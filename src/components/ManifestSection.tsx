@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
 
 const ManifestSection = () => {
   return (
@@ -17,9 +18,12 @@ const ManifestSection = () => {
             <p>Et qu'il n'est jamais trop tard pour ressentir, dire, aimer.</p>
           </div>
           
-          <Button variant="link" className="text-tranches-dustyblue hover:text-tranches-dustyblue/80">
-            Lire notre manifeste complet
-          </Button>
+          <a href="/manifeste-tranches-de-vie.pdf" download className="inline-block">
+            <Button variant="link" className="text-tranches-dustyblue hover:text-tranches-dustyblue/80 flex items-center gap-2">
+              <Download size={16} />
+              Lire notre manifeste complet
+            </Button>
+          </a>
         </div>
       </div>
     </section>
