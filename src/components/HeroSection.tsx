@@ -1,4 +1,4 @@
-
+r
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -24,10 +24,10 @@ const HeroSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
-              Je veux offrir une tranche de vie
+              Je veux aider Tranches de vie
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Je veux revivre un moment
+              Je veux revivre un souvenir
             </Button>
           </div>
         </div>
