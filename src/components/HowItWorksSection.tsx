@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Mail, MapPin, Camera } from 'lucide-react';
+import { Mail, MapPin, Video } from 'lucide-react';
 
 const HowItWorksSection = () => {
   const steps = [
@@ -15,7 +15,7 @@ const HowItWorksSection = () => {
       description: "Nous organisons une \"tranche de vie\" : une micro-expérience personnalisée, douce et humaine, grâce à notre accompagnement."
     },
     {
-      icon: <Camera className="w-12 h-12 text-tranches-charcoal" />,
+      icon: <Video className="w-12 h-12 text-tranches-charcoal" />,
       title: "Le souvenir",
       description: "Nous captons (parfois) l'instant en photo, audio ou vidéo, et l'offrons comme trace vivante de l'expérience."
     }
