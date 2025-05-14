@@ -26,7 +26,7 @@ const HeroSection = () => {
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
               Je veux offrir une tranche de vie
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/20">
+            <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
               Je veux revivre un moment
             </Button>
           </div>
