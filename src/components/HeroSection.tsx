@@ -20,7 +20,7 @@ const HeroSection = () => {
             Tranches de vie
           </h1>
           <p className="text-xl md:text-2xl text-white mb-8">
-            Revisiter ses souvenirs précieux et les revivre une deuxième fois
+            Revisiter des souvenirs précieux et les revivre une fois de plus
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
