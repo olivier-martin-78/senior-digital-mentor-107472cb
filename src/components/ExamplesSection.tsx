@@ -6,7 +6,7 @@ const ExamplesSection = () => {
   const examples = [
     {
       text: "Louis, 83 ans, a pu retrouver le village de son enfance après 60 ans.",
-      image: "/placeholder.svg"
+      image: "/lovable-uploads/8ac879f0-eb39-4064-9a78-17e88d05dcb2.png"
     },
     {
       text: "Suzanne a laissé une lettre vocale à sa petite-fille qu'elle n'avait jamais rencontrée.",
@@ -32,7 +32,8 @@ const ExamplesSection = () => {
                 <img 
                   src={example.image} 
                   alt="Exemple de tranche de vie" 
-                  className="h-full w-full object-cover opacity-70"
+                  className="h-full w-full object-cover"
+                  style={index === 0 ? {opacity: '1'} : {opacity: '0.7'}}
                 />
               </div>
               <CardContent className="p-6 bg-white">
