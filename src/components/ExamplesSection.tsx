@@ -14,7 +14,7 @@ const ExamplesSection = () => {
     },
     {
       text: "Raymonde a pu déguster à nouveau un couscous comme celui de sa mère, avec l'aide d'un chef bénévole.",
-      image: "/placeholder.svg"
+      image: "/lovable-uploads/90b817e7-b9e1-44e7-98f9-32e2cee2d305.png"
     }
   ];
 
@@ -33,7 +33,7 @@ const ExamplesSection = () => {
                   src={example.image} 
                   alt="Exemple de tranche de vie" 
                   className="h-full w-full object-cover"
-                  style={index === 0 || index === 1 ? {opacity: '1'} : {opacity: '0.7'}}
+                  style={{opacity: '1'}}
                 />
               </div>
               <CardContent className="p-6 bg-white">
