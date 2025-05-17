@@ -1,15 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PostWithAuthor, BlogAlbum, BlogCategory } from '@/types/supabase';
+import { PostWithAuthor, AlbumWithAuthor, BlogCategory } from '@/types/supabase';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Edit, Trash2, Eye, Folder, Tag } from 'lucide-react';
@@ -23,12 +23,12 @@ const AdminPosts = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("posts");
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
-  const [albums, setAlbums] = useState<BlogAlbum[]>([]);
+  const [albums, setAlbums] = useState<AlbumWithAuthor[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumDescription, setNewAlbumDescription] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingAlbum, setEditingAlbum] = useState<BlogAlbum | null>(null);
+  const [editingAlbum, setEditingAlbum] = useState<AlbumWithAuthor | null>(null);
   const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(null);
   const [isAlbumDialogOpen, setIsAlbumDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -72,7 +72,7 @@ const AdminPosts = () => {
             throw error;
           }
 
-          setAlbums(data as BlogAlbum[]);
+          setAlbums(data as AlbumWithAuthor[]);
         } 
         else if (activeTab === "categories") {
           const { data, error } = await supabase
