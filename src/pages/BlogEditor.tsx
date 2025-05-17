@@ -3,14 +3,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { BlogPost, BlogMedia } from '@/types/supabase';
+import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Image, Video } from 'lucide-react';
+import { Loader2, Upload, X, Image, Video, Plus, Check } from 'lucide-react';
 
 const BlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,12 +24,50 @@ const BlogEditor = () => {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [albumId, setAlbumId] = useState<string | null>(null);
+  const [newAlbumName, setNewAlbumName] = useState('');
+  const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
+  const [allCategories, setAllCategories] = useState<BlogCategory[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<BlogCategory[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [allAlbums, setAllAlbums] = useState<BlogAlbum[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [media, setMedia] = useState<BlogMedia[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<boolean>(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+
+  // Fetch existing resources (albums, categories)
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        // Fetch albums
+        const { data: albumsData, error: albumsError } = await supabase
+          .from('blog_albums')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (!albumsError && albumsData) {
+          setAllAlbums(albumsData);
+        }
+
+        // Fetch categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('blog_categories')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (!categoriesError && categoriesData) {
+          setAllCategories(categoriesData);
+        }
+      } catch (error) {
+        console.error('Error fetching resources:', error);
+      }
+    };
+
+    fetchResources();
+  }, []);
 
   // Fetch existing post if in edit mode
   useEffect(() => {
@@ -65,6 +105,7 @@ const BlogEditor = () => {
         setTitle(data.title);
         setContent(data.content);
         setIsPublished(data.published);
+        setAlbumId(data.album_id);
 
         // Fetch media for this post
         const { data: mediaData, error: mediaError } = await supabase
@@ -74,6 +115,20 @@ const BlogEditor = () => {
 
         if (!mediaError && mediaData) {
           setMedia(mediaData as BlogMedia[]);
+        }
+
+        // Fetch categories for this post
+        const { data: postCategoriesData, error: postCategoriesError } = await supabase
+          .from('post_categories')
+          .select(`
+            category_id,
+            blog_categories:category_id(*)
+          `)
+          .eq('post_id', id);
+
+        if (!postCategoriesError && postCategoriesData) {
+          const postCategories = postCategoriesData.map(item => item.blog_categories) as BlogCategory[];
+          setSelectedCategories(postCategories);
         }
       } catch (error: any) {
         console.error('Error fetching post:', error);
@@ -94,6 +149,111 @@ const BlogEditor = () => {
       setLoading(false);
     }
   }, [id, user, hasRole, navigate, toast, isEditing]);
+
+  const createNewAlbum = async () => {
+    if (!newAlbumName.trim()) {
+      toast({
+        title: "Nom requis",
+        description: "Veuillez entrer un nom pour l'album.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('blog_albums')
+        .insert({
+          name: newAlbumName.trim(),
+          author_id: user?.id as string
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Album existant",
+            description: "Un album avec ce nom existe déjà.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setAllAlbums([...allAlbums, data as BlogAlbum]);
+      setAlbumId(data.id);
+      setNewAlbumName('');
+      setIsCreatingAlbum(false);
+      
+      toast({
+        title: "Album créé",
+        description: "L'album a été créé avec succès."
+      });
+    } catch (error: any) {
+      console.error('Error creating album:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la création de l'album.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('blog_categories')
+        .insert({
+          name: newCategoryName.trim()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          const existingCategory = allCategories.find(c => 
+            c.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+          );
+          
+          if (existingCategory && !selectedCategories.some(c => c.id === existingCategory.id)) {
+            setSelectedCategories([...selectedCategories, existingCategory]);
+          }
+          
+          setNewCategoryName('');
+          return;
+        }
+        throw error;
+      }
+
+      const newCategory = data as BlogCategory;
+      setAllCategories([...allCategories, newCategory]);
+      setSelectedCategories([...selectedCategories, newCategory]);
+      setNewCategoryName('');
+    } catch (error: any) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la création de la catégorie.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleCategory = (category: BlogCategory) => {
+    setSelectedCategories(prev => {
+      const isSelected = prev.some(c => c.id === category.id);
+      if (isSelected) {
+        return prev.filter(c => c.id !== category.id);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
 
   const handleSave = async (publish: boolean = false) => {
     if (!title.trim()) {
@@ -125,11 +285,33 @@ const BlogEditor = () => {
             title: title.trim(),
             content: content.trim(),
             published: publish || isPublished,
+            album_id: albumId,
             updated_at: new Date().toISOString()
           })
           .eq('id', post.id);
 
         if (error) throw error;
+
+        // Update categories
+        // First, delete all existing category associations
+        await supabase
+          .from('post_categories')
+          .delete()
+          .eq('post_id', post.id);
+
+        // Then, add new category associations
+        if (selectedCategories.length > 0) {
+          const categoryInserts = selectedCategories.map(category => ({
+            post_id: post.id,
+            category_id: category.id
+          }));
+
+          const { error: insertError } = await supabase
+            .from('post_categories')
+            .insert(categoryInserts);
+
+          if (insertError) throw insertError;
+        }
 
         toast({
           title: "Article mis à jour",
@@ -145,12 +327,27 @@ const BlogEditor = () => {
             title: title.trim(),
             content: content.trim(),
             author_id: user?.id,
+            album_id: albumId,
             published: publish
           })
           .select()
           .single();
 
         if (error) throw error;
+
+        // Add categories
+        if (selectedCategories.length > 0) {
+          const categoryInserts = selectedCategories.map(category => ({
+            post_id: data.id,
+            category_id: category.id
+          }));
+
+          const { error: insertError } = await supabase
+            .from('post_categories')
+            .insert(categoryInserts);
+
+          if (insertError) throw insertError;
+        }
 
         toast({
           title: "Article créé",
@@ -351,6 +548,97 @@ const BlogEditor = () => {
               className="text-xl mt-1"
               placeholder="Titre de l'article"
             />
+          </div>
+
+          {/* Album Selection */}
+          <div className="mb-6">
+            <Label>Album</Label>
+            {isCreatingAlbum ? (
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="text"
+                  value={newAlbumName}
+                  onChange={(e) => setNewAlbumName(e.target.value)}
+                  placeholder="Nom du nouvel album"
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={createNewAlbum} 
+                  className="bg-tranches-sage hover:bg-tranches-sage/90"
+                  size="sm"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button 
+                  onClick={() => setIsCreatingAlbum(false)} 
+                  variant="outline"
+                  size="sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2 mt-1">
+                <Select value={albumId || ''} onValueChange={(value) => setAlbumId(value || null)}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Sélectionner un album" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun album</SelectItem>
+                    {allAlbums.map(album => (
+                      <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={() => setIsCreatingAlbum(true)} 
+                  variant="outline"
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nouvel album
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Categories Selection */}
+          <div className="mb-6">
+            <Label>Catégories</Label>
+            <div className="mt-2 flex flex-wrap gap-2 mb-2">
+              {allCategories.map(category => (
+                <Badge 
+                  key={category.id}
+                  variant={selectedCategories.some(c => c.id === category.id) ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => toggleCategory(category)}
+                >
+                  {category.name}
+                </Badge>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Ajouter une nouvelle catégorie"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newCategoryName.trim()) {
+                    e.preventDefault();
+                    createNewCategory();
+                  }
+                }}
+              />
+              <Button 
+                onClick={createNewCategory} 
+                disabled={!newCategoryName.trim()}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}

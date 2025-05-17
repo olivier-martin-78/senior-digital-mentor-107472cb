@@ -3,17 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PostWithAuthor, CommentWithAuthor, BlogMedia } from '@/types/supabase';
+import { PostWithAuthor, CommentWithAuthor, BlogMedia, BlogCategory, BlogAlbum } from '@/types/supabase';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash2, Send } from 'lucide-react';
+import { Edit, Trash2, Send, Folder } from 'lucide-react';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,8 @@ const BlogPost = () => {
   const { toast } = useToast();
   
   const [post, setPost] = useState<PostWithAuthor | null>(null);
+  const [album, setAlbum] = useState<BlogAlbum | null>(null);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [media, setMedia] = useState<BlogMedia[]>([]);
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [commentContent, setCommentContent] = useState('');
@@ -53,6 +56,31 @@ const BlogPost = () => {
         }
 
         setPost(postData as PostWithAuthor);
+
+        // If post has an album, fetch it
+        if (postData.album_id) {
+          const { data: albumData } = await supabase
+            .from('blog_albums')
+            .select('*')
+            .eq('id', postData.album_id)
+            .single();
+          
+          setAlbum(albumData as BlogAlbum);
+        }
+
+        // Fetch categories for this post
+        const { data: postCategoriesData } = await supabase
+          .from('post_categories')
+          .select(`
+            category_id,
+            blog_categories:category_id(*)
+          `)
+          .eq('post_id', id as string);
+
+        if (postCategoriesData) {
+          const fetchedCategories = postCategoriesData.map(item => item.blog_categories) as BlogCategory[];
+          setCategories(fetchedCategories);
+        }
 
         // Fetch media
         const { data: mediaData, error: mediaError } = await supabase
@@ -261,7 +289,7 @@ const BlogPost = () => {
             {!post.published && <span className="ml-2 text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Brouillon</span>}
           </h1>
           
-          <div className="flex items-center mb-8">
+          <div className="flex flex-wrap items-center mb-4 gap-2">
             <Avatar className="h-8 w-8 mr-2">
               <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.display_name || 'Auteur'} />
               <AvatarFallback>{getInitials(post.profiles?.display_name)}</AvatarFallback>
@@ -269,6 +297,21 @@ const BlogPost = () => {
             <span className="text-gray-600">
               {post.profiles?.display_name || 'Utilisateur'} • Publié {formatDate(post.created_at)}
             </span>
+          </div>
+
+          {/* Album and Categories */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {album && (
+              <div className="flex items-center text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+                <Folder className="h-3 w-3 mr-1" />
+                <span>Album: {album.name}</span>
+              </div>
+            )}
+            {categories.map(category => (
+              <Badge key={category.id} variant="secondary">
+                {category.name}
+              </Badge>
+            ))}
           </div>
 
           {/* Media Gallery */}

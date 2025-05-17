@@ -15,6 +15,20 @@ export interface UserRole {
   role: AppRole;
 }
 
+export interface BlogAlbum {
+  id: string;
+  name: string;
+  description: string | null;
+  author_id: string;
+  created_at: string;
+}
+
+export interface BlogCategory {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -23,6 +37,7 @@ export interface BlogPost {
   published: boolean;
   created_at: string;
   updated_at: string;
+  album_id: string | null;
 }
 
 export interface BlogMedia {
@@ -46,5 +61,13 @@ export interface PostWithAuthor extends BlogPost {
 }
 
 export interface CommentWithAuthor extends BlogComment {
+  profiles: Profile;
+}
+
+export interface PostWithCategories extends PostWithAuthor {
+  categories: BlogCategory[];
+}
+
+export interface AlbumWithAuthor extends BlogAlbum {
   profiles: Profile;
 }
