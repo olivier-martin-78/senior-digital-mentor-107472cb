@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,7 +152,7 @@ const AdminPosts = () => {
             description: newAlbumDescription.trim() || null
           })
           .eq('id', editingAlbum.id)
-          .select()
+          .select(`*, profiles:author_id(*)`)
           .single();
 
         if (error) {
@@ -167,7 +168,7 @@ const AdminPosts = () => {
         }
 
         setAlbums(albums.map(album => 
-          album.id === data.id ? data : album
+          album.id === data.id ? data as AlbumWithAuthor : album
         ));
 
         toast({
@@ -176,14 +177,20 @@ const AdminPosts = () => {
         });
       } else {
         // Create new album
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) {
+          throw new Error("Utilisateur non authentifié");
+        }
+        
+        // Create new album
         const { data, error } = await supabase
           .from('blog_albums')
           .insert({
             name: newAlbumName.trim(),
             description: newAlbumDescription.trim() || null,
-            author_id: (await supabase.auth.getUser()).data.user?.id as string
+            author_id: userId
           })
-          .select()
+          .select(`*, profiles:author_id(*)`)
           .single();
 
         if (error) {
@@ -198,7 +205,7 @@ const AdminPosts = () => {
           throw error;
         }
 
-        setAlbums([...albums, data]);
+        setAlbums([...albums, data as AlbumWithAuthor]);
 
         toast({
           title: "Album créé",
