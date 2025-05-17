@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -156,12 +155,12 @@ const Blog = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedAlbum || ''} onValueChange={(value) => setSelectedAlbum(value || null)}>
+            <Select value={selectedAlbum || 'all'} onValueChange={(value) => setSelectedAlbum(value === 'all' ? null : value)}>
               <SelectTrigger className="w-full md:w-1/4">
                 <SelectValue placeholder="Tous les albums" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les albums</SelectItem>
+                <SelectItem value="all">Tous les albums</SelectItem>
                 {albums.map(album => (
                   <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
                 ))}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -579,12 +578,12 @@ const BlogEditor = () => {
               </div>
             ) : (
               <div className="flex gap-2 mt-1">
-                <Select value={albumId || ''} onValueChange={(value) => setAlbumId(value || null)}>
+                <Select value={albumId || 'none'} onValueChange={(value) => setAlbumId(value === 'none' ? null : value)}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Sélectionner un album" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun album</SelectItem>
+                    <SelectItem value="none">Aucun album</SelectItem>
                     {allAlbums.map(album => (
                       <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
                     ))}
