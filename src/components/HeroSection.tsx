@@ -14,7 +14,7 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
       
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold text-white mb-4">
             Tranches de vie

@@ -33,7 +33,6 @@ const ExamplesSection = () => {
                   src={example.image} 
                   alt="Exemple de tranche de vie" 
                   className="h-full w-full object-cover"
-                  style={{opacity: '1'}}
                 />
               </div>
               <CardContent className="p-6 bg-white">

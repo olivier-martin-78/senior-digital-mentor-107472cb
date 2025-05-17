@@ -8,11 +8,13 @@ import JoinSection from '@/components/JoinSection';
 import ManifestSection from '@/components/ManifestSection';
 import Footer from '@/components/Footer';
 import ScrollAnimation from '@/components/ScrollAnimation';
+import Header from '@/components/Header';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <ScrollAnimation />
+      <Header />
       <HeroSection />
       <WhySection />
       <HowItWorksSection />
