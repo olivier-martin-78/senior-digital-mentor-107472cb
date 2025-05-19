@@ -12,6 +12,7 @@ export interface Question {
   id: string;
   text: string;
   answer?: string;
+  audioAnswer?: string; // URL de l'enregistrement audio
 }
 
 export interface LifeStory {

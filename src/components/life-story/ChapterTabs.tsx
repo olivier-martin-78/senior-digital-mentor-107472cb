@@ -11,6 +11,8 @@ interface ChapterTabsProps {
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
+  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob) => void;
+  onAudioDeleted: (chapterId: string, questionId: string) => void;
 }
 
 export const ChapterTabs: React.FC<ChapterTabsProps> = ({
@@ -19,7 +21,9 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
   setActiveTab,
   updateAnswer,
   handleQuestionFocus,
-  activeQuestion
+  activeQuestion,
+  onAudioRecorded,
+  onAudioDeleted
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -42,6 +46,8 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
             updateAnswer={updateAnswer}
             handleQuestionFocus={handleQuestionFocus}
             activeQuestion={activeQuestion}
+            onAudioRecorded={onAudioRecorded}
+            onAudioDeleted={onAudioDeleted}
           />
         </TabsContent>
       ))}

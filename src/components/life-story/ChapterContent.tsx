@@ -9,13 +9,17 @@ interface ChapterContentProps {
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
+  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob) => void;
+  onAudioDeleted: (chapterId: string, questionId: string) => void;
 }
 
 export const ChapterContent: React.FC<ChapterContentProps> = ({
   chapter,
   updateAnswer,
   handleQuestionFocus,
-  activeQuestion
+  activeQuestion,
+  onAudioRecorded,
+  onAudioDeleted
 }) => {
   return (
     <Card>
@@ -32,6 +36,8 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
             onAnswerChange={updateAnswer}
             onQuestionFocus={handleQuestionFocus}
             activeQuestion={activeQuestion}
+            onAudioRecorded={onAudioRecorded}
+            onAudioDeleted={onAudioDeleted}
           />
         ))}
       </CardContent>

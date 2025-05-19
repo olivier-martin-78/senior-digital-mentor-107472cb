@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Question } from '@/types/lifeStory';
+import VoiceAnswerRecorder from './VoiceAnswerRecorder';
 
 interface QuestionItemProps {
   question: Question;
@@ -10,6 +11,8 @@ interface QuestionItemProps {
   onAnswerChange: (chapterId: string, questionId: string, answer: string) => void;
   onQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
+  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob) => void;
+  onAudioDeleted: (chapterId: string, questionId: string) => void;
 }
 
 export const QuestionItem: React.FC<QuestionItemProps> = ({
@@ -17,7 +20,9 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   chapterId,
   onAnswerChange,
   onQuestionFocus,
-  activeQuestion
+  activeQuestion,
+  onAudioRecorded,
+  onAudioDeleted
 }) => {
   return (
     <div className="space-y-2">
@@ -30,6 +35,13 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           onChange={(e) => onAnswerChange(chapterId, question.id, e.target.value)}
           onFocus={() => onQuestionFocus(chapterId, question.id)}
           className="min-h-[120px]"
+        />
+        
+        <VoiceAnswerRecorder
+          questionId={question.id}
+          existingAudio={question.audioAnswer}
+          onRecordingComplete={(questionId, audioBlob) => onAudioRecorded(chapterId, questionId, audioBlob)}
+          onDeleteRecording={(questionId) => onAudioDeleted(chapterId, questionId)}
         />
       </div>
       

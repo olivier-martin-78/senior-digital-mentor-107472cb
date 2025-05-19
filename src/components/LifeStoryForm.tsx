@@ -33,7 +33,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     initialData,
     userId: user?.id || '',
     onSaveSuccess: (savedStory) => {
-      // Pas de notification ici, elle est gérée dans saveNow
+      // Pas de notification ici car la sauvegarde automatique est désactivée
     }
   });
   
@@ -44,7 +44,10 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     
     data.chapters.forEach(chapter => {
       total += chapter.questions.length;
-      answered += chapter.questions.filter(q => q.answer && q.answer.trim().length > 0).length;
+      answered += chapter.questions.filter(q => 
+        (q.answer && q.answer.trim().length > 0) || 
+        (q.audioAnswer && q.audioAnswer.trim().length > 0)
+      ).length;
     });
     
     return {
@@ -55,7 +58,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   
   const progress = calculateProgress();
   
-  // Mise à jour d'une réponse (sans sauvegarde automatique)
+  // Mise à jour d'une réponse textuelle
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
     const updatedChapters = data.chapters.map(chapter => {
       if (chapter.id === chapterId) {
@@ -90,6 +93,92 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
       ...prev,
       [chapterId]: !prev[chapterId]
     }));
+  };
+  
+  // Gestion des enregistrements audio
+  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob) => {
+    console.log(`Enregistrement audio pour la question ${questionId} du chapitre ${chapterId}`, audioBlob);
+    
+    // Créer une URL pour l'audio blob
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    // Mettre à jour la question avec l'URL de l'audio
+    const updatedChapters = data.chapters.map(chapter => {
+      if (chapter.id === chapterId) {
+        return {
+          ...chapter,
+          questions: chapter.questions.map(question => {
+            if (question.id === questionId) {
+              return { ...question, audioAnswer: audioUrl };
+            }
+            return question;
+          })
+        };
+      }
+      return chapter;
+    });
+    
+    updateData({
+      chapters: updatedChapters,
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId,
+    });
+    
+    // Afficher une notification de succès
+    toast({
+      title: "Enregistrement audio",
+      description: "Votre réponse vocale a été enregistrée avec succès.",
+      duration: 3000
+    });
+  };
+  
+  // Gestion de la suppression d'un audio
+  const handleAudioDeleted = (chapterId: string, questionId: string) => {
+    console.log(`Suppression de l'audio pour la question ${questionId} du chapitre ${chapterId}`);
+    
+    // Trouver l'URL de l'audio actuel pour la libérer
+    const currentAudioUrl = data.chapters
+      .find(c => c.id === chapterId)
+      ?.questions.find(q => q.id === questionId)
+      ?.audioAnswer;
+      
+    if (currentAudioUrl) {
+      // Libérer l'URL de l'objet
+      try {
+        URL.revokeObjectURL(currentAudioUrl);
+      } catch (e) {
+        console.error("Erreur lors de la libération de l'URL audio:", e);
+      }
+    }
+    
+    // Mettre à jour les données pour supprimer l'audio
+    const updatedChapters = data.chapters.map(chapter => {
+      if (chapter.id === chapterId) {
+        return {
+          ...chapter,
+          questions: chapter.questions.map(question => {
+            if (question.id === questionId) {
+              // Supprimer l'audioAnswer
+              const { audioAnswer, ...rest } = question;
+              return rest;
+            }
+            return question;
+          })
+        };
+      }
+      return chapter;
+    });
+    
+    updateData({
+      chapters: updatedChapters
+    });
+    
+    // Afficher une notification
+    toast({
+      title: "Audio supprimé",
+      description: "L'enregistrement vocal a été supprimé.",
+      duration: 3000
+    });
   };
   
   return (
@@ -127,6 +216,8 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
             updateAnswer={updateAnswer}
             handleQuestionFocus={handleQuestionFocus}
             activeQuestion={activeQuestion}
+            onAudioRecorded={handleAudioRecorded}
+            onAudioDeleted={handleAudioDeleted}
           />
         </div>
       </div>
