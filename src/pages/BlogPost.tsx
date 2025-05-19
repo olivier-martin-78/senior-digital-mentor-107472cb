@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +13,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash2, Send, Folder } from 'lucide-react';
+import { Edit, Trash2, Send, Folder, Image as ImageIcon } from 'lucide-react';
+import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -221,6 +221,14 @@ const BlogPost = () => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
 
+  // Ajout de cette fonction pour récupérer l'URL de la vignette de l'album
+  const getAlbumThumbnailUrl = (album: BlogAlbum | null): string => {
+    if (!album || !album.thumbnail_url) {
+      return '/placeholder.svg';
+    }
+    return getThumbnailUrl(album.thumbnail_url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -283,69 +291,85 @@ const BlogPost = () => {
           )}
         </div>
 
-        <article className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif text-tranches-charcoal mb-4">
-            {post.title}
-            {!post.published && <span className="ml-2 text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Brouillon</span>}
-          </h1>
-          
-          <div className="flex flex-wrap items-center mb-4 gap-2">
-            <Avatar className="h-8 w-8 mr-2">
-              <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.display_name || 'Auteur'} />
-              <AvatarFallback>{getInitials(post.profiles?.display_name)}</AvatarFallback>
-            </Avatar>
-            <span className="text-gray-600">
-              {post.profiles?.display_name || 'Utilisateur'} • Publié {formatDate(post.created_at)}
-            </span>
-          </div>
-
-          {/* Album and Categories */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {album && (
-              <div className="flex items-center text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                <Folder className="h-3 w-3 mr-1" />
-                <span>Album: {album.name}</span>
-              </div>
-            )}
-            {categories.map(category => (
-              <Badge key={category.id} variant="secondary">
-                {category.name}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Media Gallery */}
-          {media.length > 0 && (
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {media.map(item => (
-                <div key={item.id} className="rounded-lg overflow-hidden">
-                  {item.media_type.startsWith('image/') ? (
-                    <img
-                      src={item.media_url}
-                      alt="Media du post"
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : item.media_type.startsWith('video/') ? (
-                    <video
-                      src={item.media_url}
-                      controls
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center bg-gray-100 h-48">
-                      <p className="text-gray-500">Fichier non prévisualisable</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+        <article className="bg-white rounded-lg shadow-md overflow-hidden">
+          {/* Ajout de la vignette en haut de l'article si l'album en a une */}
+          {album && album.thumbnail_url && (
+            <div className="w-full h-64 relative">
+              <img 
+                src={getAlbumThumbnailUrl(album)} 
+                alt={post.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
             </div>
           )}
 
-          {/* Post Content */}
-          <div className="prose max-w-none">
-            {post.content.split('\n').map((paragraph, i) => (
-              <p key={i} className="mb-4">{paragraph}</p>
-            ))}
+          <div className="p-6">
+            <h1 className="text-3xl md:text-4xl font-serif text-tranches-charcoal mb-4">
+              {post.title}
+              {!post.published && <span className="ml-2 text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Brouillon</span>}
+            </h1>
+          
+            <div className="flex flex-wrap items-center mb-4 gap-2">
+              <Avatar className="h-8 w-8 mr-2">
+                <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.display_name || 'Auteur'} />
+                <AvatarFallback>{getInitials(post.profiles?.display_name)}</AvatarFallback>
+              </Avatar>
+              <span className="text-gray-600">
+                {post.profiles?.display_name || 'Utilisateur'} • Publié {formatDate(post.created_at)}
+              </span>
+            </div>
+
+            {/* Album and Categories */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {album && (
+                <div className="flex items-center text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+                  <Folder className="h-3 w-3 mr-1" />
+                  <span>Album: {album.name}</span>
+                </div>
+              )}
+              {categories.map(category => (
+                <Badge key={category.id} variant="secondary">
+                  {category.name}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Media Gallery */}
+            {media.length > 0 && (
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {media.map(item => (
+                  <div key={item.id} className="rounded-lg overflow-hidden">
+                    {item.media_type.startsWith('image/') ? (
+                      <img
+                        src={item.media_url}
+                        alt="Media du post"
+                        className="w-full h-48 object-cover"
+                      />
+                    ) : item.media_type.startsWith('video/') ? (
+                      <video
+                        src={item.media_url}
+                        controls
+                        className="w-full h-48 object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center bg-gray-100 h-48">
+                        <p className="text-gray-500">Fichier non prévisualisable</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Post Content */}
+            <div className="prose max-w-none">
+              {post.content.split('\n').map((paragraph, i) => (
+                <p key={i} className="mb-4">{paragraph}</p>
+              ))}
+            </div>
           </div>
         </article>
 
@@ -357,6 +381,7 @@ const BlogPost = () => {
             <form onSubmit={handleCommentSubmit} className="mb-8">
               <div className="flex gap-4 mb-4 items-start">
                 <Avatar className="h-8 w-8 mt-1">
+                  <AvatarImage src={user?.avatar_url || undefined} alt={user?.email || 'Utilisateur'} />
                   <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                 </Avatar>
                 <Textarea

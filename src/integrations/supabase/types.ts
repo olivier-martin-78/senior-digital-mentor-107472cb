@@ -16,6 +16,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          thumbnail_url: string | null
         }
         Insert: {
           author_id: string
@@ -23,6 +24,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          thumbnail_url?: string | null
         }
         Update: {
           author_id?: string
@@ -30,6 +32,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          thumbnail_url?: string | null
         }
         Relationships: [
           {

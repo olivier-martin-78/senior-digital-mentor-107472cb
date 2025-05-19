@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
+import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Image, Video, Plus, Check } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, Video, Plus, Check } from 'lucide-react';
 
 const BlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +37,9 @@ const BlogEditor = () => {
   const [media, setMedia] = useState<BlogMedia[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<boolean>(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const [newAlbumThumbnail, setNewAlbumThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
 
   // Fetch existing resources (albums, categories)
   useEffect(() => {
@@ -150,6 +153,16 @@ const BlogEditor = () => {
     }
   }, [id, user, hasRole, navigate, toast, isEditing]);
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewAlbumThumbnail(file);
+      // Créer une URL pour la prévisualisation
+      const previewUrl = URL.createObjectURL(file);
+      setThumbnailPreview(previewUrl);
+    }
+  };
+
   const createNewAlbum = async () => {
     if (!newAlbumName.trim()) {
       toast({
@@ -161,7 +174,12 @@ const BlogEditor = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      setUploadingThumbnail(!!newAlbumThumbnail);
+      
+      let thumbnailUrl = null;
+      
+      // Créer d'abord l'album pour obtenir un ID
+      const { data: albumData, error: albumError } = await supabase
         .from('blog_albums')
         .insert({
           name: newAlbumName.trim(),
@@ -170,22 +188,49 @@ const BlogEditor = () => {
         .select(`*, profiles:author_id(*)`)
         .single();
 
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+      if (albumError) {
+        if (albumError.code === '23505') { // Unique constraint violation
           toast({
             title: "Album existant",
             description: "Un album avec ce nom existe déjà.",
             variant: "destructive"
           });
         } else {
-          throw error;
+          throw albumError;
         }
         return;
       }
+      
+      // Si une vignette a été sélectionnée, la télécharger
+      if (newAlbumThumbnail) {
+        try {
+          thumbnailUrl = await uploadAlbumThumbnail(newAlbumThumbnail, albumData.id);
+          
+          // Mettre à jour l'album avec l'URL de la vignette
+          const { error: updateError } = await supabase
+            .from('blog_albums')
+            .update({ thumbnail_url: thumbnailUrl })
+            .eq('id', albumData.id);
+            
+          if (updateError) throw updateError;
+          
+          // Mettre à jour l'objet albumData avec l'URL de la vignette
+          albumData.thumbnail_url = thumbnailUrl;
+        } catch (uploadError: any) {
+          console.error('Erreur lors du téléchargement de la vignette:', uploadError);
+          toast({
+            title: "Erreur",
+            description: "L'album a été créé, mais la vignette n'a pas pu être téléchargée.",
+            variant: "destructive"
+          });
+        }
+      }
 
-      setAllAlbums([...allAlbums, data as BlogAlbum]);
-      setAlbumId(data.id);
+      setAllAlbums([...allAlbums, albumData as BlogAlbum]);
+      setAlbumId(albumData.id);
       setNewAlbumName('');
+      setNewAlbumThumbnail(null);
+      setThumbnailPreview(null);
       setIsCreatingAlbum(false);
       
       toast({
@@ -199,6 +244,8 @@ const BlogEditor = () => {
         description: error.message || "Une erreur est survenue lors de la création de l'album.",
         variant: "destructive"
       });
+    } finally {
+      setUploadingThumbnail(false);
     }
   };
 
@@ -554,28 +601,68 @@ const BlogEditor = () => {
           <div className="mb-6">
             <Label>Album</Label>
             {isCreatingAlbum ? (
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="text"
-                  value={newAlbumName}
-                  onChange={(e) => setNewAlbumName(e.target.value)}
-                  placeholder="Nom du nouvel album"
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={createNewAlbum} 
-                  className="bg-tranches-sage hover:bg-tranches-sage/90"
-                  size="sm"
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button 
-                  onClick={() => setIsCreatingAlbum(false)} 
-                  variant="outline"
-                  size="sm"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <div className="space-y-4 mt-1">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newAlbumName}
+                    onChange={(e) => setNewAlbumName(e.target.value)}
+                    placeholder="Nom du nouvel album"
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={createNewAlbum} 
+                    className="bg-tranches-sage hover:bg-tranches-sage/90"
+                    size="sm"
+                    disabled={uploadingThumbnail}
+                  >
+                    {uploadingThumbnail ? 
+                      <Loader2 className="h-4 w-4 animate-spin" /> : 
+                      <Check className="h-4 w-4" />
+                    }
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setIsCreatingAlbum(false);
+                      setNewAlbumThumbnail(null);
+                      setThumbnailPreview(null);
+                    }} 
+                    variant="outline"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Ajout du champ de vignette */}
+                <div>
+                  <Label htmlFor="album-thumbnail" className="block mb-2">Vignette de l'album (optionnel)</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 border border-gray-300 rounded-md overflow-hidden">
+                      {thumbnailPreview ? (
+                        <img 
+                          src={thumbnailPreview} 
+                          alt="Aperçu de la vignette" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <ImageIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Input
+                        id="album-thumbnail"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleThumbnailChange}
+                        className="max-w-xs"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Format recommandé: JPEG ou PNG, max 2MB</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex gap-2 mt-1">
@@ -712,7 +799,7 @@ const BlogEditor = () => {
                             className="w-full h-32 object-cover"
                           />
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                            <Image className="w-6 h-6 text-white" />
+                            <ImageIcon className="w-6 h-6 text-white" />
                           </div>
                         </>
                       ) : item.media_type.startsWith('video/') ? (

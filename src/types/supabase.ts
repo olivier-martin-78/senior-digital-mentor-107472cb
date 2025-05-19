@@ -23,6 +23,7 @@ export interface BlogAlbum {
   author_id: string;
   created_at: string;
   profiles: Profile;  // Cette propriété est nécessaire pour le typage
+  thumbnail_url: string | null; // Nouvelle propriété pour la vignette
 }
 
 export interface BlogCategory {
