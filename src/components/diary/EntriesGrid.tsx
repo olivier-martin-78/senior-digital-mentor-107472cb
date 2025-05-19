@@ -6,10 +6,14 @@ import EmptyDiary from './EmptyDiary';
 
 interface EntriesGridProps {
   entries: DiaryEntry[];
+  isLoading?: boolean;
 }
 
-const EntriesGrid: React.FC<EntriesGridProps> = ({ entries }) => {
-  if (entries.length === 0) {
+const EntriesGrid: React.FC<EntriesGridProps> = ({ 
+  entries,
+  isLoading = false 
+}) => {
+  if (entries.length === 0 && !isLoading) {
     return <EmptyDiary />;
   }
   

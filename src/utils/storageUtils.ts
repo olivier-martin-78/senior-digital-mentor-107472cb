@@ -25,11 +25,18 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
   try {
     // Construire l'URL à partir du chemin dans le bucket
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    console.log('URL publique générée:', data.publicUrl);
-    return data.publicUrl;
+    
+    // Vérifier si l'URL a été générée correctement
+    if (data && data.publicUrl) {
+      console.log('URL publique générée:', data.publicUrl);
+      return data.publicUrl;
+    }
+    
+    throw new Error("Impossible de générer l'URL publique");
   } catch (error) {
     console.error('Erreur lors de la génération de l\'URL publique:', error);
-    return '';
+    // Retourner une image placeholder en cas d'erreur
+    return '/placeholder.svg';
   }
 };
 
@@ -62,5 +69,21 @@ export const getPathFromUrl = (url: string): string | null => {
   } catch (error) {
     console.error("Erreur lors de l'extraction du chemin depuis l'URL:", error);
     return null;
+  }
+};
+
+/**
+ * Vérifier si une URL est valide
+ * @param url URL à vérifier
+ * @returns Booléen indiquant si l'URL est valide
+ */
+export const isValidUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
   }
 };
