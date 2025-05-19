@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,12 +128,21 @@ const Blog = () => {
     );
   };
 
-  // Récupérer l'URL de la vignette d'un album spécifique
-  const getAlbumThumbnail = (albumId: string | null): string => {
-    if (!albumId) return '/placeholder.svg';
+  // Fonction pour obtenir l'image à afficher pour un article
+  const getPostImage = (post: PostWithAuthor): string => {
+    // Si l'article a une image de couverture, l'utiliser en priorité
+    if (post.cover_image) {
+      return post.cover_image;
+    }
     
-    const album = albums.find(a => a.id === albumId);
-    return album?.thumbnail_url ? getThumbnailUrl(album.thumbnail_url) : '/placeholder.svg';
+    // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
+    if (post.album_id) {
+      const album = albums.find(a => a.id === post.album_id);
+      return album?.thumbnail_url ? getThumbnailUrl(album.thumbnail_url) : '/placeholder.svg';
+    }
+    
+    // Si aucune image n'est disponible, utiliser l'image par défaut
+    return '/placeholder.svg';
   };
 
   return (
@@ -213,18 +221,17 @@ const Blog = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.filter(post => post.published || (user && post.author_id === user.id)).map(post => (
               <Card key={post.id} className={`overflow-hidden ${!post.published ? 'border-orange-300' : ''}`}>
-                {/* Vignette de l'album */}
+                {/* Image de couverture de l'article ou vignette de l'album */}
                 <div className="relative w-full h-40 bg-gray-100">
                   <img 
-                    src={getAlbumThumbnail(post.album_id)} 
+                    src={getPostImage(post)} 
                     alt={post.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      // En cas d'erreur de chargement d'image, afficher une image par défaut
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
-                  {!post.album_id && (
+                  {!post.cover_image && !post.album_id && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <ImageIcon className="h-12 w-12 text-gray-300" />
                     </div>
