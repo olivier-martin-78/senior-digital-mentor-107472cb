@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/utils/storageUtils';
 
@@ -112,21 +111,19 @@ export const deleteAudio = async (
   if (!audioUrl) return;
   
   try {
-    // Extraire le chemin de fichier de l'URL complète
-    const fileUrl = audioUrl;
+    console.log('Tentative de suppression du fichier audio:', audioUrl);
     
-    // Utiliser une expression régulière plus flexible pour extraire le chemin
-    const filePathMatch = fileUrl.includes(`${AUDIO_BUCKET_NAME}/`) 
-      ? fileUrl.split(`${AUDIO_BUCKET_NAME}/`)[1].split('?')[0]
-      : null;
+    // Extraire le chemin du fichier à partir de l'URL
+    // Format typique: https://[project-ref].supabase.co/storage/v1/object/public/life-story-audios/[user-id]/[chapterId]_[questionId]_[timestamp].webm
     
-    if (!filePathMatch) {
-      console.error('Impossible d\'extraire le chemin du fichier:', fileUrl);
-      console.log('Format d\'URL:', fileUrl);
-      throw new Error('Format d\'URL invalide');
+    const matches = audioUrl.match(/\/storage\/v1\/object\/public\/life-story-audios\/(.*?)(\?.*)?$/);
+    
+    if (!matches || !matches[1]) {
+      console.error('Format d\'URL non reconnu:', audioUrl);
+      throw new Error('Format d\'URL non reconnu');
     }
     
-    const filePath = filePathMatch;
+    const filePath = decodeURIComponent(matches[1]);
     console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
     
     // Supprimer le fichier de Supabase Storage

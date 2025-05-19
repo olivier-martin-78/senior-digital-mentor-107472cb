@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -13,20 +13,42 @@ interface AudioPlayerProps {
 }
 
 export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }: AudioPlayerProps) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const handleDeleteAudio = async () => {
-    await deleteAudio(
-      audioUrl,
-      () => {
-        onDeleteSuccess();
-      },
-      (errorMessage) => {
-        toast({
-          title: 'Erreur',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
-    );
+    try {
+      setIsDeleting(true);
+      
+      await deleteAudio(
+        audioUrl,
+        () => {
+          onDeleteSuccess();
+          toast({
+            title: 'Audio supprimé',
+            description: 'L\'enregistrement audio a été supprimé avec succès.',
+            duration: 2000
+          });
+        },
+        (errorMessage) => {
+          toast({
+            title: 'Erreur',
+            description: errorMessage,
+            variant: 'destructive',
+            duration: 2000
+          });
+        }
+      );
+    } catch (error) {
+      console.error('Erreur non gérée lors de la suppression:', error);
+      toast({
+        title: 'Erreur inattendue',
+        description: 'Une erreur s\'est produite lors de la suppression de l\'audio.',
+        variant: 'destructive',
+        duration: 2000
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -40,8 +62,18 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
           size="sm" 
           onClick={handleDeleteAudio}
           className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          disabled={isDeleting}
         >
-          <Trash className="w-4 h-4 mr-1" /> Supprimer l'audio
+          {isDeleting ? (
+            <>
+              <div className="w-3 h-3 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              Suppression...
+            </>
+          ) : (
+            <>
+              <Trash className="w-4 h-4 mr-1" /> Supprimer l'audio
+            </>
+          )}
         </Button>
       </div>
     </div>
