@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import LifeStoryForm from '@/components/LifeStoryForm';
+import LifeStoryForm from '@/components/life-story/LifeStoryForm';
 import { LifeStory as LifeStoryType } from '@/types/lifeStory';
 import { Button } from '@/components/ui/button';
 import { Book, ChevronLeft } from 'lucide-react';

@@ -1,27 +1,27 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAutoSave } from '@/hooks/use-auto-save';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoSave } from '@/hooks/use-auto-save';
 import { toast } from '@/hooks/use-toast';
-import { LifeStory, LifeStoryProgress } from '@/types/lifeStory';
-import { initialChapters } from './life-story/initialChapters';
-import StoryHeader from './life-story/StoryHeader';
-import StoryProgress from './life-story/StoryProgress';
-import ChapterNavigation from './life-story/ChapterNavigation';
-import ChapterTabs from './life-story/ChapterTabs';
+import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
+import { initialChapters } from '@/components/life-story/initialChapters';
 
-interface LifeStoryFormProps {
+interface UseLifeStoryProps {
   existingStory?: LifeStory;
 }
 
-export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) => {
+export function useLifeStory({ existingStory }: UseLifeStoryProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState<string>('ch1');
+  const [activeTab, setActiveTab] = useState<string>(
+    existingStory?.last_edited_chapter || 'ch1'
+  );
   const [openQuestions, setOpenQuestions] = useState<Record<string, boolean>>({});
-  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(
+    existingStory?.last_edited_question ? 
+      `${existingStory.last_edited_chapter}:${existingStory.last_edited_question}` : 
+      null
+  );
   
   // Initialisation des données de l'histoire
   const initialData: LifeStory = existingStory || {
@@ -32,7 +32,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   const { data, updateData, isSaving, lastSaved, saveNow } = useAutoSave({
     initialData,
     userId: user?.id || '',
-    onSaveSuccess: (savedStory) => {
+    onSaveSuccess: () => {
       // Pas de notification ici car la sauvegarde automatique est désactivée
     }
   });
@@ -60,20 +60,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   
   // Mise à jour d'une réponse textuelle
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
-    const updatedChapters = data.chapters.map(chapter => {
-      if (chapter.id === chapterId) {
-        return {
-          ...chapter,
-          questions: chapter.questions.map(question => {
-            if (question.id === questionId) {
-              return { ...question, answer };
-            }
-            return question;
-          })
-        };
-      }
-      return chapter;
-    });
+    const updatedChapters = updateChapterQuestion(data.chapters, chapterId, questionId, { answer });
     
     updateData({
       chapters: updatedChapters,
@@ -95,18 +82,20 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     }));
   };
   
-  // Gestion des enregistrements audio
-  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => {
-    console.log(`Enregistrement audio pour la question ${questionId} du chapitre ${chapterId}`, audioBlob);
-    
-    // Mettre à jour la question avec l'URL de l'audio
-    const updatedChapters = data.chapters.map(chapter => {
+  // Helper function to update a specific question in a chapter
+  const updateChapterQuestion = (
+    chapters: Chapter[], 
+    chapterId: string, 
+    questionId: string, 
+    updates: Record<string, any>
+  ) => {
+    return chapters.map(chapter => {
       if (chapter.id === chapterId) {
         return {
           ...chapter,
           questions: chapter.questions.map(question => {
             if (question.id === questionId) {
-              return { ...question, audioAnswer: audioUrl };
+              return { ...question, ...updates };
             }
             return question;
           })
@@ -114,6 +103,19 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
       }
       return chapter;
     });
+  };
+  
+  // Gestion des enregistrements audio
+  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => {
+    console.log(`Enregistrement audio pour la question ${questionId} du chapitre ${chapterId}`, audioBlob);
+    
+    // Mettre à jour la question avec l'URL de l'audio
+    const updatedChapters = updateChapterQuestion(
+      data.chapters, 
+      chapterId, 
+      questionId, 
+      { audioAnswer: audioUrl }
+    );
     
     updateData({
       chapters: updatedChapters,
@@ -163,48 +165,20 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     });
   };
   
-  return (
-    <div className="space-y-6">
-      <StoryHeader 
-        title={data.title} 
-        lastSaved={lastSaved} 
-        isSaving={isSaving} 
-        onSave={saveNow} 
-      />
-      
-      {/* Barre de progression */}
-      <StoryProgress progress={progress} />
-      
-      {/* Navigation des chapitres */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/3">
-          <ChapterNavigation 
-            chapters={data.chapters}
-            activeTab={activeTab}
-            openQuestions={openQuestions}
-            activeQuestion={activeQuestion}
-            setActiveTab={setActiveTab}
-            toggleQuestions={toggleQuestions}
-            handleQuestionFocus={handleQuestionFocus}
-          />
-        </div>
-        
-        {/* Contenu des chapitres */}
-        <div className="md:w-2/3">
-          <ChapterTabs 
-            chapters={data.chapters}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            updateAnswer={updateAnswer}
-            handleQuestionFocus={handleQuestionFocus}
-            activeQuestion={activeQuestion}
-            onAudioRecorded={handleAudioRecorded}
-            onAudioDeleted={handleAudioDeleted}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default LifeStoryForm;
+  return {
+    data,
+    activeTab,
+    openQuestions,
+    activeQuestion,
+    progress,
+    isSaving,
+    lastSaved,
+    setActiveTab,
+    toggleQuestions,
+    handleQuestionFocus,
+    updateAnswer,
+    handleAudioRecorded,
+    handleAudioDeleted,
+    saveNow
+  };
+}
