@@ -1,4 +1,3 @@
-
 export type AppRole = 'admin' | 'editor' | 'reader';
 
 export interface Profile {
@@ -42,7 +41,7 @@ export interface BlogPost {
   updated_at: string;
   album_id: string | null;
   publication_date?: string;
-  cover_image?: string | null;
+  cover_image?: string | null;  // Adding the cover_image property
 }
 
 export interface BlogMedia {
