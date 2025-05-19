@@ -23,7 +23,8 @@ const LifeStory: React.FC = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
+        // Utilisation de "as any" pour contourner les restrictions de typage
+        const { data, error } = await (supabase as any)
           .from('life_stories')
           .select('*')
           .eq('user_id', user.id)
@@ -32,7 +33,20 @@ const LifeStory: React.FC = () => {
         if (error) throw error;
         
         if (data) {
-          setStory(data as LifeStoryType);
+          // Nous devons nous assurer que la structure des données correspond à LifeStoryType
+          // Conversion explicite pour s'assurer que les données correspondent à notre type
+          const lifeStory: LifeStoryType = {
+            id: data.id,
+            user_id: data.user_id,
+            title: data.title,
+            chapters: Array.isArray(data.chapters) ? data.chapters : [],
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            last_edited_chapter: data.last_edited_chapter,
+            last_edited_question: data.last_edited_question,
+          };
+          
+          setStory(lifeStory);
         }
         
       } catch (error) {

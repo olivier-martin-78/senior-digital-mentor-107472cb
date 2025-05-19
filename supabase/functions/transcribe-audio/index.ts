@@ -9,32 +9,41 @@ const corsHeaders = {
 
 // Process base64 in chunks to prevent memory issues
 function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-  
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
+  try {
+    console.log(`Processing base64 string of length: ${base64String.length}`);
     
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
+    const chunks: Uint8Array[] = [];
+    let position = 0;
+    
+    while (position < base64String.length) {
+      const chunk = base64String.slice(position, position + chunkSize);
+      const binaryChunk = atob(chunk);
+      const bytes = new Uint8Array(binaryChunk.length);
+      
+      for (let i = 0; i < binaryChunk.length; i++) {
+        bytes[i] = binaryChunk.charCodeAt(i);
+      }
+      
+      chunks.push(bytes);
+      position += chunkSize;
+      console.log(`Processed chunk ${chunks.length}, position: ${position}/${base64String.length}`);
     }
-    
-    chunks.push(bytes);
-    position += chunkSize;
+
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    console.log(`Successfully processed ${chunks.length} chunks, total length: ${totalLength}`);
+    return result;
+  } catch (error) {
+    console.error("Error processing base64 chunks:", error);
+    throw error;
   }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
 }
 
 serve(async (req) => {
@@ -43,14 +52,31 @@ serve(async (req) => {
   }
 
   try {
-    const { audio } = await req.json();
+    console.log("Received transcribe audio request");
+    
+    const requestData = await req.json();
+    const { audio } = requestData;
     
     if (!audio) {
+      console.error("No audio data provided");
       throw new Error('No audio data provided');
     }
 
+    console.log(`Received audio data of length: ${audio.length}`);
+    
+    // Check if OpenAI API key is present
+    const openai_api_key = Deno.env.get('OPENAI_API_KEY');
+    if (!openai_api_key) {
+      console.error("OPENAI_API_KEY environment variable not set");
+      throw new Error('OpenAI API key not configured');
+    }
+    
+    console.log("Processing audio in chunks");
+    
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
+    
+    console.log("Creating form data");
     
     // Prepare form data
     const formData = new FormData();
@@ -58,20 +84,26 @@ serve(async (req) => {
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
 
+    console.log("Sending request to OpenAI");
+    
     // Send to OpenAI
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openai_api_key}`,
       },
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${await response.text()}`);
+      const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} ${errorText}`);
+      throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
     }
 
+    console.log("Received successful response from OpenAI");
     const result = await response.json();
+    console.log("Transcription result:", result);
 
     return new Response(
       JSON.stringify({ text: result.text }),
@@ -79,6 +111,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    console.error("Transcription error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

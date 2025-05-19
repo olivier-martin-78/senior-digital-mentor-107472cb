@@ -250,6 +250,39 @@ export type Database = {
         }
         Relationships: []
       }
+      life_stories: {
+        Row: {
+          chapters: Json
+          created_at: string
+          id: string
+          last_edited_chapter: string | null
+          last_edited_question: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapters: Json
+          created_at?: string
+          id?: string
+          last_edited_chapter?: string | null
+          last_edited_question?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapters?: Json
+          created_at?: string
+          id?: string
+          last_edited_chapter?: string | null
+          last_edited_question?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_categories: {
         Row: {
           category_id: string

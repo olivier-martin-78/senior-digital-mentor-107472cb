@@ -53,7 +53,8 @@ export function useAutoSave({
       
       if (currentData.id) {
         // Mise à jour d'une histoire existante
-        const { data, error } = await supabase
+        // Utilisation de "as any" pour contourner les restrictions de typage
+        const { data, error } = await (supabase as any)
           .from('life_stories')
           .update(savePayload)
           .eq('id', currentData.id)
@@ -66,7 +67,8 @@ export function useAutoSave({
         // Création d'une nouvelle histoire
         savePayload.created_at = new Date().toISOString();
         
-        const { data, error } = await supabase
+        // Utilisation de "as any" pour contourner les restrictions de typage
+        const { data, error } = await (supabase as any)
           .from('life_stories')
           .insert(savePayload)
           .select()

@@ -1,65 +1,72 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { TranscriptionResult } from '@/types/lifeStory';
 
 interface AudioRecorderHook {
   isRecording: boolean;
   audioBlob: Blob | null;
   audioUrl: string | null;
-  startRecording: () => void;
-  stopRecording: () => void;
+  startRecording: () => Promise<void>;
+  stopRecording: () => Promise<void>;
   clearRecording: () => void;
-  transcribeAudio: () => Promise<string>;
+  transcribeAudio: () => Promise<string | null>;
   transcribing: boolean;
 }
 
-export function useAudioRecorder(): AudioRecorderHook {
-  const [isRecording, setIsRecording] = useState(false);
+export const useAudioRecorder = (): AudioRecorderHook => {
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [transcribing, setTranscribing] = useState(false);
+  const [transcribing, setTranscribing] = useState<boolean>(false);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
+  
   const startRecording = useCallback(async () => {
+    audioChunks.current = [];
     try {
+      console.log("Requesting media permissions...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      console.log("Permission granted, creating MediaRecorder...");
+      mediaRecorder.current = new MediaRecorder(stream);
       
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+      mediaRecorder.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.current.push(event.data);
+        }
       };
       
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      mediaRecorder.current.onstop = () => {
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
+        
         setAudioBlob(audioBlob);
         setAudioUrl(audioUrl);
+        setIsRecording(false);
         
         // Arrêter tous les tracks du stream pour libérer le microphone
         stream.getTracks().forEach(track => track.stop());
       };
       
-      mediaRecorder.start();
+      mediaRecorder.current.start();
       setIsRecording(true);
+      
     } catch (error) {
       console.error("Erreur lors de l'accès au microphone:", error);
       toast({
         title: "Erreur d'accès au microphone",
-        description: "Vérifiez que vous avez autorisé l'accès au microphone pour ce site.",
+        description: "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.",
         variant: "destructive",
       });
     }
   }, []);
   
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  const stopRecording = useCallback(async () => {
+    if (mediaRecorder.current && isRecording) {
+      mediaRecorder.current.stop();
     }
   }, [isRecording]);
   
@@ -67,68 +74,62 @@ export function useAudioRecorder(): AudioRecorderHook {
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
+    
     setAudioBlob(null);
     setAudioUrl(null);
   }, [audioUrl]);
   
-  const transcribeAudio = useCallback(async (): Promise<string> => {
-    if (!audioBlob) {
-      return '';
-    }
-    
-    setTranscribing(true);
+  const transcribeAudio = useCallback(async () => {
+    if (!audioBlob) return null;
     
     try {
-      // Convertir le blob audio en base64
-      const base64Audio = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          // Enlever la partie "data:audio/webm;base64," du résultat
-          resolve(base64.split(',')[1]);
-        };
-      });
+      setTranscribing(true);
+      console.log("Préparation de l'audio pour la transcription...");
       
-      // Appeler une fonction edge sur Supabase pour la transcription
-      const response = await fetch('/api/transcribe-audio', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Convertir le Blob en base64
+      const buffer = await audioBlob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Audio = btoa(binary);
+      
+      console.log("Envoi de l'audio pour transcription...");
+      
+      // Appeler notre fonction Edge pour transcription
+      const { data, error } = await supabase.functions.invoke<TranscriptionResult>('transcribe-audio', {
+        body: {
+          audio: base64Audio,
         },
-        body: JSON.stringify({ audio: base64Audio }),
       });
       
-      if (!response.ok) {
-        throw new Error('Erreur lors de la transcription');
+      if (error) {
+        console.error("Erreur lors de la transcription:", error);
+        throw new Error(`Erreur lors de la transcription: ${error.message}`);
       }
       
-      const result = await response.json();
-      return result.text || '';
-    } catch (error) {
+      if (!data || !data.success) {
+        const errorMsg = data?.error || "Erreur inconnue lors de la transcription.";
+        console.error("Échec de la transcription:", errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log("Transcription réussie:", data.text);
+      return data.text;
+      
+    } catch (error: any) {
       console.error("Erreur lors de la transcription:", error);
       toast({
         title: "Erreur de transcription",
-        description: "Impossible de transcrire l'audio en texte.",
+        description: "Impossible de transcrire l'audio en texte. " + (error.message || ""),
         variant: "destructive",
       });
-      return '';
+      return null;
     } finally {
       setTranscribing(false);
     }
   }, [audioBlob]);
-  
-  // Nettoyage lors du démontage du composant
-  useEffect(() => {
-    return () => {
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, [audioUrl, isRecording]);
   
   return {
     isRecording,
@@ -140,4 +141,6 @@ export function useAudioRecorder(): AudioRecorderHook {
     transcribeAudio,
     transcribing,
   };
-}
+};
+
+export default useAudioRecorder;
