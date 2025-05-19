@@ -66,12 +66,12 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       setIsUploading(true);
       
       // Vérifier si le bucket existe
-      const bucketExists = await checkBucketExists('life_story_audios');
+      const bucketExists = await checkBucketExists('life-story-audios');
       
       if (!bucketExists) {
         toast({
           title: 'Erreur de configuration',
-          description: 'Le bucket "life_story_audios" n\'existe pas. Veuillez contacter l\'administrateur.',
+          description: 'Le bucket "life-story-audios" n\'existe pas. Veuillez contacter l\'administrateur.',
           variant: 'destructive',
         });
         setIsUploading(false);
@@ -84,7 +84,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       
       // Télécharger le fichier
       const { data, error } = await supabase.storage
-        .from('life_story_audios')
+        .from('life-story-audios')
         .upload(filePath, blob, {
           contentType: 'audio/webm',
           cacheControl: '3600',
@@ -97,7 +97,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       }
       
       // Obtenir l'URL publique
-      const publicUrl = getPublicUrl(filePath, 'life_story_audios');
+      const publicUrl = getPublicUrl(filePath, 'life-story-audios');
       
       // Mettre à jour la question avec l'URL de l'audio
       onAudioUrlChange(chapterId, question.id, publicUrl);
@@ -126,7 +126,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     try {
       // Extraire le chemin de fichier de l'URL complète
       const fileUrl = question.audioUrl;
-      const filePathMatch = fileUrl.match(/life_story_audios\/(.+)/);
+      const filePathMatch = fileUrl.match(/life-story-audios\/(.+)/);
       
       if (!filePathMatch || !filePathMatch[1]) {
         console.error('Impossible d\'extraire le chemin du fichier:', fileUrl);
@@ -137,7 +137,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       
       // Supprimer le fichier de Supabase Storage
       const { error } = await supabase.storage
-        .from('life_story_audios')
+        .from('life-story-audios')
         .remove([filePath]);
       
       if (error) throw error;
