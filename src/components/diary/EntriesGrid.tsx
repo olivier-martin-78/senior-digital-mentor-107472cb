@@ -3,6 +3,7 @@ import React from 'react';
 import { DiaryEntry } from '@/types/diary';
 import EntryCard from './EntryCard';
 import EmptyDiary from './EmptyDiary';
+import LoadingSpinner from './LoadingSpinner';
 
 interface EntriesGridProps {
   entries: DiaryEntry[];
@@ -13,7 +14,11 @@ const EntriesGrid: React.FC<EntriesGridProps> = ({
   entries,
   isLoading = false 
 }) => {
-  if (entries.length === 0 && !isLoading) {
+  if (isLoading) {
+    return <LoadingSpinner size="lg" className="my-16" />;
+  }
+  
+  if (entries.length === 0) {
     return <EmptyDiary />;
   }
   

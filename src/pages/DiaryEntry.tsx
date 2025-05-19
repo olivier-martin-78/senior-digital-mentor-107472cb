@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 import DiaryHeader from '@/components/diary/DiaryHeader';
 import EntryHeader from '@/components/diary/EntryHeader';
 import EntryContent from '@/components/diary/EntryContent';
+import LoadingSpinner from '@/components/diary/LoadingSpinner';
 
 const DiaryEntryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -98,7 +99,7 @@ const DiaryEntryPage = () => {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="container mx-auto px-4 py-24 flex justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </div>
     );

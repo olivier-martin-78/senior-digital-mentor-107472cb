@@ -14,7 +14,7 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
   // Vérifier si le chemin est vide ou null
   if (!path) {
     console.error('Chemin de fichier vide ou null');
-    return '';
+    return '/placeholder.svg';
   }
 
   // Vérifier si le chemin est déjà une URL complète

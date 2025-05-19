@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { getPublicUrl } from '@/utils/storageUtils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { ImageIcon, FileIcon, MusicIcon, VideoIcon } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
+import LoadingSpinner from './LoadingSpinner';
 
 interface EntryMediaProps {
   mediaUrl: string | null;
@@ -24,8 +27,8 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
       return (
         <div className="mt-6 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
           {isLoading && (
-            <div className="flex justify-center items-center h-[300px]">
-              <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+            <div className="flex justify-center items-center py-16">
+              <LoadingSpinner size="md" />
             </div>
           )}
           <AspectRatio ratio={16/9} className={isLoading ? 'hidden' : 'block'}>
@@ -37,8 +40,6 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
                 console.error("Erreur de chargement d'image:", completeMediaUrl);
                 setHasError(true);
                 setIsLoading(false);
-                e.currentTarget.src = '/placeholder.svg';
-                e.currentTarget.className = "w-full h-full object-contain opacity-50";
               }}
               onLoad={() => {
                 console.log("Image chargée avec succès:", completeMediaUrl);
@@ -47,9 +48,18 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
               style={{ display: hasError ? 'none' : 'block' }}
             />
             {hasError && (
-              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                <ImageIcon size={48} />
-                <p className="mt-2">Impossible de charger l'image</p>
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 p-8">
+                <ImageIcon size={48} className="text-gray-400 mb-2" />
+                <p className="font-medium text-gray-500">Impossible de charger l'image</p>
+                <p className="text-sm text-gray-400 mt-1">Vérifiez que le fichier existe et est accessible</p>
+                <a 
+                  href={completeMediaUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="mt-4 text-sm text-tranches-sage hover:underline"
+                >
+                  Essayer d'ouvrir directement
+                </a>
               </div>
             )}
           </AspectRatio>
@@ -65,16 +75,24 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
               className="w-full h-full"
               onError={(e) => {
                 console.error("Erreur de chargement vidéo:", completeMediaUrl);
-                e.currentTarget.poster = '/placeholder.svg';
                 setHasError(true);
               }}
             >
               Votre navigateur ne prend pas en charge la lecture vidéo.
             </video>
             {hasError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-gray-400">
-                <VideoIcon size={48} />
-                <p className="mt-2">Impossible de charger la vidéo</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-gray-400 p-8">
+                <VideoIcon size={48} className="mb-2" />
+                <p className="font-medium text-gray-500">Impossible de charger la vidéo</p>
+                <p className="text-sm text-gray-400 mt-1">Vérifiez que le fichier existe et est accessible</p>
+                <a 
+                  href={completeMediaUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="mt-4 text-sm text-tranches-sage hover:underline"
+                >
+                  Essayer d'ouvrir directement
+                </a>
               </div>
             )}
           </AspectRatio>
@@ -99,12 +117,28 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
             Votre navigateur ne prend pas en charge la lecture audio.
           </audio>
           {hasError && (
-            <p className="text-sm text-red-500 mt-2">Impossible de charger le fichier audio</p>
+            <Alert variant="destructive" className="mt-2">
+              <AlertTitle>Impossible de charger le fichier audio</AlertTitle>
+              <AlertDescription>
+                Vérifiez que le fichier existe et est accessible.
+                <div className="mt-2">
+                  <a 
+                    href={completeMediaUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-sm underline"
+                  >
+                    Essayer d'ouvrir directement
+                  </a>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       );
     }
     
+    // Pour les autres types de médias
     return (
       <div className="mt-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
         <div className="flex items-center">
@@ -123,10 +157,12 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
   } catch (error) {
     console.error("Erreur lors du rendu du média:", error);
     return (
-      <div className="mt-6 p-4 border border-red-200 bg-red-50 rounded-lg text-red-500 flex items-center">
-        <FileIcon className="mr-2" size={20} />
-        Impossible de charger le média
-      </div>
+      <Alert variant="destructive" className="mt-6">
+        <AlertTitle>Erreur de chargement du média</AlertTitle>
+        <AlertDescription>
+          Une erreur s'est produite lors du chargement du média. Veuillez réessayer plus tard.
+        </AlertDescription>
+      </Alert>
     );
   }
 };
