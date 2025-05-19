@@ -4,16 +4,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle
-} from '@/components/ui/navigation-menu';
-import { cn } from '@/lib/utils';
-import { UserCircle, Book, BookOpen } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserCircle, Book, BookOpen, ChevronDown } from 'lucide-react';
 
 const Header = () => {
   const { user, profile, signOut, hasRole } = useAuth();
@@ -25,96 +23,121 @@ const Header = () => {
           Tranches de vie
         </Link>
         
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <Link to="/" className={cn(navigationMenuTriggerStyle())}>
-                Accueil
-              </Link>
-            </NavigationMenuItem>
-            
-            <NavigationMenuItem>
-              <Link to="/blog" className={cn(navigationMenuTriggerStyle())}>
-                Blog
-              </Link>
-            </NavigationMenuItem>
-            
-            {user && (
-              <>
-                <NavigationMenuItem>
-                  <Link to="/diary" className={cn(navigationMenuTriggerStyle())}>
-                    <Book className="w-4 h-4 mr-1" /> Journal
-                  </Link>
-                </NavigationMenuItem>
-                
-                <NavigationMenuItem>
-                  <Link to="/life-story" className={cn(navigationMenuTriggerStyle())}>
-                    <BookOpen className="w-4 h-4 mr-1" /> Histoire de vie
-                  </Link>
-                </NavigationMenuItem>
-              </>
-            )}
-            
-            {user ? (
-              <>
-                {(hasRole('admin') || hasRole('editor')) && (
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger>Administration</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-[200px] p-2">
-                        <Link 
-                          to="/admin/posts" 
-                          className="block p-2 hover:bg-slate-100 rounded-md"
-                        >
-                          Gérer les articles
-                        </Link>
-                        {hasRole('admin') && (
-                          <Link 
-                            to="/admin/users" 
-                            className="block p-2 hover:bg-slate-100 rounded-md"
-                          >
-                            Gérer les utilisateurs
-                          </Link>
-                        )}
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                )}
-                
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>
-                    <span className="flex items-center gap-2">
-                      <UserCircle className="w-5 h-5" />
-                      {profile?.display_name || user.email}
-                    </span>
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="w-[200px] p-2">
-                      <Link 
-                        to="/profile" 
-                        className="block p-2 hover:bg-slate-100 rounded-md"
-                      >
-                        Mon profil
-                      </Link>
-                      <button 
-                        onClick={() => signOut()}
-                        className="block w-full text-left p-2 hover:bg-slate-100 rounded-md text-red-600"
-                      >
-                        Déconnexion
-                      </button>
-                    </div>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </>
-            ) : (
-              <NavigationMenuItem>
-                <Link to="/auth" className={cn(navigationMenuTriggerStyle(), "bg-tranches-sage text-white hover:bg-tranches-sage/90")}>
-                  Se connecter
+        <div className="flex items-center space-x-4">
+          <Link to="/" className="px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+            Accueil
+          </Link>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+              Blog <ChevronDown className="h-4 w-4 ml-1" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem asChild>
+                <Link to="/blog" className="w-full">
+                  Tous les articles
                 </Link>
-              </NavigationMenuItem>
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
+              </DropdownMenuItem>
+              {(user && (hasRole('admin') || hasRole('editor'))) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/blog/new" className="w-full">
+                      Nouvel article
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {user && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+                  <Book className="w-4 h-4 mr-1" /> Journal <ChevronDown className="h-4 w-4 ml-1" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link to="/diary" className="w-full">
+                      Mon journal
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/diary/new" className="w-full">
+                      Nouvelle entrée
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+                  <BookOpen className="w-4 h-4 mr-1" /> Histoire de vie <ChevronDown className="h-4 w-4 ml-1" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link to="/life-story" className="w-full">
+                      Mon histoire
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {(hasRole('admin') || hasRole('editor')) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+                    Administration <ChevronDown className="h-4 w-4 ml-1" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/posts" className="w-full">
+                        Gérer les articles
+                      </Link>
+                    </DropdownMenuItem>
+                    {hasRole('admin') && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/users" className="w-full">
+                          Gérer les utilisateurs
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </>
+          )}
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+                <span className="flex items-center gap-2">
+                  <UserCircle className="w-5 h-5" />
+                  {profile?.display_name || user.email}
+                </span>
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="w-full">
+                    Mon profil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => signOut()}
+                  className="text-red-600"
+                >
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/auth" className="bg-tranches-sage text-white hover:bg-tranches-sage/90 px-4 py-2 rounded-md">
+              Se connecter
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );
