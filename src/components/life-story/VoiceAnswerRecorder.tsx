@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash, Volume2 } from 'lucide-react';
+import { Mic, Square, Trash, Volume2, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -147,6 +147,33 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     onDeleteRecording(questionId);
   };
   
+  const handleExportAudio = () => {
+    if (!audioUrl) return;
+
+    try {
+      // Create a temporary anchor element to trigger download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = audioUrl;
+      downloadLink.download = `reponse_vocale_${new Date().toISOString().slice(0, 10)}.webm`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      toast({
+        title: "Téléchargement réussi",
+        description: "L'enregistrement audio a été téléchargé sur votre appareil",
+        duration: 3000
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'export audio:", error);
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter l'enregistrement audio",
+        variant: "destructive",
+      });
+    }
+  };
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -217,7 +244,17 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
             />
           </div>
           
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleExportAudio}
+              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+              disabled={isPlaying}
+            >
+              <Download className="w-4 h-4 mr-1" /> Exporter l'audio
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm" 
