@@ -74,7 +74,7 @@ const Footer = () => {
           toast({
             title: "Pièce jointe ignorée",
             description: "Impossible d'envoyer la pièce jointe. Votre message sera envoyé sans pièce jointe.",
-            variant: "warning"
+            variant: "default"
           });
         }
       }
