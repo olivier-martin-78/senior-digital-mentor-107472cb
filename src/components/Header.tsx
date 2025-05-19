@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,15 +9,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 
 const Header = () => {
-  const { isAuthenticated, user, logout, hasRole } = useAuth();
+  const { session, user, profile, signOut, hasRole } = useAuth();
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
   };
 
   const getInitials = () => {
-    if (!user?.email) return '';
-    return user.email.substring(0, 2).toUpperCase();
+    if (!profile?.email) return '';
+    return profile.email.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -35,7 +36,7 @@ const Header = () => {
           <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Blog
           </Link>
-          {isAuthenticated && (
+          {session && (
             <>
               <Link to="/diary" className="text-gray-600 hover:text-tranches-sage transition-colors">
                 Journal
@@ -49,13 +50,13 @@ const Header = () => {
 
         {/* Menu utilisateur */}
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {session ? (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user?.avatar_url || undefined} />
+                      <AvatarImage src={profile?.avatar_url || undefined} />
                       <AvatarFallback>{getInitials()}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -126,7 +127,7 @@ const Header = () => {
                   <Link to="/blog" className="hover:text-tranches-sage transition-colors">
                     Blog
                   </Link>
-                  {isAuthenticated && (
+                  {session && (
                     <>
                       <Link to="/diary" className="hover:text-tranches-sage transition-colors">
                         Journal
@@ -160,7 +161,7 @@ const Header = () => {
                       </Button>
                     </>
                   )}
-                  {!isAuthenticated && (
+                  {!session && (
                     <Button asChild variant="outline">
                       <Link to="/auth">Se connecter</Link>
                     </Button>
