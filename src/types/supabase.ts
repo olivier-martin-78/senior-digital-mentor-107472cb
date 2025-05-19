@@ -7,6 +7,7 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   created_at: string;
+  receive_contacts?: boolean;
 }
 
 export interface UserRole {
@@ -21,6 +22,7 @@ export interface BlogAlbum {
   description: string | null;
   author_id: string;
   created_at: string;
+  profiles: Profile;  // Cette propriété est nécessaire pour le typage
 }
 
 export interface BlogCategory {
@@ -38,6 +40,8 @@ export interface BlogPost {
   created_at: string;
   updated_at: string;
   album_id: string | null;
+  publication_date?: string;
+  cover_image?: string | null;
 }
 
 export interface BlogMedia {
