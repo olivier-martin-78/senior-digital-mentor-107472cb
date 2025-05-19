@@ -121,18 +121,57 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   }, [audioUrl]);
   
   const handlePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.error("Référence audio non disponible");
+      return;
+    }
     
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play().catch((error) => {
-        console.error("Erreur lors de la lecture:", error);
-        toast({
-          title: "Erreur de lecture",
-          description: "Impossible de démarrer la lecture audio. Veuillez réessayer.",
-          variant: "destructive"
-        });
+    try {
+      console.log("Tentative de lecture/pause:", isPlaying ? "pause" : "lecture");
+      
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        // Correction: Forcer le chargement avant la lecture
+        audioRef.current.load();
+        
+        // Promesse explicite avec gestion d'erreur
+        const playPromise = audioRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Lecture démarrée avec succès");
+              setIsPlaying(true);
+            })
+            .catch((error) => {
+              console.error("Erreur lors de la lecture:", error);
+              
+              // Essayer une deuxième fois après un court délai
+              setTimeout(() => {
+                if (audioRef.current) {
+                  audioRef.current
+                    .play()
+                    .then(() => console.log("Lecture réussie au second essai"))
+                    .catch((error) => {
+                      console.error("Échec de la seconde tentative:", error);
+                      toast({
+                        title: "Erreur de lecture",
+                        description: "Impossible de démarrer la lecture audio. Veuillez réessayer.",
+                        variant: "destructive"
+                      });
+                    });
+                }
+              }, 300);
+            });
+        }
+      }
+    } catch (error) {
+      console.error("Exception lors de la lecture/pause:", error);
+      toast({
+        title: "Erreur de lecture",
+        description: "Une erreur s'est produite lors de la lecture. Veuillez réessayer.",
+        variant: "destructive"
       });
     }
   };
@@ -195,9 +234,10 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 flex-shrink-0 active:bg-blue-100"
                     disabled={isLoading || hasError}
                     onClick={handlePlayPause}
+                    aria-label={isPlaying ? "Pause" : "Lecture"}
                   >
                     {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
