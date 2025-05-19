@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,9 +98,15 @@ const Diary = () => {
                 {entry.media_url && (
                   <div className="mt-2 flex items-center text-sm text-gray-500">
                     <Image className="h-4 w-4 mr-2" />
-                    {entry.media_type?.startsWith('image/') ? 'Photo attachée' : 
-                     entry.media_type?.startsWith('video/') ? 'Vidéo attachée' : 
-                     entry.media_type?.startsWith('audio/') ? 'Audio attaché' : 'Média attaché'}
+                    {entry.media_type?.startsWith('image/') ? (
+                      <span title={getPublicUrl(entry.media_url)}>Photo attachée</span>
+                    ) : entry.media_type?.startsWith('video/') ? (
+                      'Vidéo attachée'
+                    ) : entry.media_type?.startsWith('audio/') ? (
+                      'Audio attaché'
+                    ) : (
+                      'Média attaché'
+                    )}
                   </div>
                 )}
                 

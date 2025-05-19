@@ -281,14 +281,30 @@ const DiaryEdit = () => {
                     <div className="p-4 border rounded-lg">
                       <h3 className="text-sm font-medium mb-2">Média actuel</h3>
                       {entry.media_type?.startsWith('image/') ? (
-                        <img 
+                        <div className="bg-gray-100 rounded-lg overflow-hidden">
+                          <img 
+                            src={getPublicUrl(entry.media_url)} 
+                            alt="Current media" 
+                            className="h-32 w-auto object-contain" 
+                            onError={(e) => {
+                              console.error("Erreur de chargement d'image:", entry.media_url);
+                              console.log("URL calculée:", getPublicUrl(entry.media_url));
+                              e.currentTarget.src = '/placeholder.svg';
+                              e.currentTarget.className = "h-32 w-auto object-contain opacity-50";
+                            }}
+                            onLoad={() => console.log("Image existante chargée avec succès")}
+                          />
+                        </div>
+                      ) : entry.media_type?.startsWith('video/') ? (
+                        <video 
                           src={getPublicUrl(entry.media_url)} 
-                          alt="Current media" 
-                          className="h-32 w-auto object-contain" 
-                          onError={(e) => {
-                            console.error("Erreur de chargement d'image:", entry.media_url);
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
+                          className="h-32 w-auto" 
+                          controls
+                        />
+                      ) : entry.media_type?.startsWith('audio/') ? (
+                        <audio 
+                          src={getPublicUrl(entry.media_url)} 
+                          controls
                         />
                       ) : (
                         <p>Un média est déjà attaché. Sélectionnez un nouveau fichier pour le remplacer.</p>

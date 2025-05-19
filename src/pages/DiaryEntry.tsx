@@ -141,63 +141,78 @@ const DiaryEntryPage = () => {
   const renderMedia = () => {
     if (!entry?.media_url) return null;
     
-    // S'assurer que nous avons l'URL publique complète
-    const mediaUrl = getPublicUrl(entry.media_url);
-    
-    if (entry.media_type?.startsWith('image/')) {
-      return (
-        <div className="mt-6 rounded-lg overflow-hidden">
-          <img 
-            src={mediaUrl} 
-            alt="Media" 
-            className="w-full h-auto max-h-[500px] object-contain" 
-            onError={(e) => {
-              console.error("Erreur de chargement d'image:", mediaUrl);
-              e.currentTarget.src = '/placeholder.svg';
-            }}
-          />
-        </div>
-      );
-    } else if (entry.media_type?.startsWith('video/')) {
-      return (
-        <div className="mt-6 rounded-lg overflow-hidden">
-          <video 
-            src={mediaUrl} 
-            controls 
-            className="w-full max-h-[500px]"
-            onError={(e) => console.error("Erreur de chargement vidéo:", mediaUrl)}
-          >
-            Votre navigateur ne prend pas en charge la lecture vidéo.
-          </video>
-        </div>
-      );
-    } else if (entry.media_type?.startsWith('audio/')) {
+    try {
+      // S'assurer que nous avons l'URL publique complète
+      const mediaUrl = getPublicUrl(entry.media_url);
+      console.log('URL média à afficher:', mediaUrl);
+      
+      if (entry.media_type?.startsWith('image/')) {
+        return (
+          <div className="mt-6 rounded-lg overflow-hidden bg-gray-100">
+            <img 
+              src={mediaUrl} 
+              alt="Media" 
+              className="w-full h-auto max-h-[500px] object-contain" 
+              onError={(e) => {
+                console.error("Erreur de chargement d'image:", mediaUrl);
+                e.currentTarget.src = '/placeholder.svg';
+                e.currentTarget.className = "w-full h-[300px] object-contain opacity-50";
+              }}
+              onLoad={() => console.log("Image chargée avec succès:", mediaUrl)}
+            />
+          </div>
+        );
+      } else if (entry.media_type?.startsWith('video/')) {
+        return (
+          <div className="mt-6 rounded-lg overflow-hidden">
+            <video 
+              src={mediaUrl} 
+              controls 
+              className="w-full max-h-[500px]"
+              onError={(e) => {
+                console.error("Erreur de chargement vidéo:", mediaUrl);
+                e.currentTarget.poster = '/placeholder.svg';
+              }}
+            >
+              Votre navigateur ne prend pas en charge la lecture vidéo.
+            </video>
+          </div>
+        );
+      } else if (entry.media_type?.startsWith('audio/')) {
+        return (
+          <div className="mt-6">
+            <audio 
+              src={mediaUrl} 
+              controls 
+              className="w-full"
+              onError={(e) => console.error("Erreur de chargement audio:", mediaUrl)}
+            >
+              Votre navigateur ne prend pas en charge la lecture audio.
+            </audio>
+          </div>
+        );
+      }
+      
       return (
         <div className="mt-6">
-          <audio 
-            src={mediaUrl} 
-            controls 
-            className="w-full"
-            onError={(e) => console.error("Erreur de chargement audio:", mediaUrl)}
+          <a 
+            href={mediaUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-tranches-sage hover:underline"
           >
-            Votre navigateur ne prend pas en charge la lecture audio.
-          </audio>
+            Voir le média
+          </a>
+        </div>
+      );
+    } catch (error) {
+      console.error("Erreur lors du rendu du média:", error);
+      return (
+        <div className="mt-6 p-4 border border-red-200 bg-red-50 rounded-lg text-red-500">
+          Impossible de charger le média
         </div>
       );
     }
-    
-    return (
-      <div className="mt-6">
-        <a 
-          href={mediaUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-tranches-sage hover:underline"
-        >
-          Voir le média
-        </a>
-      </div>
-    );
   };
 
   return (

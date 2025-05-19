@@ -11,14 +11,26 @@ export const DIARY_MEDIA_BUCKET = 'diary_media';
  * @returns URL publique du fichier
  */
 export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) => {
+  // Vérifier si le chemin est vide ou null
+  if (!path) {
+    console.error('Chemin de fichier vide ou null');
+    return '';
+  }
+
   // Vérifier si le chemin est déjà une URL complète
-  if (path?.startsWith('http')) {
+  if (path.startsWith('http')) {
     return path;
   }
   
-  // Sinon, construire l'URL à partir du chemin dans le bucket
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  try {
+    // Construire l'URL à partir du chemin dans le bucket
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    console.log('URL publique générée:', data.publicUrl);
+    return data.publicUrl;
+  } catch (error) {
+    console.error('Erreur lors de la génération de l\'URL publique:', error);
+    return '';
+  }
 };
 
 /**
