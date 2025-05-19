@@ -1,0 +1,51 @@
+
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import QuestionItem from './QuestionItem';
+import { Chapter } from '@/types/lifeStory';
+
+interface ChapterContentProps {
+  chapter: Chapter;
+  updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
+  handleQuestionFocus: (chapterId: string, questionId: string) => void;
+  showVoiceRecorder: string | null;
+  handleVoiceRecorder: (questionId: string) => void;
+  handleTranscription: (text: string) => void;
+  activeQuestion: string | null;
+}
+
+export const ChapterContent: React.FC<ChapterContentProps> = ({
+  chapter,
+  updateAnswer,
+  handleQuestionFocus,
+  showVoiceRecorder,
+  handleVoiceRecorder,
+  handleTranscription,
+  activeQuestion
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{chapter.title}</CardTitle>
+        <CardDescription>{chapter.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {chapter.questions.map(question => (
+          <QuestionItem 
+            key={question.id}
+            question={question}
+            chapterId={chapter.id}
+            onAnswerChange={updateAnswer}
+            onQuestionFocus={handleQuestionFocus}
+            showVoiceRecorder={showVoiceRecorder}
+            onToggleVoiceRecorder={handleVoiceRecorder}
+            onTranscription={handleTranscription}
+            activeQuestion={activeQuestion}
+          />
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ChapterContent;
