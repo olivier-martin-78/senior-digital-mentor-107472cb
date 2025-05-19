@@ -6,12 +6,17 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DiaryEntry } from '@/types/diary';
 import { getPublicUrl } from '@/utils/storageUtils';
+import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface EntryCardProps {
   entry: DiaryEntry;
 }
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
+  // Vérifier si le média est une image ou une vidéo
+  const isVisualMedia = entry.media_type?.startsWith('image/') || entry.media_type?.startsWith('video/');
+  
   return (
     <Link 
       to={`/diary/${entry.id}`} 
@@ -23,14 +28,44 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
       </div>
       <h3 className="font-medium text-xl mb-2 text-tranches-charcoal">{entry.title}</h3>
       
-      {entry.media_url && (
+      {isVisualMedia && entry.media_url && (
+        <div className="mt-2 mb-3 border border-gray-100 rounded-lg overflow-hidden">
+          <AspectRatio ratio={16/9}>
+            {entry.media_type?.startsWith('image/') ? (
+              <img 
+                src={getPublicUrl(entry.media_url)} 
+                alt="Aperçu du média"
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder.svg';
+                }}
+              />
+            ) : entry.media_type?.startsWith('video/') ? (
+              <div className="relative bg-gray-100 w-full h-full">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Image className="h-10 w-10 text-gray-400" />
+                </div>
+                <video 
+                  src={getPublicUrl(entry.media_url)} 
+                  className="w-full h-full object-cover opacity-0"
+                  onLoadedData={(e) => {
+                    e.currentTarget.classList.remove('opacity-0');
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.classList.add('hidden');
+                  }}
+                />
+              </div>
+            ) : null}
+          </AspectRatio>
+        </div>
+      )}
+      
+      {entry.media_url && !isVisualMedia && (
         <div className="mt-2 flex items-center text-sm text-gray-500">
           <Image className="h-4 w-4 mr-2" />
-          {entry.media_type?.startsWith('image/') ? (
-            <span title={getPublicUrl(entry.media_url)}>Photo attachée</span>
-          ) : entry.media_type?.startsWith('video/') ? (
-            'Vidéo attachée'
-          ) : entry.media_type?.startsWith('audio/') ? (
+          {entry.media_type?.startsWith('audio/') ? (
             'Audio attaché'
           ) : (
             'Média attaché'
