@@ -9,6 +9,7 @@ import ManifestSection from '@/components/ManifestSection';
 import Footer from '@/components/Footer';
 import ScrollAnimation from '@/components/ScrollAnimation';
 import Header from '@/components/Header';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
   return (
@@ -22,6 +23,7 @@ const Index = () => {
       <JoinSection />
       <ManifestSection />
       <Footer />
+      <Toaster />
     </div>
   );
 };

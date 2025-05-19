@@ -3,6 +3,12 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
 
+// CORS headers for browser requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // Initialiser Resend avec la clé API
 const resendApiKey = Deno.env.get('RESEND_API_KEY');
 if (!resendApiKey) {
@@ -13,6 +19,11 @@ const resend = new Resend(resendApiKey);
 console.log('Fonction send-contact-email initialisée');
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
   try {
     // Initialiser le client Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -37,7 +48,7 @@ serve(async (req: Request) => {
           success: false, 
           error: 'Nom, email et message sont requis' 
         }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
     
@@ -54,12 +65,28 @@ serve(async (req: Request) => {
     
     if (!adminProfiles || adminProfiles.length === 0) {
       console.warn('Aucun administrateur n\'a activé la réception des demandes de contact');
+      
+      // Dans ce cas, envoyons quand même un email de confirmation à l'expéditeur
+      const confirmationEmail = await resend.emails.send({
+        from: 'contact@tranches-de-vie.com',
+        to: email,
+        subject: 'Nous avons bien reçu votre message',
+        html: `
+          <h1>Bonjour ${name},</h1>
+          <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
+          <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
+          <p>Cordialement,</p>
+          <p>L'équipe Tranches de vie</p>
+        `,
+      });
+      
       return new Response(
         JSON.stringify({ 
-          success: false, 
-          error: 'Aucun destinataire trouvé pour cette demande' 
+          success: true, 
+          message: 'Confirmation envoyée', 
+          confirmationEmail 
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
     
@@ -87,15 +114,31 @@ serve(async (req: Request) => {
       });
     });
     
+    // Envoyer un email de confirmation à l'expéditeur
+    emailPromises.push(
+      resend.emails.send({
+        from: 'contact@tranches-de-vie.com',
+        to: email,
+        subject: 'Nous avons bien reçu votre message',
+        html: `
+          <h1>Bonjour ${name},</h1>
+          <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
+          <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
+          <p>Cordialement,</p>
+          <p>L'équipe Tranches de vie</p>
+        `,
+      })
+    );
+    
     const results = await Promise.all(emailPromises);
     console.log('Résultats des envois d\'emails:', results);
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email envoyé à ${adminProfiles.length} administrateur(s)` 
+        message: `Email envoyé à ${adminProfiles.length} administrateur(s) et confirmation envoyée` 
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
     
   } catch (error) {
@@ -106,7 +149,7 @@ serve(async (req: Request) => {
         success: false, 
         error: error.message || 'Une erreur est survenue lors de l\'envoi de l\'email' 
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   }
 });
