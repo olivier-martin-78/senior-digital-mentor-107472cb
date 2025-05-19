@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutoSave } from '@/hooks/use-auto-save';
@@ -84,7 +83,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   };
   
   // Mise à jour de l'URL audio d'une question
-  const updateAudioUrl = (chapterId: string, questionId: string, audioUrl: string | null) => {
+  const updateAudioUrl = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     const updatedChapters = data.chapters.map(chapter => {
       if (chapter.id === chapterId) {
         return {
@@ -100,11 +99,18 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
       return chapter;
     });
     
-    updateData({
-      chapters: updatedChapters,
-      last_edited_chapter: chapterId,
-      last_edited_question: questionId,
-    });
+    // Mise à jour des données mais sans déclencher d'auto-sauvegarde
+    if (preventAutoSave) {
+      // Sauvegarder manuellement sans marquer les changements pour l'autosauvegarde
+      saveNow();
+    } else {
+      // Comportement normal pour les autres mises à jour
+      updateData({
+        chapters: updatedChapters,
+        last_edited_chapter: chapterId,
+        last_edited_question: questionId,
+      });
+    }
   };
   
   // Gestion de l'enregistrement vocal

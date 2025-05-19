@@ -46,10 +46,11 @@ export function useAutoSave({
     }
   }, [data, initialData]);
   
-  const saveData = useCallback(async () => {
+  const saveData = useCallback(async (forceNoChangesReset = false) => {
     const currentData = dataRef.current;
     
-    if (!currentData || !userId || !hasChanges) return;
+    // Pour les sauvegardes forcées (enregistrement audio), on ignore la vérification de hasChanges
+    if (!currentData || !userId || (!hasChanges && !forceNoChangesReset)) return;
     
     // Vérifier si la dernière sauvegarde date de moins de 2 secondes
     const now = Date.now();
@@ -95,7 +96,11 @@ export function useAutoSave({
       // Mettre à jour les données locales avec l'ID retourné
       setData(prev => ({ ...prev, id: result.id }));
       setLastSaved(new Date());
-      setHasChanges(false); // Réinitialiser le marqueur de changement
+      
+      // Ne réinitialiser le marqueur de changement que si ce n'est pas une sauvegarde forcée (audio)
+      if (!forceNoChangesReset) {
+        setHasChanges(false);
+      }
       
       if (onSaveSuccess) {
         onSaveSuccess(result);
@@ -173,7 +178,8 @@ export function useAutoSave({
   
   // Fonction pour forcer une sauvegarde immédiate
   const saveNow = useCallback(async () => {
-    await saveData();
+    // true pour forcer la sauvegarde même s'il n'y a pas de changements marqués
+    await saveData(true);
   }, [saveData]);
   
   return {

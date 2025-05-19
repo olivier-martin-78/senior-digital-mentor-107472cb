@@ -8,7 +8,7 @@ import { uploadAudio } from '@/utils/audioUploadUtils';
 interface AudioRecorderProps {
   chapterId: string;
   questionId: string;
-  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null) => void;
+  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
 }
 
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
@@ -33,7 +33,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         questionId,
         (publicUrl) => {
           // Succès
-          onAudioUrlChange(chapterId, questionId, publicUrl);
+          // Passer preventAutoSave=true pour éviter de déclencher l'autosauvegarde
+          onAudioUrlChange(chapterId, questionId, publicUrl, true);
           
           // Show toast only once per successful upload
           if (!uploadSuccessToastShown.current) {

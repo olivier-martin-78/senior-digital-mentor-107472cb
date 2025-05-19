@@ -16,7 +16,7 @@ interface QuestionItemProps {
   showVoiceRecorder: string | null;
   onToggleVoiceRecorder: (questionId: string) => void;
   activeQuestion: string | null;
-  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null) => void;
+  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
 }
 
 export const QuestionItem: React.FC<QuestionItemProps> = ({
@@ -64,7 +64,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
             audioUrl={question.audioUrl}
             chapterId={chapterId}
             questionId={question.id}
-            onDeleteSuccess={() => onAudioUrlChange(chapterId, question.id, null)}
+            onDeleteSuccess={() => onAudioUrlChange(chapterId, question.id, null, true)}
           />
         )}
         
