@@ -13,7 +13,7 @@ interface CategorySelectorProps {
   allCategories: BlogCategory[];
   setAllCategories: (categories: BlogCategory[]) => void;
   selectedCategories: BlogCategory[];
-  setSelectedCategories: (categories: BlogCategory[]) => void;
+  setSelectedCategories: React.Dispatch<React.SetStateAction<BlogCategory[]>>;
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({
