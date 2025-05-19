@@ -83,6 +83,30 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     });
   };
   
+  // Mise à jour de l'URL audio d'une question
+  const updateAudioUrl = (chapterId: string, questionId: string, audioUrl: string | null) => {
+    const updatedChapters = data.chapters.map(chapter => {
+      if (chapter.id === chapterId) {
+        return {
+          ...chapter,
+          questions: chapter.questions.map(question => {
+            if (question.id === questionId) {
+              return { ...question, audioUrl };
+            }
+            return question;
+          })
+        };
+      }
+      return chapter;
+    });
+    
+    updateData({
+      chapters: updatedChapters,
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId,
+    });
+  };
+  
   // Gestion de l'enregistrement vocal
   const handleVoiceRecorder = (questionId: string) => {
     setShowVoiceRecorder(showVoiceRecorder === questionId ? null : questionId);
@@ -138,6 +162,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
             showVoiceRecorder={showVoiceRecorder}
             handleVoiceRecorder={handleVoiceRecorder}
             activeQuestion={activeQuestion}
+            onAudioUrlChange={updateAudioUrl}
           />
         </div>
       </div>

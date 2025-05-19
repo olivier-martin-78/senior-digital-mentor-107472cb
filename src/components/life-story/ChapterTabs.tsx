@@ -13,6 +13,7 @@ interface ChapterTabsProps {
   showVoiceRecorder: string | null;
   handleVoiceRecorder: (questionId: string) => void;
   activeQuestion: string | null;
+  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null) => void;
 }
 
 export const ChapterTabs: React.FC<ChapterTabsProps> = ({
@@ -23,7 +24,8 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
   handleQuestionFocus,
   showVoiceRecorder,
   handleVoiceRecorder,
-  activeQuestion
+  activeQuestion,
+  onAudioUrlChange
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -51,6 +53,7 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
             showVoiceRecorder={showVoiceRecorder}
             handleVoiceRecorder={handleVoiceRecorder}
             activeQuestion={activeQuestion}
+            onAudioUrlChange={onAudioUrlChange}
           />
         </TabsContent>
       ))}
