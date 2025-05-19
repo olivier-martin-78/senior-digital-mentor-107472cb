@@ -5,8 +5,7 @@ import { Calendar, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DiaryEntry } from '@/types/diary';
-import { getPublicUrl } from '@/utils/storageUtils';
-import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrl, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface EntryCardProps {
@@ -16,6 +15,12 @@ interface EntryCardProps {
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   // Vérifier si le média est une image ou une vidéo
   const isVisualMedia = entry.media_type?.startsWith('image/') || entry.media_type?.startsWith('video/');
+  
+  // Pour déboguer
+  if (entry.media_url) {
+    console.log("URL du média dans EntryCard:", entry.media_url);
+    console.log("Type du média dans EntryCard:", entry.media_type);
+  }
   
   return (
     <Link 
@@ -33,12 +38,13 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
           <AspectRatio ratio={16/9}>
             {entry.media_type?.startsWith('image/') ? (
               <img 
-                src={getThumbnailUrl(entry.media_url)} 
+                src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
                 alt="Aperçu du média"
                 className="w-full h-full object-cover" 
                 onError={(e) => {
-                  console.log("Erreur de chargement d'image:", entry.media_url);
                   const target = e.target as HTMLImageElement;
+                  console.error("Erreur de chargement d'image dans EntryCard:", entry.media_url);
+                  console.log("URL d'image qui a échoué:", target.src);
                   target.src = '/placeholder.svg';
                 }}
               />
@@ -47,17 +53,6 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Image className="h-10 w-10 text-gray-400" />
                 </div>
-                <video 
-                  src={getPublicUrl(entry.media_url)} 
-                  className="w-full h-full object-cover opacity-0"
-                  onLoadedData={(e) => {
-                    e.currentTarget.classList.remove('opacity-0');
-                  }}
-                  onError={(e) => {
-                    console.error("Erreur de chargement vidéo:", entry.media_url);
-                    e.currentTarget.classList.add('hidden');
-                  }}
-                />
               </div>
             ) : null}
           </AspectRatio>

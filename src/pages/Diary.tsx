@@ -32,6 +32,14 @@ const Diary = () => {
         }
 
         if (data) {
+          console.log("Entrées récupérées:", data);
+          // Afficher des détails pour chaque entrée pour déboguer
+          data.forEach(entry => {
+            if (entry.media_url) {
+              console.log(`Entrée ${entry.id}: media_url=${entry.media_url}, media_type=${entry.media_type}`);
+            }
+          });
+          
           setEntries(data as DiaryEntry[]);
         }
       } catch (error: any) {

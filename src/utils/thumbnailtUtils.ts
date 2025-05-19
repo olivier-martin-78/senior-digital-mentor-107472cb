@@ -58,6 +58,7 @@ export const uploadAlbumThumbnail = async (file: File, idPrefix: string): Promis
  */
 export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMBNAILS_BUCKET): string => {
   if (!url) {
+    console.log("URL vide ou null, utilisation de l'image par défaut");
     return '/placeholder.svg';
   }
   
@@ -67,24 +68,35 @@ export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMB
     return '/placeholder.svg';
   }
   
-  // Vérifier si l'URL semble être un chemin de stockage pour diary_media
-  if (url.includes('diary_media') || (!url.includes('album-thumbnails') && !url.startsWith('http'))) {
-    return getPublicUrl(url, DIARY_MEDIA_BUCKET);
-  }
-  
-  // Si l'URL n'est pas complète (ne commence pas par http), essayer de récupérer l'URL complète
-  if (!url.startsWith('http')) {
-    try {
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(url);
-        
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Erreur lors de la génération de l'URL publique:", error);
-      return '/placeholder.svg';
+  try {
+    // Déterminer automatiquement le bucket en fonction de l'URL ou du chemin
+    let actualBucket = bucket;
+    
+    if (url.includes('diary_media')) {
+      actualBucket = DIARY_MEDIA_BUCKET;
+      console.log("Bucket diary_media détecté dans l'URL:", url);
     }
+    
+    // Si l'URL est déjà une URL complète, la retourner
+    if (url.startsWith('http')) {
+      console.log("URL déjà complète:", url);
+      return url;
+    }
+    
+    // Construire l'URL à partir du chemin dans le bucket déterminé
+    const { data } = supabase.storage
+      .from(actualBucket)
+      .getPublicUrl(url);
+      
+    if (data && data.publicUrl) {
+      console.log('URL publique générée pour', actualBucket, ':', data.publicUrl);
+      return data.publicUrl;
+    }
+    
+    throw new Error("Impossible de générer l'URL publique");
+  } catch (error) {
+    console.error("Erreur lors de la génération de l'URL publique:", error, "pour l'URL:", url, "et bucket:", bucket);
+    // Retourner une image placeholder en cas d'erreur
+    return '/placeholder.svg';
   }
-  
-  return url;
 };
