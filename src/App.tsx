@@ -15,12 +15,13 @@ import Profile from "./pages/Profile";
 import Unauthorized from "./pages/Unauthorized";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
-import AdminAlbums from "./pages/admin/AdminAlbums"; // Nouvelle page
+import AdminAlbums from "./pages/admin/AdminAlbums";
 import Diary from "./pages/Diary";
 import DiaryNew from "./pages/DiaryNew";
 import DiaryEntry from "./pages/DiaryEntry";
 import DiaryEdit from "./pages/DiaryEdit";
 import LifeStory from "./pages/LifeStory";
+import WishForm from "./pages/WishForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/wish-form" element={<WishForm />} />
 
             {/* Routes protégées qui nécessitent une authentification */}
             <Route element={<ProtectedRoute />}>
@@ -59,7 +61,7 @@ const App = () => (
             {/* Routes uniquement pour les admins */}
             <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
               <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/albums" element={<AdminAlbums />} /> {/* Nouvelle route */}
+              <Route path="/admin/albums" element={<AdminAlbums />} />
             </Route>
 
             {/* Route 404 */}

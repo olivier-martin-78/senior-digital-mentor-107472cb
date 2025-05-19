@@ -36,6 +36,9 @@ const Header = () => {
           <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Albums
           </Link>
+          <Link to="/wish-form" className="text-gray-600 hover:text-tranches-sage transition-colors">
+            Adresser un souhait
+          </Link>
           {session && (
             <>
               <Link to="/diary" className="text-gray-600 hover:text-tranches-sage transition-colors">
@@ -126,6 +129,9 @@ const Header = () => {
                   </Link>
                   <Link to="/blog" className="hover:text-tranches-sage transition-colors">
                     Albums
+                  </Link>
+                  <Link to="/wish-form" className="hover:text-tranches-sage transition-colors">
+                    Adresser un souhait
                   </Link>
                   {session && (
                     <>
