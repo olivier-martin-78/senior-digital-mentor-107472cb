@@ -112,6 +112,11 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       console.log("Réponse reçue de la fonction transcription:", data);
       
       if (!data || data.success === false) {
+        // Gestion spécifique de l'erreur de quota dépassé
+        if (data?.quota_exceeded) {
+          throw new Error("Le quota OpenAI a été dépassé. Veuillez réessayer plus tard ou contacter l'administrateur.");
+        }
+        
         const errorMsg = data?.error || "Erreur inconnue lors de la transcription.";
         console.error("Échec de la transcription:", errorMsg);
         throw new Error(errorMsg);

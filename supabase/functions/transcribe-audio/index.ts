@@ -104,6 +104,19 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`OpenAI API error: ${response.status} ${errorText}`);
+      
+      // Détection spécifique de l'erreur de quota dépassé
+      if (response.status === 429 && errorText.includes("quota")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Le quota OpenAI a été dépassé. Veuillez réessayer plus tard ou contacter l'administrateur.", 
+            quota_exceeded: true,
+            success: false 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: `OpenAI API error ${response.status}: ${errorText}`, success: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }

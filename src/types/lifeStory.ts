@@ -36,4 +36,5 @@ export interface TranscriptionResult {
   text: string;
   success: boolean;
   error?: string;
+  quota_exceeded?: boolean;
 }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Check } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -24,6 +25,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   } = useAudioRecorder();
   
   const [recordingTime, setRecordingTime] = useState(0);
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -50,16 +52,28 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
   
   const handleTranscribe = async () => {
-    const text = await transcribeAudio();
-    if (text) {
-      onTranscriptionComplete(text);
-      clearRecording();
+    setTranscriptionError(null);
+    try {
+      const text = await transcribeAudio();
+      if (text) {
+        onTranscriptionComplete(text);
+        clearRecording();
+      }
+    } catch (error: any) {
+      setTranscriptionError(error.message);
     }
   };
   
   return (
     <div className="border rounded-md p-4 bg-gray-50">
       <div className="text-sm font-medium mb-2">Enregistrement vocal</div>
+      
+      {transcriptionError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Erreur de transcription</AlertTitle>
+          <AlertDescription>{transcriptionError}</AlertDescription>
+        </Alert>
+      )}
       
       <div className="flex items-center justify-between mb-4">
         {isRecording ? (
