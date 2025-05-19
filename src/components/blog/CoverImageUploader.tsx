@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,10 +22,12 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setCoverImageFile(file);
-      // Créer une URL pour la prévisualisation sans stocker l'URL blob
+      // Ne pas stocker l'URL blob dans l'état, uniquement pour la prévisualisation locale
       const previewUrl = URL.createObjectURL(file);
-      // On utilise cette URL uniquement pour l'aperçu local
       setCoverImage(previewUrl);
+      
+      // Libérer l'URL de l'objet lorsque le composant est démonté
+      return () => URL.revokeObjectURL(previewUrl);
     }
   };
 

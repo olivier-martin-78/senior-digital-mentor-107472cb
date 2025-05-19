@@ -82,6 +82,11 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
       // Si une vignette a été sélectionnée, la télécharger
       if (newAlbumThumbnail) {
         try {
+          // S'assurer de ne pas utiliser une URL blob
+          if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(thumbnailPreview);
+          }
+          
           thumbnailUrl = await uploadAlbumThumbnail(newAlbumThumbnail, albumData.id);
           
           // Mettre à jour l'album avec l'URL de la vignette

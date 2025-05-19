@@ -64,5 +64,19 @@ export const getThumbnailUrl = (url: string | null): string => {
     return '/placeholder.svg';
   }
   
+  // Si l'URL n'est pas complète (ne commence pas par http), essayer de récupérer l'URL complète
+  if (!url.startsWith('http')) {
+    try {
+      const { data } = supabase.storage
+        .from(ALBUM_THUMBNAILS_BUCKET)
+        .getPublicUrl(url);
+        
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Erreur lors de la génération de l'URL publique:", error);
+      return '/placeholder.svg';
+    }
+  }
+  
   return url;
 };

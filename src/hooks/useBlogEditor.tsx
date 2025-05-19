@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,10 +150,14 @@ export const useBlogEditor = () => {
     try {
       setUploadingCoverImage(true);
       
-      // Utiliser la fonction uploadAlbumThumbnail du utils/thumbnailtUtils.ts mais pour les blogs
-      const publicUrl = await uploadAlbumThumbnail(coverImageFile, `cover-${postId}`);
+      // S'assurer que nous ne sauvegardons pas une URL blob
+      if (coverImage && coverImage.startsWith('blob:')) {
+        // Utiliser la fonction uploadAlbumThumbnail du utils/thumbnailtUtils.ts mais pour les blogs
+        const publicUrl = await uploadAlbumThumbnail(coverImageFile, `cover-${postId}`);
+        return publicUrl;
+      }
       
-      return publicUrl;
+      return coverImage;
     } catch (error: any) {
       console.error('Erreur lors du téléchargement de la miniature:', error);
       toast({
@@ -196,6 +199,11 @@ export const useBlogEditor = () => {
         if (isEditing && post) {
           finalCoverImage = await uploadCoverImage(post.id);
         }
+      }
+      
+      // S'assurer que nous ne sauvegardons pas une URL blob
+      if (finalCoverImage && finalCoverImage.startsWith('blob:')) {
+        finalCoverImage = null;
       }
 
       if (isEditing && post) {
