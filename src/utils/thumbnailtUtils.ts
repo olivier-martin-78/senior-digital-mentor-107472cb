@@ -52,7 +52,7 @@ export const uploadAlbumThumbnail = async (file: File, idPrefix: string): Promis
 
 /**
  * Obtenir l'URL de prévisualisation d'une vignette
- * @param url URL de la vignette
+ * @param url URL ou chemin du fichier média
  * @param bucket Bucket optionnel contenant le média (par défaut: album-thumbnails)
  * @returns URL de prévisualisation ou image par défaut
  */
@@ -72,9 +72,10 @@ export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMB
     // Déterminer automatiquement le bucket en fonction de l'URL ou du chemin
     let actualBucket = bucket;
     
-    if (url.includes('diary_media')) {
+    // Si l'URL contient un identifiant utilisateur (chemin standard pour diary_media)
+    if (url.includes('/')) {
       actualBucket = DIARY_MEDIA_BUCKET;
-      console.log("Bucket diary_media détecté dans l'URL:", url);
+      console.log(`URL de type chemin détectée (${url}), utilisation du bucket ${actualBucket}`);
     }
     
     // Si l'URL est déjà une URL complète, la retourner
@@ -83,7 +84,21 @@ export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMB
       return url;
     }
     
-    // Construire l'URL à partir du chemin dans le bucket déterminé
+    // Créer une URL signée pour améliorer la compatibilité avec les navigateurs (évite les problèmes CORS)
+    if (actualBucket === DIARY_MEDIA_BUCKET) {
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from(actualBucket)
+        .createSignedUrl(url, 3600); // URL valable 1 heure
+        
+      if (signedUrlData && !signedUrlError) {
+        console.log("URL signée générée avec succès:", signedUrlData.signedUrl);
+        return signedUrlData.signedUrl;
+      } else {
+        console.warn("Impossible de créer une URL signée, retour à l'URL publique standard");
+      }
+    }
+    
+    // Construire l'URL publique standard à partir du chemin dans le bucket
     const { data } = supabase.storage
       .from(actualBucket)
       .getPublicUrl(url);

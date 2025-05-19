@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -13,6 +13,9 @@ interface EntryCardProps {
 }
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Vérifier si le média est une image ou une vidéo
   const isVisualMedia = entry.media_type?.startsWith('image/') || entry.media_type?.startsWith('video/');
   
@@ -34,20 +37,39 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
       <h3 className="font-medium text-xl mb-2 text-tranches-charcoal">{entry.title}</h3>
       
       {isVisualMedia && entry.media_url && (
-        <div className="mt-2 mb-3 border border-gray-100 rounded-lg overflow-hidden">
+        <div className="mt-2 mb-3 border border-gray-100 rounded-lg overflow-hidden bg-gray-50">
           <AspectRatio ratio={16/9}>
             {entry.media_type?.startsWith('image/') ? (
-              <img 
-                src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
-                alt="Aperçu du média"
-                className="w-full h-full object-cover" 
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  console.error("Erreur de chargement d'image dans EntryCard:", entry.media_url);
-                  console.log("URL d'image qui a échoué:", target.src);
-                  target.src = '/placeholder.svg';
-                }}
-              />
+              <>
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="w-8 h-8 border-4 border-tranches-sage border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <img 
+                  src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
+                  alt="Aperçu du média"
+                  className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    console.error("Erreur de chargement d'image dans EntryCard:", entry.media_url);
+                    console.log("URL d'image qui a échoué:", target.src);
+                    setImageError(true);
+                    setIsLoading(false);
+                  }}
+                  onLoad={() => {
+                    console.log("Image chargée avec succès dans EntryCard");
+                    setIsLoading(false);
+                  }}
+                  style={{ display: imageError ? 'none' : 'block' }}
+                />
+                {imageError && (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
+                    <Image className="h-10 w-10 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">Image non disponible</span>
+                  </div>
+                )}
+              </>
             ) : entry.media_type?.startsWith('video/') ? (
               <div className="relative bg-gray-100 w-full h-full">
                 <div className="absolute inset-0 flex items-center justify-center">

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { DiaryFormFields } from '@/components/DiaryFormFields';
 import { ArrowLeft } from 'lucide-react';
 import { getPublicUrl, getPathFromUrl, DIARY_MEDIA_BUCKET } from '@/utils/storageUtils';
+import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
 
 const diaryFormSchema = z.object({
   entry_date: z.date(),
@@ -46,7 +47,6 @@ const DiaryEdit = () => {
   const [loading, setLoading] = useState(true);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
-  const [existingMediaPreview, setExistingMediaPreview] = useState<string | null>(null);
 
   const form = useForm<DiaryFormValues>({
     resolver: zodResolver(diaryFormSchema),
@@ -108,9 +108,10 @@ const DiaryEdit = () => {
             objectives: entryData.objectives || '',
           });
           
-          // Précharger la prévisualisation du média existant
+          console.log("Entrée chargée avec succès:", entryData);
           if (entryData.media_url) {
-            setExistingMediaPreview(getPublicUrl(entryData.media_url));
+            console.log("URL du média existant:", entryData.media_url);
+            console.log("Type du média existant:", entryData.media_type);
           }
         }
       } catch (error: any) {
@@ -230,6 +231,7 @@ const DiaryEdit = () => {
 
   const handleMediaChange = (file: File | null) => {
     setMediaFile(file);
+    console.log("Nouveau fichier sélectionné:", file?.name);
   };
 
   if (loading) {
@@ -265,37 +267,40 @@ const DiaryEdit = () => {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <DiaryFormFields 
                     form={form} 
-                    onMediaChange={handleMediaChange} 
+                    onMediaChange={handleMediaChange}
+                    existingMediaUrl={entry.media_url}
+                    existingMediaType={entry.media_type}
                   />
                   
                   {entry.media_url && !mediaFile && (
-                    <div className="p-4 border rounded-lg">
+                    <div className="p-4 border rounded-lg bg-gray-50">
                       <h3 className="text-sm font-medium mb-2">Média actuel</h3>
                       {entry.media_type?.startsWith('image/') ? (
                         <div className="bg-gray-100 rounded-lg overflow-hidden">
                           <img 
-                            src={existingMediaPreview || getPublicUrl(entry.media_url)} 
+                            src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
                             alt="Média existant" 
                             className="h-32 w-auto object-contain" 
                             onError={(e) => {
                               console.error("Erreur de chargement d'image:", entry.media_url);
-                              console.log("URL calculée:", existingMediaPreview || getPublicUrl(entry.media_url));
-                              e.currentTarget.src = '/placeholder.svg';
-                              e.currentTarget.className = "h-32 w-auto object-contain opacity-50";
+                              const target = e.target as HTMLImageElement;
+                              console.log("URL calculée:", target.src);
+                              target.src = '/placeholder.svg';
+                              target.className = "h-32 w-auto object-contain opacity-50";
                             }}
                             onLoad={() => console.log("Image existante chargée avec succès")}
                           />
                         </div>
                       ) : entry.media_type?.startsWith('video/') ? (
                         <video 
-                          src={existingMediaPreview || getPublicUrl(entry.media_url)} 
+                          src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
                           className="h-32 w-auto" 
                           controls
                           onError={(e) => console.error("Erreur de chargement vidéo:", entry.media_url)}
                         />
                       ) : entry.media_type?.startsWith('audio/') ? (
                         <audio 
-                          src={existingMediaPreview || getPublicUrl(entry.media_url)} 
+                          src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
                           controls
                           onError={(e) => console.error("Erreur de chargement audio:", entry.media_url)}
                         />

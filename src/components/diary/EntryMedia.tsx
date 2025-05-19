@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { getPublicUrl, isValidUrl } from '@/utils/storageUtils';
+import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
+import { isValidUrl } from '@/utils/storageUtils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { ImageIcon, FileIcon, MusicIcon, VideoIcon, ExternalLinkIcon } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -47,11 +48,11 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
           }
         }
         
-        // Fallback à l'URL publique classique
-        setDirectUrl(getPublicUrl(mediaUrl));
+        // Fallback à l'URL publique classique avec getThumbnailUrl
+        setDirectUrl(getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET));
       } catch (err) {
         console.error("Erreur lors de la récupération de l'URL du média:", err);
-        setDirectUrl(getPublicUrl(mediaUrl));
+        setDirectUrl(getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET));
       }
     };
     

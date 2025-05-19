@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 import { Button } from '@/components/ui/button';
-import { X, Calendar as CalendarIcon } from 'lucide-react';
+import { X, Calendar as CalendarIcon, ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,13 +25,30 @@ import { Badge } from '@/components/ui/badge';
 interface DiaryFormFieldsProps {
   form: UseFormReturn<any>;
   onMediaChange: (file: File | null) => void;
+  existingMediaUrl?: string | null;
+  existingMediaType?: string | null;
 }
 
-export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaChange }) => {
+export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ 
+  form, 
+  onMediaChange, 
+  existingMediaUrl,
+  existingMediaType 
+}) => {
   const [tagInput, setTagInput] = useState('');
   const [contactInput, setContactInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isPreviewError, setIsPreviewError] = useState(false);
+
+  useEffect(() => {
+    // Si un média existant est fourni, l'utiliser pour la prévisualisation
+    if (existingMediaUrl && !selectedFile) {
+      setIsPreviewLoading(true);
+      setIsPreviewError(false);
+    }
+  }, [existingMediaUrl, selectedFile]);
 
   const addTag = () => {
     if (!tagInput.trim()) return;
@@ -67,11 +84,30 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
     
     if (file) {
       setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setIsPreviewError(false);
+      setIsPreviewLoading(true);
+      const newPreviewUrl = URL.createObjectURL(file);
+      setPreviewUrl(newPreviewUrl);
       onMediaChange(file);
+      
+      // Pour les images, charger la prévisualisation
+      if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.onload = () => {
+          setIsPreviewLoading(false);
+        };
+        img.onerror = () => {
+          setIsPreviewError(true);
+          setIsPreviewLoading(false);
+        };
+        img.src = newPreviewUrl;
+      } else {
+        // Pour les autres types de médias, ne pas afficher de chargement
+        setIsPreviewLoading(false);
+      }
     } else {
       setSelectedFile(null);
-      // Ne pas effacer previewUrl ici pour conserver la prévisualisation du fichier existant
+      setPreviewUrl(null);
       onMediaChange(null);
     }
   };
@@ -84,6 +120,44 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
       }
     };
   }, [previewUrl]);
+
+  const renderMediaPreview = () => {
+    if (selectedFile) {
+      if (selectedFile.type.startsWith('image/') && previewUrl) {
+        return (
+          <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative">
+            {isPreviewLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10">
+                <div className="w-8 h-8 border-4 border-tranches-sage border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+            <img 
+              src={previewUrl} 
+              alt="Prévisualisation" 
+              className={`max-h-48 object-contain ${isPreviewError ? 'hidden' : ''}`}
+              onLoad={() => setIsPreviewLoading(false)}
+              onError={() => setIsPreviewError(true)}
+            />
+            {isPreviewError && (
+              <div className="p-6 flex flex-col items-center justify-center">
+                <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />
+                <p className="text-gray-500">Impossible de charger l'aperçu</p>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      return (
+        <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-sm font-medium">{selectedFile.name}</p>
+          <p className="text-xs text-gray-500 mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · {selectedFile.type}</p>
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <>
@@ -376,20 +450,7 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
             onChange={handleFileChange}
           />
         </FormControl>
-        {selectedFile && (
-          <div className="mt-2">
-            <p>Fichier sélectionné: {selectedFile.name}</p>
-            {selectedFile.type.startsWith('image/') && previewUrl && (
-              <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
-                <img 
-                  src={previewUrl} 
-                  alt="Prévisualisation" 
-                  className="max-h-48 object-contain"
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {renderMediaPreview()}
         <FormDescription>
           Ajoutez une photo, vidéo ou un enregistrement audio lié à votre journée
         </FormDescription>
