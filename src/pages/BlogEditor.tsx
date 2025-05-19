@@ -426,7 +426,8 @@ const BlogEditor = () => {
             content: content.trim(),
             author_id: user?.id,
             album_id: albumId,
-            published: publish
+            published: publish,
+            cover_image: coverImage
           })
           .select()
           .single();

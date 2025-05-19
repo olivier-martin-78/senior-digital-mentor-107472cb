@@ -1,3 +1,4 @@
+
 export type AppRole = 'admin' | 'editor' | 'reader';
 
 export interface Profile {
