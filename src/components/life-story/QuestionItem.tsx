@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,7 +14,6 @@ interface QuestionItemProps {
   onQuestionFocus: (chapterId: string, questionId: string) => void;
   showVoiceRecorder: string | null;
   onToggleVoiceRecorder: (questionId: string) => void;
-  onTranscription: (text: string) => void;
   activeQuestion: string | null;
 }
 
@@ -25,9 +24,14 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   onQuestionFocus,
   showVoiceRecorder,
   onToggleVoiceRecorder,
-  onTranscription,
   activeQuestion
 }) => {
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  
+  const handleAudioChange = (newAudioBlob: Blob | null) => {
+    setAudioBlob(newAudioBlob);
+  };
+
   return (
     <div className="space-y-2">
       <h3 className="font-medium text-tranches-charcoal">{question.text}</h3>
@@ -58,7 +62,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         </div>
         
         {showVoiceRecorder === question.id && (
-          <VoiceRecorder onTranscriptionComplete={onTranscription} />
+          <VoiceRecorder onAudioChange={handleAudioChange} />
         )}
       </div>
       

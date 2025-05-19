@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash2, Check } from 'lucide-react';
+import { Mic, Square, Trash2, Download } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 interface VoiceRecorderProps {
-  onTranscriptionComplete: (text: string) => void;
+  onAudioChange: (audioBlob: Blob | null) => void;
 }
 
 export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ 
-  onTranscriptionComplete 
+  onAudioChange 
 }) => {
   const {
     isRecording,
@@ -20,12 +21,9 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     startRecording,
     stopRecording,
     clearRecording,
-    transcribeAudio,
-    transcribing,
   } = useAudioRecorder();
   
   const [recordingTime, setRecordingTime] = useState(0);
-  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -51,29 +49,40 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  const handleTranscribe = async () => {
-    setTranscriptionError(null);
-    try {
-      const text = await transcribeAudio();
-      if (text) {
-        onTranscriptionComplete(text);
-        clearRecording();
+  const handleExportAudio = () => {
+    if (audioBlob && audioUrl) {
+      try {
+        // Créer un élément a pour télécharger l'audio
+        const downloadLink = document.createElement('a');
+        downloadLink.href = audioUrl;
+        downloadLink.download = `enregistrement_vocal_${new Date().toISOString().slice(0,10)}.webm`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        toast({
+          title: "Export réussi",
+          description: "L'enregistrement audio a été téléchargé sur votre appareil",
+        });
+      } catch (error) {
+        console.error("Erreur lors de l'export audio:", error);
+        toast({
+          title: "Erreur d'export",
+          description: "Impossible d'exporter l'enregistrement audio",
+          variant: "destructive",
+        });
       }
-    } catch (error: any) {
-      setTranscriptionError(error.message);
     }
   };
+  
+  // Notifier le parent quand l'audio change
+  useEffect(() => {
+    onAudioChange(audioBlob);
+  }, [audioBlob, onAudioChange]);
   
   return (
     <div className="border rounded-md p-4 bg-gray-50">
       <div className="text-sm font-medium mb-2">Enregistrement vocal</div>
-      
-      {transcriptionError && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTitle>Erreur de transcription</AlertTitle>
-          <AlertDescription>{transcriptionError}</AlertDescription>
-        </Alert>
-      )}
       
       <div className="flex items-center justify-between mb-4">
         {isRecording ? (
@@ -121,20 +130,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
             
             <Button 
               variant="outline" 
-              size="sm" 
-              onClick={handleTranscribe}
-              disabled={transcribing}
+              size="sm"
+              onClick={handleExportAudio}
               className="ml-auto"
             >
-              {transcribing ? (
-                <>
-                  <Spinner className="w-4 h-4 mr-2" /> Transcription...
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-1" /> Utiliser cette réponse
-                </>
-              )}
+              <Download className="w-4 h-4 mr-1" /> Exporter l'audio
             </Button>
           </div>
         </div>
