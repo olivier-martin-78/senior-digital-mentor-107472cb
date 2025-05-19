@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { ChevronDown, ChevronRight, Save, Edit3 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Save, Edit3, Mic } from 'lucide-react';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { useAuth } from '@/contexts/AuthContext';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -24,11 +24,11 @@ const initialChapters: Chapter[] = [
     title: 'Enfance et Famille',
     description: 'Souvenirs et relations familiales',
     questions: [
-      { id: 'q1_1', text: 'Quel est votre tout premier souvenir d'enfance ?' },
+      { id: 'q1_1', text: 'Quel est votre tout premier souvenir d\'enfance ?' },
       { id: 'q1_2', text: 'Comment décririez-vous vos parents ? Quels traits de caractère ou valeurs vous ont-ils transmis ?' },
       { id: 'q1_3', text: 'Avez-vous des frères et sœurs ? Quelle était votre relation avec eux (complicité, rivalité, etc.) ?' },
       { id: 'q1_4', text: 'Quels sont les moments marquants de votre enfance (vacances, traditions familiales, jeux, etc.) ?' },
-      { id: 'q1_5', text: 'Comment était votre maison d'enfance et votre quartier ? Y a-t-il des anecdotes liées à cet environnement ?' },
+      { id: 'q1_5', text: 'Comment était votre maison d\'enfance et votre quartier ? Y a-t-il des anecdotes liées à cet environnement ?' },
       { id: 'q1_6', text: 'Y a-t-il des figures familiales élargies (grands-parents, oncles, tantes) qui ont joué un rôle important ?' },
     ],
   },
@@ -39,7 +39,7 @@ const initialChapters: Chapter[] = [
     questions: [
       { id: 'q2_1', text: 'Quelle était votre école préférée et pourquoi ? Y a-t-il des enseignants qui vous ont particulièrement marqué ?' },
       { id: 'q2_2', text: 'Quelles étaient vos matières favorites et celles que vous aimiez le moins ?' },
-      { id: 'q2_3', text: 'Avez-vous des souvenirs marquants de vos années d'études (amitiés, événements scolaires, réussites, échecs) ?' },
+      { id: 'q2_3', text: 'Avez-vous des souvenirs marquants de vos années d\'études (amitiés, événements scolaires, réussites, échecs) ?' },
       { id: 'q2_4', text: 'Avez-vous poursuivi des études supérieures ? Si oui, comment avez-vous choisi votre domaine ?' },
       { id: 'q2_5', text: 'Y a-t-il des mentors ou des figures inspirantes qui ont influencé votre parcours éducatif ?' },
     ],
@@ -61,7 +61,7 @@ const initialChapters: Chapter[] = [
     title: 'Vie Professionnelle',
     description: 'Carrière et accomplissements professionnels',
     questions: [
-      { id: 'q4_1', text: 'Quel a été votre premier emploi et comment l'avez-vous obtenu ?' },
+      { id: 'q4_1', text: 'Quel a été votre premier emploi et comment l\'avez-vous obtenu ?' },
       { id: 'q4_2', text: 'Quelles ont été les étapes clés de votre carrière (promotions, changements de poste, reconversions) ?' },
       { id: 'q4_3', text: 'Avez-vous des anecdotes ou des leçons apprises dans votre vie professionnelle (collègues, projets, échecs, succès) ?' },
       { id: 'q4_4', text: 'Comment votre carrière a-t-elle influencé votre vie personnelle (équilibre travail-vie, sacrifices, opportunités) ?' },
@@ -74,7 +74,7 @@ const initialChapters: Chapter[] = [
     description: 'Amitiés et relations importantes',
     questions: [
       { id: 'q5_1', text: 'Qui sont les personnes les plus importantes dans votre vie (amis, mentors, partenaires) et pourquoi ?' },
-      { id: 'q5_2', text: 'Comment avez-vous rencontré votre conjoint/partenaire, si applicable ? Quelle est l'histoire de votre relation ?' },
+      { id: 'q5_2', text: 'Comment avez-vous rencontré votre conjoint/partenaire, si applicable ? Quelle est l\'histoire de votre relation ?' },
       { id: 'q5_3', text: 'Quelles sont les amitiés ou relations amoureuses qui ont eu un impact significatif sur vous ?' },
       { id: 'q5_4', text: 'Avez-vous des anecdotes sur des moments partagés avec des proches (fêtes, voyages, disputes, réconciliations) ?' },
       { id: 'q5_5', text: 'Y a-t-il des personnes que vous avez perdues et qui vous manquent particulièrement ?' },
@@ -89,7 +89,7 @@ const initialChapters: Chapter[] = [
       { id: 'q6_2', text: 'Comment avez-vous surmonté ces obstacles ? Qui ou quoi vous a aidé ?' },
       { id: 'q6_3', text: 'Quelles leçons avez-vous tirées de ces expériences difficiles ?' },
       { id: 'q6_4', text: 'Y a-t-il des regrets ou des choses que vous auriez aimé faire différemment ?' },
-      { id: 'q6_5', text: 'Comment ces défis ont-ils façonné la personne que vous êtes aujourd'hui ?' },
+      { id: 'q6_5', text: 'Comment ces défis ont-ils façonné la personne que vous êtes aujourd\'hui ?' },
     ],
   },
   {
@@ -133,7 +133,7 @@ const initialChapters: Chapter[] = [
       { id: 'q10_1', text: 'Quelles sont les leçons les plus importantes que vous avez apprises au cours de votre vie ?' },
       { id: 'q10_2', text: 'Quels conseils donneriez-vous à votre jeune-moi si vous le pouviez ?' },
       { id: 'q10_3', text: 'Comment voyez-vous votre vie dans son ensemble ? Quels sont les fils conducteurs ou les thèmes récurrents ?' },
-      { id: 'q10_4', text: 'Quels sont vos espoirs, rêves ou projets pour l'avenir ?' },
+      { id: 'q10_4', text: 'Quels sont vos espoirs, rêves ou projets pour l\'avenir ?' },
       { id: 'q10_5', text: 'Y a-t-il un message ou une sagesse que vous aimeriez transmettre à vos lecteurs ou à vos proches ?' },
     ],
   },
