@@ -9,6 +9,7 @@ import { Question } from '@/types/lifeStory';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/utils/storageUtils';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface QuestionItemProps {
   question: Question;
@@ -36,6 +37,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
 }) => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { user } = useAuth();
   
   // Détecter quand un nouvel enregistrement audio est créé
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
@@ -71,7 +73,10 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   
   // Fonction pour télécharger l'audio vers Supabase
   const uploadAudio = async (blob: Blob) => {
-    if (!blob) return;
+    if (!blob || !user) {
+      console.error("Blob ou utilisateur non défini");
+      return;
+    }
     
     try {
       setIsUploading(true);
@@ -89,16 +94,16 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         return;
       }
       
-      // Créer un nom de fichier unique avec l'ID de la question
-      const fileName = `${chapterId}_${question.id}_${Date.now()}.webm`;
-      const filePath = `${fileName}`;
+      // Créer un nom de fichier unique avec l'ID de l'utilisateur, de la question et un timestamp
+      const userId = user.id;
+      const fileName = `${userId}/${chapterId}_${question.id}_${Date.now()}.webm`;
       
-      console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${filePath}...`);
+      console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${fileName}...`);
       
       // Télécharger le fichier
       const { data, error } = await supabase.storage
         .from(AUDIO_BUCKET_NAME)
-        .upload(filePath, blob, {
+        .upload(fileName, blob, {
           contentType: 'audio/webm',
           cacheControl: '3600',
           upsert: true
@@ -112,7 +117,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       console.log('Téléchargement réussi, récupération de l\'URL publique...');
       
       // Obtenir l'URL publique
-      const publicUrl = getPublicUrl(filePath, AUDIO_BUCKET_NAME);
+      const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
       console.log('URL publique obtenue:', publicUrl);
       
       // Mettre à jour la question avec l'URL de l'audio
@@ -123,11 +128,19 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         description: 'Votre enregistrement audio a été sauvegardé avec succès.',
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors du téléchargement de l\'audio:', error);
+      let errorMessage = 'Impossible de sauvegarder l\'enregistrement audio.';
+      
+      if (error.statusCode === 403) {
+        errorMessage += ' Problème d\'autorisation avec le bucket de stockage.';
+      } else if (error.message) {
+        errorMessage += ` Erreur: ${error.message}`;
+      }
+      
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder l\'enregistrement audio. Vérifiez votre connexion internet et réessayez.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -137,24 +150,24 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   
   // Fonction pour supprimer un fichier audio
   const handleDeleteAudio = async () => {
-    if (!question.audioUrl) return;
+    if (!question.audioUrl || !user) return;
     
     try {
       // Extraire le chemin de fichier de l'URL complète
       const fileUrl = question.audioUrl;
       
       // Utiliser une expression régulière plus flexible pour extraire le chemin
-      // Cela fonctionnera avec différents formats d'URL Supabase
-      const filePathRegex = new RegExp(`${AUDIO_BUCKET_NAME}\/([^?]+)`);
-      const filePathMatch = fileUrl.match(filePathRegex);
+      const filePathMatch = fileUrl.includes(`${AUDIO_BUCKET_NAME}/`) 
+        ? fileUrl.split(`${AUDIO_BUCKET_NAME}/`)[1].split('?')[0]
+        : null;
       
-      if (!filePathMatch || !filePathMatch[1]) {
+      if (!filePathMatch) {
         console.error('Impossible d\'extraire le chemin du fichier:', fileUrl);
         console.log('Format d\'URL:', fileUrl);
         throw new Error('Format d\'URL invalide');
       }
       
-      const filePath = filePathMatch[1];
+      const filePath = filePathMatch;
       console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
       
       // Supprimer le fichier de Supabase Storage
@@ -176,11 +189,11 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         title: 'Audio supprimé',
         description: 'L\'enregistrement audio a été supprimé avec succès.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la suppression de l\'audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer l\'enregistrement audio. Veuillez réessayer.',
+        description: `Impossible de supprimer l\'enregistrement audio. ${error.message || ''}`,
         variant: 'destructive',
       });
     }
