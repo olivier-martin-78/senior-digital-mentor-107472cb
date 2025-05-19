@@ -21,6 +21,9 @@ interface QuestionItemProps {
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null) => void;
 }
 
+// Nom du bucket Supabase pour stocker les fichiers audio
+const AUDIO_BUCKET_NAME = 'life-story-audios';
+
 export const QuestionItem: React.FC<QuestionItemProps> = ({
   question,
   chapterId,
@@ -43,17 +46,25 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     }
   };
   
-  // Vérifier si le bucket existe avant d'essayer de télécharger
-  const checkBucketExists = async (bucketName: string): Promise<boolean> => {
+  // Fonction simplifiée pour vérifier si le bucket existe et est accessible
+  const checkBucketAccess = async (): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.storage.getBucket(bucketName);
+      console.log(`Vérification de l'accès au bucket ${AUDIO_BUCKET_NAME}...`);
+      
+      // Essayer d'obtenir une liste vide du bucket (juste pour vérifier l'accès)
+      const { data, error } = await supabase.storage
+        .from(AUDIO_BUCKET_NAME)
+        .list('', { limit: 1 });
+      
       if (error) {
-        console.error('Erreur lors de la vérification du bucket:', error);
+        console.error(`Erreur d'accès au bucket ${AUDIO_BUCKET_NAME}:`, error);
         return false;
       }
-      return !!data;
+      
+      console.log(`Accès au bucket ${AUDIO_BUCKET_NAME} réussi.`);
+      return true;
     } catch (error) {
-      console.error('Exception lors de la vérification du bucket:', error);
+      console.error(`Exception lors de la vérification du bucket ${AUDIO_BUCKET_NAME}:`, error);
       return false;
     }
   };
@@ -65,13 +76,13 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     try {
       setIsUploading(true);
       
-      // Vérifier si le bucket existe
-      const bucketExists = await checkBucketExists('life-story-audios');
+      // Vérifier si le bucket est accessible
+      const bucketAccessible = await checkBucketAccess();
       
-      if (!bucketExists) {
+      if (!bucketAccessible) {
         toast({
-          title: 'Erreur de configuration',
-          description: 'Le bucket "life-story-audios" n\'existe pas. Veuillez contacter l\'administrateur.',
+          title: 'Erreur de stockage',
+          description: `Impossible d'accéder au service de stockage. Veuillez réessayer plus tard ou contacter l'assistance.`,
           variant: 'destructive',
         });
         setIsUploading(false);
@@ -82,9 +93,11 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       const fileName = `${chapterId}_${question.id}_${Date.now()}.webm`;
       const filePath = `${fileName}`;
       
+      console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${filePath}...`);
+      
       // Télécharger le fichier
       const { data, error } = await supabase.storage
-        .from('life-story-audios')
+        .from(AUDIO_BUCKET_NAME)
         .upload(filePath, blob, {
           contentType: 'audio/webm',
           cacheControl: '3600',
@@ -92,12 +105,15 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         });
       
       if (error) {
-        console.error('Erreur détaillée lors du téléchargement:', JSON.stringify(error));
+        console.error('Erreur détaillée lors du téléchargement:', error);
         throw error;
       }
       
+      console.log('Téléchargement réussi, récupération de l\'URL publique...');
+      
       // Obtenir l'URL publique
-      const publicUrl = getPublicUrl(filePath, 'life-story-audios');
+      const publicUrl = getPublicUrl(filePath, AUDIO_BUCKET_NAME);
+      console.log('URL publique obtenue:', publicUrl);
       
       // Mettre à jour la question avec l'URL de l'audio
       onAudioUrlChange(chapterId, question.id, publicUrl);
@@ -111,7 +127,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       console.error('Erreur lors du téléchargement de l\'audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder l\'enregistrement audio. Vérifiez que le bucket existe et que vous avez les permissions.',
+        description: 'Impossible de sauvegarder l\'enregistrement audio. Vérifiez votre connexion internet et réessayez.',
         variant: 'destructive',
       });
     } finally {
@@ -126,21 +142,32 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     try {
       // Extraire le chemin de fichier de l'URL complète
       const fileUrl = question.audioUrl;
-      const filePathMatch = fileUrl.match(/life-story-audios\/(.+)/);
+      
+      // Utiliser une expression régulière plus flexible pour extraire le chemin
+      // Cela fonctionnera avec différents formats d'URL Supabase
+      const filePathRegex = new RegExp(`${AUDIO_BUCKET_NAME}\/([^?]+)`);
+      const filePathMatch = fileUrl.match(filePathRegex);
       
       if (!filePathMatch || !filePathMatch[1]) {
         console.error('Impossible d\'extraire le chemin du fichier:', fileUrl);
+        console.log('Format d\'URL:', fileUrl);
         throw new Error('Format d\'URL invalide');
       }
       
       const filePath = filePathMatch[1];
+      console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
       
       // Supprimer le fichier de Supabase Storage
       const { error } = await supabase.storage
-        .from('life-story-audios')
+        .from(AUDIO_BUCKET_NAME)
         .remove([filePath]);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la suppression:', error);
+        throw error;
+      }
+      
+      console.log('Fichier supprimé avec succès');
       
       // Mettre à jour la question pour supprimer la référence à l'audio
       onAudioUrlChange(chapterId, question.id, null);
@@ -153,7 +180,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       console.error('Erreur lors de la suppression de l\'audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer l\'enregistrement audio.',
+        description: 'Impossible de supprimer l\'enregistrement audio. Veuillez réessayer.',
         variant: 'destructive',
       });
     }
@@ -227,4 +254,3 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
 };
 
 export default QuestionItem;
-
