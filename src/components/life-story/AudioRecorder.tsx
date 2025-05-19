@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import VoiceRecorder from '@/components/VoiceRecorder';
@@ -14,8 +14,9 @@ interface AudioRecorderProps {
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadComplete, setUploadComplete] = useState(false);
   const { user } = useAuth();
+  // Use a ref to track if we've already shown the success toast
+  const uploadSuccessToastShown = useRef(false);
 
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
@@ -33,7 +34,15 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         (publicUrl) => {
           // Succès
           onAudioUrlChange(chapterId, questionId, publicUrl);
-          setUploadComplete(true);
+          
+          // Show toast only once per successful upload
+          if (!uploadSuccessToastShown.current) {
+            uploadSuccessToastShown.current = true;
+            toast({
+              title: 'Audio enregistré',
+              description: 'Votre enregistrement audio a été sauvegardé avec succès.',
+            });
+          }
         },
         (errorMessage) => {
           // Erreur
@@ -46,7 +55,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         () => {
           // Début du téléchargement
           setIsUploading(true);
-          setUploadComplete(false);
+          uploadSuccessToastShown.current = false;
         },
         () => {
           // Fin du téléchargement
@@ -56,24 +65,11 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
     }
   };
 
-  // Afficher le toast de succès une seule fois après un téléchargement réussi
-  useEffect(() => {
-    if (uploadComplete) {
-      toast({
-        title: 'Audio enregistré',
-        description: 'Votre enregistrement audio a été sauvegardé avec succès.',
-      });
-      // Réinitialiser l'état pour éviter des toasts multiples
-      setUploadComplete(false);
-    }
-  }, [uploadComplete]);
-
   // Nettoyer les états lors du démontage du composant
   useEffect(() => {
     return () => {
       setAudioBlob(null);
       setIsUploading(false);
-      setUploadComplete(false);
     };
   }, []);
 

@@ -31,7 +31,7 @@ export function useAutoSave({
   const [hasChanges, setHasChanges] = useState(false);
   
   // Pour suivre si une notification est déjà visible
-  const isToastVisibleRef = useRef(false);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Pour enregistrer le dernier moment de sauvegarde (pour limiter la fréquence)
   const lastSaveTimeRef = useRef<number>(0);
   // Délai minimum entre deux notifications (5 secondes)
@@ -102,24 +102,22 @@ export function useAutoSave({
       }
 
       // Notification de sauvegarde réussie avec contrôle de fréquence
-      if (!isToastVisibleRef.current) {
-        isToastVisibleRef.current = true;
+      // Clear any existing toast timeout
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+      
+      // Only show another toast if MIN_TOAST_INTERVAL has passed
+      const lastToastTime = toastTimeoutRef.current ? now : 0;
+      if (now - lastToastTime > MIN_TOAST_INTERVAL) {
         toast({
           title: "Sauvegarde réussie",
           description: "Vos réponses ont été sauvegardées avec succès.",
-          onOpenChange: (open) => {
-            if (!open) {
-              // Remettre à false quand le toast disparaît
-              setTimeout(() => {
-                isToastVisibleRef.current = false;
-              }, 300);
-            }
-          }
         });
         
-        // Force la réinitialisation du flag si le toast n'est pas fermé correctement
-        setTimeout(() => {
-          isToastVisibleRef.current = false;
+        // Set a new timeout to track when we can show the next toast
+        toastTimeoutRef.current = setTimeout(() => {
+          toastTimeoutRef.current = null;
         }, MIN_TOAST_INTERVAL);
       }
       
@@ -154,6 +152,9 @@ export function useAutoSave({
     return () => {
       clearTimeout(initialTimer);
       clearInterval(timer);
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
       // Sauvegarde finale lorsque le composant est démonté
       if (hasChanges) {
         saveData();
