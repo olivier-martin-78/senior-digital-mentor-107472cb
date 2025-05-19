@@ -4,25 +4,31 @@ import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash, Volume2, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '@/components/ui/spinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadAudio } from '@/utils/audioUploadUtils';
 
 interface VoiceAnswerRecorderProps {
   questionId: string;
+  chapterId: string;
   existingAudio?: string | null;
-  onRecordingComplete: (questionId: string, audioBlob: Blob) => void;
+  onRecordingComplete: (questionId: string, audioBlob: Blob, audioUrl: string) => void;
   onDeleteRecording: (questionId: string) => void;
 }
 
 export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   questionId,
+  chapterId,
   existingAudio,
   onRecordingComplete,
   onDeleteRecording
 }) => {
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(existingAudio || null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
@@ -36,7 +42,8 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     
     return () => {
       stopRecording();
-      if (audioUrl && audioUrl !== existingAudio) {
+      if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
+        // Only revoke locally created URLs, not ones from storage
         URL.revokeObjectURL(audioUrl);
       }
     };
@@ -61,8 +68,8 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   
   const startRecording = async () => {
     try {
-      // Clean previous recording if exists
-      if (audioUrl && audioUrl !== existingAudio) {
+      // Clean previous recording if exists and it's not from storage
+      if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
         URL.revokeObjectURL(audioUrl);
       }
       
@@ -86,13 +93,18 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       recorder.onstop = () => {
         if (audioChunks.current.length > 0) {
           const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
-          const url = URL.createObjectURL(blob);
+          const tempUrl = URL.createObjectURL(blob);
           
           setAudioBlob(blob);
-          setAudioUrl(url);
+          setAudioUrl(tempUrl);
           
-          // Send the recording to parent component
-          onRecordingComplete(questionId, blob);
+          // Only upload if we have a user
+          if (user) {
+            uploadRecording(blob);
+          } else {
+            // For local testing without user
+            onRecordingComplete(questionId, blob, tempUrl);
+          }
         }
         
         setIsRecording(false);
@@ -119,6 +131,43 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     }
   };
   
+  const uploadRecording = (blob: Blob) => {
+    if (!user || !user.id) {
+      console.error("Impossible de télécharger sans utilisateur authentifié");
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    uploadAudio(
+      blob,
+      user.id,
+      chapterId,
+      questionId,
+      (url: string) => {
+        console.log("Audio téléchargé avec succès:", url);
+        // Replace local blob URL with storage URL
+        if (audioUrl && !existingAudio) {
+          URL.revokeObjectURL(audioUrl);
+        }
+        setAudioUrl(url);
+        
+        // Send the recording to parent component with permanent URL
+        onRecordingComplete(questionId, blob, url);
+      },
+      (errorMessage: string) => {
+        console.error("Erreur de téléchargement:", errorMessage);
+        toast({
+          title: "Erreur de téléchargement",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      },
+      () => setIsUploading(true),
+      () => setIsUploading(false)
+    );
+  };
+  
   const stopRecording = () => {
     if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
       mediaRecorder.current.stop();
@@ -137,7 +186,8 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       audioRef.current.pause();
     }
     
-    if (audioUrl && audioUrl !== existingAudio) {
+    // Only revoke if it's a local blob URL
+    if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
       URL.revokeObjectURL(audioUrl);
     }
     
@@ -192,6 +242,10 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     setIsPlaying(false);
   };
   
+  const isStorageUrl = (url: string | null) => {
+    return url ? url.includes('storage.googleapis.com') || url.includes('supabase') : false;
+  };
+  
   return (
     <div className="mt-2 p-3 border rounded-md bg-gray-50">
       <div className="text-sm font-medium mb-2">Réponse vocale</div>
@@ -227,6 +281,13 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
               <Mic className="w-4 h-4 mr-1" /> Enregistrer
             </Button>
           )}
+        </div>
+      )}
+      
+      {isUploading && (
+        <div className="flex justify-center items-center py-2 mb-2">
+          <Spinner className="mr-2 h-4 w-4" />
+          <span className="text-sm">Téléchargement en cours...</span>
         </div>
       )}
       

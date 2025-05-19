@@ -9,7 +9,7 @@ interface ChapterContentProps {
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
-  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob) => void;
+  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
 }
 

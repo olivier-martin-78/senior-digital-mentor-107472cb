@@ -96,11 +96,8 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   };
   
   // Gestion des enregistrements audio
-  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob) => {
+  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => {
     console.log(`Enregistrement audio pour la question ${questionId} du chapitre ${chapterId}`, audioBlob);
-    
-    // Créer une URL pour l'audio blob
-    const audioUrl = URL.createObjectURL(audioBlob);
     
     // Mettre à jour la question avec l'URL de l'audio
     const updatedChapters = data.chapters.map(chapter => {
@@ -135,21 +132,6 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   // Gestion de la suppression d'un audio
   const handleAudioDeleted = (chapterId: string, questionId: string) => {
     console.log(`Suppression de l'audio pour la question ${questionId} du chapitre ${chapterId}`);
-    
-    // Trouver l'URL de l'audio actuel pour la libérer
-    const currentAudioUrl = data.chapters
-      .find(c => c.id === chapterId)
-      ?.questions.find(q => q.id === questionId)
-      ?.audioAnswer;
-      
-    if (currentAudioUrl) {
-      // Libérer l'URL de l'objet
-      try {
-        URL.revokeObjectURL(currentAudioUrl);
-      } catch (e) {
-        console.error("Erreur lors de la libération de l'URL audio:", e);
-      }
-    }
     
     // Mettre à jour les données pour supprimer l'audio
     const updatedChapters = data.chapters.map(chapter => {
