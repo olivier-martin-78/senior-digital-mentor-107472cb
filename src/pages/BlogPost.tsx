@@ -18,7 +18,7 @@ import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, hasRole } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -314,7 +314,7 @@ const BlogPost = () => {
           
             <div className="flex flex-wrap items-center mb-4 gap-2">
               <Avatar className="h-8 w-8 mr-2">
-                <AvatarImage src={post.profiles?.avatar_url || undefined} alt={post.profiles?.display_name || 'Auteur'} />
+                <AvatarImage src={profile?.avatar_url || undefined} alt={post.profiles?.display_name || 'Auteur'} />
                 <AvatarFallback>{getInitials(post.profiles?.display_name)}</AvatarFallback>
               </Avatar>
               <span className="text-gray-600">
@@ -381,7 +381,7 @@ const BlogPost = () => {
             <form onSubmit={handleCommentSubmit} className="mb-8">
               <div className="flex gap-4 mb-4 items-start">
                 <Avatar className="h-8 w-8 mt-1">
-                  <AvatarImage src={user?.avatar_url || undefined} alt={user?.email || 'Utilisateur'} />
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={user?.email || 'Utilisateur'} />
                   <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                 </Avatar>
                 <Textarea
