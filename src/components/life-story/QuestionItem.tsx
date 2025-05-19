@@ -37,6 +37,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
 }) => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const { user } = useAuth();
   
   // Détecter quand un nouvel enregistrement audio est créé
@@ -80,6 +81,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     
     try {
       setIsUploading(true);
+      setUploadSuccess(false);
       
       // Vérifier si le bucket est accessible
       const bucketAccessible = await checkBucketAccess();
@@ -123,6 +125,9 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       // Mettre à jour la question avec l'URL de l'audio
       onAudioUrlChange(chapterId, question.id, publicUrl);
       
+      setUploadSuccess(true);
+      
+      // Afficher le toast une seule fois lorsque le téléchargement est terminé
       toast({
         title: 'Audio enregistré',
         description: 'Votre enregistrement audio a été sauvegardé avec succès.',
@@ -198,6 +203,15 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       });
     }
   };
+  
+  // Nettoyer les états lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      setAudioBlob(null);
+      setIsUploading(false);
+      setUploadSuccess(false);
+    };
+  }, []);
   
   return (
     <div className="space-y-2">
