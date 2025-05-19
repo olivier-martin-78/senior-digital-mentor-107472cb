@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -143,6 +145,37 @@ const AdminUsers = () => {
     }
   };
 
+  const toggleReceiveContacts = async (userId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ receive_contacts: !currentValue })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Update the UI
+      setUsers(users.map(u => {
+        if (u.id === userId) {
+          return { ...u, receive_contacts: !currentValue };
+        }
+        return u;
+      }));
+
+      toast({
+        title: "Préférence mise à jour",
+        description: "La préférence de réception des contacts a été mise à jour avec succès."
+      });
+    } catch (error: any) {
+      console.error('Error toggling receive contacts:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la mise à jour de la préférence.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -182,13 +215,14 @@ const AdminUsers = () => {
                   <TableHead>Nom</TableHead>
                   <TableHead>Date d'inscription</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Recevoir contacts</TableHead>
                   <TableHead className="w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       Aucun utilisateur trouvé.
                     </TableCell>
                   </TableRow>
@@ -216,6 +250,17 @@ const AdminUsers = () => {
                         }`}>
                           {getRoleDisplay(user.roles)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {getCurrentRole(user.roles) === 'admin' ? (
+                          <Switch 
+                            checked={!!user.receive_contacts}
+                            onCheckedChange={() => toggleReceiveContacts(user.id, !!user.receive_contacts)}
+                            disabled={user.id === currentUser?.id && !user.receive_contacts}
+                          />
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Select
