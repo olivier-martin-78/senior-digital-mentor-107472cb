@@ -59,7 +59,10 @@ serve(async (req) => {
     
     if (!audio) {
       console.error("No audio data provided");
-      throw new Error('No audio data provided');
+      return new Response(
+        JSON.stringify({ error: 'No audio data provided', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     console.log(`Received audio data of length: ${audio.length}`);
@@ -68,7 +71,10 @@ serve(async (req) => {
     const openai_api_key = Deno.env.get('OPENAI_API_KEY');
     if (!openai_api_key) {
       console.error("OPENAI_API_KEY environment variable not set");
-      throw new Error('OpenAI API key not configured');
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
     
     console.log("Processing audio in chunks");
@@ -98,7 +104,10 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`OpenAI API error: ${response.status} ${errorText}`);
-      throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+      return new Response(
+        JSON.stringify({ error: `OpenAI API error ${response.status}: ${errorText}`, success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
     }
 
     console.log("Received successful response from OpenAI");
@@ -106,14 +115,14 @@ serve(async (req) => {
     console.log("Transcription result:", result);
 
     return new Response(
-      JSON.stringify({ text: result.text }),
+      JSON.stringify({ text: result.text, success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error("Transcription error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, success: false }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

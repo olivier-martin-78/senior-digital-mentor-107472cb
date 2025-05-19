@@ -98,7 +98,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       console.log("Envoi de l'audio pour transcription...");
       
       // Appeler notre fonction Edge pour transcription
-      const { data, error } = await supabase.functions.invoke<TranscriptionResult>('transcribe-audio', {
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
         body: {
           audio: base64Audio,
         },
@@ -106,10 +106,12 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       
       if (error) {
         console.error("Erreur lors de la transcription:", error);
-        throw new Error(`Erreur lors de la transcription: ${error.message}`);
+        throw new Error(`Erreur lors de l'appel à la fonction: ${error.message}`);
       }
       
-      if (!data || !data.success) {
+      console.log("Réponse reçue de la fonction transcription:", data);
+      
+      if (!data || data.success === false) {
         const errorMsg = data?.error || "Erreur inconnue lors de la transcription.";
         console.error("Échec de la transcription:", errorMsg);
         throw new Error(errorMsg);
