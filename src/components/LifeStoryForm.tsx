@@ -88,14 +88,6 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     setShowVoiceRecorder(showVoiceRecorder === questionId ? null : questionId);
   };
   
-  const handleTranscription = (text: string) => {
-    if (showVoiceRecorder && activeQuestion) {
-      const [chapterId, questionId] = activeQuestion.split(':');
-      updateAnswer(chapterId, questionId, text);
-      setShowVoiceRecorder(null);
-    }
-  };
-  
   // Gestion du focus sur une question
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
     setActiveQuestion(`${chapterId}:${questionId}`);
@@ -145,7 +137,6 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
             handleQuestionFocus={handleQuestionFocus}
             showVoiceRecorder={showVoiceRecorder}
             handleVoiceRecorder={handleVoiceRecorder}
-            handleTranscription={handleTranscription}
             activeQuestion={activeQuestion}
           />
         </div>

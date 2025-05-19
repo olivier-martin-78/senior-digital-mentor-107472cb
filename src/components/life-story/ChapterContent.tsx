@@ -10,7 +10,6 @@ interface ChapterContentProps {
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   showVoiceRecorder: string | null;
   handleVoiceRecorder: (questionId: string) => void;
-  handleTranscription: (text: string) => void;
   activeQuestion: string | null;
 }
 
@@ -20,7 +19,6 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   handleQuestionFocus,
   showVoiceRecorder,
   handleVoiceRecorder,
-  handleTranscription,
   activeQuestion
 }) => {
   return (
@@ -39,7 +37,6 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
             onQuestionFocus={handleQuestionFocus}
             showVoiceRecorder={showVoiceRecorder}
             onToggleVoiceRecorder={handleVoiceRecorder}
-            onTranscription={handleTranscription}
             activeQuestion={activeQuestion}
           />
         ))}
