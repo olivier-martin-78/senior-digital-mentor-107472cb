@@ -12,7 +12,6 @@ interface ChapterTabsProps {
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   showVoiceRecorder: string | null;
   handleVoiceRecorder: (questionId: string) => void;
-  handleTranscription: (text: string) => void;
   activeQuestion: string | null;
 }
 
@@ -24,7 +23,6 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
   handleQuestionFocus,
   showVoiceRecorder,
   handleVoiceRecorder,
-  handleTranscription,
   activeQuestion
 }) => {
   return (
@@ -52,7 +50,6 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
             handleQuestionFocus={handleQuestionFocus}
             showVoiceRecorder={showVoiceRecorder}
             handleVoiceRecorder={handleVoiceRecorder}
-            handleTranscription={handleTranscription}
             activeQuestion={activeQuestion}
           />
         </TabsContent>
