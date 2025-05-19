@@ -14,32 +14,10 @@ interface AudioRecorderProps {
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [toastShown, setToastShown] = useState(false);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const { user } = useAuth();
 
-  // Gérer l'affichage du toast uniquement après un téléchargement réussi
-  useEffect(() => {
-    if (uploadSuccess && !toastShown) {
-      setToastShown(true);
-      toast({
-        title: 'Audio enregistré',
-        description: 'Votre enregistrement audio a été sauvegardé avec succès.',
-      });
-    }
-  }, [uploadSuccess, toastShown]);
-
-  // Nettoyer les états lors du démontage
-  useEffect(() => {
-    return () => {
-      setAudioBlob(null);
-      setIsUploading(false);
-      setUploadSuccess(false);
-      setToastShown(false);
-    };
-  }, []);
-
-  // Détecter quand un nouvel enregistrement audio est créé
+  // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
     // Ne rien faire si c'est le même blob ou si nous sommes déjà en train de télécharger
     if (isUploading) return;
@@ -55,7 +33,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         (publicUrl) => {
           // Succès
           onAudioUrlChange(chapterId, questionId, publicUrl);
-          setUploadSuccess(true);
+          setUploadComplete(true);
         },
         (errorMessage) => {
           // Erreur
@@ -68,8 +46,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         () => {
           // Début du téléchargement
           setIsUploading(true);
-          setUploadSuccess(false);
-          setToastShown(false);
+          setUploadComplete(false);
         },
         () => {
           // Fin du téléchargement
@@ -78,6 +55,27 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       );
     }
   };
+
+  // Afficher le toast de succès une seule fois après un téléchargement réussi
+  useEffect(() => {
+    if (uploadComplete) {
+      toast({
+        title: 'Audio enregistré',
+        description: 'Votre enregistrement audio a été sauvegardé avec succès.',
+      });
+      // Réinitialiser l'état pour éviter des toasts multiples
+      setUploadComplete(false);
+    }
+  }, [uploadComplete]);
+
+  // Nettoyer les états lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      setAudioBlob(null);
+      setIsUploading(false);
+      setUploadComplete(false);
+    };
+  }, []);
 
   return (
     <div className={isUploading ? "opacity-50 pointer-events-none" : ""}>
