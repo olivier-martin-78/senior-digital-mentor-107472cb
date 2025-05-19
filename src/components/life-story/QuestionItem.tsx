@@ -38,10 +38,14 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [toastShown, setToastShown] = useState(false);
   const { user } = useAuth();
   
   // Détecter quand un nouvel enregistrement audio est créé
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
+    // Ne rien faire si c'est le même blob ou si nous sommes déjà en train de télécharger
+    if (isUploading) return;
+    
     setAudioBlob(newAudioBlob);
     
     if (newAudioBlob) {
@@ -72,6 +76,21 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     }
   };
   
+  // Effet pour gérer l'affichage du toast uniquement après un téléchargement réussi
+  useEffect(() => {
+    if (uploadSuccess && !toastShown) {
+      setToastShown(true);
+      toast({
+        title: 'Audio enregistré',
+        description: 'Votre enregistrement audio a été sauvegardé avec succès.',
+      });
+    }
+    
+    return () => {
+      // Ne rien faire ici, la nettoyage se fait dans l'autre useEffect
+    };
+  }, [uploadSuccess, toastShown]);
+  
   // Fonction pour télécharger l'audio vers Supabase
   const uploadAudio = async (blob: Blob) => {
     if (!blob || !user) {
@@ -82,6 +101,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     try {
       setIsUploading(true);
       setUploadSuccess(false);
+      setToastShown(false);
       
       // Vérifier si le bucket est accessible
       const bucketAccessible = await checkBucketAccess();
@@ -127,11 +147,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       
       setUploadSuccess(true);
       
-      // Afficher le toast une seule fois lorsque le téléchargement est terminé
-      toast({
-        title: 'Audio enregistré',
-        description: 'Votre enregistrement audio a été sauvegardé avec succès.',
-      });
+      // Le toast est maintenant géré dans le useEffect
       
     } catch (error: any) {
       console.error('Erreur lors du téléchargement de l\'audio:', error);
@@ -210,6 +226,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       setAudioBlob(null);
       setIsUploading(false);
       setUploadSuccess(false);
+      setToastShown(false);
     };
   }, []);
   
