@@ -13,7 +13,7 @@ import {
   navigationMenuTriggerStyle
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Book } from 'lucide-react';
 
 const Header = () => {
   const { user, profile, signOut, hasRole } = useAuth();
@@ -38,6 +38,14 @@ const Header = () => {
                 Blog
               </Link>
             </NavigationMenuItem>
+            
+            {user && (
+              <NavigationMenuItem>
+                <Link to="/diary" className={cn(navigationMenuTriggerStyle())}>
+                  <Book className="w-4 h-4 mr-1" /> Journal
+                </Link>
+              </NavigationMenuItem>
+            )}
             
             {user ? (
               <>

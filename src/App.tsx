@@ -15,6 +15,10 @@ import Profile from "./pages/Profile";
 import Unauthorized from "./pages/Unauthorized";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
+import Diary from "./pages/Diary";
+import DiaryNew from "./pages/DiaryNew";
+import DiaryEntry from "./pages/DiaryEntry";
+import DiaryEdit from "./pages/DiaryEdit";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -36,6 +40,10 @@ const App = () => (
             {/* Routes protégées qui nécessitent une authentification */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<Profile />} />
+              <Route path="/diary" element={<Diary />} />
+              <Route path="/diary/new" element={<DiaryNew />} />
+              <Route path="/diary/:id" element={<DiaryEntry />} />
+              <Route path="/diary/edit/:id" element={<DiaryEdit />} />
             </Route>
 
             {/* Routes pour les éditeurs et admins */}

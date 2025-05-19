@@ -178,6 +178,78 @@ export type Database = {
           },
         ]
       }
+      diary_entries: {
+        Row: {
+          activities: string | null
+          contacted_people: string[] | null
+          created_at: string | null
+          desire_of_day: string | null
+          entry_date: string
+          id: string
+          is_private_notes_locked: boolean | null
+          media_type: string | null
+          media_url: string | null
+          mental_state: string | null
+          mood_rating: number | null
+          negative_things: string | null
+          objectives: string | null
+          physical_state: string | null
+          positive_things: string | null
+          private_notes: string | null
+          reflections: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activities?: string | null
+          contacted_people?: string[] | null
+          created_at?: string | null
+          desire_of_day?: string | null
+          entry_date?: string
+          id?: string
+          is_private_notes_locked?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          mental_state?: string | null
+          mood_rating?: number | null
+          negative_things?: string | null
+          objectives?: string | null
+          physical_state?: string | null
+          positive_things?: string | null
+          private_notes?: string | null
+          reflections?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activities?: string | null
+          contacted_people?: string[] | null
+          created_at?: string | null
+          desire_of_day?: string | null
+          entry_date?: string
+          id?: string
+          is_private_notes_locked?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          mental_state?: string | null
+          mood_rating?: number | null
+          negative_things?: string | null
+          objectives?: string | null
+          physical_state?: string | null
+          positive_things?: string | null
+          private_notes?: string | null
+          reflections?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_categories: {
         Row: {
           category_id: string
