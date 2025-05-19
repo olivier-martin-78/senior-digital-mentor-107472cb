@@ -19,12 +19,17 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
 
   // Vérifier si le chemin est déjà une URL complète
   if (path.startsWith('http')) {
+    console.log('URL déjà complète:', path);
     return path;
   }
   
   try {
+    // Gestion des cas où le chemin contient le nom d'utilisateur
+    // Par exemple "user_id/filename.jpg"
+    const cleanPath = path.includes('/') ? path : `${path}`;
+    
     // Construire l'URL à partir du chemin dans le bucket
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
     
     // Vérifier si l'URL a été générée correctement
     if (data && data.publicUrl) {
@@ -58,11 +63,17 @@ export const getPathFromUrl = (url: string): string | null => {
     const pathParts = urlObj.pathname.split('/');
     
     // Trouver l'index du nom du bucket dans le chemin
-    const bucketIndex = pathParts.findIndex(part => part === DIARY_MEDIA_BUCKET);
+    const bucketIndex = pathParts.findIndex(part => part === DIARY_MEDIA_BUCKET || part === 'object' || part === 'public');
     
     if (bucketIndex !== -1 && bucketIndex + 1 < pathParts.length) {
       // Retourner le chemin relatif après le nom du bucket
       return pathParts.slice(bucketIndex + 1).join('/');
+    }
+    
+    // Si on ne trouve pas le pattern standard, essayer de récupérer la partie après la dernière occurrence de /
+    const lastSlashIndex = url.lastIndexOf('/');
+    if (lastSlashIndex !== -1) {
+      return url.substring(lastSlashIndex + 1);
     }
     
     return null;

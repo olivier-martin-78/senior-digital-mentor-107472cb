@@ -15,7 +15,12 @@ const EntriesGrid: React.FC<EntriesGridProps> = ({
   isLoading = false 
 }) => {
   if (isLoading) {
-    return <LoadingSpinner size="lg" className="my-16" />;
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <LoadingSpinner size="lg" className="my-8" />
+        <p className="text-gray-500 mt-4">Chargement des entrées...</p>
+      </div>
+    );
   }
   
   if (entries.length === 0) {
