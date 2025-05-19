@@ -42,7 +42,7 @@ export interface BlogPost {
   updated_at: string;
   album_id: string | null;
   publication_date?: string;
-  cover_image?: string | null;  // Added the cover_image property
+  cover_image: string | null;  // Added the cover_image property
 }
 
 export interface BlogMedia {
