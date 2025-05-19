@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { uploadAudio } from '@/utils/audioUploadUtils';
@@ -14,6 +14,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
+  const isMounted = useRef(true);
   
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
@@ -26,29 +27,48 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
     
     if (newAudioBlob && user) {
       try {
+        // Marquer comme en cours de téléchargement
         setIsUploading(true);
         
+        // Lancer le téléchargement
         await uploadAudio(
           newAudioBlob,
           user.id,
           chapterId,
           questionId,
           (publicUrl) => {
-            // Succès
-            onAudioUrlChange(chapterId, questionId, publicUrl, true);
+            // Vérifier si le composant est toujours monté
+            if (isMounted.current) {
+              // Succès
+              onAudioUrlChange(chapterId, questionId, publicUrl, true);
+              // Réinitialiser l'état de chargement
+              setIsUploading(false);
+            }
           },
           (errorMessage) => {
-            // Erreur
-            console.error('Erreur d\'upload audio:', errorMessage);
+            // Vérifier si le composant est toujours monté
+            if (isMounted.current) {
+              // Erreur
+              console.error('Erreur d\'upload audio:', errorMessage);
+              // Réinitialiser l'état de chargement
+              setIsUploading(false);
+            }
           },
-          () => {}, // Début du téléchargement (déjà géré par setIsUploading)
-          () => {} // Fin du téléchargement (géré plus bas)
+          () => {}, // Début déjà géré par setIsUploading(true)
+          () => {
+            // Fin du téléchargement, vérifier si le composant est toujours monté
+            if (isMounted.current) {
+              setIsUploading(false);
+            }
+          }
         );
       } catch (error) {
+        // Gérer les erreurs non attrapées
         console.error("Erreur lors du téléchargement de l'audio:", error);
-      } finally {
-        // S'assurer que l'état de chargement est réinitialisé dans tous les cas
-        setIsUploading(false);
+        // Réinitialiser uniquement si le composant est toujours monté
+        if (isMounted.current) {
+          setIsUploading(false);
+        }
       }
     }
   };
@@ -56,8 +76,9 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   // Nettoyer les états lors du démontage du composant
   useEffect(() => {
     return () => {
+      // Marquer le composant comme démonté pour éviter les mises à jour d'état
+      isMounted.current = false;
       setAudioBlob(null);
-      setIsUploading(false);
     };
   }, []);
 

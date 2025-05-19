@@ -42,6 +42,7 @@ export const uploadAudio = async (
   if (!blob || !userId) {
     console.error("Blob ou utilisateur non défini");
     onError("Blob ou utilisateur non défini");
+    onUploadEnd(); // S'assurer que onUploadEnd est appelé même en cas d'erreur
     return;
   }
   
@@ -54,6 +55,7 @@ export const uploadAudio = async (
     if (!bucketAccessible) {
       console.error("Impossible d'accéder au service de stockage");
       onError(`Impossible d'accéder au service de stockage. Veuillez réessayer plus tard.`);
+      onUploadEnd(); // S'assurer que onUploadEnd est appelé même en cas d'erreur
       return;
     }
     
