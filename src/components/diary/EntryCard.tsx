@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -15,15 +15,33 @@ interface EntryCardProps {
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   
   // Vérifier si le média est une image ou une vidéo
   const isVisualMedia = entry.media_type?.startsWith('image/') || entry.media_type?.startsWith('video/');
   
   // Pour déboguer
-  if (entry.media_url) {
-    console.log("URL du média dans EntryCard:", entry.media_url);
-    console.log("Type du média dans EntryCard:", entry.media_type);
-  }
+  useEffect(() => {
+    if (entry.media_url) {
+      console.log("URL du média dans EntryCard:", entry.media_url);
+      console.log("Type du média dans EntryCard:", entry.media_type);
+      
+      // Récupérer l'URL du thumbnail de façon asynchrone
+      const loadThumbnail = async () => {
+        try {
+          const url = await getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET);
+          console.log("URL générée:", url);
+          setThumbnailUrl(url);
+        } catch (error) {
+          console.error("Erreur lors de la récupération de l'URL:", error);
+          setImageError(true);
+          setIsLoading(false);
+        }
+      };
+      
+      loadThumbnail();
+    }
+  }, [entry.media_url, entry.media_type]);
   
   return (
     <Link 
@@ -46,23 +64,25 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                     <div className="w-8 h-8 border-4 border-tranches-sage border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
-                <img 
-                  src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
-                  alt="Aperçu du média"
-                  className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    console.error("Erreur de chargement d'image dans EntryCard:", entry.media_url);
-                    console.log("URL d'image qui a échoué:", target.src);
-                    setImageError(true);
-                    setIsLoading(false);
-                  }}
-                  onLoad={() => {
-                    console.log("Image chargée avec succès dans EntryCard");
-                    setIsLoading(false);
-                  }}
-                  style={{ display: imageError ? 'none' : 'block' }}
-                />
+                {thumbnailUrl && (
+                  <img 
+                    src={thumbnailUrl} 
+                    alt="Aperçu du média"
+                    className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.error("Erreur de chargement d'image dans EntryCard:", entry.media_url);
+                      console.log("URL d'image qui a échoué:", target.src);
+                      setImageError(true);
+                      setIsLoading(false);
+                    }}
+                    onLoad={() => {
+                      console.log("Image chargée avec succès dans EntryCard");
+                      setIsLoading(false);
+                    }}
+                    style={{ display: imageError ? 'none' : 'block' }}
+                  />
+                )}
                 {imageError && (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
                     <Image className="h-10 w-10 text-gray-400 mb-2" />

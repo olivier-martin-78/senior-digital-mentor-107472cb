@@ -47,6 +47,7 @@ const DiaryEdit = () => {
   const [loading, setLoading] = useState(true);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
 
   const form = useForm<DiaryFormValues>({
     resolver: zodResolver(diaryFormSchema),
@@ -112,6 +113,14 @@ const DiaryEdit = () => {
           if (entryData.media_url) {
             console.log("URL du média existant:", entryData.media_url);
             console.log("Type du média existant:", entryData.media_type);
+            
+            // Charger l'URL du media pour la prévisualisation
+            try {
+              const url = await getThumbnailUrl(entryData.media_url, DIARY_MEDIA_BUCKET);
+              setMediaPreviewUrl(url);
+            } catch (error) {
+              console.error("Erreur lors de la récupération de l'URL du média:", error);
+            }
           }
         }
       } catch (error: any) {
@@ -272,13 +281,13 @@ const DiaryEdit = () => {
                     existingMediaType={entry.media_type}
                   />
                   
-                  {entry.media_url && !mediaFile && (
+                  {entry.media_url && !mediaFile && mediaPreviewUrl && (
                     <div className="p-4 border rounded-lg bg-gray-50">
                       <h3 className="text-sm font-medium mb-2">Média actuel</h3>
                       {entry.media_type?.startsWith('image/') ? (
                         <div className="bg-gray-100 rounded-lg overflow-hidden">
                           <img 
-                            src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
+                            src={mediaPreviewUrl} 
                             alt="Média existant" 
                             className="h-32 w-auto object-contain" 
                             onError={(e) => {
@@ -293,14 +302,14 @@ const DiaryEdit = () => {
                         </div>
                       ) : entry.media_type?.startsWith('video/') ? (
                         <video 
-                          src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
+                          src={mediaPreviewUrl} 
                           className="h-32 w-auto" 
                           controls
                           onError={(e) => console.error("Erreur de chargement vidéo:", entry.media_url)}
                         />
                       ) : entry.media_type?.startsWith('audio/') ? (
                         <audio 
-                          src={getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET)} 
+                          src={mediaPreviewUrl} 
                           controls
                           onError={(e) => console.error("Erreur de chargement audio:", entry.media_url)}
                         />

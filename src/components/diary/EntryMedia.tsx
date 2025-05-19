@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
 import { isValidUrl } from '@/utils/storageUtils';
@@ -34,25 +33,22 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
             
           if (path) {
             console.log("Tentative d'obtention d'une URL signée pour:", path);
-            const { data, error } = await supabase.storage
-              .from(DIARY_MEDIA_BUCKET)
-              .createSignedUrl(path, 3600); // 1 heure d'expiration
-              
-            if (data && !error) {
-              console.log("URL signée générée avec succès:", data.signedUrl);
-              setDirectUrl(data.signedUrl);
-              return;
-            } else {
-              console.error("Erreur lors de la création de l'URL signée:", error);
-            }
+            
+            // Obtenir l'URL avec notre fonction asynchrone
+            const url = await getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET);
+            setDirectUrl(url);
+            return;
           }
         }
         
         // Fallback à l'URL publique classique avec getThumbnailUrl
-        setDirectUrl(getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET));
+        const url = await getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET);
+        setDirectUrl(url);
       } catch (err) {
         console.error("Erreur lors de la récupération de l'URL du média:", err);
-        setDirectUrl(getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET));
+        // Essayer un dernier recours avec getPublicUrl standard
+        const url = await getThumbnailUrl(mediaUrl, DIARY_MEDIA_BUCKET);
+        setDirectUrl(url);
       }
     };
     

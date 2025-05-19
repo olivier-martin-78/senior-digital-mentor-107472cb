@@ -56,7 +56,7 @@ export const uploadAlbumThumbnail = async (file: File, idPrefix: string): Promis
  * @param bucket Bucket optionnel contenant le média (par défaut: album-thumbnails)
  * @returns URL de prévisualisation ou image par défaut
  */
-export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMBNAILS_BUCKET): string => {
+export const getThumbnailUrl = async (url: string | null, bucket: string = ALBUM_THUMBNAILS_BUCKET): Promise<string> => {
   if (!url) {
     console.log("URL vide ou null, utilisation de l'image par défaut");
     return '/placeholder.svg';
