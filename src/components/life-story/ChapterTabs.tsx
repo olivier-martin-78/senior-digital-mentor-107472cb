@@ -1,19 +1,16 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChapterContent from './ChapterContent';
 import { Chapter } from '@/types/lifeStory';
 
 interface ChapterTabsProps {
   chapters: Chapter[];
   activeTab: string;
-  setActiveTab: (id: string) => void;
+  setActiveTab: (value: string) => void;
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
-  showVoiceRecorder: string | null;
-  handleVoiceRecorder: (questionId: string) => void;
   activeQuestion: string | null;
-  onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null) => void;
 }
 
 export const ChapterTabs: React.FC<ChapterTabsProps> = ({
@@ -22,24 +19,18 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
   setActiveTab,
   updateAnswer,
   handleQuestionFocus,
-  showVoiceRecorder,
-  handleVoiceRecorder,
-  activeQuestion,
-  onAudioUrlChange
+  activeQuestion
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-4">
-        {chapters.slice(0, 5).map(chapter => (
-          <TabsTrigger key={chapter.id} value={chapter.id}>
-            {chapter.title.split(' ')[0]}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-6">
-        {chapters.slice(5).map(chapter => (
-          <TabsTrigger key={chapter.id} value={chapter.id}>
-            {chapter.title.split(' ')[0]}
+      <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        {chapters.map(chapter => (
+          <TabsTrigger 
+            key={chapter.id}
+            value={chapter.id}
+            className="whitespace-nowrap"
+          >
+            {chapter.title}
           </TabsTrigger>
         ))}
       </TabsList>
@@ -50,10 +41,7 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
             chapter={chapter}
             updateAnswer={updateAnswer}
             handleQuestionFocus={handleQuestionFocus}
-            showVoiceRecorder={showVoiceRecorder}
-            handleVoiceRecorder={handleVoiceRecorder}
             activeQuestion={activeQuestion}
-            onAudioUrlChange={onAudioUrlChange}
           />
         </TabsContent>
       ))}

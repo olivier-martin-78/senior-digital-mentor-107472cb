@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutoSave } from '@/hooks/use-auto-save';
@@ -21,7 +22,6 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   const [activeTab, setActiveTab] = useState<string>('ch1');
   const [openQuestions, setOpenQuestions] = useState<Record<string, boolean>>({});
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState<string | null>(null);
   
   // Initialisation des données de l'histoire
   const initialData: LifeStory = existingStory || {
@@ -82,42 +82,6 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     });
   };
   
-  // Mise à jour de l'URL audio d'une question
-  const updateAudioUrl = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    const updatedChapters = data.chapters.map(chapter => {
-      if (chapter.id === chapterId) {
-        return {
-          ...chapter,
-          questions: chapter.questions.map(question => {
-            if (question.id === questionId) {
-              return { ...question, audioUrl };
-            }
-            return question;
-          })
-        };
-      }
-      return chapter;
-    });
-    
-    // Mise à jour des données mais sans déclencher d'auto-sauvegarde
-    if (preventAutoSave) {
-      // Sauvegarder manuellement sans marquer les changements pour l'autosauvegarde
-      saveNow();
-    } else {
-      // Comportement normal pour les autres mises à jour
-      updateData({
-        chapters: updatedChapters,
-        last_edited_chapter: chapterId,
-        last_edited_question: questionId,
-      });
-    }
-  };
-  
-  // Gestion de l'enregistrement vocal
-  const handleVoiceRecorder = (questionId: string) => {
-    setShowVoiceRecorder(showVoiceRecorder === questionId ? null : questionId);
-  };
-  
   // Gestion du focus sur une question
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
     setActiveQuestion(`${chapterId}:${questionId}`);
@@ -165,10 +129,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
             setActiveTab={setActiveTab}
             updateAnswer={updateAnswer}
             handleQuestionFocus={handleQuestionFocus}
-            showVoiceRecorder={showVoiceRecorder}
-            handleVoiceRecorder={handleVoiceRecorder}
             activeQuestion={activeQuestion}
-            onAudioUrlChange={updateAudioUrl}
           />
         </div>
       </div>

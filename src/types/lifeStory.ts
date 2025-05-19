@@ -12,7 +12,6 @@ export interface Question {
   id: string;
   text: string;
   answer?: string;
-  audioUrl?: string; // URL de l'enregistrement audio
 }
 
 export interface LifeStory {
@@ -29,12 +28,4 @@ export interface LifeStory {
 export interface LifeStoryProgress {
   totalQuestions: number;
   answeredQuestions: number;
-}
-
-// Définition du contexte pour la transcription audio
-export interface TranscriptionResult {
-  text: string;
-  success: boolean;
-  error?: string;
-  quota_exceeded?: boolean;
 }
