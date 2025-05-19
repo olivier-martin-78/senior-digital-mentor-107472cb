@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,11 +10,11 @@ import Header from '@/components/Header';
 import { v4 as uuidv4 } from 'uuid';
 import { parseISO } from 'date-fns';
 import { DiaryEntry } from '@/types/diary';
-
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { DiaryFormFields } from '@/components/DiaryFormFields';
 import { ArrowLeft } from 'lucide-react';
+import { getPublicUrl, getPathFromUrl, DIARY_MEDIA_BUCKET } from '@/utils/storageUtils';
 
 const diaryFormSchema = z.object({
   entry_date: z.date(),
@@ -144,11 +143,11 @@ const DiaryEdit = () => {
       if (mediaFile) {
         // Delete old media if exists
         if (entry.media_url) {
-          const mediaPath = entry.media_url.split('/').pop();
+          const mediaPath = getPathFromUrl(entry.media_url);
           if (mediaPath) {
             await supabase.storage
-              .from('diary_media')
-              .remove([`${user.id}/${mediaPath}`]);
+              .from(DIARY_MEDIA_BUCKET)
+              .remove([mediaPath]);
           }
         }
 
@@ -157,7 +156,7 @@ const DiaryEdit = () => {
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('diary_media')
+          .from(DIARY_MEDIA_BUCKET)
           .upload(filePath, mediaFile);
 
         if (uploadError) {
@@ -165,11 +164,7 @@ const DiaryEdit = () => {
         }
 
         // Get public URL
-        const { data: fileData } = supabase.storage
-          .from('diary_media')
-          .getPublicUrl(filePath);
-          
-        media_url = fileData.publicUrl;
+        media_url = filePath; // Stocke le chemin relatif, pas l'URL complète
         media_type = mediaFile.type;
       }
 
@@ -198,7 +193,26 @@ const DiaryEdit = () => {
       // Update entry in Supabase
       const { error } = await supabase
         .from('diary_entries')
-        .update(entryData)
+        .update({
+          entry_date: data.entry_date.toISOString().split('T')[0],
+          title: data.title,
+          activities: data.activities || null,
+          mood_rating: data.mood_rating,
+          positive_things: data.positive_things || null,
+          negative_things: data.negative_things || null,
+          physical_state: data.physical_state,
+          mental_state: data.mental_state,
+          contacted_people: data.contacted_people || [],
+          reflections: data.reflections || null,
+          media_url,
+          media_type,
+          desire_of_day: data.desire_of_day || null,
+          tags: data.tags || [],
+          private_notes: data.private_notes || null,
+          is_private_notes_locked: data.is_private_notes_locked,
+          objectives: data.objectives || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', id);
 
       if (error) {
@@ -268,9 +282,13 @@ const DiaryEdit = () => {
                       <h3 className="text-sm font-medium mb-2">Média actuel</h3>
                       {entry.media_type?.startsWith('image/') ? (
                         <img 
-                          src={entry.media_url} 
+                          src={getPublicUrl(entry.media_url)} 
                           alt="Current media" 
                           className="h-32 w-auto object-contain" 
+                          onError={(e) => {
+                            console.error("Erreur de chargement d'image:", entry.media_url);
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
                         />
                       ) : (
                         <p>Un média est déjà attaché. Sélectionnez un nouveau fichier pour le remplacer.</p>

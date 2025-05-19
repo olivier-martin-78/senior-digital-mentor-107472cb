@@ -8,8 +8,9 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Plus, Book, Calendar } from 'lucide-react';
+import { Plus, Book, Calendar, Image } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getPublicUrl } from '@/utils/storageUtils';
 
 const Diary = () => {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
@@ -94,6 +95,15 @@ const Diary = () => {
                   {entry.entry_date && format(parseISO(entry.entry_date), "d MMMM yyyy", { locale: fr })}
                 </div>
                 <h3 className="font-medium text-xl mb-2 text-tranches-charcoal">{entry.title}</h3>
+                
+                {entry.media_url && (
+                  <div className="mt-2 flex items-center text-sm text-gray-500">
+                    <Image className="h-4 w-4 mr-2" />
+                    {entry.media_type?.startsWith('image/') ? 'Photo attachée' : 
+                     entry.media_type?.startsWith('video/') ? 'Vidéo attachée' : 
+                     entry.media_type?.startsWith('audio/') ? 'Audio attaché' : 'Média attaché'}
+                  </div>
+                )}
                 
                 {entry.mood_rating && (
                   <div className="flex items-center mt-4">

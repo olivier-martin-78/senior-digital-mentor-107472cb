@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
+import { getPublicUrl } from '@/utils/storageUtils';
 
 const DiaryEntryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -139,15 +139,22 @@ const DiaryEntryPage = () => {
 
   // Render media based on type
   const renderMedia = () => {
-    if (!entry.media_url) return null;
+    if (!entry?.media_url) return null;
+    
+    // S'assurer que nous avons l'URL publique complète
+    const mediaUrl = getPublicUrl(entry.media_url);
     
     if (entry.media_type?.startsWith('image/')) {
       return (
         <div className="mt-6 rounded-lg overflow-hidden">
           <img 
-            src={entry.media_url} 
+            src={mediaUrl} 
             alt="Media" 
             className="w-full h-auto max-h-[500px] object-contain" 
+            onError={(e) => {
+              console.error("Erreur de chargement d'image:", mediaUrl);
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
         </div>
       );
@@ -155,9 +162,10 @@ const DiaryEntryPage = () => {
       return (
         <div className="mt-6 rounded-lg overflow-hidden">
           <video 
-            src={entry.media_url} 
+            src={mediaUrl} 
             controls 
             className="w-full max-h-[500px]"
+            onError={(e) => console.error("Erreur de chargement vidéo:", mediaUrl)}
           >
             Votre navigateur ne prend pas en charge la lecture vidéo.
           </video>
@@ -166,7 +174,12 @@ const DiaryEntryPage = () => {
     } else if (entry.media_type?.startsWith('audio/')) {
       return (
         <div className="mt-6">
-          <audio src={entry.media_url} controls className="w-full">
+          <audio 
+            src={mediaUrl} 
+            controls 
+            className="w-full"
+            onError={(e) => console.error("Erreur de chargement audio:", mediaUrl)}
+          >
             Votre navigateur ne prend pas en charge la lecture audio.
           </audio>
         </div>
@@ -176,7 +189,7 @@ const DiaryEntryPage = () => {
     return (
       <div className="mt-6">
         <a 
-          href={entry.media_url} 
+          href={mediaUrl} 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-tranches-sage hover:underline"
