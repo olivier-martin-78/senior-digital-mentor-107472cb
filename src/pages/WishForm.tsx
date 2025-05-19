@@ -36,6 +36,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
@@ -82,8 +83,65 @@ const WishForm = () => {
   
   const onSubmit = async (values: FormValues) => {
     try {
-      // Ici, on pourrait envoyer les données à une API
       console.log("Données du formulaire:", values);
+      
+      // Préparation du message pour l'email
+      const requestTypeText = values.requestType === 'other' && values.customRequestType 
+        ? values.customRequestType 
+        : {
+            'personal': 'Un souhait personnel',
+            'experience': 'Une expérience à vivre',
+            'service': 'Un service à recevoir',
+            'other': 'Autre type de demande'
+          }[values.requestType] || values.requestType;
+      
+      // Formatage du contenu du message pour l'email
+      let messageContent = `
+**Nouveau souhait: ${values.title}**
+
+**Type de demande:** ${requestTypeText}
+
+**Description:**
+${values.description}
+
+**Importance pour la personne:**
+${values.importance}
+
+**Besoins concrets:**
+${values.needs}`;
+
+      if (values.offering) {
+        messageContent += `\n\n**Ce que la personne propose en retour:**\n${values.offering}`;
+      }
+
+      if (values.date) {
+        const dateStr = format(values.date, "PPP", { locale: fr });
+        messageContent += `\n\n**Date souhaitée:** ${dateStr}`;
+      }
+
+      if (values.age || values.location) {
+        messageContent += "\n\n**Informations complémentaires:**";
+        if (values.age) messageContent += `\nÂge: ${values.age} ans`;
+        if (values.location) messageContent += `\nLieu: ${values.location}`;
+      }
+
+      if (values.attachmentUrl) {
+        messageContent += `\n\n**Lien fourni:** ${values.attachmentUrl}`;
+      }
+      
+      // Envoi du message via la fonction Edge de Supabase
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: values.firstName,
+          email: values.email || 'non.specifie@tranches-de-vie.com',
+          message: messageContent,
+          attachmentUrl: values.attachmentUrl
+        }
+      });
+      
+      if (error) {
+        throw new Error(`Erreur lors de l'envoi: ${error.message}`);
+      }
       
       toast({
         title: "Souhait envoyé !",
@@ -96,7 +154,7 @@ const WishForm = () => {
       console.error("Erreur lors de l'envoi du formulaire:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi de votre souhait.",
+        description: "Une erreur est survenue lors de l'envoi de votre souhait. Veuillez réessayer ultérieurement.",
         variant: "destructive",
       });
     }
@@ -446,3 +504,4 @@ const WishForm = () => {
 };
 
 export default WishForm;
+
