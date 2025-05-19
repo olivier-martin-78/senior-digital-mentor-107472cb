@@ -9,15 +9,47 @@ export const formatTime = (seconds: number): string => {
 };
 
 export const isStorageUrl = (url: string | null): boolean => {
-  return url ? url.includes('storage.googleapis.com') || url.includes('supabase') : false;
+  if (!url) return false;
+  
+  // Liste des domaines de stockage connus
+  const storageDomains = [
+    'storage.googleapis.com',
+    'supabase',
+    'cvcebcisijjmmmwuedcv.supabase.co'
+  ];
+  
+  return storageDomains.some(domain => url.includes(domain));
+};
+
+export const getAudioFileExtension = (url: string | null): string => {
+  if (!url) return '';
+  
+  const extensionMatch = url.match(/\.(mp3|wav|webm|aac|ogg)($|\?)/i);
+  return extensionMatch ? extensionMatch[1].toLowerCase() : 'webm'; // Par défaut webm si non détecté
+};
+
+export const validateAudioUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  
+  // Vérifier que l'URL est complète et contient un protocole
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    console.warn('URL audio invalide (manque protocole):', url);
+    return null;
+  }
+  
+  return url;
 };
 
 export const handleExportAudio = (audioUrl: string) => {
   try {
-    // Create a temporary anchor element to trigger download
+    if (!validateAudioUrl(audioUrl)) {
+      throw new Error("URL audio invalide");
+    }
+    
+    // Création d'un élément temporaire pour le téléchargement
     const downloadLink = document.createElement('a');
     downloadLink.href = audioUrl;
-    downloadLink.download = `reponse_vocale_${new Date().toISOString().slice(0, 10)}.webm`;
+    downloadLink.download = `reponse_vocale_${new Date().toISOString().slice(0, 10)}.${getAudioFileExtension(audioUrl)}`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -37,6 +69,40 @@ export const handleExportAudio = (audioUrl: string) => {
   }
 };
 
+// Fonction permettant de précharger l'audio pour vérifier sa validité
+export const preloadAudio = (audioUrl: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!validateAudioUrl(audioUrl)) {
+      console.error("URL audio invalide lors du préchargement:", audioUrl);
+      resolve(false);
+      return;
+    }
+    
+    const audio = new Audio();
+    
+    // Résoudre après un délai maximum pour éviter les blocages
+    const timeoutId = setTimeout(() => {
+      console.warn("Timeout du préchargement audio:", audioUrl);
+      resolve(false);
+    }, 5000);
+    
+    audio.onloadeddata = () => {
+      clearTimeout(timeoutId);
+      console.log("Audio préchargé avec succès:", audioUrl);
+      resolve(true);
+    };
+    
+    audio.onerror = () => {
+      clearTimeout(timeoutId);
+      console.error("Erreur lors du préchargement audio:", audioUrl);
+      resolve(false);
+    };
+    
+    audio.src = audioUrl;
+    audio.load();
+  });
+};
+
 export const uploadRecording = (
   blob: Blob, 
   userId: string | undefined, 
@@ -53,6 +119,15 @@ export const uploadRecording = (
   
   if (!userId) {
     console.error("Impossible de télécharger sans utilisateur authentifié");
+    if (onError) onError("Utilisateur non authentifié");
+    if (onUploadEnd) onUploadEnd();
+    return;
+  }
+  
+  if (!blob || blob.size === 0) {
+    console.error("Blob audio invalide (taille nulle)");
+    if (onError) onError("Enregistrement audio invalide");
+    if (onUploadEnd) onUploadEnd();
     return;
   }
   
@@ -67,7 +142,12 @@ export const uploadRecording = (
     questionId,
     (url: string) => {
       console.log("Audio téléchargé avec succès:", url);
-      onSuccess(url);
+      // Vérifier que l'URL est valide avant de la retourner
+      if (validateAudioUrl(url)) {
+        onSuccess(url);
+      } else {
+        if (onError) onError("L'URL de l'audio téléchargé est invalide");
+      }
     },
     (errorMessage: string) => {
       console.error("Erreur de téléchargement:", errorMessage);
