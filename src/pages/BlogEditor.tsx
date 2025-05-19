@@ -40,6 +40,11 @@ const BlogEditor = () => {
   const [newAlbumThumbnail, setNewAlbumThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  
+  // Nouveaux états pour la miniature de l'article
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
 
   // Fetch existing resources (albums, categories)
   useEffect(() => {
@@ -109,6 +114,7 @@ const BlogEditor = () => {
         setContent(data.content);
         setIsPublished(data.published);
         setAlbumId(data.album_id);
+        setCoverImage(data.cover_image || null);
 
         // Fetch media for this post
         const { data: mediaData, error: mediaError } = await supabase
@@ -152,6 +158,50 @@ const BlogEditor = () => {
       setLoading(false);
     }
   }, [id, user, hasRole, navigate, toast, isEditing]);
+
+  // Nouvelle fonction pour gérer le changement de miniature de l'article
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImageFile(file);
+      // Créer une URL pour la prévisualisation
+      const previewUrl = URL.createObjectURL(file);
+      setCoverImage(previewUrl);
+    }
+  };
+
+  // Fonction pour télécharger la miniature de l'article
+  const uploadCoverImage = async (postId: string): Promise<string | null> => {
+    if (!coverImageFile) return null;
+    
+    try {
+      setUploadingCoverImage(true);
+      const fileExt = coverImageFile.name.split('.').pop();
+      const filePath = `cover-images/${postId}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('blog-media')
+        .upload(filePath, coverImageFile);
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('blog-media')
+        .getPublicUrl(filePath);
+        
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Erreur lors du téléchargement de la miniature:', error);
+      toast({
+        title: "Erreur",
+        description: "La miniature n'a pas pu être téléchargée.",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploadingCoverImage(false);
+    }
+  };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -333,7 +383,8 @@ const BlogEditor = () => {
             content: content.trim(),
             published: publish || isPublished,
             album_id: albumId,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            cover_image: coverImage
           })
           .eq('id', post.id);
 
@@ -381,6 +432,22 @@ const BlogEditor = () => {
           .single();
 
         if (error) throw error;
+
+        // Télécharger la miniature maintenant que nous avons l'ID de l'article
+        if (coverImageFile) {
+          const uploadedCoverUrl = await uploadCoverImage(data.id);
+          
+          if (uploadedCoverUrl) {
+            const { error: updateError } = await supabase
+              .from('blog_posts')
+              .update({ cover_image: uploadedCoverUrl })
+              .eq('id', data.id);
+              
+            if (updateError) {
+              console.error('Erreur lors de la mise à jour de la miniature:', updateError);
+            }
+          }
+        }
 
         // Add categories
         if (selectedCategories.length > 0) {
@@ -595,6 +662,50 @@ const BlogEditor = () => {
               className="text-xl mt-1"
               placeholder="Titre de l'article"
             />
+          </div>
+
+          {/* Cover Image */}
+          <div className="mb-6">
+            <Label htmlFor="cover-image">Miniature de l'article</Label>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="relative w-32 h-32 border border-gray-300 rounded-md overflow-hidden">
+                {coverImage ? (
+                  <img 
+                    src={coverImage} 
+                    alt="Miniature de l'article" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <ImageIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+                {coverImage && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCoverImage(null);
+                      setCoverImageFile(null);
+                    }}
+                    className="absolute top-1 right-1 bg-white/80 hover:bg-white p-1 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div>
+                <Input
+                  id="cover-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverImageChange}
+                  className="max-w-xs"
+                  disabled={uploadingCoverImage}
+                />
+                <p className="text-xs text-gray-500 mt-1">Format recommandé: JPEG ou PNG, max 2MB</p>
+              </div>
+            </div>
           </div>
 
           {/* Album Selection */}
