@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
@@ -19,29 +19,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     startRecording,
     stopRecording,
     clearRecording,
+    recordingTime
   } = useAudioRecorder();
   
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioLoaded, setAudioLoaded] = useState(false);
-  
-  // Gérer le temps d'enregistrement
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setRecordingTime(0);
-    }
-    
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isRecording]);
+  const [audioLoaded, setAudioLoaded] = React.useState(false);
   
   // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
@@ -87,13 +68,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   // Notifier le parent quand l'audio change
   useEffect(() => {
     if (audioBlob) {
-      console.log("Audio blob disponible, envoi au composant parent");
+      console.log("Audio blob disponible, envoi au composant parent", audioBlob.size, "octets");
       onAudioChange(audioBlob);
     }
   }, [audioBlob, onAudioChange]);
   
   // Gérer le chargement audio
   const handleAudioLoaded = () => {
+    console.log("Audio chargé avec succès");
     setAudioLoaded(true);
   };
   

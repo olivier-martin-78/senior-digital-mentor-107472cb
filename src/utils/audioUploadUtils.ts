@@ -31,6 +31,17 @@ export const checkBucketAccess = async (): Promise<boolean> => {
 };
 
 /**
+ * Assurez-vous que toutes les fonctions de callback sont appelées même en cas d'erreur
+ */
+const safeCallback = (callback: Function, ...args: any[]) => {
+  try {
+    callback(...args);
+  } catch (error) {
+    console.error("Erreur lors de l'exécution du callback:", error);
+  }
+};
+
+/**
  * Télécharge un fichier audio vers Supabase Storage
  */
 export const uploadAudio = async (
@@ -44,22 +55,22 @@ export const uploadAudio = async (
   onUploadEnd: () => void
 ): Promise<void> => {
   // Validation des paramètres
-  if (!blob) {
-    onError("Aucun enregistrement audio à télécharger");
-    onUploadEnd();
+  if (!blob || blob.size === 0) {
+    safeCallback(onError, "Aucun enregistrement audio valide à télécharger");
+    safeCallback(onUploadEnd);
     return;
   }
   
   if (!userId) {
-    onError("Identifiant utilisateur manquant");
-    onUploadEnd();
+    safeCallback(onError, "Identifiant utilisateur manquant");
+    safeCallback(onUploadEnd);
     return;
   }
   
+  safeCallback(onUploadStart);
+  console.log(`Début du téléchargement audio pour la question ${questionId}...`);
+  
   try {
-    onUploadStart();
-    console.log(`Début du téléchargement audio pour la question ${questionId}...`);
-    
     // Vérification de l'accès au bucket
     const bucketAccessible = await checkBucketAccess();
     if (!bucketAccessible) {
@@ -67,10 +78,11 @@ export const uploadAudio = async (
     }
     
     // Création d'un nom de fichier unique
-    const fileName = `${userId}/${chapterId}_${questionId}_${Date.now()}.webm`;
+    const timestamp = Date.now();
+    const fileName = `${userId}/${chapterId}_${questionId}_${timestamp}.webm`;
     console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${fileName}...`);
     
-    // Téléchargement du fichier audio avec vérification explicite des erreurs
+    // Téléchargement du fichier audio
     const { data, error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .upload(fileName, blob, {
@@ -90,7 +102,7 @@ export const uploadAudio = async (
     const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
     console.log('URL publique obtenue:', publicUrl);
     
-    onSuccess(publicUrl);
+    safeCallback(onSuccess, publicUrl);
   } catch (error: any) {
     console.error('Erreur lors du téléchargement audio:', error);
     
@@ -99,10 +111,10 @@ export const uploadAudio = async (
       errorMessage += ` Détail: ${error.message}`;
     }
     
-    onError(errorMessage);
+    safeCallback(onError, errorMessage);
   } finally {
     console.log(`Fin du processus de téléchargement pour la question ${questionId}`);
-    onUploadEnd();
+    safeCallback(onUploadEnd);
   }
 };
 
@@ -115,7 +127,7 @@ export const deleteAudio = async (
   onError: (message: string) => void
 ): Promise<void> => {
   if (!audioUrl) {
-    onError("URL audio non valide");
+    safeCallback(onError, "URL audio non valide");
     return;
   }
   
@@ -133,7 +145,7 @@ export const deleteAudio = async (
     const filePath = decodeURIComponent(matches[1]);
     console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
     
-    // Suppression du fichier avec vérification explicite d'erreur
+    // Suppression du fichier
     const { error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .remove([filePath]);
@@ -144,9 +156,9 @@ export const deleteAudio = async (
     }
     
     console.log('Fichier supprimé avec succès');
-    onSuccess();
+    safeCallback(onSuccess);
   } catch (error: any) {
     console.error('Erreur lors de la suppression:', error);
-    onError(`Impossible de supprimer l'audio. ${error.message || ''}`);
+    safeCallback(onError, `Impossible de supprimer l'audio. ${error.message || ''}`);
   }
 };
