@@ -43,6 +43,21 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     }
   };
   
+  // Vérifier si le bucket existe avant d'essayer de télécharger
+  const checkBucketExists = async (bucketName: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.storage.getBucket(bucketName);
+      if (error) {
+        console.error('Erreur lors de la vérification du bucket:', error);
+        return false;
+      }
+      return !!data;
+    } catch (error) {
+      console.error('Exception lors de la vérification du bucket:', error);
+      return false;
+    }
+  };
+  
   // Fonction pour télécharger l'audio vers Supabase
   const uploadAudio = async (blob: Blob) => {
     if (!blob) return;
@@ -50,9 +65,22 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
     try {
       setIsUploading(true);
       
+      // Vérifier si le bucket existe
+      const bucketExists = await checkBucketExists('life_story_audios');
+      
+      if (!bucketExists) {
+        toast({
+          title: 'Erreur de configuration',
+          description: 'Le bucket "life_story_audios" n\'existe pas. Veuillez contacter l\'administrateur.',
+          variant: 'destructive',
+        });
+        setIsUploading(false);
+        return;
+      }
+      
       // Créer un nom de fichier unique avec l'ID de la question
       const fileName = `${chapterId}_${question.id}_${Date.now()}.webm`;
-      const filePath = `life_story_audios/${fileName}`;
+      const filePath = `${fileName}`;
       
       // Télécharger le fichier
       const { data, error } = await supabase.storage
@@ -64,6 +92,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         });
       
       if (error) {
+        console.error('Erreur détaillée lors du téléchargement:', JSON.stringify(error));
         throw error;
       }
       
@@ -82,7 +111,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       console.error('Erreur lors du téléchargement de l\'audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder l\'enregistrement audio.',
+        description: 'Impossible de sauvegarder l\'enregistrement audio. Vérifiez que le bucket existe et que vous avez les permissions.',
         variant: 'destructive',
       });
     } finally {
@@ -99,24 +128,27 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       const fileUrl = question.audioUrl;
       const filePathMatch = fileUrl.match(/life_story_audios\/(.+)/);
       
-      if (filePathMatch && filePathMatch[0]) {
-        const filePath = filePathMatch[0];
-        
-        // Supprimer le fichier de Supabase Storage
-        const { error } = await supabase.storage
-          .from('life_story_audios')
-          .remove([filePath]);
-        
-        if (error) throw error;
-        
-        // Mettre à jour la question pour supprimer la référence à l'audio
-        onAudioUrlChange(chapterId, question.id, null);
-        
-        toast({
-          title: 'Audio supprimé',
-          description: 'L\'enregistrement audio a été supprimé avec succès.',
-        });
+      if (!filePathMatch || !filePathMatch[1]) {
+        console.error('Impossible d\'extraire le chemin du fichier:', fileUrl);
+        throw new Error('Format d\'URL invalide');
       }
+      
+      const filePath = filePathMatch[1];
+      
+      // Supprimer le fichier de Supabase Storage
+      const { error } = await supabase.storage
+        .from('life_story_audios')
+        .remove([filePath]);
+      
+      if (error) throw error;
+      
+      // Mettre à jour la question pour supprimer la référence à l'audio
+      onAudioUrlChange(chapterId, question.id, null);
+      
+      toast({
+        title: 'Audio supprimé',
+        description: 'L\'enregistrement audio a été supprimé avec succès.',
+      });
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'audio:', error);
       toast({
@@ -195,3 +227,4 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
 };
 
 export default QuestionItem;
+
