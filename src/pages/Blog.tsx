@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,7 @@ const Blog = () => {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        // Fetch albums - now including the profiles data
+        // Fetch albums - maintenant nous n'obtenons que les albums auxquels l'utilisateur a accès
         const { data: albumsData, error: albumsError } = await supabase
           .from('blog_albums')
           .select(`*, profiles:author_id(*)`)
@@ -36,6 +37,8 @@ const Blog = () => {
 
         if (!albumsError && albumsData) {
           setAlbums(albumsData as BlogAlbum[]);
+        } else if (albumsError) {
+          console.error('Erreur lors du chargement des albums:', albumsError);
         }
 
         // Fetch categories
@@ -46,6 +49,8 @@ const Blog = () => {
 
         if (!categoriesError && categoriesData) {
           setCategories(categoriesData);
+        } else if (categoriesError) {
+          console.error('Erreur lors du chargement des catégories:', categoriesError);
         }
       } catch (error) {
         console.error('Error fetching filters:', error);
@@ -53,7 +58,7 @@ const Blog = () => {
     };
 
     fetchFilters();
-  }, []);
+  }, [user?.id]); // Ajouter user?.id comme dépendance pour recharger lorsque l'utilisateur change
 
   // Fetch posts with filters
   useEffect(() => {

@@ -15,11 +15,12 @@ import Profile from "./pages/Profile";
 import Unauthorized from "./pages/Unauthorized";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAlbums from "./pages/admin/AdminAlbums"; // Nouvelle page
 import Diary from "./pages/Diary";
 import DiaryNew from "./pages/DiaryNew";
 import DiaryEntry from "./pages/DiaryEntry";
 import DiaryEdit from "./pages/DiaryEdit";
-import LifeStory from "./pages/LifeStory"; // Nouvelle page
+import LifeStory from "./pages/LifeStory";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -45,7 +46,7 @@ const App = () => (
               <Route path="/diary/new" element={<DiaryNew />} />
               <Route path="/diary/:id" element={<DiaryEntry />} />
               <Route path="/diary/edit/:id" element={<DiaryEdit />} />
-              <Route path="/life-story" element={<LifeStory />} /> {/* Nouvelle route */}
+              <Route path="/life-story" element={<LifeStory />} />
             </Route>
 
             {/* Routes pour les éditeurs et admins */}
@@ -58,6 +59,7 @@ const App = () => (
             {/* Routes uniquement pour les admins */}
             <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/albums" element={<AdminAlbums />} /> {/* Nouvelle route */}
             </Route>
 
             {/* Route 404 */}

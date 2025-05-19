@@ -1,142 +1,174 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { UserCircle, Book, BookOpen, ChevronDown } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
 
 const Header = () => {
-  const { user, profile, signOut, hasRole } = useAuth();
-  
+  const { isAuthenticated, user, logout, hasRole } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const getInitials = () => {
+    if (!user?.email) return '';
+    return user.email.substring(0, 2).toUpperCase();
+  };
+
   return (
-    <header className="w-full fixed top-0 left-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-serif text-tranches-charcoal">
-          Tranches de vie
+    <header className="fixed top-0 left-0 right-0 bg-white z-30 border-b border-gray-100">
+      <div className="container mx-auto flex justify-between items-center h-16 px-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
         </Link>
-        
-        <div className="flex items-center space-x-4">
-          <Link to="/" className="px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
+
+        {/* Navigation principale */}
+        <nav className="hidden md:flex space-x-8">
+          <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Accueil
           </Link>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
-              Blog <ChevronDown className="h-4 w-4 ml-1" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem asChild>
-                <Link to="/blog" className="w-full">
-                  Tous les articles
-                </Link>
-              </DropdownMenuItem>
-              {(user && (hasRole('admin') || hasRole('editor'))) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/blog/new" className="w-full">
-                      Nouvel article
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {user && (
+          <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
+            Blog
+          </Link>
+          {isAuthenticated && (
             <>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
-                  <Book className="w-4 h-4 mr-1" /> Journal <ChevronDown className="h-4 w-4 ml-1" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem asChild>
-                    <Link to="/diary" className="w-full">
-                      Mon journal
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/diary/new" className="w-full">
-                      Nouvelle entrée
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
-                  <BookOpen className="w-4 h-4 mr-1" /> Histoire de vie <ChevronDown className="h-4 w-4 ml-1" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem asChild>
-                    <Link to="/life-story" className="w-full">
-                      Mon histoire
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              {(hasRole('admin') || hasRole('editor')) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
-                    Administration <ChevronDown className="h-4 w-4 ml-1" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/posts" className="w-full">
-                        Gérer les articles
-                      </Link>
-                    </DropdownMenuItem>
-                    {hasRole('admin') && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/users" className="w-full">
-                          Gérer les utilisateurs
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              <Link to="/diary" className="text-gray-600 hover:text-tranches-sage transition-colors">
+                Journal
+              </Link>
+              <Link to="/life-story" className="text-gray-600 hover:text-tranches-sage transition-colors">
+                Histoire de vie
+              </Link>
             </>
           )}
-          
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center px-4 py-2 hover:bg-slate-100 rounded-md text-tranches-charcoal">
-                <span className="flex items-center gap-2">
-                  <UserCircle className="w-5 h-5" />
-                  {profile?.display_name || user.email}
-                </span>
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full">
-                    Mon profil
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => signOut()}
-                  className="text-red-600"
-                >
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        </nav>
+
+        {/* Menu utilisateur */}
+        <div className="flex items-center space-x-4">
+          {isAuthenticated ? (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user?.avatar_url || undefined} />
+                      <AvatarFallback>{getInitials()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">Profil</Link>
+                  </DropdownMenuItem>
+
+                  {/* Menu admin */}
+                  {hasRole('admin') && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Administration</DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/users">Utilisateurs</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/posts">Articles</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/albums">Albums</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  {/* Menu éditeur */}
+                  {!hasRole('admin') && hasRole('editor') && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Édition</DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/posts">Articles</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
-            <Link to="/auth" className="bg-tranches-sage text-white hover:bg-tranches-sage/90 px-4 py-2 rounded-md">
-              Se connecter
-            </Link>
+            <Button asChild variant="outline">
+              <Link to="/auth">Se connecter</Link>
+            </Button>
           )}
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="icon" variant="ghost" className="md:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <div className="grid gap-4 h-full">
+                <Link to="/" className="flex items-center space-x-2">
+                  <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
+                </Link>
+                <nav className="grid gap-6 text-lg">
+                  <Link to="/" className="hover:text-tranches-sage transition-colors">
+                    Accueil
+                  </Link>
+                  <Link to="/blog" className="hover:text-tranches-sage transition-colors">
+                    Blog
+                  </Link>
+                  {isAuthenticated && (
+                    <>
+                      <Link to="/diary" className="hover:text-tranches-sage transition-colors">
+                        Journal
+                      </Link>
+                      <Link to="/life-story" className="hover:text-tranches-sage transition-colors">
+                        Histoire de vie
+                      </Link>
+                      <Link to="/profile" className="hover:text-tranches-sage transition-colors">
+                        Profil
+                      </Link>
+                      {hasRole('admin') && (
+                        <>
+                          <Link to="/admin/users" className="hover:text-tranches-sage transition-colors">
+                            Utilisateurs
+                          </Link>
+                          <Link to="/admin/posts" className="hover:text-tranches-sage transition-colors">
+                            Articles
+                          </Link>
+                           <Link to="/admin/albums" className="hover:text-tranches-sage transition-colors">
+                            Albums
+                          </Link>
+                        </>
+                      )}
+                      {!hasRole('admin') && hasRole('editor') && (
+                        <Link to="/admin/posts" className="hover:text-tranches-sage transition-colors">
+                          Articles
+                        </Link>
+                      )}
+                      <Button variant="outline" onClick={handleLogout}>
+                        Déconnexion
+                      </Button>
+                    </>
+                  )}
+                  {!isAuthenticated && (
+                    <Button asChild variant="outline">
+                      <Link to="/auth">Se connecter</Link>
+                    </Button>
+                  )}
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
