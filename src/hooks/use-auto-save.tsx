@@ -28,17 +28,19 @@ export function useAutoSave({
   const [data, setData] = useState<LifeStory>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   
   // Référence à la dernière version des données pour éviter les problèmes de stale closure
   const dataRef = useRef(data);
   useEffect(() => {
     dataRef.current = data;
+    setHasChanges(true); // Marquer comme modifié quand les données changent
   }, [data]);
   
   const saveData = useCallback(async () => {
     const currentData = dataRef.current;
     
-    if (!currentData || !userId) return;
+    if (!currentData || !userId || !hasChanges) return;
     
     setIsSaving(true);
     try {
@@ -58,11 +60,10 @@ export function useAutoSave({
           .from('life_stories')
           .update(savePayload)
           .eq('id', currentData.id)
-          .select()
-          .single();
+          .select();
           
         if (error) throw error;
-        result = data;
+        result = data[0]; // Modification pour récupérer le premier élément du tableau
       } else {
         // Création d'une nouvelle histoire
         savePayload.created_at = new Date().toISOString();
@@ -71,20 +72,26 @@ export function useAutoSave({
         const { data, error } = await (supabase as any)
           .from('life_stories')
           .insert(savePayload)
-          .select()
-          .single();
+          .select();
           
         if (error) throw error;
-        result = data;
+        result = data[0]; // Modification pour récupérer le premier élément du tableau
       }
       
       // Mettre à jour les données locales avec l'ID retourné
       setData(prev => ({ ...prev, id: result.id }));
       setLastSaved(new Date());
+      setHasChanges(false); // Réinitialiser le marqueur de changement
       
       if (onSaveSuccess) {
         onSaveSuccess(result);
       }
+
+      // Notification de sauvegarde réussie
+      toast({
+        title: "Sauvegarde réussie",
+        description: "Vos réponses ont été sauvegardées avec succès.",
+      });
       
     } catch (error) {
       console.error("Erreur lors de la sauvegarde automatique:", error);
@@ -96,20 +103,40 @@ export function useAutoSave({
     } finally {
       setIsSaving(false);
     }
-  }, [userId, onSaveSuccess]);
+  }, [userId, onSaveSuccess, hasChanges]);
   
   // Sauvegarde périodique
   useEffect(() => {
+    // Première sauvegarde après un délai court pour les données existantes
+    const initialTimer = setTimeout(() => {
+      if (hasChanges) {
+        saveData();
+      }
+    }, 3000);
+    
+    // Sauvegarde périodique régulière
     const timer = setInterval(() => {
-      saveData();
+      if (hasChanges) {
+        saveData();
+      }
     }, interval);
     
-    return () => clearInterval(timer);
-  }, [saveData, interval]);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(timer);
+      // Sauvegarde finale lorsque le composant est démonté
+      if (hasChanges) {
+        saveData();
+      }
+    };
+  }, [saveData, interval, hasChanges]);
   
   // Fonction pour mettre à jour les données
   const updateData = useCallback((newData: Partial<LifeStory>) => {
-    setData(prev => ({ ...prev, ...newData }));
+    setData(prev => {
+      const updated = { ...prev, ...newData };
+      return updated;
+    });
   }, []);
   
   // Fonction pour forcer une sauvegarde immédiate

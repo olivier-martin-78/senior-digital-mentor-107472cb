@@ -28,22 +28,22 @@ const LifeStory: React.FC = () => {
           .from('life_stories')
           .select('*')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .limit(1); // On récupère seulement la première histoire
           
         if (error) throw error;
         
-        if (data) {
+        if (data && data.length > 0) {
           // Nous devons nous assurer que la structure des données correspond à LifeStoryType
           // Conversion explicite pour s'assurer que les données correspondent à notre type
           const lifeStory: LifeStoryType = {
-            id: data.id,
-            user_id: data.user_id,
-            title: data.title,
-            chapters: Array.isArray(data.chapters) ? data.chapters : [],
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-            last_edited_chapter: data.last_edited_chapter,
-            last_edited_question: data.last_edited_question,
+            id: data[0].id,
+            user_id: data[0].user_id,
+            title: data[0].title,
+            chapters: Array.isArray(data[0].chapters) ? data[0].chapters : [],
+            created_at: data[0].created_at,
+            updated_at: data[0].updated_at,
+            last_edited_chapter: data[0].last_edited_chapter,
+            last_edited_question: data[0].last_edited_question,
           };
           
           setStory(lifeStory);
