@@ -29,7 +29,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles = [] }) =
         console.log(`User has role ${role}:`, hasRole(role));
       });
     }
-  }, [isLoading, user, session, location.pathname, hasRole, requiredRoles]);
+
+    // Move toast notifications into useEffect to avoid re-renders during rendering
+    if (!isLoading) {
+      if (!user || !session) {
+        toast({
+          title: "Connexion requise",
+          description: "Veuillez vous connecter pour accéder à cette page.",
+          variant: "default"
+        });
+      } else if (requiredRoles.length > 0 && !requiredRoles.some(role => hasRole(role))) {
+        toast({
+          title: "Accès refusé",
+          description: "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isLoading, user, session, location.pathname, hasRole, requiredRoles, toast]);
 
   // Si l'authentification est en cours de chargement, afficher un loader
   if (isLoading) {
@@ -43,26 +60,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles = [] }) =
   // Vérifier si l'utilisateur est connecté
   if (!user || !session) {
     console.log('ProtectedRoute: Redirecting to auth - No user or session');
-    
-    toast({
-      title: "Connexion requise",
-      description: "Veuillez vous connecter pour accéder à cette page.",
-      variant: "default"
-    });
-    
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Vérifier si l'utilisateur a les rôles requis
   if (requiredRoles.length > 0 && !requiredRoles.some(role => hasRole(role))) {
     console.log('ProtectedRoute: Redirecting to unauthorized - Missing required role');
-    
-    toast({
-      title: "Accès refusé",
-      description: "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
-      variant: "destructive"
-    });
-    
     return <Navigate to="/unauthorized" replace />;
   }
 
