@@ -96,14 +96,18 @@ serve(async (req: Request) => {
     
     // Construire le contenu de l'email
     const emailSubject = `Nouvelle demande de contact de ${name}`;
-    const emailContent = `
+    let emailContent = `
       <h1>Nouvelle demande de contact</h1>
       <p><strong>Nom:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Message:</strong></p>
       <p>${message.replace(/\n/g, '<br/>')}</p>
-      ${attachmentUrl ? `<p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}">Voir la pièce jointe</a></p>` : ''}
     `;
+    
+    // Ajouter le lien de la pièce jointe si elle existe
+    if (attachmentUrl) {
+      emailContent += `<p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}">Voir la pièce jointe</a></p>`;
+    }
     
     // Envoyer l'email à tous les administrateurs concernés
     const emailPromises = adminProfiles.map(admin => {

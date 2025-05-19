@@ -33,23 +33,50 @@ const Footer = () => {
     try {
       // Upload attachment if provided
       let attachmentUrl = null;
+      
       if (attachment) {
-        const fileExt = attachment.name.split('.').pop();
-        const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        
-        const { error: uploadError, data } = await supabase.storage
-          .from('contact-attachments')
-          .upload(filePath, attachment);
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('contact-attachments')
-          .getPublicUrl(filePath);
+        try {
+          const fileExt = attachment.name.split('.').pop();
+          const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           
-        attachmentUrl = publicUrl;
+          // Vérifier d'abord si le bucket existe
+          const { data: buckets, error: bucketError } = await supabase.storage
+            .listBuckets();
+            
+          if (bucketError) {
+            console.error('Erreur lors de la vérification des buckets:', bucketError);
+            throw bucketError;
+          }
+          
+          const contactAttachmentsBucketExists = buckets.some(b => b.name === 'contact-attachments');
+          
+          if (!contactAttachmentsBucketExists) {
+            console.warn('Le bucket contact-attachments n\'existe pas, envoi sans pièce jointe.');
+          } else {
+            // Le bucket existe, on peut télécharger le fichier
+            const { error: uploadError, data } = await supabase.storage
+              .from('contact-attachments')
+              .upload(filePath, attachment);
+  
+            if (uploadError) {
+              throw uploadError;
+            }
+  
+            const { data: { publicUrl } } = supabase.storage
+              .from('contact-attachments')
+              .getPublicUrl(filePath);
+              
+            attachmentUrl = publicUrl;
+          }
+        } catch (error) {
+          console.error('Erreur lors du téléchargement de la pièce jointe:', error);
+          // On continue sans pièce jointe plutôt que de bloquer l'envoi du message
+          toast({
+            title: "Pièce jointe ignorée",
+            description: "Impossible d'envoyer la pièce jointe. Votre message sera envoyé sans pièce jointe.",
+            variant: "warning"
+          });
+        }
       }
       
       // Send email using edge function
