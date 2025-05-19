@@ -163,7 +163,7 @@ const Blog = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Blog</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">Albums</h1>
           {(hasRole('admin') || hasRole('editor')) && (
             <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
               <Link to="/blog/new">

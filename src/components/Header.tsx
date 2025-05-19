@@ -34,7 +34,7 @@ const Header = () => {
             Accueil
           </Link>
           <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
-            Blog
+            Albums
           </Link>
           {session && (
             <>
@@ -125,7 +125,7 @@ const Header = () => {
                     Accueil
                   </Link>
                   <Link to="/blog" className="hover:text-tranches-sage transition-colors">
-                    Blog
+                    Albums
                   </Link>
                   {session && (
                     <>

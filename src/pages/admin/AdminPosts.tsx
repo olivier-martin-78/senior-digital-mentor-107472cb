@@ -383,7 +383,7 @@ const AdminPosts = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion du blog</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des Albums</h1>
           {activeTab === "posts" && (
             <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
               <Link to="/blog/new">
