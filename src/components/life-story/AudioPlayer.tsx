@@ -38,6 +38,7 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
             variant: 'destructive',
             duration: 3000
           });
+          setIsDeleting(false);
         }
       );
     } catch (error) {
@@ -48,7 +49,6 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
         variant: 'destructive',
         duration: 3000
       });
-    } finally {
       setIsDeleting(false);
     }
   };
@@ -56,6 +56,10 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
   const handleAudioError = () => {
     console.error(`Erreur de chargement audio pour l'URL: ${audioUrl}`);
     setAudioError(true);
+  };
+
+  const handleAudioLoad = () => {
+    console.log(`Audio chargé avec succès: ${audioUrl}`);
   };
 
   return (
@@ -72,6 +76,7 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
           controls 
           className="w-full mb-2" 
           onError={handleAudioError}
+          onLoadedData={handleAudioLoad}
         />
       )}
       

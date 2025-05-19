@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
-import { Spinner } from '@/components/ui/spinner';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 
 interface VoiceRecorderProps {
@@ -24,7 +22,9 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   } = useAudioRecorder();
   
   const [recordingTime, setRecordingTime] = useState(0);
+  const [audioLoaded, setAudioLoaded] = useState(false);
   
+  // Gérer le temps d'enregistrement
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
@@ -43,12 +43,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     };
   }, [isRecording]);
   
+  // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // Gérer l'export audio
   const handleExportAudio = () => {
     if (audioBlob && audioUrl) {
       try {
@@ -75,10 +77,36 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
   
+  // Gérer la suppression de l'audio
+  const handleClearRecording = () => {
+    clearRecording();
+    setAudioLoaded(false);
+    onAudioChange(null);
+  };
+  
   // Notifier le parent quand l'audio change
   useEffect(() => {
-    onAudioChange(audioBlob);
+    if (audioBlob) {
+      console.log("Audio blob disponible, envoi au composant parent");
+      onAudioChange(audioBlob);
+    }
   }, [audioBlob, onAudioChange]);
+  
+  // Gérer le chargement audio
+  const handleAudioLoaded = () => {
+    setAudioLoaded(true);
+  };
+  
+  // Gérer l'erreur audio
+  const handleAudioError = () => {
+    console.error("Erreur de chargement audio");
+    setAudioLoaded(false);
+    toast({
+      title: "Erreur audio",
+      description: "Impossible de lire l'enregistrement audio",
+      variant: "destructive",
+    });
+  };
   
   return (
     <div className="border rounded-md p-4 bg-gray-50">
@@ -107,6 +135,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               variant="outline" 
               size="sm" 
               onClick={startRecording}
+              disabled={isRecording}
             >
               <Mic className="w-4 h-4 mr-1" /> Enregistrer
             </Button>
@@ -116,26 +145,34 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       
       {audioUrl && (
         <div className="mb-4">
-          <audio src={audioUrl} controls className="w-full" />
+          <audio 
+            src={audioUrl} 
+            controls 
+            className="w-full" 
+            onLoadedData={handleAudioLoaded}
+            onError={handleAudioError}
+          />
           
           <div className="flex mt-2 space-x-2">
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={clearRecording}
+              onClick={handleClearRecording}
               className="text-red-500 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 className="w-4 h-4 mr-1" /> Supprimer
             </Button>
             
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleExportAudio}
-              className="ml-auto"
-            >
-              <Download className="w-4 h-4 mr-1" /> Exporter l'audio
-            </Button>
+            {audioLoaded && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleExportAudio}
+                className="ml-auto"
+              >
+                <Download className="w-4 h-4 mr-1" /> Exporter l'audio
+              </Button>
+            )}
           </div>
         </div>
       )}

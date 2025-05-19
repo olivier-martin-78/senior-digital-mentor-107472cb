@@ -68,9 +68,9 @@ export const uploadAudio = async (
     
     // Création d'un nom de fichier unique
     const fileName = `${userId}/${chapterId}_${questionId}_${Date.now()}.webm`;
-    console.log(`Téléchargement vers ${AUDIO_BUCKET_NAME}/${fileName}`);
+    console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${fileName}...`);
     
-    // Téléchargement du fichier audio
+    // Téléchargement du fichier audio avec vérification explicite des erreurs
     const { data, error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .upload(fileName, blob, {
@@ -84,9 +84,11 @@ export const uploadAudio = async (
       throw new Error(`Erreur de téléchargement: ${error.message}`);
     }
     
+    console.log('Téléchargement réussi, récupération de l\'URL publique...');
+    
     // Récupération de l'URL publique
     const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
-    console.log('Téléchargement réussi, URL:', publicUrl);
+    console.log('URL publique obtenue:', publicUrl);
     
     onSuccess(publicUrl);
   } catch (error: any) {
@@ -131,7 +133,7 @@ export const deleteAudio = async (
     const filePath = decodeURIComponent(matches[1]);
     console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
     
-    // Suppression du fichier
+    // Suppression du fichier avec vérification explicite d'erreur
     const { error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .remove([filePath]);

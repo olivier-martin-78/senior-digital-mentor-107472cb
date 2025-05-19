@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 interface AudioRecorderHook {
@@ -19,6 +19,21 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  // Effet de nettoyage lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      // Libération des ressources lors du démontage
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
   
   const startRecording = useCallback(async () => {
     try {
@@ -108,8 +123,6 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     setAudioBlob(null);
     setAudioUrl(null);
   }, [audioUrl]);
-  
-  // Nettoyage lors du démontage du composant (implicite via l'utilisation de refs)
   
   return {
     isRecording,
