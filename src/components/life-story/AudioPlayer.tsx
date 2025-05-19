@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash, AlertCircle, RefreshCw } from 'lucide-react';
+import { Trash, AlertCircle, RefreshCw, Play, Pause } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { deleteAudio } from '@/utils/audioUploadUtils';
 import { Spinner } from '@/components/ui/spinner';
 import { validateAudioUrl, preloadAudio } from './utils/audioUtils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -21,6 +22,10 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [isValidUrl, setIsValidUrl] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isMobile = useIsMobile();
   
   // Vérifier si l'URL est valide
   useEffect(() => {
@@ -47,6 +52,62 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
       checkAudio();
     }
   }, [audioUrl, isRetrying]);
+  
+  // Initialiser l'audio
+  useEffect(() => {
+    if (!isValidUrl || audioError) return;
+    
+    const audio = new Audio(audioUrl);
+    audio.preload = "metadata";
+    audioRef.current = audio;
+    
+    const onLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setAudioLoaded(true);
+      setAudioError(false);
+    };
+    
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+    
+    const onPlay = () => {
+      setIsPlaying(true);
+    };
+    
+    const onPause = () => {
+      setIsPlaying(false);
+    };
+    
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    
+    const onError = () => {
+      console.error(`Erreur de chargement audio pour l'URL: ${audioUrl}`);
+      setAudioError(true);
+      setAudioLoaded(false);
+    };
+    
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+    
+    return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+      audio.pause();
+      audio.src = '';
+    };
+  }, [audioUrl, isValidUrl, audioError]);
   
   const handleDeleteAudio = async () => {
     if (isDeleting) return;
@@ -87,20 +148,36 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
     }
   };
   
-  const handleAudioError = () => {
-    console.error(`Erreur de chargement audio pour l'URL: ${audioUrl}`);
-    setAudioError(true);
-    setAudioLoaded(false);
-  };
-
-  const handleAudioLoad = () => {
-    console.log(`Audio chargé avec succès: ${audioUrl}`);
-    setAudioLoaded(true);
-    setAudioError(false);
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch((error) => {
+        console.error("Erreur lors de la lecture:", error);
+        setAudioError(true);
+        toast({
+          title: "Erreur de lecture",
+          description: "Impossible de démarrer la lecture audio. Veuillez réessayer.",
+          variant: "destructive"
+        });
+      });
+    }
   };
   
-  const handlePlayStateChange = (e: React.SyntheticEvent<HTMLAudioElement>) => {
-    setIsPlaying(!e.currentTarget.paused);
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    audioRef.current.currentTime = newTime;
+  };
+  
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
   
   const handleRetryLoad = () => {
@@ -151,21 +228,51 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
           </Button>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative mb-3">
           {!audioLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-60 z-10 rounded">
               <Spinner className="h-6 w-6 border-gray-500" />
             </div>
           )}
-          <audio 
-            src={audioUrl} 
-            controls 
-            className={`w-full mb-3 ${!audioLoaded ? 'opacity-0' : ''}`}
-            onError={handleAudioError}
-            onLoadedData={handleAudioLoad}
-            onPlay={handlePlayStateChange}
-            onPause={handlePlayStateChange}
-          />
+          
+          {isMobile && audioLoaded ? (
+            <div className="p-3 border rounded-md bg-white">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={handlePlayPause}
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                <div className="w-full">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 100}
+                    value={currentTime}
+                    className="w-full accent-blue-600"
+                    onChange={handleSliderChange}
+                  />
+                </div>
+                <div className="text-xs text-gray-500 min-w-[40px] text-right">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <audio 
+              src={audioUrl} 
+              controls 
+              className={`w-full ${!audioLoaded ? 'opacity-0' : ''}`}
+              onError={() => setAudioError(true)}
+              onLoadedData={() => setAudioLoaded(true)}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+            />
+          )}
         </div>
       )}
       

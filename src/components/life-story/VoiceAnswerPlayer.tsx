@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash, Download, AlertCircle } from 'lucide-react';
+import { Trash, Download, AlertCircle, Play, Pause } from 'lucide-react';
 import { handleExportAudio, validateAudioUrl, preloadAudio } from './utils/audioUtils';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VoiceAnswerPlayerProps {
   audioUrl: string;
@@ -18,7 +19,10 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isMobile = useIsMobile();
   
   // Vérifier et précharger l'audio
   useEffect(() => {
@@ -57,32 +61,98 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     };
   }, [audioUrl]);
   
-  const handleAudioPlay = () => {
-    setIsPlaying(true);
-  };
-  
-  const handleAudioPause = () => {
-    setIsPlaying(false);
-  };
-  
-  const handleAudioEnded = () => {
-    setIsPlaying(false);
-  };
-  
-  const handleAudioError = () => {
-    console.error("Erreur de lecture audio:", audioUrl);
-    setHasError(true);
-    setIsLoading(false);
+  // Initialiser l'audio
+  useEffect(() => {
+    const audio = new Audio(audioUrl);
+    audio.preload = "metadata";
+    audioRef.current = audio;
     
-    toast({
-      title: "Erreur de lecture",
-      description: "Impossible de lire cet enregistrement audio. Il pourrait être corrompu ou inaccessible.",
-      variant: "destructive"
-    });
+    const onLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setIsLoading(false);
+    };
+    
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+    
+    const onPlay = () => {
+      setIsPlaying(true);
+    };
+    
+    const onPause = () => {
+      setIsPlaying(false);
+    };
+    
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    
+    const onError = () => {
+      console.error("Erreur de lecture audio:", audioUrl);
+      setHasError(true);
+      setIsLoading(false);
+      
+      toast({
+        title: "Erreur de lecture",
+        description: "Impossible de lire cet enregistrement audio. Il pourrait être corrompu ou inaccessible.",
+        variant: "destructive"
+      });
+    };
+    
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+    
+    return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+      audio.pause();
+      audio.src = '';
+    };
+  }, [audioUrl]);
+  
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch((error) => {
+        console.error("Erreur lors de la lecture:", error);
+        toast({
+          title: "Erreur de lecture",
+          description: "Impossible de démarrer la lecture audio. Veuillez réessayer.",
+          variant: "destructive"
+        });
+      });
+    }
+  };
+  
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    audioRef.current.currentTime = newTime;
+  };
+  
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
   
   const handleDelete = () => {
-    if (audioRef.current && !audioRef.current.paused) {
+    if (audioRef.current) {
       audioRef.current.pause();
     }
     onDelete();
@@ -117,16 +187,45 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
             <span>Impossible de charger l'enregistrement audio. Essayez de rafraîchir la page.</span>
           </div>
         ) : (
-          <audio 
-            ref={audioRef}
-            src={audioUrl} 
-            controls 
-            className={`w-full ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity rounded-md`}
-            onPlay={handleAudioPlay}
-            onPause={handleAudioPause}
-            onEnded={handleAudioEnded}
-            onError={handleAudioError}
-          />
+          <div className={`rounded-md border border-gray-200 p-3 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
+            {isMobile ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    disabled={isLoading || hasError}
+                    onClick={handlePlayPause}
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  <div className="w-full">
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 100}
+                      value={currentTime}
+                      className="w-full accent-blue-600"
+                      onChange={handleSliderChange}
+                      disabled={isLoading || hasError || duration === 0}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500 min-w-[40px] text-right">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <audio 
+                ref={audioRef}
+                src={audioUrl} 
+                controls 
+                className="w-full"
+              />
+            )}
+          </div>
         )}
       </div>
       
