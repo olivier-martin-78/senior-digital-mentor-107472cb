@@ -1,11 +1,12 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash, Volume2, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadAudio } from '@/utils/audioUploadUtils';
+import useVoiceRecorder from '@/hooks/use-voice-recorder';
+import RecordingControls from './RecordingControls';
+import VoiceAnswerPlayer from './VoiceAnswerPlayer';
+import { uploadRecording } from './utils/audioUtils';
 
 interface VoiceAnswerRecorderProps {
   questionId: string;
@@ -23,263 +24,87 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   onDeleteRecording
 }) => {
   const { user } = useAuth();
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(existingAudio || null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
-  const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const audioChunks = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  useEffect(() => {
-    // Initialize audio URL from props if provided
-    setAudioUrl(existingAudio || null);
-    
-    return () => {
-      stopRecording();
-      if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
-        // Only revoke locally created URLs, not ones from storage
-        URL.revokeObjectURL(audioUrl);
+  const { 
+    isRecording, 
+    audioBlob, 
+    recordingTime, 
+    startRecording, 
+    stopRecording
+  } = useVoiceRecorder({
+    onRecordingComplete: (blob, tempUrl) => {
+      // Only upload if we have a user
+      if (user && user.id) {
+        uploadAudioRecording(blob);
+      } else {
+        // For local testing without user
+        onRecordingComplete(questionId, blob, tempUrl);
+        setAudioUrl(tempUrl);
       }
-    };
+    }
+  });
+  
+  // Initialize audio URL from props if provided
+  useEffect(() => {
+    setAudioUrl(existingAudio || null);
   }, [existingAudio]);
   
-  useEffect(() => {
-    if (isRecording) {
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+  const uploadAudioRecording = (blob: Blob) => {
+    if (!user || !user.id) return;
     
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isRecording]);
-  
-  const startRecording = async () => {
-    try {
-      // Clean previous recording if exists and it's not from storage
-      if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
-        URL.revokeObjectURL(audioUrl);
-      }
-      
-      setAudioBlob(null);
-      setAudioUrl(null);
-      audioChunks.current = [];
-      setRecordingTime(0);
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      const recorder = new MediaRecorder(stream);
-      mediaRecorder.current = recorder;
-      
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.current.push(event.data);
-        }
-      };
-      
-      recorder.onstop = () => {
-        if (audioChunks.current.length > 0) {
-          const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
-          const tempUrl = URL.createObjectURL(blob);
-          
-          setAudioBlob(blob);
-          setAudioUrl(tempUrl);
-          
-          // Only upload if we have a user
-          if (user) {
-            uploadRecording(blob);
-          } else {
-            // For local testing without user
-            onRecordingComplete(questionId, blob, tempUrl);
-          }
-        }
-        
-        setIsRecording(false);
-        
-        // Stop all tracks of the stream
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
-      };
-      
-      recorder.start();
-      setIsRecording(true);
-      
-    } catch (error) {
-      console.error("Erreur lors de l'accès au microphone:", error);
-      setIsRecording(false);
-      
-      toast({
-        title: "Erreur d'accès au microphone",
-        description: "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const uploadRecording = (blob: Blob) => {
-    if (!user || !user.id) {
-      console.error("Impossible de télécharger sans utilisateur authentifié");
-      return;
-    }
-    
-    setIsUploading(true);
-    
-    uploadAudio(
+    uploadRecording(
       blob,
       user.id,
       chapterId,
       questionId,
-      (url: string) => {
-        console.log("Audio téléchargé avec succès:", url);
-        // Replace local blob URL with storage URL
-        if (audioUrl && !existingAudio) {
-          URL.revokeObjectURL(audioUrl);
-        }
-        setAudioUrl(url);
-        
-        // Send the recording to parent component with permanent URL
-        onRecordingComplete(questionId, blob, url);
-      },
-      (errorMessage: string) => {
-        console.error("Erreur de téléchargement:", errorMessage);
-        toast({
-          title: "Erreur de téléchargement",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      },
-      () => setIsUploading(true),
-      () => setIsUploading(false)
+      {
+        onSuccess: (url) => {
+          setAudioUrl(url);
+          onRecordingComplete(questionId, blob, url);
+        },
+        onError: (errorMessage) => {
+          toast({
+            title: "Erreur de téléchargement",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        },
+        onUploadStart: () => setIsUploading(true),
+        onUploadEnd: () => setIsUploading(false)
+      }
     );
   };
   
-  const stopRecording = () => {
-    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
-      mediaRecorder.current.stop();
-    }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    setIsRecording(false);
-  };
-  
   const handleDelete = () => {
-    if (audioRef.current && !audioRef.current.paused) {
-      audioRef.current.pause();
-    }
-    
-    // Only revoke if it's a local blob URL
-    if (audioUrl && !existingAudio && audioUrl !== existingAudio) {
-      URL.revokeObjectURL(audioUrl);
-    }
-    
-    setAudioBlob(null);
     setAudioUrl(null);
-    
     onDeleteRecording(questionId);
-  };
-  
-  const handleExportAudio = () => {
-    if (!audioUrl) return;
-
-    try {
-      // Create a temporary anchor element to trigger download
-      const downloadLink = document.createElement('a');
-      downloadLink.href = audioUrl;
-      downloadLink.download = `reponse_vocale_${new Date().toISOString().slice(0, 10)}.webm`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      toast({
-        title: "Téléchargement réussi",
-        description: "L'enregistrement audio a été téléchargé sur votre appareil",
-        duration: 3000
-      });
-    } catch (error) {
-      console.error("Erreur lors de l'export audio:", error);
-      toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter l'enregistrement audio",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleAudioPlay = () => {
-    setIsPlaying(true);
-  };
-  
-  const handleAudioPause = () => {
-    setIsPlaying(false);
-  };
-  
-  const handleAudioEnded = () => {
-    setIsPlaying(false);
-  };
-  
-  const isStorageUrl = (url: string | null) => {
-    return url ? url.includes('storage.googleapis.com') || url.includes('supabase') : false;
   };
   
   return (
     <div className="mt-2 p-3 border rounded-md bg-gray-50">
       <div className="text-sm font-medium mb-2">Réponse vocale</div>
       
-      {isRecording ? (
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse mr-2"></div>
-            <span className="text-red-500 font-medium">
-              Enregistrement en cours ({formatTime(recordingTime)})
-            </span>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={stopRecording}
-            className="ml-2"
-          >
-            <Square className="w-4 h-4 mr-1" /> Arrêter
-          </Button>
-        </div>
+      {isRecording || (!isUploading && !audioUrl) ? (
+        <RecordingControls 
+          isRecording={isRecording}
+          recordingTime={recordingTime}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+        />
       ) : (
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-500">
             {audioUrl ? "Réponse vocale enregistrée" : "Prêt à enregistrer"}
           </span>
-          {!audioUrl && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          {!audioUrl && !isUploading && (
+            <button 
+              className="px-2 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
               onClick={startRecording}
             >
-              <Mic className="w-4 h-4 mr-1" /> Enregistrer
-            </Button>
+              Enregistrer
+            </button>
           )}
         </div>
       )}
@@ -291,42 +116,11 @@ export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
         </div>
       )}
       
-      {audioUrl && (
-        <div>
-          <div className="mb-2">
-            <audio 
-              ref={audioRef}
-              src={audioUrl} 
-              controls 
-              className="w-full"
-              onPlay={handleAudioPlay}
-              onPause={handleAudioPause}
-              onEnded={handleAudioEnded}
-            />
-          </div>
-          
-          <div className="flex justify-between">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleExportAudio}
-              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-              disabled={isPlaying}
-            >
-              <Download className="w-4 h-4 mr-1" /> Exporter l'audio
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDelete}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-              disabled={isPlaying}
-            >
-              <Trash className="w-4 h-4 mr-1" /> Supprimer
-            </Button>
-          </div>
-        </div>
+      {audioUrl && !isUploading && (
+        <VoiceAnswerPlayer
+          audioUrl={audioUrl}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );
