@@ -7,7 +7,6 @@ import { LifeStory } from '@/types/lifeStory';
 interface AutoSaveHookOptions {
   initialData: LifeStory;
   userId: string;
-  interval?: number;
   onSaveSuccess?: (savedData: LifeStory) => void;
 }
 
@@ -22,7 +21,6 @@ interface AutoSaveHook {
 export function useAutoSave({
   initialData,
   userId,
-  interval = 300000, // 5 minutes (300 000 ms) au lieu des 60 secondes par défaut
   onSaveSuccess,
 }: AutoSaveHookOptions): AutoSaveHook {
   const [data, setData] = useState<LifeStory>(initialData);
@@ -30,34 +28,19 @@ export function useAutoSave({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   
-  // Pour suivre si une notification est déjà visible
-  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Pour enregistrer le dernier moment de sauvegarde (pour limiter la fréquence)
-  const lastSaveTimeRef = useRef<number>(0);
-  // Délai minimum entre deux notifications (5 secondes)
-  const MIN_TOAST_INTERVAL = 5000;
-  
-  // Référence à la dernière version des données pour éviter les problèmes de stale closure
+  // Pour suivre la dernière version des données
   const dataRef = useRef(data);
   useEffect(() => {
     dataRef.current = data;
     if (JSON.stringify(data) !== JSON.stringify(initialData)) {
-      setHasChanges(true); // Marquer comme modifié uniquement si les données ont réellement changé
+      setHasChanges(true);
     }
   }, [data, initialData]);
   
-  const saveData = useCallback(async (forceNoChangesReset = false) => {
+  const saveData = useCallback(async () => {
     const currentData = dataRef.current;
     
-    // Pour les sauvegardes forcées (enregistrement audio), on ignore la vérification de hasChanges
-    if (!currentData || !userId || (!hasChanges && !forceNoChangesReset)) return;
-    
-    // Vérifier si la dernière sauvegarde date de moins de 2 secondes
-    const now = Date.now();
-    if (now - lastSaveTimeRef.current < 2000) {
-      return; // Ignorer les sauvegardes trop rapprochées
-    }
-    lastSaveTimeRef.current = now;
+    if (!currentData || !userId) return;
     
     setIsSaving(true);
     try {
@@ -96,38 +79,14 @@ export function useAutoSave({
       // Mettre à jour les données locales avec l'ID retourné
       setData(prev => ({ ...prev, id: result.id }));
       setLastSaved(new Date());
-      
-      // Ne réinitialiser le marqueur de changement que si ce n'est pas une sauvegarde forcée (audio)
-      if (!forceNoChangesReset) {
-        setHasChanges(false);
-      }
+      setHasChanges(false);
       
       if (onSaveSuccess) {
         onSaveSuccess(result);
       }
-
-      // Notification de sauvegarde réussie avec contrôle de fréquence
-      // Clear any existing toast timeout
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
-      
-      // Only show another toast if MIN_TOAST_INTERVAL has passed
-      const lastToastTime = toastTimeoutRef.current ? now : 0;
-      if (now - lastToastTime > MIN_TOAST_INTERVAL) {
-        toast({
-          title: "Sauvegarde réussie",
-          description: "Vos réponses ont été sauvegardées avec succès.",
-        });
-        
-        // Set a new timeout to track when we can show the next toast
-        toastTimeoutRef.current = setTimeout(() => {
-          toastTimeoutRef.current = null;
-        }, MIN_TOAST_INTERVAL);
-      }
       
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde automatique:", error);
+      console.error("Erreur lors de la sauvegarde:", error);
       toast({
         title: "Erreur de sauvegarde",
         description: "Impossible de sauvegarder vos modifications.",
@@ -136,50 +95,24 @@ export function useAutoSave({
     } finally {
       setIsSaving(false);
     }
-  }, [userId, onSaveSuccess, hasChanges]);
+  }, [userId, onSaveSuccess]);
   
-  // Sauvegarde périodique sans déclenchement sur perte de focus
-  useEffect(() => {
-    // Première sauvegarde après un délai plus long (30 secondes) pour les données existantes
-    const initialTimer = setTimeout(() => {
-      if (hasChanges) {
-        saveData();
-      }
-    }, 30000); // 30 secondes au lieu de 3 secondes
-    
-    // Sauvegarde périodique aux 5 minutes
-    const timer = setInterval(() => {
-      if (hasChanges) {
-        saveData();
-      }
-    }, interval);
-    
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(timer);
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
-      // Sauvegarde finale lorsque le composant est démonté
-      if (hasChanges) {
-        saveData();
-      }
-    };
-  }, [saveData, interval, hasChanges]);
-  
-  // Fonction pour mettre à jour les données sans déclencher de sauvegarde immédiate
+  // Fonction pour mettre à jour les données sans déclencher de sauvegarde
   const updateData = useCallback((newData: Partial<LifeStory>) => {
     setData(prev => {
       const updated = { ...prev, ...newData };
       return updated;
     });
-    // Pas de saveData() ici pour éviter la sauvegarde immédiate sur perte de focus
   }, []);
   
-  // Fonction pour forcer une sauvegarde immédiate
+  // Fonction pour forcer une sauvegarde manuelle
   const saveNow = useCallback(async () => {
-    // true pour forcer la sauvegarde même s'il n'y a pas de changements marqués
-    await saveData(true);
+    await saveData();
+    // Afficher la notification uniquement lors d'une sauvegarde manuelle
+    toast({
+      title: "Sauvegarde réussie",
+      description: "Vos réponses ont été sauvegardées avec succès.",
+    });
   }, [saveData]);
   
   return {

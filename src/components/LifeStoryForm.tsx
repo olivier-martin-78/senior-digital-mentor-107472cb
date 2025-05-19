@@ -33,10 +33,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     initialData,
     userId: user?.id || '',
     onSaveSuccess: (savedStory) => {
-      toast({
-        title: "Sauvegarde réussie",
-        description: "Votre histoire a été sauvegardée avec succès.",
-      });
+      // Pas de notification ici, elle est gérée dans saveNow
     }
   });
   
@@ -58,7 +55,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   
   const progress = calculateProgress();
   
-  // Mise à jour d'une réponse
+  // Mise à jour d'une réponse (sans sauvegarde automatique)
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
     const updatedChapters = data.chapters.map(chapter => {
       if (chapter.id === chapterId) {
