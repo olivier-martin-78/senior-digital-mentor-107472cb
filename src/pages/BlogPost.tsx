@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
@@ -11,12 +11,14 @@ import PostMedia from '@/components/blog/PostMedia';
 import CommentForm from '@/components/blog/CommentForm';
 import CommentList from '@/components/blog/CommentList';
 import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
-import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrl, getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
   const { user, profile, hasRole } = useAuth();
   const navigate = useNavigate();
+  
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   
   const {
     post,
@@ -28,6 +30,24 @@ const BlogPost = () => {
     addComment,
     deleteComment
   } = useBlogPost(id as string);
+
+  // Charger l'URL de l'image de couverture si elle existe
+  useEffect(() => {
+    if (post?.cover_image) {
+      const loadCoverImage = async () => {
+        try {
+          const url = await getThumbnailUrl(post.cover_image);
+          setCoverImageUrl(url);
+        } catch (error) {
+          console.error("Erreur lors du chargement de l'image de couverture:", error);
+          setCoverImageUrl('/placeholder.svg');
+        }
+      };
+      loadCoverImage();
+    } else {
+      setCoverImageUrl(null);
+    }
+  }, [post?.cover_image]);
 
   const handleCommentSubmit = async (content: string) => {
     if (!user) return;
@@ -76,9 +96,6 @@ const BlogPost = () => {
     );
   }
 
-  // Traiter les URLs des images avant l'affichage
-  const coverImage = post.cover_image ? getThumbnailUrl(post.cover_image) : null;
-
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -101,7 +118,7 @@ const BlogPost = () => {
 
         <article className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Album thumbnail */}
-          <AlbumThumbnail album={album} title={post.title} coverImage={coverImage} />
+          <AlbumThumbnail album={album} title={post.title} coverImage={coverImageUrl} />
 
           <div className="p-6">
             {/* Post header with title, author, date, categories */}

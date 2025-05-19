@@ -5,7 +5,7 @@ import { Calendar, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DiaryEntry } from '@/types/diary';
-import { getThumbnailUrl, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrl, getThumbnailUrlSync, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface EntryCardProps {
@@ -26,7 +26,11 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
       console.log("URL du média dans EntryCard:", entry.media_url);
       console.log("Type du média dans EntryCard:", entry.media_type);
       
-      // Récupérer l'URL du thumbnail de façon asynchrone
+      // Définir une URL initiale synchrone pour un chargement rapide
+      const initialUrl = getThumbnailUrlSync(entry.media_url, DIARY_MEDIA_BUCKET);
+      setThumbnailUrl(initialUrl);
+      
+      // Récupérer l'URL du thumbnail de façon asynchrone pour une meilleure qualité
       const loadThumbnail = async () => {
         try {
           const url = await getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET);

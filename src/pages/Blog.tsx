@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { PlusCircle, Search, ImageIcon } from 'lucide-react';
-import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 
 const Blog = () => {
   const { user, hasRole } = useAuth();
@@ -23,6 +24,7 @@ const Blog = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [postImages, setPostImages] = useState<Record<string, string>>({});
 
   // Fetch albums and categories
   useEffect(() => {
@@ -110,6 +112,13 @@ const Blog = () => {
         }
 
         setPosts(filteredPosts);
+        
+        // Initialiser les images pour chaque post
+        const initialPostImages: Record<string, string> = {};
+        filteredPosts.forEach(post => {
+          initialPostImages[post.id] = getInitialPostImage(post);
+        });
+        setPostImages(initialPostImages);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
@@ -119,6 +128,23 @@ const Blog = () => {
 
     fetchPosts();
   }, [user, selectedAlbum, selectedCategories, searchQuery]);
+
+  // Fonction pour obtenir l'image initiale à afficher pour un article
+  const getInitialPostImage = (post: PostWithAuthor): string => {
+    // Si l'article a une image de couverture, utiliser getThumbnailUrlSync
+    if (post.cover_image) {
+      return getThumbnailUrlSync(post.cover_image);
+    }
+    
+    // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
+    if (post.album_id) {
+      const album = albums.find(a => a.id === post.album_id);
+      return album?.thumbnail_url ? getThumbnailUrlSync(album.thumbnail_url) : '/placeholder.svg';
+    }
+    
+    // Si aucune image n'est disponible, utiliser l'image par défaut
+    return '/placeholder.svg';
+  };
 
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
@@ -130,23 +156,6 @@ const Blog = () => {
         ? prev.filter(id => id !== categoryId)
         : [...prev, categoryId]
     );
-  };
-
-  // Fonction pour obtenir l'image à afficher pour un article
-  const getPostImage = (post: PostWithAuthor): string => {
-    // Si l'article a une image de couverture, utiliser getThumbnailUrl pour vérifier si c'est une URL valide
-    if (post.cover_image) {
-      return getThumbnailUrl(post.cover_image);
-    }
-    
-    // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
-    if (post.album_id) {
-      const album = albums.find(a => a.id === post.album_id);
-      return album?.thumbnail_url ? getThumbnailUrl(album.thumbnail_url) : '/placeholder.svg';
-    }
-    
-    // Si aucune image n'est disponible, utiliser l'image par défaut
-    return '/placeholder.svg';
   };
 
   return (
@@ -228,7 +237,7 @@ const Blog = () => {
                 {/* Image de couverture de l'article ou vignette de l'album */}
                 <div className="relative w-full h-40 bg-gray-100">
                   <img 
-                    src={getPostImage(post)} 
+                    src={postImages[post.id]} 
                     alt={post.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
