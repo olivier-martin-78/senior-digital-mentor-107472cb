@@ -30,17 +30,33 @@ export function useAutoSave({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   
+  // Pour suivre si une notification est déjà visible
+  const isToastVisibleRef = useRef(false);
+  // Pour enregistrer le dernier moment de sauvegarde (pour limiter la fréquence)
+  const lastSaveTimeRef = useRef<number>(0);
+  // Délai minimum entre deux notifications (5 secondes)
+  const MIN_TOAST_INTERVAL = 5000;
+  
   // Référence à la dernière version des données pour éviter les problèmes de stale closure
   const dataRef = useRef(data);
   useEffect(() => {
     dataRef.current = data;
-    setHasChanges(true); // Marquer comme modifié quand les données changent
-  }, [data]);
+    if (JSON.stringify(data) !== JSON.stringify(initialData)) {
+      setHasChanges(true); // Marquer comme modifié uniquement si les données ont réellement changé
+    }
+  }, [data, initialData]);
   
   const saveData = useCallback(async () => {
     const currentData = dataRef.current;
     
     if (!currentData || !userId || !hasChanges) return;
+    
+    // Vérifier si la dernière sauvegarde date de moins de 2 secondes
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 2000) {
+      return; // Ignorer les sauvegardes trop rapprochées
+    }
+    lastSaveTimeRef.current = now;
     
     setIsSaving(true);
     try {
@@ -55,7 +71,6 @@ export function useAutoSave({
       
       if (currentData.id) {
         // Mise à jour d'une histoire existante
-        // Utilisation de "as any" pour contourner les restrictions de typage
         const { data, error } = await (supabase as any)
           .from('life_stories')
           .update(savePayload)
@@ -63,19 +78,18 @@ export function useAutoSave({
           .select();
           
         if (error) throw error;
-        result = data[0]; // Modification pour récupérer le premier élément du tableau
+        result = data[0]; 
       } else {
         // Création d'une nouvelle histoire
         savePayload.created_at = new Date().toISOString();
         
-        // Utilisation de "as any" pour contourner les restrictions de typage
         const { data, error } = await (supabase as any)
           .from('life_stories')
           .insert(savePayload)
           .select();
           
         if (error) throw error;
-        result = data[0]; // Modification pour récupérer le premier élément du tableau
+        result = data[0];
       }
       
       // Mettre à jour les données locales avec l'ID retourné
@@ -87,11 +101,27 @@ export function useAutoSave({
         onSaveSuccess(result);
       }
 
-      // Notification de sauvegarde réussie
-      toast({
-        title: "Sauvegarde réussie",
-        description: "Vos réponses ont été sauvegardées avec succès.",
-      });
+      // Notification de sauvegarde réussie avec contrôle de fréquence
+      if (!isToastVisibleRef.current) {
+        isToastVisibleRef.current = true;
+        toast({
+          title: "Sauvegarde réussie",
+          description: "Vos réponses ont été sauvegardées avec succès.",
+          onOpenChange: (open) => {
+            if (!open) {
+              // Remettre à false quand le toast disparaît
+              setTimeout(() => {
+                isToastVisibleRef.current = false;
+              }, 300);
+            }
+          }
+        });
+        
+        // Force la réinitialisation du flag si le toast n'est pas fermé correctement
+        setTimeout(() => {
+          isToastVisibleRef.current = false;
+        }, MIN_TOAST_INTERVAL);
+      }
       
     } catch (error) {
       console.error("Erreur lors de la sauvegarde automatique:", error);
