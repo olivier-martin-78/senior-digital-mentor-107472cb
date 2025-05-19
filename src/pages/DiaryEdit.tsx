@@ -46,6 +46,7 @@ const DiaryEdit = () => {
   const [loading, setLoading] = useState(true);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
+  const [existingMediaPreview, setExistingMediaPreview] = useState<string | null>(null);
 
   const form = useForm<DiaryFormValues>({
     resolver: zodResolver(diaryFormSchema),
@@ -106,6 +107,11 @@ const DiaryEdit = () => {
             is_private_notes_locked: entryData.is_private_notes_locked || false,
             objectives: entryData.objectives || '',
           });
+          
+          // Précharger la prévisualisation du média existant
+          if (entryData.media_url) {
+            setExistingMediaPreview(getPublicUrl(entryData.media_url));
+          }
         }
       } catch (error: any) {
         console.error('Erreur lors de la récupération de l\'entrée:', error);
@@ -137,12 +143,13 @@ const DiaryEdit = () => {
       setIsSubmitting(true);
 
       // Upload new media file if exists
-      let media_url = entry.media_url;
-      let media_type = entry.media_type;
+      let media_url = entry?.media_url || null;
+      let media_type = entry?.media_type || null;
       
       if (mediaFile) {
         // Delete old media if exists
-        if (entry.media_url) {
+        if (entry?.media_url) {
+          console.log("Suppression de l'ancien média:", entry.media_url);
           const mediaPath = getPathFromUrl(entry.media_url);
           if (mediaPath) {
             await supabase.storage
@@ -155,6 +162,7 @@ const DiaryEdit = () => {
         const fileExt = mediaFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
 
+        console.log("Téléchargement du nouveau média:", filePath);
         const { error: uploadError } = await supabase.storage
           .from(DIARY_MEDIA_BUCKET)
           .upload(filePath, mediaFile);
@@ -167,7 +175,7 @@ const DiaryEdit = () => {
         media_url = filePath; // Stocke le chemin relatif, pas l'URL complète
         media_type = mediaFile.type;
       }
-
+      
       // Format the entry data
       const entryData = {
         entry_date: data.entry_date.toISOString().split('T')[0],
@@ -190,29 +198,12 @@ const DiaryEdit = () => {
         updated_at: new Date().toISOString(),
       };
 
+      console.log("Mise à jour de l'entrée avec les données:", entryData);
+      
       // Update entry in Supabase
       const { error } = await supabase
         .from('diary_entries')
-        .update({
-          entry_date: data.entry_date.toISOString().split('T')[0],
-          title: data.title,
-          activities: data.activities || null,
-          mood_rating: data.mood_rating,
-          positive_things: data.positive_things || null,
-          negative_things: data.negative_things || null,
-          physical_state: data.physical_state,
-          mental_state: data.mental_state,
-          contacted_people: data.contacted_people || [],
-          reflections: data.reflections || null,
-          media_url,
-          media_type,
-          desire_of_day: data.desire_of_day || null,
-          tags: data.tags || [],
-          private_notes: data.private_notes || null,
-          is_private_notes_locked: data.is_private_notes_locked,
-          objectives: data.objectives || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(entryData)
         .eq('id', id);
 
       if (error) {
@@ -283,12 +274,12 @@ const DiaryEdit = () => {
                       {entry.media_type?.startsWith('image/') ? (
                         <div className="bg-gray-100 rounded-lg overflow-hidden">
                           <img 
-                            src={getPublicUrl(entry.media_url)} 
-                            alt="Current media" 
+                            src={existingMediaPreview || getPublicUrl(entry.media_url)} 
+                            alt="Média existant" 
                             className="h-32 w-auto object-contain" 
                             onError={(e) => {
                               console.error("Erreur de chargement d'image:", entry.media_url);
-                              console.log("URL calculée:", getPublicUrl(entry.media_url));
+                              console.log("URL calculée:", existingMediaPreview || getPublicUrl(entry.media_url));
                               e.currentTarget.src = '/placeholder.svg';
                               e.currentTarget.className = "h-32 w-auto object-contain opacity-50";
                             }}
@@ -297,18 +288,26 @@ const DiaryEdit = () => {
                         </div>
                       ) : entry.media_type?.startsWith('video/') ? (
                         <video 
-                          src={getPublicUrl(entry.media_url)} 
+                          src={existingMediaPreview || getPublicUrl(entry.media_url)} 
                           className="h-32 w-auto" 
                           controls
+                          onError={(e) => console.error("Erreur de chargement vidéo:", entry.media_url)}
                         />
                       ) : entry.media_type?.startsWith('audio/') ? (
                         <audio 
-                          src={getPublicUrl(entry.media_url)} 
+                          src={existingMediaPreview || getPublicUrl(entry.media_url)} 
                           controls
+                          onError={(e) => console.error("Erreur de chargement audio:", entry.media_url)}
                         />
                       ) : (
                         <p>Un média est déjà attaché. Sélectionnez un nouveau fichier pour le remplacer.</p>
                       )}
+                      
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500">
+                          Pour remplacer ce média, sélectionnez un nouveau fichier ci-dessus.
+                        </p>
+                      </div>
                     </div>
                   )}
                   

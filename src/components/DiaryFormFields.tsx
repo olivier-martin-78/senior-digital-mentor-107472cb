@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { 
   FormField, 
@@ -32,6 +31,7 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
   const [tagInput, setTagInput] = useState('');
   const [contactInput, setContactInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const addTag = () => {
     if (!tagInput.trim()) return;
@@ -59,9 +59,31 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
-    setSelectedFile(file || null);
-    onMediaChange(file || null);
+    
+    // Supprimer l'ancienne URL de prévisualisation si elle existe
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      onMediaChange(file);
+    } else {
+      setSelectedFile(null);
+      // Ne pas effacer previewUrl ici pour conserver la prévisualisation du fichier existant
+      onMediaChange(null);
+    }
   };
+
+  useEffect(() => {
+    // Nettoyer les URL blob à la destruction du composant
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   return (
     <>
@@ -129,7 +151,7 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
             <FormLabel>Ce que j'ai fait aujourd'hui</FormLabel>
             <FormControl>
               <Textarea 
-                placeholder="Décrivez vos activités de la journée..."
+                placeholder="Décrivez vos activités de la journée..." 
                 className="min-h-[100px]" 
                 {...field} 
                 value={field.value || ''}
@@ -357,6 +379,15 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ form, onMediaC
         {selectedFile && (
           <div className="mt-2">
             <p>Fichier sélectionné: {selectedFile.name}</p>
+            {selectedFile.type.startsWith('image/') && previewUrl && (
+              <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
+                <img 
+                  src={previewUrl} 
+                  alt="Prévisualisation" 
+                  className="max-h-48 object-contain"
+                />
+              </div>
+            )}
           </div>
         )}
         <FormDescription>

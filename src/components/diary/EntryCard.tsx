@@ -33,10 +33,11 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
           <AspectRatio ratio={16/9}>
             {entry.media_type?.startsWith('image/') ? (
               <img 
-                src={getPublicUrl(entry.media_url)} 
+                src={getThumbnailUrl(entry.media_url)} 
                 alt="Aperçu du média"
                 className="w-full h-full object-cover" 
                 onError={(e) => {
+                  console.log("Erreur de chargement d'image:", entry.media_url);
                   const target = e.target as HTMLImageElement;
                   target.src = '/placeholder.svg';
                 }}
@@ -53,6 +54,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                     e.currentTarget.classList.remove('opacity-0');
                   }}
                   onError={(e) => {
+                    console.error("Erreur de chargement vidéo:", entry.media_url);
                     e.currentTarget.classList.add('hidden');
                   }}
                 />

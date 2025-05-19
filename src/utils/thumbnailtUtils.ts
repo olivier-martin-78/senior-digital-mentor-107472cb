@@ -4,6 +4,8 @@ import { getPublicUrl } from "./storageUtils";
 
 // Nom du bucket pour les vignettes d'album
 export const ALBUM_THUMBNAILS_BUCKET = 'album-thumbnails';
+// Nom du bucket pour les médias du journal
+export const DIARY_MEDIA_BUCKET = 'diary_media';
 
 /**
  * Télécharger une vignette pour un album ou un post
@@ -51,9 +53,10 @@ export const uploadAlbumThumbnail = async (file: File, idPrefix: string): Promis
 /**
  * Obtenir l'URL de prévisualisation d'une vignette
  * @param url URL de la vignette
+ * @param bucket Bucket optionnel contenant le média (par défaut: album-thumbnails)
  * @returns URL de prévisualisation ou image par défaut
  */
-export const getThumbnailUrl = (url: string | null): string => {
+export const getThumbnailUrl = (url: string | null, bucket: string = ALBUM_THUMBNAILS_BUCKET): string => {
   if (!url) {
     return '/placeholder.svg';
   }
@@ -64,11 +67,16 @@ export const getThumbnailUrl = (url: string | null): string => {
     return '/placeholder.svg';
   }
   
+  // Vérifier si l'URL semble être un chemin de stockage pour diary_media
+  if (url.includes('diary_media') || (!url.includes('album-thumbnails') && !url.startsWith('http'))) {
+    return getPublicUrl(url, DIARY_MEDIA_BUCKET);
+  }
+  
   // Si l'URL n'est pas complète (ne commence pas par http), essayer de récupérer l'URL complète
   if (!url.startsWith('http')) {
     try {
       const { data } = supabase.storage
-        .from(ALBUM_THUMBNAILS_BUCKET)
+        .from(bucket)
         .getPublicUrl(url);
         
       return data.publicUrl;
