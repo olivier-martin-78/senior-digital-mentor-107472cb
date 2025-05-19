@@ -26,7 +26,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const toggleCategory = (category: BlogCategory) => {
-    setSelectedCategories(prev => {
+    setSelectedCategories((prev: BlogCategory[]) => {
       const isSelected = prev.some(c => c.id === category.id);
       if (isSelected) {
         return prev.filter(c => c.id !== category.id);

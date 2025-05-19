@@ -138,6 +138,7 @@ export type Database = {
           album_id: string | null
           author_id: string
           content: string
+          cover_image: string | null
           created_at: string
           id: string
           published: boolean | null
@@ -148,6 +149,7 @@ export type Database = {
           album_id?: string | null
           author_id: string
           content: string
+          cover_image?: string | null
           created_at?: string
           id?: string
           published?: boolean | null
@@ -158,6 +160,7 @@ export type Database = {
           album_id?: string | null
           author_id?: string
           content?: string
+          cover_image?: string | null
           created_at?: string
           id?: string
           published?: boolean | null
