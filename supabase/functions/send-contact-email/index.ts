@@ -63,12 +63,14 @@ serve(async (req: Request) => {
       throw fetchError;
     }
     
+    console.log('Administrateurs trouvés:', adminProfiles);
+    
     if (!adminProfiles || adminProfiles.length === 0) {
       console.warn('Aucun administrateur n\'a activé la réception des demandes de contact');
       
       // Dans ce cas, envoyons quand même un email de confirmation à l'expéditeur
       const confirmationEmail = await resend.emails.send({
-        from: 'contact@tranches-de-vie.com',
+        from: 'Tranches de vie <contact@tranches-de-vie.com>',
         to: email,
         subject: 'Nous avons bien reçu votre message',
         html: `
@@ -105,19 +107,24 @@ serve(async (req: Request) => {
     
     // Envoyer l'email à tous les administrateurs concernés
     const emailPromises = adminProfiles.map(admin => {
+      console.log(`Envoi d'email à l'administrateur: ${admin.display_name || admin.email}`);
+      
       return resend.emails.send({
-        from: 'contact@tranches-de-vie.com',
+        from: 'Tranches de vie <contact@tranches-de-vie.com>',
         to: admin.email,
         subject: emailSubject,
         html: emailContent,
         reply_to: email,
+      }).catch(error => {
+        console.error(`Erreur lors de l'envoi de l'email à ${admin.email}:`, error);
+        return { error };
       });
     });
     
     // Envoyer un email de confirmation à l'expéditeur
     emailPromises.push(
       resend.emails.send({
-        from: 'contact@tranches-de-vie.com',
+        from: 'Tranches de vie <contact@tranches-de-vie.com>',
         to: email,
         subject: 'Nous avons bien reçu votre message',
         html: `
@@ -127,16 +134,27 @@ serve(async (req: Request) => {
           <p>Cordialement,</p>
           <p>L'équipe Tranches de vie</p>
         `,
+      }).catch(error => {
+        console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
+        return { error };
       })
     );
     
     const results = await Promise.all(emailPromises);
+    
+    // Vérifier si des erreurs se sont produites
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error("Des erreurs se sont produites lors de l'envoi des emails:", errors);
+    }
+    
     console.log('Résultats des envois d\'emails:', results);
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email envoyé à ${adminProfiles.length} administrateur(s) et confirmation envoyée` 
+        message: `Email envoyé à ${adminProfiles.length} administrateur(s) et confirmation envoyée`,
+        results
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );

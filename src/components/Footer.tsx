@@ -53,11 +53,13 @@ const Footer = () => {
       }
       
       // Send email using edge function
-      const { error } = await supabase.functions.invoke('send-contact-email', {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
         body: { name, email, message, attachmentUrl }
       });
       
       if (error) throw error;
+      
+      console.log("Réponse de la fonction send-contact-email:", data);
       
       toast({
         title: "Message envoyé",
@@ -74,7 +76,7 @@ const Footer = () => {
       console.error('Error sending message:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi du message. Veuillez réessayer.",
+        description: `Une erreur est survenue lors de l'envoi du message: ${error.message || "Veuillez vérifier votre connexion et réessayer."}`,
         variant: "destructive"
       });
     } finally {
