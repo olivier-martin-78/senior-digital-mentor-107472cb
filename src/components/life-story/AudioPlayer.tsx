@@ -14,10 +14,12 @@ interface AudioPlayerProps {
 
 export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }: AudioPlayerProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [audioError, setAudioError] = useState(false);
   
   const handleDeleteAudio = async () => {
     try {
       setIsDeleting(true);
+      console.log(`Début de la suppression de l'audio pour la question ${questionId}`);
       
       await deleteAudio(
         audioUrl,
@@ -34,7 +36,7 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
             title: 'Erreur',
             description: errorMessage,
             variant: 'destructive',
-            duration: 2000
+            duration: 3000
           });
         }
       );
@@ -44,17 +46,34 @@ export const AudioPlayer = ({ audioUrl, chapterId, questionId, onDeleteSuccess }
         title: 'Erreur inattendue',
         description: 'Une erreur s\'est produite lors de la suppression de l\'audio.',
         variant: 'destructive',
-        duration: 2000
+        duration: 3000
       });
     } finally {
       setIsDeleting(false);
     }
   };
+  
+  const handleAudioError = () => {
+    console.error(`Erreur de chargement audio pour l'URL: ${audioUrl}`);
+    setAudioError(true);
+  };
 
   return (
     <div className="mt-2 p-3 border rounded-md bg-gray-50">
       <div className="text-sm font-medium mb-2">Enregistrement audio existant</div>
-      <audio src={audioUrl} controls className="w-full mb-2" />
+      
+      {audioError ? (
+        <div className="p-2 mb-2 bg-amber-50 text-amber-700 text-sm border border-amber-200 rounded">
+          Impossible de charger l'audio. Le fichier a peut-être été supprimé ou déplacé.
+        </div>
+      ) : (
+        <audio 
+          src={audioUrl} 
+          controls 
+          className="w-full mb-2" 
+          onError={handleAudioError}
+        />
+      )}
       
       <div className="flex justify-end">
         <Button 

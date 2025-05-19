@@ -1,15 +1,18 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/utils/storageUtils';
 
 // Nom du bucket Supabase pour stocker les fichiers audio
 export const AUDIO_BUCKET_NAME = 'life-story-audios';
 
-// Fonction simplifiée pour vérifier si le bucket existe et est accessible
+/**
+ * Vérifie si le bucket existe et est accessible
+ * @returns {Promise<boolean>} Indique si le bucket est accessible
+ */
 export const checkBucketAccess = async (): Promise<boolean> => {
   try {
     console.log(`Vérification de l'accès au bucket ${AUDIO_BUCKET_NAME}...`);
     
-    // Essayer d'obtenir une liste vide du bucket (juste pour vérifier l'accès)
     const { data, error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .list('', { limit: 1 });
@@ -27,7 +30,9 @@ export const checkBucketAccess = async (): Promise<boolean> => {
   }
 };
 
-// Fonction pour télécharger l'audio vers Supabase
+/**
+ * Télécharge un fichier audio vers Supabase Storage
+ */
 export const uploadAudio = async (
   blob: Blob, 
   userId: string, 
@@ -38,32 +43,34 @@ export const uploadAudio = async (
   onUploadStart: () => void,
   onUploadEnd: () => void
 ): Promise<void> => {
-  if (!blob || !userId) {
-    console.error("Blob ou utilisateur non défini");
-    onError("Blob ou utilisateur non défini");
-    onUploadEnd(); // S'assurer que onUploadEnd est appelé même en cas d'erreur
+  // Validation des paramètres
+  if (!blob) {
+    onError("Aucun enregistrement audio à télécharger");
+    onUploadEnd();
+    return;
+  }
+  
+  if (!userId) {
+    onError("Identifiant utilisateur manquant");
+    onUploadEnd();
     return;
   }
   
   try {
     onUploadStart();
+    console.log(`Début du téléchargement audio pour la question ${questionId}...`);
     
-    // Vérifier si le bucket est accessible
+    // Vérification de l'accès au bucket
     const bucketAccessible = await checkBucketAccess();
-    
     if (!bucketAccessible) {
-      console.error("Impossible d'accéder au service de stockage");
-      onError(`Impossible d'accéder au service de stockage. Veuillez réessayer plus tard.`);
-      onUploadEnd(); // S'assurer que onUploadEnd est appelé même en cas d'erreur
-      return;
+      throw new Error("Impossible d'accéder au service de stockage");
     }
     
-    // Créer un nom de fichier unique avec l'ID de l'utilisateur, de la question et un timestamp
+    // Création d'un nom de fichier unique
     const fileName = `${userId}/${chapterId}_${questionId}_${Date.now()}.webm`;
+    console.log(`Téléchargement vers ${AUDIO_BUCKET_NAME}/${fileName}`);
     
-    console.log(`Téléchargement du fichier audio vers ${AUDIO_BUCKET_NAME}/${fileName}...`);
-    
-    // Télécharger le fichier
+    // Téléchargement du fichier audio
     const { data, error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .upload(fileName, blob, {
@@ -73,49 +80,47 @@ export const uploadAudio = async (
       });
     
     if (error) {
-      console.error('Erreur détaillée lors du téléchargement:', error);
-      throw error;
+      console.error('Erreur de téléchargement Supabase:', error);
+      throw new Error(`Erreur de téléchargement: ${error.message}`);
     }
     
-    console.log('Téléchargement réussi, récupération de l\'URL publique...');
-    
-    // Obtenir l'URL publique
+    // Récupération de l'URL publique
     const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
-    console.log('URL publique obtenue:', publicUrl);
+    console.log('Téléchargement réussi, URL:', publicUrl);
     
     onSuccess(publicUrl);
-    
   } catch (error: any) {
-    console.error('Erreur lors du téléchargement de l\'audio:', error);
-    let errorMessage = 'Impossible de sauvegarder l\'enregistrement audio.';
+    console.error('Erreur lors du téléchargement audio:', error);
     
-    if (error.statusCode === 403) {
-      errorMessage += ' Problème d\'autorisation avec le bucket de stockage.';
-    } else if (error.message) {
-      errorMessage += ` Erreur: ${error.message}`;
+    let errorMessage = "Impossible de sauvegarder l'enregistrement audio.";
+    if (error.message) {
+      errorMessage += ` Détail: ${error.message}`;
     }
     
     onError(errorMessage);
   } finally {
-    // S'assurer que onUploadEnd est toujours appelé pour réinitialiser l'état de chargement
+    console.log(`Fin du processus de téléchargement pour la question ${questionId}`);
     onUploadEnd();
   }
 };
 
-// Fonction pour supprimer un fichier audio
+/**
+ * Supprime un fichier audio de Supabase Storage
+ */
 export const deleteAudio = async (
   audioUrl: string,
   onSuccess: () => void,
   onError: (message: string) => void
 ): Promise<void> => {
-  if (!audioUrl) return;
+  if (!audioUrl) {
+    onError("URL audio non valide");
+    return;
+  }
   
   try {
     console.log('Tentative de suppression du fichier audio:', audioUrl);
     
-    // Extraire le chemin du fichier à partir de l'URL
-    // Format typique: https://[project-ref].supabase.co/storage/v1/object/public/life-story-audios/[user-id]/[chapterId]_[questionId]_[timestamp].webm
-    
+    // Extraction du chemin du fichier à partir de l'URL
     const matches = audioUrl.match(/\/storage\/v1\/object\/public\/life-story-audios\/(.*?)(\?.*)?$/);
     
     if (!matches || !matches[1]) {
@@ -126,7 +131,7 @@ export const deleteAudio = async (
     const filePath = decodeURIComponent(matches[1]);
     console.log(`Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
     
-    // Supprimer le fichier de Supabase Storage
+    // Suppression du fichier
     const { error } = await supabase.storage
       .from(AUDIO_BUCKET_NAME)
       .remove([filePath]);
@@ -139,7 +144,7 @@ export const deleteAudio = async (
     console.log('Fichier supprimé avec succès');
     onSuccess();
   } catch (error: any) {
-    console.error('Erreur lors de la suppression de l\'audio:', error);
-    onError(`Impossible de supprimer l\'enregistrement audio. ${error.message || ''}`);
+    console.error('Erreur lors de la suppression:', error);
+    onError(`Impossible de supprimer l'audio. ${error.message || ''}`);
   }
 };

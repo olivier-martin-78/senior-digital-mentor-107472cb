@@ -18,14 +18,23 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const startRecording = useCallback(async () => {
-    audioChunks.current = [];
     try {
-      console.log("Requesting media permissions...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Nettoyer les enregistrements précédents
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+      setAudioBlob(null);
+      audioChunks.current = [];
       
-      console.log("Permission granted, creating MediaRecorder...");
+      console.log("Demande d'autorisation pour le microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      console.log("Autorisation accordée, création du MediaRecorder...");
       mediaRecorder.current = new MediaRecorder(stream);
       
       mediaRecorder.current.ondataavailable = (event) => {
@@ -35,15 +44,21 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       };
       
       mediaRecorder.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        if (audioChunks.current.length > 0) {
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          
+          setAudioBlob(audioBlob);
+          setAudioUrl(audioUrl);
+        }
         
-        setAudioBlob(audioBlob);
-        setAudioUrl(audioUrl);
         setIsRecording(false);
         
         // Arrêter tous les tracks du stream pour libérer le microphone
-        stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
       };
       
       mediaRecorder.current.start();
@@ -51,17 +66,37 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       
     } catch (error) {
       console.error("Erreur lors de l'accès au microphone:", error);
+      setIsRecording(false);
+      
       toast({
         title: "Erreur d'accès au microphone",
         description: "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.",
         variant: "destructive",
       });
     }
-  }, []);
+  }, [audioUrl]);
   
   const stopRecording = useCallback(async () => {
     if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop();
+      try {
+        mediaRecorder.current.stop();
+      } catch (error) {
+        console.error("Erreur lors de l'arrêt de l'enregistrement:", error);
+        
+        // Nettoyage en cas d'erreur
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        
+        setIsRecording(false);
+        
+        toast({
+          title: "Erreur d'enregistrement",
+          description: "Un problème est survenu lors de l'arrêt de l'enregistrement.",
+          variant: "destructive",
+        });
+      }
     }
   }, [isRecording]);
   
@@ -73,6 +108,8 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     setAudioBlob(null);
     setAudioUrl(null);
   }, [audioUrl]);
+  
+  // Nettoyage lors du démontage du composant (implicite via l'utilisation de refs)
   
   return {
     isRecording,
