@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { uploadAudio } from '@/utils/audioUploadUtils';
 
@@ -15,9 +14,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
-  // Use a ref to track if we've already shown the success toast
-  const uploadSuccessToastShown = useRef(false);
-
+  
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
     // Ne rien faire si c'est le même blob ou si nous sommes déjà en train de télécharger
@@ -35,28 +32,14 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
           // Succès
           // Passer preventAutoSave=true pour éviter de déclencher l'autosauvegarde
           onAudioUrlChange(chapterId, questionId, publicUrl, true);
-          
-          // Show toast only once per successful upload
-          if (!uploadSuccessToastShown.current) {
-            uploadSuccessToastShown.current = true;
-            toast({
-              title: 'Audio enregistré',
-              description: 'Votre enregistrement audio a été sauvegardé avec succès.',
-            });
-          }
         },
         (errorMessage) => {
           // Erreur
-          toast({
-            title: 'Erreur',
-            description: errorMessage,
-            variant: 'destructive',
-          });
+          console.error('Erreur d\'upload audio:', errorMessage);
         },
         () => {
           // Début du téléchargement
           setIsUploading(true);
-          uploadSuccessToastShown.current = false;
         },
         () => {
           // Fin du téléchargement

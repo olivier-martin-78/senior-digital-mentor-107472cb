@@ -52,11 +52,8 @@ export const uploadAudio = async (
     const bucketAccessible = await checkBucketAccess();
     
     if (!bucketAccessible) {
-      toast({
-        title: 'Erreur de stockage',
-        description: `Impossible d'accéder au service de stockage. Veuillez réessayer plus tard ou contacter l'assistance.`,
-        variant: 'destructive',
-      });
+      console.error("Impossible d'accéder au service de stockage");
+      onError(`Impossible d'accéder au service de stockage. Veuillez réessayer plus tard.`);
       onUploadEnd();
       return;
     }
@@ -142,11 +139,6 @@ export const deleteAudio = async (
     
     console.log('Fichier supprimé avec succès');
     onSuccess();
-    
-    toast({
-      title: 'Audio supprimé',
-      description: 'L\'enregistrement audio a été supprimé avec succès.',
-    });
   } catch (error: any) {
     console.error('Erreur lors de la suppression de l\'audio:', error);
     onError(`Impossible de supprimer l\'enregistrement audio. ${error.message || ''}`);
