@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { uploadAudio } from '@/utils/audioUploadUtils';
@@ -17,35 +17,39 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    // Ne rien faire si c'est le même blob ou si nous sommes déjà en train de télécharger
-    if (isUploading) return;
+    // Si pas de nouveau blob ou déjà en train de télécharger, ne rien faire
+    if (isUploading || !newAudioBlob) {
+      return;
+    }
     
     setAudioBlob(newAudioBlob);
     
     if (newAudioBlob && user) {
-      await uploadAudio(
-        newAudioBlob,
-        user.id,
-        chapterId,
-        questionId,
-        (publicUrl) => {
-          // Succès
-          // Passer preventAutoSave=true pour éviter de déclencher l'autosauvegarde
-          onAudioUrlChange(chapterId, questionId, publicUrl, true);
-        },
-        (errorMessage) => {
-          // Erreur
-          console.error('Erreur d\'upload audio:', errorMessage);
-        },
-        () => {
-          // Début du téléchargement
-          setIsUploading(true);
-        },
-        () => {
-          // Fin du téléchargement
-          setIsUploading(false);
-        }
-      );
+      try {
+        setIsUploading(true);
+        
+        await uploadAudio(
+          newAudioBlob,
+          user.id,
+          chapterId,
+          questionId,
+          (publicUrl) => {
+            // Succès
+            onAudioUrlChange(chapterId, questionId, publicUrl, true);
+          },
+          (errorMessage) => {
+            // Erreur
+            console.error('Erreur d\'upload audio:', errorMessage);
+          },
+          () => {}, // Début du téléchargement (déjà géré par setIsUploading)
+          () => {} // Fin du téléchargement (géré plus bas)
+        );
+      } catch (error) {
+        console.error("Erreur lors du téléchargement de l'audio:", error);
+      } finally {
+        // S'assurer que l'état de chargement est réinitialisé dans tous les cas
+        setIsUploading(false);
+      }
     }
   };
 

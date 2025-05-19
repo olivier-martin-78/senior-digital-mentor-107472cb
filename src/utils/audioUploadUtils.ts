@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/utils/storageUtils';
-import { toast } from '@/hooks/use-toast';
 
 // Nom du bucket Supabase pour stocker les fichiers audio
 export const AUDIO_BUCKET_NAME = 'life-story-audios';
@@ -42,6 +41,7 @@ export const uploadAudio = async (
 ): Promise<void> => {
   if (!blob || !userId) {
     console.error("Blob ou utilisateur non défini");
+    onError("Blob ou utilisateur non défini");
     return;
   }
   
@@ -54,7 +54,6 @@ export const uploadAudio = async (
     if (!bucketAccessible) {
       console.error("Impossible d'accéder au service de stockage");
       onError(`Impossible d'accéder au service de stockage. Veuillez réessayer plus tard.`);
-      onUploadEnd();
       return;
     }
     
@@ -97,6 +96,7 @@ export const uploadAudio = async (
     
     onError(errorMessage);
   } finally {
+    // S'assurer que onUploadEnd est toujours appelé pour réinitialiser l'état de chargement
     onUploadEnd();
   }
 };
