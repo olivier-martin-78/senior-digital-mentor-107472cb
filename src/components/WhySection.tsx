@@ -7,7 +7,7 @@ const WhySection = () => {
       <div className="container">
         <div className="max-w-3xl mx-auto text-center animate-on-scroll">
           <h2 className="text-3xl md:text-4xl font-serif mb-6 text-tranches-charcoal">
-            Il n'est jamais trop tard pour revivre un souvenir.
+            Imaginez un coffre rempli de vos plus tendres souvenirs… Lesquels aimeriez-vous rouvrir pour ressentir, une fois encore, la magie de ces instants ?
           </h2>
           <div className="space-y-4 text-lg text-tranches-charcoal/90">
             <p>
