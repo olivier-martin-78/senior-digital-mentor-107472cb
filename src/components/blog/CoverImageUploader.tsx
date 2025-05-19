@@ -22,8 +22,9 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setCoverImageFile(file);
-      // Créer une URL pour la prévisualisation
+      // Créer une URL pour la prévisualisation sans stocker l'URL blob
       const previewUrl = URL.createObjectURL(file);
+      // On utilise cette URL uniquement pour l'aperçu local
       setCoverImage(previewUrl);
     }
   };
@@ -38,6 +39,10 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
               src={coverImage} 
               alt="Miniature de l'article" 
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-100">

@@ -11,6 +11,7 @@ import PostMedia from '@/components/blog/PostMedia';
 import CommentForm from '@/components/blog/CommentForm';
 import CommentList from '@/components/blog/CommentList';
 import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
+import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +76,9 @@ const BlogPost = () => {
     );
   }
 
+  // Traiter les URLs des images avant l'affichage
+  const coverImage = post.cover_image ? getThumbnailUrl(post.cover_image) : null;
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -97,7 +101,7 @@ const BlogPost = () => {
 
         <article className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Album thumbnail */}
-          <AlbumThumbnail album={album} title={post.title} />
+          <AlbumThumbnail album={album} title={post.title} coverImage={coverImage} />
 
           <div className="p-6">
             {/* Post header with title, author, date, categories */}

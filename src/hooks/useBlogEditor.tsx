@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,23 +146,14 @@ export const useBlogEditor = () => {
 
   // Fonction pour télécharger la miniature de l'article
   const uploadCoverImage = async (postId: string): Promise<string | null> => {
-    if (!coverImageFile) return null;
+    if (!coverImageFile) return coverImage;
     
     try {
       setUploadingCoverImage(true);
-      const fileExt = coverImageFile.name.split('.').pop();
-      const filePath = `cover-images/${postId}-${Date.now()}.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('blog-media')
-        .upload(filePath, coverImageFile);
-        
-      if (uploadError) throw uploadError;
+      // Utiliser la fonction uploadAlbumThumbnail du utils/thumbnailtUtils.ts mais pour les blogs
+      const publicUrl = await uploadAlbumThumbnail(coverImageFile, `cover-${postId}`);
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('blog-media')
-        .getPublicUrl(filePath);
-        
       return publicUrl;
     } catch (error: any) {
       console.error('Erreur lors du téléchargement de la miniature:', error);
@@ -197,6 +189,14 @@ export const useBlogEditor = () => {
 
     try {
       setSaving(true);
+      let finalCoverImage = coverImage;
+      
+      // Si un nouveau fichier d'image a été sélectionné, le télécharger d'abord
+      if (coverImageFile) {
+        if (isEditing && post) {
+          finalCoverImage = await uploadCoverImage(post.id);
+        }
+      }
 
       if (isEditing && post) {
         // Update existing post
@@ -208,7 +208,7 @@ export const useBlogEditor = () => {
             published: publish || isPublished,
             album_id: albumId,
             updated_at: new Date().toISOString(),
-            cover_image: coverImage
+            cover_image: finalCoverImage
           })
           .eq('id', post.id);
 
@@ -251,7 +251,7 @@ export const useBlogEditor = () => {
             author_id: user?.id,
             album_id: albumId,
             published: publish,
-            cover_image: coverImage
+            cover_image: null // On commence sans cover_image
           })
           .select()
           .single();

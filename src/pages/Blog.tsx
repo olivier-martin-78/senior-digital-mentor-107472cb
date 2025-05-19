@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -135,9 +134,9 @@ const Blog = () => {
 
   // Fonction pour obtenir l'image à afficher pour un article
   const getPostImage = (post: PostWithAuthor): string => {
-    // Si l'article a une image de couverture, l'utiliser en priorité
+    // Si l'article a une image de couverture, utiliser getThumbnailUrl pour vérifier si c'est une URL valide
     if (post.cover_image) {
-      return post.cover_image;
+      return getThumbnailUrl(post.cover_image);
     }
     
     // Sinon, si l'article appartient à un album, utiliser la vignette de l'album

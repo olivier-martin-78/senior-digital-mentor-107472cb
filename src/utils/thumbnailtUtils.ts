@@ -6,12 +6,12 @@ import { getPublicUrl } from "./storageUtils";
 export const ALBUM_THUMBNAILS_BUCKET = 'album-thumbnails';
 
 /**
- * Télécharger une vignette pour un album
+ * Télécharger une vignette pour un album ou un post
  * @param file Fichier d'image
- * @param albumId ID de l'album
+ * @param idPrefix ID de l'élément (album, post, etc.)
  * @returns URL de la vignette téléchargée
  */
-export const uploadAlbumThumbnail = async (file: File, albumId: string): Promise<string> => {
+export const uploadAlbumThumbnail = async (file: File, idPrefix: string): Promise<string> => {
   try {
     // Vérifier que le fichier est une image
     if (!file.type.startsWith('image/')) {
@@ -20,7 +20,7 @@ export const uploadAlbumThumbnail = async (file: File, albumId: string): Promise
     
     // Générer un nom de fichier unique
     const fileExt = file.name.split('.').pop();
-    const fileName = `${albumId}-${Date.now()}.${fileExt}`;
+    const fileName = `${idPrefix}-${Date.now()}.${fileExt}`;
     
     // Télécharger le fichier dans le bucket
     const { error: uploadError } = await supabase.storage
@@ -32,11 +32,16 @@ export const uploadAlbumThumbnail = async (file: File, albumId: string): Promise
     }
     
     // Obtenir l'URL publique du fichier
-    const { data: { publicUrl } } = supabase.storage
+    const { data } = supabase.storage
       .from(ALBUM_THUMBNAILS_BUCKET)
       .getPublicUrl(fileName);
       
-    return publicUrl;
+    if (!data.publicUrl) {
+      throw new Error("Impossible de générer l'URL publique");
+    }
+    
+    console.log("URL publique générée:", data.publicUrl);
+    return data.publicUrl;
   } catch (error: any) {
     console.error('Erreur lors du téléchargement de la vignette:', error);
     throw new Error(error.message || 'Erreur lors du téléchargement de la vignette');
@@ -52,5 +57,12 @@ export const getThumbnailUrl = (url: string | null): string => {
   if (!url) {
     return '/placeholder.svg';
   }
+  
+  // Si c'est une URL de type blob, retourner l'image par défaut
+  if (url.startsWith('blob:')) {
+    console.log("URL blob détectée, utilisation de l'image par défaut:", url);
+    return '/placeholder.svg';
+  }
+  
   return url;
 };
