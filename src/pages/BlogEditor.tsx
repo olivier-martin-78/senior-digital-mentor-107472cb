@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,14 +42,14 @@ const BlogEditor = () => {
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        // Fetch albums
+        // Fetch albums - now including the profiles data
         const { data: albumsData, error: albumsError } = await supabase
           .from('blog_albums')
-          .select('*')
+          .select(`*, profiles:author_id(*)`)
           .order('name', { ascending: true });
 
         if (!albumsError && albumsData) {
-          setAllAlbums(albumsData);
+          setAllAlbums(albumsData as BlogAlbum[]);
         }
 
         // Fetch categories
@@ -166,7 +167,7 @@ const BlogEditor = () => {
           name: newAlbumName.trim(),
           author_id: user?.id as string
         })
-        .select()
+        .select(`*, profiles:author_id(*)`)
         .single();
 
       if (error) {
