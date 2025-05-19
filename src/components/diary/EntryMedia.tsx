@@ -116,11 +116,11 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
         <div className="mt-6 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
           <AspectRatio ratio={16/9}>
             <video 
-              src={completeMediaUrl} 
+              src={directUrl} 
               controls 
               className="w-full h-full"
               onError={(e) => {
-                console.error("Erreur de chargement vidéo:", completeMediaUrl);
+                console.error("Erreur de chargement vidéo:", directUrl);
                 setHasError(true);
               }}
             >
@@ -132,7 +132,7 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
                 <p className="font-medium text-gray-500">Impossible de charger la vidéo</p>
                 <p className="text-sm text-gray-400 mt-1">Vérifiez que le fichier existe et est accessible</p>
                 <a 
-                  href={completeMediaUrl} 
+                  href={directUrl} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="mt-4 text-sm text-tranches-sage hover:underline"
@@ -152,11 +152,11 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
             <span className="text-sm font-medium">Fichier audio</span>
           </div>
           <audio 
-            src={completeMediaUrl} 
+            src={directUrl} 
             controls 
             className="w-full"
             onError={(e) => {
-              console.error("Erreur de chargement audio:", completeMediaUrl);
+              console.error("Erreur de chargement audio:", directUrl);
               setHasError(true);
             }}
           >
@@ -169,7 +169,7 @@ const EntryMedia: React.FC<EntryMediaProps> = ({ mediaUrl, mediaType }) => {
                 Vérifiez que le fichier existe et est accessible.
                 <div className="mt-2">
                   <a 
-                    href={completeMediaUrl} 
+                    href={directUrl} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-sm underline"
