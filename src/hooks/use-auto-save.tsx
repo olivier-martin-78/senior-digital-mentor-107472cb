@@ -22,7 +22,7 @@ interface AutoSaveHook {
 export function useAutoSave({
   initialData,
   userId,
-  interval = 60000, // 60 secondes par défaut
+  interval = 300000, // 5 minutes (300 000 ms) au lieu des 60 secondes par défaut
   onSaveSuccess,
 }: AutoSaveHookOptions): AutoSaveHook {
   const [data, setData] = useState<LifeStory>(initialData);
@@ -135,14 +135,14 @@ export function useAutoSave({
   
   // Sauvegarde périodique
   useEffect(() => {
-    // Première sauvegarde après un délai court pour les données existantes
+    // Première sauvegarde après un délai plus long (30 secondes) pour les données existantes
     const initialTimer = setTimeout(() => {
       if (hasChanges) {
         saveData();
       }
-    }, 3000);
+    }, 30000); // 30 secondes au lieu de 3 secondes
     
-    // Sauvegarde périodique régulière
+    // Sauvegarde périodique aux 5 minutes
     const timer = setInterval(() => {
       if (hasChanges) {
         saveData();
