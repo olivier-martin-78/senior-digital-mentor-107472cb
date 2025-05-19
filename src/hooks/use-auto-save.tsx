@@ -133,7 +133,7 @@ export function useAutoSave({
     }
   }, [userId, onSaveSuccess, hasChanges]);
   
-  // Sauvegarde périodique
+  // Sauvegarde périodique sans déclenchement sur perte de focus
   useEffect(() => {
     // Première sauvegarde après un délai plus long (30 secondes) pour les données existantes
     const initialTimer = setTimeout(() => {
@@ -162,12 +162,13 @@ export function useAutoSave({
     };
   }, [saveData, interval, hasChanges]);
   
-  // Fonction pour mettre à jour les données
+  // Fonction pour mettre à jour les données sans déclencher de sauvegarde immédiate
   const updateData = useCallback((newData: Partial<LifeStory>) => {
     setData(prev => {
       const updated = { ...prev, ...newData };
       return updated;
     });
+    // Pas de saveData() ici pour éviter la sauvegarde immédiate sur perte de focus
   }, []);
   
   // Fonction pour forcer une sauvegarde immédiate
