@@ -20,14 +20,14 @@ const HeroSection = () => {
             Tranches de vie
           </h1>
           <p className="text-xl md:text-2xl text-white mb-8">
-            Revivre des micro-expériences à partir de ses souvenirs
+            Vivre des expériences stimulantes à partir de ses souvenirs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
-              Je veux revoir mon village
+              Je veux créer un album photos interactif
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Je veux revivre un souvenir
+              Je veux écrire l'histoire de ma vie
             </Button>
           </div>
         </div>
