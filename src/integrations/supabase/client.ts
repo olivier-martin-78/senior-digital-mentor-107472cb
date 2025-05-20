@@ -108,7 +108,7 @@ const createResilientStorage = () => {
       }
     },
     
-    removeItem: (key: string): void {
+    removeItem: (key: string): void => {
       // Remove from all storage options
       delete inMemoryStorage[key];
       
@@ -178,7 +178,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       
       return fetch(url, {
         ...options,
-        signal,
+        signal
       }).finally(() => {
         clearTimeout(timeout);
       });
