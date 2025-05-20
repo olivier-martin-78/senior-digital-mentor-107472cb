@@ -318,6 +318,27 @@ export type Database = {
         }
         Relationships: []
       }
+      media: {
+        Row: {
+          blob_url: string | null
+          created_at: string | null
+          id: string
+          permanent_url: string
+        }
+        Insert: {
+          blob_url?: string | null
+          created_at?: string | null
+          id?: string
+          permanent_url: string
+        }
+        Update: {
+          blob_url?: string | null
+          created_at?: string | null
+          id?: string
+          permanent_url?: string
+        }
+        Relationships: []
+      }
       post_categories: {
         Row: {
           category_id: string
@@ -392,6 +413,154 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wish_album_permissions: {
+        Row: {
+          album_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wish_album_permissions_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "wish_albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wish_albums: {
+        Row: {
+          author_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          thumbnail_url: string | null
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          thumbnail_url?: string | null
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wish_albums_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wish_posts: {
+        Row: {
+          age: string | null
+          album_id: string | null
+          attachment_url: string | null
+          author_id: string
+          content: string
+          cover_image: string | null
+          created_at: string
+          custom_request_type: string | null
+          date: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          importance: string | null
+          location: string | null
+          needs: string | null
+          offering: string | null
+          published: boolean | null
+          request_type: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          age?: string | null
+          album_id?: string | null
+          attachment_url?: string | null
+          author_id: string
+          content: string
+          cover_image?: string | null
+          created_at?: string
+          custom_request_type?: string | null
+          date?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          importance?: string | null
+          location?: string | null
+          needs?: string | null
+          offering?: string | null
+          published?: boolean | null
+          request_type?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          age?: string | null
+          album_id?: string | null
+          attachment_url?: string | null
+          author_id?: string
+          content?: string
+          cover_image?: string | null
+          created_at?: string
+          custom_request_type?: string | null
+          date?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          importance?: string | null
+          location?: string | null
+          needs?: string | null
+          offering?: string | null
+          published?: boolean | null
+          request_type?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wish_posts_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "wish_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wish_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

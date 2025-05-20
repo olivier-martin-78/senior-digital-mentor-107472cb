@@ -16,12 +16,15 @@ import Unauthorized from "./pages/Unauthorized";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAlbums from "./pages/admin/AdminAlbums";
+import AdminWishAlbums from "./pages/admin/AdminWishAlbums";
 import Diary from "./pages/Diary";
 import DiaryNew from "./pages/DiaryNew";
 import DiaryEntry from "./pages/DiaryEntry";
 import DiaryEdit from "./pages/DiaryEdit";
 import LifeStory from "./pages/LifeStory";
 import WishForm from "./pages/WishForm";
+import Wishes from "./pages/Wishes";
+import WishPost from "./pages/WishPost";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -40,6 +43,8 @@ const App = () => (
             <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/wish-form" element={<WishForm />} />
+            <Route path="/wishes" element={<Wishes />} />
+            <Route path="/wishes/:id" element={<WishPost />} />
 
             {/* Routes protégées qui nécessitent une authentification */}
             <Route element={<ProtectedRoute />}>
@@ -62,6 +67,7 @@ const App = () => (
             <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/albums" element={<AdminAlbums />} />
+              <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
             </Route>
 
             {/* Route 404 */}

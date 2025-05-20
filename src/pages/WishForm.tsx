@@ -52,7 +52,8 @@ const formSchema = z.object({
   date: z.date().optional(),
   needs: z.string().min(5, "Précisez vos besoins concrets"),
   offering: z.string().optional(),
-  attachmentUrl: z.string().optional()
+  attachmentUrl: z.string().optional(),
+  albumId: z.string().optional()
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -75,7 +76,8 @@ const WishForm = () => {
       importance: '',
       needs: '',
       offering: '',
-      attachmentUrl: ''
+      attachmentUrl: '',
+      albumId: ''
     }
   });
   
@@ -165,7 +167,7 @@ ${values.needs}`;
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Adresser un souhait</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Souhaits</h1>
           <p className="mb-8 text-gray-600">
             Partagez votre souhait avec nous. Qu'il s'agisse d'une expérience que vous rêvez de vivre ou d'un service dont vous avez besoin, nous sommes là pour vous aider à le réaliser.
           </p>
@@ -504,4 +506,3 @@ ${values.needs}`;
 };
 
 export default WishForm;
-

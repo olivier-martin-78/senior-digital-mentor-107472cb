@@ -26,6 +26,16 @@ export interface BlogAlbum {
   thumbnail_url: string | null; // Nouvelle propriété pour la vignette
 }
 
+export interface WishAlbum {
+  id: string;
+  name: string;
+  description: string | null;
+  author_id: string;
+  created_at: string;
+  profiles: Profile;
+  thumbnail_url: string | null;
+}
+
 export interface BlogCategory {
   id: string;
   name: string;
@@ -43,6 +53,29 @@ export interface BlogPost {
   album_id: string | null;
   publication_date?: string;
   cover_image: string | null;  // Ajout de la propriété cover_image
+}
+
+export interface WishPost {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+  album_id: string | null;
+  cover_image: string | null;
+  first_name: string | null;
+  email: string | null;
+  age: string | null;
+  location: string | null;
+  request_type: string | null;
+  custom_request_type: string | null;
+  importance: string | null;
+  date: string | null;
+  needs: string | null;
+  offering: string | null;
+  attachment_url: string | null;
 }
 
 export interface BlogMedia {
