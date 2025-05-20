@@ -107,7 +107,11 @@ const handleCheckConnection = useCallback(async () => {
     const probeResult = await probeConnectivity();
 
     // Then test Supabase connection if basic connectivity works
-    let supabaseStatus: { success: boolean; error?: string | null; duration?: number } = { success: false };
+    let supabaseStatus: { success: boolean; error: string | null; duration: number } = {
+      success: false,
+      error: null,
+      duration: 0,
+    };
     if (probeResult.success) {
       supabaseStatus = await checkSupabaseConnection();
     }
