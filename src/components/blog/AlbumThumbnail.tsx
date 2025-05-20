@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BlogAlbum } from '@/types/supabase';
-import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrl, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface AlbumThumbnailProps {
   album: BlogAlbum | null;
@@ -13,17 +13,14 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    setIsLoading(true);
+    const fetchThumbnail = async () => {
+      setIsLoading(true);
 
-    // Handle cover image (post's cover_image, stored in blog-media)
-    if (coverImage) {
-      if (coverImage.startsWith('blob:')) {
-        console.log('Blob URL detected for coverImage, using placeholder:', coverImage);
-        setThumbnailUrl('/placeholder.svg');
-      } else {
+      // Handle cover image (post's cover_image, stored in blog-media)
+      if (coverImage) {
         try {
-          const normalizedUrl = getThumbnailUrlSync(coverImage, BLOG_MEDIA_BUCKET);
-          console.log('Cover image URL normalized:', normalizedUrl);
+          const normalizedUrl = await getThumbnailUrl(coverImage, BLOG_MEDIA_BUCKET);
+          console.log('Cover image URL normalized:', { coverImage, normalizedUrl });
           setThumbnailUrl(normalizedUrl);
         } catch (error) {
           console.error('Error processing coverImage URL:', {
@@ -33,34 +30,35 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
           });
           setThumbnailUrl('/placeholder.svg');
         }
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-      return;
-    }
 
-    // Handle album thumbnail (stored in album-thumbnails)
-    if (album?.thumbnail_url) {
-      try {
-        const normalizedUrl = getThumbnailUrlSync(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
-        console.log('Album thumbnail URL normalized:', normalizedUrl);
-        setThumbnailUrl(normalizedUrl);
-      } catch (error) {
-        console.error('Error processing album thumbnail URL:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          thumbnail_url: album.thumbnail_url,
-          bucket: ALBUM_THUMBNAILS_BUCKET,
-        });
+      // Handle album thumbnail (stored in album-thumbnails)
+      if (album?.thumbnail_url) {
+        try {
+          const normalizedUrl = await getThumbnailUrl(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
+          console.log('Album thumbnail URL normalized:', { thumbnail_url: album.thumbnail_url, normalizedUrl });
+          setThumbnailUrl(normalizedUrl);
+        } catch (error) {
+          console.error('Error processing album thumbnail URL:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            thumbnail_url: album.thumbnail_url,
+            bucket: ALBUM_THUMBNAILS_BUCKET,
+          });
+          setThumbnailUrl('/placeholder.svg');
+        }
+      } else if (album) {
+        console.warn('No thumbnail_url provided for album:', album.name);
         setThumbnailUrl('/placeholder.svg');
       }
-    } else if (album) {
-      console.warn('No thumbnail_url provided for album:', album.name);
-      setThumbnailUrl('/placeholder.svg');
-    }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    fetchThumbnail();
   }, [album, coverImage]);
 
-  // Render thumbnail if cover image or album thumbnail is available
   if (coverImage || album?.thumbnail_url) {
     return (
       <div className="w-full h-64 relative">
@@ -98,7 +96,6 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
     );
   }
 
-  // Fallback header if no image
   return (
     <div className="w-full h-24 bg-gray-100 flex items-center justify-center">
       <h1 className="text-2xl font-serif text-tranches-charcoal">{title}</h1>
