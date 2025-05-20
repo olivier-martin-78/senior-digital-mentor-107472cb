@@ -43,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<Error | null>(null);
   const { toast } = useToast();
 
   const fetchUserProfile = async (userId: string) => {
@@ -81,6 +82,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Detect browser environment for mobile-specific handling
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    console.log('Environment detection:', { 
+      isMobile, 
+      userAgent: navigator.userAgent,
+      localStorage: typeof localStorage !== 'undefined',
+      sessionStorage: typeof sessionStorage !== 'undefined'
+    });
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -112,6 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchUserRoles(currentSession.user.id);
       }
       setIsLoading(false);
+    }).catch(error => {
+      console.error('Session check error:', error);
+      setIsLoading(false);
+      setAuthError(error instanceof Error ? error : new Error('Failed to check authentication session'));
     });
 
     return () => subscription.unsubscribe();
@@ -124,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       
       // Clean up existing auth state
       cleanupAuthState();
@@ -138,25 +153,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        console.error('Login error:', error);
         toast({ 
           title: "Erreur de connexion", 
           description: error.message,
           variant: "destructive"
         });
+        throw error;
       } else {
         toast({ 
           title: "Connexion réussie", 
           description: "Vous êtes maintenant connecté."
         });
-        // Force page reload for a clean state
-        window.location.href = '/';
       }
     } catch (error: any) {
+      setAuthError(error);
       toast({ 
         title: "Erreur", 
         description: error.message,
         variant: "destructive"
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -165,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, displayName?: string) => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       
       // Clean up existing auth state
       cleanupAuthState();
@@ -180,11 +198,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error('Signup error:', error);
         toast({ 
           title: "Erreur d'inscription", 
           description: error.message,
           variant: "destructive"
         });
+        throw error;
       } else {
         toast({ 
           title: "Inscription réussie", 
@@ -192,11 +212,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
     } catch (error: any) {
+      setAuthError(error);
       toast({ 
         title: "Erreur", 
         description: error.message,
         variant: "destructive"
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       
       // Clean up auth state
       cleanupAuthState();
@@ -224,11 +247,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Force page reload for a clean state
       window.location.href = '/auth';
     } catch (error: any) {
+      setAuthError(error);
       toast({ 
         title: "Erreur", 
         description: error.message,
         variant: "destructive"
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
