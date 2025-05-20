@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { BlogAlbum } from '@/types/supabase';
-import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface AlbumThumbnailProps {
   album: BlogAlbum | null;
@@ -12,39 +11,56 @@ interface AlbumThumbnailProps {
 const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImage }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  
+
   useEffect(() => {
     setIsLoading(true);
-    
-    // Si une image de couverture est fournie, l'utiliser directement
+
+    // Handle cover image (post's cover_image, stored in blog-media)
     if (coverImage) {
-      // Handle blob URLs from mobile devices
       if (coverImage.startsWith('blob:')) {
-        console.log('Blob URL detected, using placeholder instead:', coverImage);
+        console.log('Blob URL detected for coverImage, using placeholder:', coverImage);
         setThumbnailUrl('/placeholder.svg');
       } else {
-        setThumbnailUrl(coverImage);
+        try {
+          const normalizedUrl = getThumbnailUrlSync(coverImage, BLOG_MEDIA_BUCKET);
+          console.log('Cover image URL normalized:', normalizedUrl);
+          setThumbnailUrl(normalizedUrl);
+        } catch (error) {
+          console.error('Error processing coverImage URL:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            coverImage,
+            bucket: BLOG_MEDIA_BUCKET,
+          });
+          setThumbnailUrl('/placeholder.svg');
+        }
       }
       setIsLoading(false);
       return;
     }
-    
-    // Si un album avec vignette est fourni, utiliser sa vignette
+
+    // Handle album thumbnail (stored in album-thumbnails)
     if (album?.thumbnail_url) {
       try {
-        const normalizedUrl = getThumbnailUrlSync(album.thumbnail_url);
-        console.log('Thumbnail URL normalized:', normalizedUrl);
+        const normalizedUrl = getThumbnailUrlSync(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
+        console.log('Album thumbnail URL normalized:', normalizedUrl);
         setThumbnailUrl(normalizedUrl);
       } catch (error) {
-        console.error('Error processing thumbnail URL:', error);
+        console.error('Error processing album thumbnail URL:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          thumbnail_url: album.thumbnail_url,
+          bucket: ALBUM_THUMBNAILS_BUCKET,
+        });
         setThumbnailUrl('/placeholder.svg');
       }
+    } else if (album) {
+      console.warn('No thumbnail_url provided for album:', album.name);
+      setThumbnailUrl('/placeholder.svg');
     }
-    
+
     setIsLoading(false);
   }, [album, coverImage]);
-  
-  // Si une image de couverture ou une vignette d'album est disponible
+
+  // Render thumbnail if cover image or album thumbnail is available
   if (coverImage || album?.thumbnail_url) {
     return (
       <div className="w-full h-64 relative">
@@ -59,7 +75,12 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
           className="w-full h-full object-cover"
           onLoad={() => setIsLoading(false)}
           onError={(e) => {
-            console.error('Image failed to load:', thumbnailUrl);
+            console.error('Image failed to load:', {
+              url: thumbnailUrl,
+              title,
+              album: album?.name,
+              bucket: coverImage ? BLOG_MEDIA_BUCKET : ALBUM_THUMBNAILS_BUCKET,
+            });
             (e.target as HTMLImageElement).src = '/placeholder.svg';
             setIsLoading(false);
           }}
@@ -77,7 +98,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
     );
   }
 
-  // Si pas d'image, afficher un en-tête simple
+  // Fallback header if no image
   return (
     <div className="w-full h-24 bg-gray-100 flex items-center justify-center">
       <h1 className="text-2xl font-serif text-tranches-charcoal">{title}</h1>
