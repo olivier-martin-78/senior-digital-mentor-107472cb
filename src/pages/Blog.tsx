@@ -1,3 +1,4 @@
+import { ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
