@@ -1,6 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET } from './thumbnailtUtils';
+import { DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from './thumbnailtUtils';
+
+// Re-export the bucket constants so they can be imported from either file
+export { DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET };
 
 /**
  * Obtenir l'URL publique d'un fichier
