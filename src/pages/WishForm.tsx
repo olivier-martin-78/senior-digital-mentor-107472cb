@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +37,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { WishAlbum } from '@/types/supabase';
 
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
@@ -61,6 +62,27 @@ type FormValues = z.infer<typeof formSchema>;
 const WishForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Récupérer les albums de souhaits disponibles
+  useEffect(() => {
+    const fetchWishAlbums = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('wish_albums')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (error) throw error;
+        if (data) setWishAlbums(data);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des albums de souhaits:', error);
+      }
+    };
+    
+    fetchWishAlbums();
+  }, []);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,81 +106,53 @@ const WishForm = () => {
   const watchRequestType = form.watch('requestType');
   
   const onSubmit = async (values: FormValues) => {
+    setIsLoading(true);
     try {
       console.log("Données du formulaire:", values);
       
-      // Préparation du message pour l'email
-      const requestTypeText = values.requestType === 'other' && values.customRequestType 
-        ? values.customRequestType 
-        : {
-            'personal': 'Un souhait personnel',
-            'experience': 'Une expérience à vivre',
-            'service': 'Un service à recevoir',
-            'other': 'Autre type de demande'
-          }[values.requestType] || values.requestType;
-      
-      // Formatage du contenu du message pour l'email
-      let messageContent = `
-**Nouveau souhait: ${values.title}**
-
-**Type de demande:** ${requestTypeText}
-
-**Description:**
-${values.description}
-
-**Importance pour la personne:**
-${values.importance}
-
-**Besoins concrets:**
-${values.needs}`;
-
-      if (values.offering) {
-        messageContent += `\n\n**Ce que la personne propose en retour:**\n${values.offering}`;
-      }
-
-      if (values.date) {
-        const dateStr = format(values.date, "PPP", { locale: fr });
-        messageContent += `\n\n**Date souhaitée:** ${dateStr}`;
-      }
-
-      if (values.age || values.location) {
-        messageContent += "\n\n**Informations complémentaires:**";
-        if (values.age) messageContent += `\nÂge: ${values.age} ans`;
-        if (values.location) messageContent += `\nLieu: ${values.location}`;
-      }
-
-      if (values.attachmentUrl) {
-        messageContent += `\n\n**Lien fourni:** ${values.attachmentUrl}`;
-      }
-      
-      // Envoi du message via la fonction Edge de Supabase
-      const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: {
-          name: values.firstName,
-          email: values.email || 'non.specifie@tranches-de-vie.com',
-          message: messageContent,
-          attachmentUrl: values.attachmentUrl
-        }
-      });
+      // Insérer directement dans la table wish_posts de Supabase
+      const { data, error } = await supabase
+        .from('wish_posts')
+        .insert([{
+          title: values.title,
+          content: values.description,
+          author_id: null, // Sera null pour les souhaits anonymes
+          first_name: values.firstName,
+          email: values.email || null,
+          age: values.age || null,
+          location: values.location || null,
+          request_type: values.requestType,
+          custom_request_type: values.requestType === 'other' ? values.customRequestType : null,
+          importance: values.importance,
+          date: values.date ? values.date.toISOString() : null,
+          needs: values.needs,
+          offering: values.offering || null,
+          attachment_url: values.attachmentUrl || null,
+          album_id: values.albumId || null,
+          published: false // Par défaut non publié, à approuver par un administrateur
+        }])
+        .select();
       
       if (error) {
-        throw new Error(`Erreur lors de l'envoi: ${error.message}`);
+        throw new Error(`Erreur lors de l'enregistrement: ${error.message}`);
       }
       
       toast({
-        title: "Souhait envoyé !",
-        description: "Nous avons bien reçu votre souhait et le traiterons dans les meilleurs délais.",
+        title: "Souhait enregistré !",
+        description: "Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.",
       });
       
       // Rediriger vers la page d'accueil après soumission
-      navigate('/');
+      navigate('/wishes');
     } catch (error) {
       console.error("Erreur lors de l'envoi du formulaire:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi de votre souhait. Veuillez réessayer ultérieurement.",
+        description: "Une erreur est survenue lors de l'enregistrement de votre souhait. Veuillez réessayer ultérieurement.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -491,9 +485,55 @@ ${values.needs}`;
                   />
                 </div>
                 
+                {/* Section 6: Album (si disponible) */}
+                {wishAlbums.length > 0 && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
+                      <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
+                        📂
+                      </span>
+                      Catégorie (facultatif)
+                    </h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="albumId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sélectionner une catégorie pour votre souhait</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner une catégorie (facultatif)" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">Aucune catégorie</SelectItem>
+                              {wishAlbums.map((album) => (
+                                <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Vous pouvez associer votre souhait à une catégorie spécifique
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+                
                 <div className="pt-4 border-t">
-                  <Button type="submit" className="w-full md:w-auto bg-tranches-sage hover:bg-tranches-sage/90">
-                    Envoyer mon souhait
+                  <Button 
+                    type="submit" 
+                    className="w-full md:w-auto bg-tranches-sage hover:bg-tranches-sage/90"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Envoi en cours...' : 'Envoyer mon souhait'}
                   </Button>
                 </div>
               </form>
