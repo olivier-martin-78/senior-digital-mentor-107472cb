@@ -99,59 +99,59 @@ const Auth = () => {
   }, [user, navigate, from, recoveryAttempted, isMobileDevice, isMobileViewport]);
 
   // Function to check connection status
-  const handleCheckConnection = useCallback(async () => {
-    setIsCheckingConnection(true);
-    
-    try {
-      // First test basic connectivity
-      const probeResult = await probeConnectivity();
-      
-      // Then test Supabase connection if basic connectivity works
-      let supabaseStatus = { success: false };
-      if (probeResult.success) {
-        supabaseStatus = await checkSupabaseConnection();
-      }
-      
-      const success = probeResult.success && supabaseStatus.success;
-      
-      setConnectionCheck({
-        lastChecked: Date.now(),
-        success: success,
-        latency: probeResult.latency
-      });
-      
-      if (success) {
-        setConnectionError(null);
-        toast({
-          title: "Connexion rétablie",
-          description: "Votre connexion à l'application fonctionne correctement.",
-        });
-      } else {
-        // If still having connection issues, show detailed error
-        const errorDetails = !probeResult.success 
-          ? "Problème de connexion internet"
-          : `Problème de connexion au serveur: ${supabaseStatus.error || 'Erreur inconnue'}`;
-        
-        setConnectionError(`Une erreur de connexion persiste: ${errorDetails}`);
-        
-        toast({
-          title: "Problème de connexion",
-          description: errorDetails,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Connection check failed:", error);
-      setConnectionCheck({
-        lastChecked: Date.now(),
-        success: false,
-        latency: null
-      });
-      setConnectionError(`Erreur lors de la vérification de connexion: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-    } finally {
-      setIsCheckingConnection(false);
+const handleCheckConnection = useCallback(async () => {
+  setIsCheckingConnection(true);
+
+  try {
+    // First test basic connectivity
+    const probeResult = await probeConnectivity();
+
+    // Then test Supabase connection if basic connectivity works
+    let supabaseStatus: { success: boolean; error?: string | null; duration?: number } = { success: false };
+    if (probeResult.success) {
+      supabaseStatus = await checkSupabaseConnection();
     }
-  }, [toast]);
+
+    const success = probeResult.success && supabaseStatus.success;
+
+    setConnectionCheck({
+      lastChecked: Date.now(),
+      success: success,
+      latency: probeResult.latency,
+    });
+
+    if (success) {
+      setConnectionError(null);
+      toast({
+        title: "Connexion rétablie",
+        description: "Votre connexion à l'application fonctionne correctement.",
+      });
+    } else {
+      // If still having connection issues, show detailed error
+      const errorDetails = !probeResult.success
+        ? "Problème de connexion internet"
+        : `Problème de connexion au serveur: ${supabaseStatus.error || 'Erreur inconnue'}`;
+
+      setConnectionError(`Une erreur de connexion persiste: ${errorDetails}`);
+
+      toast({
+        title: "Problème de connexion",
+        description: errorDetails,
+        variant: "destructive",
+      });
+    }
+  } catch (error) {
+    console.error("Connection check failed:", error);
+    setConnectionCheck({
+      lastChecked: Date.now(),
+      success: false,
+      latency: null,
+    });
+    setConnectionError(`Erreur lors de la vérification de connexion: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+  } finally {
+    setIsCheckingConnection(false);
+  }
+}, [toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
