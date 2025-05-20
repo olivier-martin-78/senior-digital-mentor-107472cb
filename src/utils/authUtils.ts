@@ -193,11 +193,12 @@ export const getEnvironmentInfo = () => {
  * Check connection to Supabase
  */
 export const checkSupabaseConnection = async (): Promise<SupabaseConnectionResult> => {
+  const start = Date.now(); // Added this line to define the start variable
+  
   try {
     // Import dynamically to avoid circular dependencies
     const { supabase } = await import('@/integrations/supabase/client');
     
-    const start = Date.now();
     // Make a simple request to check connectivity
     const { error } = await supabase.from('profiles').select('id').limit(1).maybeSingle();
     const duration = Date.now() - start;
@@ -238,6 +239,7 @@ export const checkSupabaseConnection = async (): Promise<SupabaseConnectionResul
     };
   }
 };
+
 /**
  * Attempts to recover from authentication problems
  */
