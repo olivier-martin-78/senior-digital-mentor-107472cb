@@ -75,7 +75,20 @@ const WishForm = () => {
           .order('name', { ascending: true });
         
         if (error) throw error;
-        if (data) setWishAlbums(data);
+        if (data) {
+          // Ajouter la propriété profiles qui est requise par le type WishAlbum
+          const albumsWithProfiles = data.map(album => ({
+            ...album,
+            profiles: {
+              id: '',
+              email: '',
+              display_name: null,
+              avatar_url: null,
+              created_at: ''
+            }
+          }));
+          setWishAlbums(albumsWithProfiles as WishAlbum[]);
+        }
       } catch (error) {
         console.error('Erreur lors de la récupération des albums de souhaits:', error);
       }
@@ -511,7 +524,8 @@ const WishForm = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">Aucune catégorie</SelectItem>
+                              {/* Ne pas utiliser une chaîne vide comme valeur, mais utiliser une valeur qui identifie clairement "aucune catégorie" */}
+                              <SelectItem value="none">Aucune catégorie</SelectItem>
                               {wishAlbums.map((album) => (
                                 <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
                               ))}
