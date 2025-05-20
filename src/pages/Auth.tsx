@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, cleanupAuthState } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { detectMobileDevice, hasRestrictedStorage } from '@/hooks/use-mobile';
 
 const Auth = () => {
   const { signIn, signUp, isLoading, user } = useAuth();
@@ -22,16 +24,13 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [hasStorageIssues, setHasStorageIssues] = useState(false);
 
   // Check if user is on mobile
   useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent;
-      setIsMobile(/iPhone|iPad|iPod|Android/i.test(userAgent));
-    };
+    setIsMobile(detectMobileDevice());
+    setHasStorageIssues(hasRestrictedStorage());
     
-    checkMobile();
-
     // If already signed in, redirect
     if (user) {
       navigate(from, { replace: true });
@@ -59,7 +58,8 @@ const Auth = () => {
       console.log("Tentative de connexion avec:", { 
         email, 
         passwordLength: password.length, 
-        isMobile 
+        isMobile,
+        hasStorageIssues
       });
       
       await signIn(email, password);
@@ -101,7 +101,8 @@ const Auth = () => {
         email, 
         displayName, 
         passwordLength: password.length, 
-        isMobile 
+        isMobile,
+        hasStorageIssues
       });
       
       await signUp(email, password, displayName);
@@ -144,8 +145,12 @@ const Auth = () => {
             
             {isMobile && (
               <div className="mb-4 text-center text-sm text-gray-500">
-                Vous utilisez un appareil mobile. Si vous rencontrez des problèmes de connexion, 
-                essayez de désactiver le mode de navigation privée ou de vider votre cache.
+                <p>Vous utilisez un appareil mobile. Si vous rencontrez des problèmes de connexion:</p>
+                <ul className="list-disc text-left pl-5 mt-2">
+                  <li>Désactivez le mode de navigation privée</li>
+                  <li>Videz le cache de votre navigateur</li>
+                  {hasStorageIssues && <li className="text-amber-600 font-medium">Attention: Des restrictions de stockage ont été détectées sur votre appareil</li>}
+                </ul>
               </div>
             )}
             

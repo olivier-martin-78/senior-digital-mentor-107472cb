@@ -9,11 +9,46 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Detect if localStorage is available (may not be in some mobile browsers)
+const isLocalStorageAvailable = () => {
+  try {
+    const test = '__test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Create a more resilient storage fallback
+const storageAdapter = isLocalStorageAvailable() 
+  ? localStorage 
+  : {
+      getItem: (key: string) => {
+        console.log('Using fallback storage for get:', key);
+        return sessionStorage.getItem(key) || null;
+      },
+      setItem: (key: string, value: string) => {
+        console.log('Using fallback storage for set:', key);
+        try {
+          sessionStorage.setItem(key, value);
+        } catch (e) {
+          console.error('Storage error:', e);
+        }
+      },
+      removeItem: (key: string) => {
+        console.log('Using fallback storage for remove:', key);
+        sessionStorage.removeItem(key);
+      }
+    };
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: storageAdapter,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // Better for mobile browsers
   }
 });
