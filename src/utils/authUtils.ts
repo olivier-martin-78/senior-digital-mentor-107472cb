@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for authentication
  */
@@ -253,7 +252,7 @@ export const attemptAuthRecovery = async () => {
 /**
  * Force network activity to clear proxy caches
  */
-export const probeConnectivity = async (): Promise<{success: boolean, latency: number}> => {
+export const probeConnectivity = async () => {
   const startTime = Date.now();
   
   try {
