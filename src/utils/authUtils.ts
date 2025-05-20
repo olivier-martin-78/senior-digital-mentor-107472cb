@@ -15,6 +15,7 @@ export const cleanupAuthState = () => {
     try {
       // Remove standard auth tokens
       localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-session-v2'); // New key we're using
       // Remove all Supabase auth keys from localStorage
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -28,6 +29,7 @@ export const cleanupAuthState = () => {
     // Try to use sessionStorage as fallback
     try {
       // Remove from sessionStorage if in use
+      sessionStorage.removeItem('sb-session-v2'); // New key we're using
       Object.keys(sessionStorage || {}).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
           sessionStorage.removeItem(key);
@@ -51,12 +53,20 @@ export const cleanupAuthState = () => {
 
     // Clear memory storage fallback if it exists
     try {
-      if (typeof window !== 'undefined' && (window as any).__memoryStorage) {
-        Object.keys((window as any).__memoryStorage).forEach((key) => {
-          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-            delete (window as any).__memoryStorage[key];
-          }
-        });
+      if (typeof window !== 'undefined') {
+        // Clear global memory storage
+        if ((window as any).__memoryStorage) {
+          Object.keys((window as any).__memoryStorage).forEach((key) => {
+            if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+              delete (window as any).__memoryStorage[key];
+            }
+          });
+        }
+        
+        // Also try to clear any indexed DB storage that might be used
+        try {
+          indexedDB.deleteDatabase('supabase');
+        } catch (e) {}
       }
     } catch (e) {
       console.warn('Cannot access memory storage:', e);
@@ -73,12 +83,14 @@ export const cleanupAuthState = () => {
 export const retryWithBackoff = async <T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelay: number = 500
+  baseDelay: number = 500,
+  onAttempt?: (attempt: number) => void
 ): Promise<T> => {
   let retries = 0;
   
   while (true) {
     try {
+      if (onAttempt) onAttempt(retries + 1);
       return await operation();
     } catch (error) {
       if (retries >= maxRetries) {
@@ -94,14 +106,36 @@ export const retryWithBackoff = async <T>(
 };
 
 /**
- * Get environment information for debugging auth issues
+ * Get detailed environment information for debugging auth issues
  */
 export const getEnvironmentInfo = () => {
-  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+  // Device detection
+  const isMobile = typeof navigator !== 'undefined' && 
+    /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent);
   
-  // Test storage availability
+  // Network information
+  let connection = 'unknown';
+  let effectiveType = 'unknown';
+  let downlink = 'unknown';
+  let rtt = 'unknown';
+  let saveData = false;
+  
+  try {
+    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+      const conn = (navigator as any).connection;
+      connection = conn?.type || 'unknown';
+      effectiveType = conn?.effectiveType || 'unknown';
+      downlink = conn?.downlink || 'unknown';
+      rtt = conn?.rtt || 'unknown';
+      saveData = conn?.saveData || false;
+    }
+  } catch (e) {}
+  
+  // Storage capability testing
   let hasLocalStorage = false;
   let hasSessionStorage = false;
+  let hasIndexedDB = false;
+  let cookiesEnabled = false;
   
   try {
     const testKey = '__storage_test__';
@@ -117,37 +151,130 @@ export const getEnvironmentInfo = () => {
     hasSessionStorage = true;
   } catch (e) {}
   
+  try {
+    hasIndexedDB = !!window.indexedDB;
+  } catch (e) {}
+  
+  try {
+    cookiesEnabled = navigator.cookieEnabled;
+  } catch (e) {}
+  
   return {
-    isMobile,
-    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-    localStorage: hasLocalStorage,
-    sessionStorage: hasSessionStorage,
-    cookiesEnabled: typeof navigator !== 'undefined' ? navigator.cookieEnabled : false,
-    privateBrowsingLikely: !hasLocalStorage && !hasSessionStorage,
-    screenWidth: typeof window !== 'undefined' ? window.innerWidth : 'unknown',
-    screenHeight: typeof window !== 'undefined' ? window.innerHeight : 'unknown',
-    connectionType: typeof navigator !== 'undefined' && 'connection' in navigator ? 
-      (navigator as any).connection?.effectiveType : 'unknown'
+    device: {
+      isMobile,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      platform: typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
+      vendor: typeof navigator !== 'undefined' ? navigator.vendor : 'unknown',
+      language: typeof navigator !== 'undefined' ? navigator.language : 'unknown'
+    },
+    network: {
+      online: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      connection,
+      effectiveType,
+      downlink,
+      rtt,
+      saveData
+    },
+    storage: {
+      localStorage: hasLocalStorage,
+      sessionStorage: hasSessionStorage,
+      indexedDB: hasIndexedDB,
+      cookiesEnabled,
+      privateBrowsingLikely: !hasLocalStorage && !hasSessionStorage,
+    },
+    screen: {
+      width: typeof window !== 'undefined' ? window.innerWidth : 'unknown',
+      height: typeof window !== 'undefined' ? window.innerHeight : 'unknown',
+      pixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 'unknown'
+    }
   };
+};
+
+/**
+ * Check connection to Supabase
+ */
+export const checkSupabaseConnection = async () => {
+  try {
+    // Import dynamically to avoid circular dependencies
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const start = Date.now();
+    // Make a simple request to check connectivity
+    const { error } = await supabase.from('profiles').select('id').limit(1).maybeSingle();
+    const duration = Date.now() - start;
+    
+    return {
+      success: !error,
+      error: error ? error.message : null,
+      duration
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Unknown connection error',
+      duration: 0
+    };
+  }
 };
 
 /**
  * Attempts to recover from authentication problems
  */
 export const attemptAuthRecovery = async () => {
+  // Log detailed environment info
+  const env = getEnvironmentInfo();
+  console.log('Auth recovery - Environment details:', env);
+  
   // Clean up auth state first
   cleanupAuthState();
   
   console.log('Attempting auth recovery...');
-  const env = getEnvironmentInfo();
-  console.log('Environment:', env);
+  
+  // Check connectivity
+  const connection = await checkSupabaseConnection();
+  console.log('Connection test result:', connection);
+  
+  // If we have connectivity issues, don't try to reload
+  if (!connection.success) {
+    return false;
+  }
   
   // Reload the page if on mobile (may help with some browser issues)
-  if (env.isMobile && window.location.pathname !== '/auth') {
+  if (env.device.isMobile && window.location.pathname !== '/auth') {
     console.log('Redirecting to auth page for recovery...');
-    window.location.href = '/auth';
+    // Add timestamp to avoid caching issues
+    window.location.href = '/auth?recovery=' + Date.now();
     return true;
   }
   
   return false;
+};
+
+/**
+ * Force network activity to clear proxy caches
+ */
+export const probeConnectivity = async (): Promise<{success: boolean, latency: number}> => {
+  const startTime = Date.now();
+  
+  try {
+    // Fetch from a reliable endpoint with a random query parameter to avoid caching
+    const response = await fetch(`${window.location.origin}?nocache=${Date.now()}`);
+    const success = response.ok;
+    const latency = Date.now() - startTime;
+    
+    console.log(`Connectivity probe: ${success ? 'successful' : 'failed'}, latency: ${latency}ms`);
+    
+    return {
+      success,
+      latency
+    };
+  } catch (e) {
+    const latency = Date.now() - startTime;
+    console.log(`Connectivity probe failed:`, e);
+    
+    return {
+      success: false,
+      latency
+    };
+  }
 };
