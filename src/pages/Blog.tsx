@@ -130,32 +130,56 @@ const Blog = () => {
   }, [user, selectedAlbum, selectedCategories, searchQuery]);
 
   // Fonction pour obtenir l'image initiale à afficher pour un article
-  const getInitialPostImage = (post: PostWithAuthor): string => {
-    // Si l'article a une image de couverture, utiliser getThumbnailUrlSync
-    if (post.cover_image) {
-      if (post.cover_image.startsWith('blob:')) {
-        console.log('Blog post has blob URL cover image, using placeholder');
-        return '/placeholder.svg';
-      }
-      return getThumbnailUrlSync(post.cover_image, 'blog-media');
-    }
-    
-    // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
-    if (post.album_id) {
-      const album = albums.find(a => a.id === post.album_id);
-      if (album?.thumbnail_url) {
-        if (album.thumbnail_url.startsWith('blob:')) {
-          console.log('Album has blob URL thumbnail, using placeholder');
-          return '/placeholder.svg';
-        }
-        return getThumbnailUrlSync(album.thumbnail_url);
-      }
+// Fonction pour obtenir l'image initiale à afficher pour un article
+const getInitialPostImage = (post: PostWithAuthor): string => {
+  // Si l'article a une image de couverture, utiliser getThumbnailUrlSync
+  if (post.cover_image) {
+    if (post.cover_image.startsWith('blob:')) {
+      console.log('Blog post has blob URL cover image, using placeholder:', post.cover_image);
       return '/placeholder.svg';
     }
-    
-    // Si aucune image n'est disponible, utiliser l'image par défaut
+    try {
+      const normalizedUrl = getThumbnailUrlSync(post.cover_image, BLOG_MEDIA_BUCKET);
+      console.log('Post cover image URL normalized:', normalizedUrl);
+      return normalizedUrl;
+    } catch (error) {
+      console.error('Error processing post cover image URL:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        cover_image: post.cover_image,
+        bucket: BLOG_MEDIA_BUCKET,
+      });
+      return '/placeholder.svg';
+    }
+  }
+  
+  // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
+  if (post.album_id) {
+    const album = albums.find(a => a.id === post.album_id);
+    if (album?.thumbnail_url) {
+      if (album.thumbnail_url.startsWith('blob:')) {
+        console.log('Album has blob URL thumbnail, using placeholder:', album.thumbnail_url);
+        return '/placeholder.svg';
+      }
+      try {
+        const normalizedUrl = getThumbnailUrlSync(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
+        console.log('Album thumbnail URL normalized:', normalizedUrl);
+        return normalizedUrl;
+      } catch (error) {
+        console.error('Error processing album thumbnail URL:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          thumbnail_url: album.thumbnail_url,
+          bucket: ALBUM_THUMBNAILS_BUCKET,
+        });
+        return '/placeholder.svg';
+      }
+    }
+    console.warn('No thumbnail_url for album:', album?.name);
     return '/placeholder.svg';
-  };
+  }
+  
+  // Si aucune image n'est disponible, utiliser l'image par défaut
+  return '/placeholder.svg';
+};
 
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
