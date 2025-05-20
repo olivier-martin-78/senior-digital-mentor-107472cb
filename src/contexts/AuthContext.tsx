@@ -1,4 +1,5 @@
-import React, { createContext, useContext } from 'react';
+
+import React, { createContext, useContext, useState } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
 import { AuthContextType } from '@/types/auth';
@@ -16,7 +17,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user, 
     profile, 
     roles, 
-    isLoading, 
+    isLoading,
+    setIsLoading, 
     hasRole, 
     authError,
     setAuthError 

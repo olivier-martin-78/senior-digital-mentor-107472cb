@@ -84,6 +84,7 @@ export const useAuthState = () => {
     profile,
     roles,
     isLoading,
+    setIsLoading,
     authError,
     hasRole,
     setAuthError
