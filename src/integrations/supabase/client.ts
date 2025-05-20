@@ -9,40 +9,104 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Detect if localStorage is available (may not be in some mobile browsers)
-const isLocalStorageAvailable = () => {
-  try {
-    const test = '__test__';
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch (e) {
-    return false;
-  }
+// Detect mobile device
+const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+
+// Create a resilient storage system with multiple fallbacks
+const createResilientStorage = () => {
+  const storage = {
+    getItem: (key: string): string | null => {
+      try {
+        // Try localStorage first
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(key);
+        }
+      } catch (e) {
+        console.warn('localStorage access failed:', e);
+      }
+      
+      try {
+        // Try sessionStorage as fallback
+        if (typeof sessionStorage !== 'undefined') {
+          return sessionStorage.getItem(key);
+        }
+      } catch (e) {
+        console.warn('sessionStorage access failed:', e);
+      }
+      
+      // Memory fallback (for current session only)
+      try {
+        if (typeof window !== 'undefined' && (window as any).__memoryStorage) {
+          return (window as any).__memoryStorage[key] || null;
+        }
+      } catch (e) {}
+      
+      return null;
+    },
+    
+    setItem: (key: string, value: string): void => {
+      let stored = false;
+      
+      try {
+        // Try localStorage first
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, value);
+          stored = true;
+        }
+      } catch (e) {
+        console.warn('localStorage set failed:', e);
+      }
+      
+      if (!stored) {
+        try {
+          // Try sessionStorage as fallback
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(key, value);
+            stored = true;
+          }
+        } catch (e) {
+          console.warn('sessionStorage set failed:', e);
+        }
+      }
+      
+      // Memory fallback (for current session only)
+      if (!stored && typeof window !== 'undefined') {
+        if (!(window as any).__memoryStorage) {
+          (window as any).__memoryStorage = {};
+        }
+        (window as any).__memoryStorage[key] = value;
+      }
+    },
+    
+    removeItem: (key: string): void => {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(key);
+        }
+      } catch (e) {}
+      
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem(key);
+        }
+      } catch (e) {}
+      
+      // Memory fallback cleanup
+      try {
+        if (typeof window !== 'undefined' && (window as any).__memoryStorage) {
+          delete (window as any).__memoryStorage[key];
+        }
+      } catch (e) {}
+    }
+  };
+  
+  return storage;
 };
 
-// Create a more resilient storage fallback
-const storageAdapter = isLocalStorageAvailable() 
-  ? localStorage 
-  : {
-      getItem: (key: string) => {
-        console.log('Using fallback storage for get:', key);
-        return sessionStorage.getItem(key) || null;
-      },
-      setItem: (key: string, value: string) => {
-        console.log('Using fallback storage for set:', key);
-        try {
-          sessionStorage.setItem(key, value);
-        } catch (e) {
-          console.error('Storage error:', e);
-        }
-      },
-      removeItem: (key: string) => {
-        console.log('Using fallback storage for remove:', key);
-        sessionStorage.removeItem(key);
-      }
-    };
+// Use our resilient storage adapter
+const storageAdapter = createResilientStorage();
 
+// Create and export the Supabase client with mobile-friendly config
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: storageAdapter,
@@ -50,5 +114,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce', // Better for mobile browsers
+    debug: isMobile // Enable debug mode on mobile to catch more issues
+  },
+  global: {
+    headers: {
+      'x-client-info': `mobile-${isMobile ? 'true' : 'false'}`
+    }
+  },
+  // Better for mobile connections
+  realtime: {
+    params: {
+      eventsPerSecond: 5
+    }
   }
 });
+
+// Export mobile detection helper
+export const isMobileClient = isMobile;

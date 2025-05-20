@@ -38,12 +38,29 @@ export const cleanupAuthState = () => {
     }
 
     // Try to use cookies as a last resort (needs server-side handling)
-    document.cookie.split(';').forEach(cookie => {
-      const [name] = cookie.split('=').map(c => c.trim());
-      if (name.startsWith('supabase.auth.') || name.includes('sb-')) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+    try {
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.split('=').map(c => c.trim());
+        if (name.startsWith('supabase.auth.') || name.includes('sb-')) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        }
+      });
+    } catch (e) {
+      console.warn('Cannot access cookies:', e);
+    }
+
+    // Clear memory storage fallback if it exists
+    try {
+      if (typeof window !== 'undefined' && (window as any).__memoryStorage) {
+        Object.keys((window as any).__memoryStorage).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            delete (window as any).__memoryStorage[key];
+          }
+        });
       }
-    });
+    } catch (e) {
+      console.warn('Cannot access memory storage:', e);
+    }
 
   } catch (e) {
     console.error('Error during auth cleanup:', e);
@@ -51,10 +68,36 @@ export const cleanupAuthState = () => {
 };
 
 /**
+ * Retries an auth operation with exponential backoff
+ */
+export const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 500
+): Promise<T> => {
+  let retries = 0;
+  
+  while (true) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (retries >= maxRetries) {
+        throw error;
+      }
+      
+      const delay = baseDelay * Math.pow(2, retries);
+      console.log(`Auth operation failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      retries++;
+    }
+  }
+};
+
+/**
  * Get environment information for debugging auth issues
  */
 export const getEnvironmentInfo = () => {
-  const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
   
   // Test storage availability
   let hasLocalStorage = false;
@@ -76,10 +119,35 @@ export const getEnvironmentInfo = () => {
   
   return {
     isMobile,
-    userAgent: navigator.userAgent,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
     localStorage: hasLocalStorage,
     sessionStorage: hasSessionStorage,
-    cookiesEnabled: navigator.cookieEnabled,
-    privateBrowsingLikely: !hasLocalStorage && !hasSessionStorage
+    cookiesEnabled: typeof navigator !== 'undefined' ? navigator.cookieEnabled : false,
+    privateBrowsingLikely: !hasLocalStorage && !hasSessionStorage,
+    screenWidth: typeof window !== 'undefined' ? window.innerWidth : 'unknown',
+    screenHeight: typeof window !== 'undefined' ? window.innerHeight : 'unknown',
+    connectionType: typeof navigator !== 'undefined' && 'connection' in navigator ? 
+      (navigator as any).connection?.effectiveType : 'unknown'
   };
+};
+
+/**
+ * Attempts to recover from authentication problems
+ */
+export const attemptAuthRecovery = async () => {
+  // Clean up auth state first
+  cleanupAuthState();
+  
+  console.log('Attempting auth recovery...');
+  const env = getEnvironmentInfo();
+  console.log('Environment:', env);
+  
+  // Reload the page if on mobile (may help with some browser issues)
+  if (env.isMobile && window.location.pathname !== '/auth') {
+    console.log('Redirecting to auth page for recovery...');
+    window.location.href = '/auth';
+    return true;
+  }
+  
+  return false;
 };
