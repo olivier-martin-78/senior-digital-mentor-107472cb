@@ -192,7 +192,7 @@ export const getEnvironmentInfo = () => {
 /**
  * Check connection to Supabase
  */
-export const checkSupabaseConnection = async () => {
+export const checkSupabaseConnection = async (): Promise<SupabaseConnectionResult> => {
   try {
     // Import dynamically to avoid circular dependencies
     const { supabase } = await import('@/integrations/supabase/client');
@@ -201,21 +201,43 @@ export const checkSupabaseConnection = async () => {
     // Make a simple request to check connectivity
     const { error } = await supabase.from('profiles').select('id').limit(1).maybeSingle();
     const duration = Date.now() - start;
+
+    if (error) {
+      console.error('Supabase connection check failed:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      return {
+        success: false,
+        error: error.message,
+        duration,
+      };
+    }
+
+    console.log(`Supabase connection check successful, duration: ${duration}ms`);
     
     return {
-      success: !error,
-      error: error ? error.message : null,
-      duration
+      success: true,
+      error: null,
+      duration,
     };
-  } catch (e) {
+  } catch (error) {
+    const duration = Date.now() - start;
+    console.error('Supabase connection check failed:', {
+      message: error instanceof Error ? error.message : 'Unknown connection error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     return {
       success: false,
-      error: e instanceof Error ? e.message : 'Unknown connection error',
-      duration: 0
+      error: error instanceof Error ? error.message : 'Connection error: Load failed',
+      duration,
     };
   }
 };
-
 /**
  * Attempts to recover from authentication problems
  */
@@ -252,28 +274,58 @@ export const attemptAuthRecovery = async () => {
 /**
  * Force network activity to clear proxy caches
  */
-export const probeConnectivity = async () => {
+/**
+ * Interface for connectivity probe result
+ */
+interface ConnectivityResult {
+  success: boolean;
+  latency: number;
+}
+
+/**
+ * Interface for Supabase connection result
+ */
+interface SupabaseConnectionResult {
+  success: boolean;
+  error: string | null;
+  duration: number;
+}
+
+/**
+ * Force network activity to clear proxy caches
+ */
+export const probeConnectivity = async (): Promise<ConnectivityResult> => {
   const startTime = Date.now();
   
   try {
-    // Fetch from a reliable endpoint with a random query parameter to avoid caching
-    const response = await fetch(`${window.location.origin}?nocache=${Date.now()}`);
+    // Use Supabase URL or a reliable public endpoint instead of window.location.origin
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://ton-projet.supabase.co';
+    const response = await fetch(`${supabaseUrl}/health?nocache=${Date.now()}`, {
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     const success = response.ok;
     const latency = Date.now() - startTime;
-    
+
     console.log(`Connectivity probe: ${success ? 'successful' : 'failed'}, latency: ${latency}ms`);
     
     return {
       success,
-      latency
+      latency,
     };
-  } catch (e) {
+  } catch (error) {
     const latency = Date.now() - startTime;
-    console.log(`Connectivity probe failed:`, e);
-    
+    console.error('Connectivity probe failed:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     return {
       success: false,
-      latency
+      latency,
     };
   }
 };
