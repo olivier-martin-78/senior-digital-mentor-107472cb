@@ -132,16 +132,11 @@ const Blog = () => {
 
   // Fonction pour obtenir l'image initiale à afficher pour un article
 // Fonction pour obtenir l'image initiale à afficher pour un article
-const getInitialPostImage = (post: PostWithAuthor): string => {
-  // Si l'article a une image de couverture, utiliser getThumbnailUrlSync
+const getInitialPostImage = async (post: PostWithAuthor): Promise<string> => {
   if (post.cover_image) {
-    if (post.cover_image.startsWith('blob:')) {
-      console.log('Blog post has blob URL cover image, using placeholder:', post.cover_image);
-      return '/placeholder.svg';
-    }
     try {
-      const normalizedUrl = getThumbnailUrlSync(post.cover_image, BLOG_MEDIA_BUCKET);
-      console.log('Post cover image URL normalized:', normalizedUrl);
+      const normalizedUrl = await getThumbnailUrl(post.cover_image, BLOG_MEDIA_BUCKET);
+      console.log('Post cover image URL normalized:', { original: post.cover_image, normalized: normalizedUrl });
       return normalizedUrl;
     } catch (error) {
       console.error('Error processing post cover image URL:', {
@@ -153,17 +148,12 @@ const getInitialPostImage = (post: PostWithAuthor): string => {
     }
   }
   
-  // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
   if (post.album_id) {
     const album = albums.find(a => a.id === post.album_id);
     if (album?.thumbnail_url) {
-      if (album.thumbnail_url.startsWith('blob:')) {
-        console.log('Album has blob URL thumbnail, using placeholder:', album.thumbnail_url);
-        return '/placeholder.svg';
-      }
       try {
-        const normalizedUrl = getThumbnailUrlSync(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
-        console.log('Album thumbnail URL normalized:', normalizedUrl);
+        const normalizedUrl = await getThumbnailUrl(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
+        console.log('Album thumbnail URL normalized:', { original: album.thumbnail_url, normalized: normalizedUrl });
         return normalizedUrl;
       } catch (error) {
         console.error('Error processing album thumbnail URL:', {
@@ -178,7 +168,6 @@ const getInitialPostImage = (post: PostWithAuthor): string => {
     return '/placeholder.svg';
   }
   
-  // Si aucune image n'est disponible, utiliser l'image par défaut
   return '/placeholder.svg';
 };
 
