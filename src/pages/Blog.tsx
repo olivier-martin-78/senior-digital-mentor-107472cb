@@ -63,72 +63,65 @@ const Blog = () => {
   }, [user?.id]); // Ajouter user?.id comme dépendance pour recharger lorsque l'utilisateur change
 
   // Fetch posts with filters
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoading(true);
-        let query = supabase
-          .from('blog_posts')
-          .select(`
-            *,
-            profiles:author_id(*)
-          `)
-          .order('created_at', { ascending: false });
+useEffect(() => {
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('blog_posts')
+        .select(`
+          *,
+          profiles:author_id(*)
+        `)
+        .order('created_at', { ascending: false });
 
-        // Apply album filter if selected
-        if (selectedAlbum) {
-          query = query.eq('album_id', selectedAlbum);
-        }
-
-        // Apply search filter if provided
-        if (searchQuery.trim()) {
-          query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          throw error;
-        }
-
-        let filteredPosts = data as PostWithAuthor[];
-
-        // If categories are selected, we need to filter posts further
-        // since we can't filter by categories directly in the initial query
-        if (selectedCategories.length > 0) {
-          const { data: postCategories } = await supabase
-            .from('post_categories')
-            .select('post_id, category_id')
-            .in('category_id', selectedCategories);
-
-          if (postCategories) {
-            // Get unique post IDs that have at least one of the selected categories
-            const postIdsWithSelectedCategories = [...new Set(postCategories.map(pc => pc.post_id))];
-            
-            // Filter posts to only those with matching IDs
-            filteredPosts = filteredPosts.filter(post => 
-              postIdsWithSelectedCategories.includes(post.id)
-            );
-          }
-        }
-
-        setPosts(filteredPosts);
-        
-        // Initialiser les images pour chaque post
-        const initialPostImages: Record<string, string> = {};
-        filteredPosts.forEach(post => {
-          initialPostImages[post.id] = getInitialPostImage(post);
-        });
-        setPostImages(initialPostImages);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      } finally {
-        setLoading(false);
+      if (selectedAlbum) {
+        query = query.eq('album_id', selectedAlbum);
       }
-    };
 
-    fetchPosts();
-  }, [user, selectedAlbum, selectedCategories, searchQuery]);
+      if (searchQuery.trim()) {
+        query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      let filteredPosts = data as PostWithAuthor[];
+
+      if (selectedCategories.length > 0) {
+        const { data: postCategories } = await supabase
+          .from('post_categories')
+          .select('post_id, category_id')
+          .in('category_id', selectedCategories);
+
+        if (postCategories) {
+          const postIdsWithSelectedCategories = [...new Set(postCategories.map(pc => pc.post_id))];
+          filteredPosts = filteredPosts.filter(post => 
+            postIdsWithSelectedCategories.includes(post.id)
+          );
+        }
+      }
+
+      setPosts(filteredPosts);
+
+      // Initialiser les images pour chaque post
+      const initialPostImages: Record<string, string> = {};
+      for (const post of filteredPosts) {
+        initialPostImages[post.id] = await getInitialPostImage(post);
+      }
+      setPostImages(initialPostImages);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchPosts();
+}, [user, selectedAlbum, selectedCategories, searchQuery, albums]);
 
   // Fonction pour obtenir l'image initiale à afficher pour un article
 // Fonction pour obtenir l'image initiale à afficher pour un article
