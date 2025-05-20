@@ -1,8 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-
-// Nom du bucket pour les médias du journal
-export const DIARY_MEDIA_BUCKET = 'diary_media';
+import { DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET } from './thumbnailtUtils';
 
 /**
  * Obtenir l'URL publique d'un fichier
@@ -24,22 +22,36 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
   }
   
   try {
+    // Détection automatique du bucket basée sur le format du chemin
+    let actualBucket = bucket;
+    
+    // Si l'URL contient un identifiant utilisateur (chemin standard pour diary_media)
+    if (path.includes('/')) {
+      actualBucket = DIARY_MEDIA_BUCKET;
+    } else {
+      // Si le chemin ne contient pas de slash et ressemble à un fichier média du blog
+      const isLikelyBlogMedia = /^[^.]+$/.test(path) || /\.[a-zA-Z0-9]{1,4}$/.test(path);
+      if (isLikelyBlogMedia && bucket === DIARY_MEDIA_BUCKET) {
+        actualBucket = BLOG_MEDIA_BUCKET;
+        console.log(`Chemin détecté comme fichier blog-media: ${path}`);
+      }
+    }
+    
     // Gestion des cas où le chemin contient le nom d'utilisateur
-    // Par exemple "user_id/filename.jpg"
-    const cleanPath = path.includes('/') ? path : `${path}`;
+    const cleanPath = path;
     
     // Construire l'URL à partir du chemin dans le bucket
-    const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+    const { data } = supabase.storage.from(actualBucket).getPublicUrl(cleanPath);
     
     // Vérifier si l'URL a été générée correctement
     if (data && data.publicUrl) {
-      console.log('URL publique générée:', data.publicUrl);
+      console.log('URL publique générée:', data.publicUrl, 'depuis le bucket:', actualBucket);
       return data.publicUrl;
     }
     
     throw new Error("Impossible de générer l'URL publique");
   } catch (error) {
-    console.error('Erreur lors de la génération de l\'URL publique:', error);
+    console.error('Erreur lors de la génération de l\'URL publique:', error, 'pour le chemin:', path);
     // Retourner une image placeholder en cas d'erreur
     return '/placeholder.svg';
   }
@@ -63,7 +75,8 @@ export const getPathFromUrl = (url: string): string | null => {
     const pathParts = urlObj.pathname.split('/');
     
     // Trouver l'index du nom du bucket dans le chemin
-    const bucketIndex = pathParts.findIndex(part => part === DIARY_MEDIA_BUCKET || part === 'object' || part === 'public');
+    const buckets = [DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET, 'object', 'public'];
+    const bucketIndex = pathParts.findIndex(part => buckets.includes(part));
     
     if (bucketIndex !== -1 && bucketIndex + 1 < pathParts.length) {
       // Retourner le chemin relatif après le nom du bucket
@@ -97,4 +110,25 @@ export const isValidUrl = (url: string): boolean => {
   } catch (error) {
     return false;
   }
+};
+
+/**
+ * Détecter le bucket approprié pour un fichier média en fonction de son chemin ou URL
+ * @param path Chemin ou URL du fichier
+ * @returns Nom du bucket approprié
+ */
+export const detectMediaBucket = (path: string | null): string => {
+  if (!path) return DIARY_MEDIA_BUCKET;
+  
+  if (path.includes('/')) {
+    return DIARY_MEDIA_BUCKET;
+  }
+  
+  // Pour les chemins simples sans extension ou avec extension courte
+  const isLikelyBlogMedia = /^[^.]+$/.test(path) || /\.[a-zA-Z0-9]{1,4}$/.test(path);
+  if (isLikelyBlogMedia) {
+    return BLOG_MEDIA_BUCKET;
+  }
+  
+  return DIARY_MEDIA_BUCKET;
 };
