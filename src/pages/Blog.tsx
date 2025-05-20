@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { PlusCircle, Search, ImageIcon } from 'lucide-react';
 import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
+import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
 
 const Blog = () => {
   const { user, hasRole } = useAuth();
@@ -133,13 +133,24 @@ const Blog = () => {
   const getInitialPostImage = (post: PostWithAuthor): string => {
     // Si l'article a une image de couverture, utiliser getThumbnailUrlSync
     if (post.cover_image) {
-      return getThumbnailUrlSync(post.cover_image);
+      if (post.cover_image.startsWith('blob:')) {
+        console.log('Blog post has blob URL cover image, using placeholder');
+        return '/placeholder.svg';
+      }
+      return getThumbnailUrlSync(post.cover_image, 'blog-media');
     }
     
     // Sinon, si l'article appartient à un album, utiliser la vignette de l'album
     if (post.album_id) {
       const album = albums.find(a => a.id === post.album_id);
-      return album?.thumbnail_url ? getThumbnailUrlSync(album.thumbnail_url) : '/placeholder.svg';
+      if (album?.thumbnail_url) {
+        if (album.thumbnail_url.startsWith('blob:')) {
+          console.log('Album has blob URL thumbnail, using placeholder');
+          return '/placeholder.svg';
+        }
+        return getThumbnailUrlSync(album.thumbnail_url);
+      }
+      return '/placeholder.svg';
     }
     
     // Si aucune image n'est disponible, utiliser l'image par défaut
@@ -236,14 +247,23 @@ const Blog = () => {
               <Card key={post.id} className={`overflow-hidden ${!post.published ? 'border-orange-300' : ''}`}>
                 {/* Image de couverture de l'article ou vignette de l'album */}
                 <div className="relative w-full h-40 bg-gray-100">
-                  <img 
-                    src={postImages[post.id]} 
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
+                  {post.album_id ? (
+                    <AlbumThumbnail 
+                      album={albums.find(a => a.id === post.album_id) || null}
+                      title={post.title}
+                      coverImage={post.cover_image}
+                    />
+                  ) : (
+                    <img 
+                      src={postImages[post.id]} 
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('Post image failed to load:', postImages[post.id]);
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  )}
                   {!post.cover_image && !post.album_id && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <ImageIcon className="h-12 w-12 text-gray-300" />

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicUrl } from "./storageUtils";
 
@@ -74,6 +73,19 @@ export const normalizeMediaUrl = (url: string | null): string | null => {
     bucket = DIARY_MEDIA_BUCKET; // Les chemins avec '/' sont typiquement pour diary_media
   }
   
+  // On retourne l'URL générée à partir du chemin et du bucket
+  try {
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(url);
+      
+    if (data && data.publicUrl) {
+      return data.publicUrl;
+    }
+  } catch (e) {
+    console.error('Error normalizing media URL:', e);
+  }
+  
   return url;
 };
 
@@ -97,6 +109,12 @@ export const getThumbnailUrlSync = (url: string | null, bucket: string = ALBUM_T
   }
   
   try {
+    // Si l'URL est déjà une URL complète avec http(s), la retourner directement
+    if (url.startsWith('http')) {
+      console.log("URL déjà complète:", url);
+      return url;
+    }
+    
     // Déterminer automatiquement le bucket en fonction de l'URL ou du chemin
     let actualBucket = bucket;
     
@@ -104,12 +122,6 @@ export const getThumbnailUrlSync = (url: string | null, bucket: string = ALBUM_T
     if (url.includes('/')) {
       actualBucket = DIARY_MEDIA_BUCKET;
       console.log(`URL de type chemin détectée (${url}), utilisation du bucket ${actualBucket}`);
-    }
-    
-    // Si l'URL est déjà une URL complète, la retourner
-    if (url.startsWith('http')) {
-      console.log("URL déjà complète:", url);
-      return url;
     }
     
     // Si l'URL commence par un nom de fichier sans extension ou avec une extension courte (1-4 caractères)
@@ -132,7 +144,8 @@ export const getThumbnailUrlSync = (url: string | null, bucket: string = ALBUM_T
       return data.publicUrl;
     }
     
-    return '/placeholder.svg';
+    console.warn(`Impossible de générer l'URL publique pour ${url} dans ${actualBucket}, utilisation de l'URL brute`);
+    return url; // Retourner l'URL brute comme fallback avant le placeholder
   } catch (error) {
     console.error("Erreur lors de la génération de l'URL publique:", error, "pour l'URL:", url, "et bucket:", bucket);
     // Retourner une image placeholder en cas d'erreur
