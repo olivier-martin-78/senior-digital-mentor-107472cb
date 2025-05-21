@@ -10,6 +10,28 @@ import { cleanupAuthState } from '@/utils/authUtils';
 export { cleanupAuthState } from '@/utils/authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Ajout manuel
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('AuthContext - Initial session:', session);
+    setSession(session);
+    setUser(session?.user ?? null);
+    setLoading(false);
+  });
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    console.log('AuthContext - Auth state changed:', session);
+    setSession(session);
+    setUser(session?.user ?? null);
+    setLoading(false);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+
+// Fin ajout
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { 
