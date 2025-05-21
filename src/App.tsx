@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,8 +38,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/wish-form" element={<WishForm />} />
             <Route path="/wishes" element={<Wishes />} />
@@ -48,6 +45,8 @@ const App = () => (
 
             {/* Routes protégées qui nécessitent une authentification */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/diary" element={<Diary />} />
               <Route path="/diary/new" element={<DiaryNew />} />
