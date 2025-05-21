@@ -1,12 +1,23 @@
+
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 
 const ProtectedRoute = ({ requiredRoles }: { requiredRoles?: string[] }) => {
-  const { session, hasRole, loading } = useAuth();
+  const { session, hasRole, isLoading } = useAuth();
 
-  console.log('ProtectedRoute - loading:', loading, 'session:', session ? 'present' : 'null');
+  console.log('ProtectedRoute - loading:', isLoading, 'session:', session ? 'present' : 'null');
 
-  if (loading) {
+  // Force redirection à /auth si pas de session
+  useEffect(() => {
+    console.log('ProtectedRoute - useEffect check');
+    // Si le chargement est terminé et pas de session, rediriger vers /auth
+    if (!isLoading && !session) {
+      console.log('ProtectedRoute - No session after loading, should redirect');
+    }
+  }, [isLoading, session]);
+
+  if (isLoading) {
     console.log('ProtectedRoute - Showing loading spinner');
     return <div className="flex justify-center items-center min-h-screen">
       <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>

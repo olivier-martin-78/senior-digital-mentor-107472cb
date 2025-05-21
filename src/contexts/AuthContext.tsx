@@ -1,37 +1,16 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
 import { AuthContextType } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import { cleanupAuthState } from '@/utils/authUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 // Re-export the cleanup function for use in other components
 export { cleanupAuthState } from '@/utils/authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-// Ajout manuel
-useEffect(() => {
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    console.log('AuthContext - Initial session:', session);
-    setSession(session);
-    setUser(session?.user ?? null);
-    setLoading(false);
-  });
-
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
-    console.log('AuthContext - Auth state changed:', session);
-    setSession(session);
-    setUser(session?.user ?? null);
-    setLoading(false);
-  });
-
-  return () => subscription.unsubscribe();
-}, []);
-
-// Fin ajout
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { 
@@ -47,6 +26,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
   
   const { toast } = useToast();
+
+  // Vérification initiale de session et configuration du listener d'événements d'authentification
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('AuthContext - Initial session:', session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('AuthContext - Auth state changed:', session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
