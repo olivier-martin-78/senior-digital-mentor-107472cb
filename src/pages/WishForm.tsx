@@ -60,6 +60,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const WishForm = () => {
+  const { user } = useAuth(); // Récupérer le user dans le scope global
   const { toast } = useToast();
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
@@ -118,71 +119,70 @@ const WishForm = () => {
   
   const watchRequestType = form.watch('requestType');
   
-const onSubmit = async (values: FormValues) => {
-  setIsLoading(true);
-  try {
-    const { user } = useAuth();
-    
-    if (!user) {
-      console.log('WishForm - No user authenticated');
+  const onSubmit = async (values: FormValues) => {
+    setIsLoading(true);
+    try {
+      // Vérification si l'utilisateur est connecté
+      if (!user) {
+        console.log('WishForm - No user authenticated');
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: 'Vous devez être connecté pour soumettre un souhait.',
+        });
+        navigate('/auth');
+        return;
+      }
+
+      const submissionData = {
+        title: values.title,
+        content: values.description,
+        author_id: user.id, // Utiliser author_id au lieu de user_id
+        first_name: values.firstName,
+        email: values.email || null,
+        age: values.age || null,
+        location: values.location || null,
+        request_type: values.requestType,
+        custom_request_type: values.requestType === 'other' ? values.customRequestType : null,
+        importance: values.importance,
+        date: values.date ? values.date.toISOString() : null,
+        needs: values.needs,
+        offering: values.offering || null,
+        attachment_url: values.attachmentUrl || null,
+        album_id: values.albumId === 'none' ? null : values.albumId || null,
+        published: false
+      };
+
+      console.log('WishForm - Submitting data:', submissionData);
+
+      const { data, error } = await supabase
+        .from('wish_posts')
+        .insert([submissionData])
+        .select();
+
+      if (error) {
+        console.error('WishForm - Supabase error:', error);
+        throw error;
+      }
+
+      toast({
+        title: 'Souhait enregistré !',
+        description: 'Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.',
+      });
+      navigate('/wishes');
+    } catch (error: any) {
+      console.error('WishForm - Submission error:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Vous devez être connecté pour soumettre un souhait.',
+        description: error.message && error.message.includes('permission denied')
+          ? 'Vous n\'avez pas la permission d\'enregistrer un souhait.'
+          : 'Une erreur est survenue lors de l\'enregistrement de votre souhait. Veuillez réessayer ultérieurement.',
       });
-      navigate('/auth');
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    const submissionData = {
-      title: values.title,
-      content: values.description,
-      user_id: user.id, // Utiliser user_id au lieu de author_id
-      first_name: values.firstName,
-      email: values.email || null,
-      age: values.age || null,
-      location: values.location || null,
-      request_type: values.requestType,
-      custom_request_type: values.requestType === 'other' ? values.customRequestType : null,
-      importance: values.importance,
-      date: values.date ? values.date.toISOString() : null,
-      needs: values.needs,
-      offering: values.offering || null,
-      attachment_url: values.attachmentUrl || null,
-      album_id: values.albumId || null,
-      published: false
-    };
-
-    console.log('WishForm - Submitting data:', submissionData);
-
-    const { data, error } = await supabase
-      .from('wish_posts')
-      .insert([submissionData])
-      .select();
-
-    if (error) {
-      console.error('WishForm - Supabase error:', error);
-      throw error;
-    }
-
-    toast({
-      title: 'Souhait enregistré !',
-      description: 'Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.',
-    });
-    navigate('/wishes');
-  } catch (error: any) {
-    console.error('WishForm - Submission error:', error);
-    toast({
-      variant: 'destructive',
-      title: 'Erreur',
-      description: error.message.includes('permission denied')
-        ? 'Vous n\'avez pas la permission d\'enregistrer un souhait.'
-        : `Une erreur est survenue : ${error.message || 'Erreur inconnue'}`,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
   
   return (
     <div className="min-h-screen bg-gray-50 pt-16">

@@ -500,6 +500,7 @@ export type Database = {
           request_type: string | null
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           age?: string | null
@@ -522,6 +523,7 @@ export type Database = {
           request_type?: string | null
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           age?: string | null
@@ -544,6 +546,7 @@ export type Database = {
           request_type?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
