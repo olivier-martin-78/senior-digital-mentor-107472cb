@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
-const Header = () => {
+const Header: React.FC = () => {
   const { session, user, profile, signOut, hasRole } = useAuth();
 
   const handleLogout = async () => {
@@ -33,14 +32,14 @@ const Header = () => {
           <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Accueil
           </Link>
-          <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
-            Albums
-          </Link>
-          <Link to="/wishes" className="text-gray-600 hover:text-tranches-sage transition-colors">
-            Souhaits
-          </Link>
           {session && (
             <>
+              <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
+                Albums
+              </Link>
+              <Link to="/wishes" className="text-gray-600 hover:text-tranches-sage transition-colors">
+                Souhaits
+              </Link>
               <Link to="/diary" className="text-gray-600 hover:text-tranches-sage transition-colors">
                 Journal
               </Link>
@@ -127,14 +126,14 @@ const Header = () => {
                   <Link to="/" className="hover:text-tranches-sage transition-colors">
                     Accueil
                   </Link>
-                  <Link to="/blog" className="hover:text-tranches-sage transition-colors">
-                    Albums
-                  </Link>
-                  <Link to="/wishes" className="hover:text-tranches-sage transition-colors">
-                    Souhaits
-                  </Link>
                   {session && (
                     <>
+                      <Link to="/blog" className="hover:text-tranches-sage transition-colors">
+                        Albums
+                      </Link>
+                      <Link to="/wishes" className="hover:text-tranches-sage transition-colors">
+                        Souhaits
+                      </Link>
                       <Link to="/diary" className="hover:text-tranches-sage transition-colors">
                         Journal
                       </Link>
@@ -152,7 +151,7 @@ const Header = () => {
                           <Link to="/admin/posts" className="hover:text-tranches-sage transition-colors">
                             Articles
                           </Link>
-                           <Link to="/admin/albums" className="hover:text-tranches-sage transition-colors">
+                          <Link to="/admin/albums" className="hover:text-tranches-sage transition-colors">
                             Albums
                           </Link>
                         </>
