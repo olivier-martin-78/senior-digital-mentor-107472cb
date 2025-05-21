@@ -1,6 +1,6 @@
 import { ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET, getThumbnailUrl } from '@/utils/thumbnailtUtils';
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PostWithAuthor, BlogAlbum, BlogCategory } from '@/types/supabase';
@@ -16,8 +16,9 @@ import { PlusCircle, Search, ImageIcon } from 'lucide-react';
 import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
 
-const Blog = () => {
-  const { user, hasRole } = useAuth();
+const Blog: React.FC = () => {
+  const { user, session, hasRole } = useAuth();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -26,6 +27,18 @@ const Blog = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [postImages, setPostImages] = useState<Record<string, string>>({});
+
+  // Rediriger vers /auth si l'utilisateur n'est pas authentifié
+  useEffect(() => {
+    if (!session) {
+      navigate('/auth');
+    }
+  }, [session, navigate]);
+
+  // Ne rien afficher si l'utilisateur n'est pas authentifié
+  if (!session) {
+    return null;
+  }
 
   // Fetch albums and categories
   useEffect(() => {
@@ -54,115 +67,116 @@ const Blog = () => {
         } else if (categoriesError) {
           console.error('Erreur lors du chargement des catégories:', categoriesError);
         }
-      } catch (error) {
+      }ाए
+
+System: catch (error) {
         console.error('Error fetching filters:', error);
       }
     };
 
     fetchFilters();
-  }, [user?.id]); // Ajouter user?.id comme dépendance pour recharger lorsque l'utilisateur change
+  }, [user?.id]);
 
   // Fetch posts with filters
-useEffect(() => {
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('blog_posts')
-        .select(`
-          *,
-          profiles:author_id(*)
-        `)
-        .order('created_at', { ascending: false });
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        let query = supabase
+          .from('blog_posts')
+          .select(`
+            *,
+            profiles:author_id(*)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (selectedAlbum) {
-        query = query.eq('album_id', selectedAlbum);
-      }
-
-      if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      let filteredPosts = data as PostWithAuthor[];
-
-      if (selectedCategories.length > 0) {
-        const { data: postCategories } = await supabase
-          .from('post_categories')
-          .select('post_id, category_id')
-          .in('category_id', selectedCategories);
-
-        if (postCategories) {
-          const postIdsWithSelectedCategories = [...new Set(postCategories.map(pc => pc.post_id))];
-          filteredPosts = filteredPosts.filter(post => 
-            postIdsWithSelectedCategories.includes(post.id)
-          );
+        if (selectedAlbum) {
+          query = query.eq('album_id', selectedAlbum);
         }
+
+        if (searchQuery.trim()) {
+          query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        let filteredPosts = data as PostWithAuthor[];
+
+        if (selectedCategories.length > 0) {
+          const { data: postCategories } = await supabase
+            .from('post_categories')
+            .select('post_id, category_id')
+            .in('category_id', selectedCategories);
+
+          if (postCategories) {
+            const postIdsWithSelectedCategories = [...new Set(postCategories.map(pc => pc.post_id))];
+            filteredPosts = filteredPosts.filter(post => 
+              postIdsWithSelectedCategories.includes(post.id)
+            );
+          }
+        }
+
+        setPosts(filteredPosts);
+
+        // Initialiser les images pour chaque post
+        const initialPostImages: Record<string, string> = {};
+        for (const post of filteredPosts) {
+          initialPostImages[post.id] = await getInitialPostImage(post);
+        }
+        setPostImages(initialPostImages);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setPosts(filteredPosts);
-
-      // Initialiser les images pour chaque post
-      const initialPostImages: Record<string, string> = {};
-      for (const post of filteredPosts) {
-        initialPostImages[post.id] = await getInitialPostImage(post);
-      }
-      setPostImages(initialPostImages);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchPosts();
-}, [user, selectedAlbum, selectedCategories, searchQuery, albums]);
+    fetchPosts();
+  }, [user, selectedAlbum, selectedCategories, searchQuery, albums]);
 
   // Fonction pour obtenir l'image initiale à afficher pour un article
-// Fonction pour obtenir l'image initiale à afficher pour un article
-const getInitialPostImage = async (post: PostWithAuthor): Promise<string> => {
-  if (post.cover_image) {
-    try {
-      const normalizedUrl = await getThumbnailUrl(post.cover_image, BLOG_MEDIA_BUCKET);
-      console.log('Post cover image URL normalized:', { original: post.cover_image, normalized: normalizedUrl });
-      return normalizedUrl;
-    } catch (error) {
-      console.error('Error processing post cover image URL:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        cover_image: post.cover_image,
-        bucket: BLOG_MEDIA_BUCKET,
-      });
-      return '/placeholder.svg';
-    }
-  }
-  
-  if (post.album_id) {
-    const album = albums.find(a => a.id === post.album_id);
-    if (album?.thumbnail_url) {
+  const getInitialPostImage = async (post: PostWithAuthor): Promise<string> => {
+    if (post.cover_image) {
       try {
-        const normalizedUrl = await getThumbnailUrl(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
-        console.log('Album thumbnail URL normalized:', { original: album.thumbnail_url, normalized: normalizedUrl });
+        const normalizedUrl = await getThumbnailUrl(post.cover_image, BLOG_MEDIA_BUCKET);
+        console.log('Post cover image URL normalized:', { original: post.cover_image, normalized: normalizedUrl });
         return normalizedUrl;
       } catch (error) {
-        console.error('Error processing album thumbnail URL:', {
+        console.error('Error processing post cover image URL:', {
           error: error instanceof Error ? error.message : 'Unknown error',
-          thumbnail_url: album.thumbnail_url,
-          bucket: ALBUM_THUMBNAILS_BUCKET,
+          cover_image: post.cover_image,
+          bucket: BLOG_MEDIA_BUCKET,
         });
         return '/placeholder.svg';
       }
     }
-    console.warn('No thumbnail_url for album:', album?.name);
+    
+    if (post.album_id) {
+      const album = albums.find(a => a.id === post.album_id);
+      if (album?.thumbnail_url) {
+        try {
+          const normalizedUrl = await getThumbnailUrl(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
+          console.log('Album thumbnail URL normalized:', { original: album.thumbnail_url, normalized: normalizedUrl });
+          return normalizedUrl;
+        } catch (error) {
+          console.error('Error processing album thumbnail URL:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            thumbnail_url: album.thumbnail_url,
+            bucket: ALBUM_THUMBNAILS_BUCKET,
+          });
+          return '/placeholder.svg';
+        }
+      }
+      console.warn('No thumbnail_url for album:', album?.name);
+      return '/placeholder.svg';
+    }
+    
     return '/placeholder.svg';
-  }
-  
-  return '/placeholder.svg';
-};
+  };
 
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
