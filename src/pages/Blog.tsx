@@ -1,3 +1,4 @@
+
 import { ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET, getThumbnailUrl } from '@/utils/thumbnailtUtils';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -67,9 +68,7 @@ const Blog: React.FC = () => {
         } else if (categoriesError) {
           console.error('Erreur lors du chargement des catégories:', categoriesError);
         }
-      }ाए
-
-System: catch (error) {
+      } catch (error) {
         console.error('Error fetching filters:', error);
       }
     };
