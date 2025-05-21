@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BlogAlbum } from '@/types/supabase';
 import { getThumbnailUrl, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
@@ -70,7 +71,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
         <img
           src={thumbnailUrl}
           alt={`Couverture de ${title}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain" /* Changed from object-cover to object-contain */
           onLoad={() => setIsLoading(false)}
           onError={(e) => {
             console.error('Image failed to load:', {

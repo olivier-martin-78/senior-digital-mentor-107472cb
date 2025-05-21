@@ -17,13 +17,13 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
             <img
               src={item.media_url}
               alt="Media du post"
-              className="w-full h-48 object-cover"
+              className="w-full h-48 object-contain" /* Changed from object-cover to object-contain */
             />
           ) : item.media_type.startsWith('video/') ? (
             <video
               src={item.media_url}
               controls
-              className="w-full h-48 object-cover"
+              className="w-full h-48 object-contain" /* Changed from object-cover to object-contain */
             />
           ) : (
             <div className="flex items-center justify-center bg-gray-100 h-48">
