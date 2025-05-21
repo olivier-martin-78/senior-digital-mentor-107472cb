@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppRole } from "@/types/supabase";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -57,14 +58,14 @@ const App = () => (
             </Route>
 
             {/* Routes pour les éditeurs et admins */}
-            <Route element={<ProtectedRoute requiredRoles={['editor', 'admin']} />}>
+            <Route element={<ProtectedRoute requiredRoles={['editor', 'admin'] as AppRole[]} />}>
               <Route path="/blog/new" element={<BlogEditor />} />
               <Route path="/blog/edit/:id" element={<BlogEditor />} />
               <Route path="/admin/posts" element={<AdminPosts />} />
             </Route>
 
             {/* Routes uniquement pour les admins */}
-            <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
+            <Route element={<ProtectedRoute requiredRoles={['admin'] as AppRole[]} />}>
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/albums" element={<AdminAlbums />} />
               <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />

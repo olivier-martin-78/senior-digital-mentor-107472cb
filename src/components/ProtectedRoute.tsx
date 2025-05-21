@@ -2,8 +2,9 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
+import { AppRole } from '@/types/supabase';
 
-const ProtectedRoute = ({ requiredRoles }: { requiredRoles?: string[] }) => {
+const ProtectedRoute = ({ requiredRoles }: { requiredRoles?: AppRole[] }) => {
   const { session, hasRole, isLoading } = useAuth();
 
   console.log('ProtectedRoute - loading:', isLoading, 'session:', session ? 'present' : 'null');
