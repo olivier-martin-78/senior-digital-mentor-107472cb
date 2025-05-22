@@ -75,7 +75,7 @@ const LifeStory: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de l'histoire de vie:', error);
+        console.error("Erreur lors du chargement de l'histoire de vie:", error);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger votre histoire de vie.',

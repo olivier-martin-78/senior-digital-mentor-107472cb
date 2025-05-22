@@ -51,7 +51,7 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
 
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        console.log('Blob créé:', blob, 'Taille:', blob.size); // Débogage
+        console.log("Blob créé:", blob, "Taille:", blob.size); // Débogage
         onAudioRecorded(chapterId, questionId, blob);
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
@@ -61,10 +61,10 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
 
       mediaRecorderRef.current.start();
       setRecording(questionId);
-      toast.success('Enregistrement démarré');
+      toast.success("Enregistrement démarré");
     } catch (err) {
-      console.error('Erreur d'accès au microphone:', err);
-      toast.error('Erreur d'accès au microphone. Vérifiez les permissions.');
+      console.error("Erreur d'accès au microphone:", err);
+      toast.error("Erreur d'accès au microphone. Vérifiez les permissions.");
     }
   };
 
