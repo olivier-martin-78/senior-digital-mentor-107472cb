@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -37,7 +38,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { WishAlbum } from '@/types/supabase';
+import { WishAlbum, WishPost } from '@/types/supabase';
+
+// Props type for the WishForm component
+interface WishFormProps {
+  wishToEdit?: WishPost;
+}
 
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
@@ -59,8 +65,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const WishForm = () => {
-  const { user } = useAuth(); // Récupérer le user dans le scope global
+const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
@@ -98,9 +104,28 @@ const WishForm = () => {
     fetchWishAlbums();
   }, []);
   
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+  // Préparer les valeurs par défaut du formulaire
+  const getDefaultValues = (): FormValues => {
+    if (wishToEdit) {
+      return {
+        firstName: wishToEdit.first_name || '',
+        email: wishToEdit.email || '',
+        age: wishToEdit.age || '',
+        location: wishToEdit.location || '',
+        requestType: wishToEdit.request_type || '',
+        customRequestType: wishToEdit.custom_request_type || '',
+        title: wishToEdit.title || '',
+        description: wishToEdit.content || '',
+        importance: wishToEdit.importance || '',
+        date: wishToEdit.date ? new Date(wishToEdit.date) : undefined,
+        needs: wishToEdit.needs || '',
+        offering: wishToEdit.offering || '',
+        attachmentUrl: wishToEdit.attachment_url || '',
+        albumId: wishToEdit.album_id || ''
+      };
+    }
+    
+    return {
       firstName: '',
       email: '',
       age: '',
@@ -114,7 +139,12 @@ const WishForm = () => {
       offering: '',
       attachmentUrl: '',
       albumId: ''
-    }
+    };
+  };
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getDefaultValues()
   });
   
   const watchRequestType = form.watch('requestType');
@@ -137,7 +167,7 @@ const WishForm = () => {
       const submissionData = {
         title: values.title,
         content: values.description,
-        author_id: user.id, // Utiliser author_id au lieu de user_id
+        author_id: user.id,
         first_name: values.firstName,
         email: values.email || null,
         age: values.age || null,
@@ -150,25 +180,42 @@ const WishForm = () => {
         offering: values.offering || null,
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
-        published: false
+        published: wishToEdit ? wishToEdit.published : false
       };
 
       console.log('WishForm - Submitting data:', submissionData);
 
-      const { data, error } = await supabase
-        .from('wish_posts')
-        .insert([submissionData])
-        .select();
-
-      if (error) {
-        console.error('WishForm - Supabase error:', error);
-        throw error;
+      let data, error;
+      
+      if (wishToEdit) {
+        // Mise à jour d'un souhait existant
+        ({ data, error } = await supabase
+          .from('wish_posts')
+          .update(submissionData)
+          .eq('id', wishToEdit.id)
+          .select());
+          
+        if (error) throw error;
+        
+        toast({
+          title: 'Souhait mis à jour !',
+          description: 'Votre souhait a bien été modifié.',
+        });
+      } else {
+        // Création d'un nouveau souhait
+        ({ data, error } = await supabase
+          .from('wish_posts')
+          .insert([submissionData])
+          .select());
+          
+        if (error) throw error;
+        
+        toast({
+          title: 'Souhait enregistré !',
+          description: 'Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.',
+        });
       }
-
-      toast({
-        title: 'Souhait enregistré !',
-        description: 'Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.',
-      });
+      
       navigate('/wishes');
     } catch (error: any) {
       console.error('WishForm - Submission error:', error);
@@ -189,9 +236,13 @@ const WishForm = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Souhaits</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">
+            {wishToEdit ? 'Modifier un souhait' : 'Souhaits'}
+          </h1>
           <p className="mb-8 text-gray-600">
-            Partagez votre souhait avec nous. Qu'il s'agisse d'une expérience que vous rêvez de vivre ou d'un service dont vous avez besoin, nous sommes là pour vous aider à le réaliser.
+            {wishToEdit 
+              ? 'Modifiez votre souhait ci-dessous.' 
+              : 'Partagez votre souhait avec nous. Qu\'il s\'agisse d\'une expérience que vous rêvez de vivre ou d\'un service dont vous avez besoin, nous sommes là pour vous aider à le réaliser.'}
           </p>
           
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -289,6 +340,7 @@ const WishForm = () => {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -532,6 +584,7 @@ const WishForm = () => {
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -539,7 +592,6 @@ const WishForm = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {/* Ne pas utiliser une chaîne vide comme valeur, mais utiliser une valeur qui identifie clairement "aucune catégorie" */}
                               <SelectItem value="none">Aucune catégorie</SelectItem>
                               {wishAlbums.map((album) => (
                                 <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
@@ -562,7 +614,12 @@ const WishForm = () => {
                     className="w-full md:w-auto bg-tranches-sage hover:bg-tranches-sage/90"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Envoi en cours...' : 'Envoyer mon souhait'}
+                    {isLoading 
+                      ? 'Envoi en cours...' 
+                      : wishToEdit 
+                        ? 'Mettre à jour le souhait' 
+                        : 'Envoyer mon souhait'
+                    }
                   </Button>
                 </div>
               </form>
