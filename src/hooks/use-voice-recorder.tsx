@@ -17,7 +17,7 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Cleanup resources on unmount
+  // Nettoyer les ressources lors du démontage
   useEffect(() => {
     return () => {
       stopRecording();
@@ -27,7 +27,7 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
     };
   }, []);
   
-  // Handle recording timer
+  // Gérer le minuteur d'enregistrement
   useEffect(() => {
     if (isRecording) {
       timerRef.current = setInterval(() => {
@@ -47,7 +47,7 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
   
   const startRecording = async () => {
     try {
-      // Clean up previous recording if exists
+      // Nettoyer l'enregistrement précédent s'il existe
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -57,42 +57,93 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
       audioChunks.current = [];
       setRecordingTime(0);
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Demande d'accès au microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
       streamRef.current = stream;
       
-      const recorder = new MediaRecorder(stream);
+      console.log("Création du MediaRecorder...");
+      // Utiliser des options explicites pour MediaRecorder
+      const options = { 
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      };
+      
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, options);
+        console.log("MediaRecorder créé avec les options:", options);
+      } catch (e) {
+        // Fallback si le codec opus n'est pas supporté
+        console.warn("Codec opus non supporté, utilisation des options par défaut");
+        recorder = new MediaRecorder(stream);
+      }
+      
       mediaRecorder.current = recorder;
       
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
+          console.log("Chunk audio reçu:", event.data.size, "octets");
           audioChunks.current.push(event.data);
         }
       };
       
       recorder.onstop = () => {
+        console.log("Enregistrement arrêté, traitement des données...");
         if (audioChunks.current.length > 0) {
-          const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
-          const tempUrl = URL.createObjectURL(blob);
+          console.log("Nombre de chunks audio:", audioChunks.current.length);
           
-          setAudioBlob(blob);
-          setAudioUrl(tempUrl);
+          // Création du blob audio
+          const mimeType = recorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunks.current, { type: mimeType });
+          console.log("Blob audio créé:", blob.size, "octets, type:", blob.type);
           
-          if (onRecordingComplete) {
-            onRecordingComplete(blob, tempUrl);
+          if (blob.size > 0) {
+            const tempUrl = URL.createObjectURL(blob);
+            console.log("URL temporaire créée:", tempUrl);
+            
+            setAudioBlob(blob);
+            setAudioUrl(tempUrl);
+            
+            if (onRecordingComplete) {
+              console.log("Appel du callback onRecordingComplete");
+              onRecordingComplete(blob, tempUrl);
+            }
+          } else {
+            console.error("Blob audio vide");
+            toast({
+              title: "Erreur d'enregistrement",
+              description: "L'enregistrement audio est vide. Veuillez réessayer.",
+              variant: "destructive",
+            });
           }
+        } else {
+          console.error("Aucun chunk audio disponible");
+          toast({
+            title: "Erreur d'enregistrement",
+            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
+            variant: "destructive",
+          });
         }
         
         setIsRecording(false);
         
-        // Stop all tracks of the stream
+        // Arrêter toutes les pistes du flux
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
         }
       };
       
-      recorder.start();
+      // Démarrer l'enregistrement avec un intervalle de 1 seconde
+      recorder.start(1000);
       setIsRecording(true);
+      console.log("Enregistrement démarré");
       
     } catch (error) {
       console.error("Erreur lors de l'accès au microphone:", error);
@@ -107,13 +158,32 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
   };
   
   const stopRecording = () => {
-    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
-      mediaRecorder.current.stop();
+    console.log("Tentative d'arrêt de l'enregistrement...");
+    try {
+      if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+        console.log("État du MediaRecorder avant arrêt:", mediaRecorder.current.state);
+        mediaRecorder.current.stop();
+        console.log("MediaRecorder arrêté");
+      } else if (mediaRecorder.current) {
+        console.log("MediaRecorder déjà inactif:", mediaRecorder.current.state);
+      } else {
+        console.log("Pas de MediaRecorder à arrêter");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'arrêt du MediaRecorder:", error);
     }
     
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    try {
+      if (streamRef.current) {
+        console.log("Arrêt des pistes audio du stream");
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log("Piste arrêtée:", track.kind, track.label);
+        });
+        streamRef.current = null;
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'arrêt des pistes audio:", error);
     }
     
     setIsRecording(false);
@@ -122,10 +192,12 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
   const clearRecording = () => {
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
+      console.log("URL temporaire révoquée");
     }
     
     setAudioBlob(null);
     setAudioUrl(null);
+    console.log("Enregistrement effacé");
   };
   
   return {

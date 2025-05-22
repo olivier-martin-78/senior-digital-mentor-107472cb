@@ -37,6 +37,18 @@ export const validateAudioUrl = (url: string | null): string | null => {
     return null;
   }
   
+  // Vérifier que l'URL contient un domaine
+  try {
+    const urlObj = new URL(url);
+    if (!urlObj.hostname) {
+      console.warn('URL audio invalide (pas de nom d\'hôte):', url);
+      return null;
+    }
+  } catch (error) {
+    console.error('URL audio invalide (format incorrect):', url, error);
+    return null;
+  }
+  
   return url;
 };
 
@@ -78,6 +90,7 @@ export const preloadAudio = (audioUrl: string): Promise<boolean> => {
       return;
     }
     
+    console.log(`Préchargement de l'audio: ${audioUrl}`);
     const audio = new Audio();
     
     // Résoudre après un délai maximum pour éviter les blocages
@@ -98,7 +111,9 @@ export const preloadAudio = (audioUrl: string): Promise<boolean> => {
       resolve(false);
     };
     
+    // Ajouter un type MIME pour améliorer la compatibilité
     audio.src = audioUrl;
+    audio.preload = "metadata";
     audio.load();
   });
 };
@@ -131,8 +146,15 @@ export const uploadRecording = (
     return;
   }
   
+  console.log(`Préparation à l'upload du blob: ${blob.size} octets, type: ${blob.type}`);
+  
   if (onUploadStart) {
     onUploadStart();
+  }
+  
+  // Vérifions si le blob est de type audio avant de continuer
+  if (!blob.type.startsWith('audio/')) {
+    console.warn(`Type de blob non standard: ${blob.type}, tentative d'upload quand même`);
   }
   
   uploadAudio(
