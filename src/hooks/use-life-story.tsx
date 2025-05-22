@@ -1,4 +1,4 @@
-// src/hooks/use-life-story.ts
+// src/hooks/use-life-story.ts (version avec upload Supabase)
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress } from '@/types/lifeStory';
@@ -94,9 +94,35 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     }));
   };
 
-  const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
-    const audioUrl = URL.createObjectURL(blob);
+  const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
+    let audioUrl = URL.createObjectURL(blob);
     console.log('Audio enregistré:', { chapterId, questionId, blob, audioUrl, size: blob.size });
+
+    let persistentAudioUrl: string | null = null;
+    if (user) {
+      try {
+        const fileName = `audio/${user.id}/${questionId}-${Date.now()}.webm`;
+        const { error } = await supabase.storage
+          .from('life-story-audio')
+          .upload(fileName, blob, {
+            contentType: 'audio/webm',
+          });
+
+        if (error) throw error;
+
+        const { data: urlData } = supabase.storage
+          .from('life-story-audio')
+          .getPublicUrl(fileName);
+
+        persistentAudioUrl = urlData.publicUrl;
+        audioUrl = persistentAudioUrl;
+        console.log('Audio uploadé:', persistentAudioUrl);
+      } catch (err) {
+        console.error('Erreur lors de l’upload audio:', err);
+        toast.error('Erreur lors de la sauvegarde de l’audio');
+      }
+    }
+
     setData(prev => {
       const newData = {
         ...prev,
