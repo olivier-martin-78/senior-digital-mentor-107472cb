@@ -1,3 +1,4 @@
+
 // src/components/life-story/ChapterTabs.tsx
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,12 +28,12 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+      <TabsList className="flex flex-wrap gap-2 justify-start pb-8">
         {chapters.map(chapter => (
           <TabsTrigger 
             key={chapter.id}
             value={chapter.id}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap mb-2"
           >
             {chapter.title}
           </TabsTrigger>
@@ -40,7 +41,7 @@ export const ChapterTabs: React.FC<ChapterTabsProps> = ({
       </TabsList>
       
       {chapters.map(chapter => (
-        <TabsContent key={chapter.id} value={chapter.id}>
+        <TabsContent key={chapter.id} value={chapter.id} className="mt-6">
           <ChapterContent
             chapter={chapter}
             updateAnswer={updateAnswer}
