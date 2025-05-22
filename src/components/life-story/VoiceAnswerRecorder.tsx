@@ -1,4 +1,3 @@
-// src/components/life-story/VoiceAnswerRecorder.tsx
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
@@ -27,13 +26,15 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Spécifier le type MIME pour audio/mp4 si possible
+      const options = { mimeType: 'audio/mp4' };
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
-          console.log('Données audio reçues:', e.data.size);
+          console.log('Données audio reçues:', { size: e.data.size, type: e.data.type });
         } else {
           console.log('Aucune donnée audio reçue');
         }
@@ -46,8 +47,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
           toast.error('Aucun audio enregistré. Veuillez réessayer.');
           return;
         }
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        console.log('Blob créé:', blob, 'Taille:', blob.size, 'Type:', blob.type);
+        const blob = new Blob(chunksRef.current, { type: 'audio/mp4' });
+        console.log('Blob créé:', { blob, size: blob.size, type: blob.type });
         if (blob.size === 0) {
           console.error('Blob vide créé');
           toast.error('L’enregistrement est vide. Veuillez réessayer.');
@@ -72,9 +73,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
         }
       };
 
-      mediaRecorderRef.current.start(1000); // Collecter les données toutes les secondes
+      mediaRecorderRef.current.start(1000);
       setRecording(true);
-      console.log('Enregistrement démarré pour:', { chapterId, questionId });
+      console.log('Enregistrement démarré pour:', { chapterId, questionId, mimeType: mediaRecorderRef.current.mimeType });
       toast.success('Enregistrement démarré');
     } catch (err) {
       console.error('Erreur d’accès au microphone:', err);
@@ -86,11 +87,19 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       console.log('Arrêt de l’enregistrement pour:', { chapterId, questionId });
       mediaRecorderRef.current.stop();
-      // setRecording(false) est géré dans onstop
     } else {
       console.log('MediaRecorder déjà arrêté ou non initialisé');
       setRecording(false);
     }
+  };
+
+  const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement>) => {
+    console.error('Erreur de lecture audio:', {
+      error: e,
+      src: existingAudio,
+      userAgent: navigator.userAgent,
+    });
+    toast.error('Impossible de lire l’audio. Essayez un autre appareil ou re-enregistrez.');
   };
 
   return (
@@ -108,7 +117,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
             controls
             src={existingAudio}
             className="w-full max-w-md"
-            onError={e => console.error('Erreur de lecture audio:', e)}
+            onError={handleAudioError}
+            preload="metadata"
           />
           <Button
             variant="outline"
