@@ -1,236 +1,129 @@
-
-import React, { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
-import { Spinner } from '@/components/ui/spinner';
-import { useAuth } from '@/contexts/AuthContext';
-import useVoiceRecorder from '@/hooks/use-voice-recorder';
-import RecordingControls from './RecordingControls';
-import VoiceAnswerPlayer from './VoiceAnswerPlayer';
-import { uploadRecording, validateAudioUrl, preloadAudio } from './utils/audioUtils';
+// src/components/life-story/VoiceAnswerRecorder.tsx
+import React, { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 
 interface VoiceAnswerRecorderProps {
   questionId: string;
   chapterId: string;
-  existingAudio?: string | null;
-  onRecordingComplete: (questionId: string, audioBlob: Blob, audioUrl: string) => void;
-  onDeleteRecording: (questionId: string) => void;
+  existingAudio: string | null | undefined;
+  onRecordingComplete: (blob: Blob) => void;
+  onDeleteRecording: () => void;
 }
 
-export const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
+const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   questionId,
   chapterId,
   existingAudio,
   onRecordingComplete,
-  onDeleteRecording
+  onDeleteRecording,
 }) => {
-  const { user } = useAuth();
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [audioUrlError, setAudioUrlError] = useState(false);
-  const [processingRecording, setProcessingRecording] = useState(false);
-  
-  const { 
-    isRecording, 
-    audioBlob, 
-    recordingTime, 
-    startRecording, 
-    stopRecording
-  } = useVoiceRecorder({
-    onRecordingComplete: (blob, tempUrl) => {
-      console.log("Enregistrement terminé, blob disponible:", blob.size, "octets");
-      setProcessingRecording(true);
-      
-      // Vérification de la validité du blob
-      if (!blob || blob.size === 0) {
-        toast({
-          title: "Erreur d'enregistrement",
-          description: "L'enregistrement audio semble vide ou corrompu",
-          variant: "destructive",
-        });
-        setProcessingRecording(false);
-        return;
-      }
-      
-      // Pour le test local ou si pas d'utilisateur
-      if (!user || !user.id) {
-        setTimeout(() => {
-          onRecordingComplete(questionId, blob, tempUrl);
-          setAudioUrl(tempUrl);
-          setProcessingRecording(false);
-        }, 500);
-        return;
-      }
-      
-      // Sinon, télécharger l'enregistrement
-      uploadAudioRecording(blob);
-    }
-  });
-  
-  // Initialize audio URL from props if provided
-  useEffect(() => {
-    if (existingAudio) {
-      const validUrl = validateAudioUrl(existingAudio);
-      if (validUrl) {
-        console.log("URL audio existante valide:", validUrl);
-        setAudioUrl(validUrl);
-        setAudioUrlError(false);
-      } else {
-        console.error("URL audio existante invalide:", existingAudio);
-        setAudioUrl(null);
-        setAudioUrlError(true);
-      }
-    } else {
-      setAudioUrl(null);
-      setAudioUrlError(false);
-    }
-  }, [existingAudio]);
-  
-  const uploadAudioRecording = async (blob: Blob) => {
-    if (!user || !user.id) {
-      toast({
-        title: "Erreur d'authentification",
-        description: "Veuillez vous connecter pour enregistrer une réponse vocale.",
-        variant: "destructive",
-      });
-      setProcessingRecording(false);
-      return;
-    }
-    
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
     try {
-      setIsUploading(true);
-      
-      // Vérification supplémentaire du blob avant upload
-      if (!blob || blob.size < 100) { // Une taille minimale pour s'assurer qu'il y a du contenu
-        throw new Error("Enregistrement audio invalide ou vide");
-      }
-      
-      // Création d'une copie du blob pour éviter les problèmes de référence
-      const blobCopy = blob.slice(0, blob.size, blob.type);
-      
-      uploadRecording(
-        blobCopy,
-        user.id,
-        chapterId,
-        questionId,
-        {
-          onSuccess: async (url) => {
-            // Vérification supplémentaire de l'URL après téléchargement
-            if (validateAudioUrl(url)) {
-              console.log("URL audio valide après téléchargement:", url);
-              
-              // Vérifier que l'audio est accessible
-              const isValid = await preloadAudio(url);
-              if (isValid) {
-                setAudioUrl(url);
-                onRecordingComplete(questionId, blobCopy, url);
-                toast({
-                  title: "Enregistrement sauvegardé",
-                  description: "Votre enregistrement vocal a été sauvegardé avec succès",
-                  duration: 2000
-                });
-              } else {
-                throw new Error("L'audio téléchargé n'est pas lisible");
-              }
-            } else {
-              throw new Error("L'URL de l'enregistrement n'est pas valide après téléchargement");
-            }
-          },
-          onError: (errorMessage) => {
-            console.error("Erreur lors du téléchargement:", errorMessage);
-            toast({
-              title: "Erreur de téléchargement",
-              description: errorMessage,
-              variant: "destructive",
-            });
-            throw new Error(errorMessage);
-          },
-          onUploadStart: () => {
-            console.log("Début du téléchargement");
-          },
-          onUploadEnd: () => {
-            console.log("Fin du téléchargement");
-            setIsUploading(false);
-            setProcessingRecording(false);
-          }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      chunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+          console.log('Données audio reçues:', e.data.size);
+        } else {
+          console.log('Aucune donnée audio reçue');
         }
-      );
-    } catch (error: any) {
-      console.error("Erreur pendant le processus d'upload:", error);
-      toast({
-        title: "Erreur d'enregistrement",
-        description: error.message || "Erreur lors du traitement de l'enregistrement audio",
-        variant: "destructive",
-      });
-      setIsUploading(false);
-      setProcessingRecording(false);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        console.log('MediaRecorder arrêté, création du Blob');
+        if (chunksRef.current.length === 0) {
+          console.error('Aucun chunk audio collecté');
+          toast.error('Aucun audio enregistré. Veuillez réessayer.');
+          return;
+        }
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        console.log('Blob créé:', blob, 'Taille:', blob.size, 'Type:', blob.type);
+        if (blob.size === 0) {
+          console.error('Blob vide créé');
+          toast.error('L’enregistrement est vide. Veuillez réessayer.');
+          return;
+        }
+        onRecordingComplete(blob);
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        setRecording(false);
+        chunksRef.current = [];
+      };
+
+      mediaRecorderRef.current.onerror = (e) => {
+        console.error('Erreur MediaRecorder:', e);
+        toast.error('Erreur lors de l’enregistrement audio.');
+        setRecording(false);
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+      };
+
+      mediaRecorderRef.current.start(1000); // Collecter les données toutes les secondes
+      setRecording(true);
+      console.log('Enregistrement démarré pour:', { chapterId, questionId });
+      toast.success('Enregistrement démarré');
+    } catch (err) {
+      console.error('Erreur d’accès au microphone:', err);
+      toast.error('Erreur d’accès au microphone. Vérifiez les permissions.');
     }
   };
-  
-  const handleDelete = () => {
-    setAudioUrl(null);
-    onDeleteRecording(questionId);
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      console.log('Arrêt de l’enregistrement pour:', { chapterId, questionId });
+      mediaRecorderRef.current.stop();
+      // setRecording(false) est géré dans onstop
+    } else {
+      console.log('MediaRecorder déjà arrêté ou non initialisé');
+      setRecording(false);
+    }
   };
-  
-  // Affichage en cas d'erreur d'URL audio
-  if (audioUrlError) {
-    return (
-      <div className="mt-2 p-3 border rounded-md bg-gray-50">
-        <div className="text-sm font-medium mb-2">Réponse vocale</div>
-        <div className="p-2 text-amber-700 bg-amber-50 rounded-md mb-2">
-          L'enregistrement audio n'a pas pu être chargé. Vous pouvez en enregistrer un nouveau.
-        </div>
-        <RecordingControls 
-          isRecording={isRecording}
-          recordingTime={recordingTime}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-        />
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="mt-2 p-3 border rounded-md bg-gray-50">
-      <div className="text-sm font-medium mb-2">Réponse vocale</div>
-      
-      {isRecording || (!isUploading && !audioUrl && !processingRecording) ? (
-        <RecordingControls 
-          isRecording={isRecording}
-          recordingTime={recordingTime}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-        />
-      ) : (
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-500">
-            {audioUrl ? "Réponse vocale enregistrée" : "Prêt à enregistrer"}
-          </span>
-          {!audioUrl && !isUploading && !processingRecording && (
-            <button 
-              className="px-2 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
-              onClick={startRecording}
-            >
-              Enregistrer
-            </button>
-          )}
-        </div>
+    <div className="flex flex-wrap gap-4">
+      <Button
+        onClick={recording ? stopRecording : startRecording}
+        className="bg-tranches-sage hover:bg-tranches-sage/90"
+        disabled={recording && !mediaRecorderRef.current}
+      >
+        {recording ? 'Arrêter' : 'Enregistrer'}
+      </Button>
+      {existingAudio && (
+        <>
+          <audio
+            controls
+            src={existingAudio}
+            className="w-full max-w-md"
+            onError={e => console.error('Erreur de lecture audio:', e)}
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              console.log('Suppression audio pour:', { chapterId, questionId });
+              onDeleteRecording();
+            }}
+          >
+            Supprimer l’audio
+          </Button>
+        </>
       )}
-      
-      {(isUploading || processingRecording) && (
-        <div className="flex justify-center items-center py-2 mb-2">
-          <Spinner className="mr-2 h-4 w-4" />
-          <span className="text-sm">
-            {isUploading ? "Téléchargement en cours..." : "Traitement de l'enregistrement..."}
-          </span>
-        </div>
-      )}
-      
-      {audioUrl && !isUploading && !processingRecording && (
-        <VoiceAnswerPlayer
-          audioUrl={audioUrl}
-          onDelete={handleDelete}
-        />
-      )}
+      <div className="text-sm text-gray-500">
+        Debug: audioUrl = {existingAudio || 'null'}
+      </div>
     </div>
   );
 };
