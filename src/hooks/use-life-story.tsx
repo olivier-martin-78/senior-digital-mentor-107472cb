@@ -1,3 +1,4 @@
+
 // src/hooks/use-life-story.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,12 +24,21 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       last_edited_question: null,
     }
   );
-  const [activeTab, setActiveTab] = useState<string>('chapter-1');
+  const [activeTab, setActiveTab] = useState<string>(existingStory?.last_edited_chapter || (data.chapters[0]?.id || ''));
   const [openQuestions, setOpenQuestions] = useState<{ [key: string]: boolean }>({});
-  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(existingStory?.last_edited_question || null);
   const [progress, setProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Initialiser les chapitres comme ouverts par défaut
+  useEffect(() => {
+    const initialOpenState: { [key: string]: boolean } = {};
+    data.chapters.forEach(chapter => {
+      initialOpenState[chapter.id] = true;
+    });
+    setOpenQuestions(initialOpenState);
+  }, [data.chapters]);
 
   // Simuler le calcul de progression
   useEffect(() => {
@@ -44,8 +54,14 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     setOpenQuestions(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
   };
 
-  const handleQuestionFocus = (questionId: string) => {
+  const handleQuestionFocus = (chapterId: string, questionId: string) => {
     setActiveQuestion(questionId);
+    // Enregistrer le chapitre actif également
+    setData(prev => ({
+      ...prev,
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId
+    }));
   };
 
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
@@ -61,6 +77,8 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
             }
           : chapter
       ),
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId
     }));
   };
 
@@ -79,6 +97,8 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
             }
           : chapter
       ),
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId
     }));
     toast.success('Enregistrement audio ajouté');
   };
@@ -112,7 +132,13 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
           id: data.id || undefined,
           user_id: user.id,
           title: data.title,
-          chapters: data.chapters,
+          chapters: data.chapters.map(chapter => ({
+            ...chapter,
+            questions: chapter.questions.map(q => ({
+              ...q,
+              audioBlob: null, // On ne peut pas sauvegarder le Blob dans Supabase
+            }))
+          })),
           updated_at: new Date().toISOString(),
           last_edited_chapter: activeTab,
           last_edited_question: activeQuestion,

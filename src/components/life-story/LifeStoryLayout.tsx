@@ -1,8 +1,10 @@
+
 // src/components/life-story/LifeStoryLayout.tsx
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { Chapter } from '@/types/lifeStory';
+import ChapterTabs from './ChapterTabs';
 
 interface LifeStoryLayoutProps {
   chapters: Chapter[];
@@ -11,7 +13,7 @@ interface LifeStoryLayoutProps {
   activeQuestion: string | null;
   setActiveTab: (tab: string) => void;
   toggleQuestions: (chapterId: string) => void;
-  handleQuestionFocus: (questionId: string) => void;
+  handleQuestionFocus: (chapterId: string, questionId: string) => void;
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
@@ -61,8 +63,8 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
       setRecording(questionId);
       toast.success('Enregistrement démarré');
     } catch (err) {
-      console.error('Erreur d’accès au microphone:', err);
-      toast.error('Erreur d’accès au microphone. Vérifiez les permissions.');
+      console.error('Erreur d'accès au microphone:', err);
+      toast.error('Erreur d'accès au microphone. Vérifiez les permissions.');
     }
   };
 
@@ -75,71 +77,20 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Navigation entre les chapitres */}
-      <div className="flex space-x-4">
-        {chapters.map(chapter => (
-          <Button
-            key={chapter.id}
-            variant={activeTab === chapter.id ? 'default' : 'outline'}
-            onClick={() => setActiveTab(chapter.id)}
-          >
-            {chapter.title}
-          </Button>
-        ))}
-      </div>
-
-      {/* Questions du chapitre actif */}
-      {chapters
-        .filter(chapter => chapter.id === activeTab)
-        .map(chapter => (
-          <div key={chapter.id}>
-            <Button
-              variant="ghost"
-              onClick={() => toggleQuestions(chapter.id)}
-            >
-              {openQuestions[chapter.id] ? 'Masquer les questions' : 'Afficher les questions'}
-            </Button>
-            {openQuestions[chapter.id] && chapter.questions && (
-              <div className="mt-4 space-y-4">
-                {chapter.questions.map(question => (
-                  <div key={question.id} className="border p-4 rounded-lg">
-                    <h3 className="text-lg font-medium">{question.text}</h3>
-                    <textarea
-                      className="w-full mt-2 p-2 border rounded"
-                      value={question.answer || ''}
-                      onChange={e => updateAnswer(chapter.id, question.id, e.target.value)}
-                      onFocus={() => handleQuestionFocus(question.id)}
-                    />
-                    <div className="mt-2 flex space-x-4">
-                      <Button
-                        onClick={() =>
-                          recording === question.id
-                            ? stopRecording()
-                            : startRecording(chapter.id, question.id)
-                        }
-                        className="bg-tranches-sage hover:bg-tranches-sage/90"
-                        disabled={recording && recording !== question.id}
-                      >
-                        {recording === question.id ? 'Arrêter' : 'Enregistrer'}
-                      </Button>
-                      {question.audioUrl && (
-                        <>
-                          <audio controls src={question.audioUrl} className="w-full max-w-md" />
-                          <Button
-                            variant="outline"
-                            onClick={() => onAudioDeleted(chapter.id, question.id)}
-                          >
-                            Supprimer l’audio
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* Utiliser le composant ChapterTabs pour afficher les onglets et le contenu */}
+      <ChapterTabs
+        chapters={chapters}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        updateAnswer={updateAnswer}
+        handleQuestionFocus={(questionId) => handleQuestionFocus(activeTab, questionId)}
+        activeQuestion={activeQuestion}
+        onAudioRecorded={(chapterId, questionId, audioBlob, audioUrl) => {
+          const blob = new Blob([audioBlob], { type: 'audio/webm' });
+          onAudioRecorded(chapterId, questionId, blob);
+        }}
+        onAudioDeleted={onAudioDeleted}
+      />
     </div>
   );
 };

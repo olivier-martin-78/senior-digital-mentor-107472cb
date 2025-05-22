@@ -1,3 +1,4 @@
+
 // src/pages/LifeStory.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import LifeStoryForm from '@/components/life-story/LifeStoryForm';
 import { LifeStory as LifeStoryType } from '@/types/lifeStory';
 import { Button } from '@/components/ui/button';
 import { Book, ChevronLeft } from 'lucide-react';
+import { initialChapters } from '@/components/life-story/initialChapters';
 
 const LifeStory: React.FC = () => {
   const { user } = useAuth();
@@ -35,10 +37,11 @@ const LifeStory: React.FC = () => {
             id: data[0].id,
             user_id: data[0].user_id,
             title: data[0].title || 'Mon histoire',
-            chapters: Array.isArray(data[0].chapters)
+            chapters: Array.isArray(data[0].chapters) && data[0].chapters.length > 0
               ? data[0].chapters.map((chapter: any) => ({
                   id: chapter.id,
                   title: chapter.title,
+                  description: chapter.description || '',
                   questions: Array.isArray(chapter.questions)
                     ? chapter.questions.map((q: any) => ({
                         id: q.id,
@@ -49,36 +52,22 @@ const LifeStory: React.FC = () => {
                       }))
                     : [],
                 }))
-              : [
-                  {
-                    id: 'chapter-1',
-                    title: 'Chapitre 1',
-                    questions: [
-                      { id: 'question-1', text: 'Quelle est votre première mémoire ?', answer: '', audioBlob: null, audioUrl: null },
-                    ],
-                  },
-                ],
+              : initialChapters,
             created_at: data[0].created_at,
             updated_at: data[0].updated_at,
             last_edited_chapter: data[0].last_edited_chapter,
             last_edited_question: data[0].last_edited_question,
           };
+          console.log('Histoire chargée:', lifeStory);
           setStory(lifeStory);
         } else {
           // Initialiser une histoire par défaut si aucune n'est trouvée
+          console.log('Aucune histoire trouvée, création d\'une nouvelle');
           setStory({
             id: '',
             user_id: user.id,
             title: 'Mon histoire',
-            chapters: [
-              {
-                id: 'chapter-1',
-                title: 'Chapitre 1',
-                questions: [
-                  { id: 'question-1', text: 'Quelle est votre première mémoire ?', answer: '', audioBlob: null, audioUrl: null },
-                ],
-              },
-            ],
+            chapters: initialChapters,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             last_edited_chapter: null,
@@ -86,11 +75,22 @@ const LifeStory: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de l’histoire de vie:', error);
+        console.error('Erreur lors du chargement de l'histoire de vie:', error);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger votre histoire de vie.',
           variant: 'destructive',
+        });
+        // En cas d'erreur, créer quand même une histoire par défaut
+        setStory({
+          id: '',
+          user_id: user?.id || '',
+          title: 'Mon histoire',
+          chapters: initialChapters,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_edited_chapter: null,
+          last_edited_question: null,
         });
       } finally {
         setLoading(false);
@@ -118,12 +118,12 @@ const LifeStory: React.FC = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-2">
             <span className="flex items-center">
               <Book className="mr-3 h-6 w-6" />
-              Histoire d’une vie
+              Histoire d'une vie
             </span>
           </h1>
           <p className="text-gray-600">
             Racontez votre histoire personnelle en répondant aux questions qui vous sont proposées.
-            Vous pouvez utiliser l’enregistrement vocal pour dicter vos réponses.
+            Vous pouvez utiliser l'enregistrement vocal pour dicter vos réponses.
           </p>
         </div>
         {loading ? (

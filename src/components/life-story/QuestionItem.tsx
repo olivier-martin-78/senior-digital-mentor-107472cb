@@ -9,7 +9,7 @@ interface QuestionItemProps {
   question: Question;
   chapterId: string;
   onAnswerChange: (chapterId: string, questionId: string, answer: string) => void;
-  onQuestionFocus: (chapterId: string, questionId: string) => void;
+  onQuestionFocus: (questionId: string) => void;
   activeQuestion: string | null;
   onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
@@ -33,14 +33,14 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           placeholder="Votre réponse..."
           value={question.answer || ''}
           onChange={(e) => onAnswerChange(chapterId, question.id, e.target.value)}
-          onFocus={() => onQuestionFocus(chapterId, question.id)}
+          onFocus={() => onQuestionFocus(question.id)}
           className="min-h-[120px]"
         />
         
         <VoiceAnswerRecorder
           questionId={question.id}
           chapterId={chapterId}
-          existingAudio={question.audioAnswer}
+          existingAudio={question.audioUrl}
           onRecordingComplete={(questionId, audioBlob, audioUrl) => 
             onAudioRecorded(chapterId, questionId, audioBlob, audioUrl)}
           onDeleteRecording={(questionId) => onAudioDeleted(chapterId, questionId)}

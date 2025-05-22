@@ -12,7 +12,8 @@ export interface Question {
   id: string;
   text: string;
   answer?: string;
-  audioAnswer?: string; // URL de l'enregistrement audio
+  audioBlob?: Blob | null;
+  audioUrl?: string | null;
 }
 
 export interface LifeStory {
@@ -22,8 +23,8 @@ export interface LifeStory {
   chapters: Chapter[];
   created_at?: string;
   updated_at?: string;
-  last_edited_chapter?: string;
-  last_edited_question?: string;
+  last_edited_chapter?: string | null;
+  last_edited_question?: string | null;
 }
 
 export interface LifeStoryProgress {
