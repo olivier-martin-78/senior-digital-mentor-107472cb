@@ -26,7 +26,6 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      // Spécifier le type MIME pour audio/mp4 si possible
       const options = { mimeType: 'audio/mp4' };
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
@@ -102,6 +101,42 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     toast.error('Impossible de lire l’audio. Essayez un autre appareil ou re-enregistrez.');
   };
 
+  const handleExport = async () => {
+    if (!existingAudio) {
+      console.error('Aucune URL audio disponible pour l’export:', { chapterId, questionId });
+      toast.error('Aucun audio à exporter.');
+      return;
+    }
+
+    try {
+      console.log('Début de l’export audio:', { chapterId, questionId, audioUrl: existingAudio });
+      const response = await fetch(existingAudio);
+      if (!response.ok) {
+        throw new Error(`Échec de la récupération du fichier audio: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      console.log('Fichier audio récupéré:', { size: blob.size, type: blob.type });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `question-${questionId}-${timestamp}.m4a`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('Export réussi:', { fileName, chapterId, questionId });
+      toast.success(`Audio exporté: ${fileName}`);
+    } catch (err) {
+      console.error('Erreur lors de l’export audio:', err);
+      toast.error('Erreur lors de l’export de l’audio. Vérifiez votre connexion.');
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-4">
       <Button
@@ -128,6 +163,12 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
             }}
           >
             Supprimer l’audio
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExport}
+          >
+            Exporter
           </Button>
         </>
       )}
