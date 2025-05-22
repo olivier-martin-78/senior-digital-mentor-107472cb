@@ -10,36 +10,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface WishPost {
-  id: string;
-  title: string;
-  content: string;
-  author_id: string;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-  album_id: string | null;
-  cover_image: string | null;
-  first_name: string | null;
-  email: string | null;
-  age: string | null;
-  location: string | null;
-  request_type: string | null;
-  custom_request_type: string | null;
-  importance: string | null;
-  date: string | null;
-  needs: string | null;
-  offering: string | null;
-  attachment_url: string | null;
-  profiles: {
-    display_name: string | null;
-    email: string;
-  };
-  album?: {
-    name: string;
-  } | null;
-}
+import { WishPost as WishPostType } from '@/types/supabase';
 
 const WishPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,8 +18,9 @@ const WishPost = () => {
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
   
-  const [wish, setWish] = useState<WishPost | null>(null);
+  const [wish, setWish] = useState<WishPostType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [publishLoading, setPublishLoading] = useState(false);
 
   useEffect(() => {
     const fetchWishPost = async () => {
@@ -86,7 +58,7 @@ const WishPost = () => {
           return;
         }
         
-        setWish(data as WishPost);
+        setWish(data as WishPostType);
       } catch (error) {
         console.error('Error fetching wish post:', error);
         toast({
@@ -102,6 +74,44 @@ const WishPost = () => {
 
     fetchWishPost();
   }, [id, navigate, user, hasRole, toast]);
+
+  const handlePublishToggle = async () => {
+    if (!wish) return;
+    
+    try {
+      setPublishLoading(true);
+      const newPublishedStatus = !wish.published;
+      
+      const { error } = await supabase
+        .from('wish_posts')
+        .update({ published: newPublishedStatus })
+        .eq('id', wish.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setWish({
+        ...wish,
+        published: newPublishedStatus
+      });
+      
+      toast({
+        title: newPublishedStatus ? "Souhait publié !" : "Souhait mis en brouillon",
+        description: newPublishedStatus 
+          ? "Le souhait est maintenant visible pour tous les utilisateurs."
+          : "Le souhait est maintenant en mode brouillon, seuls vous et les administrateurs peuvent le voir.",
+      });
+    } catch (error) {
+      console.error('Error toggling wish publication status:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de modifier le statut de publication du souhait.",
+      });
+    } finally {
+      setPublishLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -128,6 +138,8 @@ const WishPost = () => {
         'service': 'Un service à recevoir',
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
+  
+  const canManagePublication = user?.id === wish.author_id || hasRole('admin') || hasRole('editor');
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -148,14 +160,26 @@ const WishPost = () => {
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <h1 className="text-3xl font-serif text-tranches-charcoal">{wish.title}</h1>
               
-              {(user?.id === wish.author_id || hasRole('admin') || hasRole('editor')) && (
-                <Button asChild variant="outline">
-                  <Link to={`/wishes/edit/${wish.id}`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Éditer
-                  </Link>
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {canManagePublication && (
+                  <Button
+                    variant={wish.published ? "outline" : "default"}
+                    className={!wish.published ? "bg-tranches-sage hover:bg-tranches-sage/90" : ""}
+                    onClick={handlePublishToggle}
+                    disabled={publishLoading}
+                  >
+                    {publishLoading ? "En cours..." : wish.published ? "Mettre en brouillon" : "Publier"}
+                  </Button>
+                )}
+                {(user?.id === wish.author_id || hasRole('admin') || hasRole('editor')) && (
+                  <Button asChild variant="outline">
+                    <Link to={`/wishes/edit/${wish.id}`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Éditer
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
             
             <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-500">

@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { WishAlbum, WishPost } from '@/types/supabase';
+import { Switch } from '@/components/ui/switch';
 
 // Props type for the WishForm component
 interface WishFormProps {
@@ -60,7 +61,8 @@ const formSchema = z.object({
   needs: z.string().min(5, "Précisez vos besoins concrets"),
   offering: z.string().optional(),
   attachmentUrl: z.string().optional(),
-  albumId: z.string().optional()
+  albumId: z.string().optional(),
+  published: z.boolean().default(false)
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -121,7 +123,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         needs: wishToEdit.needs || '',
         offering: wishToEdit.offering || '',
         attachmentUrl: wishToEdit.attachment_url || '',
-        albumId: wishToEdit.album_id || ''
+        albumId: wishToEdit.album_id || '',
+        published: wishToEdit.published || false
       };
     }
     
@@ -138,7 +141,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       needs: '',
       offering: '',
       attachmentUrl: '',
-      albumId: ''
+      albumId: '',
+      published: false
     };
   };
   
@@ -148,6 +152,9 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   });
   
   const watchRequestType = form.watch('requestType');
+  const isAdmin = useAuth().hasRole('admin');
+  const isEditor = useAuth().hasRole('editor');
+  const canPublish = isAdmin || isEditor;
   
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -180,7 +187,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         offering: values.offering || null,
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
-        published: wishToEdit ? wishToEdit.published : false
+        published: values.published
       };
 
       console.log('WishForm - Submitting data:', submissionData);
@@ -602,6 +609,40 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                             Vous pouvez associer votre souhait à une catégorie spécifique
                           </FormDescription>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+                
+                {/* Section 7: Statut de publication (pour admin/editor seulement) */}
+                {canPublish && (
+                  <div className="space-y-6 pt-6 border-t">
+                    <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
+                      <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
+                        📢
+                      </span>
+                      Statut de publication
+                    </h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="published"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Publier ce souhait</FormLabel>
+                            <FormDescription>
+                              Lorsque publié, ce souhait sera visible par tous les utilisateurs.
+                              En brouillon, seul vous, les éditeurs et les administrateurs peuvent le voir.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
                         </FormItem>
                       )}
                     />

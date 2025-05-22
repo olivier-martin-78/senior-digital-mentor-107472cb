@@ -76,6 +76,13 @@ export interface WishPost {
   needs: string | null;
   offering: string | null;
   attachment_url: string | null;
+  profiles?: {
+    display_name: string | null;
+    email: string;
+  };
+  album?: {
+    name: string;
+  } | null;
 }
 
 export interface BlogMedia {
