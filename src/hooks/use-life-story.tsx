@@ -1,170 +1,134 @@
-
-import { useState } from 'react';
+// src/hooks/use-life-story.ts
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { LifeStory } from '@/types/lifeStory';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAutoSave } from '@/hooks/use-auto-save';
-import { toast } from '@/hooks/use-toast';
-import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
-import { initialChapters } from '@/components/life-story/initialChapters';
+import { toast } from '@/components/ui/sonner';
 
 interface UseLifeStoryProps {
   existingStory?: LifeStory;
 }
 
-export function useLifeStory({ existingStory }: UseLifeStoryProps) {
+export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   const { user } = useAuth();
-  
-  const [activeTab, setActiveTab] = useState<string>(
-    existingStory?.last_edited_chapter || 'ch1'
-  );
-  const [openQuestions, setOpenQuestions] = useState<Record<string, boolean>>({});
-  const [activeQuestion, setActiveQuestion] = useState<string | null>(
-    existingStory?.last_edited_question ? 
-      `${existingStory.last_edited_chapter}:${existingStory.last_edited_question}` : 
-      null
-  );
-  
-  // Initialisation des données de l'histoire
-  const initialData: LifeStory = existingStory || {
-    title: "Mon histoire de vie",
-    chapters: initialChapters,
-  };
-  
-  const { data, updateData, isSaving, lastSaved, saveNow } = useAutoSave({
-    initialData,
-    userId: user?.id || '',
-    onSaveSuccess: () => {
-      // Pas de notification ici car la sauvegarde automatique est désactivée
+  const [data, setData] = useState<LifeStory>(
+    existingStory || {
+      id: '',
+      user_id: user?.id || '',
+      title: 'Mon histoire',
+      chapters: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      last_edited_chapter: null,
+      last_edited_question: null,
     }
-  });
-  
-  // Calcul de la progression
-  const calculateProgress = (): LifeStoryProgress => {
-    let total = 0;
-    let answered = 0;
-    
-    data.chapters.forEach(chapter => {
-      total += chapter.questions.length;
-      answered += chapter.questions.filter(q => 
-        (q.answer && q.answer.trim().length > 0) || 
-        (q.audioAnswer && q.audioAnswer.trim().length > 0)
-      ).length;
-    });
-    
-    return {
-      totalQuestions: total,
-      answeredQuestions: answered
-    };
-  };
-  
-  const progress = calculateProgress();
-  
-  // Mise à jour d'une réponse textuelle
-  const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
-    const updatedChapters = updateChapterQuestion(data.chapters, chapterId, questionId, { answer });
-    
-    updateData({
-      chapters: updatedChapters,
-      last_edited_chapter: chapterId,
-      last_edited_question: questionId,
-    });
-  };
-  
-  // Gestion du focus sur une question
-  const handleQuestionFocus = (chapterId: string, questionId: string) => {
-    setActiveQuestion(`${chapterId}:${questionId}`);
-  };
-  
-  // Toggle pour ouvrir/fermer les questions dans un chapitre
+  );
+  const [activeTab, setActiveTab] = useState<string>('chapter-1');
+  const [openQuestions, setOpenQuestions] = useState<{ [key: string]: boolean }>({});
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Simuler le calcul de progression
+  useEffect(() => {
+    const totalQuestions = data.chapters.reduce((sum, chapter) => sum + (chapter.questions?.length || 0), 0);
+    const answeredQuestions = data.chapters.reduce(
+      (sum, chapter) => sum + (chapter.questions?.filter(q => q.answer || q.audioUrl).length || 0),
+      0
+    );
+    setProgress(totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0);
+  }, [data]);
+
   const toggleQuestions = (chapterId: string) => {
-    setOpenQuestions(prev => ({
+    setOpenQuestions(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
+  };
+
+  const handleQuestionFocus = (questionId: string) => {
+    setActiveQuestion(questionId);
+  };
+
+  const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
+    setData(prev => ({
       ...prev,
-      [chapterId]: !prev[chapterId]
+      chapters: prev.chapters.map(chapter =>
+        chapter.id === chapterId
+          ? {
+              ...chapter,
+              questions: chapter.questions?.map(q =>
+                q.id === questionId ? { ...q, answer } : q
+              ),
+            }
+          : chapter
+      ),
     }));
   };
-  
-  // Helper function to update a specific question in a chapter
-  const updateChapterQuestion = (
-    chapters: Chapter[], 
-    chapterId: string, 
-    questionId: string, 
-    updates: Record<string, any>
-  ) => {
-    return chapters.map(chapter => {
-      if (chapter.id === chapterId) {
-        return {
-          ...chapter,
-          questions: chapter.questions.map(question => {
-            if (question.id === questionId) {
-              return { ...question, ...updates };
+
+  const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
+    const audioUrl = URL.createObjectURL(blob);
+    console.log('Audio enregistré:', { chapterId, questionId, blob, audioUrl }); // Débogage
+    setData(prev => ({
+      ...prev,
+      chapters: prev.chapters.map(chapter =>
+        chapter.id === chapterId
+          ? {
+              ...chapter,
+              questions: chapter.questions?.map(q =>
+                q.id === questionId ? { ...q, audioBlob: blob, audioUrl } : q
+              ),
             }
-            return question;
-          })
-        };
-      }
-      return chapter;
-    });
+          : chapter
+      ),
+    }));
+    toast.success('Enregistrement audio ajouté');
   };
-  
-  // Gestion des enregistrements audio
-  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => {
-    console.log(`Enregistrement audio pour la question ${questionId} du chapitre ${chapterId}`, audioBlob);
-    
-    // Mettre à jour la question avec l'URL de l'audio
-    const updatedChapters = updateChapterQuestion(
-      data.chapters, 
-      chapterId, 
-      questionId, 
-      { audioAnswer: audioUrl }
-    );
-    
-    updateData({
-      chapters: updatedChapters,
-      last_edited_chapter: chapterId,
-      last_edited_question: questionId,
-    });
-    
-    // Afficher une notification de succès
-    toast({
-      title: "Enregistrement audio",
-      description: "Votre réponse vocale a été enregistrée avec succès.",
-      duration: 3000
-    });
-  };
-  
-  // Gestion de la suppression d'un audio
+
   const handleAudioDeleted = (chapterId: string, questionId: string) => {
-    console.log(`Suppression de l'audio pour la question ${questionId} du chapitre ${chapterId}`);
-    
-    // Mettre à jour les données pour supprimer l'audio
-    const updatedChapters = data.chapters.map(chapter => {
-      if (chapter.id === chapterId) {
-        return {
-          ...chapter,
-          questions: chapter.questions.map(question => {
-            if (question.id === questionId) {
-              // Supprimer l'audioAnswer
-              const { audioAnswer, ...rest } = question;
-              return rest;
+    setData(prev => ({
+      ...prev,
+      chapters: prev.chapters.map(chapter =>
+        chapter.id === chapterId
+          ? {
+              ...chapter,
+              questions: chapter.questions?.map(q =>
+                q.id === questionId
+                  ? { ...q, audioBlob: null, audioUrl: null }
+                  : q
+              ),
             }
-            return question;
-          })
-        };
-      }
-      return chapter;
-    });
-    
-    updateData({
-      chapters: updatedChapters
-    });
-    
-    // Afficher une notification
-    toast({
-      title: "Audio supprimé",
-      description: "L'enregistrement vocal a été supprimé.",
-      duration: 3000
-    });
+          : chapter
+      ),
+    }));
+    toast.success('Enregistrement audio supprimé');
   };
-  
+
+  const saveNow = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('life_stories')
+        .upsert({
+          id: data.id || undefined,
+          user_id: user.id,
+          title: data.title,
+          chapters: data.chapters,
+          updated_at: new Date().toISOString(),
+          last_edited_chapter: activeTab,
+          last_edited_question: activeQuestion,
+        });
+
+      if (error) throw error;
+      setLastSaved(new Date());
+      toast.success('Histoire sauvegardée');
+    } catch (err) {
+      console.error('Erreur lors de la sauvegarde:', err);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     data,
     activeTab,
@@ -179,6 +143,6 @@ export function useLifeStory({ existingStory }: UseLifeStoryProps) {
     updateAnswer,
     handleAudioRecorded,
     handleAudioDeleted,
-    saveNow
+    saveNow,
   };
-}
+};
