@@ -1,4 +1,4 @@
-
+// src/components/life-story/QuestionItem.tsx
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
@@ -9,9 +9,9 @@ interface QuestionItemProps {
   question: Question;
   chapterId: string;
   onAnswerChange: (chapterId: string, questionId: string, answer: string) => void;
-  onQuestionFocus: (questionId: string) => void;
+  onQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
-  onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => void;
+  onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
 }
 
@@ -22,7 +22,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   onQuestionFocus,
   activeQuestion,
   onAudioRecorded,
-  onAudioDeleted
+  onAudioDeleted,
 }) => {
   return (
     <div className="space-y-2">
@@ -33,7 +33,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           placeholder="Votre réponse..."
           value={question.answer || ''}
           onChange={(e) => onAnswerChange(chapterId, question.id, e.target.value)}
-          onFocus={() => onQuestionFocus(question.id)}
+          onFocus={() => onQuestionFocus(chapterId, question.id)}
           className="min-h-[120px]"
         />
         
@@ -41,9 +41,8 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           questionId={question.id}
           chapterId={chapterId}
           existingAudio={question.audioUrl}
-          onRecordingComplete={(questionId, audioBlob, audioUrl) => 
-            onAudioRecorded(chapterId, questionId, audioBlob, audioUrl)}
-          onDeleteRecording={(questionId) => onAudioDeleted(chapterId, questionId)}
+          onRecordingComplete={(blob) => onAudioRecorded(chapterId, question.id, blob)}
+          onDeleteRecording={() => onAudioDeleted(chapterId, question.id)}
         />
       </div>
       
