@@ -94,7 +94,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    console.log('Début de handleAudioRecorded:', { chapterId, questionId, blobSize: blob.size });
+    console.log('Début de handleAudioRecorded:', { chapterId, questionId, blobSize: blob.size, blobType: blob.type });
     let audioUrl: string;
 
     if (!user) {
@@ -102,12 +102,12 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       audioUrl = URL.createObjectURL(blob);
     } else {
       try {
-        const fileName = `audio/${user.id}/${chapterId}/${questionId}-${Date.now()}.webm`;
+        const fileName = `audio/${user.id}/${chapterId}/${questionId}-${Date.now()}.m4a`;
         console.log('Upload du fichier audio:', fileName);
         const { error } = await supabase.storage
           .from('life-story-audio')
           .upload(fileName, blob, {
-            contentType: 'audio/webm',
+            contentType: 'audio/mp4',
           });
 
         if (error) {
