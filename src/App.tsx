@@ -24,6 +24,7 @@ import DiaryEntry from "./pages/DiaryEntry";
 import DiaryEdit from "./pages/DiaryEdit";
 import LifeStory from "./pages/LifeStory";
 import WishForm from "./pages/WishForm";
+import WishEditForm from "./pages/WishEditForm";
 import Wishes from "./pages/Wishes";
 import WishPost from "./pages/WishPost";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/wish-form" element={<WishForm />} />
             <Route path="/wishes" element={<Wishes />} />
             <Route path="/wishes/:id" element={<WishPost />} />
+            <Route path="/wishes/edit/:id" element={<WishEditForm />} />
 
             {/* Routes protégées qui nécessitent une authentification */}
             <Route element={<ProtectedRoute />}>
