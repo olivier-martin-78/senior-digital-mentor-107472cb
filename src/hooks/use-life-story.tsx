@@ -2,7 +2,7 @@
 // src/hooks/use-life-story.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { LifeStory } from '@/types/lifeStory';
+import { LifeStory, LifeStoryProgress } from '@/types/lifeStory';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 
@@ -27,7 +27,10 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   const [activeTab, setActiveTab] = useState<string>(existingStory?.last_edited_chapter || (data.chapters[0]?.id || ''));
   const [openQuestions, setOpenQuestions] = useState<{ [key: string]: boolean }>({});
   const [activeQuestion, setActiveQuestion] = useState<string | null>(existingStory?.last_edited_question || null);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<LifeStoryProgress>({
+    totalQuestions: 0,
+    answeredQuestions: 0
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -40,14 +43,17 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     setOpenQuestions(initialOpenState);
   }, [data.chapters]);
 
-  // Simuler le calcul de progression
+  // Calculer la progression
   useEffect(() => {
     const totalQuestions = data.chapters.reduce((sum, chapter) => sum + (chapter.questions?.length || 0), 0);
     const answeredQuestions = data.chapters.reduce(
       (sum, chapter) => sum + (chapter.questions?.filter(q => q.answer || q.audioUrl).length || 0),
       0
     );
-    setProgress(totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0);
+    setProgress({
+      totalQuestions,
+      answeredQuestions
+    });
   }, [data]);
 
   const toggleQuestions = (chapterId: string) => {

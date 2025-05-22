@@ -9,7 +9,7 @@ interface ChapterTabsProps {
   activeTab: string;
   setActiveTab: (value: string) => void;
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
-  handleQuestionFocus: (chapterId: string, questionId: string) => void;
+  handleQuestionFocus: (questionId: string) => void;
   activeQuestion: string | null;
   onAudioRecorded: (chapterId: string, questionId: string, audioBlob: Blob, audioUrl: string) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
