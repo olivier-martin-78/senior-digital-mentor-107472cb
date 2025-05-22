@@ -1,4 +1,3 @@
-// src/hooks/use-life-story.ts (version avec upload Supabase)
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress } from '@/types/lifeStory';
@@ -95,34 +94,46 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    let audioUrl = URL.createObjectURL(blob);
-    console.log('Audio enregistré:', { chapterId, questionId, blob, audioUrl, size: blob.size });
+    console.log('Début de handleAudioRecorded:', { chapterId, questionId, blobSize: blob.size });
+    let audioUrl: string;
 
-    let persistentAudioUrl: string | null = null;
-    if (user) {
+    if (!user) {
+      console.warn('Utilisateur non connecté, utilisation d’une URL temporaire');
+      audioUrl = URL.createObjectURL(blob);
+    } else {
       try {
-        const fileName = `audio/${user.id}/${questionId}-${Date.now()}.webm`;
+        const fileName = `audio/${user.id}/${chapterId}/${questionId}-${Date.now()}.webm`;
+        console.log('Upload du fichier audio:', fileName);
         const { error } = await supabase.storage
           .from('life-story-audio')
           .upload(fileName, blob, {
             contentType: 'audio/webm',
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erreur lors de l’upload audio:', error);
+          throw error;
+        }
 
         const { data: urlData } = supabase.storage
           .from('life-story-audio')
           .getPublicUrl(fileName);
 
-        persistentAudioUrl = urlData.publicUrl;
-        audioUrl = persistentAudioUrl;
-        console.log('Audio uploadé:', persistentAudioUrl);
+        if (!urlData?.publicUrl) {
+          console.error('URL publique non générée');
+          throw new Error('Impossible de générer l’URL publique');
+        }
+
+        audioUrl = urlData.publicUrl;
+        console.log('Audio uploadé avec succès:', audioUrl);
       } catch (err) {
         console.error('Erreur lors de l’upload audio:', err);
         toast.error('Erreur lors de la sauvegarde de l’audio');
+        audioUrl = URL.createObjectURL(blob); // Fallback temporaire
       }
     }
 
+    console.log('Mise à jour de l’état avec audioUrl:', audioUrl);
     setData(prev => {
       const newData = {
         ...prev,
@@ -143,6 +154,9 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       return newData;
     });
     toast.success('Enregistrement audio ajouté');
+
+    // Sauvegarde immédiate pour persister l’URL
+    await saveNow();
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string) => {
@@ -170,9 +184,13 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   };
 
   const saveNow = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn('Utilisateur non connecté, sauvegarde ignorée');
+      return;
+    }
     setIsSaving(true);
     try {
+      console.log('Sauvegarde des données dans Supabase:', JSON.stringify(data, null, 2));
       const { error } = await supabase
         .from('life_stories')
         .upsert({
@@ -193,8 +211,12 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
           last_edited_question: activeQuestion,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la sauvegarde:', error);
+        throw error;
+      }
       setLastSaved(new Date());
+      console.log('Histoire sauvegardée avec succès à:', new Date().toISOString());
       toast.success('Histoire sauvegardée');
     } catch (err) {
       console.error('Erreur lors de la sauvegarde:', err);
