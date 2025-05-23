@@ -15,13 +15,13 @@ const WhySection = () => {
               Chez Senior Digital Mentor, nous sommes convaincus que chaque parcours est une épopée qui mérite d&apos;être contée. Grâce à la puissance bienveillante du numérique, nous vous offrons les clés pour ouvrir ces coffres aux trésors et les partager avec ceux qui vous sont chers.
             </p>
             <div>
-              <p className="mb-2"><b>Imaginez...</b><br/></p>
+              <p className="mb-2 text-left"><b>Imaginez...</b><br/></p>
               <ul className="text-left list-disc pl-6 space-y-2">
                 <li><b>Transformer vos albums photos en récits vivants :</b> Votre blog personnel devient le théâtre de vos souvenirs, où chaque cliché raconte une anecdote, une époque, une émotion. Vos proches, émus et curieux, commenteront, questionneront, et revivront ces instants à vos côtés.</li>
                 <li><b>Tisser le fil de votre vie :</b> Qu&apos;il s&apos;agisse d&apos;un journal intime numérique ou de l&apos;écriture de vos mémoires (en version digitale ou papier), votre histoire est un héritage précieux. Elle passionnera votre entourage et inspirera les générations futures.</li>
               </ul>
             </div>
-            <p>
+            <p className="mb-2 text-left">
               <b>Avec le digital, la solitude n&apos;est plus une fatalité.</b><br/>
               Vos publications deviennent des ponts, des liens lumineux qui vous connectent à vos enfants, petits-enfants, et amis, où qu&apos;ils soient. Chaque partage est une étincelle, chaque commentaire une étreinte.
             </p>
