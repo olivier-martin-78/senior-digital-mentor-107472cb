@@ -280,4 +280,43 @@ const AdminLifeStories = () => {
             {/* Dialog de confirmation de suppression */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogContent>
-                <Dialog
+                <DialogHeader>
+                  <DialogTitle>Confirmer la suppression</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <p>Êtes-vous sûr de vouloir supprimer l'histoire de vie "{storyToDelete?.title}" ?</p>
+                  <p className="text-sm text-red-600 mt-2">Cette action est irréversible.</p>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setDeleteDialogOpen(false)}
+                    disabled={isDeleting}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Suppression...
+                      </>
+                    ) : (
+                      'Supprimer'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminLifeStories;
