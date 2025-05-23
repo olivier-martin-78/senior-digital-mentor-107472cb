@@ -15,8 +15,9 @@ const WhySection = () => {
             </p>
             <p>
               Chez Senior Digital Mentor, nous croyons que chaque histoire mérite d'être réactivée, racontée, partagée grâce au numérique.
-              Par exemple, nous mettons à votre disposition un blog pour raconter au travers de vos anciens albums photos des périodes de votre vie. Vous recevrez alors des commentaires de vos proches.
-              Vous pouvez aussi maintenir un journal digital, ou écrire de livre (papier ou digital) de votre vie à vos petits-enfants, et pleins d'autres choses ...
+              Par exemple, nous mettons à votre disposition un blog pour raconter au travers de vos anciens albums photos des périodes de votre vie. Vous recevrez alors des commentaires de vos proches.<br/>
+              Vous pouvez aussi maintenir un journal digital, ou écrire de livre (papier ou digital) de votre vie, car votre histoire intéresse vos petits-enfants.<br/>
+              Avec le digital vous ne vous sentirez plus jamais isolé car le contenu que vous allez produire va vous rapprocher des vôtres. 
             </p>
             <p className="mt-6">
               Nous proposons également aux aînés de vivre des moments profonds cette fois dans la vie réelle :
