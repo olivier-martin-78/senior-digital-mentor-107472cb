@@ -26,7 +26,7 @@ const WhySection = () => {
               Vos publications deviennent des ponts, des liens lumineux qui vous connectent à vos enfants, petits-enfants, et amis, où qu&apos;ils soient. Chaque partage est une étincelle, chaque commentaire une étreinte.
             </p>
             <div className="mt-6">
-              <p className="mb-2">
+              <p className="mb-2" text-align: start;>
                 <b>Au-delà de l&apos;écran, la vie !</b><br/>
                 Parce que les plus belles émotions se vivent aussi dans le monde réel, Senior Digital Mentor vous accompagne pour orchestrer des moments inoubliables :
               </p>
@@ -38,7 +38,7 @@ const WhySection = () => {
                 <li><b>Saveurs d&apos;antan </b>retrouvées le temps (atelier cuisine).</li>
                 <li><b>Lettres de transmission, </b>pour léguer vos valeurs et votre amour.</li>
               </ul>
-              <p className="mb-2">
+              <p className="mb-6">
                 <b>Ne laissez plus vos souvenirs sommeiller. Ne laissez plus la distance vous isoler.<br/>Avec Senior Digital Mentor, reprenez la parole, partagez vos trésors, et tissez des liens éternels.</b><br/>
               </p>
             </div>
