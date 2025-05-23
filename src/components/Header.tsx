@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +28,7 @@ const Header: React.FC = () => {
           <span className="font-bold text-xl text-tranches-charcoal font-serif">Senior Digital Mentor</span>
         </Link>
 
-        {/* Navigation principale */}
+        {/* Reste du code inchangé */}
         <nav className="hidden md:flex space-x-8">
           <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Accueil
@@ -70,8 +69,6 @@ const Header: React.FC = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/profile">Profil</Link>
                   </DropdownMenuItem>
-
-                  {/* Menu admin */}
                   {hasRole('admin') && (
                     <>
                       <DropdownMenuSeparator />
@@ -87,8 +84,6 @@ const Header: React.FC = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  
-                  {/* Menu éditeur */}
                   {!hasRole('admin') && hasRole('editor') && (
                     <>
                       <DropdownMenuSeparator />
@@ -98,7 +93,6 @@ const Header: React.FC = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     Déconnexion
@@ -124,7 +118,7 @@ const Header: React.FC = () => {
                 <Link to="/" className="flex items-center space-x-2">
                   <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
                 </Link>
-                <nav className="grid gap-6 text-lg">
+                <nav className Jer="grid gap-6 text-lg">
                   <Link to="/" className="hover:text-tranches-sage transition-colors">
                     Accueil
                   </Link>
