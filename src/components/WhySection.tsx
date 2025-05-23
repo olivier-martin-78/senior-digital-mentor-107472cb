@@ -26,7 +26,7 @@ const WhySection = () => {
               Vos publications deviennent des ponts, des liens lumineux qui vous connectent à vos enfants, petits-enfants, et amis, où qu&apos;ils soient. Chaque partage est une étincelle, chaque commentaire une étreinte.
             </p>
             <div className="mt-6">
-              <p className="mb-2" text-align: start;>
+              <p className="mb-2 text-left">
                 <b>Au-delà de l&apos;écran, la vie !</b><br/>
                 Parce que les plus belles émotions se vivent aussi dans le monde réel, Senior Digital Mentor vous accompagne pour orchestrer des moments inoubliables :
               </p>
