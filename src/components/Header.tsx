@@ -24,7 +24,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
+          <span className="font-bold text-xl text-tranches-charcoal font-serif">Senior Digital Mentor</span>
         </Link>
 
         {/* Navigation principale */}
