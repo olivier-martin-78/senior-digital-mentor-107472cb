@@ -18,6 +18,8 @@ import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAlbums from "./pages/admin/AdminAlbums";
 import AdminWishAlbums from "./pages/admin/AdminWishAlbums";
+import AdminLifeStories from "./pages/admin/AdminLifeStories";
+import AdminLifeStoryEdit from "./pages/admin/AdminLifeStoryEdit";
 import Diary from "./pages/Diary";
 import DiaryNew from "./pages/DiaryNew";
 import DiaryEntry from "./pages/DiaryEntry";
@@ -71,6 +73,8 @@ const App = () => (
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/albums" element={<AdminAlbums />} />
               <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
+              <Route path="/admin/life-stories" element={<AdminLifeStories />} />
+              <Route path="/admin/life-stories/:id" element={<AdminLifeStoryEdit />} />
             </Route>
 
             {/* Route 404 */}

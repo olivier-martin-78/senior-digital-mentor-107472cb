@@ -83,6 +83,9 @@ const Header: React.FC = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/admin/albums">Albums</Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/life-stories">Histoires de vie</Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   {!hasRole('admin') && hasRole('editor') && (
@@ -150,6 +153,9 @@ const Header: React.FC = () => {
                           </Link>
                           <Link to="/admin/albums" className="hover:text-tranches-sage transition-colors">
                             Albums
+                          </Link>
+                          <Link to="/admin/life-stories" className="hover:text-tranches-sage transition-colors">
+                            Histoires de vie
                           </Link>
                         </>
                       )}
