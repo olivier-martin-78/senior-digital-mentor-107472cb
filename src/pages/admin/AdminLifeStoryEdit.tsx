@@ -52,16 +52,26 @@ const AdminLifeStoryEdit: React.FC = () => {
       if (error) throw error;
 
       if (data) {
-        // Convertir explicitement le champ JSON chapters en type Chapter[]
+        // Convertir le champ JSON chapters en type Chapter[] de façon sécurisée
         let parsedChapters: Chapter[] = [];
         
         if (data.chapters) {
-          if (typeof data.chapters === 'string') {
-            // Si chapters est une chaîne JSON, la parser
-            parsedChapters = JSON.parse(data.chapters);
-          } else {
-            // Si chapters est déjà un objet (ce qui est généralement le cas avec Supabase)
-            parsedChapters = data.chapters as Chapter[];
+          try {
+            if (typeof data.chapters === 'string') {
+              // Si chapters est une chaîne JSON, la parser
+              parsedChapters = JSON.parse(data.chapters) as Chapter[];
+            } else if (Array.isArray(data.chapters)) {
+              // Vérifier et convertir chaque élément du tableau en Chapter
+              parsedChapters = (data.chapters as any[]).map(chapter => ({
+                id: chapter.id || '',
+                title: chapter.title || '',
+                description: chapter.description,
+                questions: Array.isArray(chapter.questions) ? chapter.questions : []
+              }));
+            }
+          } catch (parseError) {
+            console.error('Erreur lors du parsing des chapitres:', parseError);
+            parsedChapters = [];
           }
         }
         
@@ -80,26 +90,33 @@ const AdminLifeStoryEdit: React.FC = () => {
         setStory(lifeStory);
         
         // Gestion sécurisée des informations utilisateur
-        if (data.profiles) {
+        if (data.profiles && typeof data.profiles === 'object' && data.profiles !== null) {
+          // Vérifier que les propriétés existent avant de les utiliser
+          const profileData = data.profiles as Record<string, any>;
           setUserInfo({
-            email: data.profiles.email,
-            display_name: data.profiles.display_name
+            email: profileData.email || "Email non disponible",
+            display_name: profileData.display_name
           });
         } else {
           // Si la relation n'est pas trouvée, chercher l'utilisateur séparément
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('email, display_name')
-            .eq('id', data.user_id)
-            .single();
-            
-          if (!userError && userData) {
-            setUserInfo({
-              email: userData.email,
-              display_name: userData.display_name
-            });
-          } else {
-            setUserInfo({ email: "Utilisateur inconnu" });
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('profiles')
+              .select('email, display_name')
+              .eq('id', data.user_id)
+              .single();
+              
+            if (!userError && userData) {
+              setUserInfo({
+                email: userData.email,
+                display_name: userData.display_name
+              });
+            } else {
+              setUserInfo({ email: "Utilisateur inconnu" });
+            }
+          } catch (userQueryError) {
+            console.error('Erreur lors de la récupération des informations utilisateur:', userQueryError);
+            setUserInfo({ email: "Erreur lors du chargement de l'utilisateur" });
           }
         }
       }
