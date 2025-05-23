@@ -11,7 +11,7 @@ const WhySection = () => {
           </h2>
           <div className="space-y-4 text-lg text-tranches-charcoal/90">
             <p>
-              Au fond de chaque aîné sommeillent des trésors : des souvenirs impérissables, des émotions précieusement gardées, des désirs tus par le temps. Des histoires qui ne demandent qu&apos;à être ravivées, partagées, célébrées.<br/><br/>
+              Au fond de chaque aîné sommeillent des trésors : des souvenirs impérissables, des émotions précieusement gardées, des désirs étouffés par le temps. Des histoires qui ne demandent qu&apos;à être ravivées, partagées, célébrées.<br/><br/>
               Chez Senior Digital Mentor, nous sommes convaincus que chaque parcours est une épopée qui mérite d&apos;être contée. Grâce à la puissance bienveillante du numérique, nous vous offrons les clés pour ouvrir ces coffres aux trésors et les partager avec ceux qui vous sont chers.
             </p>
             <div>
