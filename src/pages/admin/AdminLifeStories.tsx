@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,14 +53,22 @@ const AdminLifeStories = () => {
       const { data, error } = await supabase
         .from('life_stories')
         .select(`
-          *,
-          profiles:user_id (
+          id,
+          user_id,
+          title,
+          created_at,
+          updated_at,
+          chapters,
+          profiles!life_stories_user_id_fkey (
             email,
             display_name
           )
         `);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw new Error(`Erreur Supabase: ${error.message} (code: ${error.code})`);
+      }
 
       if (data) {
         // Traitement des données pour calculer les statistiques de chaque histoire
@@ -90,14 +97,17 @@ const AdminLifeStories = () => {
             chapter_count: chapters.length,
             question_count: totalQuestions,
             answered_count: answeredQuestions,
-            user_email: story.profiles?.email,
-            user_display_name: story.profiles?.display_name
+            user_email: story.profiles?.email || 'Non disponible',
+            user_display_name: story.profiles?.display_name || 'Utilisateur inconnu'
           };
         });
         
         setStories(formattedStories);
+      } else {
+        throw new Error('Aucune donnée reçue de l\'API');
       }
     } catch (error: any) {
+      console.error('Erreur complète:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de charger les histoires de vie : ${error.message}`,
@@ -270,46 +280,4 @@ const AdminLifeStories = () => {
             {/* Dialog de confirmation de suppression */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmer la suppression</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p>
-                    Êtes-vous sûr de vouloir supprimer l'histoire "{storyToDelete?.title}" ?
-                    <br />
-                    <span className="text-red-500 font-semibold">Cette action est irréversible.</span>
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    disabled={isDeleting}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteConfirm}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Suppression...
-                      </>
-                    ) : (
-                      'Supprimer'
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default AdminLifeStories;
+                <Dialog
