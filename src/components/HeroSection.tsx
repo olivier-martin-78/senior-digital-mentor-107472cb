@@ -20,7 +20,7 @@ const HeroSection = () => {
             Aider les seniors à communiquer via le digital
           </h1>
           <p className="text-xl md:text-2xl text-white mb-8">
-            Le numérique à mon rythme
+            Formation au digital chez vous et à votre rythme
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
