@@ -15,7 +15,7 @@ const WhySection = () => {
             </p>
             <p>
               Chez Senior Digital Mentor, nous croyons que chaque histoire mérite d'être réactivée, racontée, partagée grâce au numérique.
-              Nous avons créer un blog photos pour que vous puissiez raconter des tranches de votre vie illustrées de vos photos. Votre entourage pourra intérargir en laissant des commentaires sous vos photos.
+              Nous avons créé un blog photos pour raconter au travers de vos anciens albums photos des tranches de votre vie. Votre entourage pourra intérargir en laissant des commentaires sous vos photos.
               Nous mettons également à votre disposition un journal digital pour raconter vos journées à vos enfant/petits-enfants, et pleins d'autrs choses ...
             </p>
             <p className="mt-6">
