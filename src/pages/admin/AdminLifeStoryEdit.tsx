@@ -13,13 +13,18 @@ import LifeStoryForm from '@/components/life-story/LifeStoryForm';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+interface UserInfo {
+  email: string;
+  display_name?: string | null;
+}
+
 const AdminLifeStoryEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { hasRole } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [story, setStory] = useState<LifeStory | null>(null);
-  const [userInfo, setUserInfo] = useState<{ email: string; display_name?: string } | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -37,21 +42,33 @@ const AdminLifeStoryEdit: React.FC = () => {
     try {
       setLoading(true);
       
+      // Récupérer l'histoire de vie
       const { data, error } = await supabase
         .from('life_stories')
-        .select(`
-          *,
-          profiles:user_id (
-            email,
-            display_name
-          )
-        `)
+        .select('*')
         .eq('id', storyId)
         .single();
 
       if (error) throw error;
 
       if (data) {
+        // Récupérer les informations de l'utilisateur séparément
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('email, display_name')
+          .eq('id', data.user_id)
+          .single();
+          
+        if (userError) {
+          console.error('Erreur lors de la récupération des informations utilisateur:', userError);
+          // On continue même si on n'a pas pu récupérer l'utilisateur
+        } else if (userData) {
+          setUserInfo({
+            email: userData.email,
+            display_name: userData.display_name
+          });
+        }
+        
         // Convertir le champ JSON chapters en type Chapter[] de façon sécurisée
         let parsedChapters: Chapter[] = [];
         
@@ -88,37 +105,6 @@ const AdminLifeStoryEdit: React.FC = () => {
         };
         
         setStory(lifeStory);
-        
-        // Gestion sécurisée des informations utilisateur
-        if (data.profiles && typeof data.profiles === 'object' && data.profiles !== null) {
-          // Vérifier que les propriétés existent avant de les utiliser
-          const profileData = data.profiles as Record<string, any>;
-          setUserInfo({
-            email: profileData.email || "Email non disponible",
-            display_name: profileData.display_name
-          });
-        } else {
-          // Si la relation n'est pas trouvée, chercher l'utilisateur séparément
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('profiles')
-              .select('email, display_name')
-              .eq('id', data.user_id)
-              .single();
-              
-            if (!userError && userData) {
-              setUserInfo({
-                email: userData.email,
-                display_name: userData.display_name
-              });
-            } else {
-              setUserInfo({ email: "Utilisateur inconnu" });
-            }
-          } catch (userQueryError) {
-            console.error('Erreur lors de la récupération des informations utilisateur:', userQueryError);
-            setUserInfo({ email: "Erreur lors du chargement de l'utilisateur" });
-          }
-        }
       }
     } catch (error: any) {
       toast({

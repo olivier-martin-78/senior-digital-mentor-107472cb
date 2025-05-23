@@ -8,7 +8,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Loader2, Pencil, Trash2, ChevronLeft, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -24,6 +24,12 @@ interface LifeStoryAdmin {
   answered_count: number;
   user_email?: string;
   user_display_name?: string;
+}
+
+interface Profile {
+  id: string;
+  email: string;
+  display_name: string | null;
 }
 
 const AdminLifeStories = () => {
@@ -49,8 +55,8 @@ const AdminLifeStories = () => {
     try {
       setLoading(true);
       
-      // Récupérer toutes les histoires de vie avec les informations des utilisateurs
-      const { data, error } = await supabase
+      // Récupérer toutes les histoires de vie
+      const { data: storiesData, error: storiesError } = await supabase
         .from('life_stories')
         .select(`
           id,
@@ -58,22 +64,37 @@ const AdminLifeStories = () => {
           title,
           created_at,
           updated_at,
-          chapters,
-          profiles!profiles_id_fkey (
-            email,
-            display_name
-          )
+          chapters
         `);
 
-      if (error) {
-        console.error('Erreur Supabase:', error);
-        throw new Error(`Erreur Supabase: ${error.message} (code: ${error.code})`);
+      if (storiesError) {
+        console.error('Erreur Supabase (histoires):', storiesError);
+        throw new Error(`Erreur Supabase: ${storiesError.message} (code: ${storiesError.code})`);
       }
 
-      if (data) {
+      if (storiesData) {
+        // Récupérer tous les profils d'utilisateurs
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name');
+
+        if (profilesError) {
+          console.error('Erreur Supabase (profils):', profilesError);
+          throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
+        }
+
+        // Créer un dictionnaire de profils pour faciliter l'accès
+        const profilesMap: Record<string, Profile> = {};
+        if (profilesData) {
+          profilesData.forEach((profile) => {
+            profilesMap[profile.id] = profile;
+          });
+        }
+        
         // Traitement des données pour calculer les statistiques de chaque histoire
-        const formattedStories = data.map((story: any) => {
+        const formattedStories = storiesData.map((story: any) => {
           const chapters = story.chapters || [];
+          const userProfile = profilesMap[story.user_id];
           
           let totalQuestions = 0;
           let answeredQuestions = 0;
@@ -97,8 +118,8 @@ const AdminLifeStories = () => {
             chapter_count: chapters.length,
             question_count: totalQuestions,
             answered_count: answeredQuestions,
-            user_email: story.profiles?.email || 'Non disponible',
-            user_display_name: story.profiles?.display_name || 'Utilisateur inconnu'
+            user_email: userProfile?.email || 'Non disponible',
+            user_display_name: userProfile?.display_name || 'Utilisateur inconnu'
           };
         });
         
