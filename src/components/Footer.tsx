@@ -116,8 +116,8 @@ const Footer = () => {
       <div className="container">
         <div className="flex flex-col md:flex-row justify-between items-start">
           <div className="mb-8 md:mb-0">
-            <h3 className="text-2xl font-serif text-tranches-charcoal mb-2">Tranches de vie</h3>
-            <p className="text-tranches-warmgray">Faire revivre nos souvenirs</p>
+            <h3 className="text-2xl font-serif text-tranches-charcoal mb-2">Senior Digital Mentor</h3>
+            <p className="text-tranches-warmgray">Le digital à mon rythme</p>
           </div>
           
           <div className="w-full md:w-1/2 lg:w-2/5">
@@ -207,7 +207,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-10 pt-6 border-t border-tranches-sage/30 text-center text-sm text-tranches-warmgray">
-          <p>© {new Date().getFullYear()} Tranches de vie. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} Senior Digital Menor. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
