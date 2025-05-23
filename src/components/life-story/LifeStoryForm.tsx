@@ -12,13 +12,45 @@ interface LifeStoryFormProps {
 }
 
 export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) => {
-  // Si aucune histoire existante ou s'il n'y a pas de chapitres, utiliser les chapitres initiaux
-  const storyWithChapters = existingStory && existingStory.chapters.length > 0 
-    ? existingStory 
-    : { 
-        ...existingStory, 
-        chapters: initialChapters 
-      };
+  // Toujours utiliser tous les chapitres initiaux pour tous les utilisateurs
+  const storyWithChapters = {
+    ...existingStory,
+    chapters: initialChapters,
+    // Si une histoire existe, préserver les réponses existantes
+    ...(existingStory && existingStory.chapters.length > 0 && {
+      chapters: initialChapters.map(initialChapter => {
+        // Chercher le chapitre correspondant dans l'histoire existante
+        const existingChapter = existingStory.chapters.find(ch => ch.id === initialChapter.id);
+        
+        // Si le chapitre existe, copier ses questions avec les réponses
+        if (existingChapter) {
+          return {
+            ...initialChapter,
+            questions: initialChapter.questions.map(initialQuestion => {
+              // Chercher la question correspondante dans le chapitre existant
+              const existingQuestion = existingChapter.questions.find(q => q.id === initialQuestion.id);
+              
+              // Si la question existe, préserver sa réponse et l'audio
+              if (existingQuestion) {
+                return {
+                  ...initialQuestion,
+                  answer: existingQuestion.answer || initialQuestion.answer,
+                  audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+                  audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
+                };
+              }
+              
+              return initialQuestion;
+            }),
+          };
+        }
+        
+        return initialChapter;
+      }),
+    }),
+  };
+
+  console.log('Histoire avec chapitres complets:', storyWithChapters);
 
   const {
     data,
