@@ -7,22 +7,35 @@ const WhySection = () => {
       <div className="container">
         <div className="max-w-3xl mx-auto text-center animate-on-scroll">
           <h2 className="text-3xl md:text-4xl font-serif mb-6 text-tranches-charcoal">
-            Imaginez un coffre rempli de vos plus tendres souvenirs… Lesquels aimeriez-vous rouvrir pour ressentir, une fois encore, la magie de ces instants ?
+            Révélez vos trésors cachés : Donnez une nouvelle vie à vos souvenirs avec Senior Digital Mentor
           </h2>
           <div className="space-y-4 text-lg text-tranches-charcoal/90">
             <p>
-              Des milliers de personnes âgées gardent en elles des souvenirs précieux, des émotions enfouies, des choses qu'elles n'osent plus demander.
+              Au fond de chaque aîné sommeillent des trésors : des souvenirs impérissables, des émotions précieusement gardées, des désirs tus par le temps. Des histoires qui ne demandent qu'à être ravivées, partagées, célébrées.<br/><br/>
+              Chez Senior Digital Mentor, nous sommes convaincus que chaque parcours est une épopée qui mérite d'être contée. Grâce à la puissance bienveillante du numérique, nous vous offrons les clés pour ouvrir ces coffres aux trésors et les partager avec ceux qui vous sont chers.
             </p>
             <p>
-              Chez Senior Digital Mentor, nous croyons que chaque histoire mérite d'être réactivée, racontée, partagée grâce au numérique.
-              Par exemple, nous mettons à votre disposition un blog pour raconter au travers de vos anciens albums photos des périodes de votre vie. Vous recevrez alors des commentaires de vos proches.<br/><br/>
-              Vous pouvez aussi maintenir un journal digital, ou écrire de livre (papier ou digital) de votre vie, votre histoire intéresse votre entourage.<br/><br/>
-              Avec le digital vous ne vous sentirez plus jamais isolé, vos publications numériques vous relient à ceux que vous aimez. 
+              <b>Imaginez...</b>
+              <li><b>Transformer vos albums photos en récits vivants :</b> Votre blog personnel devient le théâtre de vos souvenirs, où chaque cliché raconte une anecdote, une époque, une émotion. Vos proches, émus et curieux, commenteront, questionneront, et revivront ces instants à vos côtés.</li>
+              <li><b>Tisser le fil de votre vie :</b> Qu'il s'agisse d'un journal intime numérique ou de l'écriture de vos mémoires (en version digitale ou papier), votre histoire est un héritage précieux. Elle passionnera votre entourage et inspirera les générations futures.</li>
             </p>
+            <p>
+              <b>Avec le digital, la solitude n'est plus une fatalité.</b>
+              Vos publications deviennent des ponts, des liens lumineux qui vous connectent à vos enfants, petits-enfants, et amis, où qu'ils soient. Chaque partage est une étincelle, chaque commentaire une étreinte.
+            </p>
+            <p>
             <p className="mt-6">
-              Nous proposons également aux aînés de vivre des moments profonds cette fois dans la vie réelle :
-              retrouvailles, témoignages, lieux de mémoire, gestes d'affection, plats d'enfance, lettres de transmission…
+              <b>Au-delà de l'écran, la vie !</b>
+              Parce que les plus belles émotions se vivent aussi dans le monde réel, Senior Digital Mentor vous accompagne pour orchestrer des moments inoubliables :
+              <li><b>Retrouvailles </b>orchestrées avec soin.</li>
+              <li><b>Témoignages </b>vibrants à partager.</li>
+              <li><b>Pèlerinages </b>sur les lieux qui ont marqué votre existence.</li>
+              <li><b>Gestes d'affection </b>qui réchauffent le cœur.</li>
+              <li><b>Saveurs d'antan </b>retrouvées le temps (atelier cuisine).</li>
+              <li><b>Lettres de transmission, </b>pour léguer vos valeurs et votre amour.</li>
             </p>
+
+              
           </div>
         </div>
       </div>
