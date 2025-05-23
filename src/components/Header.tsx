@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -118,7 +119,7 @@ const Header: React.FC = () => {
                 <Link to="/" className="flex items-center space-x-2">
                   <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
                 </Link>
-                <nav className Jer="grid gap-6 text-lg">
+                <nav className="grid gap-6 text-lg">
                   <Link to="/" className="hover:text-tranches-sage transition-colors">
                     Accueil
                   </Link>
