@@ -14,10 +14,12 @@ const WhySection = () => {
               Des milliers de personnes âgées gardent en elles des souvenirs précieux, des émotions enfouies, des choses qu'elles n'osent plus demander.
             </p>
             <p>
-              Chez Tranches de vie, nous croyons que chaque histoire mérite d'être réactivée, racontée, partagée.
+              Chez Senior Digital Mentor, nous croyons que chaque histoire mérite d'être réactivée, racontée, partagée grâce au numérique.
+              Nous avons créer un blog photos pour que vous puissiez raconter des tranches de votre vie illustrées de vos photos. Votre entourage pourra intérargir en laissant des commentaires sous vos photos.
+              Nous mettons également à votre disposition un journal digital pour raconter vos journées à vos enfant/petits-enfants, et pleins d'autrs choses ...
             </p>
             <p className="mt-6">
-              Nous proposons aux aînés de vivre ou revivre des moments profonds :
+              Nous proposons également aux aînés de vivre ou revivre des moments profonds, mais cette fois dans la vie réelle :
               retrouvailles, témoignages, lieux de mémoire, gestes d'affection, plats d'enfance, lettres de transmission…
             </p>
           </div>
