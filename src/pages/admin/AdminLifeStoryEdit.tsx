@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Save, User, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { LifeStory } from '@/types/lifeStory';
+import { LifeStory, Chapter } from '@/types/lifeStory';
 import LifeStoryForm from '@/components/life-story/LifeStoryForm';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -52,12 +52,25 @@ const AdminLifeStoryEdit: React.FC = () => {
       if (error) throw error;
 
       if (data) {
+        // Convertir explicitement le champ JSON chapters en type Chapter[]
+        let parsedChapters: Chapter[] = [];
+        
+        if (data.chapters) {
+          if (typeof data.chapters === 'string') {
+            // Si chapters est une chaîne JSON, la parser
+            parsedChapters = JSON.parse(data.chapters);
+          } else {
+            // Si chapters est déjà un objet (ce qui est généralement le cas avec Supabase)
+            parsedChapters = data.chapters as Chapter[];
+          }
+        }
+        
         // Formater l'histoire de vie pour le composant LifeStoryForm
         const lifeStory: LifeStory = {
           id: data.id,
           user_id: data.user_id,
           title: data.title,
-          chapters: data.chapters,
+          chapters: parsedChapters,
           created_at: data.created_at,
           updated_at: data.updated_at,
           last_edited_chapter: data.last_edited_chapter,
@@ -65,7 +78,30 @@ const AdminLifeStoryEdit: React.FC = () => {
         };
         
         setStory(lifeStory);
-        setUserInfo(data.profiles);
+        
+        // Gestion sécurisée des informations utilisateur
+        if (data.profiles) {
+          setUserInfo({
+            email: data.profiles.email,
+            display_name: data.profiles.display_name
+          });
+        } else {
+          // Si la relation n'est pas trouvée, chercher l'utilisateur séparément
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('email, display_name')
+            .eq('id', data.user_id)
+            .single();
+            
+          if (!userError && userData) {
+            setUserInfo({
+              email: userData.email,
+              display_name: userData.display_name
+            });
+          } else {
+            setUserInfo({ email: "Utilisateur inconnu" });
+          }
+        }
       }
     } catch (error: any) {
       toast({
