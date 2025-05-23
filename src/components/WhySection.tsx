@@ -37,8 +37,8 @@ const WhySection = () => {
                 <li><b>Gestes d&apos;affection </b>qui réchauffent le cœur.</li>
                 <li><b>Saveurs d&apos;antan </b>retrouvées le temps (atelier cuisine).</li>
                 <li><b>Lettres de transmission, </b>pour léguer vos valeurs et votre amour.</li>
-              </ul>
-              <p className="mb-6">
+              </ul><br/>
+              <p className="mb-2 text-left">
                 <b>Ne laissez plus vos souvenirs sommeiller. Ne laissez plus la distance vous isoler.<br/>Avec Senior Digital Mentor, reprenez la parole, partagez vos trésors, et tissez des liens éternels.</b><br/>
               </p>
             </div>
