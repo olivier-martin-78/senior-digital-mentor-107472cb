@@ -6,7 +6,7 @@ export const initialChapters: Chapter[] = [
   {
     id: 'chapter-1',
     title: 'Enfance',
-    description: 'Vos souvenirs d'enfance',
+    description: "Vos souvenirs d'enfance",
     questions: [
       {
         id: 'question-1',
@@ -24,7 +24,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-3',
-        text: 'Comment était votre maison d'enfance ?',
+        text: "Comment était votre maison d'enfance ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -55,18 +55,18 @@ export const initialChapters: Chapter[] = [
   {
     id: 'chapter-2',
     title: 'Adolescence',
-    description: 'Vos années d'adolescence',
+    description: "Vos années d'adolescence",
     questions: [
       {
         id: 'question-7',
-        text: 'Quel était votre rêve d'adolescent ?',
+        text: "Quel était votre rêve d'adolescent ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
       },
       {
         id: 'question-8',
-        text: 'Comment était l'ambiance au lycée ?',
+        text: "Comment était l'ambiance au lycée ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -87,7 +87,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-11',
-        text: 'Quels étaient vos projets d'avenir à cette époque ?',
+        text: "Quels étaient vos projets d'avenir à cette époque ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -97,11 +97,11 @@ export const initialChapters: Chapter[] = [
   {
     id: 'chapter-3',
     title: 'Jeune adulte',
-    description: 'Vos premières années d'indépendance',
+    description: "Vos premières années d'indépendance",
     questions: [
       {
         id: 'question-12',
-        text: 'Comment s'est passé votre premier emploi ?',
+        text: "Comment s'est passé votre premier emploi ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -206,7 +206,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-25',
-        text: 'Comment est votre relation avec vos enfants aujourd'hui ?',
+        text: "Comment est votre relation avec vos enfants aujourd'hui ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -360,7 +360,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-43',
-        text: 'Qu'avez-vous appris sur vous-même au fil des années ?',
+        text: "Qu'avez-vous appris sur vous-même au fil des années ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -395,7 +395,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-47',
-        text: 'Qu'aimeriez-vous qu'on se souvienne de vous ?',
+        text: "Qu'aimeriez-vous qu'on se souvienne de vous ?",
         answer: '',
         audioBlob: null,
         audioUrl: null,
