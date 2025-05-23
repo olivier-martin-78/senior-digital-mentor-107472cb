@@ -12,7 +12,7 @@ const HowItWorksSection = () => {
     {
       icon: <MapPin className="w-12 h-12 text-tranches-charcoal" />,
       title: "La mission",
-      description: "Nous organisons une \"tranche de vie\" : une micro-expérience personnalisée, douce et humaine, grâce à notre accompagnement."
+      description: "Nous organisons une micro-expérience personnalisée, douce et humaine, grâce à notre accompagnement."
     },
     {
       icon: <Video className="w-12 h-12 text-tranches-charcoal" />,
