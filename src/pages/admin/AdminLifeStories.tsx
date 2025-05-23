@@ -59,7 +59,7 @@ const AdminLifeStories = () => {
           created_at,
           updated_at,
           chapters,
-          profiles!life_stories_user_id_fkey (
+          profiles!profiles_id_fkey (
             email,
             display_name
           )
@@ -284,18 +284,21 @@ const AdminLifeStories = () => {
                   <DialogTitle>Confirmer la suppression</DialogTitle>
                 </DialogHeader>
                 <div className="py-4">
-                  <p>Êtes-vous sûr de vouloir supprimer l'histoire de vie "{storyToDelete?.title}" ?</p>
-                  <p className="text-sm text-red-600 mt-2">Cette action est irréversible.</p>
+                  <p>
+                    Êtes-vous sûr de vouloir supprimer l'histoire "{storyToDelete?.title}" ?
+                    <br />
+                    <span className="text-red-500 font-semibold">Cette action est irréversible.</span>
+                  </p>
                 </div>
                 <DialogFooter>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setDeleteDialogOpen(false)}
                     disabled={isDeleting}
                   >
                     Annuler
                   </Button>
-                  <Button 
+                  <Button
                     variant="destructive"
                     onClick={handleDeleteConfirm}
                     disabled={isDeleting}
