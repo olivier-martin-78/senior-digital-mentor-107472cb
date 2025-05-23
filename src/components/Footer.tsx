@@ -207,7 +207,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-10 pt-6 border-t border-tranches-sage/30 text-center text-sm text-tranches-warmgray">
-          <p>© {new Date().getFullYear()} Senior Digital Menor. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} Senior Digital Mentor. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
