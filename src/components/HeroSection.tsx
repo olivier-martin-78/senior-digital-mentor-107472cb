@@ -17,7 +17,7 @@ const HeroSection = () => {
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold text-white mb-4">
-            Tranches de vie
+            Senior digital memtor
           </h1>
           <p className="text-xl md:text-2xl text-white mb-8">
             Le numérique à mon rythme
@@ -27,7 +27,7 @@ const HeroSection = () => {
               Créer un blog avec mes photos
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Partager l'histoire de ma vie
+              Me former au digital
             </Button>
           </div>
         </div>
