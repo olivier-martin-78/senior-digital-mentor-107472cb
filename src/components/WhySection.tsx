@@ -7,7 +7,7 @@ const WhySection = () => {
       <div className="container">
         <div className="max-w-3xl mx-auto text-center animate-on-scroll">
           <h2 className="text-3xl md:text-4xl font-serif mb-6 text-tranches-charcoal">
-            Révélez vos trésors cachés : Donnez une nouvelle vie à vos souvenirs avec Senior Digital Mentor
+            Révélez vos trésors cachés : Donnez une nouvelle vie à vos souvenirs
           </h2>
           <div className="space-y-4 text-lg text-tranches-charcoal/90">
             <p>
