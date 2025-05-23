@@ -16,36 +16,33 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   const storyWithChapters = {
     ...existingStory,
     chapters: initialChapters,
-    // Si une histoire existe, préserver les réponses existantes
-    ...(existingStory && existingStory.chapters.length > 0 && {
+    // Si une histoire existe, préserver les réponses existantes sans filtrer les chapitres ou questions
+    ...(existingStory && {
       chapters: initialChapters.map(initialChapter => {
         // Chercher le chapitre correspondant dans l'histoire existante
         const existingChapter = existingStory.chapters.find(ch => ch.id === initialChapter.id);
         
-        // Si le chapitre existe, copier ses questions avec les réponses
-        if (existingChapter) {
-          return {
-            ...initialChapter,
-            questions: initialChapter.questions.map(initialQuestion => {
-              // Chercher la question correspondante dans le chapitre existant
-              const existingQuestion = existingChapter.questions.find(q => q.id === initialQuestion.id);
-              
-              // Si la question existe, préserver sa réponse et l'audio
-              if (existingQuestion) {
-                return {
-                  ...initialQuestion,
-                  answer: existingQuestion.answer || initialQuestion.answer,
-                  audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
-                  audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
-                };
-              }
-              
-              return initialQuestion;
-            }),
-          };
-        }
-        
-        return initialChapter;
+        // Préserver les réponses des questions existantes, mais garantir que TOUTES les questions
+        // du chapitre initial sont présentes
+        return {
+          ...initialChapter,
+          questions: initialChapter.questions.map(initialQuestion => {
+            // Chercher si cette question existe déjà dans les données de l'utilisateur
+            const existingQuestion = existingChapter?.questions.find(q => q.id === initialQuestion.id);
+            
+            // Si la question existe, préserver sa réponse et l'audio
+            if (existingQuestion) {
+              return {
+                ...initialQuestion,
+                answer: existingQuestion.answer || initialQuestion.answer,
+                audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+                audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
+              };
+            }
+            
+            return initialQuestion;
+          }),
+        };
       }),
     }),
   };
