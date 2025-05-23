@@ -27,7 +27,7 @@ const HeroSection = () => {
               Créer un blog avec mes photos
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Interargir avec le monde
+              Partager l'histoire de ma vie
             </Button>
           </div>
         </div>
