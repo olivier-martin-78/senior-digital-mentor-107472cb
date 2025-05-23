@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,7 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white z-30 border-b border-gray-100">
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
-        <img src="SeniorDigital.png" alt="Le digital à mon rythme">
+        <img src="SeniorDigital.png" alt="Le digital à mon rythme" />
         <Link to="/" className="flex items-center space-x-2">
           <span className="font-bold text-xl text-tranches-charcoal font-serif">Senior Digital Mentor</span>
         </Link>
