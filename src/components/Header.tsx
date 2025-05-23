@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import SeniorDigitalLogo from '@/SeniorDigital.png'; // Importez l'image ici
 
 const Header: React.FC = () => {
   const { session, user, profile, signOut, hasRole } = useAuth();
@@ -23,7 +24,7 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white z-30 border-b border-gray-100">
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
-        <img src="src/SeniorDigital.png" alt="Le digital à mon rythme" />
+        <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" /> {/* Utilisez l'image importée */}
         <Link to="/" className="flex items-center space-x-2">
           <span className="font-bold text-xl text-tranches-charcoal font-serif">Senior Digital Mentor</span>
         </Link>
