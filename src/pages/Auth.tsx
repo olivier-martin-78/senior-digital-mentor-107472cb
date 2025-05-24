@@ -395,9 +395,9 @@ const handleCheckConnection = useCallback(async () => {
       <div className="container mx-auto px-4 py-16 flex justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl font-serif text-center">Bienvenue sur le Blog</CardTitle>
+            <CardTitle className="text-2xl font-serif text-center">Bienvenue sur l'application</CardTitle>
             <CardDescription className="text-center">
-              Connectez-vous ou inscrivez-vous pour continuer
+              <b>Connectez-vous<b/> ou <b>inscrivez-vous<b/> pour continuer
             </CardDescription>
           </CardHeader>
           <CardContent>
