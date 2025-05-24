@@ -24,10 +24,10 @@ const HeroSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream">
-              Migrer mes albums photos sur un blog
+              Mettre mes albums photos sur un blog
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Me former au digital et à l'IA
+              Découvrer le potentiel d'amélioration<br/>de votre quotidien grâce à l'IA
             </Button>
           </div>
         </div>
