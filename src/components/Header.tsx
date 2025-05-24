@@ -28,7 +28,6 @@ const Header: React.FC = () => {
           <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" width="110"/> {/* Utilisez l'image importée */}
         </Link>
         <span className="font-bold text-xl text-tranches-charcoal font-serif"></span>
-        {/* Reste du code inchangé */}
         <nav className="hidden md:flex space-x-8">
           <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
             Accueil
