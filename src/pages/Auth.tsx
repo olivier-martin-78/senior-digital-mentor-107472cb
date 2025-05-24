@@ -462,11 +462,11 @@ const handleCheckConnection = useCallback(async () => {
             
             {isMobileDevice && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-sm font-medium text-amber-800 mb-2">Appareil mobile détecté</p>
+           {/*   <p className="text-sm font-medium text-amber-800 mb-2">Appareil mobile détecté</p>*/}
                 <ul className="list-disc text-left pl-5 text-sm text-amber-700">
-                  <li>Désactivez le mode de navigation privée</li>
+           {/*    <li>Désactivez le mode de navigation privée</li>
                   <li>Videz le cache de votre navigateur</li>
-                  <li>Désactivez le mode économie de données</li>
+                  <li>Désactivez le mode économie de données</li>*/}
                   {hasStorageRestrictions && <li className="font-medium">Attention: Des restrictions de stockage ont été détectées</li>}
                   {isPrivateBrowsing && <li className="font-medium">Navigation privée détectée - cela peut causer des problèmes</li>}
                   {!hasCookiesEnabled && <li className="font-medium">Cookies désactivés - veuillez les activer</li>}
