@@ -44,6 +44,8 @@ const Blog: React.FC = () => {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
+        console.log('Fetching albums for user:', user?.email, 'with roles:', { admin: hasRole('admin'), editor: hasRole('editor') });
+        
         // Fetch all albums first
         const { data: allAlbumsData, error: albumsError } = await supabase
           .from('blog_albums')
@@ -55,14 +57,19 @@ const Blog: React.FC = () => {
           return;
         }
 
+        console.log('All albums found:', allAlbumsData?.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })));
+
         // Filter albums based on permissions
         let accessibleAlbums = [];
 
         if (hasRole('admin') || hasRole('editor')) {
           // Admins and editors can see all albums
+          console.log('User is admin/editor - showing all albums');
           accessibleAlbums = allAlbumsData as BlogAlbum[];
         } else {
           // For regular users, check permissions
+          console.log('User is regular user - checking permissions for user_id:', user?.id);
+          
           const { data: permissionsData, error: permissionsError } = await supabase
             .from('album_permissions')
             .select('album_id')
@@ -73,14 +80,22 @@ const Blog: React.FC = () => {
             return;
           }
 
-          const accessibleAlbumIds = permissionsData.map(p => p.album_id);
+          console.log('User permissions found:', permissionsData);
+          const accessibleAlbumIds = permissionsData?.map(p => p.album_id) || [];
+          console.log('Accessible album IDs:', accessibleAlbumIds);
           
           // Include albums the user has permission to see, plus albums they authored
-          accessibleAlbums = allAlbumsData.filter((album: BlogAlbum) => 
-            accessibleAlbumIds.includes(album.id) || album.author_id === user?.id
-          ) as BlogAlbum[];
+          accessibleAlbums = allAlbumsData?.filter((album: BlogAlbum) => {
+            const hasPermission = accessibleAlbumIds.includes(album.id);
+            const isAuthor = album.author_id === user?.id;
+            const isAccessible = hasPermission || isAuthor;
+            
+            console.log(`Album ${album.name}: hasPermission=${hasPermission}, isAuthor=${isAuthor}, accessible=${isAccessible}`);
+            return isAccessible;
+          }) || [];
         }
 
+        console.log('Final accessible albums:', accessibleAlbums.map(a => ({ id: a.id, name: a.name })));
         setAlbums(accessibleAlbums);
 
         // Fetch categories
@@ -107,6 +122,8 @@ const Blog: React.FC = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
+        console.log('Fetching posts for user:', user?.email);
+        
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -129,10 +146,13 @@ const Blog: React.FC = () => {
           throw error;
         }
 
+        console.log('All posts found:', data?.length);
         let filteredPosts = data as PostWithAuthor[];
 
         // Filter posts based on album permissions
         if (!hasRole('admin') && !hasRole('editor')) {
+          console.log('Filtering posts based on album permissions for regular user');
+          
           const { data: permissionsData, error: permissionsError } = await supabase
             .from('album_permissions')
             .select('album_id')
@@ -140,14 +160,34 @@ const Blog: React.FC = () => {
 
           if (!permissionsError && permissionsData) {
             const accessibleAlbumIds = permissionsData.map(p => p.album_id);
+            console.log('Accessible album IDs for posts:', accessibleAlbumIds);
+            
+            const beforeFilterCount = filteredPosts.length;
             
             // Include posts from accessible albums, posts without albums, or posts authored by the user
+            filteredPosts = filteredPosts.filter(post => {
+              const noAlbum = !post.album_id;
+              const hasAlbumPermission = post.album_id && accessibleAlbumIds.includes(post.album_id);
+              const isAuthor = post.author_id === user?.id;
+              const isAccessible = noAlbum || hasAlbumPermission || isAuthor;
+              
+              if (post.album_id) {
+                console.log(`Post "${post.title}" in album ${post.album_id}: hasPermission=${hasAlbumPermission}, isAuthor=${isAuthor}, accessible=${isAccessible}`);
+              }
+              
+              return isAccessible;
+            });
+            
+            console.log(`Posts filtered: ${beforeFilterCount} -> ${filteredPosts.length}`);
+          } else {
+            console.error('Error fetching permissions for posts:', permissionsError);
+            // If we can't fetch permissions, only show posts without albums or authored by the user
             filteredPosts = filteredPosts.filter(post => 
-              !post.album_id || // Posts without albums
-              accessibleAlbumIds.includes(post.album_id) || // Posts from accessible albums
-              post.author_id === user?.id // Posts authored by the user
+              !post.album_id || post.author_id === user?.id
             );
           }
+        } else {
+          console.log('User is admin/editor - showing all posts');
         }
 
         if (selectedCategories.length > 0) {
@@ -164,6 +204,7 @@ const Blog: React.FC = () => {
           }
         }
 
+        console.log('Final filtered posts:', filteredPosts.length);
         setPosts(filteredPosts);
 
         // Initialiser les images pour chaque post
