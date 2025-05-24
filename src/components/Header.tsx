@@ -24,11 +24,10 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white z-30 border-b border-gray-100">
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
-        <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" width="110"/> {/* Utilisez l'image importée */}
-        <Link to="/index.tsx" className="flex items-center space-x-2">
-          <span className="font-bold text-xl text-tranches-charcoal font-serif"></span>
+        <Link to="/" className="flex items-center space-x-2">
+          <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" width="110"/> {/* Utilisez l'image importée */}
         </Link>
-
+        <span className="font-bold text-xl text-tranches-charcoal font-serif"></span>
         {/* Reste du code inchangé */}
         <nav className="hidden md:flex space-x-8">
           <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
