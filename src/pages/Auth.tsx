@@ -397,7 +397,7 @@ const handleCheckConnection = useCallback(async () => {
           <CardHeader>
             <CardTitle className="text-2xl font-serif text-center">Bienvenue sur l'application</CardTitle>
             <CardDescription className="text-center">
-              <b>Connectez-vous<b/> ou <b>inscrivez-vous<b/> pour continuer
+              Connectez-vous ou inscrivez-vous pour continuer
             </CardDescription>
           </CardHeader>
           <CardContent>
