@@ -1,4 +1,3 @@
-
 import { ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET, getThumbnailUrl } from '@/utils/thumbnailtUtils';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -41,21 +40,48 @@ const Blog: React.FC = () => {
     return null;
   }
 
-  // Fetch albums and categories
+  // Fetch albums and categories with permission filtering
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        // Fetch albums - maintenant nous n'obtenons que les albums auxquels l'utilisateur a accès
-        const { data: albumsData, error: albumsError } = await supabase
+        // Fetch all albums first
+        const { data: allAlbumsData, error: albumsError } = await supabase
           .from('blog_albums')
           .select(`*, profiles:author_id(*)`)
           .order('name', { ascending: true });
 
-        if (!albumsError && albumsData) {
-          setAlbums(albumsData as BlogAlbum[]);
-        } else if (albumsError) {
+        if (albumsError) {
           console.error('Erreur lors du chargement des albums:', albumsError);
+          return;
         }
+
+        // Filter albums based on permissions
+        let accessibleAlbums = [];
+
+        if (hasRole('admin') || hasRole('editor')) {
+          // Admins and editors can see all albums
+          accessibleAlbums = allAlbumsData as BlogAlbum[];
+        } else {
+          // For regular users, check permissions
+          const { data: permissionsData, error: permissionsError } = await supabase
+            .from('album_permissions')
+            .select('album_id')
+            .eq('user_id', user?.id);
+
+          if (permissionsError) {
+            console.error('Erreur lors du chargement des permissions:', permissionsError);
+            return;
+          }
+
+          const accessibleAlbumIds = permissionsData.map(p => p.album_id);
+          
+          // Include albums the user has permission to see, plus albums they authored
+          accessibleAlbums = allAlbumsData.filter((album: BlogAlbum) => 
+            accessibleAlbumIds.includes(album.id) || album.author_id === user?.id
+          ) as BlogAlbum[];
+        }
+
+        setAlbums(accessibleAlbums);
 
         // Fetch categories
         const { data: categoriesData, error: categoriesError } = await supabase
@@ -74,9 +100,9 @@ const Blog: React.FC = () => {
     };
 
     fetchFilters();
-  }, [user?.id]);
+  }, [user?.id, hasRole]);
 
-  // Fetch posts with filters
+  // Fetch posts with filters and permission checking
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -104,6 +130,25 @@ const Blog: React.FC = () => {
         }
 
         let filteredPosts = data as PostWithAuthor[];
+
+        // Filter posts based on album permissions
+        if (!hasRole('admin') && !hasRole('editor')) {
+          const { data: permissionsData, error: permissionsError } = await supabase
+            .from('album_permissions')
+            .select('album_id')
+            .eq('user_id', user?.id);
+
+          if (!permissionsError && permissionsData) {
+            const accessibleAlbumIds = permissionsData.map(p => p.album_id);
+            
+            // Include posts from accessible albums, posts without albums, or posts authored by the user
+            filteredPosts = filteredPosts.filter(post => 
+              !post.album_id || // Posts without albums
+              accessibleAlbumIds.includes(post.album_id) || // Posts from accessible albums
+              post.author_id === user?.id // Posts authored by the user
+            );
+          }
+        }
 
         if (selectedCategories.length > 0) {
           const { data: postCategories } = await supabase
@@ -135,7 +180,7 @@ const Blog: React.FC = () => {
     };
 
     fetchPosts();
-  }, [user, selectedAlbum, selectedCategories, searchQuery, albums]);
+  }, [user, selectedAlbum, selectedCategories, searchQuery, albums, hasRole]);
 
   // Fonction pour obtenir l'image initiale à afficher pour un article
   const getInitialPostImage = async (post: PostWithAuthor): Promise<string> => {
