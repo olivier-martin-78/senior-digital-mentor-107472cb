@@ -233,7 +233,7 @@ const handleCheckConnection = useCallback(async () => {
         if (isMobileDevice) {
           toast({
             title: "Problème de connexion sur mobile",
-            description: "Essayez de vider le cache de votre navigateur ou de désactiver le mode navigation privée.",
+            description: "Essayez de vérifier votre connexion réseau.",
             variant: "destructive"
           });
           
@@ -331,7 +331,7 @@ const handleCheckConnection = useCallback(async () => {
         if (isMobileDevice) {
           toast({
             title: "Problème de connexion sur mobile",
-            description: "Essayez de vider le cache de votre navigateur ou de désactiver le mode navigation privée.",
+            description: "Essayez de vérifier votre connexion réseau.",
             variant: "destructive"
           });
           
@@ -444,37 +444,9 @@ const handleCheckConnection = useCallback(async () => {
                         )}
                       </div>
                     )}
-                    
-                    {isMobileDevice && (
-                      <div className="text-xs font-medium">
-                        Conseils:
-                        <ul className="list-disc pl-5 mt-1">
-                          <li>Essayez de désactiver le mode économie de données</li>
-                          <li>Essayez un autre réseau (4G ou Wi-Fi)</li>
-                          <li>Redémarrez votre navigateur</li>
-                        </ul>
-                      </div>
-                    )}
                   </div>
                 </AlertDescription>
               </Alert>
-            )}
-            
-            {isMobileDevice && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-sm font-medium text-amber-800 mb-2">Appareil mobile détecté</p>
-                <ul className="list-disc text-left pl-5 text-sm text-amber-700">
-                 <li>Désactivez le mode de navigation privée</li>
-                  <li>Videz le cache de votre navigateur</li>
-                  <li>Désactivez le mode économie de données</li>
-                  {hasStorageRestrictions && <li className="font-medium">Attention: Des restrictions de stockage ont été détectées</li>}
-                  {isPrivateBrowsing && <li className="font-medium">Navigation privée détectée - cela peut causer des problèmes</li>}
-                  {!hasCookiesEnabled && <li className="font-medium">Cookies désactivés - veuillez les activer</li>}
-                  {connectionInfo && !connectionInfo.online && <li className="font-medium text-red-600">Vous semblez être hors ligne</li>}
-                  {connectionInfo && connectionInfo.effectiveType === 'slow-2g' && 
-                    <li className="font-medium">Connexion très lente détectée</li>}
-                </ul>
-              </div>
             )}
             
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
