@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
-import SeniorDigitalLogo from '@/SeniorDigital.png'; // Importez l'image ici
+import SeniorDigitalLogo from '@/SeniorDigital.png';
 
 const Header: React.FC = () => {
   const { session, user, profile, signOut, hasRole } = useAuth();
@@ -25,7 +25,7 @@ const Header: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 bg-white z-30 border-b border-gray-100">
       <div className="container mx-auto flex justify-between items-center h-16 px-4">
         <Link to="/" className="flex items-center space-x-2">
-          <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" width="110"/> {/* Utilisez l'image importée */}
+          <img src={SeniorDigitalLogo} alt="Le digital à mon rythme" width="110"/>
         </Link>
         <span className="font-bold text-xl text-tranches-charcoal font-serif"></span>
         <nav className="hidden md:flex space-x-8">
@@ -84,6 +84,9 @@ const Header: React.FC = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/admin/life-stories">Histoires de vie</Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/diary">Journal intime</Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   {!hasRole('admin') && hasRole('editor') && (
@@ -118,7 +121,7 @@ const Header: React.FC = () => {
             <SheetContent side="right">
               <div className="grid gap-4 h-full">
                 <Link to="/" className="flex items-center space-x-2">
-                  <span className="font-bold text-xl text-tranches-charcoal font-serif">Tranches de vie</span>
+                  <span className="font-bold text-xl text-tranches-charcoal font-serif">Senior Digital Mentor</span>
                 </Link>
                 <nav className="grid gap-6 text-lg">
                   <Link to="/" className="hover:text-tranches-sage transition-colors">
@@ -154,6 +157,9 @@ const Header: React.FC = () => {
                           </Link>
                           <Link to="/admin/life-stories" className="hover:text-tranches-sage transition-colors">
                             Histoires de vie
+                          </Link>
+                          <Link to="/admin/diary" className="hover:text-tranches-sage transition-colors">
+                            Journal intime
                           </Link>
                         </>
                       )}
