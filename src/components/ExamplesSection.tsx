@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const ExamplesSection = () => {
   const examples = [
     {
-      text: "Louis, 83 ans, a pu retrouver le village de son enfance après 60 ans après avoir exprimé un souhait sur l'application.",
+      text: "Louis, 83 ans, a pu retourner dans le village de son enfance après avoir exprimé un souhait sur l'application.",
       image: "/lovable-uploads/8ac879f0-eb39-4064-9a78-17e88d05dcb2.png"
     },
     {
@@ -13,7 +13,7 @@ const ExamplesSection = () => {
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
     },
     {
-      text: "Raymonde a pu déguster à nouveau un couscous comme le préparait de sa mère, avec l'aide d'une aide à domicile.",
+      text: "Raymonde a pu retrouver les saveurs du couscous qui lui préparait sa mère, avec l'aide d'une aide à domicile.",
       image: "/lovable-uploads/90b817e7-b9e1-44e7-98f9-32e2cee2d305.png"
     }
   ];
