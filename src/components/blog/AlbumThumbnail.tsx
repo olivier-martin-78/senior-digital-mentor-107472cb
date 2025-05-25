@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { BlogAlbum } from '@/types/supabase';
 import { getThumbnailUrl, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
+import { ImageIcon } from 'lucide-react';
 
 interface AlbumThumbnailProps {
   album: BlogAlbum | null;
@@ -62,7 +62,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
 
   if (coverImage || album?.thumbnail_url) {
     return (
-      <div className="w-full h-64 relative">
+      <div className="w-full h-40 relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -71,7 +71,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
         <img
           src={thumbnailUrl}
           alt={`Couverture de ${title}`}
-          className="w-full h-full object-contain" /* Changed from object-cover to object-contain */
+          className="w-full h-full object-cover"
           onLoad={() => setIsLoading(false)}
           onError={(e) => {
             console.error('Image failed to load:', {
@@ -84,22 +84,23 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
             setIsLoading(false);
           }}
         />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent p-4">
-          <div className="text-white">
-            {album && (
-              <div className="text-sm opacity-75 mb-1">
-                Album: {album.name}
-              </div>
-            )}
+        {album && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent p-2">
+            <div className="text-white text-sm opacity-75">
+              Album: {album.name}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="w-full h-24 bg-gray-100 flex items-center justify-center">
-      <h1 className="text-2xl font-serif text-tranches-charcoal">{title}</h1>
+    <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
+      <div className="text-gray-400 text-center">
+        <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+        <span className="text-sm">Aucune image</span>
+      </div>
     </div>
   );
 };
