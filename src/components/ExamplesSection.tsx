@@ -5,15 +5,15 @@ import { Card, CardContent } from '@/components/ui/card';
 const ExamplesSection = () => {
   const examples = [
     {
-      text: "Louis, 83 ans, a pu retrouver le village de son enfance après 60 ans.",
+      text: "Louis, 83 ans, a pu retrouver le village de son enfance après 60 ans après avoir exprimé un souhait sur l'application.",
       image: "/lovable-uploads/8ac879f0-eb39-4064-9a78-17e88d05dcb2.png"
     },
     {
-      text: "Suzanne a laissé une lettre vocale à sa petite-fille qu'elle n'avait jamais rencontrée.",
+      text: "Suzanne a invité sa petite-fille a consulter l'histoire de sa vie en cours de rédaction.",
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
     },
     {
-      text: "Raymonde a pu déguster à nouveau un couscous comme celui de sa mère, avec l'aide d'un chef bénévole.",
+      text: "Raymonde a pu déguster à nouveau un couscous comme le préparait de sa mère, avec l'aide d'une aide à domicile.",
       image: "/lovable-uploads/90b817e7-b9e1-44e7-98f9-32e2cee2d305.png"
     }
   ];
@@ -22,7 +22,7 @@ const ExamplesSection = () => {
     <section className="section bg-white">
       <div className="container">
         <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-tranches-charcoal animate-on-scroll">
-          Exemples de tranches de vie réalisées
+          Exemples d'activités réalisées avec nous
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
