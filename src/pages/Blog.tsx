@@ -62,13 +62,13 @@ const Blog: React.FC = () => {
         // Filter albums based on permissions
         let accessibleAlbums = [];
 
-        if (hasRole('admin') || hasRole('editor')) {
-          // Admins and editors can see all albums
-          console.log('User is admin/editor - showing all albums');
+        if (hasRole('admin')) {
+          // Only admins can see all albums
+          console.log('User is admin - showing all albums');
           accessibleAlbums = allAlbumsData as BlogAlbum[];
         } else {
-          // For regular users, check permissions
-          console.log('User is regular user - checking permissions for user_id:', user?.id);
+          // For editors and regular users, check permissions
+          console.log('User is editor/regular user - checking permissions for user_id:', user?.id);
           
           const { data: permissionsData, error: permissionsError } = await supabase
             .from('album_permissions')
@@ -150,8 +150,8 @@ const Blog: React.FC = () => {
         let filteredPosts = data as PostWithAuthor[];
 
         // Filter posts based on album permissions
-        if (!hasRole('admin') && !hasRole('editor')) {
-          console.log('Filtering posts based on album permissions for regular user');
+        if (!hasRole('admin')) {
+          console.log('Filtering posts based on album permissions for non-admin user');
           
           const { data: permissionsData, error: permissionsError } = await supabase
             .from('album_permissions')
@@ -187,7 +187,7 @@ const Blog: React.FC = () => {
             );
           }
         } else {
-          console.log('User is admin/editor - showing all posts');
+          console.log('User is admin - showing all posts');
         }
 
         if (selectedCategories.length > 0) {
