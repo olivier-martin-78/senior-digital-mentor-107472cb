@@ -20,6 +20,7 @@ import AdminAlbums from "./pages/admin/AdminAlbums";
 import AdminWishAlbums from "./pages/admin/AdminWishAlbums";
 import AdminLifeStories from "./pages/admin/AdminLifeStories";
 import AdminLifeStoryEdit from "./pages/admin/AdminLifeStoryEdit";
+import AdminDiary from "./pages/admin/AdminDiary";
 import Diary from "./pages/Diary";
 import DiaryNew from "./pages/DiaryNew";
 import DiaryEntry from "./pages/DiaryEntry";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
               <Route path="/admin/life-stories" element={<AdminLifeStories />} />
               <Route path="/admin/life-stories/:id" element={<AdminLifeStoryEdit />} />
+              <Route path="/admin/diary" element={<AdminDiary />} />
             </Route>
 
             {/* Route 404 */}
