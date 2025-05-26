@@ -55,7 +55,23 @@ const Diary = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setEntries(data || []);
+      
+      // Convertir les données pour correspondre au type DiaryEntry
+      const convertedEntries = (data || []).map(entry => ({
+        ...entry,
+        physical_state: entry.physical_state as "fatigué" | "dormi" | "énergique" | null || null,
+        mental_state: entry.mental_state || '',
+        desire_of_day: entry.desire_of_day || '',
+        objectives: entry.objectives || '',
+        positive_things: entry.positive_things || '',
+        negative_things: entry.negative_things || '',
+        reflections: entry.reflections || '',
+        private_notes: entry.private_notes || '',
+        contacted_people: entry.contacted_people || [],
+        tags: entry.tags || []
+      }));
+      
+      setEntries(convertedEntries);
     } catch (error) {
       console.error('Erreur lors du chargement des entrées:', error);
     } finally {
@@ -87,8 +103,6 @@ const Diary = () => {
         </div>
         
         <DiaryHeader 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
           entriesCount={entries.length}
         />
         
@@ -101,7 +115,9 @@ const Diary = () => {
         />
         
         {entries.length === 0 ? (
-          <EmptyDiary hasSearch={!!searchTerm || !!startDate || !!endDate} />
+          <div className="text-center py-8">
+            <p className="text-gray-500">Aucune entrée trouvée pour cette période.</p>
+          </div>
         ) : (
           <EntriesGrid entries={entries} />
         )}

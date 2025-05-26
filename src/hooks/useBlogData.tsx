@@ -24,7 +24,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
         .from('blog_posts')
         .select(`
           *,
-          profiles(display_name, email, avatar_url)
+          profiles(id, display_name, email, avatar_url, created_at)
         `)
         .eq('published', true)
         .order('created_at', { ascending: false });
@@ -60,7 +60,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
     try {
       const { data, error } = await supabase
         .from('blog_albums')
-        .select('*')
+        .select(`
+          *,
+          profiles(id, display_name, email, avatar_url, created_at)
+        `)
         .order('name');
 
       if (error) throw error;

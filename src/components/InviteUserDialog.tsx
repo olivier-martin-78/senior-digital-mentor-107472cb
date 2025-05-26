@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { UserPlus } from 'lucide-react';
 
 const InviteUserDialog = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,6 +32,16 @@ const InviteUserDialog = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour envoyer une invitation",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -45,6 +55,7 @@ const InviteUserDialog = () => {
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
+          invited_by: user.id,
           token,
           blog_access: formData.blogAccess,
           wishes_access: formData.wishesAccess,

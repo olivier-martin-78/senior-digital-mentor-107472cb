@@ -35,10 +35,6 @@ const Blog = () => {
         </div>
         
         <BlogHeader 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedAlbum={selectedAlbum}
-          onAlbumChange={setSelectedAlbum}
           albums={albums}
           hasCreatePermission={hasCreatePermission}
         />
@@ -51,7 +47,15 @@ const Blog = () => {
           onClear={handleClearFilters}
         />
         
-        <BlogPostGrid posts={posts} loading={loading} />
+        <BlogPostGrid 
+          posts={posts} 
+          loading={loading}
+          albums={albums}
+          postImages={{}}
+          searchQuery={searchTerm}
+          selectedAlbum={selectedAlbum}
+          selectedCategories={[]}
+        />
       </div>
     </div>
   );

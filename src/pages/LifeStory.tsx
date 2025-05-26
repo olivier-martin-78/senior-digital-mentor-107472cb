@@ -11,7 +11,7 @@ import DateRangeFilter from '@/components/DateRangeFilter';
 const LifeStory = () => {
   const { user, session } = useAuth();
   const navigate = useNavigate();
-  const { lifeStory, loading, saveLifeStory } = useLifeStory();
+  const lifeStoryData = useLifeStory();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -31,7 +31,7 @@ const LifeStory = () => {
   // aux chapitres ou questions modifiées dans une certaine période
   // Pour le moment, on affiche juste les filtres pour la cohérence de l'interface
 
-  if (loading) {
+  if (!lifeStoryData.data) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
@@ -59,12 +59,21 @@ const LifeStory = () => {
           onClear={handleClearFilters}
         />
         
-        {lifeStory && (
-          <LifeStoryLayout 
-            lifeStory={lifeStory} 
-            onSave={saveLifeStory}
-          />
-        )}
+        <LifeStoryLayout 
+          data={lifeStoryData.data}
+          activeTab={lifeStoryData.activeTab}
+          openQuestions={lifeStoryData.openQuestions}
+          activeQuestion={lifeStoryData.activeQuestion}
+          progress={lifeStoryData.progress}
+          isSaving={lifeStoryData.isSaving}
+          lastSaved={lifeStoryData.lastSaved}
+          onTabChange={lifeStoryData.setActiveTab}
+          onQuestionToggle={lifeStoryData.toggleQuestion}
+          onQuestionChange={lifeStoryData.setActiveQuestion}
+          onAnswerChange={lifeStoryData.updateAnswer}
+          onVoiceAnswerChange={lifeStoryData.updateVoiceAnswer}
+          saveNow={lifeStoryData.saveNow}
+        />
       </div>
     </div>
   );

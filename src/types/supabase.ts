@@ -22,8 +22,8 @@ export interface BlogAlbum {
   description: string | null;
   author_id: string;
   created_at: string;
-  profiles: Profile;  // Cette propriété est nécessaire pour le typage
-  thumbnail_url: string | null; // Nouvelle propriété pour la vignette
+  profiles: Profile;
+  thumbnail_url: string | null;
 }
 
 export interface WishAlbum {
@@ -52,7 +52,7 @@ export interface BlogPost {
   updated_at: string;
   album_id: string | null;
   publication_date?: string;
-  cover_image: string | null;  // Ajout de la propriété cover_image
+  cover_image: string | null;
 }
 
 export interface WishPost {

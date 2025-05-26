@@ -72,7 +72,10 @@ const Wishes = () => {
     try {
       const { data, error } = await supabase
         .from('wish_albums')
-        .select('*')
+        .select(`
+          *,
+          profiles(id, display_name, email, avatar_url, created_at)
+        `)
         .order('name');
 
       if (error) throw error;
