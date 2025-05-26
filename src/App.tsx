@@ -14,6 +14,7 @@ import BlogPost from "./pages/BlogPost";
 import BlogEditor from "./pages/BlogEditor";
 import Profile from "./pages/Profile";
 import Unauthorized from "./pages/Unauthorized";
+import Recent from "./pages/Recent";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAlbums from "./pages/admin/AdminAlbums";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/recent" element={<Recent />} />
               <Route path="/diary" element={<Diary />} />
               <Route path="/diary/new" element={<DiaryNew />} />
               <Route path="/diary/:id" element={<DiaryEntry />} />

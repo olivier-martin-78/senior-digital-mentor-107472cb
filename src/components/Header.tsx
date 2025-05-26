@@ -34,6 +34,9 @@ const Header: React.FC = () => {
           </Link>
           {session && (
             <>
+              <Link to="/recent" className="text-gray-600 hover:text-tranches-sage transition-colors">
+                Récents
+              </Link>
               <Link to="/blog" className="text-gray-600 hover:text-tranches-sage transition-colors">
                 Albums
               </Link>
@@ -129,6 +132,9 @@ const Header: React.FC = () => {
                   </Link>
                   {session && (
                     <>
+                      <Link to="/recent" className="hover:text-tranches-sage transition-colors">
+                        Récents
+                      </Link>
                       <Link to="/blog" className="hover:text-tranches-sage transition-colors">
                         Albums
                       </Link>
