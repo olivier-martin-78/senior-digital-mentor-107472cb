@@ -56,11 +56,15 @@ const Diary = () => {
 
       if (error) throw error;
       
-      // Convertir les données pour correspondre au type DiaryEntry
+      // Convertir les données pour correspondre au type DiaryEntry avec validation stricte
       const convertedEntries = (data || []).map(entry => ({
         ...entry,
-        physical_state: entry.physical_state as "fatigué" | "dormi" | "énergique" | null || null,
-        mental_state: entry.mental_state || '',
+        physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
+          ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
+          : null,
+        mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
+          ? entry.mental_state as "stressé" | "calme" | "motivé"
+          : null,
         desire_of_day: entry.desire_of_day || '',
         objectives: entry.objectives || '',
         positive_things: entry.positive_things || '',

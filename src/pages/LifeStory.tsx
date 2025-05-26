@@ -11,7 +11,7 @@ import DateRangeFilter from '@/components/DateRangeFilter';
 const LifeStory = () => {
   const { user, session } = useAuth();
   const navigate = useNavigate();
-  const lifeStoryData = useLifeStory();
+  const lifeStoryData = useLifeStory({});
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -68,10 +68,10 @@ const LifeStory = () => {
           isSaving={lifeStoryData.isSaving}
           lastSaved={lifeStoryData.lastSaved}
           onTabChange={lifeStoryData.setActiveTab}
-          onQuestionToggle={lifeStoryData.toggleQuestion}
-          onQuestionChange={lifeStoryData.setActiveQuestion}
+          onQuestionToggle={lifeStoryData.toggleQuestions}
+          onQuestionChange={lifeStoryData.handleQuestionFocus}
           onAnswerChange={lifeStoryData.updateAnswer}
-          onVoiceAnswerChange={lifeStoryData.updateVoiceAnswer}
+          onVoiceAnswerChange={lifeStoryData.handleAudioRecorded}
           saveNow={lifeStoryData.saveNow}
         />
       </div>
