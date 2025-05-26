@@ -13,6 +13,7 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import BlogEditor from "./pages/BlogEditor";
 import BlogLanding from "./pages/BlogLanding";
+import AILanding from "./pages/AILanding";
 import Profile from "./pages/Profile";
 import Unauthorized from "./pages/Unauthorized";
 import Recent from "./pages/Recent";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/blog-landing" element={<BlogLanding />} />
+            <Route path="/ai-landing" element={<AILanding />} />
             <Route path="/wish-form" element={<WishForm />} />
             <Route path="/wishes" element={<Wishes />} />
             <Route path="/wishes/:id" element={<WishPost />} />

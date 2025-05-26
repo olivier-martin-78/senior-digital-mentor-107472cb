@@ -29,8 +29,10 @@ const HeroSection = () => {
                 Partager mes souvenirs<br/>et mes photos sur un blog
               </Link>
             </Button>
-            <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray">
-              Découvrez le potentiel d'amélioration<br/>de votre quotidien grâce à l'IA
+            <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray" asChild>
+              <Link to="/ai-landing">
+                Découvrez le potentiel d'amélioration<br/>de votre quotidien grâce à l'IA
+              </Link>
             </Button>
           </div>
         </div>
