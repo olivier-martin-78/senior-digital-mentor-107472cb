@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface DiaryHeaderProps {
-  entriesCount: number;
+  entriesCount?: number;
   entryId?: string;
   onDelete?: () => Promise<void>;
 }
@@ -72,7 +72,7 @@ const DiaryHeader: React.FC<DiaryHeaderProps> = ({ entriesCount, entryId, onDele
           Mes entrées de journal
         </h2>
         <p className="text-gray-600">
-          {entriesCount} entrée{entriesCount > 1 ? 's' : ''} au total
+          {entriesCount || 0} entrée{(entriesCount || 0) > 1 ? 's' : ''} au total
         </p>
       </div>
       <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">

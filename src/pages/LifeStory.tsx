@@ -60,19 +60,16 @@ const LifeStory = () => {
         />
         
         <LifeStoryLayout 
-          data={lifeStoryData.data}
+          chapters={lifeStoryData.data.chapters}
           activeTab={lifeStoryData.activeTab}
           openQuestions={lifeStoryData.openQuestions}
           activeQuestion={lifeStoryData.activeQuestion}
-          progress={lifeStoryData.progress}
-          isSaving={lifeStoryData.isSaving}
-          lastSaved={lifeStoryData.lastSaved}
-          onTabChange={lifeStoryData.setActiveTab}
-          onQuestionToggle={lifeStoryData.toggleQuestions}
-          onQuestionChange={lifeStoryData.handleQuestionFocus}
-          onAnswerChange={lifeStoryData.updateAnswer}
-          onVoiceAnswerChange={lifeStoryData.handleAudioRecorded}
-          saveNow={lifeStoryData.saveNow}
+          setActiveTab={lifeStoryData.setActiveTab}
+          toggleQuestions={lifeStoryData.toggleQuestions}
+          handleQuestionFocus={lifeStoryData.handleQuestionFocus}
+          updateAnswer={lifeStoryData.updateAnswer}
+          onAudioRecorded={lifeStoryData.handleAudioRecorded}
+          onAudioDeleted={lifeStoryData.handleAudioDeleted}
         />
       </div>
     </div>
