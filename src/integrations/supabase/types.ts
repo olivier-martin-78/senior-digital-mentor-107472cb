@@ -285,6 +285,54 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          blog_access: boolean | null
+          created_at: string
+          diary_access: boolean | null
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          invited_by: string
+          last_name: string
+          life_story_access: boolean | null
+          token: string
+          used_at: string | null
+          wishes_access: boolean | null
+        }
+        Insert: {
+          blog_access?: boolean | null
+          created_at?: string
+          diary_access?: boolean | null
+          email: string
+          expires_at?: string
+          first_name: string
+          id?: string
+          invited_by: string
+          last_name: string
+          life_story_access?: boolean | null
+          token: string
+          used_at?: string | null
+          wishes_access?: boolean | null
+        }
+        Update: {
+          blog_access?: boolean | null
+          created_at?: string
+          diary_access?: boolean | null
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          invited_by?: string
+          last_name?: string
+          life_story_access?: boolean | null
+          token?: string
+          used_at?: string | null
+          wishes_access?: boolean | null
+        }
+        Relationships: []
+      }
       life_stories: {
         Row: {
           chapters: Json
@@ -410,6 +458,33 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_section_permissions: {
+        Row: {
+          can_read: boolean | null
+          created_at: string
+          granted_by: string | null
+          id: string
+          section: string
+          user_id: string
+        }
+        Insert: {
+          can_read?: boolean | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          section: string
+          user_id: string
+        }
+        Update: {
+          can_read?: boolean | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          section?: string
           user_id?: string
         }
         Relationships: []
