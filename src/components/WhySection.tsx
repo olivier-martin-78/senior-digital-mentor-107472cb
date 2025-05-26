@@ -35,7 +35,7 @@ const WhySection = () => {
                 <li><b>Témoignages </b>vibrants à partager.</li>
                 <li><b>Pèlerinages </b>sur les lieux qui ont marqué votre existence.</li>
                 <li><b>Gestes d&apos;affection </b>qui réchauffent le cœur.</li>
-                <li><b>Saveurs d&apos;antan </b>retrouvées le temps (atelier cuisine).</li>
+                <li><b>Saveurs d&apos;antan </b>retrouvées le temps d'un atelier cuisine.</li>
                 <li><b>Lettres de transmission, </b>pour léguer vos valeurs et votre amour.</li>
               </ul><br/>
               <p className="mb-2 text-left">
