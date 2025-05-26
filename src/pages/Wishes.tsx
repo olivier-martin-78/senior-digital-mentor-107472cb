@@ -19,7 +19,7 @@ const Wishes = () => {
   const [albums, setAlbums] = useState<WishAlbum[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAlbum, setSelectedAlbum] = useState<string>('');
+  const [selectedAlbum, setSelectedAlbum] = useState<string>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -45,7 +45,7 @@ const Wishes = () => {
         query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
       }
 
-      if (selectedAlbum) {
+      if (selectedAlbum && selectedAlbum !== 'all') {
         query = query.eq('album_id', selectedAlbum);
       }
 
@@ -126,7 +126,7 @@ const Wishes = () => {
               <SelectValue placeholder="Tous les albums" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les albums</SelectItem>
+              <SelectItem value="all">Tous les albums</SelectItem>
               {albums.map((album) => (
                 <SelectItem key={album.id} value={album.id}>
                   {album.name}

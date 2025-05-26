@@ -123,7 +123,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         needs: wishToEdit.needs || '',
         offering: wishToEdit.offering || '',
         attachmentUrl: wishToEdit.attachment_url || '',
-        albumId: wishToEdit.album_id || '',
+        albumId: wishToEdit.album_id || 'none',
         published: wishToEdit.published || false
       };
     }
@@ -141,7 +141,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       needs: '',
       offering: '',
       attachmentUrl: '',
-      albumId: '',
+      albumId: 'none',
       published: false
     };
   };
