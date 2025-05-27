@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,9 +24,17 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
   
   if (!isVisible) return null;
 
+  console.log('BlogPostCard data:', {
+    postId: post.id,
+    title: post.title,
+    coverImage: post.cover_image,
+    albumId: post.album_id,
+    albumThumbnail: albums.find(a => a.id === post.album_id)?.thumbnail_url,
+    postImage: postImages[post.id],
+  });
+
   return (
     <Card className={`overflow-hidden ${!post.published ? 'border-orange-300' : ''}`}>
-      {/* Image de couverture de l'article ou vignette de l'album */}
       <div className="relative w-full h-40 bg-gray-100">
         {post.album_id ? (
           <AlbumThumbnail 
@@ -37,7 +44,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
           />
         ) : (
           <img 
-            src={postImages[post.id]} 
+            src={postImages[post.id] || '/placeholder.svg'} 
             alt={post.title}
             className="w-full h-full object-cover"
             onError={(e) => {
@@ -46,7 +53,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
             }}
           />
         )}
-        {!post.cover_image && !post.album_id && (
+        {!post.cover_image && !post.album_id && !postImages[post.id] && (
           <div className="absolute inset-0 flex items-center justify-center">
             <ImageIcon className="h-12 w-12 text-gray-300" />
           </div>
