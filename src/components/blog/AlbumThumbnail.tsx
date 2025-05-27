@@ -61,8 +61,8 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
     fetchThumbnail();
   }, [album, coverImage]);
 
-  // Vérifie si une image doit être affichée
-  if (thumbnailUrl && (coverImage || album?.thumbnail_url)) {
+  // Toujours afficher l'image si thumbnailUrl est défini
+  if (thumbnailUrl) {
     return (
       <div className="w-full h-40 relative">
         {isLoading && (
