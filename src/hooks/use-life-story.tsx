@@ -174,7 +174,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     let audioUrl: string;
 
     if (!user) {
-      console.warn('Utilisateur non connecté, utilisation d'une URL temporaire');
+      console.warn('Utilisateur non connecté, utilisation d\'une URL temporaire');
       audioUrl = URL.createObjectURL(blob);
     } else {
       try {
@@ -187,7 +187,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
           });
 
         if (error) {
-          console.error('Erreur lors de l'upload audio:', error);
+          console.error('Erreur lors de l\'upload audio:', error);
           throw error;
         }
 
@@ -197,19 +197,19 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
 
         if (!urlData?.publicUrl) {
           console.error('URL publique non générée');
-          throw new Error('Impossible de générer l'URL publique');
+          throw new Error('Impossible de générer l\'URL publique');
         }
 
         audioUrl = urlData.publicUrl;
         console.log('Audio uploadé avec succès:', audioUrl);
       } catch (err) {
-        console.error('Erreur lors de l'upload audio:', err);
-        toast.error('Erreur lors de la sauvegarde de l'audio');
+        console.error('Erreur lors de l\'upload audio:', err);
+        toast.error('Erreur lors de la sauvegarde de l\'audio');
         audioUrl = URL.createObjectURL(blob); // Fallback temporaire
       }
     }
 
-    console.log('Mise à jour de l'état avec audioUrl:', audioUrl);
+    console.log('Mise à jour de l\'état avec audioUrl:', audioUrl);
     setData(prev => {
       const newData = {
         ...prev,
