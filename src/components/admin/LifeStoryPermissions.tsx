@@ -55,17 +55,48 @@ const LifeStoryPermissions: React.FC<Props> = ({ storyOwnerId, storyOwnerName })
     try {
       const { data, error } = await supabase
         .from('life_story_permissions')
-        .select(`
-          *,
-          permitted_user:permitted_user_id(display_name, email),
-          story_owner:story_owner_id(display_name, email)
-        `)
+        .select('*')
         .eq('story_owner_id', storyOwnerId);
 
       if (error) throw error;
-      setPermissions(data || []);
+
+      // Charger les informations des utilisateurs séparément
+      if (data && data.length > 0) {
+        const userIds = [...new Set([
+          ...data.map(p => p.permitted_user_id),
+          ...data.map(p => p.story_owner_id)
+        ])];
+
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        const profilesMap = profiles?.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>) || {};
+
+        const enrichedPermissions = data.map(permission => ({
+          ...permission,
+          permission_level: permission.permission_level as 'reader' | 'editor',
+          permitted_user: profilesMap[permission.permitted_user_id],
+          story_owner: profilesMap[permission.story_owner_id]
+        }));
+
+        setPermissions(enrichedPermissions);
+      } else {
+        setPermissions([]);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des permissions:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les permissions',
+        variant: 'destructive',
+      });
     }
   };
 
