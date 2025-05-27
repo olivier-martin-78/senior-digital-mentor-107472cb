@@ -23,6 +23,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       last_edited_question: null,
     }
   );
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(
     existingStory?.last_edited_chapter || (data.chapters[0]?.id || '')
   );
@@ -36,6 +37,77 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Fonction pour charger l'histoire existante de l'utilisateur
+  const loadUserLifeStory = async () => {
+    if (!user || existingStory) return;
+
+    try {
+      setIsLoading(true);
+      const { data: storyData, error } = await supabase
+        .from('life_stories')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erreur lors du chargement de l\'histoire:', error);
+        return;
+      }
+
+      if (storyData) {
+        // Fusionner les chapitres existants avec les chapitres initiaux
+        const mergedChapters = initialChapters.map(initialChapter => {
+          const existingChapter = storyData.chapters?.find((ch: any) => ch.id === initialChapter.id);
+          
+          if (existingChapter) {
+            return {
+              ...initialChapter,
+              questions: initialChapter.questions.map(initialQuestion => {
+                const existingQuestion = existingChapter.questions?.find((q: any) => q.id === initialQuestion.id);
+                
+                if (existingQuestion) {
+                  return {
+                    ...initialQuestion,
+                    answer: existingQuestion.answer || initialQuestion.answer,
+                    audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+                    audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
+                  };
+                }
+                
+                return initialQuestion;
+              }),
+            };
+          }
+          
+          return initialChapter;
+        });
+
+        const lifeStory: LifeStory = {
+          id: storyData.id,
+          user_id: storyData.user_id,
+          title: storyData.title,
+          chapters: mergedChapters,
+          created_at: storyData.created_at,
+          updated_at: storyData.updated_at,
+          last_edited_chapter: storyData.last_edited_chapter,
+          last_edited_question: storyData.last_edited_question,
+        };
+
+        setData(lifeStory);
+        setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
+        setActiveQuestion(storyData.last_edited_question);
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement de l\'histoire de vie:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserLifeStory();
+  }, [user]);
 
   useEffect(() => {
     const initialOpenState: { [key: string]: boolean } = {};
@@ -228,6 +300,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
 
   return {
     data,
+    isLoading,
     activeTab,
     openQuestions,
     activeQuestion,

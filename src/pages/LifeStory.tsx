@@ -27,9 +27,16 @@ const LifeStory = () => {
     setEndDate('');
   };
 
-  // Pour l'histoire de vie, les filtres de date pourraient être appliqués
-  // aux chapitres ou questions modifiées dans une certaine période
-  // Pour le moment, on affiche juste les filtres pour la cohérence de l'interface
+  if (lifeStoryData.isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <Header />
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!lifeStoryData.data) {
     return (
