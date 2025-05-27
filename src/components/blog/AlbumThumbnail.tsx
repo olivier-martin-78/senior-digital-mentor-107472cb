@@ -16,13 +16,14 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
   useEffect(() => {
     const fetchThumbnail = async () => {
       setIsLoading(true);
+      console.log('fetchThumbnail called:', { coverImage, albumId: album?.id, albumThumbnail: album?.thumbnail_url });
 
       // Handle cover image (post's cover_image, stored in blog-media)
       if (coverImage) {
         try {
           const normalizedUrl = await getThumbnailUrl(coverImage, BLOG_MEDIA_BUCKET);
           console.log('Cover image URL normalized:', { coverImage, normalizedUrl });
-          setThumbnailUrl(normalizedUrl);
+          setThumbnailUrl(normalizedUrl || '/placeholder.svg');
         } catch (error) {
           console.error('Error processing coverImage URL:', {
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -40,7 +41,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
         try {
           const normalizedUrl = await getThumbnailUrl(album.thumbnail_url, ALBUM_THUMBNAILS_BUCKET);
           console.log('Album thumbnail URL normalized:', { thumbnail_url: album.thumbnail_url, normalizedUrl });
-          setThumbnailUrl(normalizedUrl);
+          setThumbnailUrl(normalizedUrl || '/placeholder.svg');
         } catch (error) {
           console.error('Error processing album thumbnail URL:', {
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -49,8 +50,8 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
           });
           setThumbnailUrl('/placeholder.svg');
         }
-      } else if (album) {
-        console.warn('No thumbnail_url provided for album:', album.name);
+      } else {
+        console.warn('No thumbnail available:', { albumId: album?.id, albumName: album?.name, coverImage });
         setThumbnailUrl('/placeholder.svg');
       }
 
@@ -60,7 +61,8 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
     fetchThumbnail();
   }, [album, coverImage]);
 
-  if (coverImage || album?.thumbnail_url) {
+  // Vérifie si une image doit être affichée
+  if (thumbnailUrl && (coverImage || album?.thumbnail_url)) {
     return (
       <div className="w-full h-40 relative">
         {isLoading && (
