@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import { ImageIcon } from 'lucide-react';
+import { getThumbnailUrl, BLOG_MEDIA_BUCKET, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 const Recent = () => {
   const { user, session } = useAuth();
@@ -17,6 +19,7 @@ const Recent = () => {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [itemThumbnails, setItemThumbnails] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!session) {
@@ -25,6 +28,44 @@ const Recent = () => {
     }
     fetchRecentItems();
   }, [session, navigate, startDate, endDate]);
+
+  // Charger les vignettes des articles
+  useEffect(() => {
+    const loadThumbnails = async () => {
+      const thumbnailPromises = recentItems.map(async (item) => {
+        if (item.type === 'blog' && item.cover_image) {
+          try {
+            const url = await getThumbnailUrl(item.cover_image, BLOG_MEDIA_BUCKET);
+            return { id: item.id, url };
+          } catch (error) {
+            console.error('Erreur lors du chargement de la vignette:', error);
+            return { id: item.id, url: '/placeholder.svg' };
+          }
+        } else if (item.type === 'diary' && item.media_url) {
+          try {
+            const url = await getThumbnailUrl(item.media_url, DIARY_MEDIA_BUCKET);
+            return { id: item.id, url };
+          } catch (error) {
+            console.error('Erreur lors du chargement de la vignette:', error);
+            return { id: item.id, url: '/placeholder.svg' };
+          }
+        }
+        return { id: item.id, url: null };
+      });
+
+      const thumbnails = await Promise.all(thumbnailPromises);
+      const thumbnailMap = thumbnails.reduce((acc, { id, url }) => {
+        if (url) acc[id] = url;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setItemThumbnails(thumbnailMap);
+    };
+
+    if (recentItems.length > 0) {
+      loadThumbnails();
+    }
+  }, [recentItems]);
 
   const fetchRecentItems = async () => {
     try {
@@ -127,36 +168,56 @@ const Recent = () => {
             ) : (
               recentItems.map((item, index) => (
                 <Card key={`${item.type}-${item.id}-${index}`} className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader 
-                    className="pb-2"
-                    onClick={() => navigate(getItemLink(item))}
-                  >
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg font-medium text-tranches-charcoal">
-                        {item.title}
-                      </CardTitle>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.type === 'blog' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {item.type === 'blog' ? 'Album' : 'Journal'}
-                      </span>
+                  <div className="flex">
+                    {/* Vignette */}
+                    <div className="w-24 h-24 flex-shrink-0">
+                      {itemThumbnails[item.id] ? (
+                        <img
+                          src={itemThumbnails[item.id]}
+                          alt={`Vignette de ${item.title}`}
+                          className="w-full h-full object-cover rounded-l-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-l-lg">
+                          <ImageIcon className="h-8 w-8 text-gray-300" />
+                        </div>
+                      )}
                     </div>
-                  </CardHeader>
-                  <CardContent 
-                    className="pt-0"
-                    onClick={() => navigate(getItemLink(item))}
-                  >
-                    <p className="text-sm text-gray-600 mb-2">
-                      {formatDate(item.created_at)}
-                    </p>
-                    {item.type === 'blog' && item.profiles && (
-                      <p className="text-sm text-gray-500">
-                        Par {item.profiles.display_name || item.profiles.email}
-                      </p>
-                    )}
-                  </CardContent>
+                    
+                    {/* Contenu */}
+                    <div className="flex-1 min-w-0">
+                      <CardHeader 
+                        className="pb-2"
+                        onClick={() => navigate(getItemLink(item))}
+                      >
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg font-medium text-tranches-charcoal truncate">
+                            {item.title}
+                          </CardTitle>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${
+                            item.type === 'blog' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {item.type === 'blog' ? 'Album' : 'Journal'}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent 
+                        className="pt-0"
+                        onClick={() => navigate(getItemLink(item))}
+                      >
+                        <p className="text-sm text-gray-600 mb-2">
+                          {formatDate(item.created_at)}
+                        </p>
+                        {item.type === 'blog' && item.profiles && (
+                          <p className="text-sm text-gray-500">
+                            Par {item.profiles.display_name || item.profiles.email}
+                          </p>
+                        )}
+                      </CardContent>
+                    </div>
+                  </div>
                 </Card>
               ))
             )}

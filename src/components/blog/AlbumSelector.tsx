@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,7 +133,7 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
 
   return (
     <div className="mb-6">
-      <Label>Album</Label>
+      <Label>Album <span className="text-red-500">*</span></Label>
       {isCreatingAlbum ? (
         <div className="space-y-4 mt-1">
           <div className="flex gap-2">
@@ -201,12 +200,11 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
         </div>
       ) : (
         <div className="flex gap-2 mt-1">
-          <Select value={albumId || 'none'} onValueChange={(value) => setAlbumId(value === 'none' ? null : value)}>
+          <Select value={albumId || ''} onValueChange={(value) => setAlbumId(value === '' ? null : value)}>
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Sélectionner un album" />
+              <SelectValue placeholder="Sélectionner un album (obligatoire)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Aucun album</SelectItem>
               {allAlbums.map(album => (
                 <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
               ))}

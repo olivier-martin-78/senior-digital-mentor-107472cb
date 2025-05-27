@@ -190,6 +190,16 @@ export const useBlogEditor = () => {
       return;
     }
 
+    // Nouvelle validation pour l'album obligatoire
+    if (!albumId) {
+      toast({
+        title: "Album manquant",
+        description: "Veuillez sélectionner un album pour votre article.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setSaving(true);
       let finalCoverImage = coverImage;

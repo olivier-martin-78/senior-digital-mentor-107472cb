@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,6 +53,13 @@ const BlogPost = () => {
     await addComment(content, user.id);
   };
 
+  // Déterminer si l'utilisateur peut modifier l'article
+  const canEditPost = user && (
+    user.id === post?.author_id || 
+    hasRole('admin') || 
+    hasRole('editor')
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -104,7 +110,7 @@ const BlogPost = () => {
           <Link to="/blog" className="text-tranches-sage hover:underline">
             &larr; Retour aux Albums
           </Link>
-          {(user?.id === post.author_id || hasRole('admin')) && (
+          {canEditPost && (
             <div className="flex gap-2">
               <Button asChild variant="outline">
                 <Link to={`/blog/edit/${post.id}`}>
