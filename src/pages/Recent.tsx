@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, MessageCircleIcon } from 'lucide-react';
 import { getThumbnailUrl, BLOG_MEDIA_BUCKET, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 const Recent = () => {
@@ -49,6 +49,14 @@ const Recent = () => {
             console.error('Erreur lors du chargement de la vignette:', error);
             return { id: item.id, url: '/placeholder.svg' };
           }
+        } else if (item.type === 'comment' && item.post_cover_image) {
+          try {
+            const url = await getThumbnailUrl(item.post_cover_image, BLOG_MEDIA_BUCKET);
+            return { id: item.id, url };
+          } catch (error) {
+            console.error('Erreur lors du chargement de la vignette du commentaire:', error);
+            return { id: item.id, url: '/placeholder.svg' };
+          }
         }
         return { id: item.id, url: null };
       });
@@ -83,31 +91,56 @@ const Recent = () => {
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+        
+      // Ajouter une requête pour les commentaires récents
+      let commentsQuery = supabase
+        .from('blog_comments')
+        .select(`
+          *,
+          profiles:author_id(display_name, email, avatar_url),
+          blog_posts:post_id(id, title, cover_image)
+        `)
+        .order('created_at', { ascending: false });
 
       // Appliquer les filtres de date si définis
       if (startDate) {
         blogQuery = blogQuery.gte('created_at', startDate);
         diaryQuery = diaryQuery.gte('created_at', startDate);
+        commentsQuery = commentsQuery.gte('created_at', startDate);
       }
       if (endDate) {
         // Ajouter 23:59:59 à la date de fin pour inclure toute la journée
         const endDateTime = endDate + 'T23:59:59';
         blogQuery = blogQuery.lte('created_at', endDateTime);
         diaryQuery = diaryQuery.lte('created_at', endDateTime);
+        commentsQuery = commentsQuery.lte('created_at', endDateTime);
       }
 
-      const [blogResponse, diaryResponse] = await Promise.all([
+      const [blogResponse, diaryResponse, commentsResponse] = await Promise.all([
         blogQuery.limit(10),
-        diaryQuery.limit(10)
+        diaryQuery.limit(10),
+        commentsQuery.limit(10)
       ]);
 
       if (blogResponse.error) throw blogResponse.error;
       if (diaryResponse.error) throw diaryResponse.error;
+      if (commentsResponse.error) throw commentsResponse.error;
+
+      // Formatter les commentaires pour les inclure dans la liste
+      const formattedComments = commentsResponse.data.map(comment => ({
+        ...comment,
+        type: 'comment',
+        title: `Commentaire sur "${comment.blog_posts?.title || 'Article'}"`,
+        post_id: comment.post_id,
+        post_title: comment.blog_posts?.title,
+        post_cover_image: comment.blog_posts?.cover_image
+      }));
 
       // Combiner et trier par date
       const allItems = [
         ...blogResponse.data.map(item => ({ ...item, type: 'blog' })),
-        ...diaryResponse.data.map(item => ({ ...item, type: 'diary' }))
+        ...diaryResponse.data.map(item => ({ ...item, type: 'diary' })),
+        ...formattedComments
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setRecentItems(allItems.slice(0, 20));
@@ -132,6 +165,8 @@ const Recent = () => {
       return `/blog/${item.id}`;
     } else if (item.type === 'diary') {
       return `/diary/${item.id}`;
+    } else if (item.type === 'comment') {
+      return `/blog/${item.post_id}`;
     }
     return '#';
   };
@@ -171,7 +206,11 @@ const Recent = () => {
                   <div className="flex">
                     {/* Vignette */}
                     <div className="w-24 h-24 flex-shrink-0">
-                      {itemThumbnails[item.id] ? (
+                      {item.type === 'comment' ? (
+                        <div className="w-full h-full bg-blue-50 flex items-center justify-center rounded-l-lg">
+                          <MessageCircleIcon className="h-10 w-10 text-blue-300" />
+                        </div>
+                      ) : itemThumbnails[item.id] ? (
                         <img
                           src={itemThumbnails[item.id]}
                           alt={`Vignette de ${item.title}`}
@@ -197,9 +236,11 @@ const Recent = () => {
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${
                             item.type === 'blog' 
                               ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
+                              : item.type === 'diary'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-purple-100 text-purple-800'
                           }`}>
-                            {item.type === 'blog' ? 'Album' : 'Journal'}
+                            {item.type === 'blog' ? 'Album' : item.type === 'diary' ? 'Journal' : 'Commentaire'}
                           </span>
                         </div>
                       </CardHeader>
@@ -214,6 +255,16 @@ const Recent = () => {
                           <p className="text-sm text-gray-500">
                             Par {item.profiles.display_name || item.profiles.email}
                           </p>
+                        )}
+                        {item.type === 'comment' && item.profiles && (
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Par {item.profiles.display_name || item.profiles.email}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              "{item.content}"
+                            </p>
+                          </div>
                         )}
                       </CardContent>
                     </div>
