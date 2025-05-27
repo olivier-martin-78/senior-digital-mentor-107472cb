@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { LifeStory, LifeStoryProgress } from '@/types/lifeStory';
+import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { initialChapters } from '@/components/life-story/initialChapters';
@@ -56,9 +57,12 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       }
 
       if (storyData) {
+        // Type assertion pour traiter chapters comme un array de Chapter
+        const existingChapters = (storyData.chapters as Chapter[]) || [];
+        
         // Fusionner les chapitres existants avec les chapitres initiaux
         const mergedChapters = initialChapters.map(initialChapter => {
-          const existingChapter = storyData.chapters?.find((ch: any) => ch.id === initialChapter.id);
+          const existingChapter = existingChapters.find((ch: Chapter) => ch.id === initialChapter.id);
           
           if (existingChapter) {
             return {
@@ -170,7 +174,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     let audioUrl: string;
 
     if (!user) {
-      console.warn('Utilisateur non connecté, utilisation d’une URL temporaire');
+      console.warn('Utilisateur non connecté, utilisation d'une URL temporaire');
       audioUrl = URL.createObjectURL(blob);
     } else {
       try {
@@ -183,7 +187,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
           });
 
         if (error) {
-          console.error('Erreur lors de l’upload audio:', error);
+          console.error('Erreur lors de l'upload audio:', error);
           throw error;
         }
 
@@ -193,19 +197,19 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
 
         if (!urlData?.publicUrl) {
           console.error('URL publique non générée');
-          throw new Error('Impossible de générer l’URL publique');
+          throw new Error('Impossible de générer l'URL publique');
         }
 
         audioUrl = urlData.publicUrl;
         console.log('Audio uploadé avec succès:', audioUrl);
       } catch (err) {
-        console.error('Erreur lors de l’upload audio:', err);
-        toast.error('Erreur lors de la sauvegarde de l’audio');
+        console.error('Erreur lors de l'upload audio:', err);
+        toast.error('Erreur lors de la sauvegarde de l'audio');
         audioUrl = URL.createObjectURL(blob); // Fallback temporaire
       }
     }
 
-    console.log('Mise à jour de l’état avec audioUrl:', audioUrl);
+    console.log('Mise à jour de l'état avec audioUrl:', audioUrl);
     setData(prev => {
       const newData = {
         ...prev,
@@ -227,7 +231,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
     });
     toast.success('Enregistrement audio ajouté');
 
-    // Sauvegarde immédiate pour persister l’URL
+    // Sauvegarde immédiate pour persister l'URL
     await saveNow();
   };
 
