@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -57,8 +56,8 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
       }
 
       if (storyData) {
-        // Type assertion pour traiter chapters comme un array de Chapter
-        const existingChapters = (storyData.chapters as Chapter[]) || [];
+        // Conversion sûre via unknown pour satisfaire TypeScript
+        const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
         
         // Fusionner les chapitres existants avec les chapitres initiaux
         const mergedChapters = initialChapters.map(initialChapter => {
