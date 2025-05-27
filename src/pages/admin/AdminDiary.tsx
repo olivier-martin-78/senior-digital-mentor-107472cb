@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,13 +5,14 @@ import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Loader2, Trash2, ChevronLeft, Search, Eye } from 'lucide-react';
+import { Loader2, Trash2, ChevronLeft, Search, Eye, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import DiaryPermissions from '@/components/admin/DiaryPermissions';
 
 interface DiaryEntryAdmin {
   id: string;
@@ -42,7 +42,9 @@ const AdminDiary = () => {
   const [entries, setEntries] = useState<DiaryEntryAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<DiaryEntryAdmin | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -133,6 +135,11 @@ const AdminDiary = () => {
   const handleDeleteClick = (entry: DiaryEntryAdmin) => {
     setEntryToDelete(entry);
     setDeleteDialogOpen(true);
+  };
+
+  const handlePermissionsClick = (userId: string, userName: string) => {
+    setSelectedUser({ id: userId, name: userName });
+    setPermissionsDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -242,7 +249,20 @@ const AdminDiary = () => {
                       <TableRow key={entry.id}>
                         <TableCell className="font-medium">{entry.title}</TableCell>
                         <TableCell>
-                          {entry.user_display_name || entry.user_email || 'Utilisateur inconnu'}
+                          <div className="flex items-center gap-2">
+                            <span>{entry.user_display_name || entry.user_email || 'Utilisateur inconnu'}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePermissionsClick(
+                                entry.user_id, 
+                                entry.user_display_name || entry.user_email || 'Utilisateur inconnu'
+                              )}
+                              title="Gérer les permissions"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {entry.entry_date 
@@ -331,6 +351,21 @@ const AdminDiary = () => {
                     )}
                   </Button>
                 </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog de gestion des permissions */}
+            <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Gestion des permissions</DialogTitle>
+                </DialogHeader>
+                {selectedUser && (
+                  <DiaryPermissions
+                    diaryOwnerId={selectedUser.id}
+                    diaryOwnerName={selectedUser.name}
+                  />
+                )}
               </DialogContent>
             </Dialog>
           </>

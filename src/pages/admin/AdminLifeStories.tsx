@@ -5,13 +5,14 @@ import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Loader2, Pencil, Trash2, ChevronLeft, Search } from 'lucide-react';
+import { Loader2, Pencil, Trash2, ChevronLeft, Search, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import LifeStoryPermissions from '@/components/admin/LifeStoryPermissions';
 
 interface LifeStoryAdmin {
   id: string;
@@ -39,7 +40,9 @@ const AdminLifeStories = () => {
   const [stories, setStories] = useState<LifeStoryAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<LifeStoryAdmin | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -148,6 +151,11 @@ const AdminLifeStories = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handlePermissionsClick = (userId: string, userName: string) => {
+    setSelectedUser({ id: userId, name: userName });
+    setPermissionsDialogOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!storyToDelete) return;
     
@@ -246,7 +254,20 @@ const AdminLifeStories = () => {
                       <TableRow key={story.id}>
                         <TableCell className="font-medium">{story.title}</TableCell>
                         <TableCell>
-                          {story.user_display_name || story.user_email || 'Utilisateur inconnu'}
+                          <div className="flex items-center gap-2">
+                            <span>{story.user_display_name || story.user_email || 'Utilisateur inconnu'}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePermissionsClick(
+                                story.user_id, 
+                                story.user_display_name || story.user_email || 'Utilisateur inconnu'
+                              )}
+                              title="Gérer les permissions"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">{story.chapter_count}</TableCell>
                         <TableCell className="text-center">
@@ -334,6 +355,21 @@ const AdminLifeStories = () => {
                     )}
                   </Button>
                 </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog de gestion des permissions */}
+            <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Gestion des permissions</DialogTitle>
+                </DialogHeader>
+                {selectedUser && (
+                  <LifeStoryPermissions
+                    storyOwnerId={selectedUser.id}
+                    storyOwnerName={selectedUser.name}
+                  />
+                )}
               </DialogContent>
             </Dialog>
           </>

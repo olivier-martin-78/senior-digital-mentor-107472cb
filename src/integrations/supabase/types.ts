@@ -285,6 +285,36 @@ export type Database = {
         }
         Relationships: []
       }
+      diary_permissions: {
+        Row: {
+          created_at: string
+          diary_owner_id: string
+          granted_by: string
+          id: string
+          permission_level: string
+          permitted_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diary_owner_id: string
+          granted_by: string
+          id?: string
+          permission_level: string
+          permitted_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diary_owner_id?: string
+          granted_by?: string
+          id?: string
+          permission_level?: string
+          permitted_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           blog_access: boolean | null
@@ -363,6 +393,36 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      life_story_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string
+          id: string
+          permission_level: string
+          permitted_user_id: string
+          story_owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by: string
+          id?: string
+          permission_level: string
+          permitted_user_id: string
+          story_owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string
+          id?: string
+          permission_level?: string
+          permitted_user_id?: string
+          story_owner_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
