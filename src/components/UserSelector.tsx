@@ -47,34 +47,45 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
         email: user.email || ''
       };
 
-      let permissionTable = '';
-      let ownerColumn = '';
-      
+      let permissions: any[] = [];
+
+      // Utiliser des conditions explicites au lieu de variables dynamiques
       if (permissionType === 'life_story') {
-        permissionTable = 'life_story_permissions';
-        ownerColumn = 'story_owner_id';
-      } else {
-        permissionTable = 'diary_permissions';
-        ownerColumn = 'diary_owner_id';
-      }
+        const { data, error } = await supabase
+          .from('life_story_permissions')
+          .select(`
+            story_owner_id,
+            profiles!life_story_permissions_story_owner_id_fkey (
+              id,
+              display_name,
+              email
+            )
+          `)
+          .eq('permitted_user_id', user.id);
 
-      // Récupérer les utilisateurs auxquels l'utilisateur actuel a accès
-      const { data: permissions, error } = await supabase
-        .from(permissionTable)
-        .select(`
-          ${ownerColumn},
-          profiles!${permissionTable}_${ownerColumn}_fkey (
-            id,
-            display_name,
-            email
-          )
-        `)
-        .eq('permitted_user_id', user.id);
+        if (error) {
+          console.error('Erreur lors du chargement des permissions:', error);
+        } else {
+          permissions = data || [];
+        }
+      } else if (permissionType === 'diary') {
+        const { data, error } = await supabase
+          .from('diary_permissions')
+          .select(`
+            diary_owner_id,
+            profiles!diary_permissions_diary_owner_id_fkey (
+              id,
+              display_name,
+              email
+            )
+          `)
+          .eq('permitted_user_id', user.id);
 
-      if (error) {
-        console.error('Erreur lors du chargement des permissions:', error);
-        setAvailableUsers([currentUserOption]);
-        return;
+        if (error) {
+          console.error('Erreur lors du chargement des permissions:', error);
+        } else {
+          permissions = data || [];
+        }
       }
 
       const userOptions: UserOption[] = [currentUserOption];
