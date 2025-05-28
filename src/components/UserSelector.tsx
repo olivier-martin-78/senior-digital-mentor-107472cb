@@ -81,13 +81,15 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
             .eq('permitted_user_id', user.id);
 
           if (error) {
-            console.error('Erreur lors du chargement des permissions:', error);
+            console.error('Erreur lors du chargement des permissions life_story:', error);
           } else {
-            permissions = data || [];
+            permissions = (data || []).map(p => ({
+              ...p,
+              owner_id: p.story_owner_id
+            }));
           }
         } else if (permissionType === 'diary') {
           // Pour le journal, vérifier à la fois les permissions diary ET life_story
-          // car un utilisateur avec accès à l'histoire de vie devrait aussi voir le journal
           const [diaryPermsResult, lifeStoryPermsResult] = await Promise.all([
             supabase
               .from('diary_permissions')
@@ -160,6 +162,7 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
         });
       }
 
+      console.log('UserSelector - Utilisateurs disponibles:', userOptions);
       setAvailableUsers(userOptions);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);

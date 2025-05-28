@@ -15,7 +15,7 @@ import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Wishes = () => {
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [albums, setAlbums] = useState<WishAlbum[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,9 +41,13 @@ const Wishes = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Les admins et éditeurs voient tous les souhaits, sinon seulement les publiés
-      if (!hasRole('admin') && !hasRole('editor')) {
-        query = query.eq('published', true);
+      // Les admins voient tous les souhaits, les autres voient seulement :
+      // - les souhaits publiés de tous
+      // - leurs propres souhaits (publiés et brouillons)
+      if (hasRole('admin')) {
+        // Les admins voient tout
+      } else {
+        query = query.or(`published.eq.true,author_id.eq.${user?.id}`);
       }
 
       if (searchTerm) {
@@ -180,7 +184,7 @@ const Wishes = () => {
                             {wish.album.name}
                           </span>
                         )}
-                        {!wish.published && (hasRole('admin') || hasRole('editor')) && (
+                        {!wish.published && (
                           <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">
                             Brouillon
                           </span>

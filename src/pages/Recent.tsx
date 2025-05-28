@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ import { ImageIcon, MessageCircleIcon } from 'lucide-react';
 import { getThumbnailUrl, BLOG_MEDIA_BUCKET, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 const Recent = () => {
-  const { user, session } = useAuth();
+  const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
   const [recentItems, setRecentItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,8 +88,13 @@ const Recent = () => {
       let diaryQuery = supabase
         .from('diary_entries')
         .select('*')
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+
+      // Pour les admins, voir tous les journaux
+      // Pour les autres utilisateurs, voir seulement leurs propres journaux
+      if (!hasRole('admin')) {
+        diaryQuery = diaryQuery.eq('user_id', user?.id);
+      }
         
       // Ajouter une requête pour les commentaires récents
       let commentsQuery = supabase
