@@ -7,14 +7,17 @@ import { initialChapters } from '@/components/life-story/initialChapters';
 
 interface UseLifeStoryProps {
   existingStory?: LifeStory;
+  targetUserId?: string;
 }
 
-export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
+export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
   const { user } = useAuth();
+  const effectiveUserId = targetUserId || user?.id;
+  
   const [data, setData] = useState<LifeStory>(
     existingStory || {
       id: '',
-      user_id: user?.id || '',
+      user_id: effectiveUserId || '',
       title: 'Mon histoire',
       chapters: initialChapters,
       created_at: new Date().toISOString(),
@@ -40,14 +43,14 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
-    if (!user || existingStory) return;
+    if (!effectiveUserId || existingStory) return;
 
     try {
       setIsLoading(true);
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .maybeSingle();
 
       if (error) {
@@ -110,7 +113,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
 
   useEffect(() => {
     loadUserLifeStory();
-  }, [user]);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     const initialOpenState: { [key: string]: boolean } = {};
@@ -259,7 +262,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
   };
 
   const saveNow = async () => {
-    if (!user) {
+    if (!user || !effectiveUserId) {
       console.warn('Utilisateur non connecté, sauvegarde ignorée');
       return;
     }
@@ -270,7 +273,7 @@ export const useLifeStory = ({ existingStory }: UseLifeStoryProps) => {
         .from('life_stories')
         .upsert({
           id: data.id || undefined,
-          user_id: user.id,
+          user_id: effectiveUserId,
           title: data.title,
           chapters: data.chapters.map(chapter => ({
             ...chapter,

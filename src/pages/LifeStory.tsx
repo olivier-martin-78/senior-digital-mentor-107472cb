@@ -7,13 +7,21 @@ import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import UserSelector from '@/components/UserSelector';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 
 const LifeStory = () => {
-  const { user, session } = useAuth();
+  const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
-  const lifeStoryData = useLifeStory({});
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Utiliser l'ID de l'utilisateur sélectionné ou l'utilisateur actuel
+  const targetUserId = selectedUserId || user?.id || '';
+  
+  const lifeStoryData = useLifeStory({ targetUserId });
 
   useEffect(() => {
     if (!session) {
@@ -26,6 +34,19 @@ const LifeStory = () => {
     setStartDate('');
     setEndDate('');
   };
+
+  const handleUserChange = (userId: string | null) => {
+    setSelectedUserId(userId);
+  };
+
+  const handleSave = async () => {
+    if (lifeStoryData.saveNow) {
+      await lifeStoryData.saveNow();
+    }
+  };
+
+  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur)
+  const canSave = !hasRole('reader');
 
   if (lifeStoryData.isLoading) {
     return (
@@ -55,8 +76,36 @@ const LifeStory = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Histoire de Vie</h1>
-          <InviteUserDialog />
+          <div className="flex items-center gap-4">
+            {canSave && (
+              <Button 
+                onClick={handleSave} 
+                disabled={lifeStoryData.isSaving}
+                className="bg-tranches-sage hover:bg-tranches-sage/90"
+              >
+                {lifeStoryData.isSaving ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin mr-2 h-4 w-4 border-2 border-t-transparent border-white rounded-full"></span>
+                    Sauvegarde...
+                  </span>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
+            )}
+            <InviteUserDialog />
+          </div>
         </div>
+
+        <UserSelector
+          permissionType="life_story"
+          selectedUserId={selectedUserId}
+          onUserChange={handleUserChange}
+          className="mb-6"
+        />
         
         <DateRangeFilter
           startDate={startDate}

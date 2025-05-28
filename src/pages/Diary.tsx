@@ -11,6 +11,7 @@ import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import { DiaryEntry } from '@/types/diary';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import UserSelector from '@/components/UserSelector';
 
 const Diary = () => {
   const { user, session } = useAuth();
@@ -20,6 +21,10 @@ const Diary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  // Utiliser l'ID de l'utilisateur sélectionné ou l'utilisateur actuel
+  const targetUserId = selectedUserId || user?.id;
 
   useEffect(() => {
     if (!session) {
@@ -27,10 +32,10 @@ const Diary = () => {
       return;
     }
     fetchEntries();
-  }, [session, user, navigate, searchTerm, startDate, endDate]);
+  }, [session, user, navigate, searchTerm, startDate, endDate, targetUserId]);
 
   const fetchEntries = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     
     try {
       setLoading(true);
@@ -38,7 +43,7 @@ const Diary = () => {
       let query = supabase
         .from('diary_entries')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .order('entry_date', { ascending: false });
 
       if (searchTerm) {
@@ -88,6 +93,10 @@ const Diary = () => {
     setEndDate('');
   };
 
+  const handleUserChange = (userId: string | null) => {
+    setSelectedUserId(userId);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -105,6 +114,13 @@ const Diary = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
           <InviteUserDialog />
         </div>
+
+        <UserSelector
+          permissionType="diary"
+          selectedUserId={selectedUserId}
+          onUserChange={handleUserChange}
+          className="mb-6"
+        />
         
         <DiaryHeader 
           entriesCount={entries.length}
