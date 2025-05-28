@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import DiaryPermissions from '@/components/admin/DiaryPermissions';
+import UserSelector from '@/components/UserSelector';
 
 interface DiaryEntryAdmin {
   id: string;
@@ -46,6 +48,7 @@ const AdminDiary = () => {
   const [entryToDelete, setEntryToDelete] = useState<DiaryEntryAdmin | null>(null);
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -54,14 +57,14 @@ const AdminDiary = () => {
     }
     
     loadDiaryEntries();
-  }, [hasRole, navigate]);
+  }, [hasRole, navigate, selectedUserId]);
 
   const loadDiaryEntries = async () => {
     try {
       setLoading(true);
       
-      // Récupérer toutes les entrées de journal
-      const { data: entriesData, error: entriesError } = await supabase
+      // Construction de la requête pour récupérer les entrées
+      let query = supabase
         .from('diary_entries')
         .select(`
           id,
@@ -76,6 +79,13 @@ const AdminDiary = () => {
           negative_things
         `)
         .order('created_at', { ascending: false });
+
+      // Si un utilisateur spécifique est sélectionné, filtrer par cet utilisateur
+      if (selectedUserId) {
+        query = query.eq('user_id', selectedUserId);
+      }
+
+      const { data: entriesData, error: entriesError } = await query;
 
       if (entriesError) {
         console.error('Erreur Supabase (entrées):', entriesError);
@@ -140,6 +150,10 @@ const AdminDiary = () => {
   const handlePermissionsClick = (userId: string, userName: string) => {
     setSelectedUser({ id: userId, name: userName });
     setPermissionsDialogOpen(true);
+  };
+
+  const handleUserChange = (userId: string | null) => {
+    setSelectedUserId(userId);
   };
 
   const handleDeleteConfirm = async () => {
@@ -207,6 +221,13 @@ const AdminDiary = () => {
             Administration des journaux intimes
           </h1>
         </div>
+
+        <UserSelector
+          permissionType="diary"
+          selectedUserId={selectedUserId}
+          onUserChange={handleUserChange}
+          className="mb-6"
+        />
 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

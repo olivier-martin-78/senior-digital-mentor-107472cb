@@ -24,7 +24,7 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
   onUserChange,
   className = ""
 }) => {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [availableUsers, setAvailableUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,41 +49,26 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
 
       let permissions: any[] = [];
 
-      // Utiliser des conditions explicites au lieu de variables dynamiques
-      if (permissionType === 'life_story') {
-        const { data, error } = await supabase
-          .from('life_story_permissions')
-          .select(`
-            story_owner_id,
-            profiles!life_story_permissions_story_owner_id_fkey (
-              id,
-              display_name,
-              email
-            )
-          `)
-          .eq('permitted_user_id', user.id);
+      // Si l'utilisateur est admin, charger tous les utilisateurs
+      if (hasRole('admin')) {
+        const { data: allProfiles, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .neq('id', user.id); // Exclure l'utilisateur actuel car il est déjà ajouté
 
         if (error) {
-          console.error('Erreur lors du chargement des permissions:', error);
-        } else {
-          permissions = data || [];
+          console.error('Erreur lors du chargement de tous les profils:', error);
+        } else if (allProfiles) {
+          // Transformer les profils en format permission pour la suite du traitement
+          permissions = allProfiles.map(profile => ({
+            profiles: profile,
+            owner_id: profile.id
+          }));
         }
-      } else if (permissionType === 'diary') {
-        // Pour le journal, vérifier à la fois les permissions diary ET life_story
-        // car un utilisateur avec accès à l'histoire de vie devrait aussi voir le journal
-        const [diaryPermsResult, lifeStoryPermsResult] = await Promise.all([
-          supabase
-            .from('diary_permissions')
-            .select(`
-              diary_owner_id,
-              profiles!diary_permissions_diary_owner_id_fkey (
-                id,
-                display_name,
-                email
-              )
-            `)
-            .eq('permitted_user_id', user.id),
-          supabase
+      } else {
+        // Pour les non-admins, utiliser la logique de permissions existante
+        if (permissionType === 'life_story') {
+          const { data, error } = await supabase
             .from('life_story_permissions')
             .select(`
               story_owner_id,
@@ -93,31 +78,64 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
                 email
               )
             `)
-            .eq('permitted_user_id', user.id)
-        ]);
+            .eq('permitted_user_id', user.id);
 
-        const diaryPermissions = diaryPermsResult.data || [];
-        const lifeStoryPermissions = lifeStoryPermsResult.data || [];
+          if (error) {
+            console.error('Erreur lors du chargement des permissions:', error);
+          } else {
+            permissions = data || [];
+          }
+        } else if (permissionType === 'diary') {
+          // Pour le journal, vérifier à la fois les permissions diary ET life_story
+          // car un utilisateur avec accès à l'histoire de vie devrait aussi voir le journal
+          const [diaryPermsResult, lifeStoryPermsResult] = await Promise.all([
+            supabase
+              .from('diary_permissions')
+              .select(`
+                diary_owner_id,
+                profiles!diary_permissions_diary_owner_id_fkey (
+                  id,
+                  display_name,
+                  email
+                )
+              `)
+              .eq('permitted_user_id', user.id),
+            supabase
+              .from('life_story_permissions')
+              .select(`
+                story_owner_id,
+                profiles!life_story_permissions_story_owner_id_fkey (
+                  id,
+                  display_name,
+                  email
+                )
+              `)
+              .eq('permitted_user_id', user.id)
+          ]);
 
-        // Combiner les deux types de permissions
-        const combinedPermissions = [
-          ...diaryPermissions.map(p => ({
-            ...p,
-            owner_id: p.diary_owner_id
-          })),
-          ...lifeStoryPermissions.map(p => ({
-            ...p,
-            owner_id: p.story_owner_id
-          }))
-        ];
+          const diaryPermissions = diaryPermsResult.data || [];
+          const lifeStoryPermissions = lifeStoryPermsResult.data || [];
 
-        permissions = combinedPermissions;
+          // Combiner les deux types de permissions
+          const combinedPermissions = [
+            ...diaryPermissions.map(p => ({
+              ...p,
+              owner_id: p.diary_owner_id
+            })),
+            ...lifeStoryPermissions.map(p => ({
+              ...p,
+              owner_id: p.story_owner_id
+            }))
+          ];
 
-        if (diaryPermsResult.error) {
-          console.error('Erreur lors du chargement des permissions diary:', diaryPermsResult.error);
-        }
-        if (lifeStoryPermsResult.error) {
-          console.error('Erreur lors du chargement des permissions life_story:', lifeStoryPermsResult.error);
+          permissions = combinedPermissions;
+
+          if (diaryPermsResult.error) {
+            console.error('Erreur lors du chargement des permissions diary:', diaryPermsResult.error);
+          }
+          if (lifeStoryPermsResult.error) {
+            console.error('Erreur lors du chargement des permissions life_story:', lifeStoryPermsResult.error);
+          }
         }
       }
 
@@ -155,8 +173,8 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
     }
   };
 
-  // Si l'utilisateur n'a accès qu'à son propre contenu, ne pas afficher le sélecteur
-  if (availableUsers.length <= 1) {
+  // Toujours afficher le sélecteur pour les admins, ou s'il y a plus d'un utilisateur
+  if (!hasRole('admin') && availableUsers.length <= 1) {
     return null;
   }
 
