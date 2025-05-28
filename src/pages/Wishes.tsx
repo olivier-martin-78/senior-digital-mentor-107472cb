@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,8 +12,10 @@ import { fr } from 'date-fns/locale';
 import { Search, Plus } from 'lucide-react';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Wishes = () => {
+  const { hasRole } = useAuth();
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [albums, setAlbums] = useState<WishAlbum[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,8 +39,12 @@ const Wishes = () => {
           profiles(display_name, email),
           album:wish_albums(name)
         `)
-        .eq('published', true)
         .order('created_at', { ascending: false });
+
+      // Les admins et éditeurs voient tous les souhaits, sinon seulement les publiés
+      if (!hasRole('admin') && !hasRole('editor')) {
+        query = query.eq('published', true);
+      }
 
       if (searchTerm) {
         query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
@@ -169,11 +174,18 @@ const Wishes = () => {
                           {wish.title}
                         </Link>
                       </CardTitle>
-                      {wish.album && (
-                        <span className="bg-tranches-sage text-white px-2 py-1 rounded-full text-xs">
-                          {wish.album.name}
-                        </span>
-                      )}
+                      <div className="flex gap-2">
+                        {wish.album && (
+                          <span className="bg-tranches-sage text-white px-2 py-1 rounded-full text-xs">
+                            {wish.album.name}
+                          </span>
+                        )}
+                        {!wish.published && (hasRole('admin') || hasRole('editor')) && (
+                          <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">
+                            Brouillon
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>

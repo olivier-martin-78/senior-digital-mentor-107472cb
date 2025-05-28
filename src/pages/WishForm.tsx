@@ -1,6 +1,5 @@
-
 import { useAuth } from '@/contexts/AuthContext';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,13 +22,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -40,6 +32,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { WishAlbum, WishPost } from '@/types/supabase';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import WishAlbumSelector from '@/components/WishAlbumSelector';
 
 // Props type for the WishForm component
 interface WishFormProps {
@@ -74,37 +68,35 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Récupérer les albums de souhaits disponibles
-  useEffect(() => {
-    const fetchWishAlbums = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('wish_albums')
-          .select('*')
-          .order('name', { ascending: true });
-        
-        if (error) throw error;
-        if (data) {
-          // Ajouter la propriété profiles qui est requise par le type WishAlbum
-          const albumsWithProfiles = data.map(album => ({
-            ...album,
-            profiles: {
-              id: '',
-              email: '',
-              display_name: null,
-              avatar_url: null,
-              created_at: ''
-            }
-          }));
-          setWishAlbums(albumsWithProfiles as WishAlbum[]);
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des albums de souhaits:', error);
+  const fetchWishAlbums = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wish_albums')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      if (data) {
+        const albumsWithProfiles = data.map(album => ({
+          ...album,
+          profiles: {
+            id: '',
+            email: '',
+            display_name: null,
+            avatar_url: null,
+            created_at: ''
+          }
+        }));
+        setWishAlbums(albumsWithProfiles as WishAlbum[]);
       }
-    };
-    
-    fetchWishAlbums();
+    } catch (error) {
+      console.error('Erreur lors de la récupération des albums de souhaits:', error);
+    }
   }, []);
+  
+  useEffect(() => {
+    fetchWishAlbums();
+  }, [fetchWishAlbums]);
   
   // Préparer les valeurs par défaut du formulaire
   const getDefaultValues = (): FormValues => {
@@ -572,48 +564,37 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                   />
                 </div>
                 
-                {/* Section 6: Album (si disponible) */}
-                {wishAlbums.length > 0 && (
-                  <div className="space-y-6">
-                    <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
-                      <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
-                        📂
-                      </span>
-                      Catégorie (facultatif)
-                    </h2>
-                    
-                    <FormField
-                      control={form.control}
-                      name="albumId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Sélectionner une catégorie pour votre souhait</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner une catégorie (facultatif)" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">Aucune catégorie</SelectItem>
-                              {wishAlbums.map((album) => (
-                                <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Vous pouvez associer votre souhait à une catégorie spécifique
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                {/* Section 6: Album avec possibilité de création */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
+                    <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
+                      📂
+                    </span>
+                    Catégorie (facultatif)
+                  </h2>
+                  
+                  <FormField
+                    control={form.control}
+                    name="albumId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sélectionner une catégorie pour votre souhait</FormLabel>
+                        <FormControl>
+                          <WishAlbumSelector
+                            wishAlbums={wishAlbums}
+                            selectedAlbumId={field.value || 'none'}
+                            onAlbumChange={field.onChange}
+                            onAlbumsUpdate={fetchWishAlbums}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Vous pouvez associer votre souhait à une catégorie spécifique ou en créer une nouvelle
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
                 {/* Section 7: Statut de publication (pour admin/editor seulement) */}
                 {canPublish && (

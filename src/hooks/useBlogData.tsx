@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PostWithAuthor, BlogAlbum } from '@/types/supabase';
 
-export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate?: string, endDate?: string) => {
+export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate?: string, endDate?: string, selectedUserId?: string | null) => {
   const { hasRole } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
@@ -14,7 +14,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
   useEffect(() => {
     Promise.all([fetchPosts(), fetchAlbums()]);
-  }, [searchTerm, selectedAlbum, startDate, endDate]);
+  }, [searchTerm, selectedAlbum, startDate, endDate, selectedUserId]);
 
   const fetchPosts = async () => {
     try {
@@ -35,6 +35,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
       if (selectedAlbum) {
         query = query.eq('album_id', selectedAlbum);
+      }
+
+      if (selectedUserId) {
+        query = query.eq('author_id', selectedUserId);
       }
 
       if (startDate) {
@@ -58,13 +62,20 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
   const fetchAlbums = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('blog_albums')
         .select(`
           *,
           profiles(id, display_name, email, avatar_url, created_at)
         `)
         .order('name');
+
+      // Filtrer les albums par utilisateur si sélectionné
+      if (selectedUserId) {
+        query = query.eq('author_id', selectedUserId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setAlbums(data || []);

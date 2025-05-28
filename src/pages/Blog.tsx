@@ -6,23 +6,29 @@ import BlogPostGrid from '@/components/blog/BlogPostGrid';
 import { useBlogData } from '@/hooks/useBlogData';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import UserSelector from '@/components/UserSelector';
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   const { 
     posts, 
     albums, 
     loading, 
     hasCreatePermission 
-  } = useBlogData(searchTerm, selectedAlbum, startDate, endDate);
+  } = useBlogData(searchTerm, selectedAlbum, startDate, endDate, selectedUserId);
 
   const handleClearFilters = () => {
     setStartDate('');
     setEndDate('');
+  };
+
+  const handleUserChange = (userId: string | null) => {
+    setSelectedUserId(userId);
   };
 
   return (
@@ -33,6 +39,13 @@ const Blog = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal">Albums</h1>
           <InviteUserDialog />
         </div>
+
+        <UserSelector
+          permissionType="life_story"
+          selectedUserId={selectedUserId}
+          onUserChange={handleUserChange}
+          className="mb-6"
+        />
         
         <BlogHeader 
           albums={albums}
