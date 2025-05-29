@@ -8,10 +8,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Constantes de configuration Supabase
-const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
-
 const Footer = () => {
   const { toast } = useToast();
   const [name, setName] = useState('');
@@ -33,67 +29,33 @@ const Footer = () => {
     }
 
     setLoading(true);
-    console.log('=== DÉBUT DIAGNOSTIC ENVOI FORMULAIRE ===');
-    console.log('Configuration Supabase URL:', SUPABASE_URL);
-    console.log('Configuration Supabase Key (début):', SUPABASE_ANON_KEY?.substring(0, 20) + '...');
-    console.log('Données du formulaire:', { 
-      name, 
-      email, 
-      messageLength: message.length, 
-      hasAttachment: !!attachment 
-    });
     
     try {
-      // Test de connectivité basique
-      console.log('=== TEST DE CONNECTIVITÉ SUPABASE ===');
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from('profiles')
-          .select('id')
-          .limit(1);
-        console.log('Test connectivité Supabase:', { success: !testError, error: testError?.message });
-      } catch (testErr) {
-        console.error('Erreur test connectivité:', testErr);
-      }
-
       // Upload attachment if provided
       let attachmentUrl = null;
       
       if (attachment) {
-        console.log('=== DÉBUT UPLOAD PIÈCE JOINTE ===');
-        console.log('Fichier à uploader:', {
-          name: attachment.name,
-          size: attachment.size,
-          type: attachment.type
-        });
-        
         try {
           const fileExt = attachment.name.split('.').pop();
           const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           
-          console.log('Tentative upload vers:', filePath);
           const { error: uploadError, data } = await supabase.storage
             .from('contact-attachments')
             .upload(filePath, attachment);
 
           if (uploadError) {
-            console.error('Erreur upload détaillée:', {
-              message: uploadError.message,
-              details: uploadError
-            });
+            console.error('Erreur upload:', uploadError);
             toast({
               title: "Attention",
               description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
               variant: "destructive"
             });
           } else {
-            console.log('Upload réussi:', data);
             const { data: { publicUrl } } = supabase.storage
               .from('contact-attachments')
               .getPublicUrl(filePath);
               
             attachmentUrl = publicUrl;
-            console.log('URL publique générée:', attachmentUrl);
           }
         } catch (error) {
           console.error('Exception durant upload:', error);
@@ -105,72 +67,16 @@ const Footer = () => {
         }
       }
       
-      // Préparer les données pour la fonction edge
-      const emailData = { name, email, message, attachmentUrl };
-      console.log('=== APPEL FONCTION EDGE ===');
-      console.log('URL fonction complète:', `${SUPABASE_URL}/functions/v1/send-contact-email`);
-      console.log('Données envoyées:', emailData);
-      console.log('Headers qui seront utilisés:', {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY?.substring(0, 20)}...`,
-        'Content-Type': 'application/json'
-      });
-      
-      // Test direct avec fetch pour diagnostic
-      console.log('=== TEST DIRECT AVEC FETCH ===');
-      try {
-        const directResponse = await fetch(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(emailData)
-        });
-        
-        console.log('Réponse fetch directe:', {
-          status: directResponse.status,
-          statusText: directResponse.statusText,
-          ok: directResponse.ok
-        });
-        
-        if (!directResponse.ok) {
-          const errorText = await directResponse.text();
-          console.error('Contenu de l\'erreur fetch:', errorText);
-        }
-      } catch (fetchError) {
-        console.error('Erreur fetch directe:', fetchError);
-      }
-      
-      // Appel via le client Supabase
-      console.log('=== APPEL VIA CLIENT SUPABASE ===');
+      // Envoyer l'email via la fonction edge
       const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: emailData
+        body: { name, email, message, attachmentUrl }
       });
-      
-      console.log('Réponse brute de la fonction:', { data, error });
       
       if (error) {
-        console.error('=== ERREUR FONCTION EDGE DÉTAILLÉE ===');
-        console.error('Type d\'erreur:', error.constructor?.name);
-        console.error('Message d\'erreur:', error.message);
-        console.error('Objet erreur complet:', JSON.stringify(error, null, 2));
-        
-        // Essayer de déterminer le type d'erreur
-        if (error.message?.includes('Failed to send a request')) {
-          console.error('DIAGNOSTIC: Problème de connectivité réseau vers la fonction');
-        } else if (error.message?.includes('timeout')) {
-          console.error('DIAGNOSTIC: Timeout de la requête');
-        } else if (error.message?.includes('CORS')) {
-          console.error('DIAGNOSTIC: Problème CORS');
-        }
-        
         throw new Error(`Erreur d'envoi: ${error.message}`);
       }
       
-      console.log('✓ Réponse fonction reçue:', data);
-      
       if (data?.success) {
-        console.log('✓ Email envoyé avec succès');
         toast({
           title: "Message envoyé",
           description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
@@ -188,31 +94,19 @@ const Footer = () => {
           fileInput.value = '';
         }
       } else {
-        console.error('Fonction exécutée mais échec:', data);
         throw new Error(data?.error || 'Erreur inconnue dans la réponse');
       }
       
     } catch (error: any) {
-      console.error('=== ERREUR COMPLÈTE ENVOI ===');
-      console.error('Type d\'erreur:', error.constructor?.name);
-      console.error('Message d\'erreur:', error.message);
-      console.error('Stack trace:', error.stack);
-      console.error('Objet erreur complet:', error);
-      
-      // Message d'erreur plus informatif
-      let errorMessage = error.message;
-      if (error.message?.includes('Failed to send a request to the Edge Function')) {
-        errorMessage = 'Impossible de contacter le serveur d\'envoi d\'emails. Vérifiez votre connexion internet et réessayez.';
-      }
+      console.error('Erreur envoi formulaire:', error);
       
       toast({
         title: "Erreur d'envoi",
-        description: `Une erreur est survenue: ${errorMessage}. Veuillez réessayer ou nous contacter directement par email à contact@senior-digital-mentor.com.`,
+        description: `Une erreur est survenue: ${error.message}. Veuillez réessayer ou nous contacter directement par email à contact@senior-digital-mentor.com.`,
         variant: "destructive"
       });
     } finally {
       setLoading(false);
-      console.log('=== FIN DIAGNOSTIC ENVOI FORMULAIRE ===');
     }
   };
 

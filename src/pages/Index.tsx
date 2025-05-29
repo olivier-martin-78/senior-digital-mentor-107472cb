@@ -10,17 +10,12 @@ import Footer from '@/components/Footer';
 import ScrollAnimation from '@/components/ScrollAnimation';
 import Header from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
-import SupabaseConnectionTest from '@/components/SupabaseConnectionTest';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <ScrollAnimation />
       <Header />
-      {/* Composant de test temporaire - à supprimer après diagnostic */}
-      <div className="py-8 bg-gray-50">
-        <SupabaseConnectionTest />
-      </div>
       <HeroSection />
       <WhySection />
       <HowItWorksSection />
