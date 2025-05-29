@@ -93,9 +93,9 @@ serve(async (req: Request) => {
     console.log('=== ENVOI EMAIL NOTIFICATION ===');
     console.log('Destinataire: contact@senior-digital-mentor.com');
     
-    // Envoyer l'email de notification à l'adresse fixe
+    // Envoyer l'email de notification en utilisant le domaine par défaut de Resend
     const notificationResult = await resend.emails.send({
-      from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
+      from: 'onboarding@resend.dev',
       to: 'contact@senior-digital-mentor.com',
       subject: emailSubject,
       html: emailContent,
@@ -109,9 +109,9 @@ serve(async (req: Request) => {
     console.log('Destinataire:', email);
     
     const confirmationResult = await resend.emails.send({
-      from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
+      from: 'onboarding@resend.dev',
       to: email,
-      subject: 'Nous avons bien reçu votre message',
+      subject: 'Nous avons bien reçu votre message - Senior Digital Mentor',
       html: `
         <h1>Bonjour ${name},</h1>
         <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
