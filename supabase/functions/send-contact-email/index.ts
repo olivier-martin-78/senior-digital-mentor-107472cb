@@ -91,12 +91,12 @@ serve(async (req: Request) => {
     `;
     
     console.log('=== ENVOI EMAIL NOTIFICATION ===');
-    console.log('Destinataire: olivier.martin.78000@gmail.com (TEST)');
+    console.log('Destinataire: contact@senior-digital-mentor.com');
     
-    // Envoyer l'email de notification à votre email personnel pour test
+    // Envoyer l'email de notification à votre adresse professionnelle
     const notificationResult = await resend.emails.send({
       from: 'contact@senior-digital-mentor.com',
-      to: 'olivier.martin.78000@gmail.com',
+      to: 'contact@senior-digital-mentor.com',
       subject: emailSubject,
       html: emailContent,
       reply_to: email,
