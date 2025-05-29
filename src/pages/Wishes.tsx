@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -106,15 +107,15 @@ const Wishes = () => {
 
   const renderWishImage = (wish: WishPost) => {
     if (!wish.cover_image) {
-      console.log('Pas d\'image de couverture pour le souhait:', wish.id);
+      console.log('Wishes - Pas d\'image de couverture pour le souhait:', wish.id);
       return null;
     }
 
-    console.log('Affichage image souhait - ID:', wish.id, 'URL:', wish.cover_image);
+    console.log('Wishes - Affichage image souhait - ID:', wish.id, 'Path:', wish.cover_image);
     
-    // Utiliser directement le bucket album-thumbnails pour les souhaits
+    // Utiliser getThumbnailUrlSync avec le bucket album-thumbnails
     const imageUrl = getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET);
-    console.log('URL générée pour souhait:', imageUrl);
+    console.log('Wishes - URL générée pour souhait:', imageUrl);
 
     return (
       <div className="w-full h-48 overflow-hidden rounded-t-lg">
@@ -123,16 +124,16 @@ const Wishes = () => {
           alt={wish.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            console.error('ERREUR: Impossible de charger l\'image du souhait');
+            console.error('Wishes - ERREUR: Impossible de charger l\'image du souhait');
             console.error('- ID du souhait:', wish.id);
-            console.error('- URL originale:', wish.cover_image);
+            console.error('- Path original:', wish.cover_image);
             console.error('- URL générée:', imageUrl);
             console.error('- Bucket utilisé:', ALBUM_THUMBNAILS_BUCKET);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('SUCCESS: Image du souhait chargée avec succès');
+            console.log('Wishes - SUCCESS: Image du souhait chargée avec succès');
             console.log('- ID du souhait:', wish.id);
             console.log('- URL:', imageUrl);
           }}

@@ -214,19 +214,19 @@ const Recent = () => {
 
     // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
     if (item.type === 'diary' && item.media_url) {
-      console.log('Traitement image journal - ID:', item.id, 'URL:', item.media_url);
+      console.log('Recent - Traitement image journal - ID:', item.id, 'URL:', item.media_url);
       const imageUrl = getThumbnailUrlSync(item.media_url, DIARY_MEDIA_BUCKET);
-      console.log('URL générée pour journal:', imageUrl);
+      console.log('Recent - URL générée pour journal:', imageUrl);
       return imageUrl;
     }
 
     // Pour les autres types, utiliser cover_image
     if (!item.cover_image) {
-      console.log('Pas d\'image de couverture pour l\'élément:', item.type, item.id);
+      console.log('Recent - Pas d\'image de couverture pour l\'élément:', item.type, item.id);
       return null;
     }
     
-    console.log('Traitement de l\'image pour:', item.type, item.id, 'URL:', item.cover_image);
+    console.log('Recent - Traitement de l\'image pour:', item.type, item.id, 'Path:', item.cover_image);
     
     // Utiliser le bon bucket selon le type d'élément
     let bucket;
@@ -240,7 +240,7 @@ const Recent = () => {
     
     const imageUrl = getThumbnailUrlSync(item.cover_image, bucket);
     
-    console.log('URL générée pour', item.type, ':', imageUrl, 'avec bucket:', bucket);
+    console.log('Recent - URL générée pour', item.type, ':', imageUrl, 'avec bucket:', bucket);
     
     return imageUrl;
   };
@@ -257,16 +257,16 @@ const Recent = () => {
           alt={item.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            console.error('ERREUR: Impossible de charger l\'image dans Recent');
+            console.error('Recent - ERREUR: Impossible de charger l\'image');
             console.error('- Type:', item.type);
             console.error('- ID:', item.id);
-            console.error('- URL originale:', item.cover_image || item.media_url);
+            console.error('- Path original:', item.cover_image || item.media_url);
             console.error('- URL générée:', imageUrl);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('SUCCESS: Image chargée dans Recent pour:', item.type, item.id);
+            console.log('Recent - SUCCESS: Image chargée pour:', item.type, item.id);
           }}
         />
       </div>

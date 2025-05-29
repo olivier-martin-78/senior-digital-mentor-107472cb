@@ -69,7 +69,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [thumbnailPath, setThumbnailPath] = useState<string | null>(null);
   
   const fetchWishAlbums = useCallback(async () => {
     try {
@@ -166,14 +166,13 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
     try {
       setUploadingThumbnail(true);
-      console.log('Début de l\'upload de la vignette pour souhait...');
+      console.log('WishForm - Début de l\'upload de la vignette...');
       
-      // Utiliser directement le bucket album-thumbnails pour les souhaits
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
       const fileExt = file.name.split('.').pop();
       const fileName = `wish-${wishId}-${Date.now()}.${fileExt}`;
       
-      console.log('Upload vers album-thumbnails avec nom:', fileName);
+      console.log('WishForm - Upload vers album-thumbnails avec nom:', fileName);
       
       const { error: uploadError } = await supabase.storage
         .from('album-thumbnails')
@@ -183,27 +182,18 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         throw uploadError;
       }
       
-      // Générer l'URL publique
-      const { data } = supabase.storage
-        .from('album-thumbnails')
-        .getPublicUrl(fileName);
-        
-      if (!data.publicUrl) {
-        throw new Error("Impossible de générer l'URL publique");
-      }
+      console.log("WishForm - Fichier uploadé avec succès, chemin:", fileName);
       
-      console.log("URL publique générée pour souhait:", data.publicUrl);
-      
-      // Mettre à jour l'état et le formulaire avec l'URL publique
-      setThumbnailUrl(data.publicUrl);
-      form.setValue('thumbnail', data.publicUrl);
+      // Stocker seulement le chemin, pas l'URL complète
+      setThumbnailPath(fileName);
+      form.setValue('thumbnail', fileName);
       
       toast({
         title: 'Vignette téléchargée !',
         description: 'La vignette a été téléchargée avec succès.',
       });
     } catch (error: any) {
-      console.error('Erreur lors du téléchargement de la vignette:', error);
+      console.error('WishForm - Erreur lors du téléchargement de la vignette:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -216,18 +206,35 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
   // Gestionnaire pour supprimer la vignette
   const handleRemoveThumbnail = () => {
-    setThumbnailUrl(null);
+    setThumbnailPath(null);
     form.setValue('thumbnail', '');
-    console.log('Vignette supprimée');
+    console.log('WishForm - Vignette supprimée');
   };
 
   // Effet pour charger la vignette existante
   useEffect(() => {
     if (wishToEdit?.cover_image) {
-      console.log('Chargement de la vignette existante:', wishToEdit.cover_image);
-      setThumbnailUrl(wishToEdit.cover_image);
+      console.log('WishForm - Chargement de la vignette existante:', wishToEdit.cover_image);
+      setThumbnailPath(wishToEdit.cover_image);
     }
   }, [wishToEdit]);
+
+  // Fonction pour obtenir l'URL d'aperçu de la vignette
+  const getThumbnailPreviewUrl = () => {
+    if (!thumbnailPath) return null;
+    
+    // Si c'est déjà une URL complète, la retourner telle quelle
+    if (thumbnailPath.startsWith('http')) {
+      return thumbnailPath;
+    }
+    
+    // Sinon, générer l'URL publique à partir du chemin
+    const { data } = supabase.storage
+      .from('album-thumbnails')
+      .getPublicUrl(thumbnailPath);
+    
+    return data.publicUrl;
+  };
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -261,10 +268,10 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
         published: values.published,
-        cover_image: thumbnailUrl || null
+        cover_image: thumbnailPath || null
       };
 
-      console.log('WishForm - Submitting data avec cover_image:', submissionData.cover_image);
+      console.log('WishForm - Submitting data avec cover_image (chemin):', submissionData.cover_image);
 
       let data, error;
       
@@ -421,19 +428,19 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                         <FormLabel>Vignette du souhait (facultatif)</FormLabel>
                         <FormControl>
                           <div className="space-y-4">
-                            {thumbnailUrl && (
+                            {thumbnailPath && (
                               <div className="relative inline-block">
                                 <img
-                                  src={thumbnailUrl}
+                                  src={getThumbnailPreviewUrl() || '/placeholder.svg'}
                                   alt="Aperçu de la vignette"
                                   className="w-32 h-32 object-cover rounded-lg border"
                                   onError={(e) => {
-                                    console.error('Erreur de chargement de l\'image dans le formulaire:', thumbnailUrl);
+                                    console.error('WishForm - Erreur de chargement de l\'image:', getThumbnailPreviewUrl());
                                     const target = e.target as HTMLImageElement;
                                     target.src = '/placeholder.svg';
                                   }}
                                   onLoad={() => {
-                                    console.log('Image chargée avec succès dans le formulaire:', thumbnailUrl);
+                                    console.log('WishForm - Image chargée avec succès:', getThumbnailPreviewUrl());
                                   }}
                                 />
                                 <Button
