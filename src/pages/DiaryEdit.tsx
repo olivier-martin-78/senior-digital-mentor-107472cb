@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,8 +25,8 @@ const diaryFormSchema = z.object({
   mood_rating: z.number().min(1).max(5).nullable().optional(),
   positive_things: z.string().optional().nullable(),
   negative_things: z.string().optional().nullable(),
-  physical_state: z.enum(['fatigué', 'dormi', 'énergique']).nullable().optional(),
-  mental_state: z.enum(['stressé', 'calme', 'motivé']).nullable().optional(),
+  physical_state: z.string().nullable().optional(),
+  mental_state: z.string().nullable().optional(),
   contacted_people: z.array(z.string()).nullable().optional(),
   reflections: z.string().optional().nullable(),
   media: z.any().optional().nullable(),

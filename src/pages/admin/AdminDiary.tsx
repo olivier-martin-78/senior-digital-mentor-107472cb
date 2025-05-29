@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Eye, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DiaryEntryWithAuthor } from '@/types/diary';
+import { DiaryEntry, DiaryEntryWithAuthor } from '@/types/diary';
 
 const AdminDiary = () => {
   const { user, hasRole } = useAuth();
@@ -58,7 +58,7 @@ const AdminDiary = () => {
         .from('diary_entries')
         .select(`
           *,
-          profiles:user_id(id, display_name, email)
+          profiles!diary_entries_user_id_fkey(id, display_name, email)
         `)
         .order('created_at', { ascending: false });
 
