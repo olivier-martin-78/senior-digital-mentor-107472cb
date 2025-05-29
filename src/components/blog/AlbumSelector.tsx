@@ -49,13 +49,13 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
         console.log('AlbumSelector - Rôles:', { hasAdmin: hasRole('admin'), hasEditor: hasRole('editor') });
         console.log('AlbumSelector - Tous les albums disponibles:', allAlbums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })));
 
-        if (hasRole('admin') || hasRole('editor')) {
-          // Admins et éditeurs voient tous les albums
-          console.log('AlbumSelector - Admin/Editeur: tous les albums visibles');
+        if (hasRole('admin')) {
+          // Seuls les administrateurs voient automatiquement tous les albums
+          console.log('AlbumSelector - Administrateur: tous les albums visibles');
           setAccessibleAlbums(allAlbums);
         } else {
-          // Pour les utilisateurs normaux, vérification stricte
-          console.log('AlbumSelector - Utilisateur normal: vérification stricte des permissions');
+          // Pour les éditeurs et utilisateurs normaux, vérification stricte des permissions
+          console.log('AlbumSelector - Éditeur/Utilisateur: vérification stricte des permissions');
           
           // Récupérer les permissions d'albums pour cet utilisateur
           const { data: albumPermissions, error: permissionsError } = await supabase
