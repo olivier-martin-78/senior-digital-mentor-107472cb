@@ -45,19 +45,22 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
 
       try {
         console.log('AlbumSelector - Chargement des albums accessibles pour user:', user.id);
+        console.log('AlbumSelector - Email utilisateur:', user.email);
         console.log('AlbumSelector - Rôles:', { hasAdmin: hasRole('admin'), hasEditor: hasRole('editor') });
+        console.log('AlbumSelector - Tous les albums disponibles:', allAlbums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })));
 
         if (hasRole('admin') || hasRole('editor')) {
           // Admins et éditeurs voient tous les albums
           console.log('AlbumSelector - Admin/Editeur: tous les albums visibles');
           setAccessibleAlbums(allAlbums);
         } else {
-          // Pour les utilisateurs normaux, récupérer UNIQUEMENT les permissions d'albums
-          console.log('AlbumSelector - Utilisateur normal: vérification stricte des permissions albums');
+          // Pour les utilisateurs normaux, vérification stricte
+          console.log('AlbumSelector - Utilisateur normal: vérification stricte des permissions');
           
+          // Récupérer les permissions d'albums pour cet utilisateur
           const { data: albumPermissions, error: permissionsError } = await supabase
             .from('album_permissions')
-            .select('album_id')
+            .select('*')
             .eq('user_id', user.id);
 
           if (permissionsError) {
@@ -65,23 +68,30 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
             throw permissionsError;
           }
 
+          console.log('AlbumSelector - Permissions trouvées dans la DB:', albumPermissions);
           const permittedAlbumIds = albumPermissions?.map(p => p.album_id) || [];
           console.log('AlbumSelector - IDs albums autorisés via permissions:', permittedAlbumIds);
 
-          // Filtrer STRICTEMENT: albums possédés + albums avec permission directe
+          // Filtrer les albums accessibles
           const userAccessibleAlbums = allAlbums.filter(album => {
             const isOwned = album.author_id === user.id;
             const hasDirectPermission = permittedAlbumIds.includes(album.id);
             
-            console.log(`AlbumSelector - Album "${album.name}": owned=${isOwned}, hasPermission=${hasDirectPermission}`);
+            console.log(`AlbumSelector - Album "${album.name}" (ID: ${album.id}):`, {
+              author_id: album.author_id,
+              user_id: user.id,
+              isOwned,
+              hasDirectPermission,
+              accessible: isOwned || hasDirectPermission
+            });
             
             return isOwned || hasDirectPermission;
           });
 
-          console.log('AlbumSelector - Albums accessibles finaux:', userAccessibleAlbums.length, userAccessibleAlbums.map(a => ({ name: a.name, owned: a.author_id === user.id })));
+          console.log('AlbumSelector - Albums finaux accessibles:', userAccessibleAlbums.map(a => ({ name: a.name, id: a.id })));
           setAccessibleAlbums(userAccessibleAlbums);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('AlbumSelector - Erreur lors de la récupération des albums accessibles:', error);
         // En cas d'erreur, montrer seulement les albums de l'utilisateur
         const userOwnedAlbums = allAlbums.filter(album => album.author_id === user.id);
