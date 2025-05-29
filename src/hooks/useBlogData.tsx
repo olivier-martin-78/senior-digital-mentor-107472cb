@@ -32,22 +32,20 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       // Gestion des permissions pour les non-administrateurs
       if (!hasRole('admin')) {
         if (selectedUserId) {
-          // Vérifier les permissions pour cet utilisateur spécifique
-          const { data: permissions, error: permError } = await supabase
-            .from('life_story_permissions')
-            .select('story_owner_id')
-            .eq('permitted_user_id', user?.id)
-            .eq('story_owner_id', selectedUserId);
+          // Pour un utilisateur spécifique sélectionné
+          if (selectedUserId !== user?.id) {
+            // Vérifier les permissions life_story pour cet utilisateur
+            const { data: permissions, error: permError } = await supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user?.id)
+              .eq('story_owner_id', selectedUserId);
 
-          if (permError) {
-            console.error('Erreur lors de la vérification des permissions:', permError);
-          }
-
-          // Si l'utilisateur n'a pas de permissions ET ce n'est pas son propre contenu, ne rien afficher
-          if (!permissions?.length && selectedUserId !== user?.id) {
-            console.log('Pas de permissions pour voir les articles de cet utilisateur');
-            setPosts([]);
-            return;
+            if (permError || !permissions?.length) {
+              console.log('Pas de permissions pour voir les articles de cet utilisateur');
+              setPosts([]);
+              return;
+            }
           }
           
           query = query.eq('author_id', selectedUserId);
@@ -64,38 +62,29 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               .eq('permitted_user_id', user?.id)
           ]);
 
-          if (albumPermissionsResult.error) {
-            console.error('Erreur lors de la vérification des permissions d\'albums:', albumPermissionsResult.error);
-          }
-          if (lifeStoryPermissionsResult.error) {
-            console.error('Erreur lors de la vérification des permissions life_story:', lifeStoryPermissionsResult.error);
-          }
+          const albumPermissions = albumPermissionsResult.data || [];
+          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
 
-          // Créer une liste des IDs d'utilisateurs autorisés
-          const authorizedUserIds = [user?.id]; // Toujours inclure l'utilisateur actuel
-          
-          // Ajouter les utilisateurs avec permissions life_story
-          if (lifeStoryPermissionsResult.data?.length) {
-            lifeStoryPermissionsResult.data.forEach(p => {
-              if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
-                authorizedUserIds.push(p.story_owner_id);
-              }
-            });
-          }
+          // Créer une liste des IDs d'utilisateurs autorisés (incluant l'utilisateur actuel)
+          const authorizedUserIds = [user?.id];
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
+              authorizedUserIds.push(p.story_owner_id);
+            }
+          });
 
           // Récupérer les albums autorisés
-          const authorizedAlbumIds: string[] = [];
-          if (albumPermissionsResult.data?.length) {
-            authorizedAlbumIds.push(...albumPermissionsResult.data.map(p => p.album_id));
-          }
+          const authorizedAlbumIds = albumPermissions.map(p => p.album_id);
 
           console.log('Utilisateurs autorisés:', authorizedUserIds);
           console.log('Albums autorisés:', authorizedAlbumIds);
 
-          // Construire la clause OR pour les permissions
+          // Construire la requête avec les permissions
           if (authorizedAlbumIds.length > 0) {
-            // Articles de l'utilisateur OU articles dans des albums autorisés
-            query = query.or(`author_id.in.(${authorizedUserIds.join(',')}),album_id.in.(${authorizedAlbumIds.join(',')})`);
+            // Articles de l'utilisateur OU articles dans des albums autorisés OU articles des utilisateurs autorisés
+            const userFilter = `author_id.in.(${authorizedUserIds.join(',')})`;
+            const albumFilter = `album_id.in.(${authorizedAlbumIds.join(',')})`;
+            query = query.or(`${userFilter},${albumFilter}`);
           } else {
             // Seulement les articles des utilisateurs autorisés
             query = query.in('author_id', authorizedUserIds);
@@ -150,7 +139,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       // Gestion des permissions pour les albums
       if (!hasRole('admin')) {
         if (selectedUserId) {
-          // Vérifier les permissions si l'utilisateur n'est pas admin
+          // Pour un utilisateur spécifique sélectionné
           if (selectedUserId !== user?.id) {
             const { data: permissions, error: permError } = await supabase
               .from('life_story_permissions')
@@ -179,28 +168,26 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               .eq('permitted_user_id', user?.id)
           ]);
 
+          const albumPermissions = albumPermissionsResult.data || [];
+          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+
           // Créer une liste des IDs d'utilisateurs autorisés
-          const authorizedUserIds = [user?.id]; // Toujours inclure l'utilisateur actuel
-          
-          // Ajouter les utilisateurs avec permissions life_story
-          if (lifeStoryPermissionsResult.data?.length) {
-            lifeStoryPermissionsResult.data.forEach(p => {
-              if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
-                authorizedUserIds.push(p.story_owner_id);
-              }
-            });
-          }
+          const authorizedUserIds = [user?.id];
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
+              authorizedUserIds.push(p.story_owner_id);
+            }
+          });
 
           // Récupérer les albums autorisés
-          const authorizedAlbumIds: string[] = [];
-          if (albumPermissionsResult.data?.length) {
-            authorizedAlbumIds.push(...albumPermissionsResult.data.map(p => p.album_id));
-          }
+          const authorizedAlbumIds = albumPermissions.map(p => p.album_id);
 
-          // Construire la clause OR pour les permissions
+          // Construire la requête avec les permissions
           if (authorizedAlbumIds.length > 0) {
-            // Albums de l'utilisateur OU albums autorisés
-            query = query.or(`author_id.in.(${authorizedUserIds.join(',')}),id.in.(${authorizedAlbumIds.join(',')})`);
+            // Albums de l'utilisateur OU albums autorisés OU albums des utilisateurs autorisés
+            const userFilter = `author_id.in.(${authorizedUserIds.join(',')})`;
+            const albumFilter = `id.in.(${authorizedAlbumIds.join(',')})`;
+            query = query.or(`${userFilter},${albumFilter}`);
           } else {
             // Seulement les albums des utilisateurs autorisés
             query = query.in('author_id', authorizedUserIds);

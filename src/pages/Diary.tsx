@@ -45,7 +45,7 @@ const Diary = () => {
         .select('*')
         .order('entry_date', { ascending: false });
 
-      // Pour les admins, pas de restriction sur user_id si un utilisateur est sélectionné
+      // Pour les admins, permettre de voir les entrées de n'importe quel utilisateur
       if (hasRole('admin')) {
         query = query.eq('user_id', targetUserId);
       } else {
