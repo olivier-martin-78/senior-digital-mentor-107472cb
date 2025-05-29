@@ -68,7 +68,7 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
             {row.map((item, itemIndex) => (
               <div 
                 key={item.id} 
-                className="flex-1 border-2 border-white cursor-pointer hover:opacity-90 transition-opacity"
+                className="flex-1 border-2 border-white cursor-pointer hover:opacity-90 transition-opacity relative"
                 style={{ width: `${100 / row.length}%` }}
                 onClick={() => handleMediaClick(item)}
               >
@@ -79,12 +79,30 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
                     className="w-full aspect-square object-cover"
                   />
                 ) : item.media_type.startsWith('video/') ? (
-                  <video
-                    src={item.media_url}
-                    className="w-full aspect-square object-cover"
-                    muted
-                    playsInline
-                  />
+                  <>
+                    {item.thumbnail_url ? (
+                      <div className="relative">
+                        <img
+                          src={item.thumbnail_url}
+                          alt="Vignette vidéo"
+                          className="w-full aspect-square object-cover"
+                        />
+                        {/* Icône play au centre */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                          <div className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[12px] border-l-black border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <video
+                        src={item.media_url}
+                        className="w-full aspect-square object-cover"
+                        muted
+                        playsInline
+                      />
+                    )}
+                  </>
                 ) : (
                   <div className="flex items-center justify-center bg-gray-100 aspect-square">
                     <p className="text-gray-500">Fichier non prévisualisable</p>

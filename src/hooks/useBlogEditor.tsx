@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
+import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -354,7 +356,7 @@ export const useBlogEditor = () => {
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 
       try {
-        // Upload to storage
+        // Upload du fichier principal
         const { error: uploadError } = await supabase.storage
           .from('blog-media')
           .upload(filePath, file);
@@ -369,13 +371,43 @@ export const useBlogEditor = () => {
           .from('blog-media')
           .getPublicUrl(filePath);
 
-        // Save to database
+        // Générer une vignette si c'est une vidéo
+        let thumbnailUrl: string | null = null;
+        if (isVideoFile(file)) {
+          try {
+            console.log('Génération de vignette pour la vidéo:', file.name);
+            const thumbnailFile = await generateVideoThumbnail(file);
+            const thumbnailExt = thumbnailFile.name.split('.').pop();
+            const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
+            
+            const { error: thumbnailUploadError } = await supabase.storage
+              .from('blog-media')
+              .upload(thumbnailPath, thumbnailFile);
+
+            if (!thumbnailUploadError) {
+              const { data: { publicUrl: thumbnailPublicUrl } } = supabase.storage
+                .from('blog-media')
+                .getPublicUrl(thumbnailPath);
+              
+              thumbnailUrl = thumbnailPublicUrl;
+              console.log('Vignette générée avec succès:', thumbnailUrl);
+            } else {
+              console.error('Erreur lors de l\'upload de la vignette:', thumbnailUploadError);
+            }
+          } catch (thumbnailError) {
+            console.error('Erreur lors de la génération de la vignette:', thumbnailError);
+            // Continue sans vignette si la génération échoue
+          }
+        }
+
+        // Save to database with thumbnail URL if available
         const { error: dbError } = await supabase
           .from('blog_media')
           .insert({
             post_id: id || post?.id,
             media_url: publicUrl,
-            media_type: file.type
+            media_type: file.type,
+            thumbnail_url: thumbnailUrl
           });
 
         if (dbError) {
@@ -389,6 +421,7 @@ export const useBlogEditor = () => {
           post_id: id || post?.id || '',
           media_url: publicUrl,
           media_type: file.type,
+          thumbnail_url: thumbnailUrl,
           created_at: new Date().toISOString()
         }]);
 
