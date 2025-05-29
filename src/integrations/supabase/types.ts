@@ -775,11 +775,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_group: {
+        Args: { group_id: string; user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           user_id: string
           required_role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      is_group_creator: {
+        Args: { group_id: string; user_id: string }
         Returns: boolean
       }
     }

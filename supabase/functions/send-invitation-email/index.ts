@@ -10,19 +10,33 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Début de la fonction send-invitation-email');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { firstName, lastName, email, inviterName, inviterEmail, accessTypes } = await req.json();
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY manquante');
+      throw new Error('Configuration manquante: RESEND_API_KEY');
+    }
+
+    const requestBody = await req.json();
+    console.log('Corps de la requête reçu:', requestBody);
+    
+    const { firstName, lastName, email, inviterName, inviterEmail, accessTypes } = requestBody;
+
+    if (!firstName || !lastName || !email || !inviterName || !inviterEmail) {
+      throw new Error('Paramètres manquants dans la requête');
+    }
 
     // Construire la liste des accès accordés
     const accessList = [];
-    if (accessTypes.blogAccess) accessList.push('Albums (Blog)');
-    if (accessTypes.wishesAccess) accessList.push('Souhaits');
-    if (accessTypes.diaryAccess) accessList.push('Journal intime');
-    if (accessTypes.lifeStoryAccess) accessList.push('Histoire de vie');
+    if (accessTypes?.blogAccess) accessList.push('Albums (Blog)');
+    if (accessTypes?.wishesAccess) accessList.push('Souhaits');
+    if (accessTypes?.diaryAccess) accessList.push('Journal intime');
+    if (accessTypes?.lifeStoryAccess) accessList.push('Histoire de vie');
 
     const accessText = accessList.length > 0 
       ? `Vous avez accès aux sections suivantes : ${accessList.join(', ')}`
@@ -60,6 +74,8 @@ serve(async (req) => {
       </div>
     `;
 
+    console.log('Envoi de l\'email vers:', email);
+
     // Envoyer l'email via Resend
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -76,9 +92,12 @@ serve(async (req) => {
       }),
     });
 
+    console.log('Statut de la réponse Resend:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Erreur Resend: ${errorData.message}`);
+      const errorText = await response.text();
+      console.error('Erreur Resend (status:', response.status, '):', errorText);
+      throw new Error(`Erreur Resend (${response.status}): ${errorText}`);
     }
 
     const result = await response.json();
@@ -89,9 +108,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'email:', error);
+    console.error('Erreur complète lors de l\'envoi de l\'email:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Erreur lors de l\'envoi de l\'email' 
+      error: error.message || 'Erreur lors de l\'envoi de l\'email',
+      details: error.toString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
