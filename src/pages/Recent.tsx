@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -7,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getThumbnailUrl, DIARY_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
+import RecentItemImage from '@/components/RecentItemImage';
 
 interface RecentItem {
   id: string;
@@ -205,100 +206,6 @@ const Recent = () => {
     }
   };
 
-  const renderItemImage = (item: RecentItem) => {
-    console.log('Recent - renderItemImage pour:', {
-      type: item.type,
-      id: item.id,
-      cover_image: item.cover_image,
-      media_url: item.media_url
-    });
-
-    // Pour les commentaires, pas d'image
-    if (item.type === 'comment') {
-      console.log('Recent - Pas d\'image pour commentaire:', item.id);
-      return null;
-    }
-
-    let imageUrl = '';
-    let imagePath = '';
-
-    // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
-    if (item.type === 'diary' && item.media_url) {
-      imagePath = item.media_url;
-      console.log('Recent - Traitement image journal - ID:', item.id, 'media_url:', item.media_url);
-    }
-    // Pour les souhaits et blogs, utiliser cover_image avec le bucket album-thumbnails
-    else if ((item.type === 'wish' || item.type === 'blog') && item.cover_image) {
-      imagePath = item.cover_image;
-      console.log('Recent - Traitement image', item.type, '- ID:', item.id, 'cover_image:', item.cover_image);
-    }
-    
-    if (!imagePath) {
-      console.log('Recent - Pas d\'image pour:', item.type, item.id);
-      return null;
-    }
-    
-    // Générer l'URL avec la fonction getThumbnailUrl de manière asynchrone
-    const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
-    
-    React.useEffect(() => {
-      const loadThumbnail = async () => {
-        try {
-          let bucket = ALBUM_THUMBNAILS_BUCKET;
-          if (item.type === 'diary') {
-            bucket = DIARY_MEDIA_BUCKET;
-          }
-          
-          console.log('Recent - Génération URL pour:', {
-            type: item.type,
-            id: item.id,
-            bucket,
-            imagePath
-          });
-          
-          const url = await getThumbnailUrl(imagePath, bucket);
-          console.log('Recent - URL générée:', url);
-          setThumbnailUrl(url);
-        } catch (error) {
-          console.error('Recent - Erreur génération URL:', {
-            type: item.type,
-            id: item.id,
-            error
-          });
-        }
-      };
-      
-      loadThumbnail();
-    }, [imagePath, item.type, item.id]);
-
-    return (
-      <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
-        <img
-          src={thumbnailUrl}
-          alt={item.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            console.error('Recent - ERREUR chargement image:');
-            console.error('- Type:', item.type);
-            console.error('- ID:', item.id);
-            console.error('- Path original:', imagePath);
-            console.error('- URL finale:', thumbnailUrl);
-            console.error('- Erreur:', e);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-          onLoad={() => {
-            console.log('Recent - SUCCESS image chargée pour:', {
-              type: item.type,
-              id: item.id,
-              url: thumbnailUrl
-            });
-          }}
-        />
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -329,7 +236,13 @@ const Recent = () => {
             {recentItems.map((item) => (
               <Card key={`${item.type}-${item.id}`} className="hover:shadow-lg transition-shadow">
                 <div className="flex">
-                  {renderItemImage(item)}
+                  <RecentItemImage
+                    type={item.type}
+                    id={item.id}
+                    title={item.title}
+                    coverImage={item.cover_image}
+                    mediaUrl={item.media_url}
+                  />
                   <div className="flex-1">
                     <CardHeader>
                       <div className="flex justify-between items-start">
