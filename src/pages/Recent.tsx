@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -171,11 +170,48 @@ const Recent = () => {
   };
 
   const getThumbnailForItem = (item: RecentItem) => {
-    if (!item.cover_image) return null;
+    if (!item.cover_image) {
+      console.log('Pas d\'image de couverture pour l\'élément:', item.type, item.id);
+      return null;
+    }
+    
+    console.log('Traitement de l\'image pour:', item.type, item.id, 'URL:', item.cover_image);
     
     // Utiliser le bon bucket selon le type d'élément
     const bucket = item.type === 'blog' ? BLOG_MEDIA_BUCKET : ALBUM_THUMBNAILS_BUCKET;
-    return getThumbnailUrlSync(item.cover_image, bucket);
+    const imageUrl = getThumbnailUrlSync(item.cover_image, bucket);
+    
+    console.log('URL générée pour', item.type, ':', imageUrl, 'avec bucket:', bucket);
+    
+    return imageUrl;
+  };
+
+  const renderItemImage = (item: RecentItem) => {
+    const imageUrl = getThumbnailForItem(item);
+    
+    if (!imageUrl) return null;
+
+    return (
+      <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
+        <img
+          src={imageUrl}
+          alt={item.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('ERREUR: Impossible de charger l\'image dans Recent');
+            console.error('- Type:', item.type);
+            console.error('- ID:', item.id);
+            console.error('- URL originale:', item.cover_image);
+            console.error('- URL générée:', imageUrl);
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+          onLoad={() => {
+            console.log('SUCCESS: Image chargée dans Recent pour:', item.type, item.id);
+          }}
+        />
+      </div>
+    );
   };
 
   if (loading) {
@@ -208,23 +244,7 @@ const Recent = () => {
             {recentItems.map((item) => (
               <Card key={`${item.type}-${item.id}`} className="hover:shadow-lg transition-shadow">
                 <div className="flex">
-                  {item.cover_image && (
-                    <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
-                      <img
-                        src={getThumbnailForItem(item)}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('Erreur de chargement de l\'image:', item.cover_image, 'Type:', item.type);
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                        onLoad={() => {
-                          console.log('Image chargée pour:', item.type, item.cover_image);
-                        }}
-                      />
-                    </div>
-                  )}
+                  {renderItemImage(item)}
                   <div className="flex-1">
                     <CardHeader>
                       <div className="flex justify-between items-start">

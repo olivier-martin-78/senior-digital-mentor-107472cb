@@ -105,6 +105,42 @@ const Wishes = () => {
     return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
   };
 
+  const renderWishImage = (wish: WishPost) => {
+    if (!wish.cover_image) {
+      console.log('Pas d\'image de couverture pour le souhait:', wish.id);
+      return null;
+    }
+
+    console.log('Tentative d\'affichage de l\'image pour le souhait:', wish.id, 'URL:', wish.cover_image);
+    
+    const imageUrl = getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET);
+    console.log('URL générée pour l\'image:', imageUrl);
+
+    return (
+      <div className="w-full h-48 overflow-hidden rounded-t-lg">
+        <img
+          src={imageUrl}
+          alt={wish.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('ERREUR: Impossible de charger l\'image du souhait');
+            console.error('- ID du souhait:', wish.id);
+            console.error('- URL originale:', wish.cover_image);
+            console.error('- URL générée:', imageUrl);
+            console.error('- Bucket utilisé:', ALBUM_THUMBNAILS_BUCKET);
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+          onLoad={() => {
+            console.log('SUCCESS: Image du souhait chargée avec succès');
+            console.log('- ID du souhait:', wish.id);
+            console.log('- URL:', imageUrl);
+          }}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -173,23 +209,7 @@ const Wishes = () => {
             ) : (
               wishes.map((wish) => (
                 <Card key={wish.id} className="hover:shadow-lg transition-shadow">
-                  {wish.cover_image && (
-                    <div className="w-full h-48 overflow-hidden rounded-t-lg">
-                      <img
-                        src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
-                        alt={wish.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('Erreur de chargement de l\'image:', wish.cover_image);
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                        onLoad={() => {
-                          console.log('Image de souhait chargée:', wish.cover_image);
-                        }}
-                      />
-                    </div>
-                  )}
+                  {renderWishImage(wish)}
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-xl text-tranches-charcoal">

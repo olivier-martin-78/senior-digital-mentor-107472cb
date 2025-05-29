@@ -69,10 +69,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
-  const [uploadedThumbnailUrl, setUploadedThumbnailUrl] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   
   const fetchWishAlbums = useCallback(async () => {
     try {
@@ -169,20 +167,18 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
     try {
       setUploadingThumbnail(true);
+      console.log('Début de l\'upload de la vignette...');
+      
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
-      const thumbnailUrl = await uploadAlbumThumbnail(file, wishId);
+      const uploadedUrl = await uploadAlbumThumbnail(file, wishId);
       
-      // Stocker l'URL permanente
-      setUploadedThumbnailUrl(thumbnailUrl);
-      form.setValue('thumbnail', thumbnailUrl);
+      console.log('URL de la vignette uploadée:', uploadedUrl);
       
-      // Créer un aperçu local temporaire pour l'affichage immédiat
-      const localPreviewUrl = URL.createObjectURL(file);
-      setThumbnailPreview(localPreviewUrl);
-      setThumbnailFile(file);
+      // Utiliser directement l'URL permanente pour l'aperçu ET le formulaire
+      setThumbnailUrl(uploadedUrl);
+      form.setValue('thumbnail', uploadedUrl);
       
-      console.log('Vignette uploadée avec succès:', thumbnailUrl);
-      console.log('Aperçu local créé:', localPreviewUrl);
+      console.log('Vignette uploadée et URL définie:', uploadedUrl);
       
       toast({
         title: 'Vignette téléchargée !',
@@ -202,33 +198,19 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
   // Gestionnaire pour supprimer la vignette
   const handleRemoveThumbnail = () => {
-    // Nettoyer l'URL blob locale si elle existe
-    if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
-      URL.revokeObjectURL(thumbnailPreview);
-    }
-    setThumbnailFile(null);
-    setThumbnailPreview(null);
-    setUploadedThumbnailUrl(null);
+    setThumbnailUrl(null);
     form.setValue('thumbnail', '');
+    console.log('Vignette supprimée');
   };
 
   // Effet pour charger la vignette existante
   useEffect(() => {
     if (wishToEdit?.cover_image) {
-      setThumbnailPreview(wishToEdit.cover_image);
-      setUploadedThumbnailUrl(wishToEdit.cover_image);
+      console.log('Chargement de la vignette existante:', wishToEdit.cover_image);
+      setThumbnailUrl(wishToEdit.cover_image);
     }
   }, [wishToEdit]);
 
-  // Nettoyer les URLs blob lors du démontage du composant
-  useEffect(() => {
-    return () => {
-      if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(thumbnailPreview);
-      }
-    };
-  }, [thumbnailPreview]);
-  
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
@@ -261,10 +243,10 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
         published: values.published,
-        cover_image: uploadedThumbnailUrl || values.thumbnail || null
+        cover_image: thumbnailUrl || null
       };
 
-      console.log('WishForm - Submitting data:', submissionData);
+      console.log('WishForm - Submitting data avec cover_image:', submissionData.cover_image);
 
       let data, error;
       
@@ -421,19 +403,19 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                         <FormLabel>Vignette du souhait (facultatif)</FormLabel>
                         <FormControl>
                           <div className="space-y-4">
-                            {thumbnailPreview && (
+                            {thumbnailUrl && (
                               <div className="relative inline-block">
                                 <img
-                                  src={thumbnailPreview}
+                                  src={thumbnailUrl}
                                   alt="Aperçu de la vignette"
                                   className="w-32 h-32 object-cover rounded-lg border"
                                   onError={(e) => {
-                                    console.error('Erreur de chargement de l\'image:', thumbnailPreview);
+                                    console.error('Erreur de chargement de l\'image dans le formulaire:', thumbnailUrl);
                                     const target = e.target as HTMLImageElement;
                                     target.src = '/placeholder.svg';
                                   }}
                                   onLoad={() => {
-                                    console.log('Image chargée avec succès:', thumbnailPreview);
+                                    console.log('Image chargée avec succès dans le formulaire:', thumbnailUrl);
                                   }}
                                 />
                                 <Button
