@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,10 +55,7 @@ const AdminDiary = () => {
       
       let query = supabase
         .from('diary_entries')
-        .select(`
-          *,
-          profiles!diary_entries_user_id_fkey(id, display_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // Filtrer par utilisateur sélectionné si défini
@@ -68,15 +64,44 @@ const AdminDiary = () => {
         query = query.eq('user_id', selectedUserId);
       }
 
-      const { data, error } = await query;
+      const { data: entriesData, error } = await query;
 
       if (error) {
         console.error('Erreur lors du chargement des entrées:', error);
         throw error;
       }
 
-      console.log('Entrées de journal chargées:', data?.length || 0);
-      setEntries(data || []);
+      // Récupérer les profils des utilisateurs séparément
+      if (entriesData && entriesData.length > 0) {
+        const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, avatar_url, created_at')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Erreur lors du chargement des profils:', profilesError);
+          throw profilesError;
+        }
+
+        // Associer les profils aux entrées
+        const entriesWithProfiles: DiaryEntryWithAuthor[] = entriesData.map(entry => ({
+          ...entry,
+          profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
+            id: entry.user_id,
+            email: 'Utilisateur inconnu',
+            display_name: null,
+            avatar_url: null,
+            created_at: new Date().toISOString()
+          }
+        }));
+
+        console.log('Entrées de journal chargées:', entriesWithProfiles.length);
+        setEntries(entriesWithProfiles);
+      } else {
+        setEntries([]);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des entrées de journal:', error);
       setEntries([]);
