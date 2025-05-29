@@ -14,7 +14,7 @@ import DateRangeFilter from '@/components/DateRangeFilter';
 import UserSelector from '@/components/UserSelector';
 
 const Diary = () => {
-  const { user, session } = useAuth();
+  const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,29 @@ const Diary = () => {
       let query = supabase
         .from('diary_entries')
         .select('*')
-        .eq('user_id', targetUserId)
         .order('entry_date', { ascending: false });
+
+      // Pour les admins, pas de restriction sur user_id si un utilisateur est sélectionné
+      if (hasRole('admin')) {
+        query = query.eq('user_id', targetUserId);
+      } else {
+        // Pour les non-admins, vérifier les permissions
+        if (selectedUserId && selectedUserId !== user?.id) {
+          // Vérifier si l'utilisateur a des permissions pour voir ce journal
+          const { data: permissions, error: permError } = await supabase
+            .from('diary_permissions')
+            .select('diary_owner_id')
+            .eq('permitted_user_id', user?.id)
+            .eq('diary_owner_id', selectedUserId);
+
+          if (permError || !permissions?.length) {
+            console.log('Pas de permissions pour voir ce journal');
+            setEntries([]);
+            return;
+          }
+        }
+        query = query.eq('user_id', targetUserId);
+      }
 
       if (searchTerm) {
         query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
@@ -80,6 +101,7 @@ const Diary = () => {
         tags: entry.tags || []
       }));
       
+      console.log('Entrées de journal chargées:', convertedEntries.length, 'pour utilisateur:', targetUserId);
       setEntries(convertedEntries);
     } catch (error) {
       console.error('Erreur lors du chargement des entrées:', error);
@@ -94,6 +116,7 @@ const Diary = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
+    console.log('Changement d\'utilisateur sélectionné:', userId);
     setSelectedUserId(userId);
   };
 
@@ -111,7 +134,9 @@ const Diary = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">
+            {selectedUserId && selectedUserId !== user?.id ? 'Journal utilisateur' : 'Mon Journal'}
+          </h1>
           <InviteUserDialog />
         </div>
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,161 +81,268 @@ const Recent = () => {
     try {
       setLoading(true);
       
-      // Construction des requêtes avec gestion des permissions
-      let blogQuery = supabase
-        .from('blog_posts')
-        .select('*, profiles(display_name, email)')
-        .eq('published', true)
-        .order('created_at', { ascending: false });
+      let allItems: any[] = [];
 
-      let diaryQuery = supabase
-        .from('diary_entries')
-        .select('*, profiles:user_id(display_name, email)')
-        .order('created_at', { ascending: false });
+      if (hasRole('admin')) {
+        // ADMIN : Voir toute l'activité récente sans restriction
+        console.log('Mode admin : récupération de toute l\'activité');
+        
+        // Articles de blog
+        let blogQuery = supabase
+          .from('blog_posts')
+          .select('*, profiles(display_name, email)')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
 
-      let commentsQuery = supabase
-        .from('blog_comments')
-        .select(`
-          *,
-          profiles:author_id(display_name, email, avatar_url),
-          blog_posts:post_id(id, title, cover_image)
-        `)
-        .order('created_at', { ascending: false });
+        // Journaux
+        let diaryQuery = supabase
+          .from('diary_entries')
+          .select('*, profiles:user_id(display_name, email)')
+          .order('created_at', { ascending: false });
 
-      // Requête pour les souhaits (tous les utilisateurs peuvent voir tous les souhaits publiés)
-      let wishQuery = supabase
-        .from('wish_posts')
-        .select('*, profiles(display_name, email)')
-        .eq('published', true)
-        .order('created_at', { ascending: false });
+        // Commentaires
+        let commentsQuery = supabase
+          .from('blog_comments')
+          .select(`
+            *,
+            profiles:author_id(display_name, email, avatar_url),
+            blog_posts:post_id(id, title, cover_image)
+          `)
+          .order('created_at', { ascending: false });
 
-      // Requête pour les histoires de vie
-      let lifeStoryQuery = supabase
-        .from('life_stories')
-        .select('*, profiles:user_id(display_name, email)')
-        .order('updated_at', { ascending: false });
+        // Souhaits
+        let wishQuery = supabase
+          .from('wish_posts')
+          .select('*, profiles(display_name, email)')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
 
-      // Gestion des permissions pour les non-administrateurs
-      if (!hasRole('admin')) {
-        // Pour les articles de blog, utiliser les permissions life_story
-        const { data: lifeStoryPermissions, error: permError } = await supabase
-          .from('life_story_permissions')
-          .select('story_owner_id')
-          .eq('permitted_user_id', user?.id);
+        // Histoires de vie
+        let lifeStoryQuery = supabase
+          .from('life_stories')
+          .select('*, profiles:user_id(display_name, email)')
+          .order('updated_at', { ascending: false });
 
-        if (permError) {
-          console.error('Erreur lors de la récupération des permissions life_story:', permError);
+        // Appliquer les filtres de date
+        if (startDate) {
+          blogQuery = blogQuery.gte('created_at', startDate);
+          diaryQuery = diaryQuery.gte('created_at', startDate);
+          commentsQuery = commentsQuery.gte('created_at', startDate);
+          wishQuery = wishQuery.gte('created_at', startDate);
+          lifeStoryQuery = lifeStoryQuery.gte('updated_at', startDate);
+        }
+        if (endDate) {
+          const endDateTime = endDate + 'T23:59:59';
+          blogQuery = blogQuery.lte('created_at', endDateTime);
+          diaryQuery = diaryQuery.lte('created_at', endDateTime);
+          commentsQuery = commentsQuery.lte('created_at', endDateTime);
+          wishQuery = wishQuery.lte('created_at', endDateTime);
+          lifeStoryQuery = lifeStoryQuery.lte('updated_at', endDateTime);
         }
 
-        // Créer une liste des utilisateurs autorisés pour les articles
+        const [blogResponse, diaryResponse, commentsResponse, wishResponse, lifeStoryResponse] = await Promise.all([
+          blogQuery.limit(10),
+          diaryQuery.limit(10),
+          commentsQuery.limit(10),
+          wishQuery.limit(10),
+          lifeStoryQuery.limit(10)
+        ]);
+
+        // Combiner tous les résultats
+        if (blogResponse.data) {
+          allItems.push(...blogResponse.data.map(item => ({ ...item, type: 'blog' })));
+        }
+        if (diaryResponse.data) {
+          allItems.push(...diaryResponse.data.map(item => ({ ...item, type: 'diary' })));
+        }
+        if (commentsResponse.data) {
+          allItems.push(...commentsResponse.data.map(comment => ({
+            ...comment,
+            type: 'comment',
+            title: `Commentaire sur "${comment.blog_posts?.title || 'Article'}"`,
+            post_id: comment.post_id,
+            post_title: comment.blog_posts?.title,
+            post_cover_image: comment.blog_posts?.cover_image
+          })));
+        }
+        if (wishResponse.data) {
+          allItems.push(...wishResponse.data.map(wish => ({ ...wish, type: 'wish' })));
+        }
+        if (lifeStoryResponse.data) {
+          allItems.push(...lifeStoryResponse.data.map(story => ({
+            ...story,
+            type: 'life_story',
+            title: `Histoire de vie: ${story.title}`,
+            created_at: story.updated_at
+          })));
+        }
+
+      } else {
+        // UTILISATEUR : Récupérer selon les permissions
+        console.log('Mode utilisateur : récupération selon les permissions');
+
+        // 1. Récupérer les permissions
+        const [albumPermissionsResult, lifeStoryPermissionsResult, diaryPermissionsResult] = await Promise.all([
+          supabase
+            .from('album_permissions')
+            .select('album_id')
+            .eq('user_id', user?.id),
+          supabase
+            .from('life_story_permissions')
+            .select('story_owner_id')
+            .eq('permitted_user_id', user?.id),
+          supabase
+            .from('diary_permissions')
+            .select('diary_owner_id')
+            .eq('permitted_user_id', user?.id)
+        ]);
+
+        console.log('Permissions récupérées:', {
+          albums: albumPermissionsResult.data?.length || 0,
+          lifeStory: lifeStoryPermissionsResult.data?.length || 0,
+          diary: diaryPermissionsResult.data?.length || 0
+        });
+
+        // 2. Construire les listes d'IDs autorisés
         const authorizedUserIds = [user?.id];
-        if (lifeStoryPermissions?.length) {
-          lifeStoryPermissions.forEach(p => {
+        const authorizedAlbumIds: string[] = [];
+        const authorizedDiaryUserIds = [user?.id];
+
+        // Albums autorisés
+        if (albumPermissionsResult.data?.length) {
+          authorizedAlbumIds.push(...albumPermissionsResult.data.map(p => p.album_id));
+        }
+
+        // Utilisateurs avec permissions life_story
+        if (lifeStoryPermissionsResult.data?.length) {
+          lifeStoryPermissionsResult.data.forEach(p => {
             if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
               authorizedUserIds.push(p.story_owner_id);
             }
           });
         }
 
-        console.log('Utilisateurs autorisés pour les articles:', authorizedUserIds);
-        blogQuery = blogQuery.in('author_id', authorizedUserIds);
-        commentsQuery = commentsQuery.in('author_id', authorizedUserIds);
+        // Utilisateurs avec permissions diary
+        if (diaryPermissionsResult.data?.length) {
+          diaryPermissionsResult.data.forEach(p => {
+            if (p.diary_owner_id && !authorizedDiaryUserIds.includes(p.diary_owner_id)) {
+              authorizedDiaryUserIds.push(p.diary_owner_id);
+            }
+          });
+        }
 
-        // Pour les journaux, seuls les propres journaux de l'utilisateur
-        diaryQuery = diaryQuery.eq('user_id', user?.id);
+        console.log('IDs autorisés:', {
+          users: authorizedUserIds,
+          albums: authorizedAlbumIds,
+          diaryUsers: authorizedDiaryUserIds
+        });
 
-        // Pour les histoires de vie, seulement celle de l'utilisateur
-        lifeStoryQuery = lifeStoryQuery.eq('user_id', user?.id);
+        // 3. Articles de blog (avec permissions albums + life_story)
+        let blogQuery = supabase
+          .from('blog_posts')
+          .select('*, profiles(display_name, email)')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
+
+        if (authorizedAlbumIds.length > 0) {
+          blogQuery = blogQuery.or(`author_id.in.(${authorizedUserIds.join(',')}),album_id.in.(${authorizedAlbumIds.join(',')})`);
+        } else {
+          blogQuery = blogQuery.in('author_id', authorizedUserIds);
+        }
+
+        // 4. Journaux (permissions diary)
+        let diaryQuery = supabase
+          .from('diary_entries')
+          .select('*, profiles:user_id(display_name, email)')
+          .in('user_id', authorizedDiaryUserIds)
+          .order('created_at', { ascending: false });
+
+        // 5. Commentaires (avec permissions albums + life_story)
+        let commentsQuery = supabase
+          .from('blog_comments')
+          .select(`
+            *,
+            profiles:author_id(display_name, email, avatar_url),
+            blog_posts:post_id(id, title, cover_image)
+          `)
+          .in('author_id', authorizedUserIds)
+          .order('created_at', { ascending: false });
+
+        // 6. Souhaits (tous les utilisateurs peuvent voir tous les souhaits publiés)
+        let wishQuery = supabase
+          .from('wish_posts')
+          .select('*, profiles(display_name, email)')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
+
+        // 7. Histoires de vie (seulement la sienne)
+        let lifeStoryQuery = supabase
+          .from('life_stories')
+          .select('*, profiles:user_id(display_name, email)')
+          .eq('user_id', user?.id)
+          .order('updated_at', { ascending: false });
+
+        // Appliquer les filtres de date
+        if (startDate) {
+          blogQuery = blogQuery.gte('created_at', startDate);
+          diaryQuery = diaryQuery.gte('created_at', startDate);
+          commentsQuery = commentsQuery.gte('created_at', startDate);
+          wishQuery = wishQuery.gte('created_at', startDate);
+          lifeStoryQuery = lifeStoryQuery.gte('updated_at', startDate);
+        }
+        if (endDate) {
+          const endDateTime = endDate + 'T23:59:59';
+          blogQuery = blogQuery.lte('created_at', endDateTime);
+          diaryQuery = diaryQuery.lte('created_at', endDateTime);
+          commentsQuery = commentsQuery.lte('created_at', endDateTime);
+          wishQuery = wishQuery.lte('created_at', endDateTime);
+          lifeStoryQuery = lifeStoryQuery.lte('updated_at', endDateTime);
+        }
+
+        const [blogResponse, diaryResponse, commentsResponse, wishResponse, lifeStoryResponse] = await Promise.all([
+          blogQuery.limit(10),
+          diaryQuery.limit(10),
+          commentsQuery.limit(10),
+          wishQuery.limit(10),
+          lifeStoryQuery.limit(10)
+        ]);
+
+        // Combiner tous les résultats
+        if (blogResponse.data) {
+          allItems.push(...blogResponse.data.map(item => ({ ...item, type: 'blog' })));
+        }
+        if (diaryResponse.data) {
+          allItems.push(...diaryResponse.data.map(item => ({ ...item, type: 'diary' })));
+        }
+        if (commentsResponse.data) {
+          allItems.push(...commentsResponse.data.map(comment => ({
+            ...comment,
+            type: 'comment',
+            title: `Commentaire sur "${comment.blog_posts?.title || 'Article'}"`,
+            post_id: comment.post_id,
+            post_title: comment.blog_posts?.title,
+            post_cover_image: comment.blog_posts?.cover_image
+          })));
+        }
+        if (wishResponse.data) {
+          allItems.push(...wishResponse.data.map(wish => ({ ...wish, type: 'wish' })));
+        }
+        if (lifeStoryResponse.data) {
+          allItems.push(...lifeStoryResponse.data.map(story => ({
+            ...story,
+            type: 'life_story',
+            title: `Histoire de vie: ${story.title}`,
+            created_at: story.updated_at
+          })));
+        }
       }
 
-      // Appliquer les filtres de date si définis
-      if (startDate) {
-        blogQuery = blogQuery.gte('created_at', startDate);
-        diaryQuery = diaryQuery.gte('created_at', startDate);
-        commentsQuery = commentsQuery.gte('created_at', startDate);
-        wishQuery = wishQuery.gte('created_at', startDate);
-        lifeStoryQuery = lifeStoryQuery.gte('updated_at', startDate);
-      }
-      if (endDate) {
-        const endDateTime = endDate + 'T23:59:59';
-        blogQuery = blogQuery.lte('created_at', endDateTime);
-        diaryQuery = diaryQuery.lte('created_at', endDateTime);
-        commentsQuery = commentsQuery.lte('created_at', endDateTime);
-        wishQuery = wishQuery.lte('created_at', endDateTime);
-        lifeStoryQuery = lifeStoryQuery.lte('updated_at', endDateTime);
-      }
+      // Trier par date et limiter
+      allItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const limitedItems = allItems.slice(0, 20);
 
-      const [blogResponse, diaryResponse, commentsResponse, wishResponse, lifeStoryResponse] = await Promise.all([
-        blogQuery.limit(10),
-        diaryQuery.limit(10),
-        commentsQuery.limit(10),
-        wishQuery.limit(10),
-        lifeStoryQuery.limit(10)
-      ]);
-
-      if (blogResponse.error) {
-        console.error('Erreur blog:', blogResponse.error);
-        throw blogResponse.error;
-      }
-      if (diaryResponse.error) {
-        console.error('Erreur diary:', diaryResponse.error);
-        throw diaryResponse.error;
-      }
-      if (commentsResponse.error) {
-        console.error('Erreur comments:', commentsResponse.error);
-        throw commentsResponse.error;
-      }
-      if (wishResponse.error) {
-        console.error('Erreur wish:', wishResponse.error);
-        throw wishResponse.error;
-      }
-      if (lifeStoryResponse.error) {
-        console.error('Erreur life story:', lifeStoryResponse.error);
-        throw lifeStoryResponse.error;
-      }
-
-      console.log('Réponses récupérées:', {
-        blog: blogResponse.data?.length || 0,
-        diary: diaryResponse.data?.length || 0,
-        comments: commentsResponse.data?.length || 0,
-        wishes: wishResponse.data?.length || 0,
-        lifeStories: lifeStoryResponse.data?.length || 0
-      });
-
-      // Formatter les différents types d'éléments
-      const formattedComments = commentsResponse.data.map(comment => ({
-        ...comment,
-        type: 'comment',
-        title: `Commentaire sur "${comment.blog_posts?.title || 'Article'}"`,
-        post_id: comment.post_id,
-        post_title: comment.blog_posts?.title,
-        post_cover_image: comment.blog_posts?.cover_image
-      }));
-
-      const formattedWishes = wishResponse.data.map(wish => ({
-        ...wish,
-        type: 'wish',
-        title: wish.title
-      }));
-
-      const formattedLifeStories = lifeStoryResponse.data.map(story => ({
-        ...story,
-        type: 'life_story',
-        title: `Histoire de vie: ${story.title}`,
-        created_at: story.updated_at // Utiliser updated_at pour le tri
-      }));
-
-      // Combiner et trier par date
-      const allItems = [
-        ...blogResponse.data.map(item => ({ ...item, type: 'blog' })),
-        ...diaryResponse.data.map(item => ({ ...item, type: 'diary' })),
-        ...formattedComments,
-        ...formattedWishes,
-        ...formattedLifeStories
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      console.log('Total d\'éléments combinés:', allItems.length);
-      setRecentItems(allItems.slice(0, 20));
+      console.log('Total d\'éléments récents:', limitedItems.length);
+      setRecentItems(limitedItems);
     } catch (error) {
       console.error('Erreur lors du chargement des éléments récents:', error);
       setRecentItems([]);

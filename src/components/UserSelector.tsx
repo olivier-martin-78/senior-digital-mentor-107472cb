@@ -51,10 +51,12 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
 
       // Si l'utilisateur est admin, charger tous les utilisateurs
       if (hasRole('admin')) {
+        console.log('Mode admin : chargement de tous les utilisateurs');
         const { data: allProfiles, error } = await supabase
           .from('profiles')
           .select('id, display_name, email')
-          .neq('id', user.id);
+          .neq('id', user.id)
+          .order('display_name');
 
         if (error) {
           console.error('Erreur lors du chargement de tous les profils:', error);
@@ -177,12 +179,21 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
     return null;
   }
 
+  const handleUserChange = (value: string) => {
+    console.log('UserSelector - Changement d\'utilisateur:', value);
+    if (value === user?.id) {
+      onUserChange(null); // Réinitialiser à l'utilisateur actuel
+    } else {
+      onUserChange(value);
+    }
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <User className="h-4 w-4 text-gray-500" />
       <Select
         value={selectedUserId || user?.id || ''}
-        onValueChange={onUserChange}
+        onValueChange={handleUserChange}
         disabled={loading}
       >
         <SelectTrigger className="w-64">
