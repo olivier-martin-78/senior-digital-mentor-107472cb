@@ -37,20 +37,25 @@ const Diary = () => {
     try {
       setLoading(true);
       
-      // Déterminer l'utilisateur cible
+      // Déterminer l'utilisateur cible - CORRECTION PRINCIPALE
       let targetUserId = selectedUserId || user.id;
       
-      console.log('Chargement des entrées pour utilisateur:', targetUserId, 'Admin mode:', hasRole('admin'), 'Selected:', selectedUserId);
+      console.log('Diary - Chargement des entrées:', {
+        currentUserId: user.id,
+        selectedUserId: selectedUserId,
+        targetUserId: targetUserId,
+        isAdmin: hasRole('admin')
+      });
       
       let query = supabase
         .from('diary_entries')
         .select('*')
         .order('entry_date', { ascending: false });
 
-      // Logique des permissions
+      // Logique des permissions - CORRECTION PRINCIPALE
       if (hasRole('admin')) {
         // Les admins peuvent voir toutes les entrées de n'importe quel utilisateur
-        console.log('Mode admin - chargement pour utilisateur:', targetUserId);
+        console.log('Diary - Mode admin - chargement pour utilisateur:', targetUserId);
         query = query.eq('user_id', targetUserId);
       } else {
         // Pour les non-admins
@@ -63,7 +68,7 @@ const Diary = () => {
             .eq('diary_owner_id', selectedUserId);
 
           if (permError || !permissions?.length) {
-            console.log('Pas de permissions pour voir ce journal');
+            console.log('Diary - Pas de permissions pour voir ce journal');
             setEntries([]);
             setLoading(false);
             return;
@@ -110,10 +115,10 @@ const Diary = () => {
         tags: entry.tags || []
       }));
       
-      console.log('Entrées de journal chargées:', convertedEntries.length, 'pour utilisateur:', targetUserId);
+      console.log('Diary - Entrées de journal chargées:', convertedEntries.length, 'pour utilisateur:', targetUserId);
       setEntries(convertedEntries);
     } catch (error) {
-      console.error('Erreur lors du chargement des entrées:', error);
+      console.error('Diary - Erreur lors du chargement des entrées:', error);
       setEntries([]);
     } finally {
       setLoading(false);
@@ -126,7 +131,7 @@ const Diary = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
-    console.log('Changement d\'utilisateur sélectionné vers:', userId);
+    console.log('Diary - Changement d\'utilisateur sélectionné vers:', userId);
     setSelectedUserId(userId);
   };
 

@@ -57,12 +57,12 @@ serve(async (req: Request) => {
       emailContent += `<p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}">Voir la pièce jointe</a></p>`;
     }
     
-    console.log('Envoi de l\'email à contact@senior-digital-mentor.com');
+    console.log('Envoi de l\'email de notification à contact@senior-digital-mentor.com');
     
-    // Envoyer l'email à l'adresse fixe
+    // Envoyer l'email de notification à l'adresse fixe - CORRECTION PRINCIPALE
     const notificationResult = await resend.emails.send({
       from: 'Tranches de vie <contact@tranches-de-vie.com>',
-      to: 'contact@senior-digital-mentor.com',
+      to: 'contact@senior-digital-mentor.com', // ADRESSE FIXE CORRIGÉE
       subject: emailSubject,
       html: emailContent,
       reply_to: email,
@@ -71,6 +71,7 @@ serve(async (req: Request) => {
     console.log('Résultat notification:', notificationResult);
     
     // Envoyer un email de confirmation à l'expéditeur
+    console.log('Envoi de l\'email de confirmation à:', email);
     const confirmationResult = await resend.emails.send({
       from: 'Tranches de vie <contact@tranches-de-vie.com>',
       to: email,

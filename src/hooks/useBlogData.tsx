@@ -19,6 +19,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
   const fetchPosts = async () => {
     try {
       setLoading(true);
+      console.log('useBlogData - Début fetchPosts pour user:', user?.id, 'selectedUserId:', selectedUserId);
       
       let query = supabase
         .from('blog_posts')
@@ -31,12 +32,12 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       // Gestion des permissions pour les posts
       if (hasRole('admin')) {
         // Les admins voient tout (publié et non publié)
+        console.log('useBlogData - Mode admin: voir tous les posts');
         if (selectedUserId) {
           query = query.eq('author_id', selectedUserId);
         }
       } else {
-        // Pour les non-admins, seuls les posts publiés ET autorisés
-        query = query.eq('published', true);
+        console.log('useBlogData - Mode utilisateur normal');
         
         if (selectedUserId && selectedUserId !== user?.id) {
           // Vérifier les permissions life_story pour cet utilisateur
@@ -47,14 +48,15 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             .eq('story_owner_id', selectedUserId);
 
           if (permError || !permissions?.length) {
-            console.log('Pas de permissions pour voir les articles de cet utilisateur');
+            console.log('useBlogData - Pas de permissions pour voir les articles de cet utilisateur');
             setPosts([]);
             return;
           }
           
-          query = query.eq('author_id', selectedUserId);
+          // Voir seulement les posts publiés de cet utilisateur
+          query = query.eq('author_id', selectedUserId).eq('published', true);
         } else {
-          // Récupérer les permissions album ET life_story
+          // Récupérer ses propres posts (publiés ET non publiés) + posts autorisés des autres
           const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
             supabase
               .from('album_permissions')
@@ -80,18 +82,31 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           // Récupérer les albums autorisés
           const authorizedAlbumIds = albumPermissions.map(p => p.album_id).filter(Boolean);
 
-          console.log('Utilisateurs autorisés:', authorizedUserIds);
-          console.log('Albums autorisés:', authorizedAlbumIds);
+          console.log('useBlogData - Utilisateurs autorisés:', authorizedUserIds);
+          console.log('useBlogData - Albums autorisés:', authorizedAlbumIds);
 
           // Construire la requête avec les permissions
+          let filterConditions = [];
+          
+          // Ses propres posts (publiés ET non publiés)
+          filterConditions.push(`author_id.eq.${user?.id}`);
+          
+          // Posts publiés des autres utilisateurs autorisés
+          const otherAuthorizedUsers = authorizedUserIds.filter(id => id !== user?.id);
+          if (otherAuthorizedUsers.length > 0) {
+            filterConditions.push(`and(author_id.in.(${otherAuthorizedUsers.join(',')}),published.eq.true)`);
+          }
+          
+          // Posts dans des albums autorisés (seulement publiés)
           if (authorizedAlbumIds.length > 0) {
-            // Posts de l'utilisateur OU posts dans des albums autorisés OU posts des utilisateurs autorisés
-            const userFilter = `author_id.in.(${authorizedUserIds.join(',')})`;
-            const albumFilter = `album_id.in.(${authorizedAlbumIds.join(',')})`;
-            query = query.or(`${userFilter},${albumFilter}`);
+            filterConditions.push(`and(album_id.in.(${authorizedAlbumIds.join(',')}),published.eq.true)`);
+          }
+
+          if (filterConditions.length > 0) {
+            query = query.or(filterConditions.join(','));
           } else {
-            // Seulement les posts des utilisateurs autorisés
-            query = query.in('author_id', authorizedUserIds);
+            // Fallback: seulement ses propres posts
+            query = query.eq('author_id', user?.id);
           }
         }
       }
@@ -115,10 +130,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       const { data, error } = await query;
 
       if (error) throw error;
-      console.log('Posts récupérés:', data?.length || 0);
+      console.log('useBlogData - Posts récupérés:', data?.length || 0);
       setPosts(data || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des articles:', error);
+      console.error('useBlogData - Erreur lors du chargement des articles:', error);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -127,6 +142,8 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
   const fetchAlbums = async () => {
     try {
+      console.log('useBlogData - Début fetchAlbums');
+      
       let query = supabase
         .from('blog_albums')
         .select(`
@@ -138,11 +155,13 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       // Gestion des permissions pour les albums
       if (hasRole('admin')) {
         // Les admins voient tous les albums
+        console.log('useBlogData - Admin: voir tous les albums');
         if (selectedUserId) {
           query = query.eq('author_id', selectedUserId);
         }
       } else {
-        // Pour les non-admins
+        console.log('useBlogData - Utilisateur normal: filtrage par permissions');
+        
         if (selectedUserId && selectedUserId !== user?.id) {
           // Vérifier les permissions life_story pour cet utilisateur
           const { data: permissions, error: permError } = await supabase
@@ -152,7 +171,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             .eq('story_owner_id', selectedUserId);
 
           if (permError || !permissions?.length) {
-            console.log('Pas de permissions pour voir les albums de cet utilisateur');
+            console.log('useBlogData - Pas de permissions pour voir les albums de cet utilisateur');
             setAlbums([]);
             return;
           }
@@ -185,29 +204,25 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           // Récupérer les albums autorisés directement
           const authorizedAlbumIds = albumPermissions.map(p => p.album_id).filter(Boolean);
 
-          // Récupérer les auteurs d'albums autorisés via permissions
-          const albumAuthorIds = albumPermissions
-            .map(p => p.blog_albums?.author_id)
-            .filter(Boolean);
-          
-          albumAuthorIds.forEach(authorId => {
-            if (!authorizedUserIds.includes(authorId)) {
-              authorizedUserIds.push(authorId);
-            }
-          });
-
-          console.log('Albums - Utilisateurs autorisés:', authorizedUserIds);
-          console.log('Albums - IDs d\'albums autorisés:', authorizedAlbumIds);
+          console.log('useBlogData - Albums - Utilisateurs autorisés:', authorizedUserIds);
+          console.log('useBlogData - Albums - IDs d\'albums autorisés:', authorizedAlbumIds);
 
           // Construire la requête avec les permissions
+          let filterConditions = [];
+          
+          // Albums de l'utilisateur et des utilisateurs autorisés
+          filterConditions.push(`author_id.in.(${authorizedUserIds.join(',')})`);
+          
+          // Albums autorisés directement
           if (authorizedAlbumIds.length > 0) {
-            // Albums de l'utilisateur OU albums autorisés OU albums des utilisateurs autorisés
-            const userFilter = `author_id.in.(${authorizedUserIds.join(',')})`;
-            const albumFilter = `id.in.(${authorizedAlbumIds.join(',')})`;
-            query = query.or(`${userFilter},${albumFilter}`);
+            filterConditions.push(`id.in.(${authorizedAlbumIds.join(',')})`);
+          }
+
+          if (filterConditions.length > 0) {
+            query = query.or(filterConditions.join(','));
           } else {
-            // Seulement les albums des utilisateurs autorisés
-            query = query.in('author_id', authorizedUserIds);
+            // Fallback: seulement ses propres albums
+            query = query.eq('author_id', user?.id);
           }
         }
       }
@@ -215,10 +230,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       const { data, error } = await query;
 
       if (error) throw error;
-      console.log('Albums récupérés:', data?.length || 0);
+      console.log('useBlogData - Albums récupérés:', data?.length || 0);
       setAlbums(data || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des albums:', error);
+      console.error('useBlogData - Erreur lors du chargement des albums:', error);
       setAlbums([]);
     }
   };

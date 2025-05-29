@@ -26,26 +26,30 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
 
   // Un post est visible si :
   // - Il est publié ET (l'utilisateur a les permissions OU c'est son propre post)
-  // - OU si l'utilisateur est l'auteur (même non publié)
+  // - OU si l'utilisateur est l'auteur (même non publié) - CORRECTION PRINCIPALE
   // - OU si l'utilisateur est admin
   const isVisible = post.published || 
                    (user && post.author_id === user.id) || 
                    hasRole('admin');
   
-  if (!isVisible) return null;
-
-  console.log('BlogPostCard data:', {
+  console.log('BlogPostCard - Vérification visibilité:', {
     postId: post.id,
     title: post.title,
     published: post.published,
-    coverImage: post.cover_image,
-    albumId: post.album_id,
-    albumThumbnail: albums.find(a => a.id === post.album_id)?.thumbnail_url,
-    postImage: postImages[post.id],
+    authorId: post.author_id,
+    currentUserId: user?.id,
+    isAuthor: user && post.author_id === user.id,
+    isAdmin: hasRole('admin'),
+    isVisible
   });
+  
+  if (!isVisible) {
+    console.log('BlogPostCard - Post non visible, ignoré');
+    return null;
+  }
 
   return (
-    <Card className={`overflow-hidden ${!post.published ? 'border-orange-300' : ''}`}>
+    <Card className={`overflow-hidden ${!post.published ? 'border-orange-300 bg-orange-50' : ''}`}>
       <div className="relative w-full h-40 bg-gray-100">
         {post.album_id ? (
           <AlbumThumbnail 
@@ -78,7 +82,11 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
         </CardTitle>
         <CardDescription>
           {post.profiles?.display_name || 'Utilisateur'} • {formatDate(post.created_at)}
-          {!post.published && ' • Brouillon'}
+          {!post.published && (
+            <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded">
+              Brouillon
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,7 +96,9 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       </CardContent>
       <CardFooter>
         <Button asChild variant="outline">
-          <Link to={`/blog/${post.id}`}>Lire la suite</Link>
+          <Link to={`/blog/${post.id}`}>
+            {!post.published && user && post.author_id === user.id ? 'Modifier/Publier' : 'Lire la suite'}
+          </Link>
         </Button>
       </CardFooter>
     </Card>
