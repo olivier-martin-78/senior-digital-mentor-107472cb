@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { CalendarIcon, Upload } from 'lucide-react';
+import { CalendarIcon, Upload, Image, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -34,13 +34,14 @@ import { WishAlbum, WishPost } from '@/types/supabase';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WishAlbumSelector from '@/components/WishAlbumSelector';
+import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 
 // Props type for the WishForm component
 interface WishFormProps {
   wishToEdit?: WishPost;
 }
 
-// Schéma de validation pour le formulaire
+// Schéma de validation pour le formulaire - Ajout du champ thumbnail
 const formSchema = z.object({
   firstName: z.string().min(1, "Le prénom est requis"),
   email: z.string().email("Email invalide").optional(),
@@ -56,7 +57,8 @@ const formSchema = z.object({
   offering: z.string().optional(),
   attachmentUrl: z.string().optional(),
   albumId: z.string().optional(),
-  published: z.boolean().default(false)
+  published: z.boolean().default(false),
+  thumbnail: z.string().optional()
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,6 +69,9 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   
   const fetchWishAlbums = useCallback(async () => {
     try {
@@ -116,7 +121,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         offering: wishToEdit.offering || '',
         attachmentUrl: wishToEdit.attachment_url || '',
         albumId: wishToEdit.album_id || 'none',
-        published: wishToEdit.published || false
+        published: wishToEdit.published || false,
+        thumbnail: wishToEdit.cover_image || ''
       };
     }
     
@@ -134,7 +140,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       offering: '',
       attachmentUrl: '',
       albumId: 'none',
-      published: false
+      published: false,
+      thumbnail: ''
     };
   };
   
@@ -147,6 +154,56 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const isAdmin = useAuth().hasRole('admin');
   const isEditor = useAuth().hasRole('editor');
   const canPublish = isAdmin || isEditor;
+  
+  // Gestionnaire pour le téléchargement de la vignette
+  const handleThumbnailUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un fichier image.',
+      });
+      return;
+    }
+
+    try {
+      setUploadingThumbnail(true);
+      const wishId = wishToEdit?.id || `wish-${Date.now()}`;
+      const thumbnailUrl = await uploadAlbumThumbnail(file, wishId);
+      
+      form.setValue('thumbnail', thumbnailUrl);
+      setThumbnailPreview(URL.createObjectURL(file));
+      setThumbnailFile(file);
+      
+      toast({
+        title: 'Vignette téléchargée !',
+        description: 'La vignette a été téléchargée avec succès.',
+      });
+    } catch (error: any) {
+      console.error('Erreur lors du téléchargement de la vignette:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: error.message || 'Erreur lors du téléchargement de la vignette.',
+      });
+    } finally {
+      setUploadingThumbnail(false);
+    }
+  };
+
+  // Gestionnaire pour supprimer la vignette
+  const handleRemoveThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    form.setValue('thumbnail', '');
+  };
+
+  // Effet pour charger la vignette existante
+  useEffect(() => {
+    if (wishToEdit?.cover_image) {
+      setThumbnailPreview(wishToEdit.cover_image);
+    }
+  }, [wishToEdit]);
   
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -179,7 +236,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         offering: values.offering || null,
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
-        published: values.published
+        published: values.published,
+        cover_image: values.thumbnail || null
       };
 
       console.log('WishForm - Submitting data:', submissionData);
@@ -321,7 +379,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                   </div>
                 </div>
                 
-                {/* Section 2: Nature de la demande */}
+                {/* Section 2: Nature de la demande avec vignette */}
                 <div className="space-y-6">
                   <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
                     <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
@@ -329,6 +387,67 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                     </span>
                     Nature de la demande
                   </h2>
+                  
+                  {/* Champ vignette */}
+                  <FormField
+                    control={form.control}
+                    name="thumbnail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vignette du souhait (facultatif)</FormLabel>
+                        <FormControl>
+                          <div className="space-y-4">
+                            {thumbnailPreview && (
+                              <div className="relative inline-block">
+                                <img
+                                  src={thumbnailPreview}
+                                  alt="Aperçu de la vignette"
+                                  className="w-32 h-32 object-cover rounded-lg border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute -top-2 -right-2"
+                                  onClick={handleRemoveThumbnail}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleThumbnailUpload(file);
+                                  }
+                                }}
+                                disabled={uploadingThumbnail}
+                                className="hidden"
+                                id="thumbnail-upload"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => document.getElementById('thumbnail-upload')?.click()}
+                                disabled={uploadingThumbnail}
+                              >
+                                <Image className="h-4 w-4 mr-2" />
+                                {uploadingThumbnail ? 'Téléchargement...' : 'Ajouter une vignette'}
+                              </Button>
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Ajoutez une image pour illustrer votre souhait (formats supportés: JPG, PNG, GIF)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
                   <FormField
                     control={form.control}

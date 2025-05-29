@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,7 @@ import { Search, Plus } from 'lucide-react';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
+import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 
 const Wishes = () => {
   const { user, hasRole } = useAuth();
@@ -171,6 +173,19 @@ const Wishes = () => {
             ) : (
               wishes.map((wish) => (
                 <Card key={wish.id} className="hover:shadow-lg transition-shadow">
+                  {wish.cover_image && (
+                    <div className="w-full h-48 overflow-hidden rounded-t-lg">
+                      <img
+                        src={getThumbnailUrlSync(wish.cover_image)}
+                        alt={wish.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-xl text-tranches-charcoal">
