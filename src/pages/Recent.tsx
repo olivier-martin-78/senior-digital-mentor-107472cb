@@ -208,44 +208,56 @@ const Recent = () => {
   const renderItemImage = (item: RecentItem) => {
     // Pour les commentaires, pas d'image
     if (item.type === 'comment') {
+      console.log('Recent - Pas d\'image pour commentaire:', item.id);
       return null;
     }
 
     let imageUrl = '';
+    let bucket = '';
+    let imagePath = '';
 
     // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
     if (item.type === 'diary' && item.media_url) {
+      bucket = 'diary_media';
+      imagePath = item.media_url;
       console.log('Recent - Traitement image journal - ID:', item.id, 'media_url:', item.media_url);
-      
-      if (item.media_url.startsWith('http')) {
-        imageUrl = item.media_url;
-        console.log('Recent - URL complète détectée pour journal:', imageUrl);
-      } else {
-        const { data } = supabase.storage
-          .from('diary_media')
-          .getPublicUrl(item.media_url);
-        imageUrl = data?.publicUrl || '';
-        console.log('Recent - URL générée pour journal:', imageUrl);
-      }
     }
     // Pour les souhaits et blogs, utiliser cover_image avec le bucket album-thumbnails
     else if ((item.type === 'wish' || item.type === 'blog') && item.cover_image) {
+      bucket = 'album-thumbnails';
+      imagePath = item.cover_image;
       console.log('Recent - Traitement image', item.type, '- ID:', item.id, 'cover_image:', item.cover_image);
-      
-      if (item.cover_image.startsWith('http')) {
-        imageUrl = item.cover_image;
-        console.log('Recent - URL complète détectée pour', item.type, ':', imageUrl);
-      } else {
-        const { data } = supabase.storage
-          .from('album-thumbnails')
-          .getPublicUrl(item.cover_image);
-        imageUrl = data?.publicUrl || '';
-        console.log('Recent - URL générée pour', item.type, ':', imageUrl);
-      }
+    }
+    
+    if (!imagePath) {
+      console.log('Recent - Pas d\'image pour:', item.type, item.id);
+      return null;
+    }
+    
+    // Si c'est déjà une URL complète, l'utiliser directement
+    if (imagePath.startsWith('http')) {
+      imageUrl = imagePath;
+      console.log('Recent - URL complète détectée pour', item.type, ':', imageUrl);
+    } else {
+      // Sinon, générer l'URL depuis le chemin
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(imagePath);
+      imageUrl = data?.publicUrl || '';
+      console.log('Recent - URL générée pour', item.type, ':', {
+        bucket,
+        chemin: imagePath,
+        urlGeneree: imageUrl
+      });
     }
     
     if (!imageUrl) {
-      console.log('Recent - Pas d\'image pour:', item.type, item.id);
+      console.error('Recent - Impossible de générer l\'URL pour:', {
+        type: item.type,
+        id: item.id,
+        bucket,
+        imagePath
+      });
       return null;
     }
 
@@ -259,13 +271,21 @@ const Recent = () => {
             console.error('Recent - ERREUR chargement image:');
             console.error('- Type:', item.type);
             console.error('- ID:', item.id);
-            console.error('- Path original:', item.cover_image || item.media_url);
+            console.error('- Bucket:', bucket);
+            console.error('- Path original:', imagePath);
             console.error('- URL finale:', imageUrl);
+            console.error('- Erreur:', e);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('Recent - SUCCESS image chargée pour:', item.type, item.id);
+            console.log('Recent - SUCCESS image chargée pour:', {
+              type: item.type,
+              id: item.id,
+              bucket,
+              chemin: imagePath,
+              url: imageUrl
+            });
           }}
         />
       </div>

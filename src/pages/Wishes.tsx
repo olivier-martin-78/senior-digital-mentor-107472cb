@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,7 +110,7 @@ const Wishes = () => {
       return null;
     }
 
-    console.log('Wishes - Traitement image - ID:', wish.id, 'chemin/URL:', wish.cover_image);
+    console.log('Wishes - Traitement image - ID:', wish.id, 'chemin dans DB:', wish.cover_image);
     
     let imageUrl = '';
     
@@ -124,7 +125,10 @@ const Wishes = () => {
         .getPublicUrl(wish.cover_image);
       
       imageUrl = data?.publicUrl || '';
-      console.log('Wishes - URL générée depuis chemin:', imageUrl);
+      console.log('Wishes - URL générée depuis chemin:', {
+        chemin: wish.cover_image,
+        urlGeneree: imageUrl
+      });
     }
 
     if (!imageUrl) {
@@ -143,11 +147,16 @@ const Wishes = () => {
             console.error('- ID souhait:', wish.id);
             console.error('- Chemin original:', wish.cover_image);
             console.error('- URL finale:', imageUrl);
+            console.error('- Erreur:', e);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('Wishes - SUCCESS image chargée pour souhait:', wish.id);
+            console.log('Wishes - SUCCESS image chargée pour souhait:', {
+              id: wish.id,
+              chemin: wish.cover_image,
+              url: imageUrl
+            });
           }}
         />
       </div>
