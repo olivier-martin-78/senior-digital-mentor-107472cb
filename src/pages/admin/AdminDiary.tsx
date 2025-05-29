@@ -1,53 +1,25 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Loader2, Trash2, ChevronLeft, Search, Eye, Settings } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Eye, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
-import DiaryPermissions from '@/components/admin/DiaryPermissions';
-import UserSelector from '@/components/UserSelector';
-
-interface DiaryEntryAdmin {
-  id: string;
-  user_id: string;
-  title: string;
-  entry_date: string;
-  mood_rating: number | null;
-  created_at: string;
-  updated_at: string;
-  user_email?: string;
-  user_display_name?: string;
-  activities: string | null;
-  positive_things: string | null;
-  negative_things: string | null;
-}
-
-interface Profile {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
+import { DiaryEntry } from '@/types/diary';
 
 const AdminDiary = () => {
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const navigate = useNavigate();
+  const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [entries, setEntries] = useState<DiaryEntryAdmin[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<DiaryEntryAdmin | null>(null);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -55,352 +27,190 @@ const AdminDiary = () => {
       return;
     }
     
-    loadDiaryEntries();
-  }, [hasRole, navigate, selectedUserId]);
+    loadUsers();
+    loadEntries();
+  }, [hasRole, navigate]);
 
-  const loadDiaryEntries = async () => {
+  useEffect(() => {
+    loadEntries();
+  }, [selectedUserId]);
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .order('display_name');
+
+      if (error) throw error;
+      console.log('Utilisateurs chargés:', data?.length || 0);
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
+    }
+  };
+
+  const loadEntries = async () => {
     try {
       setLoading(true);
       
-      console.log('Loading diary entries for user:', selectedUserId);
-      
-      // Construction de la requête pour récupérer les entrées
       let query = supabase
         .from('diary_entries')
         .select(`
-          id,
-          user_id,
-          title,
-          entry_date,
-          mood_rating,
-          created_at,
-          updated_at,
-          activities,
-          positive_things,
-          negative_things
+          *,
+          profiles:user_id(id, display_name, email)
         `)
         .order('created_at', { ascending: false });
 
-      // Si un utilisateur spécifique est sélectionné, filtrer par cet utilisateur
+      // Filtrer par utilisateur sélectionné si défini
       if (selectedUserId) {
+        console.log('Filtrage par utilisateur:', selectedUserId);
         query = query.eq('user_id', selectedUserId);
-        console.log('Filtering by user_id:', selectedUserId);
       }
 
-      const { data: entriesData, error: entriesError } = await query;
+      const { data, error } = await query;
 
-      if (entriesError) {
-        console.error('Erreur Supabase (entrées):', entriesError);
-        throw new Error(`Erreur Supabase: ${entriesError.message} (code: ${entriesError.code})`);
+      if (error) {
+        console.error('Erreur lors du chargement des entrées:', error);
+        throw error;
       }
 
-      console.log('Raw diary entries data:', entriesData);
-
-      if (entriesData) {
-        // Récupérer tous les profils d'utilisateurs
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, email, display_name');
-
-        if (profilesError) {
-          console.error('Erreur Supabase (profils):', profilesError);
-          throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
-        }
-
-        console.log('Profiles data:', profilesData);
-
-        // Créer un dictionnaire de profils pour faciliter l'accès
-        const profilesMap: Record<string, Profile> = {};
-        if (profilesData) {
-          profilesData.forEach((profile) => {
-            profilesMap[profile.id] = profile;
-          });
-        }
-        
-        // Traitement des données pour ajouter les informations utilisateur
-        const formattedEntries = entriesData.map((entry: any) => {
-          const userProfile = profilesMap[entry.user_id];
-          
-          return {
-            ...entry,
-            user_email: userProfile?.email || 'Non disponible',
-            user_display_name: userProfile?.display_name || 'Utilisateur inconnu'
-          };
-        });
-        
-        console.log('Formatted entries:', formattedEntries);
-        setEntries(formattedEntries);
-      } else {
-        throw new Error('Aucune donnée reçue de l\'API');
-      }
-    } catch (error: any) {
-      console.error('Erreur complète:', error);
-      toast({
-        title: 'Erreur',
-        description: `Impossible de charger les entrées de journal : ${error.message}`,
-        variant: 'destructive',
-      });
+      console.log('Entrées de journal chargées:', data?.length || 0);
+      setEntries(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des entrées de journal:', error);
+      setEntries([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  const handleUserChange = (value: string) => {
+    console.log('Changement d\'utilisateur sélectionné:', value);
+    setSelectedUserId(value === 'all' ? '' : value);
   };
 
-  const handleDeleteClick = (entry: DiaryEntryAdmin) => {
-    setEntryToDelete(entry);
-    setDeleteDialogOpen(true);
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'dd MMMM yyyy à HH:mm', { locale: fr });
   };
 
-  const handlePermissionsClick = (userId: string, userName: string) => {
-    setSelectedUser({ id: userId, name: userName });
-    setPermissionsDialogOpen(true);
-  };
-
-  const handleUserChange = (userId: string | null) => {
-    console.log('User changed to:', userId);
-    setSelectedUserId(userId);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!entryToDelete) return;
-    
-    try {
-      setIsDeleting(true);
-      
-      const { error } = await supabase
-        .from('diary_entries')
-        .delete()
-        .eq('id', entryToDelete.id);
-      
-      if (error) throw error;
-      
-      setEntries(prev => prev.filter(entry => entry.id !== entryToDelete.id));
-      
-      toast({
-        title: 'Entrée supprimée',
-        description: `L'entrée "${entryToDelete.title}" a été supprimée avec succès`,
-      });
-      
-      setDeleteDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de supprimer l'entrée : ${error.message}`,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Filtrer les entrées selon le terme de recherche
-  const filteredEntries = entries.filter(entry => 
-    entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    entry.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.user_display_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getMoodEmoji = (rating: number | null) => {
-    if (!rating) return '❓';
-    if (rating <= 2) return '😞';
-    if (rating <= 4) return '😐';
-    if (rating <= 6) return '🙂';
-    if (rating <= 8) return '😊';
-    return '😍';
-  };
+  if (loading && entries.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center py-20">
+            <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
-      <div className="container mx-auto px-4 py-24">
-        <div className="mb-8 flex items-center">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mr-auto"
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Retour
-          </Button>
-          <h1 className="text-3xl font-serif text-tranches-charcoal">
-            Administration des journaux intimes
-          </h1>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-serif text-tranches-charcoal">Administration - Journaux</h1>
         </div>
 
-        <UserSelector
-          permissionType="diary"
-          selectedUserId={selectedUserId}
-          onUserChange={handleUserChange}
-          className="mb-6"
-        />
-
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-gray-600">
-              Total : {entries.length} entrées de journal
-              {selectedUserId && ` pour l'utilisateur sélectionné`}
-            </p>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="pl-8"
-              />
-            </div>
-          </div>
+        <div className="mb-6 flex items-center gap-2">
+          <User className="h-4 w-4 text-gray-500" />
+          <Select value={selectedUserId || 'all'} onValueChange={handleUserChange}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Tous les utilisateurs" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les utilisateurs</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.display_name || user.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedUserId && (
+            <Badge variant="secondary">
+              {users.find(u => u.id === selectedUserId)?.display_name || 
+               users.find(u => u.id === selectedUserId)?.email || 
+               'Utilisateur sélectionné'}
+            </Badge>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex justify-center my-10">
-            <Loader2 className="h-12 w-12 animate-spin text-tranches-sage" />
+          <div className="flex justify-center py-8">
+            <div className="animate-spin h-6 w-6 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
           </div>
+        ) : entries.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <p className="text-gray-500">
+                {selectedUserId 
+                  ? "Aucune entrée de journal trouvée pour cet utilisateur." 
+                  : "Aucune entrée de journal trouvée."}
+              </p>
+            </CardContent>
+          </Card>
         ) : (
-          <>
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Titre</TableHead>
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Date d'entrée</TableHead>
-                    <TableHead className="text-center">Humeur</TableHead>
-                    <TableHead>Dernière modification</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEntries.length > 0 ? (
-                    filteredEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.title}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span>{entry.user_display_name || entry.user_email || 'Utilisateur inconnu'}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePermissionsClick(
-                                entry.user_id, 
-                                entry.user_display_name || entry.user_email || 'Utilisateur inconnu'
-                              )}
-                              title="Gérer les permissions"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {entry.entry_date 
-                            ? format(new Date(entry.entry_date), "d MMMM yyyy", { locale: fr })
-                            : 'Non disponible'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-lg" title={`Humeur: ${entry.mood_rating || 'Non renseignée'}/10`}>
-                            {getMoodEmoji(entry.mood_rating)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {entry.updated_at 
-                            ? format(new Date(entry.updated_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-                            : 'Non disponible'}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <Link to={`/diary/${entry.id}`}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              Voir
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
-                            onClick={() => handleDeleteClick(entry)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Supprimer
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        {searchTerm 
-                          ? 'Aucune entrée ne correspond à votre recherche' 
-                          : selectedUserId 
-                            ? 'Aucune entrée de journal pour cet utilisateur'
-                            : 'Aucune entrée de journal n\'a été trouvée'}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Dialog de confirmation de suppression */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmer la suppression</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p>
-                    Êtes-vous sûr de vouloir supprimer l'entrée "{entryToDelete?.title}" ?
-                    <br />
-                    <span className="text-red-500 font-semibold">Cette action est irréversible.</span>
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    disabled={isDeleting}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteConfirm}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Suppression...
-                      </>
-                    ) : (
-                      'Supprimer'
+          <div className="grid gap-4">
+            {entries.map((entry) => (
+              <Card key={entry.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg font-medium text-tranches-charcoal">
+                      {entry.title}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/diary/${entry.id}`)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Voir
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {formatDate(entry.created_at)}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <strong>Auteur:</strong> {entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur inconnu'}
+                    </div>
+                    {entry.mood_rating && (
+                      <div className="flex items-center">
+                        <span className="text-sm mr-2">Humeur:</span>
+                        <div className="flex">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span 
+                              key={i} 
+                              className={`w-4 h-4 rounded-full mx-0.5 ${i < entry.mood_rating! ? 'bg-yellow-400' : 'bg-gray-200'}`}
+                            ></span>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Dialog de gestion des permissions */}
-            <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Gestion des permissions</DialogTitle>
-                </DialogHeader>
-                {selectedUser && (
-                  <DiaryPermissions
-                    diaryOwnerId={selectedUser.id}
-                    diaryOwnerName={selectedUser.name}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
-          </>
+                    {entry.tags && entry.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {entry.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

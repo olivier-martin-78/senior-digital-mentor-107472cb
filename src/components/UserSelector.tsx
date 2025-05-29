@@ -54,12 +54,11 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
         const { data: allProfiles, error } = await supabase
           .from('profiles')
           .select('id, display_name, email')
-          .neq('id', user.id); // Exclure l'utilisateur actuel car il est déjà ajouté
+          .neq('id', user.id);
 
         if (error) {
           console.error('Erreur lors du chargement de tous les profils:', error);
         } else if (allProfiles) {
-          // Transformer les profils en format permission pour la suite du traitement
           permissions = allProfiles.map(profile => ({
             profiles: profile,
             owner_id: profile.id
@@ -89,7 +88,6 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
             }));
           }
         } else if (permissionType === 'diary') {
-          // Pour le journal, vérifier à la fois les permissions diary ET life_story
           const [diaryPermsResult, lifeStoryPermsResult] = await Promise.all([
             supabase
               .from('diary_permissions')
@@ -118,7 +116,6 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
           const diaryPermissions = diaryPermsResult.data || [];
           const lifeStoryPermissions = lifeStoryPermsResult.data || [];
 
-          // Combiner les deux types de permissions
           const combinedPermissions = [
             ...diaryPermissions.map(p => ({
               ...p,
@@ -144,7 +141,6 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
       const userOptions: UserOption[] = [currentUserOption];
 
       if (permissions && permissions.length > 0) {
-        // Utiliser un Set pour éviter les doublons
         const seenUserIds = new Set([user.id]);
         
         permissions.forEach((permission: any) => {
@@ -162,7 +158,7 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
         });
       }
 
-      console.log('UserSelector - Utilisateurs disponibles:', userOptions);
+      console.log('UserSelector - Utilisateurs disponibles:', userOptions.length);
       setAvailableUsers(userOptions);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
@@ -176,7 +172,7 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
     }
   };
 
-  // Toujours afficher le sélecteur pour les admins, ou s'il y a plus d'un utilisateur
+  // Toujours afficher le sélecteur s'il y a plus d'un utilisateur OU si l'utilisateur est admin
   if (!hasRole('admin') && availableUsers.length <= 1) {
     return null;
   }

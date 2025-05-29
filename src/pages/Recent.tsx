@@ -81,7 +81,7 @@ const Recent = () => {
     try {
       setLoading(true);
       
-      // Construire les filtres de date
+      // Construction des requêtes avec gestion des permissions
       let blogQuery = supabase
         .from('blog_posts')
         .select('*, profiles(display_name, email)')
@@ -93,13 +93,6 @@ const Recent = () => {
         .select('*, profiles:user_id(display_name, email)')
         .order('created_at', { ascending: false });
 
-      // Pour les admins, voir tous les journaux avec les profils
-      // Pour les autres utilisateurs, voir seulement leurs propres journaux
-      if (!hasRole('admin')) {
-        diaryQuery = diaryQuery.eq('user_id', user?.id);
-      }
-        
-      // Ajouter une requête pour les commentaires récents
       let commentsQuery = supabase
         .from('blog_comments')
         .select(`
@@ -109,6 +102,63 @@ const Recent = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // Gestion des permissions pour les non-administrateurs
+      if (!hasRole('admin')) {
+        // Pour les articles de blog, utiliser les permissions life_story
+        const { data: lifeStoryPermissions, error: permError } = await supabase
+          .from('life_story_permissions')
+          .select('story_owner_id')
+          .eq('permitted_user_id', user?.id);
+
+        if (permError) {
+          console.error('Erreur lors de la récupération des permissions life_story:', permError);
+        }
+
+        // Créer une liste des utilisateurs autorisés pour les articles
+        const authorizedUserIds = [user?.id];
+        if (lifeStoryPermissions?.length) {
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
+              authorizedUserIds.push(p.story_owner_id);
+            }
+          });
+        }
+
+        console.log('Utilisateurs autorisés pour les articles:', authorizedUserIds);
+        blogQuery = blogQuery.in('author_id', authorizedUserIds);
+        commentsQuery = commentsQuery.in('author_id', authorizedUserIds);
+
+        // Pour les journaux, vérifier les permissions diary ET life_story
+        const { data: diaryPermissions, error: diaryPermError } = await supabase
+          .from('diary_permissions')
+          .select('diary_owner_id')
+          .eq('permitted_user_id', user?.id);
+
+        if (diaryPermError) {
+          console.error('Erreur lors de la récupération des permissions diary:', diaryPermError);
+        }
+
+        // Combiner les permissions diary et life_story pour les journaux
+        const diaryAuthorizedUserIds = [user?.id];
+        if (diaryPermissions?.length) {
+          diaryPermissions.forEach(p => {
+            if (p.diary_owner_id && !diaryAuthorizedUserIds.includes(p.diary_owner_id)) {
+              diaryAuthorizedUserIds.push(p.diary_owner_id);
+            }
+          });
+        }
+        if (lifeStoryPermissions?.length) {
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !diaryAuthorizedUserIds.includes(p.story_owner_id)) {
+              diaryAuthorizedUserIds.push(p.story_owner_id);
+            }
+          });
+        }
+
+        console.log('Utilisateurs autorisés pour les journaux:', diaryAuthorizedUserIds);
+        diaryQuery = diaryQuery.in('user_id', diaryAuthorizedUserIds);
+      }
+
       // Appliquer les filtres de date si définis
       if (startDate) {
         blogQuery = blogQuery.gte('created_at', startDate);
@@ -116,7 +166,6 @@ const Recent = () => {
         commentsQuery = commentsQuery.gte('created_at', startDate);
       }
       if (endDate) {
-        // Ajouter 23:59:59 à la date de fin pour inclure toute la journée
         const endDateTime = endDate + 'T23:59:59';
         blogQuery = blogQuery.lte('created_at', endDateTime);
         diaryQuery = diaryQuery.lte('created_at', endDateTime);
@@ -129,11 +178,24 @@ const Recent = () => {
         commentsQuery.limit(10)
       ]);
 
-      if (blogResponse.error) throw blogResponse.error;
-      if (diaryResponse.error) throw diaryResponse.error;
-      if (commentsResponse.error) throw commentsResponse.error;
+      if (blogResponse.error) {
+        console.error('Erreur blog:', blogResponse.error);
+        throw blogResponse.error;
+      }
+      if (diaryResponse.error) {
+        console.error('Erreur diary:', diaryResponse.error);
+        throw diaryResponse.error;
+      }
+      if (commentsResponse.error) {
+        console.error('Erreur comments:', commentsResponse.error);
+        throw commentsResponse.error;
+      }
 
-      console.log('Diary entries from query:', diaryResponse.data);
+      console.log('Réponses récupérées:', {
+        blog: blogResponse.data?.length || 0,
+        diary: diaryResponse.data?.length || 0,
+        comments: commentsResponse.data?.length || 0
+      });
 
       // Formatter les commentaires pour les inclure dans la liste
       const formattedComments = commentsResponse.data.map(comment => ({
@@ -152,10 +214,11 @@ const Recent = () => {
         ...formattedComments
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      console.log('All items combined:', allItems);
+      console.log('Total d\'éléments combinés:', allItems.length);
       setRecentItems(allItems.slice(0, 20));
     } catch (error) {
       console.error('Erreur lors du chargement des éléments récents:', error);
+      setRecentItems([]);
     } finally {
       setLoading(false);
     }

@@ -7,13 +7,15 @@ import { useBlogData } from '@/hooks/useBlogData';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import UserSelector from '@/components/UserSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Blog = () => {
+  const { user, hasRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(user?.id || null);
   
   const { 
     posts, 
