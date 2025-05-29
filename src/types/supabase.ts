@@ -91,6 +91,7 @@ export interface BlogMedia {
   media_url: string;
   media_type: string;
   created_at: string;
+  thumbnail_url: string | null;
 }
 
 export interface BlogComment {

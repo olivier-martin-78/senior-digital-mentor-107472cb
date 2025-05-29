@@ -137,6 +137,7 @@ export type Database = {
           media_type: string
           media_url: string
           post_id: string
+          thumbnail_url: string | null
         }
         Insert: {
           created_at?: string
@@ -144,6 +145,7 @@ export type Database = {
           media_type: string
           media_url: string
           post_id: string
+          thumbnail_url?: string | null
         }
         Update: {
           created_at?: string
@@ -151,6 +153,7 @@ export type Database = {
           media_type?: string
           media_url?: string
           post_id?: string
+          thumbnail_url?: string | null
         }
         Relationships: [
           {
