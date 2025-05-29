@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -106,19 +105,27 @@ const Wishes = () => {
 
   const renderWishImage = (wish: WishPost) => {
     if (!wish.cover_image) {
-      console.log('Wishes - Pas d\'image de couverture pour le souhait:', wish.id);
+      console.log('Wishes - Pas d\'image pour le souhait:', wish.id);
       return null;
     }
 
-    console.log('Wishes - Affichage image souhait - ID:', wish.id, 'Path:', wish.cover_image);
+    console.log('Wishes - Traitement image - ID:', wish.id, 'chemin/URL:', wish.cover_image);
     
-    // Générer l'URL publique depuis le bucket album-thumbnails
-    const { data } = supabase.storage
-      .from('album-thumbnails')
-      .getPublicUrl(wish.cover_image);
+    let imageUrl = '';
     
-    const imageUrl = data?.publicUrl;
-    console.log('Wishes - URL générée pour souhait:', imageUrl);
+    // Si c'est déjà une URL complète, l'utiliser directement
+    if (wish.cover_image.startsWith('http')) {
+      imageUrl = wish.cover_image;
+      console.log('Wishes - URL complète détectée:', imageUrl);
+    } else {
+      // Sinon, générer l'URL depuis le chemin dans album-thumbnails
+      const { data } = supabase.storage
+        .from('album-thumbnails')
+        .getPublicUrl(wish.cover_image);
+      
+      imageUrl = data?.publicUrl || '';
+      console.log('Wishes - URL générée depuis chemin:', imageUrl);
+    }
 
     if (!imageUrl) {
       console.error('Wishes - Impossible de générer l\'URL pour:', wish.cover_image);
@@ -132,17 +139,15 @@ const Wishes = () => {
           alt={wish.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            console.error('Wishes - ERREUR: Impossible de charger l\'image du souhait');
-            console.error('- ID du souhait:', wish.id);
-            console.error('- Path original:', wish.cover_image);
-            console.error('- URL générée:', imageUrl);
+            console.error('Wishes - ERREUR chargement image:');
+            console.error('- ID souhait:', wish.id);
+            console.error('- Chemin original:', wish.cover_image);
+            console.error('- URL finale:', imageUrl);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('Wishes - SUCCESS: Image du souhait chargée avec succès');
-            console.log('- ID du souhait:', wish.id);
-            console.log('- URL:', imageUrl);
+            console.log('Wishes - SUCCESS image chargée pour souhait:', wish.id);
           }}
         />
       </div>

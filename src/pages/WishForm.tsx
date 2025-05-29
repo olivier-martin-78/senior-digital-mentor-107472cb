@@ -153,7 +153,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const isEditor = useAuth().hasRole('editor');
   const canPublish = isAdmin || isEditor;
   
-  // Gestionnaire pour le téléchargement de la vignette - INSPIRÉ DU BLOG
+  // Gestionnaire pour le téléchargement de la vignette - CORRIGÉ SELON LE MODÈLE BLOG
   const handleThumbnailUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({
@@ -166,7 +166,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
     try {
       setUploadingThumbnail(true);
-      console.log('WishForm - Début de l\'upload de la vignette...');
+      console.log('WishForm - Upload de vignette - début...');
       
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
       const fileExt = file.name.split('.').pop();
@@ -184,15 +184,17 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       
       console.log("WishForm - Fichier uploadé avec succès, chemin:", fileName);
       
-      // Générer l'URL publique pour la prévisualisation ET sauvegarder le chemin
+      // Générer l'URL publique pour la prévisualisation
       const { data } = supabase.storage
         .from('album-thumbnails')
         .getPublicUrl(fileName);
       
       if (data?.publicUrl) {
-        console.log("WishForm - URL publique générée pour prévisualisation:", data.publicUrl);
+        console.log("WishForm - URL publique générée:", data.publicUrl);
         setThumbnailPreviewUrl(data.publicUrl);
-        form.setValue('thumbnail', fileName); // Sauvegarder le chemin, pas l'URL
+        // IMPORTANT: sauvegarder uniquement le chemin dans le formulaire
+        form.setValue('thumbnail', fileName);
+        console.log("WishForm - Chemin sauvé dans le formulaire:", fileName);
       }
       
       toast({
@@ -200,7 +202,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         description: 'La vignette a été téléchargée avec succès.',
       });
     } catch (error: any) {
-      console.error('WishForm - Erreur lors du téléchargement de la vignette:', error);
+      console.error('WishForm - Erreur lors du téléchargement:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -215,22 +217,28 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const handleRemoveThumbnail = () => {
     setThumbnailPreviewUrl(null);
     form.setValue('thumbnail', '');
-    console.log('WishForm - Vignette supprimée');
+    console.log('WishForm - Vignette supprimée du formulaire');
   };
 
   // Effet pour charger la vignette existante
   useEffect(() => {
     if (wishToEdit?.cover_image) {
-      console.log('WishForm - Chargement de la vignette existante:', wishToEdit.cover_image);
+      console.log('WishForm - Chargement vignette existante - chemin:', wishToEdit.cover_image);
       
-      // Générer l'URL publique pour l'affichage
-      const { data } = supabase.storage
-        .from('album-thumbnails')
-        .getPublicUrl(wishToEdit.cover_image);
-      
-      if (data?.publicUrl) {
-        console.log('WishForm - URL générée pour vignette existante:', data.publicUrl);
-        setThumbnailPreviewUrl(data.publicUrl);
+      // Si c'est déjà une URL complète, l'utiliser directement
+      if (wishToEdit.cover_image.startsWith('http')) {
+        console.log('WishForm - URL complète détectée, utilisation directe');
+        setThumbnailPreviewUrl(wishToEdit.cover_image);
+      } else {
+        // Sinon, générer l'URL depuis le chemin
+        const { data } = supabase.storage
+          .from('album-thumbnails')
+          .getPublicUrl(wishToEdit.cover_image);
+        
+        if (data?.publicUrl) {
+          console.log('WishForm - URL générée pour vignette existante:', data.publicUrl);
+          setThumbnailPreviewUrl(data.publicUrl);
+        }
       }
     }
   }, [wishToEdit]);
@@ -240,7 +248,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
     try {
       // Vérification si l'utilisateur est connecté
       if (!user) {
-        console.log('WishForm - No user authenticated');
+        console.log('WishForm - Utilisateur non connecté');
         toast({
           variant: 'destructive',
           title: 'Erreur',
@@ -267,10 +275,10 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
         published: values.published,
-        cover_image: values.thumbnail || null // Sauvegarder le chemin
+        cover_image: values.thumbnail || null // Sauvegarder le chemin uniquement
       };
 
-      console.log('WishForm - Submitting data avec cover_image (chemin):', submissionData.cover_image);
+      console.log('WishForm - Soumission avec cover_image (chemin):', submissionData.cover_image);
 
       let data, error;
       
@@ -305,7 +313,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       
       navigate('/wishes');
     } catch (error: any) {
-      console.error('WishForm - Submission error:', error);
+      console.error('WishForm - Erreur de soumission:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -409,7 +417,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                   </div>
                 </div>
                 
-                {/* Section 2: Nature de la demande avec vignette - INSPIRÉ DU BLOG */}
+                {/* Section 2: Nature de la demande avec vignette - ZONE MISE À JOUR */}
                 <div className="space-y-6">
                   <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
                     <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
@@ -418,7 +426,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                     Nature de la demande
                   </h2>
                   
-                  {/* Champ vignette - CORRIGÉ SELON LE MODÈLE BLOG */}
+                  {/* VIGNETTE - ZONE CORRIGÉE SELON LE BLOG */}
                   <FormField
                     control={form.control}
                     name="thumbnail"
@@ -427,49 +435,51 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                         <FormLabel>Vignette du souhait (facultatif)</FormLabel>
                         <FormControl>
                           <div className="space-y-4">
-                            {/* Zone de prévisualisation */}
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                            {/* Zone de prévisualisation - style identique au blog */}
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 min-h-[200px] flex items-center justify-center">
                               {thumbnailPreviewUrl ? (
-                                <div className="relative inline-block">
+                                <div className="relative w-full max-w-md">
                                   <img
                                     src={thumbnailPreviewUrl}
                                     alt="Aperçu de la vignette"
-                                    className="max-w-full max-h-64 object-cover rounded-lg"
+                                    className="w-full h-48 object-cover rounded-lg"
                                     onError={(e) => {
-                                      console.error('WishForm - Erreur de chargement de l\'image:', thumbnailPreviewUrl);
+                                      console.error('WishForm - ERREUR chargement image:', thumbnailPreviewUrl);
                                       const target = e.target as HTMLImageElement;
                                       target.src = '/placeholder.svg';
                                     }}
                                     onLoad={() => {
-                                      console.log('WishForm - Image chargée avec succès:', thumbnailPreviewUrl);
+                                      console.log('WishForm - SUCCESS image chargée:', thumbnailPreviewUrl);
                                     }}
                                   />
                                   <Button
                                     type="button"
                                     variant="destructive"
                                     size="sm"
-                                    className="absolute -top-2 -right-2"
+                                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0"
                                     onClick={handleRemoveThumbnail}
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="py-8">
+                                <div className="text-center">
                                   <Image className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                                   <p className="text-gray-500 mb-4">Aucune vignette sélectionnée</p>
+                                  <p className="text-sm text-gray-400">Cliquez sur le bouton ci-dessous pour ajouter une image</p>
                                 </div>
                               )}
                             </div>
                             
                             {/* Bouton d'upload */}
-                            <div className="flex items-center space-x-2">
+                            <div>
                               <Input
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
+                                    console.log('WishForm - Fichier sélectionné:', file.name);
                                     handleThumbnailUpload(file);
                                   }
                                 }}
@@ -482,9 +492,10 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                                 variant="outline"
                                 onClick={() => document.getElementById('thumbnail-upload')?.click()}
                                 disabled={uploadingThumbnail}
+                                className="w-full"
                               >
-                                <Image className="h-4 w-4 mr-2" />
-                                {uploadingThumbnail ? 'Téléchargement...' : 'Ajouter une vignette'}
+                                <Upload className="h-4 w-4 mr-2" />
+                                {uploadingThumbnail ? 'Téléchargement en cours...' : 'Choisir une image'}
                               </Button>
                             </div>
                           </div>

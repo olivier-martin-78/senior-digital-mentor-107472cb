@@ -211,38 +211,41 @@ const Recent = () => {
       return null;
     }
 
-    let imageUrl = null;
+    let imageUrl = '';
 
     // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
     if (item.type === 'diary' && item.media_url) {
-      console.log('Recent - Traitement image journal - ID:', item.id, 'URL:', item.media_url);
-      const { data } = supabase.storage
-        .from('diary_media')
-        .getPublicUrl(item.media_url);
-      imageUrl = data?.publicUrl;
-      console.log('Recent - URL générée pour journal:', imageUrl);
+      console.log('Recent - Traitement image journal - ID:', item.id, 'media_url:', item.media_url);
+      
+      if (item.media_url.startsWith('http')) {
+        imageUrl = item.media_url;
+        console.log('Recent - URL complète détectée pour journal:', imageUrl);
+      } else {
+        const { data } = supabase.storage
+          .from('diary_media')
+          .getPublicUrl(item.media_url);
+        imageUrl = data?.publicUrl || '';
+        console.log('Recent - URL générée pour journal:', imageUrl);
+      }
     }
-    // Pour les souhaits, utiliser cover_image avec le bucket album-thumbnails
-    else if (item.type === 'wish' && item.cover_image) {
-      console.log('Recent - Traitement image souhait - ID:', item.id, 'Path:', item.cover_image);
-      const { data } = supabase.storage
-        .from('album-thumbnails')
-        .getPublicUrl(item.cover_image);
-      imageUrl = data?.publicUrl;
-      console.log('Recent - URL générée pour souhait:', imageUrl);
-    }
-    // Pour les blogs, utiliser cover_image avec le bucket album-thumbnails
-    else if (item.type === 'blog' && item.cover_image) {
-      console.log('Recent - Traitement image blog - ID:', item.id, 'Path:', item.cover_image);
-      const { data } = supabase.storage
-        .from('album-thumbnails')
-        .getPublicUrl(item.cover_image);
-      imageUrl = data?.publicUrl;
-      console.log('Recent - URL générée pour blog:', imageUrl);
+    // Pour les souhaits et blogs, utiliser cover_image avec le bucket album-thumbnails
+    else if ((item.type === 'wish' || item.type === 'blog') && item.cover_image) {
+      console.log('Recent - Traitement image', item.type, '- ID:', item.id, 'cover_image:', item.cover_image);
+      
+      if (item.cover_image.startsWith('http')) {
+        imageUrl = item.cover_image;
+        console.log('Recent - URL complète détectée pour', item.type, ':', imageUrl);
+      } else {
+        const { data } = supabase.storage
+          .from('album-thumbnails')
+          .getPublicUrl(item.cover_image);
+        imageUrl = data?.publicUrl || '';
+        console.log('Recent - URL générée pour', item.type, ':', imageUrl);
+      }
     }
     
     if (!imageUrl) {
-      console.log('Recent - Pas d\'image pour l\'élément:', item.type, item.id);
+      console.log('Recent - Pas d\'image pour:', item.type, item.id);
       return null;
     }
 
@@ -253,16 +256,16 @@ const Recent = () => {
           alt={item.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            console.error('Recent - ERREUR: Impossible de charger l\'image');
+            console.error('Recent - ERREUR chargement image:');
             console.error('- Type:', item.type);
             console.error('- ID:', item.id);
             console.error('- Path original:', item.cover_image || item.media_url);
-            console.error('- URL générée:', imageUrl);
+            console.error('- URL finale:', imageUrl);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
           onLoad={() => {
-            console.log('Recent - SUCCESS: Image chargée pour:', item.type, item.id);
+            console.log('Recent - SUCCESS image chargée pour:', item.type, item.id);
           }}
         />
       </div>
