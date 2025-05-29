@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,10 +56,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           // Voir seulement les posts publiés de cet utilisateur
           query = query.eq('author_id', selectedUserId).eq('published', true);
         } else {
-          // CORRECTION PRINCIPALE : Gérer explicitement les posts de l'utilisateur
-          console.log('useBlogData - Récupération des posts pour l\'utilisateur connecté');
+          // CORRECTION PRINCIPALE : Logique stricte de permissions pour les posts
+          console.log('useBlogData - Récupération des posts avec permissions strictes');
           
-          // Récupérer d'abord ses propres posts (TOUS, publiés ET brouillons)
+          // 1. Récupérer ses propres posts (TOUS, publiés ET brouillons)
           let userPostsQuery = supabase
             .from('blog_posts')
             .select(`
@@ -93,7 +94,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
           console.log('useBlogData - Posts utilisateur récupérés:', userPosts?.length || 0);
 
-          // Récupérer ensuite les posts autorisés des autres utilisateurs
+          // 2. Récupérer les permissions pour déterminer les posts accessibles des autres
           const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
             supabase
               .from('album_permissions')
@@ -108,41 +109,51 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           const albumPermissions = albumPermissionsResult.data || [];
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
 
-          // Créer une liste des IDs d'utilisateurs autorisés (sans l'utilisateur actuel)
-          const authorizedUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
+          // IDs des albums autorisés explicitement
           const authorizedAlbumIds = albumPermissions.map(p => p.album_id).filter(Boolean);
+          // IDs des utilisateurs autorisés via life_story
+          const authorizedUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
 
-          console.log('useBlogData - Autres utilisateurs autorisés:', authorizedUserIds);
-          console.log('useBlogData - Albums autorisés:', authorizedAlbumIds);
+          console.log('useBlogData - Albums autorisés explicitement:', authorizedAlbumIds);
+          console.log('useBlogData - Utilisateurs autorisés via life_story:', authorizedUserIds);
 
           let otherPosts: PostWithAuthor[] = [];
 
-          if (authorizedUserIds.length > 0 || authorizedAlbumIds.length > 0) {
-            // Récupérer les posts autorisés des autres (SEULEMENT PUBLIÉS)
+          // 3. Récupérer les posts des autres SEULEMENT si on a des permissions
+          if (authorizedAlbumIds.length > 0 || authorizedUserIds.length > 0) {
             let otherPostsQuery = supabase
               .from('blog_posts')
               .select(`
                 *,
                 profiles(id, display_name, email, avatar_url, created_at)
               `)
-              .eq('published', true) // IMPORTANT: seulement les posts publiés des autres
+              .eq('published', true) // SEULEMENT les posts publiés des autres
               .neq('author_id', user?.id); // Exclure ses propres posts
 
-            // Construire les conditions pour les autres posts
-            let filterConditions = [];
+            // CORRECTION CRITIQUE : Construire les conditions de permission de manière stricte
+            let permissionConditions = [];
             
-            // Posts des utilisateurs autorisés
-            if (authorizedUserIds.length > 0) {
-              filterConditions.push(`author_id.in.(${authorizedUserIds.join(',')})`);
+            // Condition 1: Posts dans des albums autorisés explicitement
+            if (authorizedAlbumIds.length > 0) {
+              permissionConditions.push(`album_id.in.(${authorizedAlbumIds.join(',')})`);
             }
             
-            // Posts dans des albums autorisés
-            if (authorizedAlbumIds.length > 0) {
-              filterConditions.push(`album_id.in.(${authorizedAlbumIds.join(',')})`);
+            // Condition 2: Posts d'utilisateurs autorisés via life_story permissions
+            // MAIS SEULEMENT si le post n'est pas dans un album, ou si l'album est aussi autorisé
+            if (authorizedUserIds.length > 0) {
+              // Pour éviter de voir des posts d'albums non autorisés, on filtre strictement
+              if (authorizedAlbumIds.length > 0) {
+                // Si on a des permissions d'albums, ne prendre que les posts d'utilisateurs autorisés 
+                // qui sont SOIT sans album SOIT dans un album autorisé
+                permissionConditions.push(`and(author_id.in.(${authorizedUserIds.join(',')}),or(album_id.is.null,album_id.in.(${authorizedAlbumIds.join(',')})))`);
+              } else {
+                // Si on n'a aucune permission d'album, prendre seulement les posts sans album des utilisateurs autorisés
+                permissionConditions.push(`and(author_id.in.(${authorizedUserIds.join(',')}),album_id.is.null)`);
+              }
             }
 
-            if (filterConditions.length > 0) {
-              otherPostsQuery = otherPostsQuery.or(filterConditions.join(','));
+            if (permissionConditions.length > 0) {
+              otherPostsQuery = otherPostsQuery.or(permissionConditions.join(','));
 
               // Appliquer les filtres
               if (searchTerm) {
@@ -166,6 +177,11 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               } else {
                 otherPosts = otherPostsData || [];
                 console.log('useBlogData - Autres posts autorisés récupérés:', otherPosts.length);
+                
+                // Log détaillé pour debug
+                otherPosts.forEach(post => {
+                  console.log(`useBlogData - Post autorisé: "${post.title}" (album: ${post.album_id}, auteur: ${post.author_id})`);
+                });
               }
             }
           }
