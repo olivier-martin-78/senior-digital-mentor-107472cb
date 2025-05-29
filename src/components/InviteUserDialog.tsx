@@ -43,12 +43,18 @@ const InviteUserDialog = () => {
     }
 
     setLoading(true);
+    console.log('=== DEBUT ENVOI INVITATION ===');
+    console.log('Données du formulaire:', formData);
+    console.log('Utilisateur:', user);
+    console.log('Profil:', profile);
 
     try {
       // Générer un token unique
       const token = crypto.randomUUID();
+      console.log('Token généré:', token);
 
       // Créer l'invitation en base (le trigger créera automatiquement le groupe)
+      console.log('Création de l\'invitation en base...');
       const { error: invitationError } = await supabase
         .from('invitations')
         .insert({
@@ -63,33 +69,46 @@ const InviteUserDialog = () => {
           life_story_access: formData.lifeStoryAccess
         });
 
-      if (invitationError) throw invitationError;
+      if (invitationError) {
+        console.error('Erreur création invitation:', invitationError);
+        throw invitationError;
+      }
+      console.log('Invitation créée avec succès en base');
+
+      // Préparer les données pour l'email
+      const emailData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        inviterName: profile.display_name || profile.email,
+        inviterEmail: profile.email,
+        accessTypes: {
+          blogAccess: formData.blogAccess,
+          wishesAccess: formData.wishesAccess,
+          diaryAccess: formData.diaryAccess,
+          lifeStoryAccess: formData.lifeStoryAccess
+        }
+      };
+
+      console.log('Données pour l\'email:', emailData);
+      console.log('Appel de la fonction edge send-invitation-email...');
 
       // Envoyer l'email d'invitation
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          inviterName: profile.display_name || profile.email,
-          inviterEmail: profile.email,
-          accessTypes: {
-            blogAccess: formData.blogAccess,
-            wishesAccess: formData.wishesAccess,
-            diaryAccess: formData.diaryAccess,
-            lifeStoryAccess: formData.lifeStoryAccess
-          }
-        }
+      const { data: emailResponse, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: emailData
       });
+
+      console.log('Réponse de la fonction edge:', { data: emailResponse, error: emailError });
 
       if (emailError) {
         console.error('Erreur lors de l\'envoi de l\'email:', emailError);
         toast({
           title: "Invitation créée",
-          description: `L'invitation a été créée pour ${formData.email}, mais l'email n'a pas pu être envoyé. Contactez l'administrateur.`,
+          description: `L'invitation a été créée pour ${formData.email}, mais l'email n'a pas pu être envoyé. Erreur: ${emailError.message}`,
           variant: "destructive"
         });
       } else {
+        console.log('Email envoyé avec succès');
         toast({
           title: "Invitation envoyée",
           description: `Une invitation a été envoyée à ${formData.email} avec copie à contact@senior-digital-mentor.com`
@@ -117,6 +136,7 @@ const InviteUserDialog = () => {
       });
     } finally {
       setLoading(false);
+      console.log('=== FIN ENVOI INVITATION ===');
     }
   };
 
