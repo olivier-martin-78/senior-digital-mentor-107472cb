@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 
+// Constantes de configuration Supabase
+const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
+
 const SupabaseConnectionTest = () => {
   const [testResults, setTestResults] = useState<any[]>([]);
   const [testing, setTesting] = useState(false);
@@ -15,10 +19,10 @@ const SupabaseConnectionTest = () => {
     // Test 1: Configuration basique
     results.push({
       test: 'Configuration Supabase',
-      status: supabase.supabaseUrl && supabase.supabaseKey ? 'OK' : 'ERREUR',
+      status: SUPABASE_URL && SUPABASE_ANON_KEY ? 'OK' : 'ERREUR',
       details: {
-        url: supabase.supabaseUrl,
-        keyPresent: !!supabase.supabaseKey
+        url: SUPABASE_URL,
+        keyPresent: !!SUPABASE_ANON_KEY
       }
     });
 
@@ -40,10 +44,10 @@ const SupabaseConnectionTest = () => {
 
     // Test 3: Fonction edge avec OPTIONS
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-contact-email`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
         method: 'OPTIONS',
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         }
       });
@@ -65,10 +69,10 @@ const SupabaseConnectionTest = () => {
 
     // Test 4: Fonction edge avec POST minimal
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-contact-email`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

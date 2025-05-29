@@ -8,6 +8,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Constantes de configuration Supabase
+const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
+
 const Footer = () => {
   const { toast } = useToast();
   const [name, setName] = useState('');
@@ -30,8 +34,8 @@ const Footer = () => {
 
     setLoading(true);
     console.log('=== DÉBUT DIAGNOSTIC ENVOI FORMULAIRE ===');
-    console.log('Configuration Supabase URL:', supabase.supabaseUrl);
-    console.log('Configuration Supabase Key (début):', supabase.supabaseKey?.substring(0, 20) + '...');
+    console.log('Configuration Supabase URL:', SUPABASE_URL);
+    console.log('Configuration Supabase Key (début):', SUPABASE_ANON_KEY?.substring(0, 20) + '...');
     console.log('Données du formulaire:', { 
       name, 
       email, 
@@ -104,20 +108,20 @@ const Footer = () => {
       // Préparer les données pour la fonction edge
       const emailData = { name, email, message, attachmentUrl };
       console.log('=== APPEL FONCTION EDGE ===');
-      console.log('URL fonction complète:', `${supabase.supabaseUrl}/functions/v1/send-contact-email`);
+      console.log('URL fonction complète:', `${SUPABASE_URL}/functions/v1/send-contact-email`);
       console.log('Données envoyées:', emailData);
       console.log('Headers qui seront utilisés:', {
-        'Authorization': `Bearer ${supabase.supabaseKey?.substring(0, 20)}...`,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY?.substring(0, 20)}...`,
         'Content-Type': 'application/json'
       });
       
       // Test direct avec fetch pour diagnostic
       console.log('=== TEST DIRECT AVEC FETCH ===');
       try {
-        const directResponse = await fetch(`${supabase.supabaseUrl}/functions/v1/send-contact-email`, {
+        const directResponse = await fetch(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(emailData)
