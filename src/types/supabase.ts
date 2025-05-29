@@ -16,6 +16,39 @@ export interface UserRole {
   role: AppRole;
 }
 
+export interface InvitationGroup {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: 'admin' | 'guest';
+  added_at: string;
+}
+
+export interface Invitation {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  invited_by: string;
+  token: string;
+  expires_at: string;
+  used_at: string | null;
+  created_at: string;
+  blog_access: boolean | null;
+  wishes_access: boolean | null;
+  diary_access: boolean | null;
+  life_story_access: boolean | null;
+  group_id: string | null;
+}
+
 export interface BlogAlbum {
   id: string;
   name: string;

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { UserPlus } from 'lucide-react';
 
 const InviteUserDialog = () => {
-  const { hasRole, user } = useAuth();
+  const { hasRole, user, profile } = useAuth();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ const InviteUserDialog = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
+    if (!user || !profile) {
       toast({
         title: "Erreur",
         description: "Vous devez être connecté pour envoyer une invitation",
@@ -48,8 +48,8 @@ const InviteUserDialog = () => {
       // Générer un token unique
       const token = crypto.randomUUID();
 
-      // Créer l'invitation en base
-      const { error } = await supabase
+      // Créer l'invitation en base (le trigger créera automatiquement le groupe)
+      const { error: invitationError } = await supabase
         .from('invitations')
         .insert({
           first_name: formData.firstName,
@@ -63,15 +63,38 @@ const InviteUserDialog = () => {
           life_story_access: formData.lifeStoryAccess
         });
 
-      if (error) throw error;
+      if (invitationError) throw invitationError;
 
-      // Envoyer l'email d'invitation (à implémenter plus tard avec une edge function)
-      console.log('Invitation créée avec le token:', token);
-
-      toast({
-        title: "Invitation envoyée",
-        description: `Une invitation a été envoyée à ${formData.email}`
+      // Envoyer l'email d'invitation
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          inviterName: profile.display_name || profile.email,
+          inviterEmail: profile.email,
+          accessTypes: {
+            blogAccess: formData.blogAccess,
+            wishesAccess: formData.wishesAccess,
+            diaryAccess: formData.diaryAccess,
+            lifeStoryAccess: formData.lifeStoryAccess
+          }
+        }
       });
+
+      if (emailError) {
+        console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+        toast({
+          title: "Invitation créée",
+          description: `L'invitation a été créée pour ${formData.email}, mais l'email n'a pas pu être envoyé. Contactez l'administrateur.`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Invitation envoyée",
+          description: `Une invitation a été envoyée à ${formData.email} avec copie à contact@senior-digital-mentor.com`
+        });
+      }
 
       // Réinitialiser le formulaire
       setFormData({

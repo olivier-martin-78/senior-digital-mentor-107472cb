@@ -318,6 +318,62 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          added_at: string
+          group_id: string
+          id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          group_id: string
+          id?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          group_id?: string
+          id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "invitation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           blog_access: boolean | null
@@ -326,6 +382,7 @@ export type Database = {
           email: string
           expires_at: string
           first_name: string
+          group_id: string | null
           id: string
           invited_by: string
           last_name: string
@@ -341,6 +398,7 @@ export type Database = {
           email: string
           expires_at?: string
           first_name: string
+          group_id?: string | null
           id?: string
           invited_by: string
           last_name: string
@@ -356,6 +414,7 @@ export type Database = {
           email?: string
           expires_at?: string
           first_name?: string
+          group_id?: string | null
           id?: string
           invited_by?: string
           last_name?: string
@@ -364,7 +423,15 @@ export type Database = {
           used_at?: string | null
           wishes_access?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "invitation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       life_stories: {
         Row: {
