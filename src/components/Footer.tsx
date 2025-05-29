@@ -29,7 +29,7 @@ const Footer = () => {
     }
 
     setLoading(true);
-    console.log('Début envoi formulaire...');
+    console.log('=== DÉBUT ENVOI FORMULAIRE ===');
     
     try {
       // Upload attachment if provided
@@ -74,41 +74,96 @@ const Footer = () => {
       };
       
       console.log('Envoi email avec données:', emailData);
+      console.log('URL de base Supabase:', supabase.supabaseUrl);
       
-      // Tentative d'envoi via fonction Edge
-      const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: emailData
-      });
+      // Tentative 1: Via supabase.functions.invoke (méthode recommandée)
+      console.log('=== TENTATIVE 1: supabase.functions.invoke ===');
       
-      console.log('Réponse fonction Edge:', { data, error });
-      
-      if (error) {
-        throw new Error(`Erreur fonction Edge: ${error.message}`);
-      }
-      
-      if (data?.success) {
-        toast({
-          title: "Message envoyé",
-          description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+      try {
+        const { data, error } = await supabase.functions.invoke('send-contact-email', {
+          body: emailData
         });
         
-        // Reset form
-        setName('');
-        setEmail('');
-        setMessage('');
-        setAttachment(null);
+        console.log('Réponse invoke:', { data, error });
         
-        // Reset file input
-        const fileInput = document.getElementById('attachment') as HTMLInputElement;
-        if (fileInput) {
-          fileInput.value = '';
+        if (!error && data?.success) {
+          toast({
+            title: "Message envoyé",
+            description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+          });
+          
+          // Reset form
+          setName('');
+          setEmail('');
+          setMessage('');
+          setAttachment(null);
+          
+          // Reset file input
+          const fileInput = document.getElementById('attachment') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
+          }
+          
+          return; // Succès, on sort de la fonction
         }
-      } else {
-        throw new Error(data?.error || 'Réponse inattendue de la fonction');
+        
+        // Si invoke échoue, on essaie avec fetch direct
+        throw new Error(`Invoke failed: ${error?.message || 'Réponse invalide'}`);
+        
+      } catch (invokeError) {
+        console.warn('Invoke échoué, tentative avec fetch direct:', invokeError);
+        
+        // Tentative 2: Appel direct avec fetch
+        console.log('=== TENTATIVE 2: fetch direct ===');
+        
+        const functionUrl = `https://cvcebcisijjmmmwuedcv.supabase.co/functions/v1/send-contact-email`;
+        console.log('URL fonction:', functionUrl);
+        
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+          },
+          body: JSON.stringify(emailData)
+        });
+        
+        console.log('Réponse fetch - Status:', response.status);
+        console.log('Réponse fetch - Headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Erreur fetch:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Résultat fetch:', result);
+        
+        if (result?.success) {
+          toast({
+            title: "Message envoyé",
+            description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+          });
+          
+          // Reset form
+          setName('');
+          setEmail('');
+          setMessage('');
+          setAttachment(null);
+          
+          // Reset file input
+          const fileInput = document.getElementById('attachment') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
+          }
+        } else {
+          throw new Error(result?.error || 'Réponse inattendue de la fonction');
+        }
       }
       
     } catch (error: any) {
-      console.error('Erreur complète:', error);
+      console.error('=== ERREUR COMPLÈTE ===', error);
       
       toast({
         title: "Erreur d'envoi",
@@ -117,6 +172,7 @@ const Footer = () => {
       });
     } finally {
       setLoading(false);
+      console.log('=== FIN TRAITEMENT ===');
     }
   };
 
