@@ -26,17 +26,18 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           *,
           profiles(id, display_name, email, avatar_url, created_at)
         `)
-        .eq('published', true)
         .order('created_at', { ascending: false });
 
       // Gestion des permissions pour les posts
       if (hasRole('admin')) {
-        // Les admins voient tout
+        // Les admins voient tout (publié et non publié)
         if (selectedUserId) {
           query = query.eq('author_id', selectedUserId);
         }
       } else {
-        // Pour les non-admins
+        // Pour les non-admins, seuls les posts publiés ET autorisés
+        query = query.eq('published', true);
+        
         if (selectedUserId && selectedUserId !== user?.id) {
           // Vérifier les permissions life_story pour cet utilisateur
           const { data: permissions, error: permError } = await supabase

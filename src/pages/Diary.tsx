@@ -23,50 +23,57 @@ const Diary = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Pour les admins, utiliser l'utilisateur sélectionné, sinon utiliser l'utilisateur actuel
-  const targetUserId = hasRole('admin') ? (selectedUserId || user?.id) : (selectedUserId || user?.id);
-
   useEffect(() => {
     if (!session) {
       navigate('/auth');
       return;
     }
     fetchEntries();
-  }, [session, user, navigate, searchTerm, startDate, endDate, targetUserId]);
+  }, [session, user, navigate, searchTerm, startDate, endDate, selectedUserId]);
 
   const fetchEntries = async () => {
-    if (!targetUserId) return;
+    if (!user) return;
     
     try {
       setLoading(true);
-      console.log('Chargement des entrées pour utilisateur:', targetUserId, 'Admin mode:', hasRole('admin'));
+      
+      // Déterminer l'utilisateur cible
+      let targetUserId = selectedUserId || user.id;
+      
+      console.log('Chargement des entrées pour utilisateur:', targetUserId, 'Admin mode:', hasRole('admin'), 'Selected:', selectedUserId);
       
       let query = supabase
         .from('diary_entries')
         .select('*')
         .order('entry_date', { ascending: false });
 
-      // Pour les admins, permettre de voir les entrées de n'importe quel utilisateur
+      // Logique des permissions
       if (hasRole('admin')) {
+        // Les admins peuvent voir toutes les entrées de n'importe quel utilisateur
         console.log('Mode admin - chargement pour utilisateur:', targetUserId);
         query = query.eq('user_id', targetUserId);
       } else {
-        // Pour les non-admins, vérifier les permissions
-        if (selectedUserId && selectedUserId !== user?.id) {
+        // Pour les non-admins
+        if (selectedUserId && selectedUserId !== user.id) {
           // Vérifier si l'utilisateur a des permissions pour voir ce journal
           const { data: permissions, error: permError } = await supabase
             .from('diary_permissions')
             .select('diary_owner_id')
-            .eq('permitted_user_id', user?.id)
+            .eq('permitted_user_id', user.id)
             .eq('diary_owner_id', selectedUserId);
 
           if (permError || !permissions?.length) {
             console.log('Pas de permissions pour voir ce journal');
             setEntries([]);
+            setLoading(false);
             return;
           }
+          
+          query = query.eq('user_id', selectedUserId);
+        } else {
+          // Voir ses propres entrées
+          query = query.eq('user_id', user.id);
         }
-        query = query.eq('user_id', targetUserId);
       }
 
       if (searchTerm) {
@@ -107,6 +114,7 @@ const Diary = () => {
       setEntries(convertedEntries);
     } catch (error) {
       console.error('Erreur lors du chargement des entrées:', error);
+      setEntries([]);
     } finally {
       setLoading(false);
     }

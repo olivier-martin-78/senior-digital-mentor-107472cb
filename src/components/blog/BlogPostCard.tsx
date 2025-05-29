@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { PostWithAuthor, BlogAlbum } from '@/types/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AlbumThumbnail from './AlbumThumbnail';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BlogPostCardProps {
   post: PostWithAuthor;
@@ -16,17 +18,26 @@ interface BlogPostCardProps {
 }
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, userId }) => {
+  const { user, hasRole } = useAuth();
+  
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
 
-  const isVisible = post.published || (userId && post.author_id === userId);
+  // Un post est visible si :
+  // - Il est publié ET (l'utilisateur a les permissions OU c'est son propre post)
+  // - OU si l'utilisateur est l'auteur (même non publié)
+  // - OU si l'utilisateur est admin
+  const isVisible = post.published || 
+                   (user && post.author_id === user.id) || 
+                   hasRole('admin');
   
   if (!isVisible) return null;
 
   console.log('BlogPostCard data:', {
     postId: post.id,
     title: post.title,
+    published: post.published,
     coverImage: post.cover_image,
     albumId: post.album_id,
     albumThumbnail: albums.find(a => a.id === post.album_id)?.thumbnail_url,

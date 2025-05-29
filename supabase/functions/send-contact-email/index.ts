@@ -9,13 +9,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Initialiser Resend avec la clé API
-const resendApiKey = Deno.env.get('RESEND_API_KEY');
-if (!resendApiKey) {
-  throw new Error('RESEND_API_KEY is not defined');
-}
-const resend = new Resend(resendApiKey);
-
 console.log('Fonction send-contact-email initialisée');
 
 serve(async (req: Request) => {
@@ -25,18 +18,15 @@ serve(async (req: Request) => {
   }
   
   try {
-    // Initialiser le client Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('Début du traitement de la requête');
     
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      throw new Error('Supabase environment variables are not defined');
+    // Initialiser Resend avec la clé API
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY is not defined');
+      throw new Error('RESEND_API_KEY is not defined');
     }
-    
-    // Utiliser la clé de service pour accéder aux données sans restriction RLS
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-    console.log('Client Supabase initialisé');
+    const resend = new Resend(resendApiKey);
     
     // Traiter la requête
     const { name, email, message, attachmentUrl } = await req.json();
@@ -51,48 +41,6 @@ serve(async (req: Request) => {
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
-    
-    // Récupérer les administrateurs qui ont activé l'option de recevoir les demandes de contact
-    const { data: adminProfiles, error: fetchError } = await supabase
-      .from('profiles')
-      .select('email, display_name')
-      .eq('receive_contacts', true);
-    
-    if (fetchError) {
-      console.error('Erreur lors de la récupération des administrateurs:', fetchError);
-      throw fetchError;
-    }
-    
-    console.log('Administrateurs trouvés:', adminProfiles);
-    
-    if (!adminProfiles || adminProfiles.length === 0) {
-      console.warn('Aucun administrateur n\'a activé la réception des demandes de contact');
-      
-      // Dans ce cas, envoyons quand même un email de confirmation à l'expéditeur
-      const confirmationEmail = await resend.emails.send({
-        from: 'Tranches de vie <contact@tranches-de-vie.com>',
-        to: email,
-        subject: 'Nous avons bien reçu votre message',
-        html: `
-          <h1>Bonjour ${name},</h1>
-          <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
-          <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
-          <p>Cordialement,</p>
-          <p>L'équipe Tranches de vie</p>
-        `,
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Confirmation envoyée', 
-          confirmationEmail 
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-    
-    console.log(`Envoi d'email à ${adminProfiles.length} administrateur(s)`);
     
     // Construire le contenu de l'email
     const emailSubject = `Nouvelle demande de contact de ${name}`;
@@ -109,56 +57,41 @@ serve(async (req: Request) => {
       emailContent += `<p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}">Voir la pièce jointe</a></p>`;
     }
     
-    // Envoyer l'email à tous les administrateurs concernés
-    const emailPromises = adminProfiles.map(admin => {
-      console.log(`Envoi d'email à l'administrateur: ${admin.display_name || admin.email}`);
-      
-      return resend.emails.send({
-        from: 'Tranches de vie <contact@tranches-de-vie.com>',
-        to: admin.email,
-        subject: emailSubject,
-        html: emailContent,
-        reply_to: email,
-      }).catch(error => {
-        console.error(`Erreur lors de l'envoi de l'email à ${admin.email}:`, error);
-        return { error };
-      });
+    console.log('Envoi de l\'email à contact@senior-digital-mentor.com');
+    
+    // Envoyer l'email à l'adresse fixe
+    const notificationResult = await resend.emails.send({
+      from: 'Tranches de vie <contact@tranches-de-vie.com>',
+      to: 'contact@senior-digital-mentor.com',
+      subject: emailSubject,
+      html: emailContent,
+      reply_to: email,
     });
     
+    console.log('Résultat notification:', notificationResult);
+    
     // Envoyer un email de confirmation à l'expéditeur
-    emailPromises.push(
-      resend.emails.send({
-        from: 'Tranches de vie <contact@tranches-de-vie.com>',
-        to: email,
-        subject: 'Nous avons bien reçu votre message',
-        html: `
-          <h1>Bonjour ${name},</h1>
-          <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
-          <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
-          <p>Cordialement,</p>
-          <p>L'équipe Tranches de vie</p>
-        `,
-      }).catch(error => {
-        console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
-        return { error };
-      })
-    );
+    const confirmationResult = await resend.emails.send({
+      from: 'Tranches de vie <contact@tranches-de-vie.com>',
+      to: email,
+      subject: 'Nous avons bien reçu votre message',
+      html: `
+        <h1>Bonjour ${name},</h1>
+        <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
+        <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
+        <p>Cordialement,</p>
+        <p>L'équipe Tranches de vie</p>
+      `,
+    });
     
-    const results = await Promise.all(emailPromises);
-    
-    // Vérifier si des erreurs se sont produites
-    const errors = results.filter(result => result.error);
-    if (errors.length > 0) {
-      console.error("Des erreurs se sont produites lors de l'envoi des emails:", errors);
-    }
-    
-    console.log('Résultats des envois d\'emails:', results);
+    console.log('Résultat confirmation:', confirmationResult);
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email envoyé à ${adminProfiles.length} administrateur(s) et confirmation envoyée`,
-        results
+        message: 'Email envoyé avec succès et confirmation envoyée',
+        notificationResult,
+        confirmationResult
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );

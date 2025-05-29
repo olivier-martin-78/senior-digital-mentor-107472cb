@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Check, ImageIcon, Loader2, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AlbumSelectorProps {
   albumId: string | null;
@@ -25,11 +26,63 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
   userId
 }) => {
   const { toast } = useToast();
+  const { user, hasRole } = useAuth();
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumThumbnail, setNewAlbumThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [accessibleAlbums, setAccessibleAlbums] = useState<BlogAlbum[]>([]);
+
+  // Récupérer les albums accessibles pour l'utilisateur
+  useEffect(() => {
+    const getAccessibleAlbums = async () => {
+      if (!user) return;
+
+      try {
+        if (hasRole('admin') || hasRole('editor')) {
+          // Admins et éditeurs voient tous les albums
+          setAccessibleAlbums(allAlbums);
+        } else {
+          // Pour les autres utilisateurs, récupérer les permissions
+          const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
+            supabase
+              .from('album_permissions')
+              .select('album_id')
+              .eq('user_id', user.id),
+            supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user.id)
+          ]);
+
+          const albumPermissions = albumPermissionsResult.data || [];
+          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+
+          // Albums autorisés par permissions directes
+          const directlyAuthorizedAlbumIds = albumPermissions.map(p => p.album_id);
+          
+          // Albums d'utilisateurs autorisés par permissions life_story
+          const authorizedUserIds = [user.id, ...lifeStoryPermissions.map(p => p.story_owner_id)];
+
+          // Filtrer les albums
+          const userAccessibleAlbums = allAlbums.filter(album => 
+            authorizedUserIds.includes(album.author_id) || 
+            directlyAuthorizedAlbumIds.includes(album.id)
+          );
+
+          console.log('Albums accessibles pour l\'utilisateur:', userAccessibleAlbums.length);
+          setAccessibleAlbums(userAccessibleAlbums);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des albums accessibles:', error);
+        // En cas d'erreur, montrer seulement les albums de l'utilisateur
+        setAccessibleAlbums(allAlbums.filter(album => album.author_id === user.id));
+      }
+    };
+
+    getAccessibleAlbums();
+  }, [allAlbums, user, hasRole]);
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,7 +119,7 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
         .single();
 
       if (albumError) {
-        if (albumError.code === '23505') { // Unique constraint violation
+        if (albumError.code === '23505') {
           toast({
             title: "Album existant",
             description: "Un album avec ce nom existe déjà.",
@@ -81,14 +134,12 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
       // Si une vignette a été sélectionnée, la télécharger
       if (newAlbumThumbnail) {
         try {
-          // S'assurer de ne pas utiliser une URL blob
           if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
             URL.revokeObjectURL(thumbnailPreview);
           }
           
           thumbnailUrl = await uploadAlbumThumbnail(newAlbumThumbnail, albumData.id);
           
-          // Mettre à jour l'album avec l'URL de la vignette
           const { error: updateError } = await supabase
             .from('blog_albums')
             .update({ thumbnail_url: thumbnailUrl })
@@ -96,7 +147,6 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
             
           if (updateError) throw updateError;
           
-          // Mettre à jour l'objet albumData avec l'URL de la vignette
           albumData.thumbnail_url = thumbnailUrl;
         } catch (uploadError: any) {
           console.error('Erreur lors du téléchargement de la vignette:', uploadError);
@@ -108,8 +158,10 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
         }
       }
 
-      setAllAlbums([...allAlbums, albumData as BlogAlbum]);
-      setAlbumId(albumData.id);
+      const newAlbum = albumData as BlogAlbum;
+      setAllAlbums([...allAlbums, newAlbum]);
+      setAccessibleAlbums([...accessibleAlbums, newAlbum]);
+      setAlbumId(newAlbum.id);
       setNewAlbumName('');
       setNewAlbumThumbnail(null);
       setThumbnailPreview(null);
@@ -168,7 +220,6 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
             </Button>
           </div>
           
-          {/* Ajout du champ de vignette */}
           <div>
             <Label htmlFor="album-thumbnail" className="block mb-2">Vignette de l'album (optionnel)</Label>
             <div className="flex items-center gap-4">
@@ -205,7 +256,7 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
               <SelectValue placeholder="Sélectionner un album (obligatoire)" />
             </SelectTrigger>
             <SelectContent>
-              {allAlbums.map(album => (
+              {accessibleAlbums.map(album => (
                 <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
               ))}
             </SelectContent>
