@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,7 +55,45 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           // Voir seulement les posts publiés de cet utilisateur
           query = query.eq('author_id', selectedUserId).eq('published', true);
         } else {
-          // Récupérer ses propres posts (publiés ET non publiés) + posts autorisés des autres
+          // CORRECTION PRINCIPALE : Gérer explicitement les posts de l'utilisateur
+          console.log('useBlogData - Récupération des posts pour l\'utilisateur connecté');
+          
+          // Récupérer d'abord ses propres posts (TOUS, publiés ET brouillons)
+          let userPostsQuery = supabase
+            .from('blog_posts')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .eq('author_id', user?.id)
+            .order('created_at', { ascending: false });
+
+          // Appliquer les filtres à la requête des posts utilisateur
+          if (searchTerm) {
+            userPostsQuery = userPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+          }
+          if (selectedAlbum) {
+            userPostsQuery = userPostsQuery.eq('album_id', selectedAlbum);
+          }
+          if (startDate) {
+            userPostsQuery = userPostsQuery.gte('created_at', startDate);
+          }
+          if (endDate) {
+            const endDateTime = endDate + 'T23:59:59';
+            userPostsQuery = userPostsQuery.lte('created_at', endDateTime);
+          }
+
+          const { data: userPosts, error: userPostsError } = await userPostsQuery;
+          
+          if (userPostsError) {
+            console.error('useBlogData - Erreur lors de la récupération des posts utilisateur:', userPostsError);
+            setPosts([]);
+            return;
+          }
+
+          console.log('useBlogData - Posts utilisateur récupérés:', userPosts?.length || 0);
+
+          // Récupérer ensuite les posts autorisés des autres utilisateurs
           const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
             supabase
               .from('album_permissions')
@@ -71,46 +108,81 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           const albumPermissions = albumPermissionsResult.data || [];
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
 
-          // Créer une liste des IDs d'utilisateurs autorisés
-          const authorizedUserIds = [user?.id];
-          lifeStoryPermissions.forEach(p => {
-            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
-              authorizedUserIds.push(p.story_owner_id);
-            }
-          });
-
-          // Récupérer les albums autorisés
+          // Créer une liste des IDs d'utilisateurs autorisés (sans l'utilisateur actuel)
+          const authorizedUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
           const authorizedAlbumIds = albumPermissions.map(p => p.album_id).filter(Boolean);
 
-          console.log('useBlogData - Utilisateurs autorisés:', authorizedUserIds);
+          console.log('useBlogData - Autres utilisateurs autorisés:', authorizedUserIds);
           console.log('useBlogData - Albums autorisés:', authorizedAlbumIds);
 
-          // Construire la requête avec les permissions
-          let filterConditions = [];
-          
-          // Ses propres posts (publiés ET non publiés)
-          filterConditions.push(`author_id.eq.${user?.id}`);
-          
-          // Posts publiés des autres utilisateurs autorisés
-          const otherAuthorizedUsers = authorizedUserIds.filter(id => id !== user?.id);
-          if (otherAuthorizedUsers.length > 0) {
-            filterConditions.push(`and(author_id.in.(${otherAuthorizedUsers.join(',')}),published.eq.true)`);
-          }
-          
-          // Posts dans des albums autorisés (seulement publiés)
-          if (authorizedAlbumIds.length > 0) {
-            filterConditions.push(`and(album_id.in.(${authorizedAlbumIds.join(',')}),published.eq.true)`);
+          let otherPosts: PostWithAuthor[] = [];
+
+          if (authorizedUserIds.length > 0 || authorizedAlbumIds.length > 0) {
+            // Récupérer les posts autorisés des autres (SEULEMENT PUBLIÉS)
+            let otherPostsQuery = supabase
+              .from('blog_posts')
+              .select(`
+                *,
+                profiles(id, display_name, email, avatar_url, created_at)
+              `)
+              .eq('published', true) // IMPORTANT: seulement les posts publiés des autres
+              .neq('author_id', user?.id); // Exclure ses propres posts
+
+            // Construire les conditions pour les autres posts
+            let filterConditions = [];
+            
+            // Posts des utilisateurs autorisés
+            if (authorizedUserIds.length > 0) {
+              filterConditions.push(`author_id.in.(${authorizedUserIds.join(',')})`);
+            }
+            
+            // Posts dans des albums autorisés
+            if (authorizedAlbumIds.length > 0) {
+              filterConditions.push(`album_id.in.(${authorizedAlbumIds.join(',')})`);
+            }
+
+            if (filterConditions.length > 0) {
+              otherPostsQuery = otherPostsQuery.or(filterConditions.join(','));
+
+              // Appliquer les filtres
+              if (searchTerm) {
+                otherPostsQuery = otherPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+              }
+              if (selectedAlbum) {
+                otherPostsQuery = otherPostsQuery.eq('album_id', selectedAlbum);
+              }
+              if (startDate) {
+                otherPostsQuery = otherPostsQuery.gte('created_at', startDate);
+              }
+              if (endDate) {
+                const endDateTime = endDate + 'T23:59:59';
+                otherPostsQuery = otherPostsQuery.lte('created_at', endDateTime);
+              }
+
+              const { data: otherPostsData, error: otherPostsError } = await otherPostsQuery;
+              
+              if (otherPostsError) {
+                console.error('useBlogData - Erreur lors de la récupération des autres posts:', otherPostsError);
+              } else {
+                otherPosts = otherPostsData || [];
+                console.log('useBlogData - Autres posts autorisés récupérés:', otherPosts.length);
+              }
+            }
           }
 
-          if (filterConditions.length > 0) {
-            query = query.or(filterConditions.join(','));
-          } else {
-            // Fallback: seulement ses propres posts
-            query = query.eq('author_id', user?.id);
-          }
+          // Combiner ses posts avec les posts autorisés des autres
+          const allPosts = [...(userPosts || []), ...otherPosts];
+          
+          // Trier par date de création (plus récent en premier)
+          allPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          
+          console.log('useBlogData - Total posts finaux:', allPosts.length);
+          setPosts(allPosts);
+          return;
         }
       }
 
+      // Application des filtres pour admin ou cas spéciaux
       if (searchTerm) {
         query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
       }
