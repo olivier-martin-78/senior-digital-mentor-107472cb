@@ -14,7 +14,6 @@ import { Search, Plus } from 'lucide-react';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
-import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 
 const Wishes = () => {
   const { user, hasRole } = useAuth();
@@ -113,9 +112,18 @@ const Wishes = () => {
 
     console.log('Wishes - Affichage image souhait - ID:', wish.id, 'Path:', wish.cover_image);
     
-    // Utiliser getThumbnailUrlSync avec le bucket album-thumbnails
-    const imageUrl = getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET);
+    // Générer l'URL publique depuis le bucket album-thumbnails
+    const { data } = supabase.storage
+      .from('album-thumbnails')
+      .getPublicUrl(wish.cover_image);
+    
+    const imageUrl = data?.publicUrl;
     console.log('Wishes - URL générée pour souhait:', imageUrl);
+
+    if (!imageUrl) {
+      console.error('Wishes - Impossible de générer l\'URL pour:', wish.cover_image);
+      return null;
+    }
 
     return (
       <div className="w-full h-48 overflow-hidden rounded-t-lg">
@@ -128,7 +136,6 @@ const Wishes = () => {
             console.error('- ID du souhait:', wish.id);
             console.error('- Path original:', wish.cover_image);
             console.error('- URL générée:', imageUrl);
-            console.error('- Bucket utilisé:', ALBUM_THUMBNAILS_BUCKET);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}

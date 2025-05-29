@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface RecentItem {
   id: string;
@@ -206,49 +205,46 @@ const Recent = () => {
     }
   };
 
-  const getThumbnailForItem = (item: RecentItem) => {
+  const renderItemImage = (item: RecentItem) => {
     // Pour les commentaires, pas d'image
     if (item.type === 'comment') {
       return null;
     }
 
+    let imageUrl = null;
+
     // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
     if (item.type === 'diary' && item.media_url) {
       console.log('Recent - Traitement image journal - ID:', item.id, 'URL:', item.media_url);
-      const imageUrl = getThumbnailUrlSync(item.media_url, DIARY_MEDIA_BUCKET);
+      const { data } = supabase.storage
+        .from('diary_media')
+        .getPublicUrl(item.media_url);
+      imageUrl = data?.publicUrl;
       console.log('Recent - URL générée pour journal:', imageUrl);
-      return imageUrl;
     }
-
-    // Pour les autres types, utiliser cover_image
-    if (!item.cover_image) {
-      console.log('Recent - Pas d\'image de couverture pour l\'élément:', item.type, item.id);
+    // Pour les souhaits, utiliser cover_image avec le bucket album-thumbnails
+    else if (item.type === 'wish' && item.cover_image) {
+      console.log('Recent - Traitement image souhait - ID:', item.id, 'Path:', item.cover_image);
+      const { data } = supabase.storage
+        .from('album-thumbnails')
+        .getPublicUrl(item.cover_image);
+      imageUrl = data?.publicUrl;
+      console.log('Recent - URL générée pour souhait:', imageUrl);
+    }
+    // Pour les blogs, utiliser cover_image avec le bucket album-thumbnails
+    else if (item.type === 'blog' && item.cover_image) {
+      console.log('Recent - Traitement image blog - ID:', item.id, 'Path:', item.cover_image);
+      const { data } = supabase.storage
+        .from('album-thumbnails')
+        .getPublicUrl(item.cover_image);
+      imageUrl = data?.publicUrl;
+      console.log('Recent - URL générée pour blog:', imageUrl);
+    }
+    
+    if (!imageUrl) {
+      console.log('Recent - Pas d\'image pour l\'élément:', item.type, item.id);
       return null;
     }
-    
-    console.log('Recent - Traitement de l\'image pour:', item.type, item.id, 'Path:', item.cover_image);
-    
-    // Utiliser le bon bucket selon le type d'élément
-    let bucket;
-    if (item.type === 'blog') {
-      bucket = BLOG_MEDIA_BUCKET;
-    } else if (item.type === 'wish') {
-      bucket = ALBUM_THUMBNAILS_BUCKET;
-    } else {
-      bucket = ALBUM_THUMBNAILS_BUCKET;
-    }
-    
-    const imageUrl = getThumbnailUrlSync(item.cover_image, bucket);
-    
-    console.log('Recent - URL générée pour', item.type, ':', imageUrl, 'avec bucket:', bucket);
-    
-    return imageUrl;
-  };
-
-  const renderItemImage = (item: RecentItem) => {
-    const imageUrl = getThumbnailForItem(item);
-    
-    if (!imageUrl) return null;
 
     return (
       <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
