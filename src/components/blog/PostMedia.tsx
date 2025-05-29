@@ -9,6 +9,7 @@ interface PostMediaProps {
 
 const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   if (media.length === 0) return null;
 
@@ -60,6 +61,60 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
     }
   };
 
+  const handleImageError = (mediaId: string) => {
+    setImageErrors(prev => new Set([...prev, mediaId]));
+  };
+
+  const renderVideoThumbnail = (item: BlogMedia) => {
+    const hasError = imageErrors.has(item.id);
+    
+    // Si nous avons une vignette et qu'elle n'a pas d'erreur, l'utiliser
+    if (item.thumbnail_url && !hasError) {
+      return (
+        <div className="relative">
+          <img
+            src={item.thumbnail_url}
+            alt="Vignette vidéo"
+            className="w-full aspect-square object-cover"
+            onError={() => handleImageError(item.id)}
+          />
+          {/* Icône play au centre */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+            <div className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
+              <div className="w-0 h-0 border-l-[12px] border-l-black border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Fallback : utiliser la vidéo avec poster ou une vignette par défaut
+    return (
+      <div className="relative bg-gray-900">
+        <video
+          src={item.media_url}
+          className="w-full aspect-square object-cover"
+          muted
+          playsInline
+          preload="metadata"
+          poster={item.thumbnail_url || undefined}
+        />
+        {/* Icône play au centre */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
+            <div className="w-0 h-0 border-l-[12px] border-l-black border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
+          </div>
+        </div>
+        {/* Indicateur vidéo si pas de vignette */}
+        {(!item.thumbnail_url || hasError) && (
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
+            📹 Vidéo
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="mb-8">
@@ -79,30 +134,7 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
                     className="w-full aspect-square object-cover"
                   />
                 ) : item.media_type.startsWith('video/') ? (
-                  <>
-                    {item.thumbnail_url ? (
-                      <div className="relative">
-                        <img
-                          src={item.thumbnail_url}
-                          alt="Vignette vidéo"
-                          className="w-full aspect-square object-cover"
-                        />
-                        {/* Icône play au centre */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                          <div className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
-                            <div className="w-0 h-0 border-l-[12px] border-l-black border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <video
-                        src={item.media_url}
-                        className="w-full aspect-square object-cover"
-                        muted
-                        playsInline
-                      />
-                    )}
-                  </>
+                  renderVideoThumbnail(item)
                 ) : (
                   <div className="flex items-center justify-center bg-gray-100 aspect-square">
                     <p className="text-gray-500">Fichier non prévisualisable</p>
