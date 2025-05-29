@@ -29,40 +29,70 @@ const Footer = () => {
     }
 
     setLoading(true);
-    console.log('=== DÉBUT ENVOI FORMULAIRE ===');
-    console.log('Données:', { name, email, messageLength: message.length, hasAttachment: !!attachment });
+    console.log('=== DÉBUT DIAGNOSTIC ENVOI FORMULAIRE ===');
+    console.log('Configuration Supabase URL:', supabase.supabaseUrl);
+    console.log('Configuration Supabase Key (début):', supabase.supabaseKey?.substring(0, 20) + '...');
+    console.log('Données du formulaire:', { 
+      name, 
+      email, 
+      messageLength: message.length, 
+      hasAttachment: !!attachment 
+    });
     
     try {
+      // Test de connectivité basique
+      console.log('=== TEST DE CONNECTIVITÉ SUPABASE ===');
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from('profiles')
+          .select('id')
+          .limit(1);
+        console.log('Test connectivité Supabase:', { success: !testError, error: testError?.message });
+      } catch (testErr) {
+        console.error('Erreur test connectivité:', testErr);
+      }
+
       // Upload attachment if provided
       let attachmentUrl = null;
       
       if (attachment) {
-        console.log('Upload de la pièce jointe:', attachment.name);
+        console.log('=== DÉBUT UPLOAD PIÈCE JOINTE ===');
+        console.log('Fichier à uploader:', {
+          name: attachment.name,
+          size: attachment.size,
+          type: attachment.type
+        });
+        
         try {
           const fileExt = attachment.name.split('.').pop();
           const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           
+          console.log('Tentative upload vers:', filePath);
           const { error: uploadError, data } = await supabase.storage
             .from('contact-attachments')
             .upload(filePath, attachment);
 
           if (uploadError) {
-            console.error('Erreur upload:', uploadError);
+            console.error('Erreur upload détaillée:', {
+              message: uploadError.message,
+              details: uploadError
+            });
             toast({
               title: "Attention",
               description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
               variant: "destructive"
             });
           } else {
+            console.log('Upload réussi:', data);
             const { data: { publicUrl } } = supabase.storage
               .from('contact-attachments')
               .getPublicUrl(filePath);
               
             attachmentUrl = publicUrl;
-            console.log('✓ Pièce jointe uploadée:', attachmentUrl);
+            console.log('URL publique générée:', attachmentUrl);
           }
         } catch (error) {
-          console.error('Erreur upload:', error);
+          console.error('Exception durant upload:', error);
           toast({
             title: "Attention",
             description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
@@ -71,20 +101,72 @@ const Footer = () => {
         }
       }
       
-      // Send email using edge function
-      console.log('Appel de la fonction send-contact-email');
-      const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: { name, email, message, attachmentUrl }
+      // Préparer les données pour la fonction edge
+      const emailData = { name, email, message, attachmentUrl };
+      console.log('=== APPEL FONCTION EDGE ===');
+      console.log('URL fonction complète:', `${supabase.supabaseUrl}/functions/v1/send-contact-email`);
+      console.log('Données envoyées:', emailData);
+      console.log('Headers qui seront utilisés:', {
+        'Authorization': `Bearer ${supabase.supabaseKey?.substring(0, 20)}...`,
+        'Content-Type': 'application/json'
       });
       
+      // Test direct avec fetch pour diagnostic
+      console.log('=== TEST DIRECT AVEC FETCH ===');
+      try {
+        const directResponse = await fetch(`${supabase.supabaseUrl}/functions/v1/send-contact-email`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(emailData)
+        });
+        
+        console.log('Réponse fetch directe:', {
+          status: directResponse.status,
+          statusText: directResponse.statusText,
+          ok: directResponse.ok
+        });
+        
+        if (!directResponse.ok) {
+          const errorText = await directResponse.text();
+          console.error('Contenu de l\'erreur fetch:', errorText);
+        }
+      } catch (fetchError) {
+        console.error('Erreur fetch directe:', fetchError);
+      }
+      
+      // Appel via le client Supabase
+      console.log('=== APPEL VIA CLIENT SUPABASE ===');
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: emailData
+      });
+      
+      console.log('Réponse brute de la fonction:', { data, error });
+      
       if (error) {
-        console.error('Erreur fonction edge:', error);
+        console.error('=== ERREUR FONCTION EDGE DÉTAILLÉE ===');
+        console.error('Type d\'erreur:', error.constructor?.name);
+        console.error('Message d\'erreur:', error.message);
+        console.error('Objet erreur complet:', JSON.stringify(error, null, 2));
+        
+        // Essayer de déterminer le type d'erreur
+        if (error.message?.includes('Failed to send a request')) {
+          console.error('DIAGNOSTIC: Problème de connectivité réseau vers la fonction');
+        } else if (error.message?.includes('timeout')) {
+          console.error('DIAGNOSTIC: Timeout de la requête');
+        } else if (error.message?.includes('CORS')) {
+          console.error('DIAGNOSTIC: Problème CORS');
+        }
+        
         throw new Error(`Erreur d'envoi: ${error.message}`);
       }
       
-      console.log('✓ Réponse fonction:', data);
+      console.log('✓ Réponse fonction reçue:', data);
       
       if (data?.success) {
+        console.log('✓ Email envoyé avec succès');
         toast({
           title: "Message envoyé",
           description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
@@ -102,23 +184,31 @@ const Footer = () => {
           fileInput.value = '';
         }
       } else {
-        throw new Error(data?.error || 'Erreur inconnue');
+        console.error('Fonction exécutée mais échec:', data);
+        throw new Error(data?.error || 'Erreur inconnue dans la réponse');
       }
       
     } catch (error: any) {
-      console.error('=== ERREUR ENVOI ===');
-      console.error('Type:', error.constructor?.name);
-      console.error('Message:', error.message);
-      console.error('Objet complet:', error);
+      console.error('=== ERREUR COMPLÈTE ENVOI ===');
+      console.error('Type d\'erreur:', error.constructor?.name);
+      console.error('Message d\'erreur:', error.message);
+      console.error('Stack trace:', error.stack);
+      console.error('Objet erreur complet:', error);
+      
+      // Message d'erreur plus informatif
+      let errorMessage = error.message;
+      if (error.message?.includes('Failed to send a request to the Edge Function')) {
+        errorMessage = 'Impossible de contacter le serveur d\'envoi d\'emails. Vérifiez votre connexion internet et réessayez.';
+      }
       
       toast({
         title: "Erreur d'envoi",
-        description: `Une erreur est survenue: ${error.message}. Veuillez réessayer ou nous contacter directement par email.`,
+        description: `Une erreur est survenue: ${errorMessage}. Veuillez réessayer ou nous contacter directement par email à contact@senior-digital-mentor.com.`,
         variant: "destructive"
       });
     } finally {
       setLoading(false);
-      console.log('=== FIN ENVOI FORMULAIRE ===');
+      console.log('=== FIN DIAGNOSTIC ENVOI FORMULAIRE ===');
     }
   };
 
