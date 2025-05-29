@@ -29,50 +29,62 @@ const Footer = () => {
     }
 
     setLoading(true);
+    console.log('=== DÉBUT ENVOI FORMULAIRE ===');
+    console.log('Données:', { name, email, messageLength: message.length, hasAttachment: !!attachment });
     
     try {
       // Upload attachment if provided
       let attachmentUrl = null;
       
       if (attachment) {
+        console.log('Upload de la pièce jointe:', attachment.name);
         try {
           const fileExt = attachment.name.split('.').pop();
           const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           
-          // Essayer d'uploader le fichier
           const { error: uploadError, data } = await supabase.storage
             .from('contact-attachments')
             .upload(filePath, attachment);
 
           if (uploadError) {
-            console.warn('Impossible d\'uploader la pièce jointe:', uploadError);
-            // Continuer sans pièce jointe
+            console.error('Erreur upload:', uploadError);
+            toast({
+              title: "Attention",
+              description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
+              variant: "destructive"
+            });
           } else {
             const { data: { publicUrl } } = supabase.storage
               .from('contact-attachments')
               .getPublicUrl(filePath);
               
             attachmentUrl = publicUrl;
+            console.log('✓ Pièce jointe uploadée:', attachmentUrl);
           }
         } catch (error) {
-          console.warn('Erreur lors du téléchargement de la pièce jointe:', error);
-          // Continuer sans pièce jointe
+          console.error('Erreur upload:', error);
+          toast({
+            title: "Attention",
+            description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
+            variant: "destructive"
+          });
         }
       }
       
-      // Send email using edge function with better error handling
-      try {
-        const { data, error } = await supabase.functions.invoke('send-contact-email', {
-          body: { name, email, message, attachmentUrl }
-        });
-        
-        if (error) {
-          console.error('Erreur de la fonction edge:', error);
-          throw new Error(error.message || 'Erreur lors de l\'envoi de l\'email');
-        }
-        
-        console.log("Réponse de la fonction send-contact-email:", data);
-        
+      // Send email using edge function
+      console.log('Appel de la fonction send-contact-email');
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: { name, email, message, attachmentUrl }
+      });
+      
+      if (error) {
+        console.error('Erreur fonction edge:', error);
+        throw new Error(`Erreur d'envoi: ${error.message}`);
+      }
+      
+      console.log('✓ Réponse fonction:', data);
+      
+      if (data?.success) {
         toast({
           title: "Message envoyé",
           description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
@@ -84,31 +96,29 @@ const Footer = () => {
         setMessage('');
         setAttachment(null);
         
-      } catch (functionError: any) {
-        console.error('Erreur de la fonction edge:', functionError);
-        
-        // Fallback: Show success message even if email sending fails
-        toast({
-          title: "Message reçu",
-          description: "Votre message a été reçu. Nous vous répondrons dans les plus brefs délais.",
-        });
-        
-        // Reset form anyway
-        setName('');
-        setEmail('');
-        setMessage('');
-        setAttachment(null);
+        // Reset file input
+        const fileInput = document.getElementById('attachment') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      } else {
+        throw new Error(data?.error || 'Erreur inconnue');
       }
       
     } catch (error: any) {
-      console.error('Error sending message:', error);
+      console.error('=== ERREUR ENVOI ===');
+      console.error('Type:', error.constructor?.name);
+      console.error('Message:', error.message);
+      console.error('Objet complet:', error);
+      
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue. Veuillez réessayer ou nous contacter directement par email.",
+        title: "Erreur d'envoi",
+        description: `Une erreur est survenue: ${error.message}. Veuillez réessayer ou nous contacter directement par email.`,
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+      console.log('=== FIN ENVOI FORMULAIRE ===');
     }
   };
 

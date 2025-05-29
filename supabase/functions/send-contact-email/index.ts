@@ -18,25 +18,47 @@ serve(async (req: Request) => {
   }
   
   try {
-    console.log('Début du traitement de la requête');
+    console.log('=== DÉBUT TRAITEMENT REQUÊTE ===');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
     
-    // Initialiser Resend avec la clé API
+    // Vérifier la clé API Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
-      console.error('RESEND_API_KEY is not defined');
-      throw new Error('RESEND_API_KEY is not defined');
+      console.error('ERREUR CRITIQUE: RESEND_API_KEY non définie');
+      throw new Error('Configuration manquante: RESEND_API_KEY');
     }
+    console.log('✓ RESEND_API_KEY configurée');
+    
     const resend = new Resend(resendApiKey);
     
-    // Traiter la requête
-    const { name, email, message, attachmentUrl } = await req.json();
-    console.log('Données reçues:', { name, email, message, attachmentUrl: !!attachmentUrl });
+    // Traiter les données de la requête
+    const requestBody = await req.text();
+    console.log('Corps de la requête brut:', requestBody);
     
+    let parsedData;
+    try {
+      parsedData = JSON.parse(requestBody);
+    } catch (parseError) {
+      console.error('Erreur de parsing JSON:', parseError);
+      throw new Error('Données JSON invalides');
+    }
+    
+    const { name, email, message, attachmentUrl } = parsedData;
+    console.log('Données extraites:', { 
+      name: name ? '✓' : '✗', 
+      email: email ? '✓' : '✗', 
+      message: message ? '✓' : '✗', 
+      hasAttachment: !!attachmentUrl 
+    });
+    
+    // Validation des champs requis
     if (!name || !email || !message) {
+      console.error('Champs manquants:', { name: !!name, email: !!email, message: !!message });
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Nom, email et message sont requis' 
+          error: 'Tous les champs sont requis (nom, email, message)' 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
@@ -49,61 +71,85 @@ serve(async (req: Request) => {
       <p><strong>Nom:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Message:</strong></p>
-      <p>${message.replace(/\n/g, '<br/>')}</p>
+      <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+        ${message.replace(/\n/g, '<br/>')}
+      </div>
     `;
     
     // Ajouter le lien de la pièce jointe si elle existe
     if (attachmentUrl) {
-      emailContent += `<p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}">Voir la pièce jointe</a></p>`;
+      emailContent += `
+        <p><strong>Pièce jointe:</strong> <a href="${attachmentUrl}" target="_blank">Voir la pièce jointe</a></p>
+      `;
     }
     
-    console.log('Envoi de l\'email de notification à contact@senior-digital-mentor.com');
+    emailContent += `
+      <hr style="margin: 20px 0;">
+      <p style="color: #666; font-size: 12px;">
+        Email envoyé depuis le formulaire de contact de Senior Digital Mentor
+      </p>
+    `;
     
-    // Envoyer l'email de notification à l'adresse fixe - CORRECTION PRINCIPALE
+    console.log('=== ENVOI EMAIL NOTIFICATION ===');
+    console.log('Destinataire: contact@senior-digital-mentor.com');
+    
+    // Envoyer l'email de notification à l'adresse fixe
     const notificationResult = await resend.emails.send({
-      from: 'Tranches de vie <contact@tranches-de-vie.com>',
-      to: 'contact@senior-digital-mentor.com', // ADRESSE FIXE CORRIGÉE
+      from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
+      to: 'contact@senior-digital-mentor.com',
       subject: emailSubject,
       html: emailContent,
       reply_to: email,
     });
     
-    console.log('Résultat notification:', notificationResult);
+    console.log('✓ Résultat notification:', notificationResult);
     
     // Envoyer un email de confirmation à l'expéditeur
-    console.log('Envoi de l\'email de confirmation à:', email);
+    console.log('=== ENVOI EMAIL CONFIRMATION ===');
+    console.log('Destinataire:', email);
+    
     const confirmationResult = await resend.emails.send({
-      from: 'Tranches de vie <contact@tranches-de-vie.com>',
+      from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
       to: email,
       subject: 'Nous avons bien reçu votre message',
       html: `
         <h1>Bonjour ${name},</h1>
         <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
         <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
+        <br>
         <p>Cordialement,</p>
-        <p>L'équipe Tranches de vie</p>
+        <p><strong>L'équipe Senior Digital Mentor</strong></p>
+        <hr style="margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          Senior Digital Mentor - Le digital à mon rythme
+        </p>
       `,
     });
     
-    console.log('Résultat confirmation:', confirmationResult);
+    console.log('✓ Résultat confirmation:', confirmationResult);
+    console.log('=== ENVOI TERMINÉ AVEC SUCCÈS ===');
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Email envoyé avec succès et confirmation envoyée',
-        notificationResult,
-        confirmationResult
+        message: 'Emails envoyés avec succès',
+        notification: notificationResult,
+        confirmation: confirmationResult
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
     
   } catch (error) {
-    console.error('Erreur dans la fonction send-contact-email:', error);
+    console.error('=== ERREUR DANS LA FONCTION ===');
+    console.error('Type:', error.constructor.name);
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Une erreur est survenue lors de l\'envoi de l\'email' 
+        error: error.message || 'Erreur interne du serveur',
+        details: error.constructor.name
       }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
