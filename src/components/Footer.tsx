@@ -29,17 +29,19 @@ const Footer = () => {
     }
 
     setLoading(true);
+    console.log('Début envoi formulaire...');
     
     try {
       // Upload attachment if provided
       let attachmentUrl = null;
       
       if (attachment) {
+        console.log('Upload de la pièce jointe...');
         try {
           const fileExt = attachment.name.split('.').pop();
           const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           
-          const { error: uploadError, data } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('contact-attachments')
             .upload(filePath, attachment);
 
@@ -56,24 +58,32 @@ const Footer = () => {
               .getPublicUrl(filePath);
               
             attachmentUrl = publicUrl;
+            console.log('Pièce jointe uploadée:', attachmentUrl);
           }
         } catch (error) {
           console.error('Exception durant upload:', error);
-          toast({
-            title: "Attention",
-            description: "La pièce jointe n'a pas pu être envoyée, mais votre message sera tout de même transmis.",
-            variant: "destructive"
-          });
         }
       }
       
-      // Envoyer l'email via la fonction edge
+      // Préparer les données pour l'envoi
+      const emailData = { 
+        name: name.trim(), 
+        email: email.trim(), 
+        message: message.trim(), 
+        attachmentUrl 
+      };
+      
+      console.log('Envoi email avec données:', emailData);
+      
+      // Tentative d'envoi via fonction Edge
       const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: { name, email, message, attachmentUrl }
+        body: emailData
       });
       
+      console.log('Réponse fonction Edge:', { data, error });
+      
       if (error) {
-        throw new Error(`Erreur d'envoi: ${error.message}`);
+        throw new Error(`Erreur fonction Edge: ${error.message}`);
       }
       
       if (data?.success) {
@@ -94,15 +104,15 @@ const Footer = () => {
           fileInput.value = '';
         }
       } else {
-        throw new Error(data?.error || 'Erreur inconnue dans la réponse');
+        throw new Error(data?.error || 'Réponse inattendue de la fonction');
       }
       
     } catch (error: any) {
-      console.error('Erreur envoi formulaire:', error);
+      console.error('Erreur complète:', error);
       
       toast({
         title: "Erreur d'envoi",
-        description: `Une erreur est survenue: ${error.message}. Veuillez réessayer ou nous contacter directement par email à contact@senior-digital-mentor.com.`,
+        description: `Impossible d'envoyer le message: ${error.message}. Veuillez réessayer ou nous contacter directement par email.`,
         variant: "destructive"
       });
     } finally {
