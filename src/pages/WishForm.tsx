@@ -174,11 +174,13 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       // Mettre à jour le formulaire avec l'URL permanente
       form.setValue('thumbnail', thumbnailUrl);
       
-      // Utiliser l'URL permanente pour l'aperçu au lieu de créer un blob URL
-      setThumbnailPreview(thumbnailUrl);
+      // Créer un aperçu local temporaire pour l'affichage immédiat
+      const localPreviewUrl = URL.createObjectURL(file);
+      setThumbnailPreview(localPreviewUrl);
       setThumbnailFile(file);
       
       console.log('Vignette uploadée avec succès:', thumbnailUrl);
+      console.log('Aperçu local créé:', localPreviewUrl);
       
       toast({
         title: 'Vignette téléchargée !',
@@ -198,6 +200,10 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
   // Gestionnaire pour supprimer la vignette
   const handleRemoveThumbnail = () => {
+    // Nettoyer l'URL blob locale si elle existe
+    if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(thumbnailPreview);
+    }
     setThumbnailFile(null);
     setThumbnailPreview(null);
     form.setValue('thumbnail', '');
@@ -209,6 +215,15 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       setThumbnailPreview(wishToEdit.cover_image);
     }
   }, [wishToEdit]);
+
+  // Nettoyer les URLs blob lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(thumbnailPreview);
+      }
+    };
+  }, [thumbnailPreview]);
   
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -412,6 +427,9 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                                     console.error('Erreur de chargement de l\'image:', thumbnailPreview);
                                     const target = e.target as HTMLImageElement;
                                     target.src = '/placeholder.svg';
+                                  }}
+                                  onLoad={() => {
+                                    console.log('Image chargée avec succès:', thumbnailPreview);
                                   }}
                                 />
                                 <Button
