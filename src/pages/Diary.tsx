@@ -38,7 +38,7 @@ const Diary = () => {
       setLoading(true);
       
       // Déterminer l'utilisateur cible - CORRECTION PRINCIPALE
-      let targetUserId = selectedUserId || user.id;
+      const targetUserId = selectedUserId || user.id;
       
       console.log('Diary - Chargement des entrées:', {
         currentUserId: user.id,
@@ -58,7 +58,7 @@ const Diary = () => {
         console.log('Diary - Mode admin - chargement pour utilisateur:', targetUserId);
         query = query.eq('user_id', targetUserId);
       } else {
-        // Pour les non-admins
+        // Pour les non-admins, logique de permissions existante
         if (selectedUserId && selectedUserId !== user.id) {
           // Vérifier si l'utilisateur a des permissions pour voir ce journal
           const { data: permissions, error: permError } = await supabase
