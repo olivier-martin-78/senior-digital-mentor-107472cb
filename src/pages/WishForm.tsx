@@ -171,9 +171,14 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
       const thumbnailUrl = await uploadAlbumThumbnail(file, wishId);
       
+      // Mettre à jour le formulaire avec l'URL permanente
       form.setValue('thumbnail', thumbnailUrl);
-      setThumbnailPreview(URL.createObjectURL(file));
+      
+      // Utiliser l'URL permanente pour l'aperçu au lieu de créer un blob URL
+      setThumbnailPreview(thumbnailUrl);
       setThumbnailFile(file);
+      
+      console.log('Vignette uploadée avec succès:', thumbnailUrl);
       
       toast({
         title: 'Vignette téléchargée !',
@@ -403,6 +408,11 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                                   src={thumbnailPreview}
                                   alt="Aperçu de la vignette"
                                   className="w-32 h-32 object-cover rounded-lg border"
+                                  onError={(e) => {
+                                    console.error('Erreur de chargement de l\'image:', thumbnailPreview);
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/placeholder.svg';
+                                  }}
                                 />
                                 <Button
                                   type="button"
