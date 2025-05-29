@@ -206,6 +206,13 @@ const Recent = () => {
   };
 
   const renderItemImage = (item: RecentItem) => {
+    console.log('Recent - renderItemImage pour:', {
+      type: item.type,
+      id: item.id,
+      cover_image: item.cover_image,
+      media_url: item.media_url
+    });
+
     // Pour les commentaires, pas d'image
     if (item.type === 'comment') {
       console.log('Recent - Pas d\'image pour commentaire:', item.id);

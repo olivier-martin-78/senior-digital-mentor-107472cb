@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +18,7 @@ import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 
 const AdminPosts = () => {
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("posts");
@@ -34,6 +33,9 @@ const AdminPosts = () => {
   const [isAlbumDialogOpen, setIsAlbumDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = hasRole('admin');
+  const isEditor = hasRole('editor');
 
   useEffect(() => {
     if (!hasRole('admin') && !hasRole('editor')) {
@@ -101,6 +103,18 @@ const AdminPosts = () => {
 
     fetchData();
   }, [hasRole, navigate, toast, activeTab]);
+
+  const canDeletePost = (post: PostWithAuthor) => {
+    return isAdmin || (isEditor && post.author_id === user?.id);
+  };
+
+  const canDeleteAlbum = (album: AlbumWithAuthor) => {
+    return isAdmin || (isEditor && album.author_id === user?.id);
+  };
+
+  const canDeleteCategory = () => {
+    return isAdmin; // Seuls les admins peuvent supprimer les catégories
+  };
 
   const deletePost = async (postId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.')) {
@@ -437,7 +451,7 @@ const AdminPosts = () => {
               </DialogContent>
             </Dialog>
           )}
-          {activeTab === "categories" && (
+          {activeTab === "categories" && isAdmin && (
             <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-tranches-sage hover:bg-tranches-sage/90">
@@ -471,7 +485,7 @@ const AdminPosts = () => {
               </DialogContent>
             </Dialog>
           )}
-        </div>
+        </Tabs>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
@@ -534,14 +548,16 @@ const AdminPosts = () => {
                                 <Edit className="h-4 w-4" />
                               </Link>
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => deletePost(post.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {canDeletePost(post) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => deletePost(post.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -602,14 +618,16 @@ const AdminPosts = () => {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => deleteAlbum(album.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {canDeleteAlbum(album) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => deleteAlbum(album.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -652,25 +670,29 @@ const AdminPosts = () => {
                           </TableCell>
                           <TableCell>{formatDate(category.created_at)}</TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                setEditingCategory(category);
-                                setNewCategoryName(category.name);
-                                setIsCategoryDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => deleteCategory(category.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setEditingCategory(category);
+                                  setNewCategoryName(category.name);
+                                  setIsCategoryDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDeleteCategory() && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => deleteCategory(category.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
