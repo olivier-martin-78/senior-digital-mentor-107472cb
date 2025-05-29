@@ -48,25 +48,24 @@ const InvitationGroups = () => {
   const loadGroups = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: groupsData, error } = await supabase
         .from('invitation_groups')
-        .select(`
-          id,
-          name,
-          created_by,
-          created_at,
-          profiles!invitation_groups_created_by_fkey (
-            display_name,
-            email
-          )
-        `)
+        .select('id, name, created_by, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Compter les membres pour chaque groupe
-      const groupsWithCounts = await Promise.all(
-        (data || []).map(async (group) => {
+      // Récupérer les informations des créateurs et compter les membres
+      const groupsWithDetails = await Promise.all(
+        (groupsData || []).map(async (group) => {
+          // Récupérer les infos du créateur
+          const { data: creatorData } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', group.created_by)
+            .single();
+
+          // Compter les membres
           const { count } = await supabase
             .from('group_members')
             .select('*', { count: 'exact', head: true })
@@ -78,12 +77,12 @@ const InvitationGroups = () => {
             created_by: group.created_by,
             created_at: group.created_at,
             member_count: count || 0,
-            creator_name: group.profiles?.display_name || group.profiles?.email || 'Utilisateur inconnu'
+            creator_name: creatorData?.display_name || creatorData?.email || 'Utilisateur inconnu'
           };
         })
       );
 
-      setGroups(groupsWithCounts);
+      setGroups(groupsWithDetails);
     } catch (error: any) {
       console.error('Erreur lors du chargement des groupes:', error);
       toast({
@@ -98,23 +97,34 @@ const InvitationGroups = () => {
 
   const loadGroupMembers = async (groupId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: membersData, error } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          added_at,
-          profiles!group_members_user_id_fkey (
-            display_name,
-            email
-          )
-        `)
+        .select('id, user_id, role, added_at')
         .eq('group_id', groupId)
         .order('added_at', { ascending: false });
 
       if (error) throw error;
-      setGroupMembers(data || []);
+
+      // Récupérer les profils des membres
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', member.user_id)
+            .single();
+
+          return {
+            ...member,
+            profiles: {
+              display_name: profileData?.display_name || null,
+              email: profileData?.email || 'Email inconnu'
+            }
+          };
+        })
+      );
+
+      setGroupMembers(membersWithProfiles);
     } catch (error: any) {
       console.error('Erreur lors du chargement des membres:', error);
       toast({
