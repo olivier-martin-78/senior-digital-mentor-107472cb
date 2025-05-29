@@ -485,7 +485,7 @@ const AdminPosts = () => {
               </DialogContent>
             </Dialog>
           )}
-        </Tabs>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
