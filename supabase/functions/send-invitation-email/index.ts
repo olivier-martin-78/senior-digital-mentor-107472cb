@@ -1,5 +1,4 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -10,28 +9,36 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('Début de la fonction send-invitation-email');
+  console.log('=== DEBUT FONCTION send-invitation-email ===');
   
   if (req.method === 'OPTIONS') {
+    console.log('Requête OPTIONS reçue');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Vérification de la clé API Resend...');
     if (!resendApiKey) {
-      console.error('RESEND_API_KEY manquante');
+      console.error('ERREUR: RESEND_API_KEY manquante dans les variables d\'environnement');
       throw new Error('Configuration manquante: RESEND_API_KEY');
     }
+    console.log('Clé API Resend trouvée');
 
+    console.log('Lecture du corps de la requête...');
     const requestBody = await req.json();
-    console.log('Corps de la requête reçu:', requestBody);
+    console.log('Corps de la requête reçu:', JSON.stringify(requestBody, null, 2));
     
     const { firstName, lastName, email, inviterName, inviterEmail, accessTypes } = requestBody;
 
+    console.log('Validation des paramètres...');
     if (!firstName || !lastName || !email || !inviterName || !inviterEmail) {
+      console.error('Paramètres manquants:', { firstName, lastName, email, inviterName, inviterEmail });
       throw new Error('Paramètres manquants dans la requête');
     }
+    console.log('Paramètres validés avec succès');
 
     // Construire la liste des accès accordés
+    console.log('Construction de la liste des accès...');
     const accessList = [];
     if (accessTypes?.blogAccess) accessList.push('Albums (Blog)');
     if (accessTypes?.wishesAccess) accessList.push('Souhaits');
@@ -41,6 +48,8 @@ serve(async (req) => {
     const accessText = accessList.length > 0 
       ? `Vous avez accès aux sections suivantes : ${accessList.join(', ')}`
       : 'Aucun accès spécifique accordé pour le moment.';
+    
+    console.log('Accès configurés:', accessText);
 
     // Email HTML
     const emailHtml = `
@@ -74,7 +83,8 @@ serve(async (req) => {
       </div>
     `;
 
-    console.log('Envoi de l\'email vers:', email);
+    console.log('Préparation de l\'envoi email vers:', email);
+    console.log('URL API Resend: https://api.resend.com/emails');
 
     // Envoyer l'email via Resend
     const response = await fetch('https://api.resend.com/emails', {
@@ -92,26 +102,34 @@ serve(async (req) => {
       }),
     });
 
-    console.log('Statut de la réponse Resend:', response.status);
+    console.log('Réponse Resend reçue - Status:', response.status);
+    console.log('Headers de réponse:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erreur Resend (status:', response.status, '):', errorText);
+      console.error('ERREUR Resend - Status:', response.status);
+      console.error('ERREUR Resend - Réponse:', errorText);
       throw new Error(`Erreur Resend (${response.status}): ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Email envoyé avec succès:', result);
+    console.log('SUCCESS - Email envoyé avec succès:', result);
 
     return new Response(JSON.stringify({ success: true, emailId: result.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Erreur complète lors de l\'envoi de l\'email:', error);
+    console.error('=== ERREUR COMPLETE ===');
+    console.error('Type d\'erreur:', typeof error);
+    console.error('Message:', error.message);
+    console.error('Stack trace:', error.stack);
+    console.error('Erreur complète:', error);
+    
     return new Response(JSON.stringify({ 
       error: error.message || 'Erreur lors de l\'envoi de l\'email',
-      details: error.toString()
+      details: error.toString(),
+      type: typeof error
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
