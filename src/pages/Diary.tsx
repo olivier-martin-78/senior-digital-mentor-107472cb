@@ -23,8 +23,8 @@ const Diary = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Utiliser l'ID de l'utilisateur sélectionné ou l'utilisateur actuel
-  const targetUserId = selectedUserId || user?.id;
+  // Pour les admins, utiliser l'utilisateur sélectionné, sinon utiliser l'utilisateur actuel
+  const targetUserId = hasRole('admin') ? (selectedUserId || user?.id) : (selectedUserId || user?.id);
 
   useEffect(() => {
     if (!session) {
@@ -39,6 +39,7 @@ const Diary = () => {
     
     try {
       setLoading(true);
+      console.log('Chargement des entrées pour utilisateur:', targetUserId, 'Admin mode:', hasRole('admin'));
       
       let query = supabase
         .from('diary_entries')
@@ -47,6 +48,7 @@ const Diary = () => {
 
       // Pour les admins, permettre de voir les entrées de n'importe quel utilisateur
       if (hasRole('admin')) {
+        console.log('Mode admin - chargement pour utilisateur:', targetUserId);
         query = query.eq('user_id', targetUserId);
       } else {
         // Pour les non-admins, vérifier les permissions
@@ -116,7 +118,7 @@ const Diary = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
-    console.log('Changement d\'utilisateur sélectionné:', userId);
+    console.log('Changement d\'utilisateur sélectionné vers:', userId);
     setSelectedUserId(userId);
   };
 

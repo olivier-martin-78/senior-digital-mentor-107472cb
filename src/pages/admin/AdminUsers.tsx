@@ -147,12 +147,17 @@ const AdminUsers = () => {
 
   const toggleReceiveContacts = async (userId: string, currentValue: boolean) => {
     try {
+      console.log('Tentative de modification receive_contacts pour utilisateur:', userId, 'valeur actuelle:', currentValue);
+      
       const { error } = await supabase
         .from('profiles')
         .update({ receive_contacts: !currentValue })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        throw error;
+      }
 
       // Update the UI
       setUsers(users.map(u => {
@@ -227,59 +232,64 @@ const AdminUsers = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map(user => (
-                    <TableRow key={user.id}>
-                      <TableCell className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url || undefined} alt="Avatar" />
-                          <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.display_name || '-'}</TableCell>
-                      <TableCell>{formatDate(user.created_at)}</TableCell>
-                      <TableCell>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs ${
-                          getCurrentRole(user.roles) === 'admin' 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : getCurrentRole(user.roles) === 'editor'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {getRoleDisplay(user.roles)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {getCurrentRole(user.roles) === 'admin' ? (
-                          <Switch 
-                            checked={!!user.receive_contacts}
-                            onCheckedChange={() => toggleReceiveContacts(user.id, !!user.receive_contacts)}
-                            disabled={user.id === currentUser?.id && !user.receive_contacts}
-                          />
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={getCurrentRole(user.roles)}
-                          onValueChange={(value: string) => handleRoleChange(user.id, value as AppRole)}
-                          disabled={user.id === currentUser?.id}
-                        >
-                          <SelectTrigger className="w-[130px]">
-                            <SelectValue placeholder="Changer le rôle" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Administrateur</SelectItem>
-                            <SelectItem value="editor">Éditeur</SelectItem>
-                            <SelectItem value="reader">Lecteur</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  users.map(user => {
+                    const isCurrentUser = user.id === currentUser?.id;
+                    const isAdmin = getCurrentRole(user.roles) === 'admin';
+                    
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url || undefined} alt="Avatar" />
+                            <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.display_name || '-'}</TableCell>
+                        <TableCell>{formatDate(user.created_at)}</TableCell>
+                        <TableCell>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs ${
+                            getCurrentRole(user.roles) === 'admin' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : getCurrentRole(user.roles) === 'editor'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {getRoleDisplay(user.roles)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {isAdmin ? (
+                            <Switch 
+                              checked={!!user.receive_contacts}
+                              onCheckedChange={() => toggleReceiveContacts(user.id, !!user.receive_contacts)}
+                              disabled={false}
+                            />
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={getCurrentRole(user.roles)}
+                            onValueChange={(value: string) => handleRoleChange(user.id, value as AppRole)}
+                            disabled={isCurrentUser}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue placeholder="Changer le rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Administrateur</SelectItem>
+                              <SelectItem value="editor">Éditeur</SelectItem>
+                              <SelectItem value="reader">Lecteur</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
