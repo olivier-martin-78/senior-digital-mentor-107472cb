@@ -38,7 +38,11 @@ const Diary = () => {
       setLoading(true);
       
       // Déterminer l'utilisateur cible - CORRECTION PRINCIPALE
-      const targetUserId = selectedUserId || user.id;
+      // Pour les admins : si un utilisateur est sélectionné, on le prend, sinon on prend l'admin lui-même
+      // Pour les non-admins : on prend l'utilisateur sélectionné s'il a les permissions, sinon on prend l'utilisateur connecté
+      const targetUserId = hasRole('admin') 
+        ? (selectedUserId || user.id)  // Admin peut voir n'importe qui
+        : (selectedUserId || user.id); // Non-admin suit la logique de permissions
       
       console.log('Diary - Chargement des entrées:', {
         currentUserId: user.id,
@@ -92,9 +96,15 @@ const Diary = () => {
         query = query.lte('entry_date', endDate);
       }
 
+      console.log('Diary - Exécution de la requête pour user_id:', targetUserId);
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Diary - Erreur Supabase:', error);
+        throw error;
+      }
+      
+      console.log('Diary - Données brutes reçues:', data);
       
       // Convertir les données pour correspondre au type DiaryEntry avec validation stricte
       const convertedEntries = (data || []).map(entry => ({
