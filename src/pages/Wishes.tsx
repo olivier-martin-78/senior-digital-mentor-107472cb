@@ -41,12 +41,12 @@ const Wishes = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Les admins voient tous les souhaits, les autres voient seulement :
-      // - les souhaits publiés de tous
-      // - leurs propres souhaits (publiés et brouillons)
+      // Tous les utilisateurs connectés peuvent voir tous les souhaits publiés
+      // Les utilisateurs voient aussi leurs propres brouillons
       if (hasRole('admin')) {
-        // Les admins voient tout
+        // Les admins voient tout (publiés et brouillons)
       } else {
+        // Les utilisateurs normaux voient tous les souhaits publiés + leurs propres brouillons
         query = query.or(`published.eq.true,author_id.eq.${user?.id}`);
       }
 

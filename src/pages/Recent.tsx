@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,6 +103,19 @@ const Recent = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // Requête pour les souhaits (tous les utilisateurs peuvent voir tous les souhaits publiés)
+      let wishQuery = supabase
+        .from('wish_posts')
+        .select('*, profiles(display_name, email)')
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+
+      // Requête pour les histoires de vie
+      let lifeStoryQuery = supabase
+        .from('life_stories')
+        .select('*, profiles:user_id(display_name, email)')
+        .order('updated_at', { ascending: false });
+
       // Gestion des permissions pour les non-administrateurs
       if (!hasRole('admin')) {
         // Pour les articles de blog, utiliser les permissions life_story
@@ -128,35 +142,11 @@ const Recent = () => {
         blogQuery = blogQuery.in('author_id', authorizedUserIds);
         commentsQuery = commentsQuery.in('author_id', authorizedUserIds);
 
-        // Pour les journaux, vérifier les permissions diary ET life_story
-        const { data: diaryPermissions, error: diaryPermError } = await supabase
-          .from('diary_permissions')
-          .select('diary_owner_id')
-          .eq('permitted_user_id', user?.id);
+        // Pour les journaux, seuls les propres journaux de l'utilisateur
+        diaryQuery = diaryQuery.eq('user_id', user?.id);
 
-        if (diaryPermError) {
-          console.error('Erreur lors de la récupération des permissions diary:', diaryPermError);
-        }
-
-        // Combiner les permissions diary et life_story pour les journaux
-        const diaryAuthorizedUserIds = [user?.id];
-        if (diaryPermissions?.length) {
-          diaryPermissions.forEach(p => {
-            if (p.diary_owner_id && !diaryAuthorizedUserIds.includes(p.diary_owner_id)) {
-              diaryAuthorizedUserIds.push(p.diary_owner_id);
-            }
-          });
-        }
-        if (lifeStoryPermissions?.length) {
-          lifeStoryPermissions.forEach(p => {
-            if (p.story_owner_id && !diaryAuthorizedUserIds.includes(p.story_owner_id)) {
-              diaryAuthorizedUserIds.push(p.story_owner_id);
-            }
-          });
-        }
-
-        console.log('Utilisateurs autorisés pour les journaux:', diaryAuthorizedUserIds);
-        diaryQuery = diaryQuery.in('user_id', diaryAuthorizedUserIds);
+        // Pour les histoires de vie, seulement celle de l'utilisateur
+        lifeStoryQuery = lifeStoryQuery.eq('user_id', user?.id);
       }
 
       // Appliquer les filtres de date si définis
@@ -164,18 +154,24 @@ const Recent = () => {
         blogQuery = blogQuery.gte('created_at', startDate);
         diaryQuery = diaryQuery.gte('created_at', startDate);
         commentsQuery = commentsQuery.gte('created_at', startDate);
+        wishQuery = wishQuery.gte('created_at', startDate);
+        lifeStoryQuery = lifeStoryQuery.gte('updated_at', startDate);
       }
       if (endDate) {
         const endDateTime = endDate + 'T23:59:59';
         blogQuery = blogQuery.lte('created_at', endDateTime);
         diaryQuery = diaryQuery.lte('created_at', endDateTime);
         commentsQuery = commentsQuery.lte('created_at', endDateTime);
+        wishQuery = wishQuery.lte('created_at', endDateTime);
+        lifeStoryQuery = lifeStoryQuery.lte('updated_at', endDateTime);
       }
 
-      const [blogResponse, diaryResponse, commentsResponse] = await Promise.all([
+      const [blogResponse, diaryResponse, commentsResponse, wishResponse, lifeStoryResponse] = await Promise.all([
         blogQuery.limit(10),
         diaryQuery.limit(10),
-        commentsQuery.limit(10)
+        commentsQuery.limit(10),
+        wishQuery.limit(10),
+        lifeStoryQuery.limit(10)
       ]);
 
       if (blogResponse.error) {
@@ -190,14 +186,24 @@ const Recent = () => {
         console.error('Erreur comments:', commentsResponse.error);
         throw commentsResponse.error;
       }
+      if (wishResponse.error) {
+        console.error('Erreur wish:', wishResponse.error);
+        throw wishResponse.error;
+      }
+      if (lifeStoryResponse.error) {
+        console.error('Erreur life story:', lifeStoryResponse.error);
+        throw lifeStoryResponse.error;
+      }
 
       console.log('Réponses récupérées:', {
         blog: blogResponse.data?.length || 0,
         diary: diaryResponse.data?.length || 0,
-        comments: commentsResponse.data?.length || 0
+        comments: commentsResponse.data?.length || 0,
+        wishes: wishResponse.data?.length || 0,
+        lifeStories: lifeStoryResponse.data?.length || 0
       });
 
-      // Formatter les commentaires pour les inclure dans la liste
+      // Formatter les différents types d'éléments
       const formattedComments = commentsResponse.data.map(comment => ({
         ...comment,
         type: 'comment',
@@ -207,11 +213,26 @@ const Recent = () => {
         post_cover_image: comment.blog_posts?.cover_image
       }));
 
+      const formattedWishes = wishResponse.data.map(wish => ({
+        ...wish,
+        type: 'wish',
+        title: wish.title
+      }));
+
+      const formattedLifeStories = lifeStoryResponse.data.map(story => ({
+        ...story,
+        type: 'life_story',
+        title: `Histoire de vie: ${story.title}`,
+        created_at: story.updated_at // Utiliser updated_at pour le tri
+      }));
+
       // Combiner et trier par date
       const allItems = [
         ...blogResponse.data.map(item => ({ ...item, type: 'blog' })),
         ...diaryResponse.data.map(item => ({ ...item, type: 'diary' })),
-        ...formattedComments
+        ...formattedComments,
+        ...formattedWishes,
+        ...formattedLifeStories
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       console.log('Total d\'éléments combinés:', allItems.length);
@@ -240,8 +261,34 @@ const Recent = () => {
       return `/diary/${item.id}`;
     } else if (item.type === 'comment') {
       return `/blog/${item.post_id}`;
+    } else if (item.type === 'wish') {
+      return `/wishes/${item.id}`;
+    } else if (item.type === 'life_story') {
+      return `/life-story`;
     }
     return '#';
+  };
+
+  const getItemTypeLabel = (type: string) => {
+    switch (type) {
+      case 'blog': return 'Album';
+      case 'diary': return 'Journal';
+      case 'comment': return 'Commentaire';
+      case 'wish': return 'Souhait';
+      case 'life_story': return 'Histoire de vie';
+      default: return type;
+    }
+  };
+
+  const getItemTypeColor = (type: string) => {
+    switch (type) {
+      case 'blog': return 'bg-blue-100 text-blue-800';
+      case 'diary': return 'bg-green-100 text-green-800';
+      case 'comment': return 'bg-purple-100 text-purple-800';
+      case 'wish': return 'bg-orange-100 text-orange-800';
+      case 'life_story': return 'bg-pink-100 text-pink-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -310,14 +357,8 @@ const Recent = () => {
                           <CardTitle className="text-lg font-medium text-tranches-charcoal truncate">
                             {item.title}
                           </CardTitle>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${
-                            item.type === 'blog' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : item.type === 'diary'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-purple-100 text-purple-800'
-                          }`}>
-                            {item.type === 'blog' ? 'Album' : item.type === 'diary' ? 'Journal' : 'Commentaire'}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${getItemTypeColor(item.type)}`}>
+                            {getItemTypeLabel(item.type)}
                           </span>
                         </div>
                       </CardHeader>
@@ -347,6 +388,16 @@ const Recent = () => {
                               "{item.content}"
                             </p>
                           </div>
+                        )}
+                        {item.type === 'wish' && item.profiles && (
+                          <p className="text-sm text-gray-500">
+                            Par {item.profiles.display_name || item.profiles.email}
+                          </p>
+                        )}
+                        {item.type === 'life_story' && item.profiles && (
+                          <p className="text-sm text-gray-500">
+                            Par {item.profiles.display_name || item.profiles.email}
+                          </p>
                         )}
                       </CardContent>
                     </div>
