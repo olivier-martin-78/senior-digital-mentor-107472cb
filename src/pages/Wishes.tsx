@@ -14,7 +14,7 @@ import { Search, Plus } from 'lucide-react';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
-import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 
 const Wishes = () => {
   const { user, hasRole } = useAuth();
@@ -176,12 +176,16 @@ const Wishes = () => {
                   {wish.cover_image && (
                     <div className="w-full h-48 overflow-hidden rounded-t-lg">
                       <img
-                        src={getThumbnailUrlSync(wish.cover_image)}
+                        src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
                         alt={wish.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          console.error('Erreur de chargement de l\'image:', wish.cover_image);
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('Image de souhait chargée:', wish.cover_image);
                         }}
                       />
                     </div>

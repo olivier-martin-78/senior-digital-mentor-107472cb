@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface RecentItem {
   id: string;
@@ -170,6 +170,14 @@ const Recent = () => {
     }
   };
 
+  const getThumbnailForItem = (item: RecentItem) => {
+    if (!item.cover_image) return null;
+    
+    // Utiliser le bon bucket selon le type d'élément
+    const bucket = item.type === 'blog' ? BLOG_MEDIA_BUCKET : ALBUM_THUMBNAILS_BUCKET;
+    return getThumbnailUrlSync(item.cover_image, bucket);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -203,12 +211,16 @@ const Recent = () => {
                   {item.cover_image && (
                     <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
                       <img
-                        src={getThumbnailUrlSync(item.cover_image)}
+                        src={getThumbnailForItem(item)}
                         alt={item.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          console.error('Erreur de chargement de l\'image:', item.cover_image, 'Type:', item.type);
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('Image chargée pour:', item.type, item.cover_image);
                         }}
                       />
                     </div>

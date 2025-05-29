@@ -72,6 +72,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadedThumbnailUrl, setUploadedThumbnailUrl] = useState<string | null>(null);
   
   const fetchWishAlbums = useCallback(async () => {
     try {
@@ -171,7 +172,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
       const thumbnailUrl = await uploadAlbumThumbnail(file, wishId);
       
-      // Mettre à jour le formulaire avec l'URL permanente
+      // Stocker l'URL permanente
+      setUploadedThumbnailUrl(thumbnailUrl);
       form.setValue('thumbnail', thumbnailUrl);
       
       // Créer un aperçu local temporaire pour l'affichage immédiat
@@ -206,6 +208,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
     }
     setThumbnailFile(null);
     setThumbnailPreview(null);
+    setUploadedThumbnailUrl(null);
     form.setValue('thumbnail', '');
   };
 
@@ -213,6 +216,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   useEffect(() => {
     if (wishToEdit?.cover_image) {
       setThumbnailPreview(wishToEdit.cover_image);
+      setUploadedThumbnailUrl(wishToEdit.cover_image);
     }
   }, [wishToEdit]);
 
@@ -257,7 +261,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
         published: values.published,
-        cover_image: values.thumbnail || null
+        cover_image: uploadedThumbnailUrl || values.thumbnail || null
       };
 
       console.log('WishForm - Submitting data:', submissionData);
