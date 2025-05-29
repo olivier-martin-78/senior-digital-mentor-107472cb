@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -111,10 +110,11 @@ const Wishes = () => {
       return null;
     }
 
-    console.log('Tentative d\'affichage de l\'image pour le souhait:', wish.id, 'URL:', wish.cover_image);
+    console.log('Affichage image souhait - ID:', wish.id, 'URL:', wish.cover_image);
     
+    // Utiliser directement le bucket album-thumbnails pour les souhaits
     const imageUrl = getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET);
-    console.log('URL générée pour l\'image:', imageUrl);
+    console.log('URL générée pour souhait:', imageUrl);
 
     return (
       <div className="w-full h-48 overflow-hidden rounded-t-lg">

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -7,17 +8,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
+import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface RecentItem {
   id: string;
   title: string;
-  type: 'blog' | 'wish' | 'diary';
+  type: 'blog' | 'wish' | 'diary' | 'comment';
   created_at: string;
   author?: string;
   content_preview?: string;
   cover_image?: string;
   first_name?: string;
+  post_title?: string;
+  comment_content?: string;
+  media_url?: string;
 }
 
 const Recent = () => {
@@ -100,7 +104,7 @@ const Recent = () => {
         const targetUserId = user.id;
         const { data: diaryEntries } = await supabase
           .from('diary_entries')
-          .select('id, title, created_at, activities')
+          .select('id, title, created_at, activities, media_url')
           .eq('user_id', targetUserId)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -112,7 +116,34 @@ const Recent = () => {
             type: 'diary' as const,
             created_at: entry.created_at,
             author: 'Moi',
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal'
+            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+            media_url: entry.media_url
+          })));
+        }
+
+        // Récupérer les commentaires récents
+        const { data: comments } = await supabase
+          .from('blog_comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            profiles(display_name),
+            post:blog_posts(id, title)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (comments) {
+          items.push(...comments.map(comment => ({
+            id: comment.id,
+            title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
+            type: 'comment' as const,
+            created_at: comment.created_at,
+            author: comment.profiles?.display_name || 'Anonyme',
+            content_preview: comment.content?.substring(0, 150) + '...',
+            post_title: comment.post?.title,
+            comment_content: comment.content
           })));
         }
 
@@ -138,6 +169,8 @@ const Recent = () => {
         return `/wishes/${item.id}`;
       case 'diary':
         return `/diary/${item.id}`;
+      case 'comment':
+        return `/blog/${item.id}`; // Lien vers le post commenté
       default:
         return '#';
     }
@@ -151,6 +184,8 @@ const Recent = () => {
         return 'Souhait';
       case 'diary':
         return 'Journal';
+      case 'comment':
+        return 'Commentaire';
       default:
         return type;
     }
@@ -164,12 +199,28 @@ const Recent = () => {
         return 'bg-tranches-sage';
       case 'diary':
         return 'bg-purple-500';
+      case 'comment':
+        return 'bg-orange-500';
       default:
         return 'bg-gray-500';
     }
   };
 
   const getThumbnailForItem = (item: RecentItem) => {
+    // Pour les commentaires, pas d'image
+    if (item.type === 'comment') {
+      return null;
+    }
+
+    // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
+    if (item.type === 'diary' && item.media_url) {
+      console.log('Traitement image journal - ID:', item.id, 'URL:', item.media_url);
+      const imageUrl = getThumbnailUrlSync(item.media_url, DIARY_MEDIA_BUCKET);
+      console.log('URL générée pour journal:', imageUrl);
+      return imageUrl;
+    }
+
+    // Pour les autres types, utiliser cover_image
     if (!item.cover_image) {
       console.log('Pas d\'image de couverture pour l\'élément:', item.type, item.id);
       return null;
@@ -178,7 +229,15 @@ const Recent = () => {
     console.log('Traitement de l\'image pour:', item.type, item.id, 'URL:', item.cover_image);
     
     // Utiliser le bon bucket selon le type d'élément
-    const bucket = item.type === 'blog' ? BLOG_MEDIA_BUCKET : ALBUM_THUMBNAILS_BUCKET;
+    let bucket;
+    if (item.type === 'blog') {
+      bucket = BLOG_MEDIA_BUCKET;
+    } else if (item.type === 'wish') {
+      bucket = ALBUM_THUMBNAILS_BUCKET;
+    } else {
+      bucket = ALBUM_THUMBNAILS_BUCKET;
+    }
+    
     const imageUrl = getThumbnailUrlSync(item.cover_image, bucket);
     
     console.log('URL générée pour', item.type, ':', imageUrl, 'avec bucket:', bucket);
@@ -201,7 +260,7 @@ const Recent = () => {
             console.error('ERREUR: Impossible de charger l\'image dans Recent');
             console.error('- Type:', item.type);
             console.error('- ID:', item.id);
-            console.error('- URL originale:', item.cover_image);
+            console.error('- URL originale:', item.cover_image || item.media_url);
             console.error('- URL générée:', imageUrl);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';

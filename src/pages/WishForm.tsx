@@ -34,7 +34,6 @@ import { WishAlbum, WishPost } from '@/types/supabase';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WishAlbumSelector from '@/components/WishAlbumSelector';
-import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 
 // Props type for the WishForm component
 interface WishFormProps {
@@ -154,7 +153,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const isEditor = useAuth().hasRole('editor');
   const canPublish = isAdmin || isEditor;
   
-  // Gestionnaire pour le téléchargement de la vignette
+  // Gestionnaire pour le téléchargement de la vignette - CORRIGÉ
   const handleThumbnailUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({
@@ -167,18 +166,37 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
 
     try {
       setUploadingThumbnail(true);
-      console.log('Début de l\'upload de la vignette...');
+      console.log('Début de l\'upload de la vignette pour souhait...');
       
+      // Utiliser directement le bucket album-thumbnails pour les souhaits
       const wishId = wishToEdit?.id || `wish-${Date.now()}`;
-      const uploadedUrl = await uploadAlbumThumbnail(file, wishId);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `wish-${wishId}-${Date.now()}.${fileExt}`;
       
-      console.log('URL de la vignette uploadée:', uploadedUrl);
+      console.log('Upload vers album-thumbnails avec nom:', fileName);
       
-      // Utiliser directement l'URL permanente pour l'aperçu ET le formulaire
-      setThumbnailUrl(uploadedUrl);
-      form.setValue('thumbnail', uploadedUrl);
+      const { error: uploadError } = await supabase.storage
+        .from('album-thumbnails')
+        .upload(fileName, file);
+        
+      if (uploadError) {
+        throw uploadError;
+      }
       
-      console.log('Vignette uploadée et URL définie:', uploadedUrl);
+      // Générer l'URL publique
+      const { data } = supabase.storage
+        .from('album-thumbnails')
+        .getPublicUrl(fileName);
+        
+      if (!data.publicUrl) {
+        throw new Error("Impossible de générer l'URL publique");
+      }
+      
+      console.log("URL publique générée pour souhait:", data.publicUrl);
+      
+      // Mettre à jour l'état et le formulaire avec l'URL publique
+      setThumbnailUrl(data.publicUrl);
+      form.setValue('thumbnail', data.publicUrl);
       
       toast({
         title: 'Vignette téléchargée !',
@@ -394,7 +412,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                     Nature de la demande
                   </h2>
                   
-                  {/* Champ vignette */}
+                  {/* Champ vignette - CORRIGÉ */}
                   <FormField
                     control={form.control}
                     name="thumbnail"
