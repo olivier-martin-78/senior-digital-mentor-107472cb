@@ -779,6 +779,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      delete_user_completely: {
+        Args: { user_id_to_delete: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           user_id: string

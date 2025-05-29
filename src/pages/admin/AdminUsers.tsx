@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
+import InviteUserDialog from '@/components/InviteUserDialog';
 
 interface UserWithRoles extends Profile {
   roles: AppRole[];
@@ -37,51 +39,51 @@ const AdminUsers = () => {
       return;
     }
 
-    const fetchUsers = async () => {
-      try {
-        // Fetch all profiles
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (profilesError) {
-          throw profilesError;
-        }
-
-        // Fetch all user roles
-        const { data: userRoles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('*');
-
-        if (rolesError) {
-          throw rolesError;
-        }
-
-        // Map roles to users
-        const usersWithRoles = profiles.map((profile: Profile) => {
-          const roles = userRoles
-            .filter((role: UserRole) => role.user_id === profile.id)
-            .map((role: UserRole) => role.role);
-          
-          return { ...profile, roles };
-        });
-
-        setUsers(usersWithRoles);
-      } catch (error: any) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: "Erreur",
-          description: error.message || "Une erreur est survenue lors du chargement des utilisateurs.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [hasRole, navigate, toast]);
+  }, [hasRole, navigate]);
+
+  const fetchUsers = async () => {
+    try {
+      // Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) {
+        throw profilesError;
+      }
+
+      // Fetch all user roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+
+      if (rolesError) {
+        throw rolesError;
+      }
+
+      // Map roles to users
+      const usersWithRoles = profiles.map((profile: Profile) => {
+        const roles = userRoles
+          .filter((role: UserRole) => role.user_id === profile.id)
+          .map((role: UserRole) => role.role);
+        
+        return { ...profile, roles };
+      });
+
+      setUsers(usersWithRoles);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du chargement des utilisateurs.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
@@ -181,6 +183,11 @@ const AdminUsers = () => {
     }
   };
 
+  const handleUserDeleted = () => {
+    // Refresh the users list
+    fetchUsers();
+  };
+
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -205,7 +212,10 @@ const AdminUsers = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Gestion des utilisateurs</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des utilisateurs</h1>
+          <InviteUserDialog />
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
@@ -221,7 +231,7 @@ const AdminUsers = () => {
                   <TableHead>Date d'inscription</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Recevoir contacts</TableHead>
-                  <TableHead className="w-[150px]">Actions</TableHead>
+                  <TableHead className="w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -272,20 +282,29 @@ const AdminUsers = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={getCurrentRole(user.roles)}
-                            onValueChange={(value: string) => handleRoleChange(user.id, value as AppRole)}
-                            disabled={isCurrentUser}
-                          >
-                            <SelectTrigger className="w-[130px]">
-                              <SelectValue placeholder="Changer le rôle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Administrateur</SelectItem>
-                              <SelectItem value="editor">Éditeur</SelectItem>
-                              <SelectItem value="reader">Lecteur</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={getCurrentRole(user.roles)}
+                              onValueChange={(value: string) => handleRoleChange(user.id, value as AppRole)}
+                              disabled={isCurrentUser}
+                            >
+                              <SelectTrigger className="w-[130px]">
+                                <SelectValue placeholder="Changer le rôle" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Administrateur</SelectItem>
+                                <SelectItem value="editor">Éditeur</SelectItem>
+                                <SelectItem value="reader">Lecteur</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            <DeleteUserDialog
+                              userId={user.id}
+                              userEmail={user.email}
+                              onUserDeleted={handleUserDeleted}
+                              disabled={isCurrentUser}
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
