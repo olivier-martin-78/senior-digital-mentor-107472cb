@@ -37,12 +37,8 @@ const Diary = () => {
     try {
       setLoading(true);
       
-      // Déterminer l'utilisateur cible - CORRECTION PRINCIPALE
-      // Pour les admins : si un utilisateur est sélectionné, on le prend, sinon on prend l'admin lui-même
-      // Pour les non-admins : on prend l'utilisateur sélectionné s'il a les permissions, sinon on prend l'utilisateur connecté
-      const targetUserId = hasRole('admin') 
-        ? (selectedUserId || user.id)  // Admin peut voir n'importe qui
-        : (selectedUserId || user.id); // Non-admin suit la logique de permissions
+      // Déterminer l'utilisateur cible - CORRECTION FINALE
+      const targetUserId = selectedUserId || user.id;
       
       console.log('Diary - Chargement des entrées:', {
         currentUserId: user.id,
@@ -56,32 +52,24 @@ const Diary = () => {
         .select('*')
         .order('entry_date', { ascending: false });
 
-      // Logique des permissions - CORRECTION PRINCIPALE
-      if (hasRole('admin')) {
-        // Les admins peuvent voir toutes les entrées de n'importe quel utilisateur
-        console.log('Diary - Mode admin - chargement pour utilisateur:', targetUserId);
-        query = query.eq('user_id', targetUserId);
-      } else {
-        // Pour les non-admins, logique de permissions existante
-        if (selectedUserId && selectedUserId !== user.id) {
-          // Vérifier si l'utilisateur a des permissions pour voir ce journal
-          const { data: permissions, error: permError } = await supabase
-            .from('diary_permissions')
-            .select('diary_owner_id')
-            .eq('permitted_user_id', user.id)
-            .eq('diary_owner_id', selectedUserId);
+      // Appliquer le filtre par utilisateur - TOUJOURS filtrer par targetUserId
+      console.log('Diary - Filtrage par user_id:', targetUserId);
+      query = query.eq('user_id', targetUserId);
 
-          if (permError || !permissions?.length) {
-            console.log('Diary - Pas de permissions pour voir ce journal');
-            setEntries([]);
-            setLoading(false);
-            return;
-          }
-          
-          query = query.eq('user_id', selectedUserId);
-        } else {
-          // Voir ses propres entrées
-          query = query.eq('user_id', user.id);
+      // Vérification des permissions pour les non-admins seulement
+      if (!hasRole('admin') && selectedUserId && selectedUserId !== user.id) {
+        // Vérifier si l'utilisateur a des permissions pour voir ce journal
+        const { data: permissions, error: permError } = await supabase
+          .from('diary_permissions')
+          .select('diary_owner_id')
+          .eq('permitted_user_id', user.id)
+          .eq('diary_owner_id', selectedUserId);
+
+        if (permError || !permissions?.length) {
+          console.log('Diary - Pas de permissions pour voir ce journal');
+          setEntries([]);
+          setLoading(false);
+          return;
         }
       }
 
@@ -105,6 +93,7 @@ const Diary = () => {
       }
       
       console.log('Diary - Données brutes reçues:', data);
+      console.log('Diary - Nombre d\'entrées trouvées:', data?.length || 0);
       
       // Convertir les données pour correspondre au type DiaryEntry avec validation stricte
       const convertedEntries = (data || []).map(entry => ({
