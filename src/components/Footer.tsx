@@ -74,7 +74,6 @@ const Footer = () => {
       };
       
       console.log('Envoi email avec données:', emailData);
-      console.log('URL de base Supabase:', supabase.supabaseUrl);
       
       // Tentative 1: Via supabase.functions.invoke (méthode recommandée)
       console.log('=== TENTATIVE 1: supabase.functions.invoke ===');
@@ -123,7 +122,7 @@ const Footer = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE`,
           },
           body: JSON.stringify(emailData)
         });
