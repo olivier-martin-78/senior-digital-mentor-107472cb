@@ -69,7 +69,7 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
             album.author_id === user.id || permittedAlbumIds.includes(album.id)
           );
 
-          console.log('AlbumSelector - Albums accessibles finaux:', userAccessibleAlbums.length, userAccessibleAlbums.map(a => ({ name: a.name, owned: album.author_id === user.id })));
+          console.log('AlbumSelector - Albums accessibles finaux:', userAccessibleAlbums.length, userAccessibleAlbums.map(a => ({ name: a.name, owned: a.author_id === user.id })));
           setAccessibleAlbums(userAccessibleAlbums);
         }
       } catch (error) {
