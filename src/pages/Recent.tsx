@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -8,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getThumbnailUrl, DIARY_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 
 interface RecentItem {
   id: string;
@@ -220,18 +220,15 @@ const Recent = () => {
     }
 
     let imageUrl = '';
-    let bucket = '';
     let imagePath = '';
 
     // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
     if (item.type === 'diary' && item.media_url) {
-      bucket = 'diary_media';
       imagePath = item.media_url;
       console.log('Recent - Traitement image journal - ID:', item.id, 'media_url:', item.media_url);
     }
     // Pour les souhaits et blogs, utiliser cover_image avec le bucket album-thumbnails
     else if ((item.type === 'wish' || item.type === 'blog') && item.cover_image) {
-      bucket = 'album-thumbnails';
       imagePath = item.cover_image;
       console.log('Recent - Traitement image', item.type, '- ID:', item.id, 'cover_image:', item.cover_image);
     }
@@ -241,46 +238,51 @@ const Recent = () => {
       return null;
     }
     
-    // Si c'est déjà une URL complète, l'utiliser directement
-    if (imagePath.startsWith('http')) {
-      imageUrl = imagePath;
-      console.log('Recent - URL complète détectée pour', item.type, ':', imageUrl);
-    } else {
-      // Sinon, générer l'URL depuis le chemin
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(imagePath);
-      imageUrl = data?.publicUrl || '';
-      console.log('Recent - URL générée pour', item.type, ':', {
-        bucket,
-        chemin: imagePath,
-        urlGeneree: imageUrl
-      });
-    }
+    // Générer l'URL avec la fonction getThumbnailUrl de manière asynchrone
+    const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
     
-    if (!imageUrl) {
-      console.error('Recent - Impossible de générer l\'URL pour:', {
-        type: item.type,
-        id: item.id,
-        bucket,
-        imagePath
-      });
-      return null;
-    }
+    React.useEffect(() => {
+      const loadThumbnail = async () => {
+        try {
+          let bucket = ALBUM_THUMBNAILS_BUCKET;
+          if (item.type === 'diary') {
+            bucket = DIARY_MEDIA_BUCKET;
+          }
+          
+          console.log('Recent - Génération URL pour:', {
+            type: item.type,
+            id: item.id,
+            bucket,
+            imagePath
+          });
+          
+          const url = await getThumbnailUrl(imagePath, bucket);
+          console.log('Recent - URL générée:', url);
+          setThumbnailUrl(url);
+        } catch (error) {
+          console.error('Recent - Erreur génération URL:', {
+            type: item.type,
+            id: item.id,
+            error
+          });
+        }
+      };
+      
+      loadThumbnail();
+    }, [imagePath, item.type, item.id]);
 
     return (
       <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
         <img
-          src={imageUrl}
+          src={thumbnailUrl}
           alt={item.title}
           className="w-full h-full object-cover"
           onError={(e) => {
             console.error('Recent - ERREUR chargement image:');
             console.error('- Type:', item.type);
             console.error('- ID:', item.id);
-            console.error('- Bucket:', bucket);
             console.error('- Path original:', imagePath);
-            console.error('- URL finale:', imageUrl);
+            console.error('- URL finale:', thumbnailUrl);
             console.error('- Erreur:', e);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -289,9 +291,7 @@ const Recent = () => {
             console.log('Recent - SUCCESS image chargée pour:', {
               type: item.type,
               id: item.id,
-              bucket,
-              chemin: imagePath,
-              url: imageUrl
+              url: thumbnailUrl
             });
           }}
         />
