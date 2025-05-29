@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +62,8 @@ const AdminDiary = () => {
     try {
       setLoading(true);
       
+      console.log('Loading diary entries for user:', selectedUserId);
+      
       // Construction de la requête pour récupérer les entrées
       let query = supabase
         .from('diary_entries')
@@ -83,6 +84,7 @@ const AdminDiary = () => {
       // Si un utilisateur spécifique est sélectionné, filtrer par cet utilisateur
       if (selectedUserId) {
         query = query.eq('user_id', selectedUserId);
+        console.log('Filtering by user_id:', selectedUserId);
       }
 
       const { data: entriesData, error: entriesError } = await query;
@@ -91,6 +93,8 @@ const AdminDiary = () => {
         console.error('Erreur Supabase (entrées):', entriesError);
         throw new Error(`Erreur Supabase: ${entriesError.message} (code: ${entriesError.code})`);
       }
+
+      console.log('Raw diary entries data:', entriesData);
 
       if (entriesData) {
         // Récupérer tous les profils d'utilisateurs
@@ -102,6 +106,8 @@ const AdminDiary = () => {
           console.error('Erreur Supabase (profils):', profilesError);
           throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
         }
+
+        console.log('Profiles data:', profilesData);
 
         // Créer un dictionnaire de profils pour faciliter l'accès
         const profilesMap: Record<string, Profile> = {};
@@ -122,6 +128,7 @@ const AdminDiary = () => {
           };
         });
         
+        console.log('Formatted entries:', formattedEntries);
         setEntries(formattedEntries);
       } else {
         throw new Error('Aucune donnée reçue de l\'API');
@@ -153,6 +160,7 @@ const AdminDiary = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
+    console.log('User changed to:', userId);
     setSelectedUserId(userId);
   };
 
@@ -233,6 +241,7 @@ const AdminDiary = () => {
           <div className="flex items-center justify-between mb-4">
             <p className="text-gray-600">
               Total : {entries.length} entrées de journal
+              {selectedUserId && ` pour l'utilisateur sélectionné`}
             </p>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -328,7 +337,9 @@ const AdminDiary = () => {
                       <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         {searchTerm 
                           ? 'Aucune entrée ne correspond à votre recherche' 
-                          : 'Aucune entrée de journal n\'a été trouvée'}
+                          : selectedUserId 
+                            ? 'Aucune entrée de journal pour cet utilisateur'
+                            : 'Aucune entrée de journal n\'a été trouvée'}
                       </TableCell>
                     </TableRow>
                   )}

@@ -42,10 +42,12 @@ const Recent = () => {
           }
         } else if (item.type === 'diary' && item.media_url) {
           try {
+            console.log('Chargement vignette diary pour:', item.media_url);
             const url = await getThumbnailUrl(item.media_url, DIARY_MEDIA_BUCKET);
+            console.log('URL vignette diary générée:', url);
             return { id: item.id, url };
           } catch (error) {
-            console.error('Erreur lors du chargement de la vignette:', error);
+            console.error('Erreur lors du chargement de la vignette diary:', error);
             return { id: item.id, url: '/placeholder.svg' };
           }
         } else if (item.type === 'comment' && item.post_cover_image) {
@@ -66,6 +68,7 @@ const Recent = () => {
         return acc;
       }, {} as Record<string, string>);
       
+      console.log('Thumbnails map:', thumbnailMap);
       setItemThumbnails(thumbnailMap);
     };
 
@@ -87,10 +90,10 @@ const Recent = () => {
 
       let diaryQuery = supabase
         .from('diary_entries')
-        .select('*')
+        .select('*, profiles:user_id(display_name, email)')
         .order('created_at', { ascending: false });
 
-      // Pour les admins, voir tous les journaux
+      // Pour les admins, voir tous les journaux avec les profils
       // Pour les autres utilisateurs, voir seulement leurs propres journaux
       if (!hasRole('admin')) {
         diaryQuery = diaryQuery.eq('user_id', user?.id);
@@ -130,6 +133,8 @@ const Recent = () => {
       if (diaryResponse.error) throw diaryResponse.error;
       if (commentsResponse.error) throw commentsResponse.error;
 
+      console.log('Diary entries from query:', diaryResponse.data);
+
       // Formatter les commentaires pour les inclure dans la liste
       const formattedComments = commentsResponse.data.map(comment => ({
         ...comment,
@@ -147,6 +152,7 @@ const Recent = () => {
         ...formattedComments
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+      console.log('All items combined:', allItems);
       setRecentItems(allItems.slice(0, 20));
     } catch (error) {
       console.error('Erreur lors du chargement des éléments récents:', error);
@@ -219,6 +225,10 @@ const Recent = () => {
                           src={itemThumbnails[item.id]}
                           alt={`Vignette de ${item.title}`}
                           className="w-full h-full object-cover rounded-l-lg"
+                          onError={(e) => {
+                            console.error('Erreur de chargement de vignette:', itemThumbnails[item.id]);
+                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-l-lg">
@@ -256,6 +266,11 @@ const Recent = () => {
                           {formatDate(item.created_at)}
                         </p>
                         {item.type === 'blog' && item.profiles && (
+                          <p className="text-sm text-gray-500">
+                            Par {item.profiles.display_name || item.profiles.email}
+                          </p>
+                        )}
+                        {item.type === 'diary' && item.profiles && (
                           <p className="text-sm text-gray-500">
                             Par {item.profiles.display_name || item.profiles.email}
                           </p>

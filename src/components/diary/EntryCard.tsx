@@ -34,16 +34,19 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
       const loadThumbnail = async () => {
         try {
           const url = await getThumbnailUrl(entry.media_url, DIARY_MEDIA_BUCKET);
-          console.log("URL générée:", url);
+          console.log("URL générée pour EntryCard:", url);
           setThumbnailUrl(url);
+          setIsLoading(false);
         } catch (error) {
-          console.error("Erreur lors de la récupération de l'URL:", error);
+          console.error("Erreur lors de la récupération de l'URL dans EntryCard:", error);
           setImageError(true);
           setIsLoading(false);
         }
       };
       
       loadThumbnail();
+    } else {
+      setIsLoading(false);
     }
   }, [entry.media_url, entry.media_type]);
   
@@ -68,7 +71,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                     <div className="w-8 h-8 border-4 border-tranches-sage border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
-                {thumbnailUrl && (
+                {thumbnailUrl && !imageError && (
                   <img 
                     src={thumbnailUrl} 
                     alt="Aperçu du média"
@@ -84,10 +87,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                       console.log("Image chargée avec succès dans EntryCard");
                       setIsLoading(false);
                     }}
-                    style={{ display: imageError ? 'none' : 'block' }}
                   />
                 )}
-                {imageError && (
+                {(imageError || (!thumbnailUrl && !isLoading)) && (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
                     <Image className="h-10 w-10 text-gray-400 mb-2" />
                     <span className="text-sm text-gray-500">Image non disponible</span>
