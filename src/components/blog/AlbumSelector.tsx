@@ -48,42 +48,28 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
           console.log('AlbumSelector - Admin/Editeur: tous les albums visibles');
           setAccessibleAlbums(allAlbums);
         } else {
-          // Pour les autres utilisateurs, récupérer les permissions
-          console.log('AlbumSelector - Utilisateur normal: vérification des permissions');
+          // Pour les autres utilisateurs, récupérer uniquement les permissions directes d'albums
+          console.log('AlbumSelector - Utilisateur normal: vérification des permissions albums');
           
-          const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
-            supabase
-              .from('album_permissions')
-              .select('album_id')
-              .eq('user_id', user.id),
-            supabase
-              .from('life_story_permissions')
-              .select('story_owner_id')
-              .eq('permitted_user_id', user.id)
-          ]);
+          const { data: albumPermissions, error: permissionsError } = await supabase
+            .from('album_permissions')
+            .select('album_id')
+            .eq('user_id', user.id);
 
-          const albumPermissions = albumPermissionsResult.data || [];
-          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+          if (permissionsError) {
+            console.error('AlbumSelector - Erreur lors de la récupération des permissions:', permissionsError);
+            throw permissionsError;
+          }
 
-          console.log('AlbumSelector - Permissions album directes:', albumPermissions.length);
-          console.log('AlbumSelector - Permissions life_story:', lifeStoryPermissions.length);
+          const permittedAlbumIds = albumPermissions?.map(p => p.album_id) || [];
+          console.log('AlbumSelector - IDs albums autorisés via permissions:', permittedAlbumIds);
 
-          // Albums autorisés par permissions directes
-          const directlyAuthorizedAlbumIds = albumPermissions.map(p => p.album_id);
-          
-          // Albums d'utilisateurs autorisés par permissions life_story
-          const authorizedUserIds = [user.id, ...lifeStoryPermissions.map(p => p.story_owner_id).filter(Boolean)];
-
-          console.log('AlbumSelector - IDs utilisateurs autorisés:', authorizedUserIds);
-          console.log('AlbumSelector - IDs albums directement autorisés:', directlyAuthorizedAlbumIds);
-
-          // Filtrer les albums
+          // Filtrer les albums : albums possédés + albums avec permission directe
           const userAccessibleAlbums = allAlbums.filter(album => 
-            authorizedUserIds.includes(album.author_id) || 
-            directlyAuthorizedAlbumIds.includes(album.id)
+            album.author_id === user.id || permittedAlbumIds.includes(album.id)
           );
 
-          console.log('AlbumSelector - Albums accessibles finaux:', userAccessibleAlbums.length, userAccessibleAlbums.map(a => a.name));
+          console.log('AlbumSelector - Albums accessibles finaux:', userAccessibleAlbums.length, userAccessibleAlbums.map(a => ({ name: a.name, owned: album.author_id === user.id })));
           setAccessibleAlbums(userAccessibleAlbums);
         }
       } catch (error) {
@@ -92,11 +78,17 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
         const userOwnedAlbums = allAlbums.filter(album => album.author_id === user.id);
         console.log('AlbumSelector - Fallback: albums possédés par l\'utilisateur:', userOwnedAlbums.length);
         setAccessibleAlbums(userOwnedAlbums);
+        
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger toutes les permissions. Seuls vos albums sont affichés.",
+          variant: "destructive"
+        });
       }
     };
 
     getAccessibleAlbums();
-  }, [allAlbums, user, hasRole]);
+  }, [allAlbums, user, hasRole, toast]);
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -270,9 +262,15 @@ const AlbumSelector: React.FC<AlbumSelectorProps> = ({
               <SelectValue placeholder="Sélectionner un album (obligatoire)" />
             </SelectTrigger>
             <SelectContent>
-              {accessibleAlbums.map(album => (
-                <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
-              ))}
+              {accessibleAlbums.length === 0 ? (
+                <SelectItem value="no-albums" disabled>
+                  Aucun album accessible - créez-en un nouveau
+                </SelectItem>
+              ) : (
+                accessibleAlbums.map(album => (
+                  <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           <Button 
