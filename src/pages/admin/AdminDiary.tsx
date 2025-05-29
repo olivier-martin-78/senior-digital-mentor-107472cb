@@ -11,12 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Eye, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DiaryEntry } from '@/types/diary';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 
 const AdminDiary = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [users, setUsers] = useState<any[]>([]);

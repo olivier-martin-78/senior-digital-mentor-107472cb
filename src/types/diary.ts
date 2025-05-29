@@ -10,8 +10,8 @@ export interface DiaryEntry {
   mood_rating: number | null;
   positive_things: string | null;
   negative_things: string | null;
-  physical_state: 'fatigué' | 'dormi' | 'énergique' | null;
-  mental_state: 'stressé' | 'calme' | 'motivé' | null;
+  physical_state: string | null;
+  mental_state: string | null;
   contacted_people: string[] | null;
   reflections: string | null;
   media_url: string | null;
