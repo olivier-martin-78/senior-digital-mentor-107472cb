@@ -50,7 +50,7 @@ const Recent = () => {
           `)
           .eq('published', true)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(15);
 
         if (blogPosts) {
           items.push(...blogPosts.map(post => ({
@@ -79,7 +79,7 @@ const Recent = () => {
             profiles(display_name)
           `)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(15);
 
         if (!hasRole('admin')) {
           wishQuery = wishQuery.or(`published.eq.true,author_id.eq.${user.id}`);
@@ -100,14 +100,27 @@ const Recent = () => {
           })));
         }
 
-        // Récupérer les entrées de journal récentes (seulement les siennes sauf pour les admins)
-        const targetUserId = user.id;
-        const { data: diaryEntries } = await supabase
+        // Récupérer les entrées de journal récentes
+        let diaryQuery = supabase
           .from('diary_entries')
-          .select('id, title, created_at, activities, media_url')
-          .eq('user_id', targetUserId)
+          .select(`
+            id, 
+            title, 
+            created_at, 
+            activities, 
+            media_url,
+            user_id,
+            profiles(display_name)
+          `)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(15);
+
+        // Si c'est un admin, récupérer toutes les entrées, sinon seulement les siennes
+        if (!hasRole('admin')) {
+          diaryQuery = diaryQuery.eq('user_id', user.id);
+        }
+
+        const { data: diaryEntries } = await diaryQuery;
 
         if (diaryEntries) {
           items.push(...diaryEntries.map(entry => ({
@@ -115,7 +128,9 @@ const Recent = () => {
             title: entry.title,
             type: 'diary' as const,
             created_at: entry.created_at,
-            author: 'Moi',
+            author: hasRole('admin') && entry.user_id !== user.id 
+              ? (entry.profiles?.display_name || 'Utilisateur') 
+              : 'Moi',
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
             media_url: entry.media_url
           })));
@@ -132,7 +147,7 @@ const Recent = () => {
             post:blog_posts(id, title)
           `)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(15);
 
         if (comments) {
           items.push(...comments.map(comment => ({
@@ -150,7 +165,7 @@ const Recent = () => {
         // Trier tous les éléments par date de création
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        setRecentItems(items.slice(0, 20)); // Garder les 20 plus récents
+        setRecentItems(items.slice(0, 40)); // Garder les 40 plus récents
       } catch (error) {
         console.error('Erreur lors du chargement des éléments récents:', error);
       } finally {
