@@ -36,7 +36,52 @@ const Recent = () => {
         setLoading(true);
         const items: RecentItem[] = [];
 
-        // Récupérer les posts de blog récents avec permissions groupes
+        // Récupérer d'abord les utilisateurs autorisés via les groupes d'invitation
+        console.log('Recent - Récupération des utilisateurs autorisés pour user:', user.id);
+        
+        let authorizedUserIds = [user.id];
+
+        if (!hasRole('admin')) {
+          // Récupérer les permissions via life_story_permissions ET groupes d'invitation
+          const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
+            supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user.id),
+            // Récupérer les créateurs de groupes dont l'utilisateur est membre
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user.id)
+          ]);
+
+          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+          const groupPermissions = groupPermissionsResult.data || [];
+
+          console.log('Recent - Permissions life_story:', lifeStoryPermissions);
+          console.log('Recent - Permissions groupes:', groupPermissions);
+
+          // Ajouter les utilisateurs autorisés via life_story_permissions
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
+              authorizedUserIds.push(p.story_owner_id);
+            }
+          });
+          
+          // Ajouter les créateurs de groupes
+          groupPermissions.forEach(p => {
+            if (p.invitation_groups?.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
+              authorizedUserIds.push(p.invitation_groups.created_by);
+            }
+          });
+
+          console.log('Recent - Utilisateurs autorisés finaux:', authorizedUserIds);
+        }
+
+        // Récupérer les posts de blog récents avec permissions
         if (hasRole('admin')) {
           // Les admins voient tous les posts publiés
           const { data: blogPosts } = await supabase
@@ -66,43 +111,6 @@ const Recent = () => {
             })));
           }
         } else {
-          // Récupérer les permissions via life_story_permissions ET groupes d'invitation
-          const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
-            supabase
-              .from('life_story_permissions')
-              .select('story_owner_id')
-              .eq('permitted_user_id', user.id),
-            // Récupérer les créateurs de groupes dont l'utilisateur est membre
-            supabase
-              .from('group_members')
-              .select(`
-                group_id,
-                invitation_groups!inner(created_by)
-              `)
-              .eq('user_id', user.id)
-          ]);
-
-          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
-          const groupPermissions = groupPermissionsResult.data || [];
-
-          // IDs des utilisateurs autorisés
-          const authorizedUserIds = [user.id];
-          
-          lifeStoryPermissions.forEach(p => {
-            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
-              authorizedUserIds.push(p.story_owner_id);
-            }
-          });
-          
-          // Ajouter les créateurs de groupes
-          groupPermissions.forEach(p => {
-            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
-              authorizedUserIds.push(p.invitation_groups.created_by);
-            }
-          });
-
-          console.log('Recent - Utilisateurs autorisés pour les posts:', authorizedUserIds);
-
           // Récupérer les posts avec permissions
           if (authorizedUserIds.length > 0) {
             const { data: blogPosts } = await supabase
@@ -117,7 +125,8 @@ const Recent = () => {
                 published,
                 profiles(display_name)
               `)
-              .or(`and(author_id.eq.${user.id}),and(author_id.in.(${authorizedUserIds.slice(1).join(',')}),published.eq.true)`)
+              .in('author_id', authorizedUserIds)
+              .or(`author_id.eq.${user.id},and(published.eq.true,author_id.in.(${authorizedUserIds.filter(id => id !== user.id).join(',')}))`)
               .order('created_at', { ascending: false })
               .limit(15);
 
@@ -171,7 +180,7 @@ const Recent = () => {
           })));
         }
 
-        // Récupérer les entrées de journal récentes avec permissions groupes
+        // Récupérer les entrées de journal récentes avec permissions
         if (hasRole('admin')) {
           // Les admins voient toutes les entrées
           const { data: diaryEntries } = await supabase
@@ -211,42 +220,8 @@ const Recent = () => {
             })));
           }
         } else {
-          // Récupérer les permissions via diary_permissions ET groupes d'invitation
-          const [diaryPermissionsResult, groupPermissionsResult] = await Promise.all([
-            supabase
-              .from('diary_permissions')
-              .select('diary_owner_id')
-              .eq('permitted_user_id', user.id),
-            // Récupérer les créateurs de groupes dont l'utilisateur est membre
-            supabase
-              .from('group_members')
-              .select(`
-                group_id,
-                invitation_groups!inner(created_by)
-              `)
-              .eq('user_id', user.id)
-          ]);
-
-          const diaryPermissions = diaryPermissionsResult.data || [];
-          const groupPermissions = groupPermissionsResult.data || [];
-
-          // IDs des utilisateurs autorisés
-          const authorizedUserIds = [user.id];
-          
-          diaryPermissions.forEach(p => {
-            if (p.diary_owner_id && !authorizedUserIds.includes(p.diary_owner_id)) {
-              authorizedUserIds.push(p.diary_owner_id);
-            }
-          });
-          
-          // Ajouter les créateurs de groupes
-          groupPermissions.forEach(p => {
-            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
-              authorizedUserIds.push(p.invitation_groups.created_by);
-            }
-          });
-
-          console.log('Recent - Utilisateurs autorisés pour le journal:', authorizedUserIds);
+          // Récupérer les entrées de journal avec permissions
+          console.log('Recent - Récupération journal pour utilisateurs autorisés:', authorizedUserIds);
 
           if (authorizedUserIds.length > 0) {
             const { data: diaryEntries } = await supabase
@@ -262,6 +237,8 @@ const Recent = () => {
               .in('user_id', authorizedUserIds)
               .order('created_at', { ascending: false })
               .limit(15);
+
+            console.log('Recent - Entrées journal récupérées:', diaryEntries?.length || 0);
 
             if (diaryEntries) {
               // Récupérer les profils pour les entrées des autres utilisateurs

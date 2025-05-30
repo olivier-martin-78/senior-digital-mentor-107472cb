@@ -40,23 +40,37 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
         console.log('useBlogData - Mode utilisateur normal');
         
         if (selectedUserId && selectedUserId !== user?.id) {
-          // Vérifier les permissions life_story pour cet utilisateur
-          const { data: permissions, error: permError } = await supabase
-            .from('life_story_permissions')
-            .select('story_owner_id')
-            .eq('permitted_user_id', user?.id)
-            .eq('story_owner_id', selectedUserId);
+          // Vérifier d'abord les permissions life_story, puis les groupes d'invitation
+          const [lifeStoryPermissions, groupPermissions] = await Promise.all([
+            supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user?.id)
+              .eq('story_owner_id', selectedUserId),
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user?.id)
+          ]);
 
-          if (permError || !permissions?.length) {
+          const hasLifeStoryPermission = lifeStoryPermissions.data && lifeStoryPermissions.data.length > 0;
+          const groupCreators = groupPermissions.data?.map(p => p.invitation_groups.created_by) || [];
+          const hasGroupPermission = groupCreators.includes(selectedUserId);
+
+          if (!lifeStoryPermissions.error && (hasLifeStoryPermission || hasGroupPermission)) {
+            console.log('useBlogData - Permissions trouvées pour utilisateur sélectionné');
+            // Voir seulement les posts publiés de cet utilisateur
+            query = query.eq('author_id', selectedUserId).eq('published', true);
+          } else {
             console.log('useBlogData - Pas de permissions pour voir les articles de cet utilisateur');
             setPosts([]);
             return;
           }
-          
-          // Voir seulement les posts publiés de cet utilisateur
-          query = query.eq('author_id', selectedUserId).eq('published', true);
         } else {
-          // CORRECTION : Logique pour inclure les permissions des groupes d'invitation
+          // Récupération avec permissions des groupes d'invitation ET life_story
           console.log('useBlogData - Récupération des posts avec permissions strictes + groupes');
           
           // 1. Récupérer ses propres posts (TOUS, publiés ET brouillons)
@@ -104,7 +118,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               .from('life_story_permissions')
               .select('story_owner_id')
               .eq('permitted_user_id', user?.id),
-            // NOUVEAU : Récupérer les utilisateurs autorisés via les groupes d'invitation
+            // Récupérer les utilisateurs autorisés via les groupes d'invitation
             supabase
               .from('group_members')
               .select(`
@@ -125,7 +139,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           const lifeStoryUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
           
           // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-          const groupCreatorIds = groupPermissions.map(p => p.invitation_groups.created_by).filter(id => id !== user?.id);
+          const groupCreatorIds = groupPermissions.map(p => p.invitation_groups?.created_by).filter(id => id && id !== user?.id);
           
           // Combiner tous les utilisateurs autorisés
           const authorizedUserIds = [...new Set([...lifeStoryUserIds, ...groupCreatorIds])];
@@ -267,20 +281,33 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
         console.log('useBlogData - Utilisateur normal: filtrage par permissions');
         
         if (selectedUserId && selectedUserId !== user?.id) {
-          // Vérifier les permissions life_story pour cet utilisateur
-          const { data: permissions, error: permError } = await supabase
-            .from('life_story_permissions')
-            .select('story_owner_id')
-            .eq('permitted_user_id', user?.id)
-            .eq('story_owner_id', selectedUserId);
+          // Vérifier les permissions life_story ET groupes pour cet utilisateur
+          const [lifeStoryPermissions, groupPermissions] = await Promise.all([
+            supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user?.id)
+              .eq('story_owner_id', selectedUserId),
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user?.id)
+          ]);
 
-          if (permError || !permissions?.length) {
+          const hasLifeStoryPermission = lifeStoryPermissions.data && lifeStoryPermissions.data.length > 0;
+          const groupCreators = groupPermissions.data?.map(p => p.invitation_groups.created_by) || [];
+          const hasGroupPermission = groupCreators.includes(selectedUserId);
+
+          if (!lifeStoryPermissions.error && (hasLifeStoryPermission || hasGroupPermission)) {
+            query = query.eq('author_id', selectedUserId);
+          } else {
             console.log('useBlogData - Pas de permissions pour voir les albums de cet utilisateur');
             setAlbums([]);
             return;
           }
-          
-          query = query.eq('author_id', selectedUserId);
         } else {
           // Récupérer les permissions album ET life_story ET groupes d'invitation
           const [albumPermissionsResult, lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
@@ -317,7 +344,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           
           // Ajouter les créateurs de groupes
           groupPermissions.forEach(p => {
-            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
+            if (p.invitation_groups?.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
               authorizedUserIds.push(p.invitation_groups.created_by);
             }
           });
@@ -332,7 +359,9 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           let filterConditions = [];
           
           // Albums de l'utilisateur et des utilisateurs autorisés
-          filterConditions.push(`author_id.in.(${authorizedUserIds.join(',')})`);
+          if (authorizedUserIds.length > 0) {
+            filterConditions.push(`author_id.in.(${authorizedUserIds.join(',')})`);
+          }
           
           // Albums autorisés directement
           if (authorizedAlbumIds.length > 0) {
