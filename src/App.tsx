@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import Auth from '@/pages/Auth';
 import Index from '@/pages/Index';
 import Profile from '@/pages/Profile';
@@ -42,7 +42,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   return children;
 };
 
-const App: React.FC = () => {
+const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
@@ -77,6 +77,14 @@ const App: React.FC = () => {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 };
 

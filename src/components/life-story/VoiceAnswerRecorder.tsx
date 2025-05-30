@@ -37,8 +37,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
 
   return (
     <VoiceRecorder
-      onRecordingComplete={handleAudioRecorded}
-      onDeleteRecording={handleAudioDeleted}
+      onAudioSaved={handleAudioRecorded}
+      onAudioDeleted={handleAudioDeleted}
       existingAudioUrl={existingAudioUrl}
     />
   );
