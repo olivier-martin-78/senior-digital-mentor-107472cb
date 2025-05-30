@@ -36,12 +36,22 @@ const Recent = () => {
         setLoading(true);
         const items: RecentItem[] = [];
 
+        // === LOGS DE DÉBOGAGE DÉTAILLÉS ===
+        console.log('🔍 ===== DÉBOGAGE RECENT - DÉBUT =====');
+        console.log('🔍 Utilisateur actuel:', {
+          id: user.id,
+          email: user.email,
+          roles: hasRole('admin') ? 'admin' : hasRole('editor') ? 'editor' : 'reader'
+        });
+
         // Récupérer d'abord les utilisateurs autorisés via les groupes d'invitation
-        console.log('Recent - Récupération des utilisateurs autorisés pour user:', user.id);
+        console.log('🔍 Récupération des utilisateurs autorisés pour user:', user.id);
         
         let authorizedUserIds = [user.id];
 
         if (!hasRole('admin')) {
+          console.log('🔍 Utilisateur NON-ADMIN - Vérification des permissions');
+          
           // Récupérer les permissions via life_story_permissions ET groupes d'invitation
           const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
             supabase
@@ -61,13 +71,16 @@ const Recent = () => {
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
           const groupPermissions = groupPermissionsResult.data || [];
 
-          console.log('Recent - Permissions life_story:', lifeStoryPermissions);
-          console.log('Recent - Permissions groupes:', groupPermissions);
+          console.log('🔍 Life story permissions brutes:', lifeStoryPermissionsResult);
+          console.log('🔍 Group permissions brutes:', groupPermissionsResult);
+          console.log('🔍 Permissions life_story traitées:', lifeStoryPermissions);
+          console.log('🔍 Permissions groupes traitées:', groupPermissions);
 
           // Ajouter les utilisateurs autorisés via life_story_permissions
           lifeStoryPermissions.forEach(p => {
             if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
               authorizedUserIds.push(p.story_owner_id);
+              console.log('🔍 Ajout utilisateur autorisé via life_story:', p.story_owner_id);
             }
           });
           
@@ -75,14 +88,18 @@ const Recent = () => {
           groupPermissions.forEach(p => {
             if (p.invitation_groups?.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
               authorizedUserIds.push(p.invitation_groups.created_by);
+              console.log('🔍 Ajout utilisateur autorisé via groupe:', p.invitation_groups.created_by);
             }
           });
 
-          console.log('Recent - Utilisateurs autorisés finaux:', authorizedUserIds);
+          console.log('🔍 Utilisateurs autorisés finaux:', authorizedUserIds);
         }
 
-        // Récupérer les posts de blog récents avec permissions améliorées
+        // === RÉCUPÉRATION DES ARTICLES DE BLOG ===
+        console.log('🔍 ===== RÉCUPÉRATION ARTICLES BLOG =====');
+        
         if (hasRole('admin')) {
+          console.log('🔍 MODE ADMIN - récupération tous posts publiés');
           // Les admins voient tous les posts publiés
           console.log('Recent - Mode admin: récupération de tous les posts publiés');
           const { data: blogPosts } = await supabase
@@ -112,16 +129,29 @@ const Recent = () => {
             })));
           }
         } else {
-          // Pour les utilisateurs non-admin, logique stricte de permissions
-          console.log('Recent - Mode utilisateur normal, authorizedUserIds:', authorizedUserIds);
+          console.log('🔍 MODE UTILISATEUR NORMAL');
+          console.log('🔍 authorizedUserIds:', authorizedUserIds);
+          console.log('🔍 Nombre d\'utilisateurs autorisés:', authorizedUserIds.length);
           
-          // Si l'utilisateur n'a que son propre ID (pas de permissions vers d'autres)
           const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === user.id;
+          console.log('🔍 A seulement son propre ID?', hasOnlyOwnId);
           
           if (hasOnlyOwnId) {
-            console.log('Recent - Utilisateur sans permissions particulières, récupération de ses propres posts uniquement');
+            console.log('🔍 ⚠️ UTILISATEUR SANS PERMISSIONS - récupération posts personnels uniquement');
+            
+            // Vérifier d'abord combien de posts l'utilisateur a créé
+            const { data: userPostsCount, error: countError } = await supabase
+              .from('blog_posts')
+              .select('id', { count: 'exact', head: true })
+              .eq('author_id', user.id);
+
+            console.log('🔍 Nombre de posts de l\'utilisateur (count):', {
+              count: userPostsCount,
+              error: countError
+            });
+
             // Récupérer seulement ses propres posts (publiés ET brouillons)
-            const { data: userBlogPosts } = await supabase
+            const { data: userBlogPosts, error: userPostsError } = await supabase
               .from('blog_posts')
               .select(`
                 id,
@@ -137,8 +167,21 @@ const Recent = () => {
               .order('created_at', { ascending: false })
               .limit(15);
 
+            console.log('🔍 Requête posts utilisateur:', {
+              data: userBlogPosts,
+              error: userPostsError,
+              count: userBlogPosts?.length || 0
+            });
+
             if (userBlogPosts) {
-              console.log('Recent - Posts utilisateur récupérés:', userBlogPosts.length);
+              console.log('🔍 Posts utilisateur détaillés:', userBlogPosts.map(p => ({
+                id: p.id,
+                title: p.title,
+                author_id: p.author_id,
+                published: p.published,
+                created_at: p.created_at
+              })));
+              
               items.push(...userBlogPosts.map(post => ({
                 id: post.id,
                 title: post.title,
@@ -148,8 +191,12 @@ const Recent = () => {
                 content_preview: post.content?.substring(0, 150) + '...',
                 cover_image: post.cover_image
               })));
+              
+              console.log('🔍 Items blog ajoutés:', items.filter(i => i.type === 'blog').length);
             }
           } else {
+            console.log('🔍 UTILISATEUR AVEC PERMISSIONS - récupération séparée');
+            
             // L'utilisateur a des permissions vers d'autres utilisateurs
             console.log('Recent - Utilisateur avec permissions, récupération séparée des posts');
             
@@ -214,6 +261,9 @@ const Recent = () => {
           }
         }
 
+        // === AUTRES CONTENUS ===
+        console.log('🔍 ===== RÉCUPÉRATION AUTRES CONTENUS =====');
+
         // Récupérer les souhaits récents (tous si admin, sinon ceux publiés + ses propres brouillons)
         let wishQuery = supabase
           .from('wish_posts')
@@ -236,6 +286,7 @@ const Recent = () => {
         }
 
         const { data: wishes } = await wishQuery;
+        console.log('🔍 Wishes récupérés:', wishes?.length || 0);
 
         if (wishes) {
           items.push(...wishes.map(wish => ({
@@ -291,7 +342,7 @@ const Recent = () => {
           }
         } else {
           // Récupérer les entrées de journal avec permissions
-          console.log('Recent - Récupération journal pour utilisateurs autorisés:', authorizedUserIds);
+          console.log('🔍 Récupération journal pour utilisateurs autorisés:', authorizedUserIds);
 
           if (authorizedUserIds.length > 0) {
             const { data: diaryEntries } = await supabase
@@ -308,7 +359,7 @@ const Recent = () => {
               .order('created_at', { ascending: false })
               .limit(15);
 
-            console.log('Recent - Entrées journal récupérées:', diaryEntries?.length || 0);
+            console.log('🔍 Entrées journal récupérées:', diaryEntries?.length || 0);
 
             if (diaryEntries) {
               // Récupérer les profils pour les entrées des autres utilisateurs
@@ -353,6 +404,8 @@ const Recent = () => {
           .order('created_at', { ascending: false })
           .limit(15);
 
+        console.log('🔍 Commentaires récupérés:', comments?.length || 0);
+
         if (comments) {
           items.push(...comments.map(comment => ({
             id: comment.id,
@@ -369,10 +422,27 @@ const Recent = () => {
         // Trier tous les éléments par date de création
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        console.log('Recent - Total éléments récupérés:', items.length);
+        console.log('🔍 ===== RÉSUMÉ FINAL =====');
+        console.log('🔍 Total éléments récupérés:', items.length);
+        console.log('🔍 Répartition par type:', {
+          blog: items.filter(i => i.type === 'blog').length,
+          wish: items.filter(i => i.type === 'wish').length,
+          diary: items.filter(i => i.type === 'diary').length,
+          comment: items.filter(i => i.type === 'comment').length
+        });
+        console.log('🔍 Articles de blog dans le résultat final:', 
+          items.filter(i => i.type === 'blog').map(i => ({
+            id: i.id,
+            title: i.title,
+            author: i.author,
+            created_at: i.created_at
+          }))
+        );
+        console.log('🔍 ===== DÉBOGAGE RECENT - FIN =====');
+
         setRecentItems(items.slice(0, 40)); // Garder les 40 plus récents
       } catch (error) {
-        console.error('Erreur lors du chargement des éléments récents:', error);
+        console.error('🔍 ❌ Erreur lors du chargement des éléments récents:', error);
       } finally {
         setLoading(false);
       }
