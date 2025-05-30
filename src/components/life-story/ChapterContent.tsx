@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import QuestionItem from './QuestionItem';
 import { Chapter } from '@/types/lifeStory';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ChapterContentProps {
   chapter: Chapter;
@@ -24,11 +25,20 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
+  const { profile } = useAuth();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{chapter.title}</CardTitle>
-        <CardDescription>{chapter.description}</CardDescription>
+        <CardDescription>
+          {chapter.description}
+          {profile && (
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="font-medium">Auteur :</span> {profile.display_name || profile.email}
+            </div>
+          )}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {chapter.questions && chapter.questions.length > 0 ? (

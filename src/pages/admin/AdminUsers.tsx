@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,6 @@ import {
 } from '@/components/ui/select';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
-import ImpersonationBanner from '@/components/admin/ImpersonationBanner';
 import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 
 interface UserWithRoles extends Profile {
@@ -223,8 +223,6 @@ const AdminUsers = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <ImpersonationBanner />
-        
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des utilisateurs</h1>
           <InviteUserDialog />

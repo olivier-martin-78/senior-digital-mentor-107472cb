@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,18 +41,24 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Ref pour éviter les appels multiples
+  const loadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
-    if (!effectiveUserId) return;
+    if (!effectiveUserId || loadingRef.current || hasLoadedRef.current) return;
 
     // Si existingStory est fourni, ne pas recharger
     if (existingStory) {
       console.log('use-life-story - Histoire existante fournie, pas de rechargement');
+      hasLoadedRef.current = true;
       return;
     }
 
     try {
+      loadingRef.current = true;
       setIsLoading(true);
       console.log('use-life-story - Chargement pour utilisateur:', effectiveUserId);
       
@@ -123,16 +130,20 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           chapters: initialChapters
         }));
       }
+      
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error('Erreur lors du chargement de l\'histoire de vie:', err);
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   };
 
   // Recharger quand l'utilisateur effectif change
   useEffect(() => {
     console.log('use-life-story - Effet targetUserId changé:', { targetUserId, effectiveUserId });
+    hasLoadedRef.current = false; // Reset pour permettre le rechargement
     loadUserLifeStory();
   }, [effectiveUserId]);
 
@@ -265,8 +276,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const saveNow = async () => {
-    if (!user || !effectiveUserId) {
-      console.warn('Utilisateur non connecté, sauvegarde ignorée');
+    if (!user || !effectiveUserId || isSaving) {
+      console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
     
