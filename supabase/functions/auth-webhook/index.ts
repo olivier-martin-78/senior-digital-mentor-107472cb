@@ -26,15 +26,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Webhook payload reçu:", JSON.stringify(payload, null, 2));
 
     // Vérifier si c'est un événement de création d'utilisateur
-    // Supabase envoie "users" comme nom de table, pas "auth.users"
     if (payload.table === "users" && payload.type === "INSERT") {
       const user = payload.record;
       console.log("Nouvel utilisateur créé:", {
         id: user.id,
         email: user.email,
         email_confirmed_at: user.email_confirmed_at,
-        confirmation_sent_at: user.confirmation_sent_at,
-        confirmation_token: user.confirmation_token ? "présent" : "absent"
+        confirmation_sent_at: user.confirmation_sent_at
       });
 
       // Si l'email est déjà confirmé, pas besoin d'envoyer un email de confirmation
@@ -49,34 +47,36 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Utiliser le vrai token de confirmation de Supabase
-      const confirmationToken = user.confirmation_token;
+      // Utiliser l'admin API pour générer un lien de confirmation
+      console.log("Génération d'un lien de confirmation via Admin API...");
       
-      if (!confirmationToken) {
-        console.log("Pas de token de confirmation disponible");
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email: user.email,
+        options: {
+          redirectTo: 'https://senior-digital-mentor.com/auth/confirm'
+        }
+      });
+
+      if (linkError) {
+        console.error("Erreur lors de la génération du lien:", linkError);
         return new Response(JSON.stringify({ 
           success: false, 
-          message: "Pas de token de confirmation disponible" 
+          error: linkError.message 
         }), {
-          status: 400,
+          status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
 
-      console.log("Token de confirmation trouvé dans le payload");
-
-      // Générer l'URL de confirmation avec le vrai token de Supabase
-      const baseUrl = "https://senior-digital-mentor.com";
-      const confirmationUrl = `${baseUrl}/auth/confirm?token=${confirmationToken}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/auth')}`;
-      
-      console.log("URL de confirmation générée avec le vrai token:", confirmationUrl);
+      console.log("Lien de confirmation généré:", linkData.properties.action_link);
 
       // Appeler notre fonction d'envoi d'email personnalisé
       console.log("Appel de la fonction send-confirmation-email...");
       const { data: emailData, error } = await supabase.functions.invoke('send-confirmation-email', {
         body: {
           email: user.email,
-          confirmationUrl: confirmationUrl,
+          confirmationUrl: linkData.properties.action_link,
           displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name || user.email.split('@')[0]
         }
       });

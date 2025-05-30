@@ -29,8 +29,8 @@ const AuthConfirm = () => {
           return;
         }
 
-        // Utiliser verifyOtp avec token_hash pour les tokens de confirmation Supabase
-        console.log('Tentative de confirmation avec le token Supabase...');
+        // Utiliser verifyOtp avec le token généré par l'Admin API
+        console.log('Tentative de confirmation avec le token Admin API...');
         
         const confirmationResult = await supabase.auth.verifyOtp({
           token_hash: token,
