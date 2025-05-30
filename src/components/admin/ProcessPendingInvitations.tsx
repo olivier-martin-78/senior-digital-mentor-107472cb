@@ -6,21 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus } from 'lucide-react';
 
-// Type pour les utilisateurs retournés par l'API Admin
-interface SupabaseUser {
-  id: string;
-  email?: string;
-  email_confirmed_at?: string | null;
-  // Autres propriétés que nous n'utilisons pas ici
-  [key: string]: any;
-}
-
 const ProcessPendingInvitations = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const processPendingInvitations = async () => {
     setIsProcessing(true);
+    console.log('Début du traitement des invitations en attente');
     
     try {
       // Récupérer les invitations non utilisées avec des utilisateurs confirmés
@@ -36,11 +28,15 @@ const ProcessPendingInvitations = () => {
         .not('group_id', 'is', null)
         .gt('expires_at', new Date().toISOString());
 
+      console.log('Invitations récupérées:', pendingInvitations);
+
       if (invitationsError) {
+        console.error('Erreur lors de la récupération des invitations:', invitationsError);
         throw invitationsError;
       }
 
       if (!pendingInvitations || pendingInvitations.length === 0) {
+        console.log('Aucune invitation en attente trouvée');
         toast({
           title: "Aucune invitation en attente",
           description: "Toutes les invitations ont déjà été traitées."
@@ -48,33 +44,38 @@ const ProcessPendingInvitations = () => {
         return;
       }
 
+      console.log(`${pendingInvitations.length} invitations à traiter`);
+
+      // Récupérer tous les utilisateurs confirmés
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      
+      if (userError) {
+        console.error('Erreur lors de la récupération des utilisateurs:', userError);
+        throw userError;
+      }
+
+      console.log('Utilisateurs récupérés:', userData?.users?.length || 0);
+
+      if (!userData || !userData.users || !Array.isArray(userData.users)) {
+        console.error('Données utilisateurs invalides');
+        throw new Error('Impossible de récupérer les utilisateurs');
+      }
+
       let processedCount = 0;
 
       // Traiter chaque invitation
       for (const invitation of pendingInvitations) {
+        console.log(`Traitement de l'invitation pour: ${invitation.email}`);
+        
         // Chercher l'utilisateur confirmé avec cet email
-        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-        
-        if (userError) {
-          console.error('Erreur lors de la récupération des utilisateurs:', userError);
-          continue;
-        }
-
-        // Vérifier que userData et users existent et ont le bon type
-        if (!userData || !userData.users || !Array.isArray(userData.users)) {
-          console.error('Données utilisateurs invalides');
-          continue;
-        }
-
-        // Typer correctement les utilisateurs
-        const users = userData.users as SupabaseUser[];
-        
-        const user = users.find(u => 
+        const user = userData.users.find((u: any) => 
           u.email === invitation.email && 
           u.email_confirmed_at !== null
         );
 
         if (user && user.id) {
+          console.log(`Utilisateur trouvé: ${user.id} pour ${invitation.email}`);
+          
           // Vérifier si l'utilisateur n'est pas déjà dans le groupe
           const { data: existingMember } = await supabase
             .from('group_members')
@@ -84,6 +85,8 @@ const ProcessPendingInvitations = () => {
             .maybeSingle();
 
           if (!existingMember) {
+            console.log(`Ajout de l'utilisateur ${user.id} au groupe ${invitation.group_id}`);
+            
             // Ajouter l'utilisateur au groupe
             const { error: memberError } = await supabase
               .from('group_members')
@@ -95,18 +98,29 @@ const ProcessPendingInvitations = () => {
 
             if (!memberError) {
               // Marquer l'invitation comme utilisée
-              await supabase
+              const { error: updateError } = await supabase
                 .from('invitations')
                 .update({ used_at: new Date().toISOString() })
                 .eq('id', invitation.id);
 
-              processedCount++;
+              if (!updateError) {
+                processedCount++;
+                console.log(`Invitation traitée avec succès pour ${invitation.email}`);
+              } else {
+                console.error('Erreur lors de la mise à jour de l\'invitation:', updateError);
+              }
             } else {
               console.error('Erreur lors de l\'ajout au groupe:', memberError);
             }
+          } else {
+            console.log(`L'utilisateur ${user.id} est déjà membre du groupe ${invitation.group_id}`);
           }
+        } else {
+          console.log(`Aucun utilisateur confirmé trouvé pour l'email: ${invitation.email}`);
         }
       }
+
+      console.log(`Traitement terminé. ${processedCount} utilisateurs traités.`);
 
       if (processedCount > 0) {
         toast({
@@ -116,7 +130,7 @@ const ProcessPendingInvitations = () => {
       } else {
         toast({
           title: "Aucun traitement nécessaire",
-          description: "Tous les utilisateurs invités sont déjà dans leurs groupes respectifs."
+          description: "Tous les utilisateurs invités sont déjà dans leurs groupes respectifs ou n'ont pas encore confirmé leur email."
         });
       }
 
