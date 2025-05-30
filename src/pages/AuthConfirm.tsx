@@ -29,57 +29,20 @@ const AuthConfirm = () => {
           return;
         }
 
-        // Essayer d'abord avec le token hash (format Supabase standard)
-        let confirmationResult = await supabase.auth.verifyOtp({
+        // Utiliser verifyOtp avec token_hash pour les tokens de confirmation Supabase
+        console.log('Tentative de confirmation avec le token Supabase...');
+        
+        const confirmationResult = await supabase.auth.verifyOtp({
           token_hash: token,
           type: 'email'
         });
 
-        // Si ça échoue, essayer avec le token direct en utilisant la bonne signature
         if (confirmationResult.error) {
-          console.log('Tentative avec token direct...');
-          
-          // Pour verifyOtp avec type "email", nous devons fournir l'email
-          // Essayons d'obtenir l'email depuis les paramètres ou utiliser une approche différente
-          const email = searchParams.get('email');
-          if (email) {
-            confirmationResult = await supabase.auth.verifyOtp({
-              email: email,
-              token: token,
-              type: 'email'
-            });
-          }
+          console.error('Erreur de confirmation:', confirmationResult.error);
+          throw new Error(confirmationResult.error.message);
         }
 
-        // Si les deux échouent, essayer la méthode manuelle avec les bonnes constantes
-        if (confirmationResult.error) {
-          console.log('Tentative de confirmation manuelle...');
-          
-          // Utiliser les constantes publiques directement
-          const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
-          const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
-          
-          const response = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY
-            },
-            body: JSON.stringify({
-              token: token,
-              type: 'signup'
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Erreur de confirmation: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          console.log('Confirmation manuelle réussie:', data);
-        } else {
-          console.log('Confirmation réussie:', confirmationResult.data);
-        }
+        console.log('Confirmation réussie:', confirmationResult.data);
 
         setStatus('success');
         setMessage('Votre email a été confirmé avec succès !');
@@ -89,7 +52,7 @@ const AuthConfirm = () => {
           if (redirectTo) {
             window.location.href = redirectTo;
           } else {
-            navigate('/auth');
+            navigate('/');
           }
         }, 3000);
 

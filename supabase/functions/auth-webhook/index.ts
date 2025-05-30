@@ -33,7 +33,8 @@ const handler = async (req: Request): Promise<Response> => {
         id: user.id,
         email: user.email,
         email_confirmed_at: user.email_confirmed_at,
-        confirmation_sent_at: user.confirmation_sent_at
+        confirmation_sent_at: user.confirmation_sent_at,
+        confirmation_token: user.confirmation_token ? "présent" : "absent"
       });
 
       // Si l'email est déjà confirmé, pas besoin d'envoyer un email de confirmation
@@ -48,20 +49,27 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Générer un token de confirmation si pas disponible
-      let confirmationToken = user.email_confirm_token;
+      // Utiliser le vrai token de confirmation de Supabase
+      const confirmationToken = user.confirmation_token;
       
       if (!confirmationToken) {
-        // Générer un token temporaire pour l'URL
-        confirmationToken = crypto.randomUUID();
-        console.log("Token de confirmation généré:", confirmationToken);
+        console.log("Pas de token de confirmation disponible");
+        return new Response(JSON.stringify({ 
+          success: false, 
+          message: "Pas de token de confirmation disponible" 
+        }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
-      // Générer l'URL de confirmation personnalisée
+      console.log("Token de confirmation trouvé dans le payload");
+
+      // Générer l'URL de confirmation avec le vrai token de Supabase
       const baseUrl = "https://senior-digital-mentor.com";
       const confirmationUrl = `${baseUrl}/auth/confirm?token=${confirmationToken}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/auth')}`;
       
-      console.log("URL de confirmation générée:", confirmationUrl);
+      console.log("URL de confirmation générée avec le vrai token:", confirmationUrl);
 
       // Appeler notre fonction d'envoi d'email personnalisé
       console.log("Appel de la fonction send-confirmation-email...");
