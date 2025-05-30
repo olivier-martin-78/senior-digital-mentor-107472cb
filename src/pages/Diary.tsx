@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,7 +178,20 @@ const Diary = () => {
       // Récupération pour l'utilisateur actuel ou pas de sélection utilisateur
       console.log('Diary - Récupération des entrées utilisateur actuel');
       
-      // 1. Récupérer directement les entrées de l'utilisateur actuel
+      // 1. Vérifier d'abord s'il y a des entrées dans la table
+      console.log('Diary - Vérification globale de la table diary_entries...');
+      const { data: allEntriesCheck, error: allEntriesError } = await supabase
+        .from('diary_entries')
+        .select('id, user_id, title')
+        .limit(10);
+
+      if (allEntriesError) {
+        console.error('Diary - Erreur lors de la vérification globale:', allEntriesError);
+      } else {
+        console.log('Diary - Entrées globales trouvées:', allEntriesCheck?.length || 0, allEntriesCheck);
+      }
+
+      // 2. Récupérer directement les entrées de l'utilisateur actuel
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
@@ -212,6 +224,12 @@ const Diary = () => {
       
       if (userEntriesError) {
         console.error('Diary - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
+        console.error('Diary - Détails erreur:', {
+          message: userEntriesError.message,
+          details: userEntriesError.details,
+          hint: userEntriesError.hint,
+          code: userEntriesError.code
+        });
         setEntries([]);
         return;
       }
@@ -222,7 +240,7 @@ const Diary = () => {
         sampleEntry: userEntries?.[0] || 'aucune'
       });
 
-      // 2. Récupérer les utilisateurs autorisés via les groupes d'invitation
+      // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
       console.log('Diary - Récupération des groupes pour utilisateur:', user.id);
       const { data: groupPermissions, error: groupError } = await supabase
         .from('group_members')
@@ -266,7 +284,7 @@ const Diary = () => {
 
       let otherEntries: DiaryEntry[] = [];
 
-      // 3. Récupérer les entrées des autres utilisateurs autorisés
+      // 4. Récupérer les entrées des autres utilisateurs autorisés
       if (groupCreatorIds.length > 0) {
         console.log('Diary - Récupération des autres entrées pour:', groupCreatorIds);
         let otherEntriesQuery = supabase
@@ -291,6 +309,12 @@ const Diary = () => {
         
         if (otherEntriesError) {
           console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
+          console.error('Diary - Détails erreur autres entrées:', {
+            message: otherEntriesError.message,
+            details: otherEntriesError.details,
+            hint: otherEntriesError.hint,
+            code: otherEntriesError.code
+          });
         } else {
           otherEntries = otherEntriesData || [];
           console.log('Diary - Réponse autres entrées:', { 
