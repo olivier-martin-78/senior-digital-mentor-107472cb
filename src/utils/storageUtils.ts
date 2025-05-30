@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DIARY_MEDIA_BUCKET, BLOG_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from './thumbnailtUtils';
 
@@ -25,20 +24,11 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
   }
   
   try {
-    // Détection automatique du bucket basée sur le format du chemin
-    let actualBucket = bucket;
+    // DEBUG: Log du bucket utilisé
+    console.log('🔗 getPublicUrl - Utilisation du bucket:', bucket, 'pour le chemin:', path);
     
-    // Si l'URL contient un identifiant utilisateur (chemin standard pour diary_media)
-    if (path.includes('/')) {
-      actualBucket = DIARY_MEDIA_BUCKET;
-    } else {
-      // Si le chemin ne contient pas de slash et ressemble à un fichier média du blog
-      const isLikelyBlogMedia = /^[^.]+$/.test(path) || /\.[a-zA-Z0-9]{1,4}$/.test(path);
-      if (isLikelyBlogMedia && bucket === DIARY_MEDIA_BUCKET) {
-        actualBucket = BLOG_MEDIA_BUCKET;
-        console.log(`Chemin détecté comme fichier blog-media: ${path}`);
-      }
-    }
+    // Utiliser directement le bucket fourni en paramètre
+    const actualBucket = bucket;
     
     // Gestion des cas où le chemin contient le nom d'utilisateur
     const cleanPath = path;
@@ -48,7 +38,7 @@ export const getPublicUrl = (path: string, bucket: string = DIARY_MEDIA_BUCKET) 
     
     // Vérifier si l'URL a été générée correctement
     if (data && data.publicUrl) {
-      console.log('URL publique générée:', data.publicUrl, 'depuis le bucket:', actualBucket);
+      console.log('🔗 URL publique générée:', data.publicUrl, 'depuis le bucket:', actualBucket);
       return data.publicUrl;
     }
     

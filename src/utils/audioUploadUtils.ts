@@ -105,10 +105,10 @@ export const uploadAudio = async (
     
     console.log('✅ Téléchargement réussi, récupération de l\'URL publique...');
     
-    // Récupération de l'URL publique
+    // Récupération de l'URL publique en passant explicitement le bon bucket
     const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
     console.log('🔗 URL publique obtenue:', publicUrl);
-    console.log('🪣 Bucket utilisé:', AUDIO_BUCKET_NAME);
+    console.log('🪣 Bucket utilisé pour l\'URL:', AUDIO_BUCKET_NAME);
     
     safeCallback(onSuccess, publicUrl);
   } catch (error: any) {
