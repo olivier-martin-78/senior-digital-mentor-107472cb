@@ -10,9 +10,10 @@ interface AudioRecorderProps {
   chapterId: string;
   questionId: string;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
+  onUploadStart?: () => void;
 }
 
-export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
+export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploadStart }: AudioRecorderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
@@ -70,6 +71,11 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       console.log(`AudioRecorder - Début du processus d'upload pour la question ${questionId}`);
       setIsUploading(true);
       currentUploadRef.current = uploadKey;
+      
+      // Signaler le début de l'upload au parent
+      if (onUploadStart) {
+        onUploadStart();
+      }
       
       // Tentative de téléchargement de l'audio
       await uploadAudio(

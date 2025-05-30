@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AudioRecorder from '@/components/life-story/AudioRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
@@ -22,6 +22,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   existingAudioUrl,
 }) => {
   const { hasRole } = useAuth();
+  const [isUploading, setIsUploading] = useState(false);
   
   // Les lecteurs ne peuvent pas enregistrer d'audio
   const canRecord = !hasRole('reader');
@@ -40,9 +41,12 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       // Créer un blob factice pour compatibilité avec l'interface existante
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
+      // Arrêter l'état d'upload une fois l'URL reçue
+      setIsUploading(false);
     } else {
       // Ne pas afficher de toast lors des changements automatiques
       onAudioDeleted(chapterId, questionId, false);
+      setIsUploading(false);
     }
   };
 
@@ -52,8 +56,14 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     onAudioDeleted(chapterId, questionId, true); // Afficher le toast pour la suppression manuelle
   };
 
-  // Si un audio existe déjà, afficher le lecteur
-  if (existingAudioUrl) {
+  // Gérer le début de l'upload
+  const handleUploadStart = () => {
+    console.log('Début de l\'upload audio');
+    setIsUploading(true);
+  };
+
+  // Si un audio existe déjà ET qu'on n'est pas en train d'uploader, afficher le lecteur
+  if (existingAudioUrl && !isUploading) {
     return (
       <VoiceAnswerPlayer
         audioUrl={existingAudioUrl}
@@ -68,6 +78,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       chapterId={chapterId}
       questionId={questionId}
       onAudioUrlChange={handleAudioUrlChange}
+      onUploadStart={handleUploadStart}
     />
   );
 };
