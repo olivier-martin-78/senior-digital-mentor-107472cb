@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale';
 import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { WishPost as WishPostType } from '@/types/supabase';
+import { sanitizeInput, isValidUrl } from '@/utils/securityUtils';
 
 const WishPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -113,6 +114,48 @@ const WishPost = () => {
     }
   };
 
+  // Fonction pour sécuriser l'affichage du contenu
+  const renderSecureContent = (content: string | null) => {
+    if (!content) return <p className="text-gray-500 italic">Non renseigné</p>;
+    
+    const sanitizedContent = sanitizeInput(content);
+    return sanitizedContent.split('\n').map((paragraph, index) => (
+      paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
+    ));
+  };
+
+  // Fonction pour sécuriser l'affichage des liens
+  const renderSecureLink = (url: string | null) => {
+    if (!url) {
+      return (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-gray-500 italic">Aucun document ou lien fourni</p>
+        </div>
+      );
+    }
+
+    const sanitizedUrl = sanitizeInput(url);
+    if (!isValidUrl(sanitizedUrl)) {
+      return (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-red-500 italic">Lien invalide ou non sécurisé</p>
+        </div>
+      );
+    }
+
+    return (
+      <a 
+        href={sanitizedUrl} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="flex items-center text-tranches-sage hover:underline bg-gray-50 rounded-lg p-4"
+      >
+        <ExternalLink className="h-4 w-4 mr-2" />
+        Accéder au document ou lien partagé
+      </a>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -131,7 +174,7 @@ const WishPost = () => {
   }
 
   const requestTypeText = wish.request_type === 'other' && wish.custom_request_type 
-    ? wish.custom_request_type 
+    ? sanitizeInput(wish.custom_request_type || '')
     : {
         'personal': 'Un souhait personnel',
         'experience': 'Une expérience à vivre',
@@ -161,7 +204,9 @@ const WishPost = () => {
           {/* Header */}
           <div className="mb-8">
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-              <h1 className="text-3xl font-serif text-tranches-charcoal">{wish.title}</h1>
+              <h1 className="text-3xl font-serif text-tranches-charcoal">
+                {sanitizeInput(wish.title)}
+              </h1>
               
               <div className="flex gap-2">
                 {canManagePublication && (
@@ -192,7 +237,7 @@ const WishPost = () => {
               </div>
               
               {wish.album && (
-                <Badge variant="outline">{wish.album.name}</Badge>
+                <Badge variant="outline">{sanitizeInput(wish.album.name)}</Badge>
               )}
               
               {!wish.published && (
@@ -211,19 +256,19 @@ const WishPost = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Prénom</label>
-                  <p className="text-gray-900">{wish.first_name || 'Non renseigné'}</p>
+                  <p className="text-gray-900">{sanitizeInput(wish.first_name || 'Non renseigné')}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Âge</label>
-                  <p className="text-gray-900">{wish.age || 'Non renseigné'}</p>
+                  <p className="text-gray-900">{sanitizeInput(wish.age || 'Non renseigné')}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-gray-900">{wish.email || 'Non renseigné'}</p>
+                  <p className="text-gray-900">{sanitizeInput(wish.email || 'Non renseigné')}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Localisation</label>
-                  <p className="text-gray-900">{wish.location || 'Non renseignée'}</p>
+                  <p className="text-gray-900">{sanitizeInput(wish.location || 'Non renseignée')}</p>
                 </div>
               </div>
             </div>
@@ -253,13 +298,7 @@ const WishPost = () => {
             <div>
               <h2 className="text-xl font-medium mb-2">Description du souhait</h2>
               <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
-                {wish.content ? (
-                  wish.content.split('\n').map((paragraph, index) => (
-                    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))
-                ) : (
-                  <p className="text-gray-500 italic">Aucune description fournie</p>
-                )}
+                {renderSecureContent(wish.content)}
               </div>
             </div>
             
@@ -267,13 +306,7 @@ const WishPost = () => {
             <div>
               <h2 className="text-xl font-medium mb-2">Pourquoi c'est important</h2>
               <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
-                {wish.importance ? (
-                  wish.importance.split('\n').map((paragraph, index) => (
-                    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))
-                ) : (
-                  <p className="text-gray-500 italic">Non renseigné</p>
-                )}
+                {renderSecureContent(wish.importance)}
               </div>
             </div>
             
@@ -281,13 +314,7 @@ const WishPost = () => {
             <div>
               <h2 className="text-xl font-medium mb-2">Besoins concrets</h2>
               <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
-                {wish.needs ? (
-                  wish.needs.split('\n').map((paragraph, index) => (
-                    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))
-                ) : (
-                  <p className="text-gray-500 italic">Non renseigné</p>
-                )}
+                {renderSecureContent(wish.needs)}
               </div>
             </div>
             
@@ -295,34 +322,14 @@ const WishPost = () => {
             <div>
               <h2 className="text-xl font-medium mb-2">Ce que je peux offrir en retour</h2>
               <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
-                {wish.offering ? (
-                  wish.offering.split('\n').map((paragraph, index) => (
-                    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))
-                ) : (
-                  <p className="text-gray-500 italic">Non renseigné</p>
-                )}
+                {renderSecureContent(wish.offering)}
               </div>
             </div>
             
             {/* Documents ou liens */}
             <div>
               <h2 className="text-xl font-medium mb-2">Documents ou liens</h2>
-              {wish.attachment_url ? (
-                <a 
-                  href={wish.attachment_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center text-tranches-sage hover:underline bg-gray-50 rounded-lg p-4"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Accéder au document ou lien partagé
-                </a>
-              ) : (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-500 italic">Aucun document ou lien fourni</p>
-                </div>
-              )}
+              {renderSecureLink(wish.attachment_url)}
             </div>
           </div>
           
@@ -334,7 +341,7 @@ const WishPost = () => {
             </h2>
             {wish.email ? (
               <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-                <a href={`mailto:${wish.email}`}>
+                <a href={`mailto:${sanitizeInput(wish.email)}`}>
                   Contacter l'auteur du souhait
                 </a>
               </Button>

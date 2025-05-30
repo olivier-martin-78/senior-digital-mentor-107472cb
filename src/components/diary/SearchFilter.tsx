@@ -16,8 +16,16 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
 }) => {
   const [inputValue, setInputValue] = useState(searchTerm);
 
+  // Sécuriser l'input pour éviter les injections XSS
+  const sanitizeInput = (input: string): string => {
+    return input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  };
+
   const handleSearch = () => {
-    onSearchTermChange(inputValue);
+    const sanitizedInput = sanitizeInput(inputValue.trim());
+    if (sanitizedInput.length <= 100) { // Limite de longueur
+      onSearchTermChange(sanitizedInput);
+    }
   };
 
   const handleClearSearch = () => {
@@ -28,6 +36,14 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Bloquer les caractères potentiellement dangereux
+    if (!/[<>"]/.test(value)) {
+      setInputValue(value);
     }
   };
 
@@ -44,9 +60,11 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
             type="text"
             placeholder="Rechercher par titre, activités ou réflexions..."
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             className="pl-10 pr-10"
+            maxLength={100}
+            autoComplete="off"
           />
           {inputValue && (
             <Button

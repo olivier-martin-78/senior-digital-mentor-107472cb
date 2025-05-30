@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cleanupAuthState } from '@/utils/authUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole } from '@/types/supabase';
+import { rateLimiter, secureStorage } from '@/utils/securityUtils';
 
 // Re-export the cleanup function for use in other components
 export { cleanupAuthState } from '@/utils/authUtils';
@@ -28,11 +29,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const { toast } = useToast();
 
-  // Fonction hasRole modifiée pour prendre en compte l'impersonnation
+  // Fonction hasRole modifiée pour prendre en compte l'impersonnation sécurisée
   const hasRole = (role: AppRole) => {
     // Vérifier si nous sommes dans le contexte d'impersonnation
     try {
-      const impersonationState = localStorage.getItem('impersonation_state');
+      const impersonationState = secureStorage.getItem('impersonation_state');
       if (impersonationState) {
         const parsedState = JSON.parse(impersonationState);
         if (parsedState.isImpersonating && parsedState.impersonatedRoles) {
@@ -41,6 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Erreur lors de la vérification des rôles d\'impersonnation:', error);
+      // En cas d'erreur, nettoyer l'état d'impersonnation corrompu
+      secureStorage.removeItem('impersonation_state');
     }
 
     // Sinon, utiliser la logique normale
@@ -50,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fonction pour obtenir l'utilisateur effectif (impersonné ou réel)
   const getEffectiveUser = () => {
     try {
-      const impersonationState = localStorage.getItem('impersonation_state');
+      const impersonationState = secureStorage.getItem('impersonation_state');
       if (impersonationState) {
         const parsedState = JSON.parse(impersonationState);
         if (parsedState.isImpersonating && parsedState.impersonatedUser) {
@@ -59,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'utilisateur effectif:', error);
+      secureStorage.removeItem('impersonation_state');
     }
 
     return profile;
@@ -86,9 +90,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // Vérifier le rate limiting
+    if (!rateLimiter.isAllowed(`signin_${email}`)) {
+      const error = new Error('Trop de tentatives de connexion. Veuillez réessayer plus tard.');
+      setAuthError(error);
+      toast({
+        title: "Trop de tentatives",
+        description: "Veuillez attendre avant de réessayer.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+
     try {
       setAuthError(null);
       setIsLoading(true);
+      
+      // Nettoyer l'état d'impersonnation lors de la connexion
+      secureStorage.removeItem('impersonation_state');
       
       await AuthService.signIn(email, password);
       
@@ -110,6 +129,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
+    // Vérifier le rate limiting
+    if (!rateLimiter.isAllowed(`signup_${email}`)) {
+      const error = new Error('Trop de tentatives d\'inscription. Veuillez réessayer plus tard.');
+      setAuthError(error);
+      toast({
+        title: "Trop de tentatives",
+        description: "Veuillez attendre avant de réessayer.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+
     try {
       setAuthError(null);
       setIsLoading(true);
@@ -139,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       
       // Nettoyer l'état d'impersonnation lors de la déconnexion
-      localStorage.removeItem('impersonation_state');
+      secureStorage.removeItem('impersonation_state');
       
       await AuthService.signOut();
       
