@@ -34,7 +34,11 @@ interface InvitationGroupsProps {
   onDataChange?: () => void;
 }
 
-const InvitationGroups = forwardRef<{ loadGroups: () => void }, InvitationGroupsProps>(
+export interface InvitationGroupsRef {
+  loadGroups: () => void;
+}
+
+const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
   ({ onDataChange }, ref) => {
     const { hasRole, user } = useAuth();
     const { toast } = useToast();

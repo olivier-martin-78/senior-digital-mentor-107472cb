@@ -1,11 +1,11 @@
 
 import React, { useRef } from 'react';
 import Header from '@/components/Header';
-import InvitationGroups from '@/components/admin/InvitationGroups';
+import InvitationGroups, { InvitationGroupsRef } from '@/components/admin/InvitationGroups';
 import ProcessPendingInvitations from '@/components/admin/ProcessPendingInvitations';
 
 const AdminInvitationGroups = () => {
-  const invitationGroupsRef = useRef<{ loadGroups: () => void }>(null);
+  const invitationGroupsRef = useRef<InvitationGroupsRef>(null);
 
   const handleInvitationsProcessed = () => {
     // Recharger les groupes après traitement des invitations
