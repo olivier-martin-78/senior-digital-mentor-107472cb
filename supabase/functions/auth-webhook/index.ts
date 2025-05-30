@@ -54,7 +54,8 @@ const handler = async (req: Request): Promise<Response> => {
         type: 'signup',
         email: user.email,
         options: {
-          redirectTo: 'https://senior-digital-mentor.com/auth/confirm'
+          // Ne pas utiliser redirect_to dans le lien Supabase
+          // Nous allons construire notre propre URL
         }
       });
 
@@ -71,12 +72,26 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("Lien de confirmation généré:", linkData.properties.action_link);
 
+      // Extraire le token du lien généré par Supabase
+      const originalUrl = new URL(linkData.properties.action_link);
+      const token = originalUrl.searchParams.get('token');
+      const tokenHash = originalUrl.searchParams.get('token_hash');
+      const type = originalUrl.searchParams.get('type');
+
+      // Construire notre propre URL de confirmation avec les paramètres préservés
+      const confirmationUrl = new URL('https://senior-digital-mentor.com/auth/confirm');
+      if (token) confirmationUrl.searchParams.set('token', token);
+      if (tokenHash) confirmationUrl.searchParams.set('token_hash', tokenHash);
+      if (type) confirmationUrl.searchParams.set('type', type);
+
+      console.log("URL de confirmation personnalisée:", confirmationUrl.toString());
+
       // Appeler notre fonction d'envoi d'email personnalisé
       console.log("Appel de la fonction send-confirmation-email...");
       const { data: emailData, error } = await supabase.functions.invoke('send-confirmation-email', {
         body: {
           email: user.email,
-          confirmationUrl: linkData.properties.action_link,
+          confirmationUrl: confirmationUrl.toString(),
           displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name || user.email.split('@')[0]
         }
       });
