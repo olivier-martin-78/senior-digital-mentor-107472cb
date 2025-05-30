@@ -1,4 +1,3 @@
-
 // src/components/life-story/initialChapters.ts
 import { Chapter } from '@/types/lifeStory';
 
@@ -17,7 +16,7 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-2',
-        text: 'A quels jeux jouiez-vous et avec qui dans votre enfance ?',Q
+        text: 'A quels jeux jouiez-vous et avec qui dans votre enfance ?',
         answer: '',
         audioBlob: null,
         audioUrl: null,
