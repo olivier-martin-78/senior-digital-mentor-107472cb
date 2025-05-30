@@ -77,7 +77,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
             console.log(`Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
             setUploadedAudioUrl(publicUrl);
             uploadCompleted.current = true;
-            onAudioUrlChange(chapterId, questionId, publicUrl, true);
+            // Envoyer l'URL au parent pour sauvegarde immédiate
+            onAudioUrlChange(chapterId, questionId, publicUrl, false); // false = autoriser la sauvegarde auto
             
             toast({
               title: "Enregistrement sauvegardé",

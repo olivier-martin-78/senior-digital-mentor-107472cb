@@ -226,21 +226,25 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     setIsSaving(true);
     try {
       console.log('Sauvegarde des données dans Supabase');
+      
+      // Préparer les chapitres avec les audioUrl sauvegardées
+      const chaptersToSave = data.chapters.map(chapter => ({
+        ...chapter,
+        questions: chapter.questions?.map(q => ({
+          id: q.id,
+          text: q.text,
+          answer: q.answer,
+          audioUrl: q.audioUrl, // Assurer que l'audioUrl est incluse
+        })) || [],
+      }));
+      
       const { error } = await supabase
         .from('life_stories')
         .upsert({
           id: data.id || undefined,
           user_id: effectiveUserId,
           title: data.title,
-          chapters: data.chapters.map(chapter => ({
-            ...chapter,
-            questions: chapter.questions?.map(q => ({
-              id: q.id,
-              text: q.text,
-              answer: q.answer,
-              audioUrl: q.audioUrl,
-            })) || [],
-          })),
+          chapters: chaptersToSave,
           updated_at: new Date().toISOString(),
           last_edited_chapter: activeTab,
           last_edited_question: activeQuestion,

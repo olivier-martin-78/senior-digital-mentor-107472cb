@@ -16,9 +16,11 @@ import AdminLifeStories from '@/pages/admin/AdminLifeStories';
 import AdminLifeStoryEdit from '@/pages/admin/AdminLifeStoryEdit';
 import Wishes from '@/pages/Wishes';
 import WishPost from '@/pages/WishPost';
+import WishNew from '@/pages/WishNew';
 import Diary from '@/pages/Diary';
 import DiaryEntry from '@/pages/DiaryEntry';
 import DiaryEdit from '@/pages/DiaryEdit';
+import DiaryNew from '@/pages/DiaryNew';
 import LifeStory from '@/pages/LifeStory';
 import Recent from '@/pages/Recent';
 import Unauthorized from '@/pages/Unauthorized';
@@ -61,9 +63,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/blog/:id" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
 
         <Route path="/wishes" element={<ProtectedRoute><Wishes /></ProtectedRoute>} />
+        <Route path="/wishes/new" element={<ProtectedRoute><WishNew /></ProtectedRoute>} />
         <Route path="/wishes/:id" element={<ProtectedRoute><WishPost /></ProtectedRoute>} />
 
         <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+        <Route path="/diary/new" element={<ProtectedRoute><DiaryNew /></ProtectedRoute>} />
         <Route path="/diary/edit/:id" element={<ProtectedRoute><DiaryEdit /></ProtectedRoute>} />
         <Route path="/diary/:id" element={<ProtectedRoute><DiaryEntry /></ProtectedRoute>} />
 
