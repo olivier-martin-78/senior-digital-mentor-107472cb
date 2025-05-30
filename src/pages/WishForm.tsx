@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -45,7 +46,8 @@ const formSchema = z.object({
   firstName: z.string().min(1, "Le prénom est requis"),
   email: z.string().email("Email invalide").optional(),
   age: z.string().optional(),
-  location: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
   requestType: z.string().min(1, "Le type de demande est requis"),
   customRequestType: z.string().optional(),
   title: z.string().min(1, "Un titre pour votre demande est requis"),
@@ -107,11 +109,24 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   // Préparer les valeurs par défaut du formulaire
   const getDefaultValues = (): FormValues => {
     if (wishToEdit) {
+      // Parser l'ancienne location pour extraire le code postal et la ville si possible
+      const locationParts = wishToEdit.location ? wishToEdit.location.split(', ') : [];
+      let postalCode = '';
+      let city = '';
+      
+      if (locationParts.length === 2) {
+        postalCode = locationParts[0];
+        city = locationParts[1];
+      } else if (locationParts.length === 1) {
+        city = locationParts[0];
+      }
+
       return {
         firstName: wishToEdit.first_name || '',
         email: wishToEdit.email || '',
         age: wishToEdit.age || '',
-        location: wishToEdit.location || '',
+        postalCode: postalCode,
+        city: city,
         requestType: wishToEdit.request_type || '',
         customRequestType: wishToEdit.custom_request_type || '',
         title: wishToEdit.title || '',
@@ -131,7 +146,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       firstName: '',
       email: '',
       age: '',
-      location: '',
+      postalCode: '',
+      city: '',
       requestType: '',
       customRequestType: '',
       title: '',
@@ -278,6 +294,16 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         }
       }
 
+      // Construire la localisation à partir du code postal et de la ville
+      let location = '';
+      if (values.postalCode && values.city) {
+        location = `${values.postalCode}, ${values.city}`;
+      } else if (values.city) {
+        location = values.city;
+      } else if (values.postalCode) {
+        location = values.postalCode;
+      }
+
       const submissionData = {
         title: values.title,
         content: values.description,
@@ -285,7 +311,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
         first_name: values.firstName,
         email: values.email || null,
         age: values.age || null,
-        location: values.location || null,
+        location: location || null,
         request_type: values.requestType,
         custom_request_type: values.requestType === 'other' ? values.customRequestType : null,
         importance: values.importance,
@@ -425,20 +451,38 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ville / Pays</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Paris, France" {...field} />
-                          </FormControl>
-                          <FormDescription>Facultatif</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="md:col-span-2">
+                      <FormLabel className="text-base font-medium">Localisation (facultatif)</FormLabel>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="postalCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Code postal</FormLabel>
+                              <FormControl>
+                                <Input placeholder="ex: 75001" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Ville</FormLabel>
+                              <FormControl>
+                                <Input placeholder="ex: Paris" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

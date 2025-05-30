@@ -156,6 +156,29 @@ const WishPost = () => {
     );
   };
 
+  // Fonction pour afficher la localisation de manière structurée
+  const renderLocation = () => {
+    if (!wish?.location) {
+      return <p className="text-gray-900">Non renseignée</p>;
+    }
+
+    const sanitizedLocation = sanitizeInput(wish.location);
+    const locationParts = sanitizedLocation.split(', ');
+    
+    if (locationParts.length === 2) {
+      // Si on a deux parties, on suppose que c'est "code postal, ville"
+      return (
+        <div className="text-gray-900">
+          <span className="font-medium">{locationParts[1]}</span>
+          <span className="text-gray-600 ml-2">({locationParts[0]})</span>
+        </div>
+      );
+    } else {
+      // Sinon on affiche tel quel
+      return <p className="text-gray-900">{sanitizedLocation}</p>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -267,8 +290,11 @@ const WishPost = () => {
                   <p className="text-gray-900">{sanitizeInput(wish.email || 'Non renseigné')}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Localisation</label>
-                  <p className="text-gray-900">{sanitizeInput(wish.location || 'Non renseignée')}</p>
+                  <label className="text-sm font-medium text-gray-600 flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Localisation
+                  </label>
+                  {renderLocation()}
                 </div>
               </div>
             </div>
