@@ -33,7 +33,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .from('diary_entries')
           .select(`
             *,
-            profiles!diary_entries_user_id_fkey (
+            profiles!inner (
               id,
               email,
               display_name
@@ -106,7 +106,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         .from('diary_entries')
         .select(`
           *,
-          profiles!diary_entries_user_id_fkey (
+          profiles!inner (
             id,
             email,
             display_name
@@ -199,7 +199,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       
       console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
 
-      let otherEntries: DiaryEntryWithAuthor[] = [];
+      let otherEntries: any[] = [];
 
       // 4. Récupérer les entrées des autres utilisateurs autorisés
       if (groupCreatorIds.length > 0) {
@@ -208,7 +208,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .from('diary_entries')
           .select(`
             *,
-            profiles!diary_entries_user_id_fkey (
+            profiles!inner (
               id,
               email,
               display_name
