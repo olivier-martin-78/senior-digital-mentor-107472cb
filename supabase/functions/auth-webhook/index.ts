@@ -14,6 +14,8 @@ const corsHeaders = {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== DEBUT auth-webhook ===");
+  console.log("Method:", req.method);
+  console.log("Headers:", Object.fromEntries(req.headers.entries()));
   
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,42 +23,88 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const payload = await req.json();
-    console.log("Webhook payload reçu:", payload);
+    console.log("Webhook payload reçu:", JSON.stringify(payload, null, 2));
 
     // Vérifier si c'est un événement de création d'utilisateur
     if (payload.table === "auth.users" && payload.type === "INSERT") {
       const user = payload.record;
-      console.log("Nouvel utilisateur créé:", user.email);
+      console.log("Nouvel utilisateur créé:", {
+        id: user.id,
+        email: user.email,
+        email_confirm_token: user.email_confirm_token ? "présent" : "absent",
+        confirmation_sent_at: user.confirmation_sent_at,
+        email_confirmed_at: user.email_confirmed_at
+      });
+
+      // Vérifier que nous avons un token de confirmation
+      if (!user.email_confirm_token) {
+        console.error("Pas de token de confirmation trouvé pour l'utilisateur");
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "Pas de token de confirmation" 
+        }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
 
       // Générer l'URL de confirmation personnalisée
-      const confirmationUrl = `https://senior-digital-mentor.com/auth?token=${user.email_confirm_token}&type=signup&redirect_to=https://senior-digital-mentor.com/auth`;
+      const baseUrl = "https://senior-digital-mentor.com";
+      const confirmationUrl = `${baseUrl}/auth/confirm?token=${user.email_confirm_token}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/auth')}`;
+      
+      console.log("URL de confirmation générée:", confirmationUrl);
 
       // Appeler notre fonction d'envoi d'email personnalisé
-      const { error } = await supabase.functions.invoke('send-confirmation-email', {
+      console.log("Appel de la fonction send-confirmation-email...");
+      const { data: emailData, error } = await supabase.functions.invoke('send-confirmation-email', {
         body: {
           email: user.email,
           confirmationUrl: confirmationUrl,
-          displayName: user.raw_user_meta_data?.display_name
+          displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name
         }
       });
 
       if (error) {
         console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
-        throw error;
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: error.message 
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
-      console.log("Email de confirmation personnalisé envoyé avec succès");
-    }
+      console.log("Email de confirmation personnalisé envoyé avec succès:", emailData);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Email de confirmation envoyé",
+        emailData: emailData 
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    } else {
+      console.log("Événement ignoré:", { table: payload.table, type: payload.type });
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Événement ignoré" 
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
   } catch (error: any) {
     console.error("Erreur dans auth-webhook:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        stack: error.stack 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

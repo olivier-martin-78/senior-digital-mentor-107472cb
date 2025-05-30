@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import Auth from '@/pages/Auth';
+import AuthConfirm from '@/pages/AuthConfirm';
 import Index from '@/pages/Index';
 import Profile from '@/pages/Profile';
 import Blog from '@/pages/Blog';
@@ -52,6 +53,7 @@ const AppRoutes: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/confirm" element={<AuthConfirm />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
