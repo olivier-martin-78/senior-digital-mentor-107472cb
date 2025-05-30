@@ -10,11 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 
 const LifeStory = () => {
-  const { user, session, hasRole } = useAuth();
+  const { user, session, hasRole, getEffectiveUserId } = useAuth();
   const navigate = useNavigate();
   
-  // Utiliser l'ID de l'utilisateur actuel
-  const targetUserId = user?.id || '';
+  // Utiliser l'ID de l'utilisateur effectif (impersonné ou réel)
+  const targetUserId = getEffectiveUserId() || '';
   
   const lifeStoryData = useLifeStory({ targetUserId });
 

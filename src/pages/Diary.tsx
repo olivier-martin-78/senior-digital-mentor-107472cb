@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,7 @@ import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const Diary = () => {
-  const { user, session, hasRole } = useAuth();
+  const { user, session, hasRole, getEffectiveUserId } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,21 +21,24 @@ const Diary = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Utiliser l'utilisateur effectif pour l'impersonnation
+  const effectiveUserId = getEffectiveUserId();
+
   useEffect(() => {
     if (!session) {
       navigate('/auth');
       return;
     }
     fetchEntries();
-  }, [session, user, navigate, searchTerm, startDate, endDate]);
+  }, [session, effectiveUserId, navigate, searchTerm, startDate, endDate]);
 
   const fetchEntries = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     
     try {
       setLoading(true);
       console.log('Diary - Début fetchEntries:', {
-        currentUserId: user.id,
+        currentUserId: effectiveUserId,
         isAdmin: hasRole('admin')
       });
       
@@ -90,8 +94,8 @@ const Diary = () => {
         return;
       }
 
-      // Récupération pour l'utilisateur actuel
-      console.log('Diary - Récupération des entrées utilisateur actuel');
+      // Récupération pour l'utilisateur effectif
+      console.log('Diary - Récupération des entrées utilisateur effectif:', effectiveUserId);
       
       // 1. Vérifier d'abord s'il y a des entrées dans la table
       console.log('Diary - Vérification globale de la table diary_entries...');
@@ -106,18 +110,18 @@ const Diary = () => {
         console.log('Diary - Entrées globales trouvées:', allEntriesCheck?.length || 0, allEntriesCheck);
       }
 
-      // 2. Récupérer directement les entrées de l'utilisateur actuel
+      // 2. Récupérer directement les entrées de l'utilisateur effectif
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('entry_date', { ascending: false });
 
-      console.log('Diary - Requête utilisateur actuel construite, filtres:', {
+      console.log('Diary - Requête utilisateur effectif construite, filtres:', {
         searchTerm,
         startDate,
         endDate,
-        userId: user.id
+        userId: effectiveUserId
       });
 
       // Appliquer les filtres aux entrées utilisateur
@@ -134,7 +138,7 @@ const Diary = () => {
         console.log('Diary - Filtre date fin appliqué:', endDate);
       }
 
-      console.log('Diary - Exécution requête utilisateur actuel...');
+      console.log('Diary - Exécution requête utilisateur effectif...');
       const { data: userEntries, error: userEntriesError } = await userEntriesQuery;
       
       if (userEntriesError) {
@@ -149,21 +153,21 @@ const Diary = () => {
         return;
       }
 
-      console.log('Diary - Réponse entrées utilisateur actuel:', { 
+      console.log('Diary - Réponse entrées utilisateur effectif:', { 
         count: userEntries?.length || 0, 
         entries: userEntries,
         sampleEntry: userEntries?.[0] || 'aucune'
       });
 
       // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
-      console.log('Diary - Récupération des groupes pour utilisateur:', user.id);
+      console.log('Diary - Récupération des groupes pour utilisateur effectif:', effectiveUserId);
       const { data: groupPermissions, error: groupError } = await supabase
         .from('group_members')
         .select(`
           group_id,
           invitation_groups!inner(created_by)
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', effectiveUserId);
 
       if (groupError) {
         console.error('Diary - Erreur groupes:', groupError);
@@ -193,7 +197,7 @@ const Diary = () => {
       console.log('Diary - Réponse groupes:', groupPermissions);
 
       // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user.id) || [];
+      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== effectiveUserId) || [];
       
       console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
 
