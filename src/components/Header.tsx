@@ -46,21 +46,30 @@ const Header = () => {
   return (
     <header className="bg-white border-b border-gray-200 fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold text-tranches-charcoal font-serif">
-          Senior Digital Mentor
-        </Link>
+        <div className="flex items-center space-x-3">
+          <img 
+            src="/SeniorDigital.png" 
+            alt="Senior Digital Logo" 
+            className="h-10 w-10 object-contain"
+          />
+          <Link to="/" className="text-2xl font-bold text-tranches-charcoal font-serif">
+            Senior Digital Mentor
+          </Link>
+        </div>
         <nav>
           {session ? (
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Avatar className="h-9 w-9">
+              <DropdownMenuTrigger className="outline-none">
+                <Avatar className="h-9 w-9 cursor-pointer">
                   <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
-                  <AvatarFallback>{getInitials(user?.email || '??')}</AvatarFallback>
+                  <AvatarFallback className="bg-tranches-sage text-white">
+                    {getInitials(user?.email || '??')}
+                  </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200">
                 <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full">
+                  <Link to="/profile" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                     <Settings className="mr-2 h-4 w-4" />
                     Mon profil
                   </Link>
@@ -68,43 +77,43 @@ const Header = () => {
                 {hasRole('admin') && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/users" className="w-full">
+                      <Link to="/admin/users" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Users className="mr-2 h-4 w-4" />
                         Gestion des utilisateurs
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/invitation-groups" className="w-full">
+                      <Link to="/admin/invitation-groups" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Users className="mr-2 h-4 w-4" />
                         Groupes d'invitation
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/posts" className="w-full">
+                      <Link to="/admin/posts" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <FileText className="mr-2 h-4 w-4" />
                         Articles de blog
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/albums" className="w-full">
+                      <Link to="/admin/albums" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Image className="mr-2 h-4 w-4" />
                         Blog photos
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/wish-albums" className="w-full">
+                      <Link to="/admin/wish-albums" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Heart className="mr-2 h-4 w-4" />
                         Souhaits formulés
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/diary" className="w-full">
+                      <Link to="/admin/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <BookOpen className="mr-2 h-4 w-4" />
                         Journaux partagés
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/life-stories" className="w-full">
+                      <Link to="/admin/life-stories" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Book className="mr-2 h-4 w-4" />
                         Histoires de vie
                       </Link>
@@ -113,7 +122,7 @@ const Header = () => {
                 )}
                 <DropdownMenuItem
                   onClick={handleSignOut}
-                  className="cursor-pointer"
+                  className="cursor-pointer px-2 py-2 text-gray-700 hover:bg-gray-50"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Déconnexion
