@@ -15,13 +15,13 @@ interface AudioRecorderProps {
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadAttempted, setUploadAttempted] = useState(false);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
   
-  // Utiliser des refs pour gérer les composants montés/démontés
+  // Utiliser des refs pour éviter les uploads multiples
   const isMounted = useRef(true);
   const isUploadingRef = useRef(false);
-  const currentBlobRef = useRef<Blob | null>(null);
+  const uploadCompleted = useRef(false);
   
   // Effet de nettoyage lors du démontage du composant
   useEffect(() => {
@@ -34,19 +34,29 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
     console.log("handleAudioChange appelé avec blob:", newAudioBlob ? `${newAudioBlob.size} octets` : "null");
     
+    // Réinitialiser l'état pour un nouvel enregistrement
+    if (newAudioBlob) {
+      uploadCompleted.current = false;
+      setUploadedAudioUrl(null);
+    }
+    
     // Stockage du nouveau blob audio
     setAudioBlob(newAudioBlob);
-    currentBlobRef.current = newAudioBlob;
     
     // Si pas de blob ou pas d'utilisateur, ne rien faire d'autre
     if (!newAudioBlob || !user) {
       console.log("Pas de blob ou pas d'utilisateur, sortie de handleAudioChange");
+      if (!newAudioBlob) {
+        // Audio supprimé
+        setUploadedAudioUrl(null);
+        onAudioUrlChange(chapterId, questionId, null);
+      }
       return;
     }
     
-    // Si un téléchargement est déjà en cours, ne pas en démarrer un nouveau
-    if (isUploading || isUploadingRef.current) {
-      console.log("Upload déjà en cours, sortie de handleAudioChange");
+    // Si un téléchargement est déjà en cours ou complété, ne pas en démarrer un nouveau
+    if (isUploading || isUploadingRef.current || uploadCompleted.current) {
+      console.log("Upload déjà en cours ou complété, sortie de handleAudioChange");
       return;
     }
     
@@ -54,7 +64,6 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       console.log(`Début du processus d'upload pour l'audio de la question ${questionId}`);
       setIsUploading(true);
       isUploadingRef.current = true;
-      setUploadAttempted(true);
       
       // Téléchargement de l'audio
       await uploadAudio(
@@ -64,8 +73,10 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         questionId,
         // Callback de succès
         (publicUrl) => {
-          if (isMounted.current) {
+          if (isMounted.current && !uploadCompleted.current) {
             console.log(`Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
+            setUploadedAudioUrl(publicUrl);
+            uploadCompleted.current = true;
             onAudioUrlChange(chapterId, questionId, publicUrl, true);
             
             toast({
@@ -129,13 +140,19 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       {isUploading && (
         <div className="flex items-center justify-center py-2 mt-2 bg-gray-100 rounded-md">
           <Spinner className="h-5 w-5 border-gray-500 mr-2" />
-          <span className="text-sm text-gray-700">Téléchargement en cours...</span>
+          <span className="text-sm text-gray-700">Sauvegarde en cours...</span>
         </div>
       )}
       
-      {uploadAttempted && !isUploading && !audioBlob && (
-        <div className="py-2 mt-2 bg-gray-100 rounded-md text-center">
-          <span className="text-sm text-gray-700">Enregistrez un nouvel audio pour l'envoyer.</span>
+      {uploadedAudioUrl && !isUploading && (
+        <div className="py-2 mt-2 bg-green-100 rounded-md text-center">
+          <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
+        </div>
+      )}
+      
+      {audioBlob && !isUploading && !uploadedAudioUrl && (
+        <div className="py-2 mt-2 bg-yellow-100 rounded-md text-center">
+          <span className="text-sm text-yellow-700">⏳ En attente de sauvegarde...</span>
         </div>
       )}
     </div>

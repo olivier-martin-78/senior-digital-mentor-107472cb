@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -171,70 +172,27 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
   };
 
+  // Fonction simplifiée pour gérer l'audio - AudioRecorder s'occupe de l'upload
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    console.log('Début de handleAudioRecorded:', { chapterId, questionId, blobSize: blob.size, blobType: blob.type });
-    let audioUrl: string;
-
-    if (!user) {
-      console.warn('Utilisateur non connecté, utilisation d\'une URL temporaire');
-      audioUrl = URL.createObjectURL(blob);
-    } else {
-      try {
-        const fileName = `audio/${user.id}/${chapterId}/${questionId}-${Date.now()}.m4a`;
-        console.log('Upload du fichier audio:', fileName);
-        const { error } = await supabase.storage
-          .from('life-story-audio')
-          .upload(fileName, blob, {
-            contentType: 'audio/mp4',
-          });
-
-        if (error) {
-          console.error('Erreur lors de l\'upload audio:', error);
-          throw error;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('life-story-audio')
-          .getPublicUrl(fileName);
-
-        if (!urlData?.publicUrl) {
-          console.error('URL publique non générée');
-          throw new Error('Impossible de générer l\'URL publique');
-        }
-
-        audioUrl = urlData.publicUrl;
-        console.log('Audio uploadé avec succès:', audioUrl);
-      } catch (err) {
-        console.error('Erreur lors de l\'upload audio:', err);
-        toast.error('Erreur lors de la sauvegarde de l\'audio');
-        audioUrl = URL.createObjectURL(blob); // Fallback temporaire
-      }
-    }
-
-    console.log('Mise à jour de l\'état avec audioUrl:', audioUrl);
-    setData(prev => {
-      const newData = {
-        ...prev,
-        chapters: prev.chapters.map(chapter =>
-          chapter.id === chapterId
-            ? {
-                ...chapter,
-                questions: chapter.questions?.map(q =>
-                  q.id === questionId ? { ...q, audioBlob: blob, audioUrl } : q
-                ) || [],
-              }
-            : chapter
-        ),
-        last_edited_chapter: chapterId,
-        last_edited_question: questionId,
-      };
-      console.log('Nouvel état après enregistrement:', JSON.stringify(newData, null, 2));
-      return newData;
-    });
-    toast.success('Enregistrement audio ajouté');
-
-    // Sauvegarde immédiate pour persister l'URL
-    await saveNow();
+    console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload, pas besoin de dupliquer');
+    
+    // Ne pas faire d'upload ici, AudioRecorder s'en charge déjà
+    // Mettre à jour seulement l'état local pour indiquer qu'il y a un audio
+    setData(prev => ({
+      ...prev,
+      chapters: prev.chapters.map(chapter =>
+        chapter.id === chapterId
+          ? {
+              ...chapter,
+              questions: chapter.questions?.map(q =>
+                q.id === questionId ? { ...q, audioBlob: blob } : q
+              ) || [],
+            }
+          : chapter
+      ),
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId,
+    }));
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string) => {
@@ -255,7 +213,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
             : chapter
         ),
       };
-      console.log('Nouvel état après suppression:', JSON.stringify(newData, null, 2));
       return newData;
     });
     toast.success('Enregistrement audio supprimé');
@@ -268,7 +225,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }
     setIsSaving(true);
     try {
-      console.log('Sauvegarde des données dans Supabase:', JSON.stringify(data, null, 2));
+      console.log('Sauvegarde des données dans Supabase');
       const { error } = await supabase
         .from('life_stories')
         .upsert({

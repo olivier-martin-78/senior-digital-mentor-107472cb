@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import VoiceRecorder from '@/components/VoiceRecorder';
+import AudioRecorder from '@/components/life-story/AudioRecorder';
 
 interface VoiceAnswerRecorderProps {
   chapterId: string;
@@ -27,17 +27,24 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     return null;
   }
 
-  const handleAudioChange = (audioBlob: Blob | null) => {
-    if (audioBlob) {
-      onAudioRecorded(chapterId, questionId, audioBlob);
+  const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
+    console.log('AudioURL change dans VoiceAnswerRecorder:', { chapterId, questionId, audioUrl, preventAutoSave });
+    
+    if (audioUrl) {
+      // Créer un blob factice pour compatibilité avec l'interface existante
+      // Le vrai blob est géré par AudioRecorder et uploadé vers Supabase
+      const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
+      onAudioRecorded(chapterId, questionId, dummyBlob);
     } else {
       onAudioDeleted(chapterId, questionId);
     }
   };
 
   return (
-    <VoiceRecorder
-      onAudioChange={handleAudioChange}
+    <AudioRecorder
+      chapterId={chapterId}
+      questionId={questionId}
+      onAudioUrlChange={handleAudioUrlChange}
     />
   );
 };
