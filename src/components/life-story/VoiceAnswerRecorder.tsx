@@ -24,19 +24,23 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   const { hasRole } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   
-  // DEBUG: Log l'état initial
-  console.log('🎤 VoiceAnswerRecorder - État initial:', {
+  // DEBUG: Log l'état initial avec plus de détails
+  console.log('🎤 VoiceAnswerRecorder - État initial détaillé:', {
     chapterId,
     questionId,
     existingAudioUrl,
+    existingAudioUrlType: typeof existingAudioUrl,
+    existingAudioUrlLength: existingAudioUrl?.length,
     isUploading,
-    hasExistingAudio: !!existingAudioUrl
+    hasExistingAudio: !!existingAudioUrl,
+    isValidUrl: existingAudioUrl && existingAudioUrl.length > 10
   });
   
   // Les lecteurs ne peuvent pas enregistrer d'audio
   const canRecord = !hasRole('reader');
 
   if (!canRecord) {
+    console.log('🎤 VoiceAnswerRecorder - Utilisateur lecteur, pas d\'enregistrement autorisé');
     return null;
   }
 
@@ -46,7 +50,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       questionId, 
       audioUrl, 
       preventAutoSave,
-      previousUrl: existingAudioUrl
+      previousUrl: existingAudioUrl,
+      urlChanged: audioUrl !== existingAudioUrl
     });
     
     // Appeler la fonction du parent pour mettre à jour l'état
@@ -80,18 +85,20 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     setIsUploading(true);
   };
 
-  // DEBUG: Log de la décision d'affichage
+  // DEBUG: Log de la décision d'affichage avec plus de détails
   const shouldShowPlayer = existingAudioUrl && !isUploading;
-  console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage:', {
+  console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage détaillée:', {
     shouldShowPlayer,
     existingAudioUrl: !!existingAudioUrl,
+    existingAudioUrlValue: existingAudioUrl,
     isUploading,
-    condition: 'existingAudioUrl && !isUploading'
+    condition: 'existingAudioUrl && !isUploading',
+    finalDecision: shouldShowPlayer ? 'LECTEUR' : 'ENREGISTREUR'
   });
 
   // Si un audio existe déjà ET qu'on n'est pas en train d'uploader, afficher le lecteur
   if (shouldShowPlayer) {
-    console.log('🎤 VoiceAnswerRecorder - Affichage du lecteur avec URL:', existingAudioUrl);
+    console.log('🎤 VoiceAnswerRecorder - ✅ Affichage du lecteur avec URL:', existingAudioUrl);
     return (
       <VoiceAnswerPlayer
         audioUrl={existingAudioUrl}
@@ -101,7 +108,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   }
 
   // Sinon, afficher l'enregistreur
-  console.log('🎤 VoiceAnswerRecorder - Affichage de l\'enregistreur');
+  console.log('🎤 VoiceAnswerRecorder - ⚠️ Affichage de l\'enregistreur (pas d\'audio existant ou upload en cours)');
   return (
     <AudioRecorder
       chapterId={chapterId}

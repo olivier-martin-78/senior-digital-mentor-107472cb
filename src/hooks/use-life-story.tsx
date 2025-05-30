@@ -103,10 +103,11 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
                 const existingQuestion = existingChapter.questions?.find((q: any) => q.id === initialQuestion.id);
                 
                 if (existingQuestion) {
-                  console.log('use-life-story - Question avec données existantes:', {
+                  console.log('📚 use-life-story - Question avec données existantes:', {
                     questionId: initialQuestion.id,
                     answer: existingQuestion.answer,
-                    audioUrl: existingQuestion.audioUrl
+                    audioUrl: existingQuestion.audioUrl,
+                    audioUrlLength: existingQuestion.audioUrl?.length
                   });
                   
                   return {
@@ -136,7 +137,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           last_edited_question: storyData.last_edited_question,
         };
 
-        console.log('use-life-story - Histoire fusionnée:', lifeStory);
+        console.log('📚 use-life-story - Histoire fusionnée avec audioUrls:', {
+          totalChapters: lifeStory.chapters.length,
+          questionsWithAudio: lifeStory.chapters.flatMap(ch => ch.questions || []).filter(q => q.audioUrl).length,
+          questionsWithAudioDetails: lifeStory.chapters.flatMap(ch => ch.questions || []).filter(q => q.audioUrl).map(q => ({ id: q.id, audioUrl: q.audioUrl?.substring(0, 50) + '...' }))
+        });
+        
         setData(lifeStory);
         setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);

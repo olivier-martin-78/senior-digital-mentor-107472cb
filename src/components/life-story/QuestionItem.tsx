@@ -26,10 +26,12 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
-  console.log('QuestionItem - Question avec audio:', { 
+  console.log('📝 QuestionItem - Question avec audio:', { 
     questionId: question.id, 
     audioUrl: question.audioUrl,
-    hasAudioUrl: !!question.audioUrl 
+    hasAudioUrl: !!question.audioUrl,
+    audioUrlLength: question.audioUrl?.length,
+    audioUrlPreview: question.audioUrl?.substring(0, 100) + '...'
   });
 
   return (
