@@ -6,7 +6,7 @@ import { AuthContextType } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import { cleanupAuthState } from '@/utils/authUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { useImpersonationContext } from '@/contexts/ImpersonationContext';
+import { AppRole } from '@/types/supabase';
 
 // Re-export the cleanup function for use in other components
 export { cleanupAuthState } from '@/utils/authUtils';
@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   // Fonction hasRole modifiée pour prendre en compte l'impersonnation
-  const hasRole = (role: string) => {
+  const hasRole = (role: AppRole) => {
     // Vérifier si nous sommes dans le contexte d'impersonnation
     try {
       const impersonationState = localStorage.getItem('impersonation_state');
