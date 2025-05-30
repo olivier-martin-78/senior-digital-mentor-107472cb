@@ -48,6 +48,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
     try {
       setIsLoading(true);
+      console.log('use-life-story - Chargement pour utilisateur:', effectiveUserId);
+      
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
@@ -58,6 +60,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         console.error('Erreur lors du chargement de l\'histoire:', error);
         return;
       }
+
+      console.log('use-life-story - Données chargées:', storyData);
 
       if (storyData) {
         // Conversion sûre via unknown pour satisfaire TypeScript
@@ -101,9 +105,18 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           last_edited_question: storyData.last_edited_question,
         };
 
+        console.log('use-life-story - Histoire fusionnée:', lifeStory);
         setData(lifeStory);
         setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);
+      } else {
+        console.log('use-life-story - Aucune histoire trouvée, utilisation des chapitres initiaux');
+        // Pas d'histoire existante, utiliser les chapitres initiaux
+        setData(prev => ({
+          ...prev,
+          user_id: effectiveUserId || '',
+          chapters: initialChapters
+        }));
       }
     } catch (err) {
       console.error('Erreur lors du chargement de l\'histoire de vie:', err);
@@ -172,7 +185,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
   };
 
-  // Fonction pour gérer les changements d'URL audio depuis AudioRecorder
+  // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     console.log('handleAudioUrlChange appelé:', { chapterId, questionId, audioUrl, preventAutoSave });
     
@@ -194,19 +207,15 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
     // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
     if (!preventAutoSave) {
-      // Déclencher une sauvegarde automatique après un court délai
       setTimeout(() => {
         saveNow();
       }, 1000);
     }
   };
 
-  // Fonction simplifiée pour gérer l'audio - AudioRecorder s'occupe de l'upload
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload, pas besoin de dupliquer');
+    console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload');
     
-    // Ne pas faire d'upload ici, AudioRecorder s'en charge déjà
-    // Mettre à jour seulement l'état local pour indiquer qu'il y a un audio
     setData(prev => ({
       ...prev,
       chapters: prev.chapters.map(chapter =>
@@ -254,7 +263,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }
     setIsSaving(true);
     try {
-      console.log('Sauvegarde des données dans Supabase');
+      console.log('Sauvegarde des données dans Supabase pour utilisateur:', effectiveUserId);
       
       // Préparer les chapitres avec les audioUrl sauvegardées
       const chaptersToSave = data.chapters.map(chapter => ({
@@ -263,7 +272,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           id: q.id,
           text: q.text,
           answer: q.answer,
-          audioUrl: q.audioUrl, // Assurer que l'audioUrl est incluse
+          audioUrl: q.audioUrl,
         })) || [],
       }));
       

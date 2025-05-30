@@ -13,15 +13,13 @@ interface AudioRecorderProps {
 }
 
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: AudioRecorderProps) => {
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
   
   // Utiliser des refs pour éviter les uploads multiples
   const isMounted = useRef(true);
-  const isUploadingRef = useRef(false);
-  const uploadCompleted = useRef(false);
+  const currentUploadRef = useRef<string | null>(null);
   
   // Effet de nettoyage lors du démontage du composant
   useEffect(() => {
@@ -34,36 +32,31 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
     console.log("handleAudioChange appelé avec blob:", newAudioBlob ? `${newAudioBlob.size} octets` : "null");
     
-    // Réinitialiser l'état pour un nouvel enregistrement
-    if (newAudioBlob) {
-      uploadCompleted.current = false;
+    // Si pas de blob, audio supprimé
+    if (!newAudioBlob) {
+      console.log("Audio supprimé");
       setUploadedAudioUrl(null);
-    }
-    
-    // Stockage du nouveau blob audio
-    setAudioBlob(newAudioBlob);
-    
-    // Si pas de blob ou pas d'utilisateur, ne rien faire d'autre
-    if (!newAudioBlob || !user) {
-      console.log("Pas de blob ou pas d'utilisateur, sortie de handleAudioChange");
-      if (!newAudioBlob) {
-        // Audio supprimé
-        setUploadedAudioUrl(null);
-        onAudioUrlChange(chapterId, questionId, null);
-      }
+      onAudioUrlChange(chapterId, questionId, null);
       return;
     }
     
-    // Si un téléchargement est déjà en cours ou complété, ne pas en démarrer un nouveau
-    if (isUploading || isUploadingRef.current || uploadCompleted.current) {
-      console.log("Upload déjà en cours ou complété, sortie de handleAudioChange");
+    // Si pas d'utilisateur, ne rien faire
+    if (!user) {
+      console.log("Pas d'utilisateur connecté");
+      return;
+    }
+    
+    // Vérifier si un upload est déjà en cours pour cette question
+    const uploadKey = `${chapterId}-${questionId}`;
+    if (isUploading || currentUploadRef.current === uploadKey) {
+      console.log("Upload déjà en cours pour cette question");
       return;
     }
     
     try {
-      console.log(`Début du processus d'upload pour l'audio de la question ${questionId}`);
+      console.log(`Début du processus d'upload pour la question ${questionId}`);
       setIsUploading(true);
-      isUploadingRef.current = true;
+      currentUploadRef.current = uploadKey;
       
       // Téléchargement de l'audio
       await uploadAudio(
@@ -73,12 +66,10 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         questionId,
         // Callback de succès
         (publicUrl) => {
-          if (isMounted.current && !uploadCompleted.current) {
+          if (isMounted.current && currentUploadRef.current === uploadKey) {
             console.log(`Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
             setUploadedAudioUrl(publicUrl);
-            uploadCompleted.current = true;
-            // Envoyer l'URL au parent pour sauvegarde immédiate
-            onAudioUrlChange(chapterId, questionId, publicUrl, false); // false = autoriser la sauvegarde auto
+            onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
             toast({
               title: "Enregistrement sauvegardé",
@@ -102,19 +93,14 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         },
         // Callback de début d'upload
         () => {
-          if (isMounted.current) {
-            console.log(`Début du téléchargement pour la question ${questionId}`);
-          }
+          console.log(`Début du téléchargement pour la question ${questionId}`);
         },
         // Callback de fin d'upload
         () => {
           if (isMounted.current) {
             console.log(`Fin du téléchargement pour la question ${questionId}`);
             setIsUploading(false);
-            isUploadingRef.current = false;
-          } else {
-            console.log(`Fin du téléchargement pour la question ${questionId} (composant démonté)`);
-            isUploadingRef.current = false;
+            currentUploadRef.current = null;
           }
         }
       );
@@ -122,7 +108,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       if (isMounted.current) {
         console.error(`Erreur non gérée lors de l'upload audio pour la question ${questionId}:`, error);
         setIsUploading(false);
-        isUploadingRef.current = false;
+        currentUploadRef.current = null;
         
         toast({
           title: "Erreur inattendue",
@@ -148,12 +134,6 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       {uploadedAudioUrl && !isUploading && (
         <div className="py-2 mt-2 bg-green-100 rounded-md text-center">
           <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
-        </div>
-      )}
-      
-      {audioBlob && !isUploading && !uploadedAudioUrl && (
-        <div className="py-2 mt-2 bg-yellow-100 rounded-md text-center">
-          <span className="text-sm text-yellow-700">⏳ En attente de sauvegarde...</span>
         </div>
       )}
     </div>

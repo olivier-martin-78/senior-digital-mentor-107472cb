@@ -158,6 +158,7 @@ const LifeStory = () => {
           updateAnswer={lifeStoryData.updateAnswer}
           onAudioRecorded={lifeStoryData.handleAudioRecorded}
           onAudioDeleted={lifeStoryData.handleAudioDeleted}
+          onAudioUrlChange={lifeStoryData.handleAudioUrlChange}
         />
       </div>
     </div>
