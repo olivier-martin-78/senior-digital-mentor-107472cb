@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -79,7 +80,7 @@ const BlogPost = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Article non trouvé</h1>
           <p className="mb-8 text-gray-600">L'article que vous recherchez n'existe pas ou a été supprimé.</p>
           <Button asChild>
-            <Link to="/blog">Retour aux Albums</Link>
+            <Link to="/blog">Retour au blog</Link>
           </Button>
         </div>
       </div>
@@ -95,7 +96,7 @@ const BlogPost = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Article non publié</h1>
           <p className="mb-8 text-gray-600">Cet article n'est pas encore publié.</p>
           <Button asChild>
-            <Link to="/blog">Retour aux Albums</Link>
+            <Link to="/blog">Retour au blog</Link>
           </Button>
         </div>
       </div>
@@ -108,7 +109,7 @@ const BlogPost = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4 flex justify-between items-center">
           <Link to="/blog" className="text-tranches-sage hover:underline">
-            &larr; Retour aux Albums
+            &larr; Retour au blog
           </Link>
           {canEditPost && (
             <div className="flex gap-2">

@@ -10,7 +10,6 @@ import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import { DiaryEntry } from '@/types/diary';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
-import UserSelector from '@/components/UserSelector';
 
 const Diary = () => {
   const { user, session, hasRole } = useAuth();
@@ -20,7 +19,6 @@ const Diary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
@@ -28,7 +26,7 @@ const Diary = () => {
       return;
     }
     fetchEntries();
-  }, [session, user, navigate, searchTerm, startDate, endDate, selectedUserId]);
+  }, [session, user, navigate, searchTerm, startDate, endDate]);
 
   const fetchEntries = async () => {
     if (!user) return;
@@ -37,7 +35,7 @@ const Diary = () => {
       setLoading(true);
       console.log('Diary - Début fetchEntries:', {
         currentUserId: user.id,
-        selectedUserId: selectedUserId,
+        selectedUserId: null,
         isAdmin: hasRole('admin')
       });
       
@@ -415,11 +413,6 @@ const Diary = () => {
     setEndDate('');
   };
 
-  const handleUserChange = (userId: string | null) => {
-    console.log('Diary - Changement d\'utilisateur sélectionné vers:', userId);
-    setSelectedUserId(userId);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -434,18 +427,9 @@ const Diary = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">
-            {selectedUserId && selectedUserId !== user?.id ? 'Journal utilisateur' : 'Mon Journal'}
-          </h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
           <InviteUserDialog />
         </div>
-
-        <UserSelector
-          permissionType="diary"
-          selectedUserId={selectedUserId}
-          onUserChange={handleUserChange}
-          className="mb-6"
-        />
         
         <DiaryPageHeader 
           entriesCount={entries.length}
