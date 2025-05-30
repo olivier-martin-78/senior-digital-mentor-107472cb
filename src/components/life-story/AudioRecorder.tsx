@@ -58,7 +58,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       setIsUploading(true);
       currentUploadRef.current = uploadKey;
       
-      // Téléchargement de l'audio
+      // Tentative de téléchargement de l'audio
       await uploadAudio(
         newAudioBlob,
         user.id,
@@ -78,17 +78,32 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
             });
           }
         },
-        // Callback d'erreur
+        // Callback d'erreur - gérer gracieusement les erreurs
         (errorMessage) => {
           if (isMounted.current) {
             console.error(`Erreur d'upload pour la question ${questionId}:`, errorMessage);
             
-            toast({
-              title: "Erreur",
-              description: errorMessage,
-              variant: "destructive",
-              duration: 3000
-            });
+            // Si c'est une erreur de bucket, proposer de continuer sans sauvegarde cloud
+            if (errorMessage.includes('Bucket not found')) {
+              console.log('Bucket audio non trouvé, sauvegarde locale uniquement');
+              toast({
+                title: "Stockage audio indisponible",
+                description: "L'enregistrement est conservé localement mais ne sera pas sauvegardé sur le serveur",
+                variant: "destructive",
+                duration: 4000
+              });
+              
+              // Continuer avec l'audio local uniquement
+              setUploadedAudioUrl('local-audio');
+              onAudioUrlChange(chapterId, questionId, null, true);
+            } else {
+              toast({
+                title: "Erreur",
+                description: errorMessage,
+                variant: "destructive",
+                duration: 3000
+              });
+            }
           }
         },
         // Callback de début d'upload
@@ -131,9 +146,15 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         </div>
       )}
       
-      {uploadedAudioUrl && !isUploading && (
+      {uploadedAudioUrl && !isUploading && uploadedAudioUrl !== 'local-audio' && (
         <div className="py-2 mt-2 bg-green-100 rounded-md text-center">
           <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
+        </div>
+      )}
+      
+      {uploadedAudioUrl === 'local-audio' && !isUploading && (
+        <div className="py-2 mt-2 bg-yellow-100 rounded-md text-center">
+          <span className="text-sm text-yellow-700">⚠ Audio local uniquement</span>
         </div>
       )}
     </div>

@@ -165,10 +165,10 @@ const Diary = () => {
         return;
       }
 
-      // Récupération avec permissions des groupes d'invitation
-      console.log('Diary - Récupération des entrées avec permissions groupes');
+      // Récupération pour l'utilisateur actuel (pas de selectedUserId ou selectedUserId = user.id)
+      console.log('Diary - Récupération des entrées utilisateur actuel');
       
-      // 1. Ses propres entrées
+      // Récupérer directement les entrées de l'utilisateur actuel
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
@@ -196,80 +196,7 @@ const Diary = () => {
 
       console.log('Diary - Entrées utilisateur récupérées:', userEntries?.length || 0);
 
-      // 2. Récupérer les créateurs de groupes dont l'utilisateur est membre
-      const { data: groupPermissions, error: groupError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          invitation_groups!inner(created_by)
-        `)
-        .eq('user_id', user.id);
-
-      if (groupError) {
-        console.error('Diary - Erreur groupes:', groupError);
-        setEntries(userEntries ? userEntries.map(entry => ({
-          ...entry,
-          physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
-            ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
-            : null,
-          mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
-            ? entry.mental_state as "stressé" | "calme" | "motivé"
-            : null,
-          desire_of_day: entry.desire_of_day || '',
-          objectives: entry.objectives || '',
-          positive_things: entry.positive_things || '',
-          negative_things: entry.negative_things || '',
-          reflections: entry.reflections || '',
-          private_notes: entry.private_notes || '',
-          contacted_people: entry.contacted_people || [],
-          tags: entry.tags || []
-        })) : []);
-        return;
-      }
-
-      // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user.id) || [];
-      
-      console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
-
-      let otherEntries: DiaryEntry[] = [];
-
-      // 3. Récupérer les entrées des autres utilisateurs autorisés
-      if (groupCreatorIds.length > 0) {
-        let otherEntriesQuery = supabase
-          .from('diary_entries')
-          .select('*')
-          .in('user_id', groupCreatorIds)
-          .order('entry_date', { ascending: false });
-
-        // Appliquer les filtres aux autres entrées
-        if (searchTerm) {
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
-        }
-        if (startDate) {
-          otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
-        }
-        if (endDate) {
-          otherEntriesQuery = otherEntriesQuery.lte('entry_date', endDate);
-        }
-
-        const { data: otherEntriesData, error: otherEntriesError } = await otherEntriesQuery;
-        
-        if (otherEntriesError) {
-          console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
-        } else {
-          otherEntries = otherEntriesData || [];
-          console.log('Diary - Autres entrées autorisées récupérées:', otherEntries.length);
-        }
-      }
-
-      // Combiner ses entrées avec les entrées autorisées des autres
-      const allEntries = [...(userEntries || []), ...otherEntries];
-      
-      // Trier par date d'entrée (plus récent en premier)
-      allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
-      
-      const convertedEntries = allEntries.map(entry => ({
+      const convertedEntries = (userEntries || []).map(entry => ({
         ...entry,
         physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
           ? entry.physical_state as "fatigué" | "dormi" | "énergique" 

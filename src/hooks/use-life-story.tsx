@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -44,7 +43,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
-    if (!effectiveUserId || existingStory) return;
+    if (!effectiveUserId) return;
+
+    // Si existingStory est fourni, ne pas recharger
+    if (existingStory) {
+      console.log('use-life-story - Histoire existante fournie, pas de rechargement');
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -125,7 +130,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }
   };
 
+  // Recharger quand l'utilisateur effectif change
   useEffect(() => {
+    console.log('use-life-story - Effet targetUserId changé:', { targetUserId, effectiveUserId });
     loadUserLifeStory();
   }, [effectiveUserId]);
 
@@ -261,6 +268,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       console.warn('Utilisateur non connecté, sauvegarde ignorée');
       return;
     }
+    
     setIsSaving(true);
     try {
       console.log('Sauvegarde des données dans Supabase pour utilisateur:', effectiveUserId);
