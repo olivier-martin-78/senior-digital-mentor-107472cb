@@ -26,6 +26,12 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
+  console.log('QuestionItem - Question avec audio:', { 
+    questionId: question.id, 
+    audioUrl: question.audioUrl,
+    hasAudioUrl: !!question.audioUrl 
+  });
+
   return (
     <div className="space-y-2">
       <h3 className="font-medium text-tranches-charcoal">{question.text}</h3>

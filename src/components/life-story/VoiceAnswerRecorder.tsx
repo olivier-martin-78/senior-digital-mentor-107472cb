@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AudioRecorder from '@/components/life-story/AudioRecorder';
+import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
 interface VoiceAnswerRecorderProps {
   chapterId: string;
@@ -45,6 +46,23 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     }
   };
 
+  const handleDeleteExistingAudio = () => {
+    console.log('Suppression de l\'audio existant pour permettre un nouvel enregistrement');
+    onAudioUrlChange(chapterId, questionId, null, false);
+    onAudioDeleted(chapterId, questionId, true); // Afficher le toast pour la suppression manuelle
+  };
+
+  // Si un audio existe déjà, afficher le lecteur
+  if (existingAudioUrl) {
+    return (
+      <VoiceAnswerPlayer
+        audioUrl={existingAudioUrl}
+        onDelete={handleDeleteExistingAudio}
+      />
+    );
+  }
+
+  // Sinon, afficher l'enregistreur
   return (
     <AudioRecorder
       chapterId={chapterId}

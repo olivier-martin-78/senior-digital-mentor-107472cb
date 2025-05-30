@@ -97,6 +97,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
                 const existingQuestion = existingChapter.questions?.find((q: any) => q.id === initialQuestion.id);
                 
                 if (existingQuestion) {
+                  console.log('use-life-story - Question avec données existantes:', {
+                    questionId: initialQuestion.id,
+                    answer: existingQuestion.answer,
+                    audioUrl: existingQuestion.audioUrl
+                  });
+                  
                   return {
                     ...initialQuestion,
                     answer: existingQuestion.answer || initialQuestion.answer,
