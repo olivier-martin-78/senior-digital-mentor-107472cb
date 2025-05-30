@@ -38,39 +38,26 @@ const LifeStory = () => {
     try {
       console.log('LifeStory - Récupération des utilisateurs autorisés');
       
-      // Récupérer les permissions via life_story_permissions ET groupes d'invitation
-      const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
-        supabase
-          .from('life_story_permissions')
-          .select('story_owner_id')
-          .eq('permitted_user_id', user.id),
-        // Récupérer les créateurs de groupes dont l'utilisateur est membre
-        supabase
-          .from('group_members')
-          .select(`
-            group_id,
-            invitation_groups!inner(created_by)
-          `)
-          .eq('user_id', user.id)
-      ]);
+      // Récupérer les créateurs de groupes dont l'utilisateur est membre
+      const { data: groupPermissions, error: groupError } = await supabase
+        .from('group_members')
+        .select(`
+          group_id,
+          invitation_groups!inner(created_by)
+        `)
+        .eq('user_id', user.id);
 
-      const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
-      const groupPermissions = groupPermissionsResult.data || [];
+      if (groupError) {
+        console.error('LifeStory - Erreur groupes:', groupError);
+        setAuthorizedUserIds([]);
+        return;
+      }
 
-      // IDs des utilisateurs autorisés via life_story_permissions
-      const lifeStoryUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user.id);
-      
       // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-      const groupCreatorIds = groupPermissions.map(p => p.invitation_groups.created_by).filter(id => id !== user.id);
+      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user.id) || [];
       
-      // Combiner tous les utilisateurs autorisés
-      const allAuthorizedIds = [...new Set([...lifeStoryUserIds, ...groupCreatorIds])];
-
-      console.log('LifeStory - Utilisateurs autorisés via life_story_permissions:', lifeStoryUserIds);
       console.log('LifeStory - Utilisateurs autorisés via groupes:', groupCreatorIds);
-      console.log('LifeStory - Total utilisateurs autorisés:', allAuthorizedIds);
-
-      setAuthorizedUserIds(allAuthorizedIds);
+      setAuthorizedUserIds(groupCreatorIds);
     } catch (error) {
       console.error('LifeStory - Erreur lors de la récupération des utilisateurs autorisés:', error);
     }

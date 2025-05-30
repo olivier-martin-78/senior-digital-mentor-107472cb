@@ -91,6 +91,7 @@ const Diary = () => {
           tags: entry.tags || []
         }));
         
+        console.log('Diary - Entrées admin récupérées:', convertedEntries.length);
         setEntries(convertedEntries);
         return;
       }
@@ -98,162 +99,115 @@ const Diary = () => {
       // Pour les utilisateurs non-admin
       if (selectedUserId && selectedUserId !== user.id) {
         // Vérifier les permissions pour voir le journal de cet utilisateur
-        const { data: permissions, error: permError } = await supabase
-          .from('diary_permissions')
-          .select('diary_owner_id')
-          .eq('permitted_user_id', user.id)
-          .eq('diary_owner_id', selectedUserId);
+        const { data: groupPermissions, error: groupError } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            invitation_groups!inner(created_by)
+          `)
+          .eq('user_id', user.id);
 
-        if (permError || !permissions?.length) {
-          console.log('Diary - Pas de permissions pour voir ce journal');
-          setEntries([]);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Récupérer ses propres entrées ou celles autorisées
-      if (selectedUserId && selectedUserId !== user.id) {
-        // Entrées d'un autre utilisateur (déjà vérifié les permissions)
-        let query = supabase
-          .from('diary_entries')
-          .select('*')
-          .eq('user_id', selectedUserId)
-          .order('entry_date', { ascending: false });
-
-        // Appliquer les filtres
-        if (searchTerm) {
-          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
-        }
-        if (startDate) {
-          query = query.gte('entry_date', startDate);
-        }
-        if (endDate) {
-          query = query.lte('entry_date', endDate);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const convertedEntries = (data || []).map(entry => ({
-          ...entry,
-          physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
-            ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
-            : null,
-          mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
-            ? entry.mental_state as "stressé" | "calme" | "motivé"
-            : null,
-          desire_of_day: entry.desire_of_day || '',
-          objectives: entry.objectives || '',
-          positive_things: entry.positive_things || '',
-          negative_things: entry.negative_things || '',
-          reflections: entry.reflections || '',
-          private_notes: entry.private_notes || '',
-          contacted_people: entry.contacted_people || [],
-          tags: entry.tags || []
-        }));
-        
-        setEntries(convertedEntries);
-      } else {
-        // NOUVELLE LOGIQUE : Ses propres entrées + celles des utilisateurs dont il fait partie du groupe d'invitation
-        console.log('Diary - Récupération des entrées avec permissions groupes');
-        
-        // 1. Ses propres entrées
-        let userEntriesQuery = supabase
-          .from('diary_entries')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('entry_date', { ascending: false });
-
-        // Appliquer les filtres
-        if (searchTerm) {
-          userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
-        }
-        if (startDate) {
-          userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
-        }
-        if (endDate) {
-          userEntriesQuery = userEntriesQuery.lte('entry_date', endDate);
-        }
-
-        const { data: userEntries, error: userEntriesError } = await userEntriesQuery;
-        
-        if (userEntriesError) {
-          console.error('Diary - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
+        if (groupError) {
+          console.error('Diary - Erreur groupes:', groupError);
           setEntries([]);
           return;
         }
 
-        // 2. Récupérer les permissions via diary_permissions ET groupes d'invitation
-        const [diaryPermissionsResult, groupPermissionsResult] = await Promise.all([
-          supabase
-            .from('diary_permissions')
-            .select('diary_owner_id')
-            .eq('permitted_user_id', user.id),
-          // Récupérer les créateurs de groupes dont l'utilisateur est membre
-          supabase
-            .from('group_members')
-            .select(`
-              group_id,
-              invitation_groups!inner(created_by)
-            `)
-            .eq('user_id', user.id)
-        ]);
+        const groupCreators = groupPermissions?.map(p => p.invitation_groups.created_by) || [];
+        const hasGroupPermission = groupCreators.includes(selectedUserId);
 
-        const diaryPermissions = diaryPermissionsResult.data || [];
-        const groupPermissions = groupPermissionsResult.data || [];
-
-        // IDs des utilisateurs autorisés via diary_permissions
-        const diaryUserIds = diaryPermissions.map(p => p.diary_owner_id).filter(id => id !== user.id);
-        
-        // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-        const groupCreatorIds = groupPermissions.map(p => p.invitation_groups.created_by).filter(id => id !== user.id);
-        
-        // Combiner tous les utilisateurs autorisés
-        const authorizedUserIds = [...new Set([...diaryUserIds, ...groupCreatorIds])];
-
-        console.log('Diary - Utilisateurs autorisés via diary_permissions:', diaryUserIds);
-        console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
-        console.log('Diary - Total utilisateurs autorisés:', authorizedUserIds);
-
-        let otherEntries: DiaryEntry[] = [];
-
-        // 3. Récupérer les entrées des autres utilisateurs autorisés
-        if (authorizedUserIds.length > 0) {
-          let otherEntriesQuery = supabase
+        if (hasGroupPermission) {
+          console.log('Diary - Permissions trouvées pour utilisateur sélectionné');
+          let query = supabase
             .from('diary_entries')
             .select('*')
-            .in('user_id', authorizedUserIds)
+            .eq('user_id', selectedUserId)
             .order('entry_date', { ascending: false });
 
           // Appliquer les filtres
           if (searchTerm) {
-            otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+            query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
           }
           if (startDate) {
-            otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
+            query = query.gte('entry_date', startDate);
           }
           if (endDate) {
-            otherEntriesQuery = otherEntriesQuery.lte('entry_date', endDate);
+            query = query.lte('entry_date', endDate);
           }
 
-          const { data: otherEntriesData, error: otherEntriesError } = await otherEntriesQuery;
+          const { data, error } = await query;
+          if (error) throw error;
+
+          const convertedEntries = (data || []).map(entry => ({
+            ...entry,
+            physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
+              ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
+              : null,
+            mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
+              ? entry.mental_state as "stressé" | "calme" | "motivé"
+              : null,
+            desire_of_day: entry.desire_of_day || '',
+            objectives: entry.objectives || '',
+            positive_things: entry.positive_things || '',
+            negative_things: entry.negative_things || '',
+            reflections: entry.reflections || '',
+            private_notes: entry.private_notes || '',
+            contacted_people: entry.contacted_people || [],
+            tags: entry.tags || []
+          }));
           
-          if (otherEntriesError) {
-            console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
-          } else {
-            otherEntries = otherEntriesData || [];
-            console.log('Diary - Autres entrées autorisées récupérées:', otherEntries.length);
-          }
+          console.log('Diary - Entrées utilisateur autorisé récupérées:', convertedEntries.length);
+          setEntries(convertedEntries);
+        } else {
+          console.log('Diary - Pas de permissions pour voir ce journal');
+          setEntries([]);
         }
+        return;
+      }
 
-        // Combiner ses entrées avec les entrées autorisées des autres
-        const allEntries = [...(userEntries || []), ...otherEntries];
-        
-        // Trier par date d'entrée (plus récent en premier)
-        allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
-        
-        const convertedEntries = allEntries.map(entry => ({
+      // Récupération avec permissions des groupes d'invitation
+      console.log('Diary - Récupération des entrées avec permissions groupes');
+      
+      // 1. Ses propres entrées
+      let userEntriesQuery = supabase
+        .from('diary_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('entry_date', { ascending: false });
+
+      // Appliquer les filtres aux entrées utilisateur
+      if (searchTerm) {
+        userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+      }
+      if (startDate) {
+        userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
+      }
+      if (endDate) {
+        userEntriesQuery = userEntriesQuery.lte('entry_date', endDate);
+      }
+
+      const { data: userEntries, error: userEntriesError } = await userEntriesQuery;
+      
+      if (userEntriesError) {
+        console.error('Diary - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
+        setEntries([]);
+        return;
+      }
+
+      console.log('Diary - Entrées utilisateur récupérées:', userEntries?.length || 0);
+
+      // 2. Récupérer les créateurs de groupes dont l'utilisateur est membre
+      const { data: groupPermissions, error: groupError } = await supabase
+        .from('group_members')
+        .select(`
+          group_id,
+          invitation_groups!inner(created_by)
+        `)
+        .eq('user_id', user.id);
+
+      if (groupError) {
+        console.error('Diary - Erreur groupes:', groupError);
+        setEntries(userEntries ? userEntries.map(entry => ({
           ...entry,
           physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
             ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
@@ -269,11 +223,72 @@ const Diary = () => {
           private_notes: entry.private_notes || '',
           contacted_people: entry.contacted_people || [],
           tags: entry.tags || []
-        }));
-        
-        console.log('Diary - Total entrées finales:', convertedEntries.length);
-        setEntries(convertedEntries);
+        })) : []);
+        return;
       }
+
+      // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
+      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user.id) || [];
+      
+      console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
+
+      let otherEntries: DiaryEntry[] = [];
+
+      // 3. Récupérer les entrées des autres utilisateurs autorisés
+      if (groupCreatorIds.length > 0) {
+        let otherEntriesQuery = supabase
+          .from('diary_entries')
+          .select('*')
+          .in('user_id', groupCreatorIds)
+          .order('entry_date', { ascending: false });
+
+        // Appliquer les filtres aux autres entrées
+        if (searchTerm) {
+          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+        }
+        if (startDate) {
+          otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
+        }
+        if (endDate) {
+          otherEntriesQuery = otherEntriesQuery.lte('entry_date', endDate);
+        }
+
+        const { data: otherEntriesData, error: otherEntriesError } = await otherEntriesQuery;
+        
+        if (otherEntriesError) {
+          console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
+        } else {
+          otherEntries = otherEntriesData || [];
+          console.log('Diary - Autres entrées autorisées récupérées:', otherEntries.length);
+        }
+      }
+
+      // Combiner ses entrées avec les entrées autorisées des autres
+      const allEntries = [...(userEntries || []), ...otherEntries];
+      
+      // Trier par date d'entrée (plus récent en premier)
+      allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
+      
+      const convertedEntries = allEntries.map(entry => ({
+        ...entry,
+        physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
+          ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
+          : null,
+        mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
+          ? entry.mental_state as "stressé" | "calme" | "motivé"
+          : null,
+        desire_of_day: entry.desire_of_day || '',
+        objectives: entry.objectives || '',
+        positive_things: entry.positive_things || '',
+        negative_things: entry.negative_things || '',
+        reflections: entry.reflections || '',
+        private_notes: entry.private_notes || '',
+        contacted_people: entry.contacted_people || [],
+        tags: entry.tags || []
+      }));
+      
+      console.log('Diary - Total entrées finales:', convertedEntries.length);
+      setEntries(convertedEntries);
     } catch (error) {
       console.error('Diary - Erreur lors du chargement des entrées:', error);
       setEntries([]);
