@@ -17,6 +17,7 @@ import AdminLifeStoryEdit from '@/pages/admin/AdminLifeStoryEdit';
 import Wishes from '@/pages/Wishes';
 import WishPost from '@/pages/WishPost';
 import WishNew from '@/pages/WishNew';
+import WishEdit from '@/pages/WishEdit';
 import Diary from '@/pages/Diary';
 import DiaryEntry from '@/pages/DiaryEntry';
 import DiaryEdit from '@/pages/DiaryEdit';
@@ -64,6 +65,7 @@ const AppRoutes: React.FC = () => {
 
         <Route path="/wishes" element={<ProtectedRoute><Wishes /></ProtectedRoute>} />
         <Route path="/wishes/new" element={<ProtectedRoute><WishNew /></ProtectedRoute>} />
+        <Route path="/wishes/edit/:id" element={<ProtectedRoute><WishEdit /></ProtectedRoute>} />
         <Route path="/wishes/:id" element={<ProtectedRoute><WishPost /></ProtectedRoute>} />
 
         <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />

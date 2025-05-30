@@ -136,6 +136,9 @@ const WishPost = () => {
         'personal': 'Un souhait personnel',
         'experience': 'Une expérience à vivre',
         'service': 'Un service à recevoir',
+        'aide': 'Aide',
+        'materiel': 'Matériel',
+        'autre': 'Autre',
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
@@ -185,13 +188,13 @@ const WishPost = () => {
             <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                {new Date(wish.created_at).toLocaleDateString('fr-FR')}
+                {format(new Date(wish.created_at), 'EEEE d MMMM yyyy', { locale: fr })}
               </div>
               
               {wish.date && (
                 <div className="flex items-center">
                   <CalendarIcon className="h-4 w-4 mr-1" />
-                  Date souhaitée: {new Date(wish.date).toLocaleDateString('fr-FR')}
+                  Date souhaitée: {format(new Date(wish.date), 'EEEE d MMMM yyyy', { locale: fr })}
                 </div>
               )}
               
@@ -216,7 +219,7 @@ const WishPost = () => {
             </div>
             
             <div className="text-sm text-gray-500">
-              Émis par: <span className="font-medium">{wish.first_name || wish.profiles.display_name || wish.profiles.email}</span>
+              Émis par: <span className="font-medium">{wish.first_name || wish.profiles?.display_name || wish.profiles?.email}</span>
               {wish.age && ` • ${wish.age} ans`}
             </div>
           </div>

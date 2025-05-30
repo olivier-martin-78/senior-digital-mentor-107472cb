@@ -1,7 +1,9 @@
-// src/components/life-story/LifeStoryLayout.tsx
+
 import React from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ChapterNavigation from './ChapterNavigation';
+import ChapterContent from './ChapterContent';
 import { Chapter } from '@/types/lifeStory';
-import ChapterTabs from './ChapterTabs';
 
 interface LifeStoryLayoutProps {
   chapters: Chapter[];
@@ -14,6 +16,7 @@ interface LifeStoryLayoutProps {
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
+  onAudioUrlChange?: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
 }
 
 const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
@@ -27,19 +30,47 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
   updateAnswer,
   onAudioRecorded,
   onAudioDeleted,
+  onAudioUrlChange,
 }) => {
   return (
-    <div className="space-y-6">
-      <ChapterTabs
-        chapters={chapters}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        updateAnswer={updateAnswer}
-        handleQuestionFocus={handleQuestionFocus}
-        activeQuestion={activeQuestion}
-        onAudioRecorded={onAudioRecorded}
-        onAudioDeleted={onAudioDeleted}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Navigation des chapitres */}
+      <div className="lg:col-span-1">
+        <ChapterNavigation
+          chapters={chapters}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          openQuestions={openQuestions}
+          toggleQuestions={toggleQuestions}
+        />
+      </div>
+
+      {/* Contenu principal */}
+      <div className="lg:col-span-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="hidden">
+            {chapters.map((chapter) => (
+              <TabsTrigger key={chapter.id} value={chapter.id}>
+                {chapter.title}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {chapters.map((chapter) => (
+            <TabsContent key={chapter.id} value={chapter.id} className="mt-0">
+              <ChapterContent
+                chapter={chapter}
+                activeQuestion={activeQuestion}
+                handleQuestionFocus={handleQuestionFocus}
+                updateAnswer={updateAnswer}
+                onAudioRecorded={onAudioRecorded}
+                onAudioDeleted={onAudioDeleted}
+                onAudioUrlChange={onAudioUrlChange}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
     </div>
   );
 };

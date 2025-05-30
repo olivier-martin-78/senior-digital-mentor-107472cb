@@ -172,6 +172,35 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
   };
 
+  // Fonction pour gérer les changements d'URL audio depuis AudioRecorder
+  const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
+    console.log('handleAudioUrlChange appelé:', { chapterId, questionId, audioUrl, preventAutoSave });
+    
+    setData(prev => ({
+      ...prev,
+      chapters: prev.chapters.map(chapter =>
+        chapter.id === chapterId
+          ? {
+              ...chapter,
+              questions: chapter.questions?.map(q =>
+                q.id === questionId ? { ...q, audioUrl } : q
+              ) || [],
+            }
+          : chapter
+      ),
+      last_edited_chapter: chapterId,
+      last_edited_question: questionId,
+    }));
+
+    // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
+    if (!preventAutoSave) {
+      // Déclencher une sauvegarde automatique après un court délai
+      setTimeout(() => {
+        saveNow();
+      }, 1000);
+    }
+  };
+
   // Fonction simplifiée pour gérer l'audio - AudioRecorder s'occupe de l'upload
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
     console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload, pas besoin de dupliquer');
@@ -280,6 +309,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     updateAnswer,
     handleAudioRecorded,
     handleAudioDeleted,
+    handleAudioUrlChange,
     saveNow,
   };
 };
