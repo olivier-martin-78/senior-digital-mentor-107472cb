@@ -20,7 +20,7 @@ enabled = true
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
+site_url = "https://senior-digital-mentor.com"
 
 [analytics]
 enabled = false
@@ -32,4 +32,10 @@ enabled = true
 verify_jwt = false
 
 [functions.send-invitation-email]
+verify_jwt = false
+
+[functions.send-confirmation-email]
+verify_jwt = false
+
+[functions.auth-webhook]
 verify_jwt = false
