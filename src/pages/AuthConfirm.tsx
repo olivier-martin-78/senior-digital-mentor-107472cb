@@ -17,54 +17,64 @@ const AuthConfirm = () => {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
+        // Récupérer TOUS les paramètres de l'URL
+        const urlParams = Object.fromEntries(searchParams.entries());
+        console.log('TOUS les paramètres URL reçus:', urlParams);
+        console.log('URL complète:', window.location.href);
+
         // Récupérer tous les paramètres possibles
         const token = searchParams.get('token');
         const tokenHash = searchParams.get('token_hash');
         const type = searchParams.get('type');
         const redirectTo = searchParams.get('redirect_to');
 
-        console.log('Paramètres de confirmation reçus:', { 
+        console.log('Paramètres individuels:', { 
           token, 
           tokenHash, 
           type, 
-          redirectTo,
-          allParams: Object.fromEntries(searchParams.entries())
+          redirectTo
         });
 
         // Vérifier si nous avons un token (soit token soit token_hash)
         const confirmationToken = token || tokenHash;
         
         if (!confirmationToken) {
+          console.error('AUCUN TOKEN TROUVÉ !');
+          console.error('URL actuelle:', window.location.href);
+          console.error('SearchParams:', Array.from(searchParams.entries()));
           setStatus('error');
-          setMessage('Token de confirmation manquant');
+          setMessage(`Token de confirmation manquant. URL reçue: ${window.location.href}`);
           return;
         }
 
-        console.log('Tentative de confirmation avec le token:', confirmationToken);
+        console.log('Token trouvé:', confirmationToken);
+        console.log('Type de token:', tokenHash ? 'token_hash' : 'token');
 
-        // Essayer d'abord avec verifyOtp en utilisant token_hash
+        // Essayer la vérification avec le token approprié
         let confirmationResult;
         
         if (tokenHash) {
-          console.log('Utilisation de verifyOtp avec token_hash...');
+          console.log('Utilisation de verifyOtp avec token_hash:', tokenHash);
           confirmationResult = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: 'email'
           });
-        } else {
-          console.log('Utilisation de verifyOtp avec token...');
+        } else if (token) {
+          console.log('Utilisation de verifyOtp avec token:', token);
           confirmationResult = await supabase.auth.verifyOtp({
             token_hash: token,
             type: 'email'
           });
         }
 
-        if (confirmationResult.error) {
+        console.log('Résultat de la confirmation:', confirmationResult);
+
+        if (confirmationResult?.error) {
           console.error('Erreur de confirmation:', confirmationResult.error);
           throw new Error(confirmationResult.error.message);
         }
 
-        console.log('Confirmation réussie:', confirmationResult.data);
+        console.log('Confirmation réussie:', confirmationResult?.data);
 
         setStatus('success');
         setMessage('Votre email a été confirmé avec succès !');
