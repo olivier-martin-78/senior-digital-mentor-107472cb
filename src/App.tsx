@@ -7,6 +7,7 @@ import Index from '@/pages/Index';
 import Profile from '@/pages/Profile';
 import Blog from '@/pages/Blog';
 import BlogPost from '@/pages/BlogPost';
+import BlogEditor from '@/pages/BlogEditor';
 import AdminPosts from '@/pages/admin/AdminPosts';
 import AdminAlbums from '@/pages/admin/AdminAlbums';
 import AdminWishAlbums from '@/pages/admin/AdminWishAlbums';
@@ -17,6 +18,7 @@ import Wishes from '@/pages/Wishes';
 import WishPost from '@/pages/WishPost';
 import Diary from '@/pages/Diary';
 import DiaryEntry from '@/pages/DiaryEntry';
+import DiaryEdit from '@/pages/DiaryEdit';
 import LifeStory from '@/pages/LifeStory';
 import Recent from '@/pages/Recent';
 import Unauthorized from '@/pages/Unauthorized';
@@ -54,12 +56,15 @@ const AppRoutes: React.FC = () => {
         <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
 
         <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />
+        <Route path="/blog/new" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
+        <Route path="/blog/edit/:id" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
         <Route path="/blog/:id" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
 
         <Route path="/wishes" element={<ProtectedRoute><Wishes /></ProtectedRoute>} />
         <Route path="/wishes/:id" element={<ProtectedRoute><WishPost /></ProtectedRoute>} />
 
         <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+        <Route path="/diary/edit/:id" element={<ProtectedRoute><DiaryEdit /></ProtectedRoute>} />
         <Route path="/diary/:id" element={<ProtectedRoute><DiaryEntry /></ProtectedRoute>} />
 
         <Route path="/life-story" element={<ProtectedRoute><LifeStory /></ProtectedRoute>} />
