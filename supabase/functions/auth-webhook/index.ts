@@ -26,7 +26,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Webhook payload reçu:", JSON.stringify(payload, null, 2));
 
     // Vérifier si c'est un événement de création d'utilisateur
-    if (payload.table === "auth.users" && payload.type === "INSERT") {
+    // Supabase envoie "users" comme nom de table, pas "auth.users"
+    if (payload.table === "users" && payload.type === "INSERT") {
       const user = payload.record;
       console.log("Nouvel utilisateur créé:", {
         id: user.id,
