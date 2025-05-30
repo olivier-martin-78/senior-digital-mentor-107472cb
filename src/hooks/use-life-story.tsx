@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -65,10 +66,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('use-life-story - Chargement pour utilisateur:', effectiveUserId);
       
+      // Récupérer l'histoire la plus récente pour cet utilisateur
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
         .eq('user_id', effectiveUserId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) {
@@ -235,7 +239,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
     // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
     // Mais seulement si ce n'est pas la même URL qu'avant et qu'on n'est pas en train de sauvegarder
-    if (!savingRef.current) {
+    if (!savingRef.current && hasLoadedRef.current) {
       const saveKey = `${chapterId}-${questionId}-${audioUrl}`;
       
       if (lastAutoSaveRef.current !== saveKey) {
@@ -307,6 +311,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
+
+    // Ne pas sauvegarder si les données ne sont pas encore chargées
+    if (!hasLoadedRef.current) {
+      console.log('Sauvegarde ignorée - données pas encore chargées');
+      return;
+    }
     
     setIsSaving(true);
     savingRef.current = true;
@@ -324,23 +334,47 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           audioUrl: q.audioUrl,
         })) || [],
       }));
-      
-      const { error } = await supabase
-        .from('life_stories')
-        .upsert({
-          id: data.id || undefined,
-          user_id: effectiveUserId,
-          title: data.title,
-          chapters: chaptersToSave,
-          updated_at: new Date().toISOString(),
-          last_edited_chapter: activeTab,
-          last_edited_question: activeQuestion,
-        });
 
-      if (error) {
-        console.error('Erreur lors de la sauvegarde:', error);
-        throw error;
+      // Corriger la logique d'upsert
+      const dataToSave = {
+        user_id: effectiveUserId,
+        title: data.title,
+        chapters: chaptersToSave,
+        updated_at: new Date().toISOString(),
+        last_edited_chapter: activeTab,
+        last_edited_question: activeQuestion,
+      };
+
+      // Si on a un ID valide et non vide, on fait un update
+      if (data.id && data.id !== '') {
+        const { error } = await supabase
+          .from('life_stories')
+          .update(dataToSave)
+          .eq('id', data.id);
+
+        if (error) {
+          console.error('Erreur lors de la mise à jour:', error);
+          throw error;
+        }
+      } else {
+        // Sinon on fait un insert et on récupère l'ID
+        const { data: insertedData, error } = await supabase
+          .from('life_stories')
+          .insert(dataToSave)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Erreur lors de l\'insertion:', error);
+          throw error;
+        }
+
+        // Mettre à jour l'ID local
+        if (insertedData) {
+          setData(prev => ({ ...prev, id: insertedData.id }));
+        }
       }
+
       setLastSaved(new Date());
       console.log('Histoire sauvegardée avec succès à:', new Date().toISOString());
       
