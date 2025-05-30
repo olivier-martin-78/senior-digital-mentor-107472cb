@@ -29,20 +29,48 @@ const AuthConfirm = () => {
           return;
         }
 
-        // Confirmer l'email avec Supabase
-        const { data, error } = await supabase.auth.verifyOtp({
+        // Essayer d'abord avec le token hash (format Supabase standard)
+        let confirmationResult = await supabase.auth.verifyOtp({
           token_hash: token,
           type: 'email'
         });
 
-        if (error) {
-          console.error('Erreur de confirmation:', error);
-          setStatus('error');
-          setMessage(`Erreur lors de la confirmation: ${error.message}`);
-          return;
+        // Si ça échoue, essayer avec le token direct
+        if (confirmationResult.error) {
+          console.log('Tentative avec token direct...');
+          confirmationResult = await supabase.auth.verifyOtp({
+            token: token,
+            type: 'email'
+          });
         }
 
-        console.log('Confirmation réussie:', data);
+        // Si les deux échouent, essayer la méthode manuelle
+        if (confirmationResult.error) {
+          console.log('Tentative de confirmation manuelle...');
+          
+          // Appeler directement l'API Supabase pour la confirmation
+          const response = await fetch(`${supabase.supabaseUrl}/auth/v1/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabase.supabaseKey
+            },
+            body: JSON.stringify({
+              token: token,
+              type: 'signup'
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Erreur de confirmation: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log('Confirmation manuelle réussie:', data);
+        } else {
+          console.log('Confirmation réussie:', confirmationResult.data);
+        }
+
         setStatus('success');
         setMessage('Votre email a été confirmé avec succès !');
 
@@ -58,7 +86,7 @@ const AuthConfirm = () => {
       } catch (error) {
         console.error('Erreur lors de la confirmation:', error);
         setStatus('error');
-        setMessage('Une erreur inattendue s\'est produite');
+        setMessage(`Erreur lors de la confirmation: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
       }
     };
 

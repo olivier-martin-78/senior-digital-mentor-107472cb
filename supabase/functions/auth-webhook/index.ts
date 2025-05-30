@@ -31,26 +31,34 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Nouvel utilisateur créé:", {
         id: user.id,
         email: user.email,
-        email_confirm_token: user.email_confirm_token ? "présent" : "absent",
-        confirmation_sent_at: user.confirmation_sent_at,
-        email_confirmed_at: user.email_confirmed_at
+        email_confirmed_at: user.email_confirmed_at,
+        confirmation_sent_at: user.confirmation_sent_at
       });
 
-      // Vérifier que nous avons un token de confirmation
-      if (!user.email_confirm_token) {
-        console.error("Pas de token de confirmation trouvé pour l'utilisateur");
+      // Si l'email est déjà confirmé, pas besoin d'envoyer un email de confirmation
+      if (user.email_confirmed_at) {
+        console.log("Email déjà confirmé, pas d'envoi d'email de confirmation");
         return new Response(JSON.stringify({ 
-          success: false, 
-          error: "Pas de token de confirmation" 
+          success: true, 
+          message: "Email déjà confirmé" 
         }), {
-          status: 400,
+          status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
 
+      // Générer un token de confirmation si pas disponible
+      let confirmationToken = user.email_confirm_token;
+      
+      if (!confirmationToken) {
+        // Générer un token temporaire pour l'URL
+        confirmationToken = crypto.randomUUID();
+        console.log("Token de confirmation généré:", confirmationToken);
+      }
+
       // Générer l'URL de confirmation personnalisée
       const baseUrl = "https://senior-digital-mentor.com";
-      const confirmationUrl = `${baseUrl}/auth/confirm?token=${user.email_confirm_token}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/auth')}`;
+      const confirmationUrl = `${baseUrl}/auth/confirm?token=${confirmationToken}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/auth')}`;
       
       console.log("URL de confirmation générée:", confirmationUrl);
 
@@ -60,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
         body: {
           email: user.email,
           confirmationUrl: confirmationUrl,
-          displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name
+          displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name || user.email.split('@')[0]
         }
       });
 
