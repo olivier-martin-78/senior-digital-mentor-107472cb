@@ -59,6 +59,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   
   // Gérer la suppression de l'audio
   const handleClearRecording = () => {
+    console.log("VoiceRecorder - Suppression de l'enregistrement");
     clearRecording();
     setAudioLoaded(false);
     onAudioChange(null);
@@ -69,14 +70,20 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     console.log("VoiceRecorder - État audio changé:", { 
       hasBlob: !!audioBlob, 
       hasUrl: !!audioUrl, 
-      blobSize: audioBlob?.size 
+      blobSize: audioBlob?.size,
+      isRecording 
     });
     
-    if (audioBlob && audioBlob.size > 0) {
+    // Seulement notifier le parent si nous avons un blob valide ET que l'enregistrement est terminé
+    if (audioBlob && audioBlob.size > 0 && !isRecording) {
       console.log("VoiceRecorder - Envoi du blob au parent:", audioBlob.size, "octets");
       onAudioChange(audioBlob);
+    } else if (!audioBlob && !isRecording) {
+      // Si pas de blob et enregistrement terminé, notifier la suppression
+      console.log("VoiceRecorder - Pas d'audio, notification de suppression");
+      onAudioChange(null);
     }
-  }, [audioBlob, onAudioChange]);
+  }, [audioBlob, audioUrl, isRecording, onAudioChange]);
   
   // Gérer le chargement audio
   const handleAudioLoaded = () => {
@@ -130,7 +137,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         )}
       </div>
       
-      {audioUrl && (
+      {audioUrl && !isRecording && (
         <div className="mb-4">
           <audio 
             src={audioUrl} 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -136,10 +137,11 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     loadUserLifeStory();
   }, [effectiveUserId]);
 
+  // Initialiser l'état des questions fermées par défaut
   useEffect(() => {
     const initialOpenState: { [key: string]: boolean } = {};
     data.chapters.forEach(chapter => {
-      initialOpenState[chapter.id] = true;
+      initialOpenState[chapter.id] = false; // Fermé par défaut
     });
     setOpenQuestions(initialOpenState);
   }, [data.chapters]);

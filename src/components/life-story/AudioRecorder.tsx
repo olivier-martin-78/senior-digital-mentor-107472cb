@@ -33,13 +33,16 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
     console.log("AudioRecorder - handleAudioChange appelé:", { 
       hasBlob: !!newAudioBlob, 
       blobSize: newAudioBlob?.size,
-      questionId 
+      questionId,
+      isUploading
     });
     
     // Si pas de blob, audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
       console.log("AudioRecorder - Audio supprimé ou vide");
       setUploadedAudioUrl(null);
+      setIsUploading(false);
+      currentUploadRef.current = null;
       onAudioUrlChange(chapterId, questionId, null);
       return;
     }
@@ -78,6 +81,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
           if (isMounted.current && currentUploadRef.current === uploadKey) {
             console.log(`AudioRecorder - Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
             setUploadedAudioUrl(publicUrl);
+            setIsUploading(false);
+            currentUploadRef.current = null;
             onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
             toast({
@@ -89,8 +94,10 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         },
         // Callback d'erreur
         (errorMessage) => {
-          if (isMounted.current) {
+          if (isMounted.current && currentUploadRef.current === uploadKey) {
             console.error(`AudioRecorder - Erreur d'upload pour la question ${questionId}:`, errorMessage);
+            setIsUploading(false);
+            currentUploadRef.current = null;
             
             // Si c'est une erreur de bucket, proposer de continuer sans sauvegarde cloud
             if (errorMessage.includes('Bucket not found') || errorMessage.includes('bucket')) {
@@ -120,7 +127,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         },
         // Callback de fin d'upload
         () => {
-          if (isMounted.current) {
+          if (isMounted.current && currentUploadRef.current === uploadKey) {
             console.log(`AudioRecorder - Fin du téléchargement pour la question ${questionId}`);
             setIsUploading(false);
             currentUploadRef.current = null;
@@ -128,7 +135,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         }
       );
     } catch (error) {
-      if (isMounted.current) {
+      if (isMounted.current && currentUploadRef.current === uploadKey) {
         console.error(`AudioRecorder - Erreur non gérée lors de l'upload audio pour la question ${questionId}:`, error);
         setIsUploading(false);
         currentUploadRef.current = null;
