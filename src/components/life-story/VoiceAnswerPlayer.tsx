@@ -22,15 +22,12 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loadAttempts, setLoadAttempts] = useState(0);
-  const [isStabilizing, setIsStabilizing] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stabilizationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   
   const MAX_LOAD_ATTEMPTS = 3;
-  const STABILIZATION_DELAY = 2000; // 2 secondes de stabilisation
-  const RETRY_DELAY = 1000; // 1 seconde entre les tentatives
+  const RETRY_DELAY = 2000; // 2 secondes entre les tentatives
   
   // DEBUG: Log l'état initial
   console.log('🎵 VoiceAnswerPlayer - Initialisation:', {
@@ -38,33 +35,22 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     isValidUrl: validateAudioUrl(audioUrl),
     isLoading,
     hasError,
-    isStabilizing
+    urlLength: audioUrl?.length,
+    bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown'
   });
   
-  // Phase de stabilisation et chargement de l'audio
+  // Chargement de l'audio avec gestion d'erreur améliorée
   useEffect(() => {
     let mounted = true;
     
-    console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { audioUrl, mounted });
+    console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { audioUrl, mounted, loadAttempts });
     
     if (!validateAudioUrl(audioUrl)) {
       console.log('🎵 VoiceAnswerPlayer - ❌ URL audio invalide:', audioUrl);
       setHasError(true);
       setIsLoading(false);
-      setIsStabilizing(false);
       return;
     }
-    
-    console.log("🎵 VoiceAnswerPlayer - Début stabilisation audio:", audioUrl);
-    
-    // Phase de stabilisation - attendre que l'audio soit accessible
-    stabilizationTimeoutRef.current = setTimeout(() => {
-      if (mounted) {
-        console.log('🎵 VoiceAnswerPlayer - Fin de stabilisation, début chargement');
-        setIsStabilizing(false);
-        startAudioLoad();
-      }
-    }, STABILIZATION_DELAY);
     
     const startAudioLoad = () => {
       if (!mounted) {
@@ -72,16 +58,17 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         return;
       }
       
-      console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS}`);
+      console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS} pour URL:`, audioUrl);
       
       // Créer un nouvel élément audio
       const audio = new Audio();
       audio.preload = "auto";
+      audio.crossOrigin = "anonymous"; // Ajouter pour éviter les problèmes CORS
       audioRef.current = audio;
       
       const onLoadedMetadata = () => {
         if (mounted) {
-          console.log("🎵 VoiceAnswerPlayer - ✅ Audio chargé, durée:", audio.duration);
+          console.log("🎵 VoiceAnswerPlayer - ✅ Audio chargé avec succès, durée:", audio.duration, "secondes");
           setDuration(audio.duration);
           setIsLoading(false);
           setHasError(false);
@@ -120,11 +107,32 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       const onError = (e: Event) => {
         if (!mounted) return;
         
-        console.error(`🎵 VoiceAnswerPlayer - ❌ Erreur chargement (tentative ${loadAttempts + 1}):`, e);
+        const target = e.target as HTMLAudioElement;
+        const errorCode = target?.error?.code;
+        const errorMessage = target?.error?.message;
+        
+        console.error(`🎵 VoiceAnswerPlayer - ❌ Erreur chargement (tentative ${loadAttempts + 1}):`, {
+          event: e,
+          errorCode,
+          errorMessage,
+          readyState: target?.readyState,
+          networkState: target?.networkState,
+          src: target?.src
+        });
+        
+        // Diagnostiquer le type d'erreur
+        if (errorCode === 1) {
+          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_ABORTED: Chargement abandonné');
+        } else if (errorCode === 2) {
+          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_NETWORK: Erreur réseau');
+        } else if (errorCode === 3) {
+          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_DECODE: Erreur de décodage');
+        } else if (errorCode === 4) {
+          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_SRC_NOT_SUPPORTED: Format non supporté');
+        }
         
         if (loadAttempts < MAX_LOAD_ATTEMPTS - 1) {
-          console.log('🎵 VoiceAnswerPlayer - 🔄 Tentative de rechargement...');
-          // Tentative de rechargement
+          console.log('🎵 VoiceAnswerPlayer - 🔄 Tentative de rechargement dans', RETRY_DELAY, 'ms...');
           setLoadAttempts(prev => prev + 1);
           retryTimeoutRef.current = setTimeout(() => {
             if (mounted) {
@@ -132,11 +140,33 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
             }
           }, RETRY_DELAY);
         } else {
-          // Échec définitif après toutes les tentatives
           console.error("🎵 VoiceAnswerPlayer - 💥 Échec définitif après", MAX_LOAD_ATTEMPTS, "tentatives");
           setHasError(true);
           setIsLoading(false);
+          
+          // Toast d'erreur avec plus d'informations
+          toast({
+            title: "Erreur de lecture audio",
+            description: `Impossible de charger l'enregistrement (code: ${errorCode}). Le fichier est peut-être corrompu ou inaccessible.`,
+            variant: "destructive",
+            duration: 5000
+          });
         }
+      };
+      
+      const onCanPlay = () => {
+        console.log('🎵 VoiceAnswerPlayer - 🎯 Audio prêt à être lu (canplay)');
+      };
+      
+      const onLoadStart = () => {
+        console.log('🎵 VoiceAnswerPlayer - 🔄 Début du chargement audio');
+      };
+      
+      const onProgress = () => {
+        console.log('🎵 VoiceAnswerPlayer - 📊 Progression du chargement:', {
+          buffered: audio.buffered.length > 0 ? audio.buffered.end(0) : 0,
+          duration: audio.duration
+        });
       };
       
       // Ajouter les écouteurs d'événements
@@ -146,10 +176,13 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       audio.addEventListener('pause', onPause);
       audio.addEventListener('ended', onEnded);
       audio.addEventListener('error', onError);
+      audio.addEventListener('canplay', onCanPlay);
+      audio.addEventListener('loadstart', onLoadStart);
+      audio.addEventListener('progress', onProgress);
       
       // Charger l'audio
       try {
-        console.log('🎵 VoiceAnswerPlayer - 📥 Chargement audio src:', audioUrl);
+        console.log('🎵 VoiceAnswerPlayer - 📥 Définition de la source audio:', audioUrl);
         audio.src = audioUrl;
         audio.load();
       } catch (error) {
@@ -166,26 +199,28 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audio.removeEventListener('pause', onPause);
         audio.removeEventListener('ended', onEnded);
         audio.removeEventListener('error', onError);
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.removeEventListener('loadstart', onLoadStart);
+        audio.removeEventListener('progress', onProgress);
         audio.pause();
         audio.src = '';
       };
     };
     
+    // Démarrer le chargement immédiatement
+    const cleanup = startAudioLoad();
+    
     return () => {
       console.log('🎵 VoiceAnswerPlayer - 🧹 Nettoyage useEffect principal');
       mounted = false;
-      if (stabilizationTimeoutRef.current) {
-        clearTimeout(stabilizationTimeoutRef.current);
-      }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
       }
     };
-  }, [audioUrl]);
+  }, [audioUrl, loadAttempts]);
   
   const handlePlayPause = () => {
     if (!audioRef.current || hasError) {
@@ -250,26 +285,13 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   
   // DEBUG: Log des états de rendu
   console.log('🎵 VoiceAnswerPlayer - État rendu:', {
-    isStabilizing,
     isLoading,
     hasError,
     isValidUrl: validateAudioUrl(audioUrl),
     duration,
-    isPlaying
+    isPlaying,
+    loadAttempts
   });
-  
-  // Affichage en cours de stabilisation
-  if (isStabilizing) {
-    console.log('🎵 VoiceAnswerPlayer - Rendu: stabilisation en cours');
-    return (
-      <div className="rounded-md border border-gray-200 p-3">
-        <div className="flex items-center justify-center py-2">
-          <Spinner className="h-5 w-5 border-gray-500 mr-2" />
-          <span className="text-sm text-gray-600">Préparation de la lecture...</span>
-        </div>
-      </div>
-    );
-  }
   
   // Si l'URL n'est pas valide, afficher un message d'erreur
   if (!validateAudioUrl(audioUrl)) {
@@ -290,13 +312,14 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-60 z-10 rounded-md">
             <Spinner className="h-6 w-6 border-gray-500" />
+            <span className="ml-2 text-sm text-gray-600">Chargement audio...</span>
           </div>
         )}
         
         {hasError ? (
           <div className="p-3 bg-amber-50 text-amber-700 rounded-md flex items-center">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-            <span>Impossible de charger l'enregistrement. L'audio est peut-être encore en cours de traitement. Veuillez patienter quelques instants et actualiser si nécessaire.</span>
+            <span>Impossible de charger l'enregistrement. Vérifiez la console pour plus de détails.</span>
           </div>
         ) : (
           <div className={`rounded-md border border-gray-200 p-3 ${isLoading ? 'opacity-60' : 'opacity-100'} transition-opacity`}>
@@ -335,11 +358,14 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                 controls 
                 className="w-full"
                 src={audioUrl}
-                onError={() => {
-                  console.log("🎵 VoiceAnswerPlayer - ❌ Erreur audio natif");
+                onError={(e) => {
+                  console.log("🎵 VoiceAnswerPlayer - ❌ Erreur audio natif:", e);
                 }}
                 onLoadedData={() => {
                   console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif chargé");
+                }}
+                onCanPlay={() => {
+                  console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif prêt à jouer");
                 }}
               />
             )}
