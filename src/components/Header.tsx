@@ -54,7 +54,7 @@ const Header = () => {
           <img 
             src="/SeniorDigital.png" 
             alt="Senior Digital Logo" 
-            width="80"
+            width="100"
             className="object-contain"
           />
         {/*  <Link to="/" className="text-2xl font-bold text-tranches-charcoal font-serif">
