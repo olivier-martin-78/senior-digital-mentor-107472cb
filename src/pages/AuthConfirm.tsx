@@ -17,25 +17,47 @@ const AuthConfirm = () => {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
+        // Récupérer tous les paramètres possibles
         const token = searchParams.get('token');
+        const tokenHash = searchParams.get('token_hash');
         const type = searchParams.get('type');
         const redirectTo = searchParams.get('redirect_to');
 
-        console.log('Confirmation params:', { token, type, redirectTo });
+        console.log('Paramètres de confirmation reçus:', { 
+          token, 
+          tokenHash, 
+          type, 
+          redirectTo,
+          allParams: Object.fromEntries(searchParams.entries())
+        });
 
-        if (!token) {
+        // Vérifier si nous avons un token (soit token soit token_hash)
+        const confirmationToken = token || tokenHash;
+        
+        if (!confirmationToken) {
           setStatus('error');
           setMessage('Token de confirmation manquant');
           return;
         }
 
-        // Utiliser verifyOtp avec le token généré par l'Admin API
-        console.log('Tentative de confirmation avec le token Admin API...');
+        console.log('Tentative de confirmation avec le token:', confirmationToken);
+
+        // Essayer d'abord avec verifyOtp en utilisant token_hash
+        let confirmationResult;
         
-        const confirmationResult = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'email'
-        });
+        if (tokenHash) {
+          console.log('Utilisation de verifyOtp avec token_hash...');
+          confirmationResult = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'email'
+          });
+        } else {
+          console.log('Utilisation de verifyOtp avec token...');
+          confirmationResult = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'email'
+          });
+        }
 
         if (confirmationResult.error) {
           console.error('Erreur de confirmation:', confirmationResult.error);
