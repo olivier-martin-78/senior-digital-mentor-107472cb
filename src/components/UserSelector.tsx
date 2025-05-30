@@ -114,15 +114,15 @@ const UserSelector: React.FC<UserSelectorProps> = ({
         <span className="text-sm font-medium text-gray-700">Voir les contenus de :</span>
         
         <Select
-          value={selectedUserId || ''}
-          onValueChange={(value) => onUserChange(value || null)}
+          value={selectedUserId || 'my-content'}
+          onValueChange={(value) => onUserChange(value === 'my-content' ? null : value)}
           disabled={loading}
         >
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder={loading ? "Chargement..." : getCurrentUserDisplay()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Mes contenus</SelectItem>
+            <SelectItem value="my-content">Mes contenus</SelectItem>
             {availableUsers.map(userProfile => (
               <SelectItem key={userProfile.id} value={userProfile.id}>
                 {userProfile.display_name || userProfile.email}
