@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -49,6 +48,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutoSaveRef = useRef<string>(''); // Pour éviter les sauvegardes identiques
   const lastToastRef = useRef<string>(''); // Pour éviter les toasts identiques
+
+  // DEBUG: Log du hook principal
+  console.log('📚 useLifeStory - Initialisation:', {
+    targetUserId,
+    effectiveUserId,
+    hasExistingStory: !!existingStory
+  });
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
@@ -219,27 +225,44 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    console.log('handleAudioUrlChange appelé:', { chapterId, questionId, audioUrl, preventAutoSave });
+    console.log('📚 useLifeStory - handleAudioUrlChange:', { 
+      chapterId, 
+      questionId, 
+      audioUrl, 
+      preventAutoSave,
+      currentData: data.chapters.find(c => c.id === chapterId)?.questions?.find(q => q.id === questionId)?.audioUrl
+    });
     
-    setData(prev => ({
-      ...prev,
-      chapters: prev.chapters.map(chapter =>
-        chapter.id === chapterId
-          ? {
-              ...chapter,
-              questions: chapter.questions?.map(q =>
-                q.id === questionId ? { ...q, audioUrl } : q
-              ) || [],
-            }
-          : chapter
-      ),
-      last_edited_chapter: chapterId,
-      last_edited_question: questionId,
-    }));
+    setData(prev => {
+      const newData = {
+        ...prev,
+        chapters: prev.chapters.map(chapter =>
+          chapter.id === chapterId
+            ? {
+                ...chapter,
+                questions: chapter.questions?.map(q =>
+                  q.id === questionId ? { ...q, audioUrl } : q
+                ) || [],
+              }
+            : chapter
+        ),
+        last_edited_chapter: chapterId,
+        last_edited_question: questionId,
+      };
+      
+      console.log('📚 useLifeStory - Données mises à jour:', {
+        chapterId,
+        questionId,
+        newAudioUrl: audioUrl,
+        questionData: newData.chapters.find(c => c.id === chapterId)?.questions?.find(q => q.id === questionId)
+      });
+      
+      return newData;
+    });
 
     // Si preventAutoSave est true, ne pas déclencher de sauvegarde automatique
     if (preventAutoSave) {
-      console.log('Sauvegarde automatique désactivée pour cet appel');
+      console.log('📚 useLifeStory - Sauvegarde automatique désactivée');
       return;
     }
 
@@ -249,6 +272,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       const saveKey = `${chapterId}-${questionId}-${audioUrl}`;
       
       if (lastAutoSaveRef.current !== saveKey) {
+        console.log('📚 useLifeStory - Planification sauvegarde auto dans 1s');
         lastAutoSaveRef.current = saveKey;
         
         // Annuler le timeout précédent s'il existe
@@ -258,6 +282,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         
         autoSaveTimeoutRef.current = setTimeout(() => {
           if (!savingRef.current) { // Double vérification
+            console.log('📚 useLifeStory - Exécution sauvegarde auto');
             saveNow();
           }
         }, 1000);

@@ -24,6 +24,15 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   const { hasRole } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   
+  // DEBUG: Log l'état initial
+  console.log('🎤 VoiceAnswerRecorder - État initial:', {
+    chapterId,
+    questionId,
+    existingAudioUrl,
+    isUploading,
+    hasExistingAudio: !!existingAudioUrl
+  });
+  
   // Les lecteurs ne peuvent pas enregistrer d'audio
   const canRecord = !hasRole('reader');
 
@@ -32,18 +41,27 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   }
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    console.log('AudioURL change dans VoiceAnswerRecorder:', { chapterId, questionId, audioUrl, preventAutoSave });
+    console.log('🎤 VoiceAnswerRecorder - handleAudioUrlChange:', { 
+      chapterId, 
+      questionId, 
+      audioUrl, 
+      preventAutoSave,
+      previousUrl: existingAudioUrl
+    });
     
     // Appeler la fonction du parent pour mettre à jour l'état
     onAudioUrlChange(chapterId, questionId, audioUrl, preventAutoSave);
     
     if (audioUrl) {
+      console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice');
       // Créer un blob factice pour compatibilité avec l'interface existante
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       // Arrêter l'état d'upload une fois l'URL reçue
       setIsUploading(false);
+      console.log('🎤 VoiceAnswerRecorder - Upload terminé, isUploading = false');
     } else {
+      console.log('🎤 VoiceAnswerRecorder - Pas d\'URL, suppression audio');
       // Ne pas afficher de toast lors des changements automatiques
       onAudioDeleted(chapterId, questionId, false);
       setIsUploading(false);
@@ -51,19 +69,29 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   };
 
   const handleDeleteExistingAudio = () => {
-    console.log('Suppression de l\'audio existant pour permettre un nouvel enregistrement');
+    console.log('🎤 VoiceAnswerRecorder - Suppression manuelle de l\'audio existant');
     onAudioUrlChange(chapterId, questionId, null, false);
     onAudioDeleted(chapterId, questionId, true); // Afficher le toast pour la suppression manuelle
   };
 
   // Gérer le début de l'upload
   const handleUploadStart = () => {
-    console.log('Début de l\'upload audio');
+    console.log('🎤 VoiceAnswerRecorder - Début upload, isUploading = true');
     setIsUploading(true);
   };
 
+  // DEBUG: Log de la décision d'affichage
+  const shouldShowPlayer = existingAudioUrl && !isUploading;
+  console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage:', {
+    shouldShowPlayer,
+    existingAudioUrl: !!existingAudioUrl,
+    isUploading,
+    condition: 'existingAudioUrl && !isUploading'
+  });
+
   // Si un audio existe déjà ET qu'on n'est pas en train d'uploader, afficher le lecteur
-  if (existingAudioUrl && !isUploading) {
+  if (shouldShowPlayer) {
+    console.log('🎤 VoiceAnswerRecorder - Affichage du lecteur avec URL:', existingAudioUrl);
     return (
       <VoiceAnswerPlayer
         audioUrl={existingAudioUrl}
@@ -73,6 +101,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   }
 
   // Sinon, afficher l'enregistreur
+  console.log('🎤 VoiceAnswerRecorder - Affichage de l\'enregistreur');
   return (
     <AudioRecorder
       chapterId={chapterId}
