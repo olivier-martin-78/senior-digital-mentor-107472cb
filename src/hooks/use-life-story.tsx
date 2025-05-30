@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -11,8 +12,8 @@ interface UseLifeStoryProps {
 }
 
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
-  const { user, getEffectiveUserId } = useAuth();
-  const effectiveUserId = targetUserId || getEffectiveUserId?.() || user?.id;
+  const { getEffectiveUserId } = useAuth();
+  const effectiveUserId = targetUserId || getEffectiveUserId?.() || '';
   
   const [data, setData] = useState<LifeStory>(
     existingStory || {
@@ -344,7 +345,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const saveNow = async () => {
-    if (!user || !effectiveUserId || isSaving || savingRef.current) {
+    if (!effectiveUserId || isSaving || savingRef.current) {
       console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
@@ -429,6 +430,31 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       savingRef.current = false;
     }
   };
+
+  // Initialiser l'état des questions fermées par défaut
+  useEffect(() => {
+    const initialOpenState: { [key: string]: boolean } = {};
+    data.chapters.forEach(chapter => {
+      initialOpenState[chapter.id] = false; // Fermé par défaut
+    });
+    setOpenQuestions(initialOpenState);
+  }, [data.chapters]);
+
+  useEffect(() => {
+    const totalQuestions = data.chapters.reduce(
+      (sum, chapter) => sum + (chapter.questions?.length || 0),
+      0
+    );
+    const answeredQuestions = data.chapters.reduce(
+      (sum, chapter) =>
+        sum + (chapter.questions?.filter(q => q.answer || q.audioUrl).length || 0),
+      0
+    );
+    setProgress({
+      totalQuestions,
+      answeredQuestions,
+    });
+  }, [data]);
 
   // Nettoyer les timeouts à la destruction du composant
   useEffect(() => {

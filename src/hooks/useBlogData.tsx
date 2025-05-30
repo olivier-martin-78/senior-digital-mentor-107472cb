@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PostWithAuthor, BlogAlbum } from '@/types/supabase';
 
 export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate?: string, endDate?: string, selectedUserId?: string | null) => {
-  const { user, hasRole } = useAuth();
+  const { hasRole, getEffectiveUserId } = useAuth();
+  const effectiveUserId = getEffectiveUserId();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,12 +15,12 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
 
   useEffect(() => {
     Promise.all([fetchPosts(), fetchAlbums()]);
-  }, [searchTerm, selectedAlbum, startDate, endDate, selectedUserId]);
+  }, [searchTerm, selectedAlbum, startDate, endDate, selectedUserId, effectiveUserId]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      console.log('useBlogData - Début fetchPosts pour user:', user?.id, 'selectedUserId:', selectedUserId);
+      console.log('useBlogData - Début fetchPosts pour effectiveUserId:', effectiveUserId, 'selectedUserId:', selectedUserId);
       
       if (hasRole('admin')) {
         // Les admins voient tout (publié et non publié)
@@ -59,7 +60,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       }
 
       // Pour les utilisateurs non-admin
-      if (selectedUserId && selectedUserId !== user?.id) {
+      if (selectedUserId && selectedUserId !== effectiveUserId) {
         // Vérifier les permissions pour voir les posts de cet utilisateur
         const { data: groupPermissions, error: groupError } = await supabase
           .from('group_members')
@@ -67,7 +68,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             group_id,
             invitation_groups!inner(created_by)
           `)
-          .eq('user_id', user?.id);
+          .eq('user_id', effectiveUserId);
 
         if (groupError) {
           console.error('useBlogData - Erreur groupes:', groupError);
@@ -126,7 +127,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           *,
           profiles(id, display_name, email, avatar_url, created_at)
         `)
-        .eq('author_id', user?.id)
+        .eq('author_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       // Appliquer les filtres aux posts utilisateur
@@ -161,7 +162,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           group_id,
           invitation_groups!inner(created_by)
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', effectiveUserId);
 
       if (groupError) {
         console.error('useBlogData - Erreur groupes:', groupError);
@@ -170,7 +171,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       }
 
       // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user?.id) || [];
+      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== effectiveUserId) || [];
       
       console.log('useBlogData - Utilisateurs autorisés via groupes:', groupCreatorIds);
 
@@ -256,7 +257,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       }
 
       // Pour les utilisateurs non-admin
-      if (selectedUserId && selectedUserId !== user?.id) {
+      if (selectedUserId && selectedUserId !== effectiveUserId) {
         // Vérifier les permissions groupes pour cet utilisateur
         const { data: groupPermissions, error: groupError } = await supabase
           .from('group_members')
@@ -264,7 +265,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             group_id,
             invitation_groups!inner(created_by)
           `)
-          .eq('user_id', user?.id);
+          .eq('user_id', effectiveUserId);
 
         if (groupError) {
           console.error('useBlogData - Erreur groupes albums:', groupError);
@@ -303,7 +304,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           *,
           profiles(id, display_name, email, avatar_url, created_at)
         `)
-        .eq('author_id', user?.id)
+        .eq('author_id', effectiveUserId)
         .order('name');
 
       if (userAlbumsError) {
@@ -319,7 +320,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           group_id,
           invitation_groups!inner(created_by)
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', effectiveUserId);
 
       if (groupError) {
         console.error('useBlogData - Erreur groupes albums:', groupError);
@@ -328,7 +329,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
       }
 
       // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user?.id) || [];
+      const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== effectiveUserId) || [];
 
       console.log('useBlogData - Albums - Utilisateurs autorisés via groupes:', groupCreatorIds);
 
