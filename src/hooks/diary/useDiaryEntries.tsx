@@ -33,7 +33,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .from('diary_entries')
           .select(`
             *,
-            profiles!inner (
+            profiles!user_id (
               id,
               email,
               display_name
@@ -106,7 +106,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         .from('diary_entries')
         .select(`
           *,
-          profiles!inner (
+          profiles!user_id (
             id,
             email,
             display_name
@@ -208,7 +208,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .from('diary_entries')
           .select(`
             *,
-            profiles!inner (
+            profiles!user_id (
               id,
               email,
               display_name
