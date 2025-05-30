@@ -30,31 +30,40 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
   
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    console.log("handleAudioChange appelé avec blob:", newAudioBlob ? `${newAudioBlob.size} octets` : "null");
+    console.log("AudioRecorder - handleAudioChange appelé:", { 
+      hasBlob: !!newAudioBlob, 
+      blobSize: newAudioBlob?.size,
+      questionId 
+    });
     
     // Si pas de blob, audio supprimé
-    if (!newAudioBlob) {
-      console.log("Audio supprimé");
+    if (!newAudioBlob || newAudioBlob.size === 0) {
+      console.log("AudioRecorder - Audio supprimé ou vide");
       setUploadedAudioUrl(null);
       onAudioUrlChange(chapterId, questionId, null);
       return;
     }
     
     // Si pas d'utilisateur, ne rien faire
-    if (!user) {
-      console.log("Pas d'utilisateur connecté");
+    if (!user?.id) {
+      console.log("AudioRecorder - Pas d'utilisateur connecté");
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour enregistrer un audio",
+        variant: "destructive",
+      });
       return;
     }
     
     // Vérifier si un upload est déjà en cours pour cette question
     const uploadKey = `${chapterId}-${questionId}`;
     if (isUploading || currentUploadRef.current === uploadKey) {
-      console.log("Upload déjà en cours pour cette question");
+      console.log("AudioRecorder - Upload déjà en cours pour cette question");
       return;
     }
     
     try {
-      console.log(`Début du processus d'upload pour la question ${questionId}`);
+      console.log(`AudioRecorder - Début du processus d'upload pour la question ${questionId}`);
       setIsUploading(true);
       currentUploadRef.current = uploadKey;
       
@@ -67,7 +76,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         // Callback de succès
         (publicUrl) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            console.log(`Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
+            console.log(`AudioRecorder - Upload réussi pour la question ${questionId}, URL: ${publicUrl}`);
             setUploadedAudioUrl(publicUrl);
             onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
@@ -78,14 +87,14 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
             });
           }
         },
-        // Callback d'erreur - gérer gracieusement les erreurs
+        // Callback d'erreur
         (errorMessage) => {
           if (isMounted.current) {
-            console.error(`Erreur d'upload pour la question ${questionId}:`, errorMessage);
+            console.error(`AudioRecorder - Erreur d'upload pour la question ${questionId}:`, errorMessage);
             
             // Si c'est une erreur de bucket, proposer de continuer sans sauvegarde cloud
-            if (errorMessage.includes('Bucket not found')) {
-              console.log('Bucket audio non trouvé, sauvegarde locale uniquement');
+            if (errorMessage.includes('Bucket not found') || errorMessage.includes('bucket')) {
+              console.log('AudioRecorder - Bucket audio non trouvé, sauvegarde locale uniquement');
               toast({
                 title: "Stockage audio indisponible",
                 description: "L'enregistrement est conservé localement mais ne sera pas sauvegardé sur le serveur",
@@ -93,12 +102,11 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
                 duration: 4000
               });
               
-              // Continuer avec l'audio local uniquement
               setUploadedAudioUrl('local-audio');
               onAudioUrlChange(chapterId, questionId, null, true);
             } else {
               toast({
-                title: "Erreur",
+                title: "Erreur de sauvegarde",
                 description: errorMessage,
                 variant: "destructive",
                 duration: 3000
@@ -108,12 +116,12 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         },
         // Callback de début d'upload
         () => {
-          console.log(`Début du téléchargement pour la question ${questionId}`);
+          console.log(`AudioRecorder - Début du téléchargement pour la question ${questionId}`);
         },
         // Callback de fin d'upload
         () => {
           if (isMounted.current) {
-            console.log(`Fin du téléchargement pour la question ${questionId}`);
+            console.log(`AudioRecorder - Fin du téléchargement pour la question ${questionId}`);
             setIsUploading(false);
             currentUploadRef.current = null;
           }
@@ -121,7 +129,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       );
     } catch (error) {
       if (isMounted.current) {
-        console.error(`Erreur non gérée lors de l'upload audio pour la question ${questionId}:`, error);
+        console.error(`AudioRecorder - Erreur non gérée lors de l'upload audio pour la question ${questionId}:`, error);
         setIsUploading(false);
         currentUploadRef.current = null;
         

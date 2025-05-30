@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download } from 'lucide-react';
-import { useAudioRecorder } from '@/hooks/use-audio-recorder';
+import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { toast } from '@/hooks/use-toast';
 
 interface VoiceRecorderProps {
@@ -20,7 +20,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     stopRecording,
     clearRecording,
     recordingTime
-  } = useAudioRecorder();
+  } = useVoiceRecorder();
   
   const [audioLoaded, setAudioLoaded] = React.useState(false);
   
@@ -35,7 +35,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const handleExportAudio = () => {
     if (audioBlob && audioUrl) {
       try {
-        // Créer un élément a pour télécharger l'audio
         const downloadLink = document.createElement('a');
         downloadLink.href = audioUrl;
         downloadLink.download = `enregistrement_vocal_${new Date().toISOString().slice(0,10)}.webm`;
@@ -67,8 +66,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   
   // Notifier le parent quand l'audio change
   useEffect(() => {
-    if (audioBlob) {
-      console.log("Audio blob disponible, envoi au composant parent", audioBlob.size, "octets");
+    console.log("VoiceRecorder - État audio changé:", { 
+      hasBlob: !!audioBlob, 
+      hasUrl: !!audioUrl, 
+      blobSize: audioBlob?.size 
+    });
+    
+    if (audioBlob && audioBlob.size > 0) {
+      console.log("VoiceRecorder - Envoi du blob au parent:", audioBlob.size, "octets");
       onAudioChange(audioBlob);
     }
   }, [audioBlob, onAudioChange]);
