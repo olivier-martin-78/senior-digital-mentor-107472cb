@@ -93,7 +93,7 @@ export const useRecentItems = () => {
         // Fetch other content types
         await fetchWishes(items, hasRole, user);
         await fetchDiaryEntries(items, hasRole, user, authorizedUserIds);
-        await fetchComments(items);
+        await fetchComments(items, hasRole, user, authorizedUserIds);
 
         // Trier tous les éléments par date de création
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -379,29 +379,139 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, a
   }
 };
 
-const fetchComments = async (items: RecentItem[]) => {
-  const { data: comments } = await supabase
-    .from('blog_comments')
-    .select(`
-      id,
-      content,
-      created_at,
-      profiles(display_name),
-      post:blog_posts(id, title)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(15);
+const fetchComments = async (items: RecentItem[], hasRole: any, user: any, authorizedUserIds: string[]) => {
+  console.log('🔍 ===== RÉCUPÉRATION COMMENTAIRES =====');
+  console.log('🔍 Utilisateur courant:', user.id);
+  console.log('🔍 authorizedUserIds pour commentaires:', authorizedUserIds);
+  console.log('🔍 hasRole admin:', hasRole('admin'));
 
-  if (comments) {
-    items.push(...comments.map(comment => ({
-      id: comment.id,
-      title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
-      type: 'comment' as const,
-      created_at: comment.created_at,
-      author: comment.profiles?.display_name || 'Anonyme',
-      content_preview: comment.content?.substring(0, 150) + '...',
-      post_title: comment.post?.title,
-      comment_content: comment.content
-    })));
+  if (hasRole('admin')) {
+    console.log('🔍 MODE ADMIN - récupération tous commentaires');
+    const { data: comments } = await supabase
+      .from('blog_comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        author_id,
+        profiles(display_name),
+        post:blog_posts(id, title)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(15);
+
+    console.log('🔍 Commentaires admin récupérés:', comments?.length || 0);
+
+    if (comments) {
+      items.push(...comments.map(comment => ({
+        id: comment.id,
+        title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
+        type: 'comment' as const,
+        created_at: comment.created_at,
+        author: comment.author_id === user.id ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
+        content_preview: comment.content?.substring(0, 150) + '...',
+        post_title: comment.post?.title,
+        comment_content: comment.content
+      })));
+    }
+  } else {
+    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === user.id;
+    console.log('🔍 A seulement son propre ID pour commentaires?', hasOnlyOwnId);
+    
+    if (hasOnlyOwnId) {
+      console.log('🔍 ⚠️ UTILISATEUR SANS PERMISSIONS - récupération commentaires personnels uniquement');
+      
+      // Récupérer seulement les commentaires de l'utilisateur
+      const { data: userComments, error: userCommentsError } = await supabase
+        .from('blog_comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          author_id,
+          profiles(display_name),
+          post:blog_posts(id, title)
+        `)
+        .eq('author_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+      console.log('🔍 Requête commentaires utilisateur:', {
+        data: userComments,
+        error: userCommentsError,
+        count: userComments?.length || 0
+      });
+
+      if (userComments) {
+        items.push(...userComments.map(comment => ({
+          id: comment.id,
+          title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
+          type: 'comment' as const,
+          created_at: comment.created_at,
+          author: 'Moi',
+          content_preview: comment.content?.substring(0, 150) + '...',
+          post_title: comment.post?.title,
+          comment_content: comment.content
+        })));
+      }
+    } else {
+      console.log('🔍 UTILISATEUR AVEC PERMISSIONS - récupération commentaires séparée');
+      
+      // 1. Récupérer ses propres commentaires
+      const { data: userComments } = await supabase
+        .from('blog_comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          author_id,
+          profiles(display_name),
+          post:blog_posts(id, title)
+        `)
+        .eq('author_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // 2. Récupérer les commentaires sur les posts des utilisateurs autorisés
+      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== user.id);
+      let otherComments: any[] = [];
+      
+      if (otherAuthorizedIds.length > 0) {
+        const { data: commentsOnAuthorizedPosts } = await supabase
+          .from('blog_comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            author_id,
+            profiles(display_name),
+            post:blog_posts!inner(id, title, author_id)
+          `)
+          .in('post.author_id', otherAuthorizedIds)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        otherComments = commentsOnAuthorizedPosts || [];
+      }
+
+      const allComments = [...(userComments || []), ...otherComments];
+
+      console.log('🔍 Commentaires utilisateur:', userComments?.length || 0);
+      console.log('🔍 Commentaires autres autorisés:', otherComments.length);
+      console.log('🔍 Total commentaires:', allComments.length);
+
+      if (allComments.length > 0) {
+        items.push(...allComments.map(comment => ({
+          id: comment.id,
+          title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
+          type: 'comment' as const,
+          created_at: comment.created_at,
+          author: comment.author_id === user.id ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
+          content_preview: comment.content?.substring(0, 150) + '...',
+          post_title: comment.post?.title,
+          comment_content: comment.content
+        })));
+      }
+    }
   }
 };
