@@ -53,31 +53,33 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/confirm" element={<AuthConfirm />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />
-              <Route path="/blog/:id" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
-              <Route path="/blog/new" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
-              <Route path="/blog/edit/:id" element={<ProtectedRoute><BlogEditor /></ProtectedRoute>} />
-              <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
-              <Route path="/diary/:id" element={<ProtectedRoute><DiaryEntry /></ProtectedRoute>} />
-              <Route path="/diary/new" element={<ProtectedRoute><DiaryNew /></ProtectedRoute>} />
-              <Route path="/diary/edit/:id" element={<ProtectedRoute><DiaryEdit /></ProtectedRoute>} />
-              <Route path="/life-story" element={<ProtectedRoute><LifeStory /></ProtectedRoute>} />
-              <Route path="/wishes" element={<ProtectedRoute><Wishes /></ProtectedRoute>} />
-              <Route path="/wishes/:id" element={<ProtectedRoute><WishPost /></ProtectedRoute>} />
-              <Route path="/wishes/new" element={<ProtectedRoute><WishForm /></ProtectedRoute>} />
-              <Route path="/wishes/new-form" element={<ProtectedRoute><WishNew /></ProtectedRoute>} />
-              <Route path="/wishes/edit/:id" element={<ProtectedRoute><WishEdit /></ProtectedRoute>} />
-              <Route path="/wishes/edit-form/:id" element={<ProtectedRoute><WishEditForm /></ProtectedRoute>} />
-              <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
-              <Route path="/admin/posts" element={<ProtectedRoute><AdminPosts /></ProtectedRoute>} />
-              <Route path="/admin/albums" element={<ProtectedRoute><AdminAlbums /></ProtectedRoute>} />
-              <Route path="/admin/wish-albums" element={<ProtectedRoute><AdminWishAlbums /></ProtectedRoute>} />
-              <Route path="/admin/diary" element={<ProtectedRoute><AdminDiary /></ProtectedRoute>} />
-              <Route path="/admin/life-stories" element={<ProtectedRoute><AdminLifeStories /></ProtectedRoute>} />
-              <Route path="/admin/life-stories/:userId" element={<ProtectedRoute><AdminLifeStoryEdit /></ProtectedRoute>} />
-              <Route path="/admin/invitation-groups" element={<ProtectedRoute><AdminInvitationGroups /></ProtectedRoute>} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:id" element={<BlogPost />} />
+                <Route path="/blog/new" element={<BlogEditor />} />
+                <Route path="/blog/edit/:id" element={<BlogEditor />} />
+                <Route path="/diary" element={<Diary />} />
+                <Route path="/diary/:id" element={<DiaryEntry />} />
+                <Route path="/diary/new" element={<DiaryNew />} />
+                <Route path="/diary/edit/:id" element={<DiaryEdit />} />
+                <Route path="/life-story" element={<LifeStory />} />
+                <Route path="/wishes" element={<Wishes />} />
+                <Route path="/wishes/:id" element={<WishPost />} />
+                <Route path="/wishes/new" element={<WishForm />} />
+                <Route path="/wishes/new-form" element={<WishNew />} />
+                <Route path="/wishes/edit/:id" element={<WishEdit />} />
+                <Route path="/wishes/edit-form/:id" element={<WishEditForm />} />
+                <Route path="/recent" element={<Recent />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/posts" element={<AdminPosts />} />
+                <Route path="/admin/albums" element={<AdminAlbums />} />
+                <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
+                <Route path="/admin/diary" element={<AdminDiary />} />
+                <Route path="/admin/life-stories" element={<AdminLifeStories />} />
+                <Route path="/admin/life-stories/:userId" element={<AdminLifeStoryEdit />} />
+                <Route path="/admin/invitation-groups" element={<AdminInvitationGroups />} />
+              </Route>
               <Route path="/blog-landing" element={<BlogLanding />} />
               <Route path="/ai-landing" element={<AILanding />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
