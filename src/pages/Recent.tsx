@@ -81,9 +81,10 @@ const Recent = () => {
           console.log('Recent - Utilisateurs autorisés finaux:', authorizedUserIds);
         }
 
-        // Récupérer les posts de blog récents avec permissions
+        // Récupérer les posts de blog récents avec permissions améliorées
         if (hasRole('admin')) {
           // Les admins voient tous les posts publiés
+          console.log('Recent - Mode admin: récupération de tous les posts publiés');
           const { data: blogPosts } = await supabase
             .from('blog_posts')
             .select(`
@@ -111,9 +112,16 @@ const Recent = () => {
             })));
           }
         } else {
-          // Récupérer les posts avec permissions
-          if (authorizedUserIds.length > 0) {
-            const { data: blogPosts } = await supabase
+          // Pour les utilisateurs non-admin, logique stricte de permissions
+          console.log('Recent - Mode utilisateur normal, authorizedUserIds:', authorizedUserIds);
+          
+          // Si l'utilisateur n'a que son propre ID (pas de permissions vers d'autres)
+          const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === user.id;
+          
+          if (hasOnlyOwnId) {
+            console.log('Recent - Utilisateur sans permissions particulières, récupération de ses propres posts uniquement');
+            // Récupérer seulement ses propres posts (publiés ET brouillons)
+            const { data: userBlogPosts } = await supabase
               .from('blog_posts')
               .select(`
                 id,
@@ -125,13 +133,75 @@ const Recent = () => {
                 published,
                 profiles(display_name)
               `)
-              .in('author_id', authorizedUserIds)
-              .or(`author_id.eq.${user.id},and(published.eq.true,author_id.in.(${authorizedUserIds.filter(id => id !== user.id).join(',')}))`)
+              .eq('author_id', user.id)
               .order('created_at', { ascending: false })
               .limit(15);
 
-            if (blogPosts) {
-              items.push(...blogPosts.map(post => ({
+            if (userBlogPosts) {
+              console.log('Recent - Posts utilisateur récupérés:', userBlogPosts.length);
+              items.push(...userBlogPosts.map(post => ({
+                id: post.id,
+                title: post.title,
+                type: 'blog' as const,
+                created_at: post.created_at,
+                author: 'Moi',
+                content_preview: post.content?.substring(0, 150) + '...',
+                cover_image: post.cover_image
+              })));
+            }
+          } else {
+            // L'utilisateur a des permissions vers d'autres utilisateurs
+            console.log('Recent - Utilisateur avec permissions, récupération séparée des posts');
+            
+            // 1. Récupérer ses propres posts (TOUS, publiés ET brouillons)
+            const { data: userBlogPosts } = await supabase
+              .from('blog_posts')
+              .select(`
+                id,
+                title,
+                content,
+                created_at,
+                cover_image,
+                author_id,
+                published,
+                profiles(display_name)
+              `)
+              .eq('author_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(10);
+
+            // 2. Récupérer les posts des autres utilisateurs autorisés (SEULEMENT publiés)
+            const otherAuthorizedIds = authorizedUserIds.filter(id => id !== user.id);
+            let otherBlogPosts: any[] = [];
+            
+            if (otherAuthorizedIds.length > 0) {
+              const { data: otherPosts } = await supabase
+                .from('blog_posts')
+                .select(`
+                  id,
+                  title,
+                  content,
+                  created_at,
+                  cover_image,
+                  author_id,
+                  published,
+                  profiles(display_name)
+                `)
+                .eq('published', true) // SEULEMENT les publiés pour les autres
+                .in('author_id', otherAuthorizedIds)
+                .order('created_at', { ascending: false })
+                .limit(10);
+              
+              otherBlogPosts = otherPosts || [];
+              console.log('Recent - Posts autres utilisateurs autorisés récupérés:', otherBlogPosts.length);
+            }
+
+            // Combiner et mapper les posts
+            const allBlogPosts = [...(userBlogPosts || []), ...otherBlogPosts];
+            console.log('Recent - Total posts blog récupérés:', allBlogPosts.length);
+
+            if (allBlogPosts.length > 0) {
+              items.push(...allBlogPosts.map(post => ({
                 id: post.id,
                 title: post.title,
                 type: 'blog' as const,
