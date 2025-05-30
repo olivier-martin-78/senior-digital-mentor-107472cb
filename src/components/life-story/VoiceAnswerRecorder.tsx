@@ -7,7 +7,7 @@ interface VoiceAnswerRecorderProps {
   chapterId: string;
   questionId: string;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
-  onAudioDeleted: (chapterId: string, questionId: string) => void;
+  onAudioDeleted: (chapterId: string, questionId: string, showToast?: boolean) => void;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
   existingAudioUrl?: string | null;
 }
@@ -40,7 +40,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
     } else {
-      onAudioDeleted(chapterId, questionId);
+      // Ne pas afficher de toast lors des changements automatiques
+      onAudioDeleted(chapterId, questionId, false);
     }
   };
 

@@ -252,8 +252,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
   };
 
-  const handleAudioDeleted = (chapterId: string, questionId: string) => {
-    console.log('Suppression audio:', { chapterId, questionId });
+  const handleAudioDeleted = (chapterId: string, questionId: string, showToast: boolean = true) => {
+    console.log('Suppression audio:', { chapterId, questionId, showToast });
     setData(prev => {
       const newData = {
         ...prev,
@@ -272,7 +272,11 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       };
       return newData;
     });
-    toast.success('Enregistrement audio supprimé');
+    
+    // Seulement afficher le toast si demandé explicitement
+    if (showToast) {
+      toast.success('Enregistrement audio supprimé');
+    }
   };
 
   const saveNow = async () => {

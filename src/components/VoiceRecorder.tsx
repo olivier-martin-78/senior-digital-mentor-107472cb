@@ -57,15 +57,15 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
   
-  // Gérer la suppression de l'audio
+  // Gérer la suppression de l'audio (action explicite de l'utilisateur)
   const handleClearRecording = () => {
-    console.log("VoiceRecorder - Suppression de l'enregistrement");
+    console.log("VoiceRecorder - Suppression explicite de l'enregistrement par l'utilisateur");
     clearRecording();
     setAudioLoaded(false);
     onAudioChange(null);
   };
   
-  // Notifier le parent quand l'audio change
+  // Notifier le parent quand l'audio change (sans toast automatique)
   useEffect(() => {
     console.log("VoiceRecorder - État audio changé:", { 
       hasBlob: !!audioBlob, 
