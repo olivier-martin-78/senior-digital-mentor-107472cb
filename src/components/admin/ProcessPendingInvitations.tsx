@@ -15,7 +15,44 @@ const ProcessPendingInvitations = () => {
     console.log('Début du traitement des invitations en attente');
     
     try {
-      // Récupérer les invitations non utilisées avec des utilisateurs confirmés
+      // D'abord, récupérons TOUTES les invitations pour voir ce qu'il y a en base
+      console.log('=== DEBUG: Récupération de TOUTES les invitations ===');
+      const { data: allInvitations, error: allInvitationsError } = await supabase
+        .from('invitations')
+        .select(`
+          id,
+          email,
+          group_id,
+          used_at,
+          expires_at,
+          invitation_groups(name)
+        `);
+
+      if (allInvitationsError) {
+        console.error('Erreur lors de la récupération de toutes les invitations:', allInvitationsError);
+      } else {
+        console.log('Toutes les invitations en base:', allInvitations);
+        console.log('Nombre total d\'invitations:', allInvitations?.length || 0);
+        
+        // Analyser chaque invitation
+        allInvitations?.forEach((inv, index) => {
+          console.log(`Invitation ${index + 1}:`, {
+            email: inv.email,
+            group_id: inv.group_id,
+            used_at: inv.used_at,
+            expires_at: inv.expires_at,
+            is_expired: new Date(inv.expires_at) <= new Date(),
+            has_group: !!inv.group_id,
+            is_used: !!inv.used_at
+          });
+        });
+      }
+
+      // Maintenant récupérons les invitations avec nos critères originaux
+      console.log('=== DEBUG: Récupération des invitations avec critères ===');
+      const currentTime = new Date().toISOString();
+      console.log('Date actuelle pour comparaison:', currentTime);
+      
       const { data: pendingInvitations, error: invitationsError } = await supabase
         .from('invitations')
         .select(`
@@ -26,9 +63,9 @@ const ProcessPendingInvitations = () => {
         `)
         .is('used_at', null)
         .not('group_id', 'is', null)
-        .gt('expires_at', new Date().toISOString());
+        .gt('expires_at', currentTime);
 
-      console.log('Invitations récupérées:', pendingInvitations);
+      console.log('Invitations avec critères:', pendingInvitations);
 
       if (invitationsError) {
         console.error('Erreur lors de la récupération des invitations:', invitationsError);
@@ -36,10 +73,10 @@ const ProcessPendingInvitations = () => {
       }
 
       if (!pendingInvitations || pendingInvitations.length === 0) {
-        console.log('Aucune invitation en attente trouvée');
+        console.log('Aucune invitation en attente trouvée avec les critères');
         toast({
           title: "Aucune invitation en attente",
-          description: "Toutes les invitations ont déjà été traitées."
+          description: "Toutes les invitations ont déjà été traitées, ont expiré, ou n'ont pas de groupe associé."
         });
         return;
       }
@@ -56,7 +93,7 @@ const ProcessPendingInvitations = () => {
 
       console.log('Utilisateurs récupérés:', userData?.users?.length || 0);
 
-      if (!userData || !userData.users || !Array.isArray(userData.users)) {
+      if (!userData?.users || !Array.isArray(userData.users)) {
         console.error('Données utilisateurs invalides');
         throw new Error('Impossible de récupérer les utilisateurs');
       }
@@ -73,7 +110,7 @@ const ProcessPendingInvitations = () => {
           u.email_confirmed_at !== null
         );
 
-        if (user && user.id) {
+        if (user?.id) {
           console.log(`Utilisateur trouvé: ${user.id} pour ${invitation.email}`);
           
           // Vérifier si l'utilisateur n'est pas déjà dans le groupe
