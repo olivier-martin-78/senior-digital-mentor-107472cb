@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +40,7 @@ type DiaryFormValues = z.infer<typeof diaryFormSchema>;
 
 const DiaryEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,10 +87,24 @@ const DiaryEdit = () => {
         }
 
         if (data) {
-          setEntry(data as DiaryEntry);
+          const entryData = data as DiaryEntry;
+          
+          // Vérifier les permissions de modification
+          const canEdit = entryData.user_id === user.id || hasRole('admin');
+          
+          if (!canEdit) {
+            toast({
+              title: 'Accès refusé',
+              description: "Vous n'avez pas les permissions pour modifier cette entrée.",
+              variant: 'destructive',
+            });
+            navigate(`/diary/${id}`);
+            return;
+          }
+          
+          setEntry(entryData);
           
           // Set form values
-          const entryData = data as DiaryEntry;
           form.reset({
             entry_date: entryData.entry_date ? parseISO(entryData.entry_date) : new Date(),
             title: entryData.title || '',
@@ -138,7 +151,7 @@ const DiaryEdit = () => {
     };
 
     fetchEntry();
-  }, [id, user, toast, navigate, form]);
+  }, [id, user, hasRole, toast, navigate, form]);
 
   const onSubmit = async (data: DiaryFormValues) => {
     if (!user || !id || !entry) {

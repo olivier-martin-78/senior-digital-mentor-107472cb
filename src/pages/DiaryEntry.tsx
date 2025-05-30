@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +14,7 @@ import LoadingSpinner from '@/components/diary/LoadingSpinner';
 const DiaryEntryPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const { toast } = useToast();
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +94,12 @@ const DiaryEntryPage = () => {
     }
   };
 
+  // Vérifier les permissions de modification
+  const canEdit = entry && user && (
+    entry.user_id === user.id || // L'auteur peut toujours modifier
+    hasRole('admin') // Les admins peuvent modifier
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -128,7 +135,11 @@ const DiaryEntryPage = () => {
       <Header />
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-3xl mx-auto">
-          <DiaryHeader entryId={entry.id} onDelete={handleDelete} />
+          <DiaryHeader 
+            entryId={entry.id} 
+            onDelete={handleDelete}
+            canEdit={canEdit}
+          />
           
           <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
             <EntryHeader 

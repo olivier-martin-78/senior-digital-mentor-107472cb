@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +9,18 @@ import EntryMood from './EntryMood';
 import RecentItemImage from '@/components/RecentItemImage';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EntryCardProps {
   entry: DiaryEntry;
 }
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
+  const { user, hasRole } = useAuth();
   const isDraft = !entry.title || entry.title.trim() === '';
+  
+  // Vérifier si l'utilisateur peut modifier cette entrée
+  const canEdit = user && (entry.user_id === user.id || hasRole('admin'));
 
   return (
     <Link to={`/diary/${entry.id}`}>
@@ -52,6 +58,10 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
               <p className="text-sm text-gray-500 mt-1">
                 {format(new Date(entry.entry_date), 'EEEE d MMMM yyyy', { locale: fr })}
               </p>
+              {/* Afficher un indicateur si l'utilisateur ne peut pas modifier */}
+              {!canEdit && user && entry.user_id !== user.id && (
+                <p className="text-xs text-gray-400 mt-1">👀 Lecture seule</p>
+              )}
             </div>
             <EntryMood rating={entry.mood_rating} />
           </div>
