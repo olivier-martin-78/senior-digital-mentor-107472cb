@@ -43,7 +43,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
       setUploadedAudioUrl(null);
       setIsUploading(false);
       currentUploadRef.current = null;
-      onAudioUrlChange(chapterId, questionId, null);
+      onAudioUrlChange(chapterId, questionId, null, true); // Éviter l'auto-sauvegarde
       return;
     }
     
@@ -84,8 +84,10 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
             currentUploadRef.current = null;
-            onAudioUrlChange(chapterId, questionId, publicUrl, false);
+            // Passer preventAutoSave: true pour éviter la double sauvegarde
+            onAudioUrlChange(chapterId, questionId, publicUrl, true);
             
+            // Un seul toast de succès ici
             toast({
               title: "Enregistrement sauvegardé",
               description: "Votre enregistrement vocal a été sauvegardé avec succès",

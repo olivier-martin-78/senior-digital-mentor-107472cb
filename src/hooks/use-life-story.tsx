@@ -47,6 +47,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const savingRef = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutoSaveRef = useRef<string>(''); // Pour éviter les sauvegardes identiques
+  const lastToastRef = useRef<string>(''); // Pour éviter les toasts identiques
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
@@ -226,9 +227,15 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       last_edited_question: questionId,
     }));
 
+    // Si preventAutoSave est true, ne pas déclencher de sauvegarde automatique
+    if (preventAutoSave) {
+      console.log('Sauvegarde automatique désactivée pour cet appel');
+      return;
+    }
+
     // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
-    // Mais seulement si ce n'est pas la même URL qu'avant
-    if (!preventAutoSave && !savingRef.current) {
+    // Mais seulement si ce n'est pas la même URL qu'avant et qu'on n'est pas en train de sauvegarder
+    if (!savingRef.current) {
       const saveKey = `${chapterId}-${questionId}-${audioUrl}`;
       
       if (lastAutoSaveRef.current !== saveKey) {
@@ -240,7 +247,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         }
         
         autoSaveTimeoutRef.current = setTimeout(() => {
-          saveNow();
+          if (!savingRef.current) { // Double vérification
+            saveNow();
+          }
         }, 1000);
       }
     }
@@ -334,7 +343,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       setLastSaved(new Date());
       console.log('Histoire sauvegardée avec succès à:', new Date().toISOString());
-      toast.success('Histoire sauvegardée', { duration: 700 });
+      
+      // Éviter les toasts identiques consécutifs
+      const toastKey = `save-${Date.now()}`;
+      if (lastToastRef.current !== toastKey) {
+        lastToastRef.current = toastKey;
+        toast.success('Histoire sauvegardée', { duration: 700 });
+      }
     } catch (err) {
       console.error('Erreur lors de la sauvegarde:', err);
       toast.error('Erreur lors de la sauvegarde', { duration: 700 });

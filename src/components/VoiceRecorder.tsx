@@ -23,6 +23,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   } = useVoiceRecorder();
   
   const [audioLoaded, setAudioLoaded] = React.useState(false);
+  const [hasNotifiedParent, setHasNotifiedParent] = React.useState(false);
   
   // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
@@ -62,28 +63,39 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     console.log("VoiceRecorder - Suppression explicite de l'enregistrement par l'utilisateur");
     clearRecording();
     setAudioLoaded(false);
+    setHasNotifiedParent(false);
     onAudioChange(null);
   };
   
-  // Notifier le parent quand l'audio change (sans toast automatique)
+  // Notifier le parent quand l'audio change (avec protection contre la boucle)
   useEffect(() => {
     console.log("VoiceRecorder - État audio changé:", { 
       hasBlob: !!audioBlob, 
       hasUrl: !!audioUrl, 
       blobSize: audioBlob?.size,
-      isRecording 
+      isRecording,
+      hasNotifiedParent
     });
     
-    // Seulement notifier le parent si nous avons un blob valide ET que l'enregistrement est terminé
-    if (audioBlob && audioBlob.size > 0 && !isRecording) {
+    // Seulement notifier si nous avons un blob valide ET que l'enregistrement est terminé ET qu'on n'a pas déjà notifié
+    if (audioBlob && audioBlob.size > 0 && !isRecording && !hasNotifiedParent) {
       console.log("VoiceRecorder - Envoi du blob au parent:", audioBlob.size, "octets");
       onAudioChange(audioBlob);
-    } else if (!audioBlob && !isRecording) {
+      setHasNotifiedParent(true);
+    } else if (!audioBlob && !isRecording && hasNotifiedParent) {
       // Si pas de blob et enregistrement terminé, notifier la suppression
       console.log("VoiceRecorder - Pas d'audio, notification de suppression");
       onAudioChange(null);
+      setHasNotifiedParent(false);
     }
-  }, [audioBlob, audioUrl, isRecording, onAudioChange]);
+  }, [audioBlob, audioUrl, isRecording, hasNotifiedParent, onAudioChange]);
+  
+  // Reset du flag quand on démarre un nouvel enregistrement
+  useEffect(() => {
+    if (isRecording) {
+      setHasNotifiedParent(false);
+    }
+  }, [isRecording]);
   
   // Gérer le chargement audio
   const handleAudioLoaded = () => {

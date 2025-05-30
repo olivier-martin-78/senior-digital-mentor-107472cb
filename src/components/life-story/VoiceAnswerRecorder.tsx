@@ -32,7 +32,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     console.log('AudioURL change dans VoiceAnswerRecorder:', { chapterId, questionId, audioUrl, preventAutoSave });
     
-    // Appeler la fonction du parent pour mettre à jour l'état et sauvegarder
+    // Appeler la fonction du parent pour mettre à jour l'état
     onAudioUrlChange(chapterId, questionId, audioUrl, preventAutoSave);
     
     if (audioUrl) {
