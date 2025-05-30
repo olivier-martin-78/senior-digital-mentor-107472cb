@@ -54,6 +54,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
         title: "Erreur",
         description: "Vous devez être connecté pour enregistrer un audio",
         variant: "destructive",
+        duration: 700
       });
       return;
     }
@@ -88,7 +89,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
             toast({
               title: "Enregistrement sauvegardé",
               description: "Votre enregistrement vocal a été sauvegardé avec succès",
-              duration: 2000
+              duration: 700
             });
           }
         },
@@ -106,7 +107,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
                 title: "Stockage audio indisponible",
                 description: "L'enregistrement est conservé localement mais ne sera pas sauvegardé sur le serveur",
                 variant: "destructive",
-                duration: 4000
+                duration: 700
               });
               
               setUploadedAudioUrl('local-audio');
@@ -116,7 +117,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
                 title: "Erreur de sauvegarde",
                 description: errorMessage,
                 variant: "destructive",
-                duration: 3000
+                duration: 700
               });
             }
           }
@@ -144,7 +145,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange }: Audio
           title: "Erreur inattendue",
           description: "Une erreur est survenue lors du téléchargement de l'audio",
           variant: "destructive",
-          duration: 3000
+          duration: 700
         });
       }
     }

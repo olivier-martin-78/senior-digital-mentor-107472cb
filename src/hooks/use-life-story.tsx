@@ -45,6 +45,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   // Ref pour éviter les appels multiples
   const loadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
+  const savingRef = useRef(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
@@ -225,8 +227,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
 
     // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
-    if (!preventAutoSave) {
-      setTimeout(() => {
+    if (!preventAutoSave && !savingRef.current) {
+      // Annuler le timeout précédent s'il existe
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      autoSaveTimeoutRef.current = setTimeout(() => {
         saveNow();
       }, 1000);
     }
@@ -275,17 +282,19 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     
     // Seulement afficher le toast si demandé explicitement
     if (showToast) {
-      toast.success('Enregistrement audio supprimé');
+      toast.success('Enregistrement audio supprimé', { duration: 700 });
     }
   };
 
   const saveNow = async () => {
-    if (!user || !effectiveUserId || isSaving) {
+    if (!user || !effectiveUserId || isSaving || savingRef.current) {
       console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
     
     setIsSaving(true);
+    savingRef.current = true;
+    
     try {
       console.log('Sauvegarde des données dans Supabase pour utilisateur:', effectiveUserId);
       
@@ -318,14 +327,24 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       setLastSaved(new Date());
       console.log('Histoire sauvegardée avec succès à:', new Date().toISOString());
-      toast.success('Histoire sauvegardée');
+      toast.success('Histoire sauvegardée', { duration: 700 });
     } catch (err) {
       console.error('Erreur lors de la sauvegarde:', err);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error('Erreur lors de la sauvegarde', { duration: 700 });
     } finally {
       setIsSaving(false);
+      savingRef.current = false;
     }
   };
+
+  // Nettoyer les timeouts à la destruction du composant
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return {
     data,
