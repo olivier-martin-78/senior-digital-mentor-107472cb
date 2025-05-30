@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -12,8 +11,8 @@ interface UseLifeStoryProps {
 }
 
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
-  const { user } = useAuth();
-  const effectiveUserId = targetUserId || user?.id;
+  const { user, getEffectiveUserId } = useAuth();
+  const effectiveUserId = targetUserId || getEffectiveUserId?.() || user?.id;
   
   const [data, setData] = useState<LifeStory>(
     existingStory || {

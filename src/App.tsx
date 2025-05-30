@@ -1,7 +1,7 @@
-
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
 import Auth from '@/pages/Auth';
 import AuthConfirm from '@/pages/AuthConfirm';
 import Index from '@/pages/Index';
@@ -96,7 +96,9 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ImpersonationProvider>
+        <AppRoutes />
+      </ImpersonationProvider>
     </AuthProvider>
   );
 };

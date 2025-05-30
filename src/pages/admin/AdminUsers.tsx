@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
+import { UserCheck } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui/select';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
+import ImpersonationBanner from '@/components/admin/ImpersonationBanner';
+import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 
 interface UserWithRoles extends Profile {
   roles: AppRole[];
@@ -31,6 +34,7 @@ const AdminUsers = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
+  const { startImpersonation } = useImpersonationContext();
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -207,10 +211,20 @@ const AdminUsers = () => {
     return 'reader';
   };
 
+  const handleImpersonateUser = async (user: UserWithRoles) => {
+    const success = await startImpersonation(user);
+    if (success) {
+      // Rediriger vers la page principale en tant qu'utilisateur impersonné
+      navigate('/');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
+        <ImpersonationBanner />
+        
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des utilisateurs</h1>
           <InviteUserDialog />
@@ -230,7 +244,7 @@ const AdminUsers = () => {
                   <TableHead>Date d'inscription</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Recevoir contacts</TableHead>
-                  <TableHead className="w-[200px]">Actions</TableHead>
+                  <TableHead className="w-[250px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,6 +310,18 @@ const AdminUsers = () => {
                                 <SelectItem value="reader">Lecteur</SelectItem>
                               </SelectContent>
                             </Select>
+                            
+                            {!isCurrentUser && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleImpersonateUser(user)}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Se connecter en tant que cet utilisateur"
+                              >
+                                <UserCheck className="h-4 w-4" />
+                              </Button>
+                            )}
                             
                             <DeleteUserDialog
                               userId={user.id}

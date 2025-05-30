@@ -6,6 +6,7 @@ import { AuthContextType } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import { cleanupAuthState } from '@/utils/authUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 
 // Re-export the cleanup function for use in other components
 export { cleanupAuthState } from '@/utils/authUtils';
@@ -20,12 +21,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     roles, 
     isLoading,
     setIsLoading, 
-    hasRole, 
+    hasRole: originalHasRole, 
     authError,
     setAuthError 
   } = useAuthState();
   
   const { toast } = useToast();
+
+  // Fonction hasRole modifiée pour prendre en compte l'impersonnation
+  const hasRole = (role: string) => {
+    // Vérifier si nous sommes dans le contexte d'impersonnation
+    try {
+      const impersonationState = localStorage.getItem('impersonation_state');
+      if (impersonationState) {
+        const parsedState = JSON.parse(impersonationState);
+        if (parsedState.isImpersonating && parsedState.impersonatedRoles) {
+          return parsedState.impersonatedRoles.includes(role);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des rôles d\'impersonnation:', error);
+    }
+
+    // Sinon, utiliser la logique normale
+    return originalHasRole(role);
+  };
+
+  // Fonction pour obtenir l'utilisateur effectif (impersonné ou réel)
+  const getEffectiveUser = () => {
+    try {
+      const impersonationState = localStorage.getItem('impersonation_state');
+      if (impersonationState) {
+        const parsedState = JSON.parse(impersonationState);
+        if (parsedState.isImpersonating && parsedState.impersonatedUser) {
+          return parsedState.impersonatedUser;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur effectif:', error);
+    }
+
+    return profile;
+  };
+
+  // Fonction pour obtenir l'ID utilisateur effectif
+  const getEffectiveUserId = () => {
+    const effectiveUser = getEffectiveUser();
+    return effectiveUser?.id || user?.id;
+  };
 
   // Vérification initiale de session et configuration du listener d'événements d'authentification
   useEffect(() => {
@@ -95,6 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(null);
       setIsLoading(true);
       
+      // Nettoyer l'état d'impersonnation lors de la déconnexion
+      localStorage.removeItem('impersonation_state');
+      
       await AuthService.signOut();
       
       toast({ 
@@ -120,13 +166,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     session,
     user,
-    profile,
+    profile: getEffectiveUser(),
     roles,
     isLoading,
     hasRole,
     signIn,
     signUp,
-    signOut
+    signOut,
+    getEffectiveUserId
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
