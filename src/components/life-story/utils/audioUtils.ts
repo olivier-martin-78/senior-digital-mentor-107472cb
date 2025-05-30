@@ -58,3 +58,9 @@ export const handleExportAudio = (audioUrl: string) => {
     console.error('Erreur lors de l\'export audio:', error);
   }
 };
+
+export const formatTime = (time: number): string => {
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
