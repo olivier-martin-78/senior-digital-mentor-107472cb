@@ -56,8 +56,8 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           // Voir seulement les posts publiés de cet utilisateur
           query = query.eq('author_id', selectedUserId).eq('published', true);
         } else {
-          // CORRECTION PRINCIPALE : Logique stricte de permissions pour les posts
-          console.log('useBlogData - Récupération des posts avec permissions strictes');
+          // CORRECTION : Logique pour inclure les permissions des groupes d'invitation
+          console.log('useBlogData - Récupération des posts avec permissions strictes + groupes');
           
           // 1. Récupérer ses propres posts (TOUS, publiés ET brouillons)
           let userPostsQuery = supabase
@@ -95,7 +95,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           console.log('useBlogData - Posts utilisateur récupérés:', userPosts?.length || 0);
 
           // 2. Récupérer les permissions pour déterminer les posts accessibles des autres
-          const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
+          const [albumPermissionsResult, lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
             supabase
               .from('album_permissions')
               .select('album_id')
@@ -103,19 +103,37 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             supabase
               .from('life_story_permissions')
               .select('story_owner_id')
-              .eq('permitted_user_id', user?.id)
+              .eq('permitted_user_id', user?.id),
+            // NOUVEAU : Récupérer les utilisateurs autorisés via les groupes d'invitation
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user?.id)
           ]);
 
           const albumPermissions = albumPermissionsResult.data || [];
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+          const groupPermissions = groupPermissionsResult.data || [];
 
           // IDs des albums autorisés explicitement
           const authorizedAlbumIds = albumPermissions.map(p => p.album_id).filter(Boolean);
+          
           // IDs des utilisateurs autorisés via life_story
-          const authorizedUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
+          const lifeStoryUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user?.id);
+          
+          // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
+          const groupCreatorIds = groupPermissions.map(p => p.invitation_groups.created_by).filter(id => id !== user?.id);
+          
+          // Combiner tous les utilisateurs autorisés
+          const authorizedUserIds = [...new Set([...lifeStoryUserIds, ...groupCreatorIds])];
 
           console.log('useBlogData - Albums autorisés explicitement:', authorizedAlbumIds);
-          console.log('useBlogData - Utilisateurs autorisés via life_story:', authorizedUserIds);
+          console.log('useBlogData - Utilisateurs autorisés via life_story:', lifeStoryUserIds);
+          console.log('useBlogData - Utilisateurs autorisés via groupes:', groupCreatorIds);
+          console.log('useBlogData - Total utilisateurs autorisés:', authorizedUserIds);
 
           let otherPosts: PostWithAuthor[] = [];
 
@@ -130,7 +148,7 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               .eq('published', true) // SEULEMENT les posts publiés des autres
               .neq('author_id', user?.id); // Exclure ses propres posts
 
-            // CORRECTION CRITIQUE : Construire les conditions de permission de manière stricte
+            // Construire les conditions de permission
             let permissionConditions = [];
             
             // Condition 1: Posts dans des albums autorisés explicitement
@@ -138,12 +156,10 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
               permissionConditions.push(`album_id.in.(${authorizedAlbumIds.join(',')})`);
             }
             
-            // Condition 2: Posts d'utilisateurs autorisés via life_story permissions
-            // MAIS SEULEMENT si le post n'est pas dans un album, ou si l'album est aussi autorisé
+            // Condition 2: Posts d'utilisateurs autorisés (life_story + groupes)
             if (authorizedUserIds.length > 0) {
-              // Pour éviter de voir des posts d'albums non autorisés, on filtre strictement
               if (authorizedAlbumIds.length > 0) {
-                // Si on a des permissions d'albums, ne prendre que les posts d'utilisateurs autorisés 
+                // Si on a des permissions d'albums, prendre les posts d'utilisateurs autorisés 
                 // qui sont SOIT sans album SOIT dans un album autorisé
                 permissionConditions.push(`and(author_id.in.(${authorizedUserIds.join(',')}),or(album_id.is.null,album_id.in.(${authorizedAlbumIds.join(',')})))`);
               } else {
@@ -266,8 +282,8 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
           
           query = query.eq('author_id', selectedUserId);
         } else {
-          // Récupérer les permissions album ET life_story
-          const [albumPermissionsResult, lifeStoryPermissionsResult] = await Promise.all([
+          // Récupérer les permissions album ET life_story ET groupes d'invitation
+          const [albumPermissionsResult, lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
             supabase
               .from('album_permissions')
               .select('album_id, blog_albums!inner(author_id)')
@@ -275,17 +291,34 @@ export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate
             supabase
               .from('life_story_permissions')
               .select('story_owner_id')
-              .eq('permitted_user_id', user?.id)
+              .eq('permitted_user_id', user?.id),
+            // Récupérer les créateurs de groupes dont l'utilisateur est membre
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user?.id)
           ]);
 
           const albumPermissions = albumPermissionsResult.data || [];
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+          const groupPermissions = groupPermissionsResult.data || [];
 
           // Créer une liste des IDs d'utilisateurs autorisés
           const authorizedUserIds = [user?.id];
+          
           lifeStoryPermissions.forEach(p => {
             if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
               authorizedUserIds.push(p.story_owner_id);
+            }
+          });
+          
+          // Ajouter les créateurs de groupes
+          groupPermissions.forEach(p => {
+            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
+              authorizedUserIds.push(p.invitation_groups.created_by);
             }
           });
 

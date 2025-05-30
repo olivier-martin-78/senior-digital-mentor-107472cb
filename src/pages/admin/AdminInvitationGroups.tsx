@@ -30,7 +30,10 @@ const AdminInvitationGroups = () => {
         
         <div className="space-y-6">
           <ProcessPendingInvitations onInvitationsProcessed={handleInvitationsProcessed} />
-          <InvitationGroups ref={invitationGroupsRef} />
+          <InvitationGroups 
+            ref={invitationGroupsRef}
+            onDataChange={handleInvitationsProcessed}
+          />
         </div>
       </div>
     </div>
