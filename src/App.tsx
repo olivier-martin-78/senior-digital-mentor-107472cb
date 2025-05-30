@@ -1,9 +1,10 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Auth from '@/pages/Auth';
-import Home from '@/pages/Home';
-import ProfilePage from '@/pages/ProfilePage';
+import Index from '@/pages/Index';
+import Profile from '@/pages/Profile';
 import Blog from '@/pages/Blog';
 import BlogPost from '@/pages/BlogPost';
 import AdminPosts from '@/pages/admin/AdminPosts';
@@ -21,8 +22,9 @@ import Recent from '@/pages/Recent';
 import Unauthorized from '@/pages/Unauthorized';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminInvitationGroups from '@/pages/admin/AdminInvitationGroups';
+import { AppRole } from '@/types/supabase';
 
-const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) => {
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: AppRole }) => {
   const { session, hasRole } = useAuth();
 
   useEffect(() => {
@@ -47,8 +49,8 @@ const App: React.FC = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
 
         <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />

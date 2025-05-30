@@ -1,4 +1,4 @@
-// src/components/life-story/QuestionItem.tsx
+
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
@@ -40,9 +40,9 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
         <VoiceAnswerRecorder
           questionId={question.id}
           chapterId={chapterId}
-          existingAudio={question.audioUrl}
-          onRecordingComplete={(blob) => onAudioRecorded(chapterId, question.id, blob)}
-          onDeleteRecording={() => onAudioDeleted(chapterId, question.id)}
+          existingAudioUrl={question.audioUrl}
+          onAudioRecorded={onAudioRecorded}
+          onAudioDeleted={onAudioDeleted}
         />
       </div>
       

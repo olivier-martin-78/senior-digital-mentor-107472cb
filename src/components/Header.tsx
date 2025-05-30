@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,7 @@ import {
 } from "lucide-react"
 
 const Header = () => {
-  const { user, session, signOut, hasRole } = useAuth();
+  const { user, session, signOut, hasRole, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -53,7 +54,7 @@ const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.avatar_url || undefined} alt="Avatar" />
+                  <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
                   <AvatarFallback>{getInitials(user?.email || '??')}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -65,7 +66,7 @@ const Header = () => {
                   </Link>
                 </DropdownMenuItem>
                 {hasRole('admin') && (
-                  <DropdownMenuContent align="end" className="w-56">
+                  <>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/users" className="w-full">
                         <Users className="mr-2 h-4 w-4" />
@@ -108,7 +109,7 @@ const Header = () => {
                         Histoires de vie
                       </Link>
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  </>
                 )}
                 <DropdownMenuItem
                   onClick={handleSignOut}
