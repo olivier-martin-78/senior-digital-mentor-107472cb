@@ -51,12 +51,18 @@ const ProcessPendingInvitations = () => {
           continue;
         }
 
+        // Vérifier que userData et users existent et ont le bon type
+        if (!userData || !userData.users || !Array.isArray(userData.users)) {
+          console.error('Données utilisateurs invalides');
+          continue;
+        }
+
         const user = userData.users.find(u => 
           u.email === invitation.email && 
           u.email_confirmed_at !== null
         );
 
-        if (user) {
+        if (user && user.id) {
           // Vérifier si l'utilisateur n'est pas déjà dans le groupe
           const { data: existingMember } = await supabase
             .from('group_members')
