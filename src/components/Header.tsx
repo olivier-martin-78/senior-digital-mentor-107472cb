@@ -54,7 +54,7 @@ const Header = () => {
           <img 
             src="/SeniorDigital.png" 
             alt="Senior Digital Logo" 
-            className="h-20 w-20 object-contain"
+            className="h-25 w-25 object-contain"
           />
         {/*  <Link to="/" className="text-2xl font-bold text-tranches-charcoal font-serif">
             Senior Digital Mentor

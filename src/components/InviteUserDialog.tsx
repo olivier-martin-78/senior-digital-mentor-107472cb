@@ -145,7 +145,7 @@ const InviteUserDialog = () => {
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <UserPlus className="h-4 w-4" />
-          Inviter un utilisateur
+          Inviter une personne
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -193,7 +193,7 @@ const InviteUserDialog = () => {
                   checked={formData.blogAccess}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, blogAccess: !!checked }))}
                 />
-                <Label htmlFor="blogAccess">Albums (Blog)</Label>
+                <Label htmlFor="blogAccess">Blog (Photos/Vidéos)</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -209,7 +209,7 @@ const InviteUserDialog = () => {
                   checked={formData.diaryAccess}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, diaryAccess: !!checked }))}
                 />
-                <Label htmlFor="diaryAccess">Journal intime</Label>
+                <Label htmlFor="diaryAccess">Journal partagé</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
