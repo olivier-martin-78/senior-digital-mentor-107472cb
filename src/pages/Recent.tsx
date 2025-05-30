@@ -36,31 +36,103 @@ const Recent = () => {
         setLoading(true);
         const items: RecentItem[] = [];
 
-        // Récupérer les posts de blog récents
-        const { data: blogPosts } = await supabase
-          .from('blog_posts')
-          .select(`
-            id,
-            title,
-            content,
-            created_at,
-            cover_image,
-            profiles(display_name)
-          `)
-          .eq('published', true)
-          .order('created_at', { ascending: false })
-          .limit(15);
+        // Récupérer les posts de blog récents avec permissions groupes
+        if (hasRole('admin')) {
+          // Les admins voient tous les posts publiés
+          const { data: blogPosts } = await supabase
+            .from('blog_posts')
+            .select(`
+              id,
+              title,
+              content,
+              created_at,
+              cover_image,
+              author_id,
+              profiles(display_name)
+            `)
+            .eq('published', true)
+            .order('created_at', { ascending: false })
+            .limit(15);
 
-        if (blogPosts) {
-          items.push(...blogPosts.map(post => ({
-            id: post.id,
-            title: post.title,
-            type: 'blog' as const,
-            created_at: post.created_at,
-            author: post.profiles?.display_name || 'Anonyme',
-            content_preview: post.content?.substring(0, 150) + '...',
-            cover_image: post.cover_image
-          })));
+          if (blogPosts) {
+            items.push(...blogPosts.map(post => ({
+              id: post.id,
+              title: post.title,
+              type: 'blog' as const,
+              created_at: post.created_at,
+              author: post.author_id === user.id ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
+              content_preview: post.content?.substring(0, 150) + '...',
+              cover_image: post.cover_image
+            })));
+          }
+        } else {
+          // Récupérer les permissions via life_story_permissions ET groupes d'invitation
+          const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
+            supabase
+              .from('life_story_permissions')
+              .select('story_owner_id')
+              .eq('permitted_user_id', user.id),
+            // Récupérer les créateurs de groupes dont l'utilisateur est membre
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user.id)
+          ]);
+
+          const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+          const groupPermissions = groupPermissionsResult.data || [];
+
+          // IDs des utilisateurs autorisés
+          const authorizedUserIds = [user.id];
+          
+          lifeStoryPermissions.forEach(p => {
+            if (p.story_owner_id && !authorizedUserIds.includes(p.story_owner_id)) {
+              authorizedUserIds.push(p.story_owner_id);
+            }
+          });
+          
+          // Ajouter les créateurs de groupes
+          groupPermissions.forEach(p => {
+            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
+              authorizedUserIds.push(p.invitation_groups.created_by);
+            }
+          });
+
+          console.log('Recent - Utilisateurs autorisés pour les posts:', authorizedUserIds);
+
+          // Récupérer les posts avec permissions
+          if (authorizedUserIds.length > 0) {
+            const { data: blogPosts } = await supabase
+              .from('blog_posts')
+              .select(`
+                id,
+                title,
+                content,
+                created_at,
+                cover_image,
+                author_id,
+                published,
+                profiles(display_name)
+              `)
+              .or(`and(author_id.eq.${user.id}),and(author_id.in.(${authorizedUserIds.slice(1).join(',')}),published.eq.true)`)
+              .order('created_at', { ascending: false })
+              .limit(15);
+
+            if (blogPosts) {
+              items.push(...blogPosts.map(post => ({
+                id: post.id,
+                title: post.title,
+                type: 'blog' as const,
+                created_at: post.created_at,
+                author: post.author_id === user.id ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
+                content_preview: post.content?.substring(0, 150) + '...',
+                cover_image: post.cover_image
+              })));
+            }
+          }
         }
 
         // Récupérer les souhaits récents (tous si admin, sinon ceux publiés + ses propres brouillons)
@@ -99,57 +171,126 @@ const Recent = () => {
           })));
         }
 
-        // Récupérer les entrées de journal récentes
-        let diaryQuery = supabase
-          .from('diary_entries')
-          .select(`
-            id, 
-            title, 
-            created_at, 
-            activities, 
-            media_url,
-            user_id
-          `)
-          .order('created_at', { ascending: false })
-          .limit(15);
+        // Récupérer les entrées de journal récentes avec permissions groupes
+        if (hasRole('admin')) {
+          // Les admins voient toutes les entrées
+          const { data: diaryEntries } = await supabase
+            .from('diary_entries')
+            .select(`
+              id, 
+              title, 
+              created_at, 
+              activities, 
+              media_url,
+              user_id
+            `)
+            .order('created_at', { ascending: false })
+            .limit(15);
 
-        // Si c'est un admin, récupérer toutes les entrées, sinon seulement les siennes
-        if (!hasRole('admin')) {
-          diaryQuery = diaryQuery.eq('user_id', user.id);
-        }
-
-        const { data: diaryEntries } = await diaryQuery;
-
-        if (diaryEntries) {
-          // Pour les admins, récupérer les informations de profil séparément si nécessaire
-          let profilesMap: { [key: string]: string } = {};
-          
-          if (hasRole('admin')) {
+          if (diaryEntries) {
+            // Récupérer les profils pour les entrées des autres utilisateurs
             const userIds = [...new Set(diaryEntries.map(entry => entry.user_id))];
             const { data: profiles } = await supabase
               .from('profiles')
               .select('id, display_name')
               .in('id', userIds);
             
-            if (profiles) {
-              profilesMap = profiles.reduce((acc, profile) => {
-                acc[profile.id] = profile.display_name || 'Utilisateur';
-                return acc;
-              }, {} as { [key: string]: string });
+            const profilesMap = profiles?.reduce((acc, profile) => {
+              acc[profile.id] = profile.display_name || 'Utilisateur';
+              return acc;
+            }, {} as { [key: string]: string }) || {};
+
+            items.push(...diaryEntries.map(entry => ({
+              id: entry.id,
+              title: entry.title,
+              type: 'diary' as const,
+              created_at: entry.created_at,
+              author: entry.user_id === user.id ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+              content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+              media_url: entry.media_url
+            })));
+          }
+        } else {
+          // Récupérer les permissions via diary_permissions ET groupes d'invitation
+          const [diaryPermissionsResult, groupPermissionsResult] = await Promise.all([
+            supabase
+              .from('diary_permissions')
+              .select('diary_owner_id')
+              .eq('permitted_user_id', user.id),
+            // Récupérer les créateurs de groupes dont l'utilisateur est membre
+            supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(created_by)
+              `)
+              .eq('user_id', user.id)
+          ]);
+
+          const diaryPermissions = diaryPermissionsResult.data || [];
+          const groupPermissions = groupPermissionsResult.data || [];
+
+          // IDs des utilisateurs autorisés
+          const authorizedUserIds = [user.id];
+          
+          diaryPermissions.forEach(p => {
+            if (p.diary_owner_id && !authorizedUserIds.includes(p.diary_owner_id)) {
+              authorizedUserIds.push(p.diary_owner_id);
+            }
+          });
+          
+          // Ajouter les créateurs de groupes
+          groupPermissions.forEach(p => {
+            if (p.invitation_groups.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
+              authorizedUserIds.push(p.invitation_groups.created_by);
+            }
+          });
+
+          console.log('Recent - Utilisateurs autorisés pour le journal:', authorizedUserIds);
+
+          if (authorizedUserIds.length > 0) {
+            const { data: diaryEntries } = await supabase
+              .from('diary_entries')
+              .select(`
+                id, 
+                title, 
+                created_at, 
+                activities, 
+                media_url,
+                user_id
+              `)
+              .in('user_id', authorizedUserIds)
+              .order('created_at', { ascending: false })
+              .limit(15);
+
+            if (diaryEntries) {
+              // Récupérer les profils pour les entrées des autres utilisateurs
+              const otherUserIds = diaryEntries.filter(entry => entry.user_id !== user.id).map(entry => entry.user_id);
+              let profilesMap: { [key: string]: string } = {};
+              
+              if (otherUserIds.length > 0) {
+                const { data: profiles } = await supabase
+                  .from('profiles')
+                  .select('id, display_name')
+                  .in('id', otherUserIds);
+                
+                profilesMap = profiles?.reduce((acc, profile) => {
+                  acc[profile.id] = profile.display_name || 'Utilisateur';
+                  return acc;
+                }, {} as { [key: string]: string }) || {};
+              }
+
+              items.push(...diaryEntries.map(entry => ({
+                id: entry.id,
+                title: entry.title,
+                type: 'diary' as const,
+                created_at: entry.created_at,
+                author: entry.user_id === user.id ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+                content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+                media_url: entry.media_url
+              })));
             }
           }
-
-          items.push(...diaryEntries.map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: hasRole('admin') && entry.user_id !== user.id 
-              ? (profilesMap[entry.user_id] || 'Utilisateur') 
-              : 'Moi',
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          })));
         }
 
         // Récupérer les commentaires récents
@@ -181,6 +322,7 @@ const Recent = () => {
         // Trier tous les éléments par date de création
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+        console.log('Recent - Total éléments récupérés:', items.length);
         setRecentItems(items.slice(0, 40)); // Garder les 40 plus récents
       } catch (error) {
         console.error('Erreur lors du chargement des éléments récents:', error);

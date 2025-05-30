@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLifeStory } from '@/hooks/use-life-story';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
 import InviteUserDialog from '@/components/InviteUserDialog';
@@ -14,6 +15,7 @@ const LifeStory = () => {
   const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [authorizedUserIds, setAuthorizedUserIds] = useState<string[]>([]);
   
   // Utiliser l'ID de l'utilisateur sélectionné ou l'utilisateur actuel
   const targetUserId = selectedUserId || user?.id || '';
@@ -25,9 +27,66 @@ const LifeStory = () => {
       navigate('/auth');
       return;
     }
-  }, [session, navigate]);
+    
+    // Récupérer les utilisateurs autorisés via les groupes d'invitation
+    fetchAuthorizedUsers();
+  }, [session, navigate, user]);
+
+  const fetchAuthorizedUsers = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('LifeStory - Récupération des utilisateurs autorisés');
+      
+      // Récupérer les permissions via life_story_permissions ET groupes d'invitation
+      const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
+        supabase
+          .from('life_story_permissions')
+          .select('story_owner_id')
+          .eq('permitted_user_id', user.id),
+        // Récupérer les créateurs de groupes dont l'utilisateur est membre
+        supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            invitation_groups!inner(created_by)
+          `)
+          .eq('user_id', user.id)
+      ]);
+
+      const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
+      const groupPermissions = groupPermissionsResult.data || [];
+
+      // IDs des utilisateurs autorisés via life_story_permissions
+      const lifeStoryUserIds = lifeStoryPermissions.map(p => p.story_owner_id).filter(id => id !== user.id);
+      
+      // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
+      const groupCreatorIds = groupPermissions.map(p => p.invitation_groups.created_by).filter(id => id !== user.id);
+      
+      // Combiner tous les utilisateurs autorisés
+      const allAuthorizedIds = [...new Set([...lifeStoryUserIds, ...groupCreatorIds])];
+
+      console.log('LifeStory - Utilisateurs autorisés via life_story_permissions:', lifeStoryUserIds);
+      console.log('LifeStory - Utilisateurs autorisés via groupes:', groupCreatorIds);
+      console.log('LifeStory - Total utilisateurs autorisés:', allAuthorizedIds);
+
+      setAuthorizedUserIds(allAuthorizedIds);
+    } catch (error) {
+      console.error('LifeStory - Erreur lors de la récupération des utilisateurs autorisés:', error);
+    }
+  };
 
   const handleUserChange = (userId: string | null) => {
+    console.log('LifeStory - Changement d\'utilisateur sélectionné vers:', userId);
+    
+    // Vérifier les permissions avant de changer d'utilisateur
+    if (userId && userId !== user?.id && !hasRole('admin')) {
+      if (!authorizedUserIds.includes(userId)) {
+        console.log('LifeStory - Utilisateur non autorisé:', userId);
+        return;
+      }
+    }
+    
     setSelectedUserId(userId);
   };
 
@@ -37,8 +96,8 @@ const LifeStory = () => {
     }
   };
 
-  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur)
-  const canSave = !hasRole('reader');
+  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est son propre story)
+  const canSave = !hasRole('reader') && (!selectedUserId || selectedUserId === user?.id);
 
   if (lifeStoryData.isLoading) {
     return (
@@ -67,7 +126,9 @@ const LifeStory = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Histoire de Vie</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">
+            {selectedUserId && selectedUserId !== user?.id ? 'Histoire de Vie' : 'Mon Histoire de Vie'}
+          </h1>
           <div className="flex items-center gap-4">
             {canSave && (
               <Button 
