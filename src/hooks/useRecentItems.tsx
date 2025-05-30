@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,7 +43,7 @@ export const useRecentItems = () => {
           roles: hasRole('admin') ? 'admin' : hasRole('editor') ? 'editor' : 'reader'
         });
 
-        // Récupérer d'abord les utilisateurs autorisés via les groupes d'invitation
+        // Récupérer d'abord les utilisateurs autorisés via les groupes d'invitation ET les permissions d'albums
         console.log('🔍 Récupération des utilisateurs autorisés pour user effectif:', effectiveUserId);
         
         let authorizedUserIds = [effectiveUserId];
@@ -52,8 +51,8 @@ export const useRecentItems = () => {
         if (!hasRole('admin')) {
           console.log('🔍 Utilisateur NON-ADMIN - Vérification des permissions');
           
-          // Récupérer les permissions via life_story_permissions ET groupes d'invitation
-          const [lifeStoryPermissionsResult, groupPermissionsResult] = await Promise.all([
+          // Récupérer les permissions via life_story_permissions, groupes d'invitation ET album_permissions
+          const [lifeStoryPermissionsResult, groupPermissionsResult, albumPermissionsResult] = await Promise.all([
             supabase
               .from('life_story_permissions')
               .select('story_owner_id')
@@ -65,14 +64,24 @@ export const useRecentItems = () => {
                 group_id,
                 invitation_groups!inner(created_by)
               `)
+              .eq('user_id', effectiveUserId),
+            // Récupérer les permissions d'albums
+            supabase
+              .from('album_permissions')
+              .select(`
+                album_id,
+                blog_albums!inner(author_id)
+              `)
               .eq('user_id', effectiveUserId)
           ]);
 
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
           const groupPermissions = groupPermissionsResult.data || [];
+          const albumPermissions = albumPermissionsResult.data || [];
 
           console.log('🔍 Life story permissions brutes:', lifeStoryPermissionsResult);
           console.log('🔍 Group permissions brutes:', groupPermissionsResult);
+          console.log('🔍 Album permissions brutes:', albumPermissionsResult);
 
           // Ajouter les utilisateurs autorisés via life_story_permissions
           lifeStoryPermissions.forEach(p => {
@@ -87,6 +96,14 @@ export const useRecentItems = () => {
             if (p.invitation_groups?.created_by && !authorizedUserIds.includes(p.invitation_groups.created_by)) {
               authorizedUserIds.push(p.invitation_groups.created_by);
               console.log('🔍 Ajout utilisateur autorisé via groupe:', p.invitation_groups.created_by);
+            }
+          });
+
+          // Ajouter les propriétaires d'albums autorisés
+          albumPermissions.forEach(p => {
+            if (p.blog_albums?.author_id && !authorizedUserIds.includes(p.blog_albums.author_id)) {
+              authorizedUserIds.push(p.blog_albums.author_id);
+              console.log('🔍 Ajout utilisateur autorisé via album:', p.blog_albums.author_id);
             }
           });
 
@@ -478,11 +495,12 @@ const fetchComments = async (items: RecentItem[], hasRole: any, effectiveUserId:
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // 2. Récupérer les commentaires sur les posts des utilisateurs autorisés
+      // 2. Récupérer les commentaires sur les posts des utilisateurs autorisés ET les commentaires des utilisateurs autorisés
       const otherAuthorizedIds = authorizedUserIds.filter(id => id !== effectiveUserId);
       let otherComments: any[] = [];
       
       if (otherAuthorizedIds.length > 0) {
+        // Récupérer les commentaires sur les posts des utilisateurs autorisés
         const { data: commentsOnAuthorizedPosts } = await supabase
           .from('blog_comments')
           .select(`
@@ -495,9 +513,33 @@ const fetchComments = async (items: RecentItem[], hasRole: any, effectiveUserId:
           `)
           .in('post.author_id', otherAuthorizedIds)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(8);
         
-        otherComments = commentsOnAuthorizedPosts || [];
+        // Récupérer les commentaires des utilisateurs autorisés (peu importe sur quels posts)
+        const { data: commentsFromAuthorizedUsers } = await supabase
+          .from('blog_comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            author_id,
+            profiles(display_name),
+            post:blog_posts(id, title, author_id)
+          `)
+          .in('author_id', otherAuthorizedIds)
+          .order('created_at', { ascending: false })
+          .limit(7);
+        
+        otherComments = [
+          ...(commentsOnAuthorizedPosts || []),
+          ...(commentsFromAuthorizedUsers || [])
+        ];
+        
+        // Éliminer les doublons par ID
+        const uniqueComments = otherComments.filter((comment, index, self) => 
+          index === self.findIndex(c => c.id === comment.id)
+        );
+        otherComments = uniqueComments;
       }
 
       const allComments = [...(userComments || []), ...otherComments];
