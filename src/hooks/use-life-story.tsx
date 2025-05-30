@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -47,6 +46,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const hasLoadedRef = useRef(false);
   const savingRef = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAutoSaveRef = useRef<string>(''); // Pour éviter les sauvegardes identiques
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
@@ -227,15 +227,22 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }));
 
     // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
+    // Mais seulement si ce n'est pas la même URL qu'avant
     if (!preventAutoSave && !savingRef.current) {
-      // Annuler le timeout précédent s'il existe
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
+      const saveKey = `${chapterId}-${questionId}-${audioUrl}`;
       
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        saveNow();
-      }, 1000);
+      if (lastAutoSaveRef.current !== saveKey) {
+        lastAutoSaveRef.current = saveKey;
+        
+        // Annuler le timeout précédent s'il existe
+        if (autoSaveTimeoutRef.current) {
+          clearTimeout(autoSaveTimeoutRef.current);
+        }
+        
+        autoSaveTimeoutRef.current = setTimeout(() => {
+          saveNow();
+        }, 1000);
+      }
     }
   };
 
