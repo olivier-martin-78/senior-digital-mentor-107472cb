@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
-import DiaryHeader from '@/components/diary/DiaryHeader';
+import DiaryPageHeader from '@/components/diary/DiaryPageHeader';
 import EmptyDiary from '@/components/diary/EmptyDiary';
 import EntriesGrid from '@/components/diary/EntriesGrid';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
@@ -448,7 +447,7 @@ const Diary = () => {
           className="mb-6"
         />
         
-        <DiaryHeader 
+        <DiaryPageHeader 
           entriesCount={entries.length}
         />
         
