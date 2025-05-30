@@ -50,6 +50,8 @@ const Diary = () => {
         
         <DiaryContent
           entries={entries}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
           startDate={startDate}
           endDate={endDate}
           onStartDateChange={setStartDate}

@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { DiaryEntry } from '@/types/diary';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 
 export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
   const { session, hasRole, getEffectiveUserId } = useAuth();
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
   const effectiveUserId = getEffectiveUserId();
@@ -31,7 +31,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         console.log('Diary - Mode admin: voir toutes les entrées');
         let query = supabase
           .from('diary_entries')
-          .select('*')
+          .select(`
+            *,
+            profiles!diary_entries_user_id_fkey (
+              id,
+              email,
+              display_name
+            )
+          `)
           .order('entry_date', { ascending: false });
 
         // Appliquer les filtres
@@ -97,7 +104,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // 2. Récupérer directement les entrées de l'utilisateur effectif
       let userEntriesQuery = supabase
         .from('diary_entries')
-        .select('*')
+        .select(`
+          *,
+          profiles!diary_entries_user_id_fkey (
+            id,
+            email,
+            display_name
+          )
+        `)
         .eq('user_id', effectiveUserId)
         .order('entry_date', { ascending: false });
 
@@ -185,14 +199,21 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       
       console.log('Diary - Utilisateurs autorisés via groupes:', groupCreatorIds);
 
-      let otherEntries: DiaryEntry[] = [];
+      let otherEntries: DiaryEntryWithAuthor[] = [];
 
       // 4. Récupérer les entrées des autres utilisateurs autorisés
       if (groupCreatorIds.length > 0) {
         console.log('Diary - Récupération des autres entrées pour:', groupCreatorIds);
         let otherEntriesQuery = supabase
           .from('diary_entries')
-          .select('*')
+          .select(`
+            *,
+            profiles!diary_entries_user_id_fkey (
+              id,
+              email,
+              display_name
+            )
+          `)
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 

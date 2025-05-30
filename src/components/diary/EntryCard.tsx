@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DiaryEntry } from '@/types/diary';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import EntryMood from './EntryMood';
@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface EntryCardProps {
-  entry: DiaryEntry;
+  entry: DiaryEntryWithAuthor;
 }
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
@@ -21,6 +21,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   
   // Vérifier si l'utilisateur peut modifier cette entrée
   const canEdit = user && (entry.user_id === user.id || hasRole('admin'));
+
+  // Obtenir le nom d'affichage de l'auteur
+  const authorDisplayName = entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur inconnu';
 
   return (
     <Link to={`/diary/${entry.id}`}>
@@ -57,6 +60,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
               </CardTitle>
               <p className="text-sm text-gray-500 mt-1">
                 {format(new Date(entry.entry_date), 'EEEE d MMMM yyyy', { locale: fr })}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Par {authorDisplayName}
               </p>
               {/* Afficher un indicateur si l'utilisateur ne peut pas modifier */}
               {!canEdit && user && entry.user_id !== user.id && (

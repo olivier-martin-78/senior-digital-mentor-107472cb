@@ -3,10 +3,13 @@ import React from 'react';
 import DiaryPageHeader from './DiaryPageHeader';
 import EntriesGrid from './EntriesGrid';
 import DateRangeFilter from '@/components/DateRangeFilter';
-import { DiaryEntry } from '@/types/diary';
+import SearchFilter from './SearchFilter';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 
 interface DiaryContentProps {
-  entries: DiaryEntry[];
+  entries: DiaryEntryWithAuthor[];
+  searchTerm: string;
+  onSearchTermChange: (term: string) => void;
   startDate: string;
   endDate: string;
   onStartDateChange: (date: string) => void;
@@ -16,6 +19,8 @@ interface DiaryContentProps {
 
 const DiaryContent: React.FC<DiaryContentProps> = ({
   entries,
+  searchTerm,
+  onSearchTermChange,
   startDate,
   endDate,
   onStartDateChange,
@@ -26,13 +31,20 @@ const DiaryContent: React.FC<DiaryContentProps> = ({
     <>
       <DiaryPageHeader entriesCount={entries.length} />
       
-      <DateRangeFilter
-        startDate={startDate}
-        endDate={endDate}
-        onStartDateChange={onStartDateChange}
-        onEndDateChange={onEndDateChange}
-        onClear={onClearFilters}
-      />
+      <div className="space-y-4 mb-6">
+        <SearchFilter
+          searchTerm={searchTerm}
+          onSearchTermChange={onSearchTermChange}
+        />
+        
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={onStartDateChange}
+          onEndDateChange={onEndDateChange}
+          onClear={onClearFilters}
+        />
+      </div>
       
       {entries.length === 0 ? (
         <div className="text-center py-8">

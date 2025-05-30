@@ -7,6 +7,7 @@ export const useDiaryFilters = () => {
   const [endDate, setEndDate] = useState('');
 
   const handleClearFilters = () => {
+    setSearchTerm('');
     setStartDate('');
     setEndDate('');
   };

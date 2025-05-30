@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { DiaryEntry } from '@/types/diary';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 import EntryCard from './EntryCard';
 import EmptyDiary from './EmptyDiary';
 import LoadingSpinner from './LoadingSpinner';
 
 interface EntriesGridProps {
-  entries: DiaryEntry[];
+  entries: DiaryEntryWithAuthor[];
   isLoading?: boolean;
 }
 
