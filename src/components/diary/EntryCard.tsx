@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import EntryMood from './EntryMood';
 import RecentItemImage from '@/components/RecentItemImage';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Badge } from '@/components/ui/badge';
 
 interface EntryCardProps {
   entry: DiaryEntry;
@@ -20,27 +22,38 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
       <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full ${
         isDraft ? 'bg-orange-50 border-orange-200 border-2' : ''
       }`}>
+        {/* Image de couverture en pleine largeur */}
+        {entry.media_url && (
+          <div className="relative">
+            <AspectRatio ratio={16 / 9}>
+              <div className="w-full h-full overflow-hidden rounded-t-lg">
+                <RecentItemImage
+                  type="diary"
+                  id={entry.id}
+                  title={entry.title || 'Brouillon sans titre'}
+                  mediaUrl={entry.media_url}
+                />
+              </div>
+            </AspectRatio>
+            {isDraft && (
+              <div className="absolute top-2 right-2">
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                  📝 Brouillon
+                </Badge>
+              </div>
+            )}
+          </div>
+        )}
+
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              {entry.media_url && (
-                <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
-                  <RecentItemImage
-                    type="diary"
-                    id={entry.id}
-                    title={entry.title || 'Brouillon sans titre'}
-                    mediaUrl={entry.media_url}
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
-                  {entry.title || 'Brouillon sans titre'}
-                </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                  {format(new Date(entry.entry_date), 'EEEE d MMMM yyyy', { locale: fr })}
-                </p>
-              </div>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
+                {entry.title || 'Brouillon sans titre'}
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                {format(new Date(entry.entry_date), 'EEEE d MMMM yyyy', { locale: fr })}
+              </p>
             </div>
             <EntryMood rating={entry.mood_rating} />
           </div>
@@ -72,7 +85,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
                 )}
               </div>
             )}
-            {isDraft && (
+            {isDraft && !entry.media_url && (
               <div className="mt-2">
                 <span className="text-xs text-orange-600 font-medium">📝 Brouillon</span>
               </div>
