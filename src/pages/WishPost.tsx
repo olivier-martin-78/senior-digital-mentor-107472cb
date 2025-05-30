@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { WishPost as WishPostType } from '@/types/supabase';
 
@@ -159,7 +159,7 @@ const WishPost = () => {
         
         <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-8">
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <h1 className="text-3xl font-serif text-tranches-charcoal">{wish.title}</h1>
               
@@ -191,110 +191,157 @@ const WishPost = () => {
                 {format(new Date(wish.created_at), 'EEEE d MMMM yyyy', { locale: fr })}
               </div>
               
-              {wish.date && (
-                <div className="flex items-center">
-                  <CalendarIcon className="h-4 w-4 mr-1" />
-                  Date souhaitée: {format(new Date(wish.date), 'EEEE d MMMM yyyy', { locale: fr })}
-                </div>
-              )}
-              
-              {wish.location && (
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {wish.location}
-                </div>
-              )}
-              
               {wish.album && (
                 <Badge variant="outline">{wish.album.name}</Badge>
-              )}
-              
-              {wish.request_type && (
-                <Badge variant="secondary">{requestTypeText}</Badge>
               )}
               
               {!wish.published && (
                 <Badge variant="destructive">Brouillon</Badge>
               )}
             </div>
-            
-            <div className="text-sm text-gray-500">
-              Émis par: <span className="font-medium">{wish.first_name || wish.profiles?.display_name || wish.profiles?.email}</span>
-              {wish.age && ` • ${wish.age} ans`}
-            </div>
           </div>
           
-          {/* Content */}
-          <div className="space-y-6">
+          {/* Informations personnelles */}
+          <div className="space-y-8">
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h2 className="text-xl font-medium mb-4 flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Informations personnelles
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Prénom</label>
+                  <p className="text-gray-900">{wish.first_name || 'Non renseigné'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Âge</label>
+                  <p className="text-gray-900">{wish.age || 'Non renseigné'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <p className="text-gray-900">{wish.email || 'Non renseigné'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Localisation</label>
+                  <p className="text-gray-900">{wish.location || 'Non renseignée'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Type de demande */}
+            <div>
+              <h2 className="text-xl font-medium mb-2">Type de demande</h2>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">{requestTypeText}</Badge>
+              </div>
+            </div>
+
+            {/* Date souhaitée */}
+            {wish.date && (
+              <div>
+                <h2 className="text-xl font-medium mb-2 flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Date souhaitée
+                </h2>
+                <p className="text-gray-700">
+                  {format(new Date(wish.date), 'EEEE d MMMM yyyy', { locale: fr })}
+                </p>
+              </div>
+            )}
+
+            {/* Description du souhait */}
             <div>
               <h2 className="text-xl font-medium mb-2">Description du souhait</h2>
-              <div className="prose prose-gray max-w-none">
-                {wish.content.split('\n').map((paragraph, index) => (
-                  paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                ))}
+              <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
+                {wish.content ? (
+                  wish.content.split('\n').map((paragraph, index) => (
+                    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
+                  ))
+                ) : (
+                  <p className="text-gray-500 italic">Aucune description fournie</p>
+                )}
               </div>
             </div>
             
-            {wish.importance && (
-              <div>
-                <h2 className="text-xl font-medium mb-2">Pourquoi c'est important</h2>
-                <div className="prose prose-gray max-w-none">
-                  {wish.importance.split('\n').map((paragraph, index) => (
+            {/* Pourquoi c'est important */}
+            <div>
+              <h2 className="text-xl font-medium mb-2">Pourquoi c'est important</h2>
+              <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
+                {wish.importance ? (
+                  wish.importance.split('\n').map((paragraph, index) => (
                     paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 italic">Non renseigné</p>
+                )}
               </div>
-            )}
+            </div>
             
-            {wish.needs && (
-              <div>
-                <h2 className="text-xl font-medium mb-2">Besoins concrets</h2>
-                <div className="prose prose-gray max-w-none">
-                  {wish.needs.split('\n').map((paragraph, index) => (
+            {/* Besoins concrets */}
+            <div>
+              <h2 className="text-xl font-medium mb-2">Besoins concrets</h2>
+              <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
+                {wish.needs ? (
+                  wish.needs.split('\n').map((paragraph, index) => (
                     paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 italic">Non renseigné</p>
+                )}
               </div>
-            )}
+            </div>
             
-            {wish.offering && (
-              <div>
-                <h2 className="text-xl font-medium mb-2">Ce que je peux offrir en retour</h2>
-                <div className="prose prose-gray max-w-none">
-                  {wish.offering.split('\n').map((paragraph, index) => (
+            {/* Ce que je peux offrir en retour */}
+            <div>
+              <h2 className="text-xl font-medium mb-2">Ce que je peux offrir en retour</h2>
+              <div className="prose prose-gray max-w-none bg-gray-50 rounded-lg p-4">
+                {wish.offering ? (
+                  wish.offering.split('\n').map((paragraph, index) => (
                     paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 italic">Non renseigné</p>
+                )}
               </div>
-            )}
+            </div>
             
-            {wish.attachment_url && (
-              <div>
-                <h2 className="text-xl font-medium mb-2">Documents ou liens</h2>
+            {/* Documents ou liens */}
+            <div>
+              <h2 className="text-xl font-medium mb-2">Documents ou liens</h2>
+              {wish.attachment_url ? (
                 <a 
                   href={wish.attachment_url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center text-tranches-sage hover:underline"
+                  className="flex items-center text-tranches-sage hover:underline bg-gray-50 rounded-lg p-4"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Accéder au document ou lien partagé
                 </a>
-              </div>
-            )}
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-500 italic">Aucun document ou lien fourni</p>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Contact */}
-          {wish.email && (
-            <div className="mt-8 pt-6 border-t">
-              <h2 className="text-xl font-medium mb-4">Contact</h2>
+          <div className="mt-8 pt-6 border-t">
+            <h2 className="text-xl font-medium mb-4 flex items-center">
+              <Mail className="h-5 w-5 mr-2" />
+              Contact
+            </h2>
+            {wish.email ? (
               <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
                 <a href={`mailto:${wish.email}`}>
                   Contacter l'auteur du souhait
                 </a>
               </Button>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-500 italic">Aucun email de contact fourni</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
