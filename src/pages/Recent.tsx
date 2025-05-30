@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -109,8 +108,7 @@ const Recent = () => {
             created_at, 
             activities, 
             media_url,
-            user_id,
-            profiles(display_name)
+            user_id
           `)
           .order('created_at', { ascending: false })
           .limit(15);
@@ -123,13 +121,31 @@ const Recent = () => {
         const { data: diaryEntries } = await diaryQuery;
 
         if (diaryEntries) {
+          // Pour les admins, récupérer les informations de profil séparément si nécessaire
+          let profilesMap: { [key: string]: string } = {};
+          
+          if (hasRole('admin')) {
+            const userIds = [...new Set(diaryEntries.map(entry => entry.user_id))];
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, display_name')
+              .in('id', userIds);
+            
+            if (profiles) {
+              profilesMap = profiles.reduce((acc, profile) => {
+                acc[profile.id] = profile.display_name || 'Utilisateur';
+                return acc;
+              }, {} as { [key: string]: string });
+            }
+          }
+
           items.push(...diaryEntries.map(entry => ({
             id: entry.id,
             title: entry.title,
             type: 'diary' as const,
             created_at: entry.created_at,
             author: hasRole('admin') && entry.user_id !== user.id 
-              ? (entry.profiles?.display_name || 'Utilisateur') 
+              ? (profilesMap[entry.user_id] || 'Utilisateur') 
               : 'Moi',
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
             media_url: entry.media_url
