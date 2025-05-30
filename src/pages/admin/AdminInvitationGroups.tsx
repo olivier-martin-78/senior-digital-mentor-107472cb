@@ -2,6 +2,7 @@
 import React from 'react';
 import Header from '@/components/Header';
 import InvitationGroups from '@/components/admin/InvitationGroups';
+import ProcessPendingInvitations from '@/components/admin/ProcessPendingInvitations';
 
 const AdminInvitationGroups = () => {
   return (
@@ -18,7 +19,10 @@ const AdminInvitationGroups = () => {
           </p>
         </div>
         
-        <InvitationGroups />
+        <div className="space-y-6">
+          <ProcessPendingInvitations />
+          <InvitationGroups />
+        </div>
       </div>
     </div>
   );
