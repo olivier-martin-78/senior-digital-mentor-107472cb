@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -19,6 +20,9 @@ import {
   LogOut,
   Settings,
   Users,
+  Clock,
+  Camera,
+  PenTool,
 } from "lucide-react"
 
 const Header = () => {
@@ -56,6 +60,48 @@ const Header = () => {
             Senior Digital Mentor
           </Link>
         </div>
+
+        {/* Navigation principale */}
+        {session && (
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              to="/recent" 
+              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
+            >
+              <Clock className="w-4 h-4" />
+              <span>Récents</span>
+            </Link>
+            <Link 
+              to="/blog" 
+              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Blog (Photos/Vidéos)</span>
+            </Link>
+            <Link 
+              to="/diary" 
+              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
+            >
+              <PenTool className="w-4 h-4" />
+              <span>Journal partagé</span>
+            </Link>
+            <Link 
+              to="/life-story" 
+              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
+            >
+              <Book className="w-4 h-4" />
+              <span>Histoire de vie</span>
+            </Link>
+            <Link 
+              to="/wishes" 
+              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
+            >
+              <Heart className="w-4 h-4" />
+              <span>Souhaits</span>
+            </Link>
+          </nav>
+        )}
+
         <nav>
           {session ? (
             <DropdownMenu>
@@ -74,8 +120,45 @@ const Header = () => {
                     Mon profil
                   </Link>
                 </DropdownMenuItem>
+
+                {/* Navigation mobile */}
+                <div className="md:hidden">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/recent" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                      <Clock className="mr-2 h-4 w-4" />
+                      Récents
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/blog" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                      <Camera className="mr-2 h-4 w-4" />
+                      Blog (Photos/Vidéos)
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                      <PenTool className="mr-2 h-4 w-4" />
+                      Journal partagé
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/life-story" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                      <Book className="mr-2 h-4 w-4" />
+                      Histoire de vie
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/wishes" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                      <Heart className="mr-2 h-4 w-4" />
+                      Souhaits
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+
                 {hasRole('admin') && (
                   <>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/admin/users" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <Users className="mr-2 h-4 w-4" />
@@ -120,6 +203,7 @@ const Header = () => {
                     </DropdownMenuItem>
                   </>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
                   className="cursor-pointer px-2 py-2 text-gray-700 hover:bg-gray-50"
