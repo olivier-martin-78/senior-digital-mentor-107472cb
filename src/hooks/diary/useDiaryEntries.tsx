@@ -31,14 +31,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         console.log('Diary - Mode admin: voir toutes les entrées');
         let query = supabase
           .from('diary_entries')
-          .select(`
-            *,
-            profiles (
-              id,
-              email,
-              display_name
-            )
-          `)
+          .select('*')
           .order('entry_date', { ascending: false });
 
         // Appliquer les filtres
@@ -53,35 +46,59 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }
 
         console.log('Diary - Requête admin construite');
-        const { data, error } = await query;
+        const { data: diaryData, error } = await query;
         
         if (error) {
           console.error('Diary - Erreur requête admin:', error);
           throw error;
         }
         
-        console.log('Diary - Réponse admin:', { count: data?.length || 0, data });
+        console.log('Diary - Réponse admin:', { count: diaryData?.length || 0, data: diaryData });
         
-        const convertedEntries = (data || []).map(entry => ({
-          ...entry,
-          physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
-            ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
-            : null,
-          mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
-            ? entry.mental_state as "stressé" | "calme" | "motivé"
-            : null,
-          desire_of_day: entry.desire_of_day || '',
-          objectives: entry.objectives || '',
-          positive_things: entry.positive_things || '',
-          negative_things: entry.negative_things || '',
-          reflections: entry.reflections || '',
-          private_notes: entry.private_notes || '',
-          contacted_people: entry.contacted_people || [],
-          tags: entry.tags || []
-        }));
-        
-        console.log('Diary - Entrées admin récupérées:', convertedEntries.length);
-        setEntries(convertedEntries);
+        if (diaryData && diaryData.length > 0) {
+          // Récupérer les profils séparément
+          const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, email, display_name, avatar_url, created_at')
+            .in('id', userIds);
+
+          if (profilesError) {
+            console.error('Diary - Erreur profils admin:', profilesError);
+            throw profilesError;
+          }
+
+          // Combiner les données
+          const entriesWithProfiles = diaryData.map(entry => ({
+            ...entry,
+            physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
+              ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
+              : null,
+            mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
+              ? entry.mental_state as "stressé" | "calme" | "motivé"
+              : null,
+            desire_of_day: entry.desire_of_day || '',
+            objectives: entry.objectives || '',
+            positive_things: entry.positive_things || '',
+            negative_things: entry.negative_things || '',
+            reflections: entry.reflections || '',
+            private_notes: entry.private_notes || '',
+            contacted_people: entry.contacted_people || [],
+            tags: entry.tags || [],
+            profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
+              id: entry.user_id,
+              email: 'Utilisateur inconnu',
+              display_name: null,
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
+          }));
+          
+          console.log('Diary - Entrées admin récupérées:', entriesWithProfiles.length);
+          setEntries(entriesWithProfiles);
+        } else {
+          setEntries([]);
+        }
         return;
       }
 
@@ -104,14 +121,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // 2. Récupérer directement les entrées de l'utilisateur effectif
       let userEntriesQuery = supabase
         .from('diary_entries')
-        .select(`
-          *,
-          profiles (
-            id,
-            email,
-            display_name
-          )
-        `)
+        .select('*')
         .eq('user_id', effectiveUserId)
         .order('entry_date', { ascending: false });
 
@@ -170,25 +180,43 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (groupError) {
         console.error('Diary - Erreur groupes:', groupError);
         // En cas d'erreur, au moins retourner les entrées de l'utilisateur
-        const convertedUserEntries = (userEntries || []).map(entry => ({
-          ...entry,
-          physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
-            ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
-            : null,
-          mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
-            ? entry.mental_state as "stressé" | "calme" | "motivé"
-            : null,
-          desire_of_day: entry.desire_of_day || '',
-          objectives: entry.objectives || '',
-          positive_things: entry.positive_things || '',
-          negative_things: entry.negative_things || '',
-          reflections: entry.reflections || '',
-          private_notes: entry.private_notes || '',
-          contacted_people: entry.contacted_people || [],
-          tags: entry.tags || []
-        }));
-        console.log('Diary - Retour entrées utilisateur seulement après erreur groupes:', convertedUserEntries.length);
-        setEntries(convertedUserEntries);
+        if (userEntries && userEntries.length > 0) {
+          // Récupérer le profil de l'utilisateur
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('id, email, display_name, avatar_url, created_at')
+            .eq('id', effectiveUserId)
+            .single();
+
+          const convertedUserEntries = userEntries.map(entry => ({
+            ...entry,
+            physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
+              ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
+              : null,
+            mental_state: ['stressé', 'calme', 'motivé'].includes(entry.mental_state)
+              ? entry.mental_state as "stressé" | "calme" | "motivé"
+              : null,
+            desire_of_day: entry.desire_of_day || '',
+            objectives: entry.objectives || '',
+            positive_things: entry.positive_things || '',
+            negative_things: entry.negative_things || '',
+            reflections: entry.reflections || '',
+            private_notes: entry.private_notes || '',
+            contacted_people: entry.contacted_people || [],
+            tags: entry.tags || [],
+            profiles: userProfile || {
+              id: effectiveUserId,
+              email: 'Utilisateur inconnu',
+              display_name: null,
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
+          }));
+          console.log('Diary - Retour entrées utilisateur seulement après erreur groupes:', convertedUserEntries.length);
+          setEntries(convertedUserEntries);
+        } else {
+          setEntries([]);
+        }
         return;
       }
 
@@ -206,14 +234,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         console.log('Diary - Récupération des autres entrées pour:', groupCreatorIds);
         let otherEntriesQuery = supabase
           .from('diary_entries')
-          .select(`
-            *,
-            profiles (
-              id,
-              email,
-              display_name
-            )
-          `)
+          .select('*')
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 
@@ -262,6 +283,13 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Trier par date d'entrée (plus récent en premier)
       allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
 
+      // Récupérer tous les profils nécessaires
+      const allUserIds = [...new Set(allEntries.map(entry => entry.user_id))];
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, avatar_url, created_at')
+        .in('id', allUserIds);
+
       const convertedEntries = allEntries.map(entry => ({
         ...entry,
         physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
@@ -277,7 +305,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         reflections: entry.reflections || '',
         private_notes: entry.private_notes || '',
         contacted_people: entry.contacted_people || [],
-        tags: entry.tags || []
+        tags: entry.tags || [],
+        profiles: allProfiles?.find(profile => profile.id === entry.user_id) || {
+          id: entry.user_id,
+          email: 'Utilisateur inconnu',
+          display_name: null,
+          avatar_url: null,
+          created_at: new Date().toISOString()
+        }
       }));
       
       console.log('Diary - Total entrées finales:', convertedEntries.length);
