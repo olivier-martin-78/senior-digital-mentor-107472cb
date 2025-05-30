@@ -13,6 +13,7 @@ interface QuestionItemProps {
   activeQuestion: string | null;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
+  onAudioUrlChange?: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
 }
 
 export const QuestionItem: React.FC<QuestionItemProps> = ({
@@ -23,6 +24,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   activeQuestion,
   onAudioRecorded,
   onAudioDeleted,
+  onAudioUrlChange,
 }) => {
   return (
     <div className="space-y-2">
@@ -43,6 +45,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           existingAudioUrl={question.audioUrl}
           onAudioRecorded={onAudioRecorded}
           onAudioDeleted={onAudioDeleted}
+          onAudioUrlChange={onAudioUrlChange}
         />
       </div>
       

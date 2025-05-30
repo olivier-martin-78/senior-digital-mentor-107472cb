@@ -1,3 +1,4 @@
+
 // src/components/life-story/ChapterContent.tsx
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -11,6 +12,7 @@ interface ChapterContentProps {
   activeQuestion: string | null;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
+  onAudioUrlChange?: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
 }
 
 export const ChapterContent: React.FC<ChapterContentProps> = ({
@@ -20,6 +22,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   activeQuestion,
   onAudioRecorded,
   onAudioDeleted,
+  onAudioUrlChange,
 }) => {
   return (
     <Card>
@@ -39,6 +42,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
               activeQuestion={activeQuestion}
               onAudioRecorded={onAudioRecorded}
               onAudioDeleted={onAudioDeleted}
+              onAudioUrlChange={onAudioUrlChange}
             />
           ))
         ) : (

@@ -42,6 +42,8 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
           setActiveTab={setActiveTab}
           openQuestions={openQuestions}
           toggleQuestions={toggleQuestions}
+          activeQuestion={activeQuestion}
+          handleQuestionFocus={handleQuestionFocus}
         />
       </div>
 
