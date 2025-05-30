@@ -6,7 +6,6 @@ import { useLifeStory } from '@/hooks/use-life-story';
 import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
 import InviteUserDialog from '@/components/InviteUserDialog';
-import DateRangeFilter from '@/components/DateRangeFilter';
 import UserSelector from '@/components/UserSelector';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
@@ -15,8 +14,6 @@ const LifeStory = () => {
   const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   
   // Utiliser l'ID de l'utilisateur sélectionné ou l'utilisateur actuel
   const targetUserId = selectedUserId || user?.id || '';
@@ -29,11 +26,6 @@ const LifeStory = () => {
       return;
     }
   }, [session, navigate]);
-
-  const handleClearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-  };
 
   const handleUserChange = (userId: string | null) => {
     setSelectedUserId(userId);
@@ -105,14 +97,6 @@ const LifeStory = () => {
           selectedUserId={selectedUserId}
           onUserChange={handleUserChange}
           className="mb-6"
-        />
-        
-        <DateRangeFilter
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onClear={handleClearFilters}
         />
         
         <LifeStoryLayout 

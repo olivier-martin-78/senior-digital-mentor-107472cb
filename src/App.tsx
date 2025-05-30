@@ -1,97 +1,81 @@
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import Auth from '@/pages/Auth';
+import Home from '@/pages/Home';
+import ProfilePage from '@/pages/ProfilePage';
+import Blog from '@/pages/Blog';
+import BlogPost from '@/pages/BlogPost';
+import AdminPosts from '@/pages/admin/AdminPosts';
+import AdminAlbums from '@/pages/admin/AdminAlbums';
+import AdminWishAlbums from '@/pages/admin/AdminWishAlbums';
+import AdminDiary from '@/pages/admin/AdminDiary';
+import AdminLifeStories from '@/pages/admin/AdminLifeStories';
+import AdminLifeStoryEdit from '@/pages/admin/AdminLifeStoryEdit';
+import Wishes from '@/pages/Wishes';
+import WishPost from '@/pages/WishPost';
+import Diary from '@/pages/Diary';
+import DiaryEntry from '@/pages/DiaryEntry';
+import LifeStory from '@/pages/LifeStory';
+import Recent from '@/pages/Recent';
+import Unauthorized from '@/pages/Unauthorized';
+import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminInvitationGroups from '@/pages/admin/AdminInvitationGroups';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { AppRole } from "@/types/supabase";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import BlogEditor from "./pages/BlogEditor";
-import BlogLanding from "./pages/BlogLanding";
-import AILanding from "./pages/AILanding";
-import Profile from "./pages/Profile";
-import Unauthorized from "./pages/Unauthorized";
-import Recent from "./pages/Recent";
-import AdminPosts from "./pages/admin/AdminPosts";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminAlbums from "./pages/admin/AdminAlbums";
-import AdminWishAlbums from "./pages/admin/AdminWishAlbums";
-import AdminLifeStories from "./pages/admin/AdminLifeStories";
-import AdminLifeStoryEdit from "./pages/admin/AdminLifeStoryEdit";
-import AdminDiary from "./pages/admin/AdminDiary";
-import Diary from "./pages/Diary";
-import DiaryNew from "./pages/DiaryNew";
-import DiaryEntry from "./pages/DiaryEntry";
-import DiaryEdit from "./pages/DiaryEdit";
-import LifeStory from "./pages/LifeStory";
-import WishForm from "./pages/WishForm";
-import WishEditForm from "./pages/WishEditForm";
-import Wishes from "./pages/Wishes";
-import WishPost from "./pages/WishPost";
-import ProtectedRoute from "./components/ProtectedRoute";
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) => {
+  const { session, hasRole } = useAuth();
 
-const queryClient = new QueryClient();
+  useEffect(() => {
+    console.log('Session in ProtectedRoute:', session);
+  }, [session]);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/blog-landing" element={<BlogLanding />} />
-            <Route path="/ai-landing" element={<AILanding />} />
-            <Route path="/wish-form" element={<WishForm />} />
-            <Route path="/wishes" element={<Wishes />} />
-            <Route path="/wishes/:id" element={<WishPost />} />
-            <Route path="/wishes/edit/:id" element={<WishEditForm />} />
+  if (!session) {
+    return <Navigate to="/auth" />;
+  }
 
-            {/* Routes protégées qui nécessitent une authentification */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:id" element={<BlogPost />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/recent" element={<Recent />} />
-              <Route path="/diary" element={<Diary />} />
-              <Route path="/diary/new" element={<DiaryNew />} />
-              <Route path="/diary/:id" element={<DiaryEntry />} />
-              <Route path="/diary/edit/:id" element={<DiaryEdit />} />
-              <Route path="/life-story" element={<LifeStory />} />
-            </Route>
+  if (requiredRole && !hasRole(requiredRole)) {
+    return <Navigate to="/unauthorized" />;
+  }
 
-            {/* Routes pour les éditeurs et admins */}
-            <Route element={<ProtectedRoute requiredRoles={['editor', 'admin'] as AppRole[]} />}>
-              <Route path="/blog/new" element={<BlogEditor />} />
-              <Route path="/blog/edit/:id" element={<BlogEditor />} />
-              <Route path="/admin/posts" element={<AdminPosts />} />
-            </Route>
+  return children;
+};
 
-            {/* Routes uniquement pour les admins */}
-            <Route element={<ProtectedRoute requiredRoles={['admin'] as AppRole[]} />}>
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/albums" element={<AdminAlbums />} />
-              <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
-              <Route path="/admin/life-stories" element={<AdminLifeStories />} />
-              <Route path="/admin/life-stories/:id" element={<AdminLifeStoryEdit />} />
-              <Route path="/admin/diary" element={<AdminDiary />} />
-            </Route>
+const App: React.FC = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
 
-            {/* Route 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+        <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />
+        <Route path="/blog/:id" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
+
+        <Route path="/wishes" element={<ProtectedRoute><Wishes /></ProtectedRoute>} />
+        <Route path="/wishes/:id" element={<ProtectedRoute><WishPost /></ProtectedRoute>} />
+
+        <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+        <Route path="/diary/:id" element={<ProtectedRoute><DiaryEntry /></ProtectedRoute>} />
+
+        <Route path="/life-story" element={<ProtectedRoute><LifeStory /></ProtectedRoute>} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/posts" element={<ProtectedRoute requiredRole="admin"><AdminPosts /></ProtectedRoute>} />
+        <Route path="/admin/albums" element={<ProtectedRoute requiredRole="admin"><AdminAlbums /></ProtectedRoute>} />
+        <Route path="/admin/wish-albums" element={<ProtectedRoute requiredRole="admin"><AdminWishAlbums /></ProtectedRoute>} />
+        <Route path="/admin/diary" element={<ProtectedRoute requiredRole="admin"><AdminDiary /></ProtectedRoute>} />
+        <Route path="/admin/life-stories" element={<ProtectedRoute requiredRole="admin"><AdminLifeStories /></ProtectedRoute>} />
+        <Route path="/admin/life-stories/:id" element={<ProtectedRoute requiredRole="admin"><AdminLifeStoryEdit /></ProtectedRoute>} />
+        <Route path="/admin/invitation-groups" element={<ProtectedRoute requiredRole="admin"><AdminInvitationGroups /></ProtectedRoute>} />
+
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
+  );
+};
 
 export default App;
