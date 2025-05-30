@@ -65,8 +65,15 @@ const Diary = () => {
           query = query.lte('entry_date', endDate);
         }
 
+        console.log('Diary - Requête admin construite');
         const { data, error } = await query;
-        if (error) throw error;
+        
+        if (error) {
+          console.error('Diary - Erreur requête admin:', error);
+          throw error;
+        }
+        
+        console.log('Diary - Réponse admin:', { count: data?.length || 0, data });
         
         const convertedEntries = (data || []).map(entry => ({
           ...entry,
@@ -132,8 +139,15 @@ const Diary = () => {
             query = query.lte('entry_date', endDate);
           }
 
+          console.log('Diary - Requête utilisateur sélectionné construite');
           const { data, error } = await query;
-          if (error) throw error;
+          
+          if (error) {
+            console.error('Diary - Erreur requête utilisateur sélectionné:', error);
+            throw error;
+          }
+
+          console.log('Diary - Réponse utilisateur sélectionné:', { count: data?.length || 0, data });
 
           const convertedEntries = (data || []).map(entry => ({
             ...entry,
@@ -172,17 +186,28 @@ const Diary = () => {
         .eq('user_id', user.id)
         .order('entry_date', { ascending: false });
 
+      console.log('Diary - Requête utilisateur actuel construite, filtres:', {
+        searchTerm,
+        startDate,
+        endDate,
+        userId: user.id
+      });
+
       // Appliquer les filtres aux entrées utilisateur
       if (searchTerm) {
         userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+        console.log('Diary - Filtre de recherche appliqué:', searchTerm);
       }
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
+        console.log('Diary - Filtre date début appliqué:', startDate);
       }
       if (endDate) {
         userEntriesQuery = userEntriesQuery.lte('entry_date', endDate);
+        console.log('Diary - Filtre date fin appliqué:', endDate);
       }
 
+      console.log('Diary - Exécution requête utilisateur actuel...');
       const { data: userEntries, error: userEntriesError } = await userEntriesQuery;
       
       if (userEntriesError) {
@@ -191,9 +216,14 @@ const Diary = () => {
         return;
       }
 
-      console.log('Diary - Entrées utilisateur récupérées:', userEntries?.length || 0);
+      console.log('Diary - Réponse entrées utilisateur actuel:', { 
+        count: userEntries?.length || 0, 
+        entries: userEntries,
+        sampleEntry: userEntries?.[0] || 'aucune'
+      });
 
       // 2. Récupérer les utilisateurs autorisés via les groupes d'invitation
+      console.log('Diary - Récupération des groupes pour utilisateur:', user.id);
       const { data: groupPermissions, error: groupError } = await supabase
         .from('group_members')
         .select(`
@@ -222,9 +252,12 @@ const Diary = () => {
           contacted_people: entry.contacted_people || [],
           tags: entry.tags || []
         }));
+        console.log('Diary - Retour entrées utilisateur seulement après erreur groupes:', convertedUserEntries.length);
         setEntries(convertedUserEntries);
         return;
       }
+
+      console.log('Diary - Réponse groupes:', groupPermissions);
 
       // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
       const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== user.id) || [];
@@ -235,6 +268,7 @@ const Diary = () => {
 
       // 3. Récupérer les entrées des autres utilisateurs autorisés
       if (groupCreatorIds.length > 0) {
+        console.log('Diary - Récupération des autres entrées pour:', groupCreatorIds);
         let otherEntriesQuery = supabase
           .from('diary_entries')
           .select('*')
@@ -252,18 +286,30 @@ const Diary = () => {
           otherEntriesQuery = otherEntriesQuery.lte('entry_date', endDate);
         }
 
+        console.log('Diary - Exécution requête autres entrées...');
         const { data: otherEntriesData, error: otherEntriesError } = await otherEntriesQuery;
         
         if (otherEntriesError) {
           console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
         } else {
           otherEntries = otherEntriesData || [];
-          console.log('Diary - Autres entrées autorisées récupérées:', otherEntries.length);
+          console.log('Diary - Réponse autres entrées:', { 
+            count: otherEntries.length,
+            entries: otherEntries,
+            sampleEntry: otherEntries[0] || 'aucune'
+          });
         }
+      } else {
+        console.log('Diary - Aucun autre utilisateur autorisé, pas de requête supplémentaire');
       }
 
       // Combiner ses entrées avec les entrées autorisées des autres
       const allEntries = [...(userEntries || []), ...otherEntries];
+      console.log('Diary - Combinaison des entrées:', {
+        userEntriesCount: userEntries?.length || 0,
+        otherEntriesCount: otherEntries.length,
+        totalCount: allEntries.length
+      });
       
       // Trier par date d'entrée (plus récent en premier)
       allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
@@ -287,6 +333,7 @@ const Diary = () => {
       }));
       
       console.log('Diary - Total entrées finales:', convertedEntries.length);
+      console.log('Diary - Échantillon entrées finales:', convertedEntries.slice(0, 2));
       setEntries(convertedEntries);
     } catch (error) {
       console.error('Diary - Erreur lors du chargement des entrées:', error);
@@ -348,6 +395,9 @@ const Diary = () => {
         {entries.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500">Aucune entrée trouvée pour cette période.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Vérifiez les filtres de date ou créez votre première entrée de journal.
+            </p>
           </div>
         ) : (
           <EntriesGrid entries={entries} />
