@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,28 +47,41 @@ const InvitationGroups = () => {
   const loadGroups = async () => {
     try {
       setLoading(true);
+      console.log('=== DEBUG InvitationGroups: Début du chargement des groupes ===');
+      console.log('Utilisateur actuel:', user?.id);
+      console.log('Est admin?', hasRole('admin'));
+
       const { data: groupsData, error } = await supabase
         .from('invitation_groups')
         .select('id, name, created_by, created_at')
         .order('created_at', { ascending: false });
+
+      console.log('Requête invitation_groups - Données récupérées:', groupsData);
+      console.log('Requête invitation_groups - Erreur:', error);
 
       if (error) throw error;
 
       // Récupérer les informations des créateurs et compter les membres
       const groupsWithDetails = await Promise.all(
         (groupsData || []).map(async (group) => {
+          console.log(`Traitement du groupe: ${group.name} (${group.id})`);
+          
           // Récupérer les infos du créateur
-          const { data: creatorData } = await supabase
+          const { data: creatorData, error: creatorError } = await supabase
             .from('profiles')
             .select('display_name, email')
             .eq('id', group.created_by)
             .single();
 
+          console.log(`Créateur du groupe ${group.name}:`, creatorData, 'Erreur:', creatorError);
+
           // Compter les membres
-          const { count } = await supabase
+          const { count, error: countError } = await supabase
             .from('group_members')
             .select('*', { count: 'exact', head: true })
             .eq('group_id', group.id);
+
+          console.log(`Nombre de membres pour ${group.name}:`, count, 'Erreur:', countError);
 
           return {
             id: group.id,
@@ -82,6 +94,7 @@ const InvitationGroups = () => {
         })
       );
 
+      console.log('Groupes avec détails finaux:', groupsWithDetails);
       setGroups(groupsWithDetails);
     } catch (error: any) {
       console.error('Erreur lors du chargement des groupes:', error);
@@ -277,6 +290,17 @@ const InvitationGroups = () => {
           </Card>
         ))}
       </div>
+
+      {groups.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-gray-500">Aucun groupe d'invitation trouvé</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Les groupes d'invitation sont créés automatiquement lors de l'envoi d'invitations.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedGroup && (
         <Card>

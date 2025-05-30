@@ -1,10 +1,19 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Header from '@/components/Header';
 import InvitationGroups from '@/components/admin/InvitationGroups';
 import ProcessPendingInvitations from '@/components/admin/ProcessPendingInvitations';
 
 const AdminInvitationGroups = () => {
+  const invitationGroupsRef = useRef<{ loadGroups: () => void }>(null);
+
+  const handleInvitationsProcessed = () => {
+    // Recharger les groupes après traitement des invitations
+    if (invitationGroupsRef.current) {
+      invitationGroupsRef.current.loadGroups();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -20,8 +29,8 @@ const AdminInvitationGroups = () => {
         </div>
         
         <div className="space-y-6">
-          <ProcessPendingInvitations />
-          <InvitationGroups />
+          <ProcessPendingInvitations onInvitationsProcessed={handleInvitationsProcessed} />
+          <InvitationGroups ref={invitationGroupsRef} />
         </div>
       </div>
     </div>

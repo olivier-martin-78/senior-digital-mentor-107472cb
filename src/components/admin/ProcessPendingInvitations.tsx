@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus } from 'lucide-react';
 
-const ProcessPendingInvitations = () => {
+interface ProcessPendingInvitationsProps {
+  onInvitationsProcessed?: () => void;
+}
+
+const ProcessPendingInvitations = ({ onInvitationsProcessed }: ProcessPendingInvitationsProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
@@ -164,6 +167,11 @@ const ProcessPendingInvitations = () => {
           title: "Invitations traitées",
           description: `${processedCount} utilisateur(s) ont été ajoutés à leur groupe d'invitation.`
         });
+        
+        // Déclencher le rafraîchissement des groupes
+        if (onInvitationsProcessed) {
+          onInvitationsProcessed();
+        }
       } else {
         toast({
           title: "Aucun traitement nécessaire",
