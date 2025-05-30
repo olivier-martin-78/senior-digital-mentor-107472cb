@@ -6,6 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus } from 'lucide-react';
 
+// Type pour les utilisateurs retournés par l'API Admin
+interface SupabaseUser {
+  id: string;
+  email?: string;
+  email_confirmed_at?: string | null;
+  // Autres propriétés que nous n'utilisons pas ici
+  [key: string]: any;
+}
+
 const ProcessPendingInvitations = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
@@ -57,7 +66,10 @@ const ProcessPendingInvitations = () => {
           continue;
         }
 
-        const user = userData.users.find(u => 
+        // Typer correctement les utilisateurs
+        const users = userData.users as SupabaseUser[];
+        
+        const user = users.find(u => 
           u.email === invitation.email && 
           u.email_confirmed_at !== null
         );
