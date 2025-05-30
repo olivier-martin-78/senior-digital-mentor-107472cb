@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getThumbnailUrl, DIARY_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
+import CommentBubbleIcon from './CommentBubbleIcon';
 
 interface RecentItemImageProps {
   type: 'blog' | 'wish' | 'diary' | 'comment';
@@ -30,9 +31,9 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
         media_url: mediaUrl
       });
 
-      // Pour les commentaires, pas d'image
+      // Pour les commentaires, pas besoin de charger d'image
       if (type === 'comment') {
-        console.log('RecentItemImage - Pas d\'image pour commentaire:', id);
+        console.log('RecentItemImage - Commentaire détecté, utilisation de l\'icône bulle:', id);
         return;
       }
 
@@ -82,9 +83,9 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
     loadThumbnail();
   }, [type, id, coverImage, mediaUrl]);
 
-  // Pour les commentaires, ne pas afficher d'image
+  // Pour les commentaires, afficher l'icône de bulle
   if (type === 'comment') {
-    return null;
+    return <CommentBubbleIcon className={className} />;
   }
 
   // Si pas d'image disponible, ne pas afficher le conteneur
