@@ -47,7 +47,7 @@ const Header = () => {
     <header className="bg-white border-b border-gray-200 fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold text-tranches-charcoal font-serif">
-          Tranches de Vie
+          Senior Digital Mentor
         </Link>
         <nav>
           {session ? (
@@ -88,19 +88,19 @@ const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/admin/albums" className="w-full">
                         <Image className="mr-2 h-4 w-4" />
-                        Albums photos
+                        Blog photos
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/wish-albums" className="w-full">
                         <Heart className="mr-2 h-4 w-4" />
-                        Albums de souhaits
+                        Souhaits formulés
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/admin/diary" className="w-full">
                         <BookOpen className="mr-2 h-4 w-4" />
-                        Journaux intimes
+                        Journaux partagés
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
