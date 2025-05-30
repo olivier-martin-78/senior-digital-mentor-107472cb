@@ -21,245 +21,175 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [hasError, setHasError] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [loadAttempts, setLoadAttempts] = useState(0);
+  const [isStabilizing, setIsStabilizing] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stabilizationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   
-  // Vérifier et précharger l'audio
+  const MAX_LOAD_ATTEMPTS = 3;
+  const STABILIZATION_DELAY = 2000; // 2 secondes de stabilisation
+  const RETRY_DELAY = 1000; // 1 seconde entre les tentatives
+  
+  // Phase de stabilisation et chargement de l'audio
   useEffect(() => {
     let mounted = true;
-    let audioElement: HTMLAudioElement | null = null;
     
     if (!validateAudioUrl(audioUrl)) {
       setHasError(true);
       setIsLoading(false);
+      setIsStabilizing(false);
       return;
     }
     
-    const checkAudio = async () => {
-      try {
-        console.log("Vérification de l'audio:", audioUrl);
-        setIsLoading(true);
-        
-        // Créer un élément audio pour tester le chargement
-        audioElement = new Audio();
-        
-        // Définir les gestionnaires d'événements
-        const onLoadedData = () => {
-          if (mounted) {
-            console.log("Audio préchargé avec succès");
-            setIsLoading(false);
-            setHasError(false);
-            setDuration(audioElement?.duration || 0);
-          }
-        };
-        
-        const onError = (e: ErrorEvent) => {
-          console.error("Erreur lors du préchargement audio:", e);
-          if (mounted) {
-            setIsLoading(false);
-            setHasError(true);
-            
-            toast({
-              title: "Problème de lecture audio",
-              description: "L'enregistrement n'a pas pu être chargé correctement",
-              variant: "destructive"
-            });
-          }
-        };
-        
-        // Ajouter les écouteurs d'événements
-        audioElement.addEventListener('loadeddata', onLoadedData);
-        audioElement.addEventListener('error', () => onError(new ErrorEvent("error")));
-        
-        // Charger l'audio avec un délai pour éviter les problèmes de chargement
-        audioElement.preload = "auto";
-        setTimeout(() => {
-          if (mounted) {
-            audioElement!.src = audioUrl;
-            audioElement!.load();
-          }
-        }, 300);
-        
-        // Définir un timeout de sécurité
-        setTimeout(() => {
-          if (mounted && isLoading) {
-            console.warn("Timeout du chargement audio");
-            setIsLoading(false);
-            if (!hasError) {
-              // Essayer encore une fois de charger l'audio
-              setHasError(false);
-            }
-          }
-        }, 5000);
-        
-      } catch (error) {
-        console.error("Exception lors de la vérification de l'audio:", error);
-        if (mounted) {
-          setIsLoading(false);
-          setHasError(true);
-        }
-      }
-    };
+    console.log("Début de la stabilisation audio pour:", audioUrl);
     
-    checkAudio();
+    // Phase de stabilisation - attendre que l'audio soit accessible
+    stabilizationTimeoutRef.current = setTimeout(() => {
+      if (mounted) {
+        setIsStabilizing(false);
+        startAudioLoad();
+      }
+    }, STABILIZATION_DELAY);
+    
+    const startAudioLoad = () => {
+      if (!mounted) return;
+      
+      console.log(`Tentative de chargement audio ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS}`);
+      
+      // Créer un nouvel élément audio
+      const audio = new Audio();
+      audio.preload = "auto";
+      audioRef.current = audio;
+      
+      const onLoadedMetadata = () => {
+        if (mounted) {
+          console.log("Audio chargé avec succès, durée:", audio.duration);
+          setDuration(audio.duration);
+          setIsLoading(false);
+          setHasError(false);
+          setLoadAttempts(0);
+        }
+      };
+      
+      const onTimeUpdate = () => {
+        if (mounted) {
+          setCurrentTime(audio.currentTime);
+        }
+      };
+      
+      const onPlay = () => {
+        if (mounted) {
+          setIsPlaying(true);
+        }
+      };
+      
+      const onPause = () => {
+        if (mounted) {
+          setIsPlaying(false);
+        }
+      };
+      
+      const onEnded = () => {
+        if (mounted) {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }
+      };
+      
+      const onError = (e: Event) => {
+        if (!mounted) return;
+        
+        console.error(`Erreur de chargement audio (tentative ${loadAttempts + 1}):`, e);
+        
+        if (loadAttempts < MAX_LOAD_ATTEMPTS - 1) {
+          // Tentative de rechargement
+          setLoadAttempts(prev => prev + 1);
+          retryTimeoutRef.current = setTimeout(() => {
+            if (mounted) {
+              startAudioLoad();
+            }
+          }, RETRY_DELAY);
+        } else {
+          // Échec définitif après toutes les tentatives
+          console.error("Échec définitif du chargement audio après", MAX_LOAD_ATTEMPTS, "tentatives");
+          setHasError(true);
+          setIsLoading(false);
+        }
+      };
+      
+      // Ajouter les écouteurs d'événements
+      audio.addEventListener('loadedmetadata', onLoadedMetadata);
+      audio.addEventListener('timeupdate', onTimeUpdate);
+      audio.addEventListener('play', onPlay);
+      audio.addEventListener('pause', onPause);
+      audio.addEventListener('ended', onEnded);
+      audio.addEventListener('error', onError);
+      
+      // Charger l'audio
+      try {
+        audio.src = audioUrl;
+        audio.load();
+      } catch (error) {
+        console.error("Exception lors du chargement:", error);
+        onError(new Event('error'));
+      }
+      
+      // Nettoyer lors du démontage
+      return () => {
+        audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+        audio.removeEventListener('timeupdate', onTimeUpdate);
+        audio.removeEventListener('play', onPlay);
+        audio.removeEventListener('pause', onPause);
+        audio.removeEventListener('ended', onEnded);
+        audio.removeEventListener('error', onError);
+        audio.pause();
+        audio.src = '';
+      };
+    };
     
     return () => {
       mounted = false;
-      // Nettoyer les écouteurs d'événements
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.src = '';
-        audioElement.remove();
+      if (stabilizationTimeoutRef.current) {
+        clearTimeout(stabilizationTimeoutRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
       }
     };
   }, [audioUrl]);
   
-  // Initialiser l'audio
-  useEffect(() => {
-    // Si l'URL n'est pas valide ou s'il y a une erreur, ne pas initialiser
-    if (!validateAudioUrl(audioUrl) || hasError) {
-      return;
-    }
-    
-    // Créer un nouvel élément audio
-    const audio = new Audio(audioUrl);
-    audio.preload = "auto";
-    audioRef.current = audio;
-    
-    const onLoadedMetadata = () => {
-      console.log("Métadonnées audio chargées, durée:", audio.duration);
-      setDuration(audio.duration);
-      setIsLoading(false);
-    };
-    
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-    
-    const onPlay = () => {
-      console.log("Lecture démarrée");
-      setIsPlaying(true);
-    };
-    
-    const onPause = () => {
-      console.log("Lecture en pause");
-      setIsPlaying(false);
-    };
-    
-    const onEnded = () => {
-      console.log("Lecture terminée");
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-    
-    const onError = (e: Event) => {
-      console.error("Erreur de lecture audio:", e);
-      setHasError(true);
-      setIsLoading(false);
-      
-      toast({
-        title: "Erreur de lecture",
-        description: "Impossible de lire cet enregistrement audio. Il pourrait être corrompu ou inaccessible.",
-        variant: "destructive"
-      });
-    };
-    
-    // Ajouter les écouteurs d'événements
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('error', onError);
-    
-    // Charger l'audio
-    try {
-      audio.load();
-    } catch (error) {
-      console.error("Erreur lors du chargement de l'audio:", error);
-    }
-    
-    // Nettoyer lors du démontage
-    return () => {
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('pause', onPause);
-      audio.removeEventListener('ended', onEnded);
-      audio.removeEventListener('error', onError);
-      audio.pause();
-      audio.src = '';
-    };
-  }, [audioUrl, hasError]);
-  
   const handlePlayPause = () => {
-    if (!audioRef.current) {
-      console.error("Référence audio non disponible");
-      return;
-    }
+    if (!audioRef.current || hasError) return;
     
     try {
       if (isPlaying) {
-        console.log("Pause de la lecture");
         audioRef.current.pause();
       } else {
-        console.log("Début de la lecture");
-        // Réinitialiser l'audio si nécessaire
-        if (audioRef.current.error) {
-          console.log("Réinitialisation de l'audio après erreur");
-          audioRef.current.src = audioUrl;
-          audioRef.current.load();
-        }
-        
-        // Utiliser une promesse pour la lecture avec gestion d'erreur
         const playPromise = audioRef.current.play();
-        
         if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log("Lecture démarrée avec succès");
-            })
-            .catch((error) => {
-              console.error("Erreur lors de la lecture:", error);
-              
-              // Réessayer après un court délai
-              setTimeout(() => {
-                if (audioRef.current) {
-                  console.log("Nouvelle tentative de lecture");
-                  // Réinitialiser l'audio
-                  audioRef.current.src = audioUrl;
-                  audioRef.current.load();
-                  
-                  audioRef.current
-                    .play()
-                    .then(() => console.log("Lecture réussie au second essai"))
-                    .catch((secondError) => {
-                      console.error("Échec de la seconde tentative:", secondError);
-                      setHasError(true);
-                      toast({
-                        title: "Erreur de lecture",
-                        description: "Impossible de lire l'audio. Veuillez réessayer ou enregistrer à nouveau.",
-                        variant: "destructive"
-                      });
-                    });
-                }
-              }, 500);
+          playPromise.catch((error) => {
+            console.error("Erreur lors de la lecture:", error);
+            toast({
+              title: "Erreur de lecture",
+              description: "Impossible de lire l'audio. Veuillez réessayer.",
+              variant: "destructive"
             });
+          });
         }
       }
     } catch (error) {
-      console.error("Exception lors de la lecture/pause:", error);
-      setHasError(true);
-      toast({
-        title: "Erreur de lecture",
-        description: "Une erreur s'est produite lors de la lecture. Veuillez réessayer.",
-        variant: "destructive"
-      });
+      console.error("Exception lors de la lecture:", error);
     }
   };
   
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || hasError) return;
     
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
@@ -288,6 +218,18 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     handleExportAudio(audioUrl);
   };
   
+  // Affichage en cours de stabilisation
+  if (isStabilizing) {
+    return (
+      <div className="rounded-md border border-gray-200 p-3">
+        <div className="flex items-center justify-center py-2">
+          <Spinner className="h-5 w-5 border-gray-500 mr-2" />
+          <span className="text-sm text-gray-600">Préparation de la lecture...</span>
+        </div>
+      </div>
+    );
+  }
+  
   // Si l'URL n'est pas valide, afficher un message d'erreur
   if (!validateAudioUrl(audioUrl)) {
     return (
@@ -310,10 +252,10 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         {hasError ? (
           <div className="p-3 bg-amber-50 text-amber-700 rounded-md flex items-center">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-            <span>Impossible de charger l'enregistrement audio. Essayez de rafraîchir la page ou d'enregistrer à nouveau.</span>
+            <span>Impossible de charger l'enregistrement. L'audio est peut-être encore en cours de traitement. Veuillez patienter quelques instants et actualiser si nécessaire.</span>
           </div>
         ) : (
-          <div className={`rounded-md border border-gray-200 p-3 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
+          <div className={`rounded-md border border-gray-200 p-3 ${isLoading ? 'opacity-60' : 'opacity-100'} transition-opacity`}>
             {isMobile ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -349,10 +291,11 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                 controls 
                 className="w-full"
                 src={audioUrl}
-                onError={() => setHasError(true)}
+                onError={() => {
+                  console.log("Erreur audio détectée par l'élément audio natif");
+                }}
                 onLoadedData={() => {
-                  setIsLoading(false);
-                  setHasError(false);
+                  console.log("Audio natif chargé");
                 }}
               />
             )}
