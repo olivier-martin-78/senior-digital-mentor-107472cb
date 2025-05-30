@@ -18,7 +18,7 @@ export interface RecentItem {
 }
 
 export const useRecentItems = () => {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, getEffectiveUserId } = useAuth();
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,18 +30,24 @@ export const useRecentItems = () => {
         setLoading(true);
         const items: RecentItem[] = [];
 
+        // Utiliser l'utilisateur effectif (impersonné ou réel)
+        const effectiveUserId = getEffectiveUserId();
+        
         // === LOGS DE DÉBOGAGE DÉTAILLÉS ===
         console.log('🔍 ===== DÉBOGAGE RECENT - DÉBUT =====');
-        console.log('🔍 Utilisateur actuel:', {
+        console.log('🔍 Utilisateur original:', {
           id: user.id,
-          email: user.email,
+          email: user.email
+        });
+        console.log('🔍 Utilisateur effectif (impersonné):', {
+          id: effectiveUserId,
           roles: hasRole('admin') ? 'admin' : hasRole('editor') ? 'editor' : 'reader'
         });
 
         // Récupérer d'abord les utilisateurs autorisés via les groupes d'invitation
-        console.log('🔍 Récupération des utilisateurs autorisés pour user:', user.id);
+        console.log('🔍 Récupération des utilisateurs autorisés pour user effectif:', effectiveUserId);
         
-        let authorizedUserIds = [user.id];
+        let authorizedUserIds = [effectiveUserId];
 
         if (!hasRole('admin')) {
           console.log('🔍 Utilisateur NON-ADMIN - Vérification des permissions');
@@ -51,7 +57,7 @@ export const useRecentItems = () => {
             supabase
               .from('life_story_permissions')
               .select('story_owner_id')
-              .eq('permitted_user_id', user.id),
+              .eq('permitted_user_id', effectiveUserId),
             // Récupérer les créateurs de groupes dont l'utilisateur est membre
             supabase
               .from('group_members')
@@ -59,7 +65,7 @@ export const useRecentItems = () => {
                 group_id,
                 invitation_groups!inner(created_by)
               `)
-              .eq('user_id', user.id)
+              .eq('user_id', effectiveUserId)
           ]);
 
           const lifeStoryPermissions = lifeStoryPermissionsResult.data || [];
@@ -88,12 +94,12 @@ export const useRecentItems = () => {
         }
 
         // Fetch blog posts
-        await fetchBlogPosts(items, user, hasRole, authorizedUserIds);
+        await fetchBlogPosts(items, effectiveUserId, hasRole, authorizedUserIds);
 
         // Fetch other content types
-        await fetchWishes(items, hasRole, user);
-        await fetchDiaryEntries(items, hasRole, user, authorizedUserIds);
-        await fetchComments(items, hasRole, user, authorizedUserIds);
+        await fetchWishes(items, hasRole, effectiveUserId);
+        await fetchDiaryEntries(items, hasRole, effectiveUserId, authorizedUserIds);
+        await fetchComments(items, hasRole, effectiveUserId, authorizedUserIds);
 
         // Trier tous les éléments par date de création
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -117,15 +123,15 @@ export const useRecentItems = () => {
     };
 
     fetchRecentItems();
-  }, [user, hasRole]);
+  }, [user, hasRole, getEffectiveUserId]);
 
   return { recentItems, loading };
 };
 
 // Helper functions for fetching different content types
-const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, authorizedUserIds: string[]) => {
+const fetchBlogPosts = async (items: RecentItem[], effectiveUserId: string, hasRole: any, authorizedUserIds: string[]) => {
   console.log('🔍 ===== RÉCUPÉRATION ARTICLES BLOG =====');
-  console.log('🔍 Utilisateur courant:', user.id);
+  console.log('🔍 Utilisateur effectif:', effectiveUserId);
   console.log('🔍 authorizedUserIds:', authorizedUserIds);
   console.log('🔍 hasRole admin:', hasRole('admin'));
 
@@ -152,13 +158,13 @@ const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, auth
         title: post.title,
         type: 'blog' as const,
         created_at: post.created_at,
-        author: post.author_id === user.id ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
+        author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
         content_preview: post.content?.substring(0, 150) + '...',
         cover_image: post.cover_image
       })));
     }
   } else {
-    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === user.id;
+    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === effectiveUserId;
     console.log('🔍 A seulement son propre ID?', hasOnlyOwnId);
     
     if (hasOnlyOwnId) {
@@ -176,7 +182,7 @@ const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, auth
           published,
           profiles(display_name)
         `)
-        .eq('author_id', user.id)
+        .eq('author_id', effectiveUserId)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -213,12 +219,12 @@ const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, auth
           published,
           profiles(display_name)
         `)
-        .eq('author_id', user.id)
+        .eq('author_id', effectiveUserId)
         .order('created_at', { ascending: false })
         .limit(10);
 
       // 2. Récupérer les posts des autres utilisateurs autorisés (SEULEMENT publiés)
-      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== user.id);
+      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== effectiveUserId);
       let otherBlogPosts: any[] = [];
       
       if (otherAuthorizedIds.length > 0) {
@@ -250,7 +256,7 @@ const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, auth
           title: post.title,
           type: 'blog' as const,
           created_at: post.created_at,
-          author: post.author_id === user.id ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
+          author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
           content_preview: post.content?.substring(0, 150) + '...',
           cover_image: post.cover_image
         })));
@@ -259,7 +265,7 @@ const fetchBlogPosts = async (items: RecentItem[], user: any, hasRole: any, auth
   }
 };
 
-const fetchWishes = async (items: RecentItem[], hasRole: any, user: any) => {
+const fetchWishes = async (items: RecentItem[], hasRole: any, effectiveUserId: string) => {
   let wishQuery = supabase
     .from('wish_posts')
     .select(`
@@ -277,7 +283,7 @@ const fetchWishes = async (items: RecentItem[], hasRole: any, user: any) => {
     .limit(15);
 
   if (!hasRole('admin')) {
-    wishQuery = wishQuery.or(`published.eq.true,author_id.eq.${user.id}`);
+    wishQuery = wishQuery.or(`published.eq.true,author_id.eq.${effectiveUserId}`);
   }
 
   const { data: wishes } = await wishQuery;
@@ -296,7 +302,7 @@ const fetchWishes = async (items: RecentItem[], hasRole: any, user: any) => {
   }
 };
 
-const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, authorizedUserIds: string[]) => {
+const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, effectiveUserId: string, authorizedUserIds: string[]) => {
   if (hasRole('admin')) {
     const { data: diaryEntries } = await supabase
       .from('diary_entries')
@@ -328,7 +334,7 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, a
         title: entry.title,
         type: 'diary' as const,
         created_at: entry.created_at,
-        author: entry.user_id === user.id ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+        author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
         content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
         media_url: entry.media_url
       })));
@@ -350,7 +356,7 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, a
         .limit(15);
 
       if (diaryEntries) {
-        const otherUserIds = diaryEntries.filter(entry => entry.user_id !== user.id).map(entry => entry.user_id);
+        const otherUserIds = diaryEntries.filter(entry => entry.user_id !== effectiveUserId).map(entry => entry.user_id);
         let profilesMap: { [key: string]: string } = {};
         
         if (otherUserIds.length > 0) {
@@ -370,7 +376,7 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, a
           title: entry.title,
           type: 'diary' as const,
           created_at: entry.created_at,
-          author: entry.user_id === user.id ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+          author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
           content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
           media_url: entry.media_url
         })));
@@ -379,9 +385,9 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, user: any, a
   }
 };
 
-const fetchComments = async (items: RecentItem[], hasRole: any, user: any, authorizedUserIds: string[]) => {
+const fetchComments = async (items: RecentItem[], hasRole: any, effectiveUserId: string, authorizedUserIds: string[]) => {
   console.log('🔍 ===== RÉCUPÉRATION COMMENTAIRES =====');
-  console.log('🔍 Utilisateur courant:', user.id);
+  console.log('🔍 Utilisateur effectif:', effectiveUserId);
   console.log('🔍 authorizedUserIds pour commentaires:', authorizedUserIds);
   console.log('🔍 hasRole admin:', hasRole('admin'));
 
@@ -408,14 +414,14 @@ const fetchComments = async (items: RecentItem[], hasRole: any, user: any, autho
         title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
         type: 'comment' as const,
         created_at: comment.created_at,
-        author: comment.author_id === user.id ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
+        author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
         content_preview: comment.content?.substring(0, 150) + '...',
         post_title: comment.post?.title,
         comment_content: comment.content
       })));
     }
   } else {
-    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === user.id;
+    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === effectiveUserId;
     console.log('🔍 A seulement son propre ID pour commentaires?', hasOnlyOwnId);
     
     if (hasOnlyOwnId) {
@@ -432,7 +438,7 @@ const fetchComments = async (items: RecentItem[], hasRole: any, user: any, autho
           profiles(display_name),
           post:blog_posts(id, title)
         `)
-        .eq('author_id', user.id)
+        .eq('author_id', effectiveUserId)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -468,12 +474,12 @@ const fetchComments = async (items: RecentItem[], hasRole: any, user: any, autho
           profiles(display_name),
           post:blog_posts(id, title)
         `)
-        .eq('author_id', user.id)
+        .eq('author_id', effectiveUserId)
         .order('created_at', { ascending: false })
         .limit(10);
 
       // 2. Récupérer les commentaires sur les posts des utilisateurs autorisés
-      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== user.id);
+      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== effectiveUserId);
       let otherComments: any[] = [];
       
       if (otherAuthorizedIds.length > 0) {
@@ -506,7 +512,7 @@ const fetchComments = async (items: RecentItem[], hasRole: any, user: any, autho
           title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
           type: 'comment' as const,
           created_at: comment.created_at,
-          author: comment.author_id === user.id ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
+          author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
           content_preview: comment.content?.substring(0, 150) + '...',
           post_title: comment.post?.title,
           comment_content: comment.content
