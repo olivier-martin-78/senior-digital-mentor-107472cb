@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -181,103 +182,41 @@ const fetchBlogPosts = async (items: RecentItem[], effectiveUserId: string, hasR
       })));
     }
   } else {
-    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === effectiveUserId;
-    console.log('🔍 A seulement son propre ID?', hasOnlyOwnId);
+    // Récupérer SEULEMENT les posts de l'utilisateur effectif (impersonné)
+    console.log('🔍 UTILISATEUR NON-ADMIN - récupération posts de l\'utilisateur effectif uniquement');
     
-    if (hasOnlyOwnId) {
-      console.log('🔍 ⚠️ UTILISATEUR SANS PERMISSIONS - récupération posts personnels uniquement');
-      
-      const { data: userBlogPosts, error: userPostsError } = await supabase
-        .from('blog_posts')
-        .select(`
-          id,
-          title,
-          content,
-          created_at,
-          cover_image,
-          author_id,
-          published,
-          profiles(display_name)
-        `)
-        .eq('author_id', effectiveUserId)
-        .order('created_at', { ascending: false })
-        .limit(15);
+    const { data: userBlogPosts, error: userPostsError } = await supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        title,
+        content,
+        created_at,
+        cover_image,
+        author_id,
+        published,
+        profiles(display_name)
+      `)
+      .eq('author_id', effectiveUserId)
+      .order('created_at', { ascending: false })
+      .limit(15);
 
-      console.log('🔍 Requête posts utilisateur:', {
-        data: userBlogPosts,
-        error: userPostsError,
-        count: userBlogPosts?.length || 0
-      });
+    console.log('🔍 Requête posts utilisateur effectif:', {
+      data: userBlogPosts,
+      error: userPostsError,
+      count: userBlogPosts?.length || 0
+    });
 
-      if (userBlogPosts) {
-        items.push(...userBlogPosts.map(post => ({
-          id: post.id,
-          title: post.title,
-          type: 'blog' as const,
-          created_at: post.created_at,
-          author: 'Moi',
-          content_preview: post.content?.substring(0, 150) + '...',
-          cover_image: post.cover_image
-        })));
-      }
-    } else {
-      console.log('🔍 UTILISATEUR AVEC PERMISSIONS - récupération séparée');
-      
-      // 1. Récupérer ses propres posts (TOUS, publiés ET brouillons)
-      const { data: userBlogPosts } = await supabase
-        .from('blog_posts')
-        .select(`
-          id,
-          title,
-          content,
-          created_at,
-          cover_image,
-          author_id,
-          published,
-          profiles(display_name)
-        `)
-        .eq('author_id', effectiveUserId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      // 2. Récupérer les posts des autres utilisateurs autorisés (SEULEMENT publiés)
-      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== effectiveUserId);
-      let otherBlogPosts: any[] = [];
-      
-      if (otherAuthorizedIds.length > 0) {
-        const { data: otherPosts } = await supabase
-          .from('blog_posts')
-          .select(`
-            id,
-            title,
-            content,
-            created_at,
-            cover_image,
-            author_id,
-            published,
-            profiles(display_name)
-          `)
-          .eq('published', true)
-          .in('author_id', otherAuthorizedIds)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        otherBlogPosts = otherPosts || [];
-      }
-
-      const allBlogPosts = [...(userBlogPosts || []), ...otherBlogPosts];
-
-      if (allBlogPosts.length > 0) {
-        items.push(...allBlogPosts.map(post => ({
-          id: post.id,
-          title: post.title,
-          type: 'blog' as const,
-          created_at: post.created_at,
-          author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
-          content_preview: post.content?.substring(0, 150) + '...',
-          cover_image: post.cover_image
-        })));
-      }
+    if (userBlogPosts) {
+      items.push(...userBlogPosts.map(post => ({
+        id: post.id,
+        title: post.title,
+        type: 'blog' as const,
+        created_at: post.created_at,
+        author: 'Moi',
+        content_preview: post.content?.substring(0, 150) + '...',
+        cover_image: post.cover_image
+      })));
     }
   }
 };
@@ -320,6 +259,11 @@ const fetchWishes = async (items: RecentItem[], hasRole: any, effectiveUserId: s
 };
 
 const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, effectiveUserId: string, authorizedUserIds: string[]) => {
+  console.log('🔍 ===== RÉCUPÉRATION ENTRÉES JOURNAL =====');
+  console.log('🔍 Utilisateur effectif:', effectiveUserId);
+  console.log('🔍 authorizedUserIds pour journal:', authorizedUserIds);
+  console.log('🔍 hasRole admin:', hasRole('admin'));
+
   if (hasRole('admin')) {
     const { data: diaryEntries } = await supabase
       .from('diary_entries')
@@ -357,47 +301,39 @@ const fetchDiaryEntries = async (items: RecentItem[], hasRole: any, effectiveUse
       })));
     }
   } else {
-    if (authorizedUserIds.length > 0) {
-      const { data: diaryEntries } = await supabase
-        .from('diary_entries')
-        .select(`
-          id, 
-          title, 
-          created_at, 
-          activities, 
-          media_url,
-          user_id
-        `)
-        .in('user_id', authorizedUserIds)
-        .order('created_at', { ascending: false })
-        .limit(15);
+    // Récupérer SEULEMENT les entrées de journal de l'utilisateur effectif (impersonné)
+    console.log('🔍 UTILISATEUR NON-ADMIN - récupération entrées journal de l\'utilisateur effectif uniquement');
+    
+    const { data: diaryEntries, error: diaryError } = await supabase
+      .from('diary_entries')
+      .select(`
+        id, 
+        title, 
+        created_at, 
+        activities, 
+        media_url,
+        user_id
+      `)
+      .eq('user_id', effectiveUserId)
+      .order('created_at', { ascending: false })
+      .limit(15);
 
-      if (diaryEntries) {
-        const otherUserIds = diaryEntries.filter(entry => entry.user_id !== effectiveUserId).map(entry => entry.user_id);
-        let profilesMap: { [key: string]: string } = {};
-        
-        if (otherUserIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, display_name')
-            .in('id', otherUserIds);
-          
-          profilesMap = profiles?.reduce((acc, profile) => {
-            acc[profile.id] = profile.display_name || 'Utilisateur';
-            return acc;
-          }, {} as { [key: string]: string }) || {};
-        }
+    console.log('🔍 Requête entrées journal utilisateur effectif:', {
+      data: diaryEntries,
+      error: diaryError,
+      count: diaryEntries?.length || 0
+    });
 
-        items.push(...diaryEntries.map(entry => ({
-          id: entry.id,
-          title: entry.title,
-          type: 'diary' as const,
-          created_at: entry.created_at,
-          author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
-          content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-          media_url: entry.media_url
-        })));
-      }
+    if (diaryEntries) {
+      items.push(...diaryEntries.map(entry => ({
+        id: entry.id,
+        title: entry.title,
+        type: 'diary' as const,
+        created_at: entry.created_at,
+        author: 'Moi',
+        content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+        media_url: entry.media_url
+      })));
     }
   }
 };
@@ -438,14 +374,36 @@ const fetchComments = async (items: RecentItem[], hasRole: any, effectiveUserId:
       })));
     }
   } else {
-    const hasOnlyOwnId = authorizedUserIds.length === 1 && authorizedUserIds[0] === effectiveUserId;
-    console.log('🔍 A seulement son propre ID pour commentaires?', hasOnlyOwnId);
+    console.log('🔍 UTILISATEUR NON-ADMIN - récupération commentaires avec permissions d\'albums');
     
-    if (hasOnlyOwnId) {
-      console.log('🔍 ⚠️ UTILISATEUR SANS PERMISSIONS - récupération commentaires personnels uniquement');
-      
-      // Récupérer seulement les commentaires de l'utilisateur
-      const { data: userComments, error: userCommentsError } = await supabase
+    // 1. Récupérer les permissions d'albums pour cet utilisateur
+    const { data: albumPermissions } = await supabase
+      .from('album_permissions')
+      .select(`
+        album_id,
+        blog_albums!inner(author_id)
+      `)
+      .eq('user_id', effectiveUserId);
+
+    // 2. Récupérer les commentaires de l'utilisateur effectif
+    const { data: userComments } = await supabase
+      .from('blog_comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        author_id,
+        profiles(display_name),
+        post:blog_posts(id, title)
+      `)
+      .eq('author_id', effectiveUserId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // 3. Récupérer les commentaires sur les posts des albums autorisés
+    let albumComments: any[] = [];
+    if (albumPermissions && albumPermissions.length > 0) {
+      const { data: commentsOnAlbumPosts } = await supabase
         .from('blog_comments')
         .select(`
           id,
@@ -453,113 +411,37 @@ const fetchComments = async (items: RecentItem[], hasRole: any, effectiveUserId:
           created_at,
           author_id,
           profiles(display_name),
-          post:blog_posts(id, title)
+          post:blog_posts!inner(id, title, album_id)
         `)
-        .eq('author_id', effectiveUserId)
-        .order('created_at', { ascending: false })
-        .limit(15);
-
-      console.log('🔍 Requête commentaires utilisateur:', {
-        data: userComments,
-        error: userCommentsError,
-        count: userComments?.length || 0
-      });
-
-      if (userComments) {
-        items.push(...userComments.map(comment => ({
-          id: comment.id,
-          title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
-          type: 'comment' as const,
-          created_at: comment.created_at,
-          author: 'Moi',
-          content_preview: comment.content?.substring(0, 150) + '...',
-          post_title: comment.post?.title,
-          comment_content: comment.content
-        })));
-      }
-    } else {
-      console.log('🔍 UTILISATEUR AVEC PERMISSIONS - récupération commentaires séparée');
-      
-      // 1. Récupérer ses propres commentaires
-      const { data: userComments } = await supabase
-        .from('blog_comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          author_id,
-          profiles(display_name),
-          post:blog_posts(id, title)
-        `)
-        .eq('author_id', effectiveUserId)
+        .in('post.album_id', albumPermissions.map(p => p.album_id))
         .order('created_at', { ascending: false })
         .limit(10);
-
-      // 2. Récupérer les commentaires sur les posts des utilisateurs autorisés ET les commentaires des utilisateurs autorisés
-      const otherAuthorizedIds = authorizedUserIds.filter(id => id !== effectiveUserId);
-      let otherComments: any[] = [];
       
-      if (otherAuthorizedIds.length > 0) {
-        // Récupérer les commentaires sur les posts des utilisateurs autorisés
-        const { data: commentsOnAuthorizedPosts } = await supabase
-          .from('blog_comments')
-          .select(`
-            id,
-            content,
-            created_at,
-            author_id,
-            profiles(display_name),
-            post:blog_posts!inner(id, title, author_id)
-          `)
-          .in('post.author_id', otherAuthorizedIds)
-          .order('created_at', { ascending: false })
-          .limit(8);
-        
-        // Récupérer les commentaires des utilisateurs autorisés (peu importe sur quels posts)
-        const { data: commentsFromAuthorizedUsers } = await supabase
-          .from('blog_comments')
-          .select(`
-            id,
-            content,
-            created_at,
-            author_id,
-            profiles(display_name),
-            post:blog_posts(id, title, author_id)
-          `)
-          .in('author_id', otherAuthorizedIds)
-          .order('created_at', { ascending: false })
-          .limit(7);
-        
-        otherComments = [
-          ...(commentsOnAuthorizedPosts || []),
-          ...(commentsFromAuthorizedUsers || [])
-        ];
-        
-        // Éliminer les doublons par ID
-        const uniqueComments = otherComments.filter((comment, index, self) => 
-          index === self.findIndex(c => c.id === comment.id)
-        );
-        otherComments = uniqueComments;
-      }
+      albumComments = commentsOnAlbumPosts || [];
+    }
 
-      const allComments = [...(userComments || []), ...otherComments];
+    const allComments = [...(userComments || []), ...albumComments];
 
-      console.log('🔍 Commentaires utilisateur:', userComments?.length || 0);
-      console.log('🔍 Commentaires autres autorisés:', otherComments.length);
-      console.log('🔍 Total commentaires:', allComments.length);
+    // Éliminer les doublons par ID
+    const uniqueComments = allComments.filter((comment, index, self) => 
+      index === self.findIndex(c => c.id === comment.id)
+    );
 
-      if (allComments.length > 0) {
-        items.push(...allComments.map(comment => ({
-          id: comment.id,
-          title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
-          type: 'comment' as const,
-          created_at: comment.created_at,
-          author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
-          content_preview: comment.content?.substring(0, 150) + '...',
-          post_title: comment.post?.title,
-          comment_content: comment.content
-        })));
-      }
+    console.log('🔍 Commentaires utilisateur effectif:', userComments?.length || 0);
+    console.log('🔍 Commentaires albums autorisés:', albumComments.length);
+    console.log('🔍 Total commentaires uniques:', uniqueComments.length);
+
+    if (uniqueComments.length > 0) {
+      items.push(...uniqueComments.map(comment => ({
+        id: comment.id,
+        title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
+        type: 'comment' as const,
+        created_at: comment.created_at,
+        author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
+        content_preview: comment.content?.substring(0, 150) + '...',
+        post_title: comment.post?.title,
+        comment_content: comment.content
+      })));
     }
   }
 };
