@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,32 +122,71 @@ const Diary = () => {
 
         if (hasGroupPermission) {
           console.log('Diary - Permissions trouvées pour utilisateur sélectionné');
+          
+          // D'abord, vérifier s'il y a des entrées pour cet utilisateur dans la table
+          console.log('Diary - Vérification globale des entrées pour utilisateur:', selectedUserId);
+          const { data: checkEntries, error: checkError } = await supabase
+            .from('diary_entries')
+            .select('id, user_id, title, entry_date')
+            .eq('user_id', selectedUserId)
+            .limit(5);
+
+          if (checkError) {
+            console.error('Diary - Erreur vérification globale pour utilisateur:', checkError);
+          } else {
+            console.log('Diary - Entrées trouvées pour cet utilisateur (vérification globale):', {
+              count: checkEntries?.length || 0,
+              entries: checkEntries
+            });
+          }
+
           let query = supabase
             .from('diary_entries')
             .select('*')
             .eq('user_id', selectedUserId)
             .order('entry_date', { ascending: false });
 
+          console.log('Diary - Construction de la requête pour utilisateur sélectionné avec filtres:', {
+            userId: selectedUserId,
+            searchTerm,
+            startDate,
+            endDate
+          });
+
           // Appliquer les filtres
           if (searchTerm) {
             query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+            console.log('Diary - Filtre de recherche appliqué pour utilisateur sélectionné:', searchTerm);
           }
           if (startDate) {
             query = query.gte('entry_date', startDate);
+            console.log('Diary - Filtre date début appliqué pour utilisateur sélectionné:', startDate);
           }
           if (endDate) {
             query = query.lte('entry_date', endDate);
+            console.log('Diary - Filtre date fin appliqué pour utilisateur sélectionné:', endDate);
           }
 
-          console.log('Diary - Requête utilisateur sélectionné construite');
+          console.log('Diary - Exécution requête utilisateur sélectionné...');
           const { data, error } = await query;
           
           if (error) {
             console.error('Diary - Erreur requête utilisateur sélectionné:', error);
+            console.error('Diary - Détails erreur utilisateur sélectionné:', {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            });
             throw error;
           }
 
-          console.log('Diary - Réponse utilisateur sélectionné:', { count: data?.length || 0, data });
+          console.log('Diary - Réponse utilisateur sélectionné détaillée:', { 
+            count: data?.length || 0, 
+            data,
+            filteredResult: data,
+            sampleEntry: data?.[0] || 'aucune'
+          });
 
           const convertedEntries = (data || []).map(entry => ({
             ...entry,
@@ -166,7 +206,11 @@ const Diary = () => {
             tags: entry.tags || []
           }));
           
-          console.log('Diary - Entrées utilisateur autorisé récupérées:', convertedEntries.length);
+          console.log('Diary - Entrées utilisateur autorisé récupérées et converties:', {
+            originalCount: data?.length || 0,
+            convertedCount: convertedEntries.length,
+            sampleConverted: convertedEntries[0] || 'aucune'
+          });
           setEntries(convertedEntries);
         } else {
           console.log('Diary - Pas de permissions pour voir ce journal');
