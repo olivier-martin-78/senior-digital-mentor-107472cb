@@ -3,35 +3,34 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
-interface UserOption {
+interface UserProfile {
   id: string;
-  name: string;
+  display_name: string | null;
   email: string;
 }
 
 interface UserSelectorProps {
-  permissionType: 'life_story' | 'diary';
+  permissionType: 'life_story' | 'diary' | 'blog';
   selectedUserId: string | null;
   onUserChange: (userId: string | null) => void;
   className?: string;
 }
 
-export const UserSelector: React.FC<UserSelectorProps> = ({
+const UserSelector: React.FC<UserSelectorProps> = ({
   permissionType,
   selectedUserId,
   onUserChange,
-  className = ""
+  className = ''
 }) => {
   const { user, hasRole } = useAuth();
-  const [availableUsers, setAvailableUsers] = useState<UserOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadAvailableUsers();
-    }
+    loadAvailableUsers();
   }, [user, permissionType]);
 
   const loadAvailableUsers = async () => {
@@ -39,177 +38,110 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
 
     try {
       setLoading(true);
-      
-      // Ajouter l'utilisateur actuel en premier
-      const currentUserOption: UserOption = {
-        id: user.id,
-        name: 'Mon profil',
-        email: user.email || ''
-      };
+      const users: UserProfile[] = [];
 
-      let permissions: any[] = [];
-
-      // Si l'utilisateur est admin, charger tous les utilisateurs
       if (hasRole('admin')) {
-        console.log('Mode admin : chargement de tous les utilisateurs');
-        const { data: allProfiles, error } = await supabase
+        // Les admins voient tous les utilisateurs
+        const { data: allUsers, error } = await supabase
           .from('profiles')
           .select('id, display_name, email')
-          .neq('id', user.id)
           .order('display_name');
 
-        if (error) {
-          console.error('Erreur lors du chargement de tous les profils:', error);
-        } else if (allProfiles) {
-          permissions = allProfiles.map(profile => ({
-            profiles: profile,
-            owner_id: profile.id
-          }));
+        if (!error && allUsers) {
+          users.push(...allUsers);
         }
       } else {
-        // Pour les non-admins, utiliser la logique de permissions existante
-        if (permissionType === 'life_story') {
-          const { data, error } = await supabase
-            .from('life_story_permissions')
-            .select(`
-              story_owner_id,
-              profiles!life_story_permissions_story_owner_id_fkey (
-                id,
-                display_name,
-                email
-              )
-            `)
-            .eq('permitted_user_id', user.id);
+        // Récupérer les utilisateurs autorisés via les groupes d'invitation seulement
+        const { data: groupPermissions, error: groupError } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            invitation_groups!inner(created_by)
+          `)
+          .eq('user_id', user.id);
 
-          if (error) {
-            console.error('Erreur lors du chargement des permissions life_story:', error);
-          } else {
-            permissions = (data || []).map(p => ({
-              ...p,
-              owner_id: p.story_owner_id
-            }));
-          }
-        } else if (permissionType === 'diary') {
-          const [diaryPermsResult, lifeStoryPermsResult] = await Promise.all([
-            supabase
-              .from('diary_permissions')
-              .select(`
-                diary_owner_id,
-                profiles!diary_permissions_diary_owner_id_fkey (
-                  id,
-                  display_name,
-                  email
-                )
-              `)
-              .eq('permitted_user_id', user.id),
-            supabase
-              .from('life_story_permissions')
-              .select(`
-                story_owner_id,
-                profiles!life_story_permissions_story_owner_id_fkey (
-                  id,
-                  display_name,
-                  email
-                )
-              `)
-              .eq('permitted_user_id', user.id)
-          ]);
+        if (!groupError && groupPermissions) {
+          // Récupérer les IDs des créateurs de groupes
+          const creatorIds = [...new Set(groupPermissions.map(p => p.invitation_groups.created_by))];
+          
+          if (creatorIds.length > 0) {
+            // Récupérer les profils des créateurs
+            const { data: creatorProfiles, error: creatorError } = await supabase
+              .from('profiles')
+              .select('id, display_name, email')
+              .in('id', creatorIds)
+              .order('display_name');
 
-          const diaryPermissions = diaryPermsResult.data || [];
-          const lifeStoryPermissions = lifeStoryPermsResult.data || [];
-
-          const combinedPermissions = [
-            ...diaryPermissions.map(p => ({
-              ...p,
-              owner_id: p.diary_owner_id
-            })),
-            ...lifeStoryPermissions.map(p => ({
-              ...p,
-              owner_id: p.story_owner_id
-            }))
-          ];
-
-          permissions = combinedPermissions;
-
-          if (diaryPermsResult.error) {
-            console.error('Erreur lors du chargement des permissions diary:', diaryPermsResult.error);
-          }
-          if (lifeStoryPermsResult.error) {
-            console.error('Erreur lors du chargement des permissions life_story:', lifeStoryPermsResult.error);
+            if (!creatorError && creatorProfiles) {
+              users.push(...creatorProfiles);
+            }
           }
         }
       }
 
-      const userOptions: UserOption[] = [currentUserOption];
-
-      if (permissions && permissions.length > 0) {
-        const seenUserIds = new Set([user.id]);
-        
-        permissions.forEach((permission: any) => {
-          const profile = permission.profiles;
-          const userId = profile?.id;
-          
-          if (profile && userId && !seenUserIds.has(userId)) {
-            seenUserIds.add(userId);
-            userOptions.push({
-              id: userId,
-              name: profile.display_name || profile.email,
-              email: profile.email
-            });
-          }
-        });
-      }
-
-      console.log('UserSelector - Utilisateurs disponibles:', userOptions.length);
-      setAvailableUsers(userOptions);
+      console.log('UserSelector - Utilisateurs disponibles:', users.length);
+      setAvailableUsers(users);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
-      setAvailableUsers([{
-        id: user.id,
-        name: 'Mon profil',
-        email: user.email || ''
-      }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Toujours afficher le sélecteur s'il y a plus d'un utilisateur OU si l'utilisateur est admin
-  if (!hasRole('admin') && availableUsers.length <= 1) {
+  const handleClearSelection = () => {
+    onUserChange(null);
+  };
+
+  const getCurrentUserDisplay = () => {
+    if (!selectedUserId) return 'Mes contenus';
+    
+    const selectedUser = availableUsers.find(u => u.id === selectedUserId);
+    if (selectedUser) {
+      return `Contenus de ${selectedUser.display_name || selectedUser.email}`;
+    }
+    
+    return 'Utilisateur sélectionné';
+  };
+
+  // Ne pas afficher le sélecteur s'il n'y a pas d'autres utilisateurs disponibles
+  if (!hasRole('admin') && availableUsers.length === 0) {
     return null;
   }
 
-  const handleUserChange = (value: string) => {
-    console.log('UserSelector - Changement d\'utilisateur:', value);
-    if (value === user?.id) {
-      onUserChange(null); // Réinitialiser à l'utilisateur actuel
-    } else {
-      onUserChange(value);
-    }
-  };
-
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <User className="h-4 w-4 text-gray-500" />
-      <Select
-        value={selectedUserId || user?.id || ''}
-        onValueChange={handleUserChange}
-        disabled={loading}
-      >
-        <SelectTrigger className="w-64">
-          <SelectValue placeholder="Sélectionner un utilisateur" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableUsers.map((userOption) => (
-            <SelectItem key={userOption.id} value={userOption.id}>
-              <div className="flex flex-col">
-                <span className="font-medium">{userOption.name}</span>
-                <span className="text-xs text-gray-500">{userOption.email}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className={`flex items-center gap-4 ${className}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-700">Voir les contenus de :</span>
+        
+        <Select
+          value={selectedUserId || ''}
+          onValueChange={(value) => onUserChange(value || null)}
+          disabled={loading}
+        >
+          <SelectTrigger className="w-[280px]">
+            <SelectValue placeholder={loading ? "Chargement..." : getCurrentUserDisplay()} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Mes contenus</SelectItem>
+            {availableUsers.map(userProfile => (
+              <SelectItem key={userProfile.id} value={userProfile.id}>
+                {userProfile.display_name || userProfile.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {selectedUserId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearSelection}
+            className="p-2 h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
