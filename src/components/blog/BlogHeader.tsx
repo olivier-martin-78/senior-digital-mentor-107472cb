@@ -13,7 +13,7 @@ interface BlogHeaderProps {
 const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission }) => {
   return (
     <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-serif text-tranches-charcoal">Albums</h1>
+      <div></div>
       {hasCreatePermission && (
         <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
           <Link to="/blog/new">
