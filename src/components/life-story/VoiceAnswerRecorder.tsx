@@ -27,19 +27,17 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     return null;
   }
 
-  const handleAudioRecorded = (blob: Blob) => {
-    onAudioRecorded(chapterId, questionId, blob);
-  };
-
-  const handleAudioDeleted = () => {
-    onAudioDeleted(chapterId, questionId);
+  const handleAudioChange = (audioBlob: Blob | null) => {
+    if (audioBlob) {
+      onAudioRecorded(chapterId, questionId, audioBlob);
+    } else {
+      onAudioDeleted(chapterId, questionId);
+    }
   };
 
   return (
     <VoiceRecorder
-      onAudioSaved={handleAudioRecorded}
-      onAudioDeleted={handleAudioDeleted}
-      existingAudioUrl={existingAudioUrl}
+      onAudioChange={handleAudioChange}
     />
   );
 };
