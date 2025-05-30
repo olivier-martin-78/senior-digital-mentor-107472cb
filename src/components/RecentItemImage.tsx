@@ -8,6 +8,7 @@ interface RecentItemImageProps {
   title: string;
   coverImage?: string;
   mediaUrl?: string;
+  className?: string;
 }
 
 const RecentItemImage: React.FC<RecentItemImageProps> = ({ 
@@ -15,7 +16,8 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
   id, 
   title, 
   coverImage, 
-  mediaUrl 
+  mediaUrl,
+  className = "w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg"
 }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
 
@@ -91,7 +93,7 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
   }
 
   return (
-    <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
+    <div className={className}>
       <img
         src={thumbnailUrl}
         alt={title}

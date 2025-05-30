@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,14 +25,13 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
         {entry.media_url && (
           <div className="relative">
             <AspectRatio ratio={16 / 9}>
-              <div className="w-full h-full overflow-hidden rounded-t-lg">
-                <RecentItemImage
-                  type="diary"
-                  id={entry.id}
-                  title={entry.title || 'Brouillon sans titre'}
-                  mediaUrl={entry.media_url}
-                />
-              </div>
+              <RecentItemImage
+                type="diary"
+                id={entry.id}
+                title={entry.title || 'Brouillon sans titre'}
+                mediaUrl={entry.media_url}
+                className="w-full h-full overflow-hidden rounded-t-lg"
+              />
             </AspectRatio>
             {isDraft && (
               <div className="absolute top-2 right-2">
