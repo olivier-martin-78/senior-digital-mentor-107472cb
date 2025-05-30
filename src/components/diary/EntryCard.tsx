@@ -24,7 +24,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
             <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
               {entry.title || 'Brouillon sans titre'}
             </CardTitle>
-            <EntryMood rating={entry.mood_rating} size="sm" />
+            <EntryMood rating={entry.mood_rating} />
           </div>
           <p className="text-sm text-gray-500">
             {format(new Date(entry.entry_date), 'EEEE d MMMM yyyy', { locale: fr })}
