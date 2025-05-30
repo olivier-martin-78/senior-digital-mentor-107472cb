@@ -10,14 +10,14 @@ export const initialChapters: Chapter[] = [
     questions: [
       {
         id: 'question-1',
-        text: 'Quelle est votre première mémoire ?',
+        text: 'Quel est votre plus ancien souvenir ?',
         answer: '',
         audioBlob: null,
         audioUrl: null,
       },
       {
         id: 'question-2',
-        text: 'Quel était votre jeu préféré ?',
+        text: 'A quels jeux jouiez-vous et avec qui dans votre enfance ?',Q
         answer: '',
         audioBlob: null,
         audioUrl: null,
@@ -38,14 +38,14 @@ export const initialChapters: Chapter[] = [
       },
       {
         id: 'question-5',
-        text: 'Comment étaient vos relations avec vos frères et sœurs ?',
+        text: 'Comment étaient vos intéractions ou relations avec vos frères et sœurs ?',
         answer: '',
         audioBlob: null,
         audioUrl: null,
       },
       {
         id: 'question-6',
-        text: 'Quel a été votre jouet préféré ?',
+        text: 'Quel a été votre jouet ou doudou préféré ?',
         answer: '',
         audioBlob: null,
         audioUrl: null,
