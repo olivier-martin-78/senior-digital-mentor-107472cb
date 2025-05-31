@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +22,11 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       setLoading(true);
       console.log('Diary - Début fetchEntries:', {
         currentUserId: effectiveUserId,
-        isAdmin: hasRole('admin')
+        isAdmin: hasRole('admin'),
+        searchTerm: searchTerm,
+        searchTermLength: searchTerm?.length || 0,
+        startDate,
+        endDate
       });
       
       if (hasRole('admin')) {
@@ -37,7 +40,16 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         // Appliquer les filtres pour admin - recherche insensible à la casse sur tous les champs
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
-          query = query.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
+          console.log('Diary - Admin - Construction requête de recherche:', {
+            originalSearchTerm: searchTerm,
+            searchPattern: searchPattern,
+            patternLength: searchPattern.length
+          });
+          
+          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+          
+          console.log('Diary - Admin - Requête de recherche construite:', searchQuery);
+          query = query.or(searchQuery);
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -46,7 +58,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           query = query.lte('entry_date', endDate);
         }
 
-        console.log('Diary - Requête admin construite');
+        console.log('Diary - Requête admin construite, exécution...');
         const { data: diaryData, error } = await query;
         
         if (error) {
@@ -54,7 +66,17 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           throw error;
         }
         
-        console.log('Diary - Réponse admin:', { count: diaryData?.length || 0, data: diaryData });
+        console.log('Diary - Réponse admin:', { 
+          count: diaryData?.length || 0, 
+          searchTerm: searchTerm,
+          hasSearchTerm: !!searchTerm,
+          sampleEntries: diaryData?.slice(0, 2).map(entry => ({
+            id: entry.id,
+            title: entry.title,
+            tags: entry.tags,
+            reflections: entry.reflections?.substring(0, 100)
+          })) || []
+        });
         
         if (diaryData && diaryData.length > 0) {
           // Récupérer les profils séparément
@@ -95,9 +117,24 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             }
           }));
           
-          console.log('Diary - Entrées admin récupérées:', entriesWithProfiles.length);
+          console.log('Diary - Entrées admin récupérées:', {
+            totalCount: entriesWithProfiles.length,
+            searchApplied: !!searchTerm,
+            searchTerm: searchTerm,
+            entriesWithSearchTermInTitle: entriesWithProfiles.filter(e => 
+              e.title.toLowerCase().includes(searchTerm?.toLowerCase() || '')
+            ).length,
+            entriesWithSearchTermInReflections: entriesWithProfiles.filter(e => 
+              e.reflections.toLowerCase().includes(searchTerm?.toLowerCase() || '')
+            ).length,
+            entriesWithSearchTermInTags: entriesWithProfiles.filter(e => 
+              JSON.stringify(e.tags).toLowerCase().includes(searchTerm?.toLowerCase() || '')
+            ).length
+          });
+          
           setEntries(entriesWithProfiles);
         } else {
+          console.log('Diary - Admin - Aucune entrée trouvée avec les critères de recherche');
           setEntries([]);
         }
         return;
@@ -110,13 +147,22 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       console.log('Diary - Vérification globale de la table diary_entries...');
       const { data: allEntriesCheck, error: allEntriesError } = await supabase
         .from('diary_entries')
-        .select('id, user_id, title')
+        .select('id, user_id, title, tags, reflections')
         .limit(10);
 
       if (allEntriesError) {
         console.error('Diary - Erreur lors de la vérification globale:', allEntriesError);
       } else {
-        console.log('Diary - Entrées globales trouvées:', allEntriesCheck?.length || 0, allEntriesCheck);
+        console.log('Diary - Entrées globales trouvées:', {
+          count: allEntriesCheck?.length || 0,
+          searchTerm: searchTerm,
+          sampleData: allEntriesCheck?.map(entry => ({
+            id: entry.id,
+            title: entry.title,
+            tags: entry.tags,
+            reflections: entry.reflections?.substring(0, 50)
+          })) || []
+        });
       }
 
       // 2. Récupérer directement les entrées de l'utilisateur effectif
@@ -136,7 +182,16 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Appliquer les filtres aux entrées utilisateur - recherche insensible à la casse sur tous les champs
       if (searchTerm) {
         const searchPattern = `%${searchTerm}%`;
-        userEntriesQuery = userEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
+        console.log('Diary - User - Construction requête de recherche:', {
+          originalSearchTerm: searchTerm,
+          searchPattern: searchPattern,
+          patternLength: searchPattern.length
+        });
+        
+        const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+        
+        console.log('Diary - User - Requête de recherche construite:', searchQuery);
+        userEntriesQuery = userEntriesQuery.or(searchQuery);
         console.log('Diary - Filtre de recherche appliqué sur tous les champs (insensible à la casse):', searchTerm);
       }
       if (startDate) {
@@ -165,8 +220,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
       console.log('Diary - Réponse entrées utilisateur effectif:', { 
         count: userEntries?.length || 0, 
-        entries: userEntries,
-        sampleEntry: userEntries?.[0] || 'aucune'
+        searchTerm: searchTerm,
+        hasSearchTerm: !!searchTerm,
+        sampleEntries: userEntries?.slice(0, 2).map(entry => ({
+          id: entry.id,
+          title: entry.title,
+          tags: entry.tags,
+          reflections: entry.reflections?.substring(0, 100)
+        })) || []
       });
 
       // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
@@ -191,6 +252,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             .single();
 
           const convertedUserEntries = userEntries.map(entry => ({
+            // ... keep existing code (entry mapping logic)
             ...entry,
             physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
               ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
@@ -243,7 +305,15 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         // Appliquer les filtres aux autres entrées - recherche insensible à la casse sur tous les champs
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
+          console.log('Diary - Others - Construction requête de recherche:', {
+            originalSearchTerm: searchTerm,
+            searchPattern: searchPattern
+          });
+          
+          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+          
+          console.log('Diary - Others - Requête de recherche construite:', searchQuery);
+          otherEntriesQuery = otherEntriesQuery.or(searchQuery);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
@@ -267,8 +337,13 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           otherEntries = otherEntriesData || [];
           console.log('Diary - Réponse autres entrées:', { 
             count: otherEntries.length,
-            entries: otherEntries,
-            sampleEntry: otherEntries[0] || 'aucune'
+            searchTerm: searchTerm,
+            sampleEntries: otherEntries.slice(0, 2).map(entry => ({
+              id: entry.id,
+              title: entry.title,
+              tags: entry.tags,
+              reflections: entry.reflections?.substring(0, 100)
+            })) || []
           });
         }
       } else {
@@ -280,7 +355,9 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       console.log('Diary - Combinaison des entrées:', {
         userEntriesCount: userEntries?.length || 0,
         otherEntriesCount: otherEntries.length,
-        totalCount: allEntries.length
+        totalCount: allEntries.length,
+        searchTerm: searchTerm,
+        hasSearchTerm: !!searchTerm
       });
       
       // Trier par date d'entrée (plus récent en premier)
@@ -318,8 +395,23 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }
       }));
       
-      console.log('Diary - Total entrées finales:', convertedEntries.length);
-      console.log('Diary - Échantillon entrées finales:', convertedEntries.slice(0, 2));
+      console.log('Diary - Total entrées finales:', {
+        totalCount: convertedEntries.length,
+        searchTerm: searchTerm,
+        hasSearchTerm: !!searchTerm,
+        manualSearchResults: searchTerm ? {
+          titleMatches: convertedEntries.filter(e => 
+            e.title.toLowerCase().includes(searchTerm.toLowerCase())
+          ).length,
+          reflectionMatches: convertedEntries.filter(e => 
+            e.reflections.toLowerCase().includes(searchTerm.toLowerCase())
+          ).length,
+          tagMatches: convertedEntries.filter(e => 
+            JSON.stringify(e.tags).toLowerCase().includes(searchTerm.toLowerCase())
+          ).length
+        } : null
+      });
+      
       setEntries(convertedEntries);
     } catch (error) {
       console.error('Diary - Erreur lors du chargement des entrées:', error);
