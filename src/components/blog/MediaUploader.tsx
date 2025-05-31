@@ -53,12 +53,12 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(Array.from(e.dataTransfer.files));
+      processFiles(Array.from(e.dataTransfer.files));
     }
   };
 
-  // Gérer les fichiers sélectionnés
-  const handleFiles = async (files: File[]) => {
+  // Traiter les fichiers directement sans compression côté client
+  const processFiles = async (files: File[]) => {
     const validFiles: File[] = [];
     const errors: string[] = [];
 
@@ -73,71 +73,14 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
     }
 
     if (errors.length > 0) {
-      // Afficher les erreurs de validation
       console.error('Erreurs de validation:', errors);
       return;
     }
 
-    // Traiter les fichiers valides
-    const processedFiles: File[] = [];
-    
-    for (const file of validFiles) {
-      const uploadingFile: UploadingFile = {
-        file,
-        progress: 0,
-        status: isVideoFile(file) ? 'compressing' : 'uploading'
-      };
-      
-      setUploadingFilesList(prev => [...prev, uploadingFile]);
-
-      try {
-        let processedFile = file;
-        
-        // Compresser les vidéos si nécessaire
-        if (isVideoFile(file) && file.size > 50 * 1024 * 1024) { // > 50MB
-          uploadingFile.status = 'compressing';
-          setUploadingFilesList(prev => 
-            prev.map(f => f.file.name === file.name ? uploadingFile : f)
-          );
-          
-          processedFile = await compressVideo(file, (progress) => {
-            setUploadingFilesList(prev => 
-              prev.map(f => 
-                f.file.name === file.name 
-                  ? { ...f, progress: progress * 0.5 } // 50% pour la compression
-                  : f
-              )
-            );
-          });
-        }
-        
-        uploadingFile.status = 'uploading';
-        uploadingFile.progress = isVideoFile(file) ? 50 : 0;
-        setUploadingFilesList(prev => 
-          prev.map(f => f.file.name === file.name ? uploadingFile : f)
-        );
-        
-        processedFiles.push(processedFile);
-        
-        uploadingFile.status = 'success';
-        uploadingFile.progress = 100;
-        setUploadingFilesList(prev => 
-          prev.map(f => f.file.name === file.name ? uploadingFile : f)
-        );
-        
-      } catch (error) {
-        uploadingFile.status = 'error';
-        uploadingFile.error = error instanceof Error ? error.message : 'Erreur inconnue';
-        setUploadingFilesList(prev => 
-          prev.map(f => f.file.name === file.name ? uploadingFile : f)
-        );
-      }
-    }
-
     // Simuler l'événement de changement pour le gestionnaire existant
-    if (processedFiles.length > 0) {
+    if (validFiles.length > 0) {
       const dataTransfer = new DataTransfer();
-      processedFiles.forEach(file => dataTransfer.items.add(file));
+      validFiles.forEach(file => dataTransfer.items.add(file));
       
       const fileInput = document.getElementById('media-upload') as HTMLInputElement;
       if (fileInput) {
@@ -147,16 +90,11 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
         handleFileUpload(event);
       }
     }
-
-    // Nettoyer la liste après 3 secondes
-    setTimeout(() => {
-      setUploadingFilesList([]);
-    }, 3000);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      handleFiles(Array.from(e.target.files));
+      processFiles(Array.from(e.target.files));
     }
   };
 
@@ -198,21 +136,6 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
         </Label>
       </div>
 
-      {/* Affichage des fichiers en cours d'upload */}
-      {uploadingFilesList.length > 0 && (
-        <div className="space-y-2">
-          {uploadingFilesList.map((uploadingFile, index) => (
-            <UploadProgress
-              key={`${uploadingFile.file.name}-${index}`}
-              progress={uploadingFile.progress}
-              status={uploadingFile.status}
-              fileName={uploadingFile.file.name}
-              error={uploadingFile.error}
-            />
-          ))}
-        </div>
-      )}
-
       {/* Avertissement pour les gros fichiers */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
         <div className="flex">
@@ -220,7 +143,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
           <div className="text-xs text-yellow-800">
             <strong>Conseils pour les vidéos :</strong>
             <ul className="mt-1 list-disc list-inside space-y-1">
-              <li>Les vidéos de plus de 50 MB seront automatiquement compressées</li>
+              <li>Les vidéos seront automatiquement optimisées lors de l'upload</li>
               <li>Pour de meilleurs résultats, utilisez des vidéos de moins de {formatFileSize(MAX_FILE_SIZE)}</li>
               <li>Formats recommandés : MP4, WebM</li>
             </ul>

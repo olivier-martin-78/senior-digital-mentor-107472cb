@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -349,6 +348,7 @@ export const useBlogEditor = () => {
     setUploadingFiles(true);
     setUploadErrors([]);
     const newErrors: string[] = [];
+    const successfulUploads: any[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -358,18 +358,10 @@ export const useBlogEditor = () => {
       try {
         console.log(`Début upload du fichier: ${file.name} (${Math.round(file.size / (1024 * 1024))} MB)`);
         
-        // Upload du fichier principal avec timeout personnalisé
-        const uploadPromise = supabase.storage
+        // Upload du fichier principal
+        const { error: uploadError } = await supabase.storage
           .from('blog-media')
           .upload(filePath, file);
-
-        // Timeout personnalisé basé sur la taille du fichier
-        const timeoutDuration = Math.max(60000, file.size / 1024); // Minimum 1 minute, +1ms par KB
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout: Upload trop long')), timeoutDuration);
-        });
-
-        const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
         if (uploadError) {
           console.error(`Erreur upload ${file.name}:`, uploadError);
@@ -409,19 +401,20 @@ export const useBlogEditor = () => {
             }
           } catch (thumbnailError) {
             console.error('Erreur lors de la génération de la vignette:', thumbnailError);
-            // Continue sans vignette si la génération échoue
           }
         }
 
-        // Save to database with thumbnail URL if available
-        const { error: dbError } = await supabase
+        // Save to database
+        const { data: insertedMedia, error: dbError } = await supabase
           .from('blog_media')
           .insert({
             post_id: id || post?.id,
             media_url: publicUrl,
             media_type: file.type,
             thumbnail_url: thumbnailUrl
-          });
+          })
+          .select()
+          .single();
 
         if (dbError) {
           console.error(`Erreur DB pour ${file.name}:`, dbError);
@@ -429,22 +422,24 @@ export const useBlogEditor = () => {
           continue;
         }
 
-        // Add to local state
-        setMedia(prev => [...prev, {
-          id: Date.now().toString(), // Temporary ID
-          post_id: id || post?.id || '',
-          media_url: publicUrl,
-          media_type: file.type,
-          thumbnail_url: thumbnailUrl,
-          created_at: new Date().toISOString()
-        }]);
-
-        console.log(`Traitement terminé avec succès: ${file.name}`);
+        if (insertedMedia) {
+          successfulUploads.push(insertedMedia);
+          console.log(`Traitement terminé avec succès: ${file.name}`, insertedMedia);
+        }
 
       } catch (error: any) {
         console.error(`Erreur générale pour ${file.name}:`, error);
         newErrors.push(`Erreur lors du traitement de ${file.name}: ${error.message}`);
       }
+    }
+
+    // Mettre à jour l'état local avec tous les uploads réussis
+    if (successfulUploads.length > 0) {
+      setMedia(prev => [...prev, ...successfulUploads]);
+      toast({
+        title: "Upload réussi",
+        description: `${successfulUploads.length} fichier(s) téléchargé(s) avec succès.`
+      });
     }
 
     if (newErrors.length > 0) {
@@ -453,11 +448,6 @@ export const useBlogEditor = () => {
         title: "Erreurs d'upload",
         description: `${newErrors.length} fichier(s) n'ont pas pu être téléchargés.`,
         variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Upload réussi",
-        description: `${files.length} fichier(s) téléchargé(s) avec succès.`
       });
     }
 
