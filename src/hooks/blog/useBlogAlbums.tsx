@@ -12,7 +12,7 @@ export const useBlogAlbums = () => {
   useEffect(() => {
     const fetchAlbums = async () => {
       if (!user) {
-        console.log('🚫 useBlogAlbums - Pas d\'utilisateur connecté');
+        console.log('🚫 useBlogAlbums - No user connected');
         setAlbums([]);
         setLoading(false);
         return;
@@ -22,57 +22,37 @@ export const useBlogAlbums = () => {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('📊 useBlogAlbums - DÉBUT REQUÊTE avec nouvelles politiques RLS simplifiées:', {
+        console.log('📊 useBlogAlbums - START REQUEST:', {
           originalUserId: user.id,
           effectiveUserId: effectiveUserId,
           originalUserEmail: user.email,
-          effectiveUserProfile: profile,
           isImpersonating: effectiveUserId !== user.id,
-          isAdmin: hasRole('admin'),
-          timestamp: new Date().toISOString()
+          isAdmin: hasRole('admin')
         });
 
-        // Vérifier l'état de la session avant la requête
-        const { data: session } = await supabase.auth.getSession();
-        console.log('🔐 useBlogAlbums - État session:', {
-          hasSession: !!session.session,
-          userId: session.session?.user?.id,
-          userEmail: session.session?.user?.email
-        });
-
-        console.log('🎯 useBlogAlbums - STRATÉGIE: Récupérer tous les albums avec nouvelles politiques RLS, filtrer côté client selon impersonnation');
+        // Simple query - let RLS handle the filtering
+        console.log('🚀 useBlogAlbums - Executing simple Supabase query');
+        const startTime = Date.now();
         
-        // Avec les nouvelles politiques RLS simplifiées, tous les utilisateurs authentifiés peuvent voir tous les albums
-        const albumsQuery = supabase
+        const { data, error } = await supabase
           .from('blog_albums')
           .select(`
             *,
             profiles(id, display_name, email, avatar_url, created_at)
           `)
           .order('name');
-
-        console.log('🚀 useBlogAlbums - EXÉCUTION REQUÊTE Supabase avec politiques RLS simplifiées');
-        const startTime = Date.now();
-        
-        const { data, error } = await albumsQuery;
         
         const endTime = Date.now();
-        console.log(`⏱️ useBlogAlbums - REQUÊTE TERMINÉE en ${endTime - startTime}ms`);
+        console.log(`⏱️ useBlogAlbums - Query completed in ${endTime - startTime}ms`);
 
         if (error) {
-          console.error('❌ useBlogAlbums - ERREUR SUPABASE:', {
-            error: error,
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
+          console.error('❌ useBlogAlbums - Supabase error:', error);
           throw error;
         }
         
-        console.log('✅ useBlogAlbums - DONNÉES BRUTES reçues:', {
+        console.log('✅ useBlogAlbums - Raw data received:', {
           count: data?.length || 0,
-          rawData: data?.map(album => ({
+          albums: data?.map(album => ({
             id: album.id,
             name: album.name,
             author_id: album.author_id,
@@ -82,64 +62,44 @@ export const useBlogAlbums = () => {
 
         let filteredAlbums = data || [];
 
-        // FILTRAGE CÔTÉ CLIENT pour l'impersonnation
+        // Client-side filtering for impersonation
         if (hasRole('admin') && effectiveUserId !== user.id) {
-          console.log('🎭 useBlogAlbums - MODE IMPERSONNATION: filtrage côté client');
+          console.log('🎭 useBlogAlbums - Impersonation mode: client-side filtering');
           const beforeFilterCount = filteredAlbums.length;
           
-          filteredAlbums = filteredAlbums.filter(album => {
-            const canSee = album.author_id === effectiveUserId;
-            console.log('🔎 useBlogAlbums - Test visibilité album:', {
-              albumId: album.id,
-              albumName: album.name,
-              albumAuthorId: album.author_id,
-              effectiveUserId,
-              canSee
-            });
-            return canSee;
-          });
+          filteredAlbums = filteredAlbums.filter(album => album.author_id === effectiveUserId);
 
-          console.log('📊 useBlogAlbums - Résultat filtrage impersonnation:', {
-            avant: beforeFilterCount,
-            après: filteredAlbums.length,
-            supprimés: beforeFilterCount - filteredAlbums.length
+          console.log('📊 useBlogAlbums - Impersonation filtering result:', {
+            before: beforeFilterCount,
+            after: filteredAlbums.length
           });
-        } else {
-          console.log('📋 useBlogAlbums - Pas de filtrage impersonnation nécessaire');
         }
 
-        console.log('🎉 useBlogAlbums - RÉSULTAT FINAL:', {
+        console.log('🎉 useBlogAlbums - Final result:', {
           count: filteredAlbums.length,
           albums: filteredAlbums.map(album => ({
             id: album.id,
             name: album.name,
-            author_id: album.author_id,
-            author_email: album.profiles?.email
-          })),
-          timestamp: new Date().toISOString()
+            author_id: album.author_id
+          }))
         });
 
         setAlbums(filteredAlbums);
         
       } catch (error) {
-        console.error('💥 useBlogAlbums - ERREUR CRITIQUE:', {
-          error: error,
-          message: error instanceof Error ? error.message : 'Erreur inconnue',
-          stack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
+        console.error('💥 useBlogAlbums - Critical error:', error);
         setAlbums([]);
       } finally {
         setLoading(false);
-        console.log('🏁 useBlogAlbums - FIN fetchAlbums, loading: false');
+        console.log('🏁 useBlogAlbums - End fetchAlbums, loading: false');
       }
     };
 
-    console.log('🔄 useBlogAlbums - useEffect déclenché, démarrage fetchAlbums');
+    console.log('🔄 useBlogAlbums - useEffect triggered, starting fetchAlbums');
     fetchAlbums();
   }, [user, getEffectiveUserId, profile, hasRole]);
 
-  console.log('📤 useBlogAlbums - RETOUR hook:', {
+  console.log('📤 useBlogAlbums - Hook return:', {
     albumsCount: albums.length,
     loading
   });
