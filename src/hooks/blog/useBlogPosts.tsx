@@ -143,7 +143,53 @@ export const useBlogPosts = (
 
         let otherPosts: PostWithAuthor[] = [];
 
-        // 3. Récupérer les posts des autres utilisateurs autorisés
+        // 2. NOUVELLE ÉTAPE : Récupérer les posts des albums avec permissions directes
+        console.log('useBlogPosts - Récupération posts via permissions directes albums');
+        const { data: albumPermissions, error: albumPermissionsError } = await supabase
+          .from('album_permissions')
+          .select('album_id')
+          .eq('user_id', effectiveUserId);
+
+        if (!albumPermissionsError && albumPermissions && albumPermissions.length > 0) {
+          const albumIds = albumPermissions.map(p => p.album_id);
+          console.log('useBlogPosts - Albums avec permissions directes:', albumIds);
+
+          let albumPostsQuery = supabase
+            .from('blog_posts')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .eq('published', true) // SEULEMENT les posts publiés des albums avec permissions
+            .in('album_id', albumIds)
+            .order('created_at', { ascending: false });
+
+          // Appliquer les filtres aux posts d'albums
+          if (searchTerm) {
+            albumPostsQuery = albumPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+          }
+          if (selectedAlbum) {
+            albumPostsQuery = albumPostsQuery.eq('album_id', selectedAlbum);
+          }
+          if (startDate) {
+            albumPostsQuery = albumPostsQuery.gte('created_at', startDate);
+          }
+          if (endDate) {
+            const endDateTime = endDate + 'T23:59:59';
+            albumPostsQuery = albumPostsQuery.lte('created_at', endDateTime);
+          }
+
+          const { data: albumPosts, error: albumPostsError } = await albumPostsQuery;
+          
+          if (!albumPostsError && albumPosts) {
+            otherPosts.push(...albumPosts);
+            console.log('useBlogPosts - Posts d\'albums avec permissions directes récupérés:', albumPosts.length);
+          } else {
+            console.error('useBlogPosts - Erreur lors de la récupération des posts d\'albums:', albumPostsError);
+          }
+        }
+
+        // 3. Récupérer les posts des autres utilisateurs autorisés via groupes
         if (authorizedUserIds && authorizedUserIds.length > 0) {
           let otherPostsQuery = supabase
             .from('blog_posts')
@@ -175,18 +221,29 @@ export const useBlogPosts = (
           if (otherPostsError) {
             console.error('useBlogPosts - Erreur lors de la récupération des autres posts:', otherPostsError);
           } else {
-            otherPosts = otherPostsData || [];
-            console.log('useBlogPosts - Autres posts autorisés récupérés:', otherPosts.length);
+            otherPosts.push(...(otherPostsData || []));
+            console.log('useBlogPosts - Autres posts autorisés récupérés:', otherPostsData?.length || 0);
           }
         }
 
-        // Combiner ses posts avec les posts autorisés des autres
-        const allPosts = [...(userPosts || []), ...otherPosts];
+        // 4. Combiner ses posts avec les posts autorisés des autres (en évitant les doublons)
+        const allPosts = [...(userPosts || [])];
+        otherPosts.forEach(post => {
+          if (!allPosts.find(existing => existing.id === post.id)) {
+            allPosts.push(post);
+          }
+        });
         
         // Trier par date de création (plus récent en premier)
         allPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         
+        console.log('useBlogPosts - ===== RÉSUMÉ FINAL POSTS =====');
+        console.log('useBlogPosts - Posts utilisateur:', userPosts?.length || 0);
+        console.log('useBlogPosts - Posts via permissions directes albums:', albumPermissions?.length || 0, 'albums autorisés');
+        console.log('useBlogPosts - Posts via groupes:', authorizedUserIds?.length || 0, 'utilisateurs autorisés');
         console.log('useBlogPosts - Total posts finaux:', allPosts.length);
+        console.log('useBlogPosts - Posts finaux:', allPosts.map(p => ({ id: p.id, title: p.title, author: p.profiles?.display_name, album_id: p.album_id })));
+        
         setPosts(allPosts);
       } catch (error) {
         console.error('useBlogPosts - Erreur lors du chargement des articles:', error);
