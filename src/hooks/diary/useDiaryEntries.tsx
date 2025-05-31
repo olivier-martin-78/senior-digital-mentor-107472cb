@@ -150,7 +150,31 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Récupération pour l'utilisateur effectif
       console.log('🔍 Diary - Récupération des entrées utilisateur effectif:', effectiveUserId);
       
-      // Récupérer directement les entrées de l'utilisateur effectif
+      // DIAGNOSTIC: Récupérer TOUTES les entrées de l'utilisateur sans filtre
+      console.log('🔍 DIAGNOSTIC - Récupération de TOUTES les entrées pour diagnostic...');
+      const { data: allUserEntries, error: allEntriesError } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .eq('user_id', effectiveUserId)
+        .order('entry_date', { ascending: false });
+
+      if (allEntriesError) {
+        console.error('🔍 DIAGNOSTIC - Erreur:', allEntriesError);
+      } else {
+        console.log('🔍 DIAGNOSTIC - TOUTES vos entrées:', {
+          count: allUserEntries?.length || 0,
+          entries: allUserEntries?.map(entry => ({
+            id: entry.id,
+            title: entry.title,
+            tags: entry.tags,
+            contacted_people: entry.contacted_people,
+            activities: entry.activities?.substring(0, 50),
+            reflections: entry.reflections?.substring(0, 50)
+          })) || []
+        });
+      }
+      
+      // Récupérer directement les entrées de l'utilisateur effectif avec filtre
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
