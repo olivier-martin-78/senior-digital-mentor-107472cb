@@ -8,28 +8,26 @@ export const useBlogPosts = (
   searchTerm: string, 
   selectedAlbum: string, 
   startDate?: string, 
-  endDate?: string, 
-  selectedUserId?: string | null,
-  effectiveUserId?: string,
-  authorizedUserIds?: string[]
+  endDate?: string
 ) => {
-  const { hasRole } = useAuth();
+  const { user } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPosts = async () => {
+      if (!user) {
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        console.log('useBlogPosts - Début fetchPosts avec nouvelles politiques consolidées');
+        console.log('useBlogPosts - Récupération avec politiques RLS consolidées');
         
-        // Avec les nouvelles politiques RLS consolidées, nous pouvons simplifier énormément
-        // La politique "blog_posts_select_consolidated" gère automatiquement :
-        // - Admin peut tout voir
-        // - Propriétaire peut voir ses posts (publiés et brouillons)
-        // - Posts publiés visibles par tous
-        // - Permissions sur les albums
-        
+        // Utilisation directe des politiques RLS consolidées
+        // La politique "blog_posts_final" gère automatiquement tous les cas
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -39,10 +37,6 @@ export const useBlogPosts = (
           .order('created_at', { ascending: false });
 
         // Appliquer les filtres
-        if (selectedUserId) {
-          query = query.eq('author_id', selectedUserId);
-        }
-
         if (searchTerm) {
           query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
         }
@@ -63,19 +57,11 @@ export const useBlogPosts = (
         const { data, error } = await query;
         
         if (error) {
-          console.error('useBlogPosts - Erreur politique consolidée:', error);
+          console.error('useBlogPosts - Erreur:', error);
           throw error;
         }
 
-        console.log('useBlogPosts - Posts récupérés avec politique consolidée:', data?.length || 0);
-        console.log('useBlogPosts - Posts détails:', data?.map(p => ({ 
-          id: p.id, 
-          title: p.title, 
-          author: p.profiles?.display_name,
-          published: p.published,
-          album_id: p.album_id 
-        })));
-        
+        console.log('useBlogPosts - Posts récupérés:', data?.length || 0);
         setPosts(data || []);
         
       } catch (error) {
@@ -86,10 +72,8 @@ export const useBlogPosts = (
       }
     };
 
-    if (effectiveUserId) {
-      fetchPosts();
-    }
-  }, [searchTerm, selectedAlbum, startDate, endDate, selectedUserId, effectiveUserId, authorizedUserIds, hasRole]);
+    fetchPosts();
+  }, [searchTerm, selectedAlbum, startDate, endDate, user]);
 
   return { posts, loading };
 };

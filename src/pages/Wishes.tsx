@@ -42,15 +42,21 @@ const Wishes = () => {
     
     try {
       setLoading(true);
+      console.log('Wishes - Utilisation des politiques RLS consolidées');
+      
+      // Utilisation directe des politiques RLS consolidées
+      // La politique "wish_posts_final" gère automatiquement l'accès
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Wishes - Erreur:', error);
         throw error;
       }
       
+      console.log('Wishes - Souhaits récupérés:', data?.length || 0);
       setWishes(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des souhaits:', error);

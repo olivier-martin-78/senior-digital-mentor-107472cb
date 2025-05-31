@@ -1,42 +1,33 @@
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useBlogPermissions } from './blog/useBlogPermissions';
-import { useBlogPosts } from './blog/useBlogPosts';
 import { useBlogAlbums } from './blog/useBlogAlbums';
+import { useBlogPosts } from './blog/useBlogPosts';
+import { useAuth } from '@/contexts/AuthContext';
 
-export const useBlogData = (searchTerm: string, selectedAlbum: string, startDate?: string, endDate?: string, selectedUserId?: string | null) => {
-  const { hasRole, getEffectiveUserId } = useAuth();
-  const effectiveUserId = getEffectiveUserId();
-
-  const hasCreatePermission = hasRole('editor') || hasRole('admin');
-
-  // Get permissions
-  const { authorizedUserIds, loading: permissionsLoading } = useBlogPermissions(effectiveUserId || '');
-
-  // Get posts
+export const useBlogData = (
+  searchTerm: string,
+  selectedAlbum: string,
+  startDate?: string,
+  endDate?: string,
+  selectedUserId?: string | null
+) => {
+  const { hasRole } = useAuth();
+  
+  // Utilisation simplifiée avec les nouvelles politiques RLS consolidées
+  const { albums, loading: albumsLoading } = useBlogAlbums();
   const { posts, loading: postsLoading } = useBlogPosts(
     searchTerm,
     selectedAlbum,
     startDate,
-    endDate,
-    selectedUserId,
-    effectiveUserId,
-    authorizedUserIds
+    endDate
   );
 
-  // Get albums
-  const { albums, loading: albumsLoading } = useBlogAlbums(
-    selectedUserId,
-    effectiveUserId,
-    authorizedUserIds
-  );
-
-  const loading = permissionsLoading || postsLoading || albumsLoading;
+  // Les politiques RLS gèrent maintenant les permissions automatiquement
+  const hasCreatePermission = hasRole('admin') || hasRole('editor');
 
   return {
     posts,
     albums,
-    loading,
+    loading: albumsLoading || postsLoading,
     hasCreatePermission
   };
 };
