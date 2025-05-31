@@ -160,6 +160,18 @@ const Wishes = () => {
     shouldShowGrid: wishes.length > 0
   });
 
+  // Logs pour les conditions de rendu
+  const isEmptyState = wishes.length === 0;
+  const shouldShowGrid = wishes.length > 0;
+  
+  console.log('🔍 Analyse du rendu final:', {
+    isEmptyState,
+    shouldShowGrid,
+    wishesArray: wishes,
+    renderingEmptyMessage: isEmptyState,
+    renderingGrid: shouldShowGrid
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -177,46 +189,49 @@ const Wishes = () => {
           </div>
         </div>
         
-        {wishes.length === 0 ? (
-          <>
-            {console.log('📭 Affichage du message "Aucun souhait"')}
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold text-gray-600 mb-4">Aucun souhait pour le moment</h2>
-              <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
-              <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-                <a href="/wishes/new">
-                  <Plus className="mr-2 h-5 w-5" />
-                  Créer un souhait
-                </a>
-              </Button>
-            </div>
-          </>
+        {isEmptyState ? (
+          (() => {
+            console.log('📭 Affichage du message "Aucun souhait"');
+            return (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-semibold text-gray-600 mb-4">Aucun souhait pour le moment</h2>
+                <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
+                <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+                  <a href="/wishes/new">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Créer un souhait
+                  </a>
+                </Button>
+              </div>
+            );
+          })()
         ) : (
-          <>
-            {console.log('🎯 Affichage de la grille avec', wishes.length, 'souhaits')}
-            {console.log('🔍 Détail des souhaits à afficher:', wishes.map((wish, idx) => ({
+          (() => {
+            console.log('🎯 Affichage de la grille avec', wishes.length, 'souhaits');
+            console.log('🔍 Détail des souhaits à afficher:', wishes.map((wish, idx) => ({
               position: idx,
               id: wish.id,
               title: wish.title,
               hasContent: !!wish.content,
               published: wish.published
-            })))}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {wishes.map((wish, index) => {
-                console.log(`🎴 Rendu WishCard ${index + 1}/${wishes.length}:`, {
-                  id: wish.id,
-                  title: wish.title,
-                  published: wish.published
-                });
-                return (
-                  <WishCard key={wish.id} wish={wish} />
-                );
-              })}
-            </div>
-          </>
+            })));
+            
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {wishes.map((wish, index) => {
+                  console.log(`🎴 Rendu WishCard ${index + 1}/${wishes.length}:`, {
+                    id: wish.id,
+                    title: wish.title,
+                    published: wish.published
+                  });
+                  return (
+                    <WishCard key={wish.id} wish={wish} />
+                  );
+                })}
+              </div>
+            );
+          })()
         )}
-        
-        {console.log('🏁 ===== FIN RENDU COMPONENT =====')}
       </div>
     </div>
   );
