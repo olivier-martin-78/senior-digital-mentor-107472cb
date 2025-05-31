@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BlogAlbum } from '@/types/supabase';
 
 export const useBlogAlbums = () => {
-  const { user, getEffectiveUserId, profile, hasRole } = useAuth();
+  const { user, getEffectiveUserId, hasRole } = useAuth();
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,8 +30,8 @@ export const useBlogAlbums = () => {
           isAdmin: hasRole('admin')
         });
 
-        // Simple query - let RLS handle the filtering
-        console.log('🚀 useBlogAlbums - Executing simple Supabase query');
+        // Simple query - les nouvelles politiques RLS permettent à tous les utilisateurs authentifiés de voir tous les albums
+        console.log('🚀 useBlogAlbums - Executing Supabase query with new RLS policies');
         const startTime = Date.now();
         
         const { data, error } = await supabase
@@ -62,7 +62,7 @@ export const useBlogAlbums = () => {
 
         let filteredAlbums = data || [];
 
-        // Client-side filtering for impersonation
+        // Filtrage côté client pour l'impersonnation
         if (hasRole('admin') && effectiveUserId !== user.id) {
           console.log('🎭 useBlogAlbums - Impersonation mode: client-side filtering');
           const beforeFilterCount = filteredAlbums.length;
@@ -71,7 +71,8 @@ export const useBlogAlbums = () => {
 
           console.log('📊 useBlogAlbums - Impersonation filtering result:', {
             before: beforeFilterCount,
-            after: filteredAlbums.length
+            after: filteredAlbums.length,
+            effectiveUserId
           });
         }
 
@@ -97,7 +98,7 @@ export const useBlogAlbums = () => {
 
     console.log('🔄 useBlogAlbums - useEffect triggered, starting fetchAlbums');
     fetchAlbums();
-  }, [user, getEffectiveUserId, profile, hasRole]);
+  }, [user, getEffectiveUserId, hasRole]);
 
   console.log('📤 useBlogAlbums - Hook return:', {
     albumsCount: albums.length,
