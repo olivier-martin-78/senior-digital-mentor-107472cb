@@ -29,120 +29,42 @@ const Wishes = () => {
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  console.log('🚀 ===== WISHES COMPONENT - DÉBUT DIAGNOSTIC =====');
-  console.log('🔐 État d\'authentification:', {
-    hasSession: !!session,
-    hasUser: !!user,
-    userId: user?.id,
-    userEmail: user?.email
-  });
-
   useEffect(() => {
-    console.log('🔄 useEffect déclenché - Conditions:', {
-      session: !!session,
-      sessionId: session?.user?.id,
-      shouldRedirect: !session
-    });
-
     if (!session) {
-      console.log('❌ Pas de session - Redirection vers /auth');
       navigate('/auth');
       return;
     }
     
-    console.log('✅ Session validée - Lancement de fetchWishes');
     fetchWishes();
   }, [session, navigate]);
 
   const fetchWishes = async () => {
-    console.log('📡 ===== DÉBUT FETCH WISHES =====');
-    console.log('👤 Utilisateur actuel:', {
-      user: !!user,
-      userId: user?.id,
-      userEmail: user?.email
-    });
-    
     if (!user) {
-      console.log('❌ Pas d\'utilisateur - Arrêt de fetchWishes');
       return;
     }
     
     try {
       setLoading(true);
-      console.log('⏳ État loading activé');
-      console.log('🔧 Utilisation des politiques RLS ultra-simplifiées');
       
-      console.log('📤 Lancement requête Supabase...');
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('📥 Réponse Supabase reçue:', {
-        hasData: !!data,
-        dataLength: data?.length || 0,
-        hasError: !!error,
-        errorMessage: error?.message
-      });
-
       if (error) {
-        console.error('❌ Erreur Supabase détectée:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw error;
       }
       
-      console.log('📊 DONNÉES RÉCUPÉRÉES DÉTAIL:', {
-        totalSouhaits: data?.length || 0,
-        souhaitsPubliés: data?.filter(w => w.published).length || 0,
-        souhaitsNonPubliés: data?.filter(w => !w.published).length || 0
-      });
-
-      if (data && data.length > 0) {
-        console.log('🎯 STRUCTURE DES SOUHAITS:', data.map((wish, index) => ({
-          index,
-          id: wish.id,
-          title: wish.title,
-          published: wish.published,
-          author_id: wish.author_id,
-          created_at: wish.created_at,
-          contentLength: wish.content?.length || 0
-        })));
-      } else {
-        console.log('⚠️ AUCUNE DONNÉE RÉCUPÉRÉE - data est:', data);
-      }
-      
-      console.log('💾 Mise à jour du state wishes...');
       setWishes(data || []);
-      console.log('✅ State wishes mis à jour avec:', data?.length || 0, 'éléments');
       
     } catch (error) {
-      console.error('💥 ERREUR DANS fetchWishes:', {
-        errorType: typeof error,
-        errorMessage: error instanceof Error ? error.message : 'Erreur inconnue',
-        errorStack: error instanceof Error ? error.stack : 'Pas de stack',
-        fullError: error
-      });
+      console.error('Erreur lors de la récupération des souhaits:', error);
     } finally {
-      console.log('🏁 fetchWishes terminé - Désactivation loading');
       setLoading(false);
     }
-    
-    console.log('📡 ===== FIN FETCH WISHES =====');
   };
 
-  console.log('🎨 ===== DÉBUT RENDU COMPONENT =====');
-  console.log('📊 État actuel du component:', {
-    loading,
-    wishesLength: wishes.length,
-    wishesData: wishes.map(w => ({ id: w.id, title: w.title, published: w.published }))
-  });
-
   if (loading) {
-    console.log('⏳ Affichage du spinner de chargement');
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
@@ -152,25 +74,6 @@ const Wishes = () => {
       </div>
     );
   }
-
-  console.log('🚦 Condition d\'affichage des souhaits:', {
-    wishesLength: wishes.length,
-    isEmpty: wishes.length === 0,
-    shouldShowEmpty: wishes.length === 0,
-    shouldShowGrid: wishes.length > 0
-  });
-
-  // Logs pour les conditions de rendu
-  const isEmptyState = wishes.length === 0;
-  const shouldShowGrid = wishes.length > 0;
-  
-  console.log('🔍 Analyse du rendu final:', {
-    isEmptyState,
-    shouldShowGrid,
-    wishesArray: wishes,
-    renderingEmptyMessage: isEmptyState,
-    renderingGrid: shouldShowGrid
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -189,48 +92,23 @@ const Wishes = () => {
           </div>
         </div>
         
-        {isEmptyState ? (
-          (() => {
-            console.log('📭 Affichage du message "Aucun souhait"');
-            return (
-              <div className="text-center py-12">
-                <h2 className="text-xl font-semibold text-gray-600 mb-4">Aucun souhait pour le moment</h2>
-                <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
-                <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-                  <a href="/wishes/new">
-                    <Plus className="mr-2 h-5 w-5" />
-                    Créer un souhait
-                  </a>
-                </Button>
-              </div>
-            );
-          })()
+        {wishes.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-gray-600 mb-4">Aucun souhait pour le moment</h2>
+            <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
+            <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+              <a href="/wishes/new">
+                <Plus className="mr-2 h-5 w-5" />
+                Créer un souhait
+              </a>
+            </Button>
+          </div>
         ) : (
-          (() => {
-            console.log('🎯 Affichage de la grille avec', wishes.length, 'souhaits');
-            console.log('🔍 Détail des souhaits à afficher:', wishes.map((wish, idx) => ({
-              position: idx,
-              id: wish.id,
-              title: wish.title,
-              hasContent: !!wish.content,
-              published: wish.published
-            })));
-            
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishes.map((wish, index) => {
-                  console.log(`🎴 Rendu WishCard ${index + 1}/${wishes.length}:`, {
-                    id: wish.id,
-                    title: wish.title,
-                    published: wish.published
-                  });
-                  return (
-                    <WishCard key={wish.id} wish={wish} />
-                  );
-                })}
-              </div>
-            );
-          })()
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {wishes.map((wish) => (
+              <WishCard key={wish.id} wish={wish} />
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -25,32 +25,10 @@ interface WishCardProps {
 }
 
 const WishCard: React.FC<WishCardProps> = ({ wish }) => {
-  console.log('🎴 ===== WISHCARD RENDU =====');
-  console.log('📋 Props reçues:', {
-    id: wish.id,
-    title: wish.title,
-    published: wish.published,
-    hasContent: !!wish.content,
-    contentLength: wish.content?.length || 0,
-    firstName: wish.first_name,
-    age: wish.age,
-    location: wish.location,
-    hasCoverImage: !!wish.cover_image
-  });
-
   const isDraft = !wish.published;
   const thumbnailUrl = wish.cover_image 
     ? getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)
     : '/placeholder.svg';
-
-  console.log('🖼️ Image config:', {
-    isDraft,
-    hasCoverImage: !!wish.cover_image,
-    coverImage: wish.cover_image,
-    thumbnailUrl
-  });
-
-  console.log('✅ WishCard prêt à être rendu pour:', wish.title);
 
   return (
     <Link to={`/wishes/${wish.id}`}>
