@@ -161,15 +161,22 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (allEntriesError) {
         console.error('🔍 DIAGNOSTIC - Erreur:', allEntriesError);
       } else {
-        console.log('🔍 DIAGNOSTIC - TOUTES vos entrées:', {
+        console.log('🔍 DIAGNOSTIC - TOUTES vos entrées (CONTENU COMPLET):', {
           count: allUserEntries?.length || 0,
           entries: allUserEntries?.map(entry => ({
             id: entry.id,
             title: entry.title,
             tags: entry.tags,
             contacted_people: entry.contacted_people,
-            activities: entry.activities?.substring(0, 50),
-            reflections: entry.reflections?.substring(0, 50)
+            activities: entry.activities,
+            reflections: entry.reflections,
+            positive_things: entry.positive_things,
+            negative_things: entry.negative_things,
+            desire_of_day: entry.desire_of_day,
+            objectives: entry.objectives,
+            private_notes: entry.private_notes,
+            physical_state: entry.physical_state,
+            mental_state: entry.mental_state
           })) || []
         });
       }
