@@ -42,8 +42,9 @@ const Wishes = () => {
     
     try {
       setLoading(true);
-      console.log('Wishes - Chargement des souhaits...');
+      console.log('Wishes - Chargement avec nouvelles politiques RLS ultra-simplifiées...');
       
+      // Avec les nouvelles politiques RLS ultra-simplifiées, l'accès est direct
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
@@ -54,10 +55,11 @@ const Wishes = () => {
         throw error;
       }
       
-      console.log('Souhaits récupérés avec succès:', data?.length || 0);
+      console.log('✅ Souhaits récupérés avec succès:', data?.length || 0, 'souhaits trouvés');
+      console.log('📋 Détails des souhaits:', data);
       setWishes(data || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des souhaits:', error);
+      console.error('❌ Erreur lors du chargement des souhaits:', error);
     } finally {
       setLoading(false);
     }

@@ -16,9 +16,9 @@ export const useRecentWishes = () => {
       }
 
       try {
-        console.log('useRecentWishes - Utilisation des nouvelles politiques RLS simplifiées');
+        console.log('useRecentWishes - Utilisation des politiques RLS ultra-simplifiées');
         
-        // Les nouvelles politiques RLS simplifiées permettent l'accès direct
+        // Avec les nouvelles politiques RLS ultra-simplifiées, l'accès est direct et performant
         const { data: wishesData, error } = await supabase
           .from('wish_posts')
           .select(`
@@ -41,6 +41,7 @@ export const useRecentWishes = () => {
         }
 
         if (wishesData) {
+          console.log('✅ useRecentWishes - Souhaits récents récupérés:', wishesData.length);
           const items = wishesData.map(wish => ({
             id: wish.id,
             title: wish.title,

@@ -56,9 +56,9 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
     try {
       setLoading(true);
       
-      console.log('WishAlbumPermissions - Récupération avec nouvelles politiques RLS simplifiées');
+      console.log('WishAlbumPermissions - Récupération avec politiques RLS ultra-simplifiées');
       
-      // Les nouvelles politiques RLS simplifiées permettent l'accès direct aux profils
+      // Avec les nouvelles politiques RLS ultra-simplifiées, l'accès aux profils est direct
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, display_name, email');
@@ -72,7 +72,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         return;
       }
       
-      // Récupérer les permissions d'album (réservé aux admins avec les nouvelles politiques)
+      // Récupérer les permissions d'album (maintenant avec politiques ultra-simplifiées)
       const { data: permissions, error: permissionsError } = await supabase
         .from('wish_album_permissions')
         .select('user_id')
@@ -92,11 +92,12 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         has_access: userIds.includes(profile.id)
       }));
       
+      console.log('✅ WishAlbumPermissions - Utilisateurs et permissions récupérés:', usersWithAccess.length);
       setUsers(usersWithAccess);
       setFilteredUsers(usersWithAccess);
       
     } catch (error) {
-      console.error('WishAlbumPermissions - Erreur:', error);
+      console.error('❌ WishAlbumPermissions - Erreur:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les utilisateurs et leurs permissions.",
@@ -121,7 +122,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
     try {
       setSaving(true);
       
-      console.log('WishAlbumPermissions - Sauvegarde avec nouvelles politiques RLS simplifiées');
+      console.log('WishAlbumPermissions - Sauvegarde avec politiques RLS ultra-simplifiées');
       
       // Récupérer les permissions actuelles
       const { data: currentPermissions, error: fetchError } = await supabase
@@ -169,6 +170,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         }
       }
       
+      console.log('✅ WishAlbumPermissions - Permissions sauvegardées avec succès');
       toast({
         title: "Permissions sauvegardées",
         description: "Les permissions d'accès à l'album ont été mises à jour."
@@ -177,7 +179,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
       onClose();
       
     } catch (error) {
-      console.error('WishAlbumPermissions - Erreur sauvegarde:', error);
+      console.error('❌ WishAlbumPermissions - Erreur sauvegarde:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les permissions.",
