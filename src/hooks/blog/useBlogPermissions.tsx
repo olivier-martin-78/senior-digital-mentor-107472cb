@@ -14,9 +14,9 @@ export const useBlogPermissions = () => {
       return;
     }
 
-    console.log('useBlogPermissions - Utilisation des politiques RLS consolidées');
+    console.log('useBlogPermissions - Utilisation des politiques RLS finales');
     
-    // Avec les nouvelles politiques RLS consolidées, la gestion des permissions
+    // Avec les nouvelles politiques RLS finales, la gestion des permissions
     // est entièrement déléguée aux politiques de base de données.
     // Plus besoin de gérer la logique côté client car les politiques 
     // "blog_albums_final" et "blog_posts_final" s'occupent de tout

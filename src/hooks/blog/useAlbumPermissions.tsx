@@ -14,9 +14,9 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       return;
     }
 
-    console.log('AlbumPermissions - Utilisation des politiques RLS consolidées');
+    console.log('AlbumPermissions - Utilisation des politiques RLS finales');
     
-    // Avec les nouvelles politiques RLS consolidées, les albums dans allAlbums
+    // Avec les nouvelles politiques RLS finales, les albums dans allAlbums
     // sont déjà filtrés automatiquement par la politique "blog_albums_final"
     // qui gère :
     // - Admin voit tout

@@ -12,7 +12,7 @@ export const useBlogData = (
 ) => {
   const { hasRole } = useAuth();
   
-  // Utilisation simplifiée avec les nouvelles politiques RLS consolidées
+  // Utilisation simplifiée avec les nouvelles politiques RLS finales
   const { albums, loading: albumsLoading } = useBlogAlbums();
   const { posts, loading: postsLoading } = useBlogPosts(
     searchTerm,
