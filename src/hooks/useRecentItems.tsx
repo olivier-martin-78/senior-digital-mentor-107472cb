@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentPermissions } from './recent/useRecentPermissions';
@@ -30,7 +31,7 @@ export const useRecentItems = () => {
   
   const { authorizedUserIds, loading: permissionsLoading } = useRecentPermissions();
   const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
-  const wishes = useRecentWishes(effectiveUserId);
+  const wishes = useRecentWishes(); // CORRECTION: Suppression de l'argument effectiveUserId
   const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
 
