@@ -27,7 +27,11 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             created_at,
             author_id,
             profiles(display_name),
-            post:blog_posts(id, title)
+            post:blog_posts(
+              id, 
+              title,
+              blog_albums(name)
+            )
           `)
           .order('created_at', { ascending: false })
           .limit(15);
@@ -43,7 +47,8 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
             content_preview: comment.content?.substring(0, 150) + '...',
             post_title: comment.post?.title,
-            comment_content: comment.content
+            comment_content: comment.content,
+            album_name: comment.post?.blog_albums?.name
           })));
         }
       } else {
@@ -67,7 +72,11 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             created_at,
             author_id,
             profiles(display_name),
-            post:blog_posts(id, title)
+            post:blog_posts(
+              id, 
+              title,
+              blog_albums(name)
+            )
           `)
           .eq('author_id', effectiveUserId)
           .order('created_at', { ascending: false })
@@ -84,7 +93,12 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
               created_at,
               author_id,
               profiles(display_name),
-              post:blog_posts!inner(id, title, album_id)
+              post:blog_posts!inner(
+                id, 
+                title, 
+                album_id,
+                blog_albums(name)
+              )
             `)
             .in('post.album_id', albumPermissions.map(p => p.album_id))
             .order('created_at', { ascending: false })
@@ -113,7 +127,8 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
             content_preview: comment.content?.substring(0, 150) + '...',
             post_title: comment.post?.title,
-            comment_content: comment.content
+            comment_content: comment.content,
+            album_name: comment.post?.blog_albums?.name
           })));
         }
       }

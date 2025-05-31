@@ -85,7 +85,7 @@ const Header = () => {
                 className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
               >
                 <PenTool className="w-4 h-4" />
-                <span>Journal partagé</span>
+                <span>Journal</span>
               </Link>
               <Link 
                 to="/life-story" 
@@ -141,7 +141,7 @@ const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                         <PenTool className="mr-2 h-4 w-4" />
-                        Journal partagé
+                        Journal
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
