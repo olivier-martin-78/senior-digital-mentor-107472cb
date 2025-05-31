@@ -5,7 +5,6 @@ import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
 import BlogSearch from '@/components/blog/BlogSearch';
 import { useBlogData } from '@/hooks/useBlogData';
-import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -38,7 +37,6 @@ const Blog = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Blog (Photos/Vidéos)</h1>
-          <InviteUserDialog />
         </div>
         
         <BlogHeader 
