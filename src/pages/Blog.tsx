@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
+import BlogSearch from '@/components/blog/BlogSearch';
 import { useBlogData } from '@/hooks/useBlogData';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DateRangeFilter from '@/components/DateRangeFilter';
@@ -27,6 +28,10 @@ const Blog = () => {
     setEndDate('');
   };
 
+  const handleSearch = (newSearchTerm: string) => {
+    setSearchTerm(newSearchTerm);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -39,6 +44,11 @@ const Blog = () => {
         <BlogHeader 
           albums={albums}
           hasCreatePermission={hasCreatePermission}
+        />
+        
+        <BlogSearch 
+          onSearch={handleSearch}
+          initialSearchTerm={searchTerm}
         />
         
         <DateRangeFilter

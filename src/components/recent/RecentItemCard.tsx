@@ -44,7 +44,12 @@ const RecentItemCard: React.FC<RecentItemCardProps> = ({ item }) => {
               </p>
             )}
             <div className="flex justify-between items-center text-sm text-gray-500">
-              <span>Par {item.author}</span>
+              <div className="flex flex-col">
+                <span>Par {item.author}</span>
+                {item.album_name && item.type === 'blog' && (
+                  <span className="text-tranches-sage">Album: {item.album_name}</span>
+                )}
+              </div>
               <span>{format(new Date(item.created_at), 'dd MMMM yyyy', { locale: fr })}</span>
             </div>
           </CardContent>

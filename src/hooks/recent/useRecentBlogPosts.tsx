@@ -28,7 +28,9 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             created_at,
             cover_image,
             author_id,
-            profiles(display_name)
+            album_id,
+            profiles(display_name),
+            blog_albums(name)
           `)
           .eq('published', true)
           .order('created_at', { ascending: false })
@@ -42,7 +44,8 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             created_at: post.created_at,
             author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
             content_preview: post.content?.substring(0, 150) + '...',
-            cover_image: post.cover_image
+            cover_image: post.cover_image,
+            album_name: post.blog_albums?.name || undefined
           })));
         }
       } else {
@@ -59,7 +62,9 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             cover_image,
             author_id,
             published,
-            profiles(display_name)
+            album_id,
+            profiles(display_name),
+            blog_albums(name)
           `)
           .eq('author_id', effectiveUserId)
           .order('created_at', { ascending: false })
@@ -79,7 +84,8 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             created_at: post.created_at,
             author: 'Moi',
             content_preview: post.content?.substring(0, 150) + '...',
-            cover_image: post.cover_image
+            cover_image: post.cover_image,
+            album_name: post.blog_albums?.name || undefined
           })));
         }
       }

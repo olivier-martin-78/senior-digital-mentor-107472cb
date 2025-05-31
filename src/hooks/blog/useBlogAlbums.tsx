@@ -87,7 +87,25 @@ export const useBlogAlbums = (
 
         let otherAlbums: BlogAlbum[] = [];
 
-        // 3. Récupérer les albums des autres utilisateurs autorisés
+        // 2. Récupérer les albums via les permissions directes (album_permissions)
+        const { data: albumPermissions, error: albumPermissionsError } = await supabase
+          .from('album_permissions')
+          .select(`
+            album_id,
+            blog_albums!inner(
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            )
+          `)
+          .eq('user_id', effectiveUserId);
+
+        if (!albumPermissionsError && albumPermissions) {
+          const permittedAlbums = albumPermissions.map(p => p.blog_albums);
+          otherAlbums.push(...permittedAlbums);
+          console.log('useBlogAlbums - Albums via permissions directes:', permittedAlbums.length);
+        }
+
+        // 3. Récupérer les albums des autres utilisateurs autorisés via groupes
         if (authorizedUserIds && authorizedUserIds.length > 0) {
           const { data: otherAlbumsData, error: otherAlbumsError } = await supabase
             .from('blog_albums')
@@ -101,13 +119,18 @@ export const useBlogAlbums = (
           if (otherAlbumsError) {
             console.error('useBlogAlbums - Erreur autres albums:', otherAlbumsError);
           } else {
-            otherAlbums = otherAlbumsData || [];
-            console.log('useBlogAlbums - Autres albums autorisés récupérés:', otherAlbums.length);
+            otherAlbums.push(...(otherAlbumsData || []));
+            console.log('useBlogAlbums - Autres albums autorisés récupérés:', otherAlbumsData?.length || 0);
           }
         }
 
-        // Combiner ses albums avec les albums autorisés des autres
-        const allAlbums = [...(userAlbums || []), ...otherAlbums];
+        // Combiner ses albums avec les albums autorisés des autres (en évitant les doublons)
+        const allAlbums = [...(userAlbums || [])];
+        otherAlbums.forEach(album => {
+          if (!allAlbums.find(existing => existing.id === album.id)) {
+            allAlbums.push(album);
+          }
+        });
         
         console.log('useBlogAlbums - Total albums finaux:', allAlbums.length);
         setAlbums(allAlbums);

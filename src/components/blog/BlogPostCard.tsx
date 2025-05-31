@@ -48,12 +48,15 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
     return null;
   }
 
+  // Trouver l'album associé à ce post
+  const postAlbum = albums.find(a => a.id === post.album_id);
+
   return (
     <Card className={`overflow-hidden ${!post.published ? 'border-orange-300 bg-orange-50' : ''}`}>
       <div className="relative w-full h-40 bg-gray-100">
         {post.album_id ? (
           <AlbumThumbnail 
-            album={albums.find(a => a.id === post.album_id) || null}
+            album={postAlbum || null}
             title={post.title}
             coverImage={post.cover_image}
           />
@@ -82,6 +85,10 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
         </CardTitle>
         <CardDescription>
           {post.profiles?.display_name || 'Utilisateur'} • {formatDate(post.created_at)}
+          {/* Affichage du nom de l'album pour tous les utilisateurs */}
+          {postAlbum && (
+            <span className="ml-2 text-tranches-sage">• Album: {postAlbum.name}</span>
+          )}
           {!post.published && (
             <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded">
               Brouillon

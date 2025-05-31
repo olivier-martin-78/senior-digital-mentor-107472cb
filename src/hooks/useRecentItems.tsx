@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentPermissions } from './recent/useRecentPermissions';
@@ -19,6 +18,7 @@ export interface RecentItem {
   post_title?: string;
   comment_content?: string;
   media_url?: string;
+  album_name?: string; // Nouveau champ pour le nom de l'album
 }
 
 export const useRecentItems = () => {
