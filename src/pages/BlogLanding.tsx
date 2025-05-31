@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Smartphone, Heart, Users, BookOpen, PenTool, MessageCircle, Star, Mail, Phone, MapPin } from 'lucide-react';
+import { Check, Smartphone, Heart, Users, BookOpen, PenTool, MessageCircle, Star, Mail, Phone } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Link } from 'react-router-dom';
 import SeniorDigitalLogo from '@/SeniorDigital.png';
@@ -409,7 +408,7 @@ const BlogLanding = () => {
             <div>
               <img src={SeniorDigitalLogo} alt="Senior Digital Mentor" width="110" className="mb-4 brightness-0 invert"/>
               <p className="text-gray-300 text-sm">
-                Accompagner les seniors dans leur découverte du numérique
+                Se former au digital à mon rythme
               </p>
             </div>
             
@@ -441,16 +440,12 @@ const BlogLanding = () => {
                   <Mail className="h-4 w-4 mr-2" />
                   contact@senior-digital-mentor.fr
                 </p>
-                <p className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Paris, France
-                </p>
               </div>
             </div>
           </div>
           
           <div className="border-t border-gray-600 mt-8 pt-8 text-center text-sm text-gray-300">
-            <p>&copy; 2024 Senior Digital Mentor. Tous droits réservés.</p>
+            <p>&copy; 2025 Senior Digital Mentor. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
