@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -406,7 +407,7 @@ const BlogLanding = () => {
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <img src={SeniorDigitalLogo} alt="Senior Digital Mentor" width="110" className="mb-4 brightness-0 invert"/>
+              <img src="/SeniorDigital.png" alt="Senior Digital Mentor" width="110" className="mb-4"/>
               <p className="text-gray-300 text-sm">
                 Se former au digital à mon rythme
               </p>
@@ -438,7 +439,7 @@ const BlogLanding = () => {
                 </p>
                 <p className="flex items-center">
                   <Mail className="h-4 w-4 mr-2" />
-                  contact@senior-digital-mentor.fr
+                  contact@senior-digital-mentor.com
                 </p>
               </div>
             </div>
