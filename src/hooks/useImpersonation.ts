@@ -33,15 +33,65 @@ export const useImpersonation = () => {
     }
 
     try {
-      // Récupérer les rôles de l'utilisateur cible
-      const { data: userRoles, error } = await supabase
+      console.log('🎭 Début impersonnation pour:', targetUser.email);
+
+      // Récupérer les rôles directs de l'utilisateur cible
+      const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', targetUser.id);
 
-      if (error) throw error;
+      if (rolesError) {
+        console.error('❌ Erreur récupération rôles directs:', rolesError);
+        throw rolesError;
+      }
 
-      const roles = userRoles.map(r => r.role as AppRole);
+      let roles = userRoles?.map(r => r.role as AppRole) || [];
+      console.log('📋 Rôles directs de l\'utilisateur:', roles);
+
+      // Vérifier si l'utilisateur est membre d'un groupe créé par un admin
+      const { data: groupMemberships, error: groupError } = await supabase
+        .from('group_members')
+        .select(`
+          group_id,
+          invitation_groups!inner(
+            created_by,
+            profiles!inner(id, email)
+          )
+        `)
+        .eq('user_id', targetUser.id);
+
+      if (groupError) {
+        console.error('❌ Erreur récupération groupes:', groupError);
+      } else if (groupMemberships && groupMemberships.length > 0) {
+        console.log('👥 Groupes trouvés:', groupMemberships);
+
+        // Vérifier si un des créateurs de groupe est admin
+        for (const membership of groupMemberships) {
+          const groupCreatorId = membership.invitation_groups?.created_by;
+          if (groupCreatorId) {
+            console.log('🔍 Vérification si le créateur du groupe est admin:', membership.invitation_groups.profiles?.email);
+            
+            const { data: creatorRoles, error: creatorRolesError } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', groupCreatorId);
+
+            if (!creatorRolesError && creatorRoles) {
+              const creatorIsAdmin = creatorRoles.some(r => r.role === 'admin');
+              if (creatorIsAdmin) {
+                console.log('✅ Créateur du groupe est admin - héritage des permissions admin');
+                if (!roles.includes('admin')) {
+                  roles.push('admin');
+                }
+                break; // Un seul admin suffit
+              }
+            }
+          }
+        }
+      }
+
+      console.log('🎯 Rôles finaux (directs + hérités):', roles);
 
       // Obtenir l'utilisateur actuel depuis le localStorage
       const currentUserData = localStorage.getItem('supabase.auth.user');
@@ -60,7 +110,7 @@ export const useImpersonation = () => {
 
       toast({
         title: "Impersonnation activée",
-        description: `Vous naviguez maintenant en tant que ${targetUser.display_name || targetUser.email}`,
+        description: `Vous naviguez maintenant en tant que ${targetUser.display_name || targetUser.email} ${roles.includes('admin') ? '(avec permissions admin héritées)' : ''}`,
         duration: 3000
       });
 
