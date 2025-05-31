@@ -332,10 +332,12 @@ export const useBlogEditor = () => {
     }
   };
 
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const handleFileUpload = useCallback(async (files: File[]) => {
+    console.log('📤 handleFileUpload appelé avec', files.length, 'fichiers');
+    
     if (!files || files.length === 0) return;
     
+    // Vérifier si on a un post (existant ou nouveau)
     if (!id && !post) {
       toast({
         title: "Enregistrez d'abord",
@@ -348,7 +350,7 @@ export const useBlogEditor = () => {
     setUploadingFiles(true);
     setUploadErrors([]);
     const newErrors: string[] = [];
-    const successfulUploads: any[] = [];
+    const successfulUploads: BlogMedia[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -356,7 +358,7 @@ export const useBlogEditor = () => {
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 
       try {
-        console.log(`Début upload du fichier: ${file.name} (${Math.round(file.size / (1024 * 1024))} MB)`);
+        console.log(`🚀 Début upload du fichier: ${file.name} (${Math.round(file.size / (1024 * 1024))} MB)`);
         
         // Upload du fichier principal
         const { error: uploadError } = await supabase.storage
@@ -364,12 +366,12 @@ export const useBlogEditor = () => {
           .upload(filePath, file);
 
         if (uploadError) {
-          console.error(`Erreur upload ${file.name}:`, uploadError);
+          console.error(`❌ Erreur upload ${file.name}:`, uploadError);
           newErrors.push(`Erreur lors de l'upload de ${file.name}: ${uploadError.message}`);
           continue;
         }
 
-        console.log(`Upload réussi: ${file.name}`);
+        console.log(`✅ Upload réussi: ${file.name}`);
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
@@ -380,7 +382,7 @@ export const useBlogEditor = () => {
         let thumbnailUrl: string | null = null;
         if (isVideoFile(file)) {
           try {
-            console.log('Génération de vignette pour la vidéo:', file.name);
+            console.log('🎬 Génération de vignette pour la vidéo:', file.name);
             const thumbnailFile = await generateVideoThumbnail(file);
             const thumbnailExt = thumbnailFile.name.split('.').pop();
             const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
@@ -395,12 +397,12 @@ export const useBlogEditor = () => {
                 .getPublicUrl(thumbnailPath);
               
               thumbnailUrl = thumbnailPublicUrl;
-              console.log('Vignette générée avec succès:', thumbnailUrl);
+              console.log('✅ Vignette générée avec succès:', thumbnailUrl);
             } else {
-              console.error('Erreur lors de l\'upload de la vignette:', thumbnailUploadError);
+              console.error('❌ Erreur lors de l\'upload de la vignette:', thumbnailUploadError);
             }
           } catch (thumbnailError) {
-            console.error('Erreur lors de la génération de la vignette:', thumbnailError);
+            console.error('❌ Erreur lors de la génération de la vignette:', thumbnailError);
           }
         }
 
@@ -417,25 +419,31 @@ export const useBlogEditor = () => {
           .single();
 
         if (dbError) {
-          console.error(`Erreur DB pour ${file.name}:`, dbError);
+          console.error(`❌ Erreur DB pour ${file.name}:`, dbError);
           newErrors.push(`Erreur lors de l'enregistrement de ${file.name}: ${dbError.message}`);
           continue;
         }
 
         if (insertedMedia) {
-          successfulUploads.push(insertedMedia);
-          console.log(`Traitement terminé avec succès: ${file.name}`, insertedMedia);
+          successfulUploads.push(insertedMedia as BlogMedia);
+          console.log(`✅ Traitement terminé avec succès: ${file.name}`, insertedMedia);
         }
 
       } catch (error: any) {
-        console.error(`Erreur générale pour ${file.name}:`, error);
+        console.error(`❌ Erreur générale pour ${file.name}:`, error);
         newErrors.push(`Erreur lors du traitement de ${file.name}: ${error.message}`);
       }
     }
 
     // Mettre à jour l'état local avec tous les uploads réussis
     if (successfulUploads.length > 0) {
-      setMedia(prev => [...prev, ...successfulUploads]);
+      console.log('📝 Mise à jour de l\'état local avec', successfulUploads.length, 'nouveaux médias');
+      setMedia(prev => {
+        const newMedia = [...prev, ...successfulUploads];
+        console.log('📝 Nouvel état des médias:', newMedia);
+        return newMedia;
+      });
+      
       toast({
         title: "Upload réussi",
         description: `${successfulUploads.length} fichier(s) téléchargé(s) avec succès.`
@@ -452,8 +460,6 @@ export const useBlogEditor = () => {
     }
 
     setUploadingFiles(false);
-    // Clear input
-    event.target.value = '';
   }, [id, post, toast]);
 
   const deleteMedia = async (mediaItem: BlogMedia) => {

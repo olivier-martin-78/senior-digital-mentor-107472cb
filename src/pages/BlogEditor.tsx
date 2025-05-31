@@ -165,6 +165,13 @@ const BlogEditor = () => {
                 media={media} 
                 deleteMedia={deleteMedia} 
               />
+              
+              {/* Debug info */}
+              {media.length > 0 && (
+                <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                  <strong>Debug:</strong> {media.length} média(s) dans l'état local
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -6,24 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Upload, X, AlertTriangle } from 'lucide-react';
 import { 
   validateFileSize, 
-  compressVideo, 
   isVideoFile, 
   formatFileSize,
   MAX_FILE_SIZE 
 } from '@/utils/videoCompressionUtils';
-import UploadProgress from './UploadProgress';
 
 interface MediaUploaderProps {
-  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileUpload: (files: File[]) => Promise<void>;
   uploadingFiles: boolean;
   uploadErrors: string[];
-}
-
-interface UploadingFile {
-  file: File;
-  progress: number;
-  status: 'compressing' | 'uploading' | 'success' | 'error';
-  error?: string;
 }
 
 const MediaUploader: React.FC<MediaUploaderProps> = ({ 
@@ -32,7 +23,6 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   uploadErrors 
 }) => {
   const [dragActive, setDragActive] = useState(false);
-  const [uploadingFilesList, setUploadingFilesList] = useState<UploadingFile[]>([]);
   
   // Handle drag events
   const handleDrag = (e: React.DragEvent) => {
@@ -47,17 +37,18 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   };
   
   // Handle drop event
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(Array.from(e.dataTransfer.files));
+      const files = Array.from(e.dataTransfer.files);
+      await processFiles(files);
     }
   };
 
-  // Traiter les fichiers directement sans compression côté client
+  // Traiter les fichiers directement
   const processFiles = async (files: File[]) => {
     const validFiles: File[] = [];
     const errors: string[] = [];
@@ -77,24 +68,18 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
       return;
     }
 
-    // Simuler l'événement de changement pour le gestionnaire existant
+    // Appeler directement la fonction d'upload avec les fichiers valides
     if (validFiles.length > 0) {
-      const dataTransfer = new DataTransfer();
-      validFiles.forEach(file => dataTransfer.items.add(file));
-      
-      const fileInput = document.getElementById('media-upload') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.files = dataTransfer.files;
-        const event = new Event('change', { bubbles: true }) as any;
-        event.target = fileInput;
-        handleFileUpload(event);
-      }
+      await handleFileUpload(validFiles);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      processFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      await processFiles(files);
+      // Clear input après traitement
+      e.target.value = '';
     }
   };
 
