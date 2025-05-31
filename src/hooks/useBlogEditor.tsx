@@ -356,15 +356,28 @@ export const useBlogEditor = () => {
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 
       try {
-        // Upload du fichier principal
-        const { error: uploadError } = await supabase.storage
+        console.log(`Début upload du fichier: ${file.name} (${Math.round(file.size / (1024 * 1024))} MB)`);
+        
+        // Upload du fichier principal avec timeout personnalisé
+        const uploadPromise = supabase.storage
           .from('blog-media')
           .upload(filePath, file);
 
+        // Timeout personnalisé basé sur la taille du fichier
+        const timeoutDuration = Math.max(60000, file.size / 1024); // Minimum 1 minute, +1ms par KB
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout: Upload trop long')), timeoutDuration);
+        });
+
+        const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
         if (uploadError) {
+          console.error(`Erreur upload ${file.name}:`, uploadError);
           newErrors.push(`Erreur lors de l'upload de ${file.name}: ${uploadError.message}`);
           continue;
         }
+
+        console.log(`Upload réussi: ${file.name}`);
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
@@ -411,6 +424,7 @@ export const useBlogEditor = () => {
           });
 
         if (dbError) {
+          console.error(`Erreur DB pour ${file.name}:`, dbError);
           newErrors.push(`Erreur lors de l'enregistrement de ${file.name}: ${dbError.message}`);
           continue;
         }
@@ -425,13 +439,21 @@ export const useBlogEditor = () => {
           created_at: new Date().toISOString()
         }]);
 
+        console.log(`Traitement terminé avec succès: ${file.name}`);
+
       } catch (error: any) {
+        console.error(`Erreur générale pour ${file.name}:`, error);
         newErrors.push(`Erreur lors du traitement de ${file.name}: ${error.message}`);
       }
     }
 
     if (newErrors.length > 0) {
       setUploadErrors(newErrors);
+      toast({
+        title: "Erreurs d'upload",
+        description: `${newErrors.length} fichier(s) n'ont pas pu être téléchargés.`,
+        variant: "destructive"
+      });
     } else {
       toast({
         title: "Upload réussi",
