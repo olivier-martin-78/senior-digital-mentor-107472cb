@@ -6,8 +6,10 @@ import Header from '@/components/Header';
 import DiaryContent from '@/components/diary/DiaryContent';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import InviteUserDialog from '@/components/InviteUserDialog';
+import { Button } from '@/components/ui/button';
 import { useDiaryEntries } from '@/hooks/diary/useDiaryEntries';
 import { useDiaryFilters } from '@/hooks/diary/useDiaryFilters';
+import { Plus } from 'lucide-react';
 
 const Diary = () => {
   const { session } = useAuth();
@@ -47,6 +49,13 @@ const Diary = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
           <div className="flex gap-3">
             <InviteUserDialog />
+            <Button 
+              onClick={() => navigate('/diary/new')}
+              className="bg-tranches-sage hover:bg-tranches-sage/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle entrée
+            </Button>
           </div>
         </div>
         

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -188,13 +189,13 @@ const Header = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/admin/wish-albums" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                           <Heart className="mr-2 h-4 w-4" />
-                          Souhaits formulés
+                          Souhaits
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/admin/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
                           <BookOpen className="mr-2 h-4 w-4" />
-                          Journaux partagés
+                          Journal
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
