@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,24 +40,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
         // Appliquer les filtres pour admin
         if (searchTerm) {
-          const searchPattern = `%${searchTerm}%`;
-          console.log('Diary - Admin - Construction requête de recherche:', {
-            originalSearchTerm: searchTerm,
-            searchPattern: searchPattern,
-            patternLength: searchPattern.length
-          });
+          console.log('Diary - Admin - Recherche avec terme:', searchTerm);
           
-          // Pour les arrays, on utilise cs (contains) au lieu de ilike
-          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
-          
-          console.log('Diary - Admin - Requête de recherche construite (sans arrays):', searchQuery);
-          query = query.or(searchQuery);
-          
-          // Recherche séparée pour les arrays avec cs (contains)
-          if (searchTerm) {
-            query = query.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
-            console.log('Diary - Admin - Requête array avec cs:', `tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
-          }
+          // Recherche dans les champs texte avec ilike (insensible à la casse)
+          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`);
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -124,22 +111,35 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             }
           }));
           
-          console.log('Diary - Entrées admin récupérées:', {
-            totalCount: entriesWithProfiles.length,
-            searchApplied: !!searchTerm,
-            searchTerm: searchTerm,
-            entriesWithSearchTermInTitle: entriesWithProfiles.filter(e => 
-              e.title.toLowerCase().includes(searchTerm?.toLowerCase() || '')
-            ).length,
-            entriesWithSearchTermInReflections: entriesWithProfiles.filter(e => 
-              e.reflections.toLowerCase().includes(searchTerm?.toLowerCase() || '')
-            ).length,
-            entriesWithSearchTermInTags: entriesWithProfiles.filter(e => 
-              JSON.stringify(e.tags).toLowerCase().includes(searchTerm?.toLowerCase() || '')
-            ).length
+          // Filtrage côté client pour les arrays si terme de recherche
+          let filteredEntries = entriesWithProfiles;
+          if (searchTerm) {
+            filteredEntries = entriesWithProfiles.filter(entry => {
+              const searchLower = searchTerm.toLowerCase();
+              
+              // Vérifier dans les arrays
+              const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
+              const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+              
+              return tagsMatch || peopleMatch;
+            });
+            
+            // Combiner avec les résultats de la requête SQL (éviter les doublons)
+            const sqlResultIds = new Set(entriesWithProfiles.map(e => e.id));
+            const arrayFilteredIds = new Set(filteredEntries.map(e => e.id));
+            
+            // Prendre l'union des deux ensembles
+            filteredEntries = entriesWithProfiles.filter(entry => 
+              sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
+            );
+          }
+          
+          console.log('Diary - Entrées admin récupérées après filtrage arrays:', {
+            totalCount: filteredEntries.length,
+            searchApplied: !!searchTerm
           });
           
-          setEntries(entriesWithProfiles);
+          setEntries(filteredEntries);
         } else {
           console.log('Diary - Admin - Aucune entrée trouvée avec les critères de recherche');
           setEntries([]);
@@ -150,29 +150,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Récupération pour l'utilisateur effectif
       console.log('Diary - Récupération des entrées utilisateur effectif:', effectiveUserId);
       
-      // 1. Vérifier d'abord s'il y a des entrées dans la table
-      console.log('Diary - Vérification globale de la table diary_entries...');
-      const { data: allEntriesCheck, error: allEntriesError } = await supabase
-        .from('diary_entries')
-        .select('id, user_id, title, tags, reflections')
-        .limit(10);
-
-      if (allEntriesError) {
-        console.error('Diary - Erreur lors de la vérification globale:', allEntriesError);
-      } else {
-        console.log('Diary - Entrées globales trouvées:', {
-          count: allEntriesCheck?.length || 0,
-          searchTerm: searchTerm,
-          sampleData: allEntriesCheck?.map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            tags: entry.tags,
-            reflections: entry.reflections?.substring(0, 50)
-          })) || []
-        });
-      }
-
-      // 2. Récupérer directement les entrées de l'utilisateur effectif
+      // Récupérer directement les entrées de l'utilisateur effectif
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
@@ -188,22 +166,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
       // Appliquer les filtres aux entrées utilisateur
       if (searchTerm) {
-        const searchPattern = `%${searchTerm}%`;
-        console.log('Diary - User - Construction requête de recherche:', {
-          originalSearchTerm: searchTerm,
-          searchPattern: searchPattern,
-          patternLength: searchPattern.length
-        });
+        console.log('Diary - User - Recherche avec terme:', searchTerm);
         
-        // Recherche dans les champs texte avec ilike
-        const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
-        
-        console.log('Diary - User - Requête de recherche construite (sans arrays):', searchQuery);
-        userEntriesQuery = userEntriesQuery.or(searchQuery);
-        
-        // Recherche séparée pour les arrays avec cs (contains) - recherche exacte
-        userEntriesQuery = userEntriesQuery.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
-        console.log('Diary - User - Requête array avec cs:', `tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+        // Recherche dans les champs texte avec ilike (insensible à la casse)
+        userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`);
       }
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
@@ -241,7 +207,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         })) || []
       });
 
-      // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
+      // Récupérer les utilisateurs autorisés via les groupes d'invitation
       console.log('Diary - Récupération des groupes pour utilisateur effectif:', effectiveUserId);
       const { data: groupPermissions, error: groupError } = await supabase
         .from('group_members')
@@ -263,7 +229,6 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             .single();
 
           const convertedUserEntries = userEntries.map(entry => ({
-            // ... keep existing code (entry mapping logic)
             ...entry,
             physical_state: ['fatigué', 'dormi', 'énergique'].includes(entry.physical_state) 
               ? entry.physical_state as "fatigué" | "dormi" | "énergique" 
@@ -287,8 +252,32 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
               created_at: new Date().toISOString()
             }
           }));
-          console.log('Diary - Retour entrées utilisateur seulement après erreur groupes:', convertedUserEntries.length);
-          setEntries(convertedUserEntries);
+          
+          // Filtrage côté client pour les arrays si terme de recherche
+          let filteredUserEntries = convertedUserEntries;
+          if (searchTerm) {
+            const arrayFiltered = convertedUserEntries.filter(entry => {
+              const searchLower = searchTerm.toLowerCase();
+              
+              // Vérifier dans les arrays
+              const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
+              const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+              
+              return tagsMatch || peopleMatch;
+            });
+            
+            // Combiner avec les résultats de la requête SQL (éviter les doublons)
+            const sqlResultIds = new Set(convertedUserEntries.map(e => e.id));
+            const arrayFilteredIds = new Set(arrayFiltered.map(e => e.id));
+            
+            // Prendre l'union des deux ensembles
+            filteredUserEntries = convertedUserEntries.filter(entry => 
+              sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
+            );
+          }
+          
+          console.log('Diary - Retour entrées utilisateur seulement après erreur groupes:', filteredUserEntries.length);
+          setEntries(filteredUserEntries);
         } else {
           setEntries([]);
         }
@@ -304,7 +293,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
       let otherEntries: any[] = [];
 
-      // 4. Récupérer les entrées des autres utilisateurs autorisés
+      // Récupérer les entrées des autres utilisateurs autorisés
       if (groupCreatorIds.length > 0) {
         console.log('Diary - Récupération des autres entrées pour:', groupCreatorIds);
         let otherEntriesQuery = supabase
@@ -315,20 +304,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
         // Appliquer les filtres aux autres entrées
         if (searchTerm) {
-          const searchPattern = `%${searchTerm}%`;
-          console.log('Diary - Others - Construction requête de recherche:', {
-            originalSearchTerm: searchTerm,
-            searchPattern: searchPattern
-          });
+          console.log('Diary - Others - Recherche avec terme:', searchTerm);
           
-          // Recherche dans les champs texte
-          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
-          
-          console.log('Diary - Others - Requête de recherche construite (sans arrays):', searchQuery);
-          otherEntriesQuery = otherEntriesQuery.or(searchQuery);
-          
-          // Recherche séparée pour les arrays
-          otherEntriesQuery = otherEntriesQuery.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+          // Recherche dans les champs texte avec ilike (insensible à la casse)
+          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
@@ -410,24 +389,47 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }
       }));
       
+      // Filtrage côté client pour les arrays si terme de recherche
+      let finalEntries = convertedEntries;
+      if (searchTerm) {
+        const arrayFiltered = convertedEntries.filter(entry => {
+          const searchLower = searchTerm.toLowerCase();
+          
+          // Vérifier dans les arrays
+          const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
+          const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+          
+          return tagsMatch || peopleMatch;
+        });
+        
+        // Combiner avec les résultats de la requête SQL (éviter les doublons)
+        const sqlResultIds = new Set(convertedEntries.map(e => e.id));
+        const arrayFilteredIds = new Set(arrayFiltered.map(e => e.id));
+        
+        // Prendre l'union des deux ensembles
+        finalEntries = convertedEntries.filter(entry => 
+          sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
+        );
+      }
+      
       console.log('Diary - Total entrées finales:', {
-        totalCount: convertedEntries.length,
+        totalCount: finalEntries.length,
         searchTerm: searchTerm,
         hasSearchTerm: !!searchTerm,
         manualSearchResults: searchTerm ? {
-          titleMatches: convertedEntries.filter(e => 
+          titleMatches: finalEntries.filter(e => 
             e.title.toLowerCase().includes(searchTerm.toLowerCase())
           ).length,
-          reflectionMatches: convertedEntries.filter(e => 
+          reflectionMatches: finalEntries.filter(e => 
             e.reflections.toLowerCase().includes(searchTerm.toLowerCase())
           ).length,
-          tagMatches: convertedEntries.filter(e => 
+          tagMatches: finalEntries.filter(e => 
             JSON.stringify(e.tags).toLowerCase().includes(searchTerm.toLowerCase())
           ).length
         } : null
       });
       
-      setEntries(convertedEntries);
+      setEntries(finalEntries);
     } catch (error) {
       console.error('Diary - Erreur lors du chargement des entrées:', error);
       setEntries([]);
