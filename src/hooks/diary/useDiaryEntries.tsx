@@ -37,7 +37,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .select('*')
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres pour admin - recherche insensible à la casse sur tous les champs
+        // Appliquer les filtres pour admin
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
           console.log('Diary - Admin - Construction requête de recherche:', {
@@ -46,10 +46,17 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             patternLength: searchPattern.length
           });
           
-          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+          // Pour les arrays, on utilise cs (contains) au lieu de ilike
+          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
           
-          console.log('Diary - Admin - Requête de recherche construite:', searchQuery);
+          console.log('Diary - Admin - Requête de recherche construite (sans arrays):', searchQuery);
           query = query.or(searchQuery);
+          
+          // Recherche séparée pour les arrays avec cs (contains)
+          if (searchTerm) {
+            query = query.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+            console.log('Diary - Admin - Requête array avec cs:', `tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+          }
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -179,7 +186,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         userId: effectiveUserId
       });
 
-      // Appliquer les filtres aux entrées utilisateur - recherche insensible à la casse sur tous les champs
+      // Appliquer les filtres aux entrées utilisateur
       if (searchTerm) {
         const searchPattern = `%${searchTerm}%`;
         console.log('Diary - User - Construction requête de recherche:', {
@@ -188,11 +195,15 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           patternLength: searchPattern.length
         });
         
-        const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+        // Recherche dans les champs texte avec ilike
+        const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
         
-        console.log('Diary - User - Requête de recherche construite:', searchQuery);
+        console.log('Diary - User - Requête de recherche construite (sans arrays):', searchQuery);
         userEntriesQuery = userEntriesQuery.or(searchQuery);
-        console.log('Diary - Filtre de recherche appliqué sur tous les champs (insensible à la casse):', searchTerm);
+        
+        // Recherche séparée pour les arrays avec cs (contains) - recherche exacte
+        userEntriesQuery = userEntriesQuery.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+        console.log('Diary - User - Requête array avec cs:', `tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
       }
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
@@ -302,7 +313,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres aux autres entrées - recherche insensible à la casse sur tous les champs
+        // Appliquer les filtres aux autres entrées
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
           console.log('Diary - Others - Construction requête de recherche:', {
@@ -310,10 +321,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             searchPattern: searchPattern
           });
           
-          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`;
+          // Recherche dans les champs texte
+          const searchQuery = `title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern}`;
           
-          console.log('Diary - Others - Requête de recherche construite:', searchQuery);
+          console.log('Diary - Others - Requête de recherche construite (sans arrays):', searchQuery);
           otherEntriesQuery = otherEntriesQuery.or(searchQuery);
+          
+          // Recherche séparée pour les arrays
+          otherEntriesQuery = otherEntriesQuery.or(`tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
