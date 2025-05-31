@@ -66,7 +66,9 @@ export const useBlogAlbums = (
           return;
         }
 
-        // Récupérer les albums avec permissions groupes
+        // Récupération avec permissions des groupes d'invitation
+        console.log('useBlogAlbums - Récupération des albums avec permissions groupes');
+        
         // 1. Ses propres albums
         const { data: userAlbums, error: userAlbumsError } = await supabase
           .from('blog_albums')
@@ -83,30 +85,44 @@ export const useBlogAlbums = (
           return;
         }
 
-        console.log('useBlogAlbums - Albums - Utilisateurs autorisés via groupes:', authorizedUserIds);
+        console.log('useBlogAlbums - Albums utilisateur récupérés:', userAlbums?.length || 0);
 
         let otherAlbums: BlogAlbum[] = [];
 
-        // 2. Récupérer les albums via les permissions directes (album_permissions)
+        // 2. Récupérer TOUS les albums via les permissions directes (album_permissions)
+        console.log('useBlogAlbums - Récupération albums via permissions directes pour utilisateur:', effectiveUserId);
         const { data: albumPermissions, error: albumPermissionsError } = await supabase
           .from('album_permissions')
           .select(`
             album_id,
-            blog_albums!inner(
+            blog_albums(
               *,
               profiles(id, display_name, email, avatar_url, created_at)
             )
           `)
           .eq('user_id', effectiveUserId);
 
+        console.log('useBlogAlbums - Résultat permissions directes:', {
+          data: albumPermissions,
+          error: albumPermissionsError,
+          count: albumPermissions?.length || 0
+        });
+
         if (!albumPermissionsError && albumPermissions) {
-          const permittedAlbums = albumPermissions.map(p => p.blog_albums);
+          const permittedAlbums = albumPermissions
+            .map(p => p.blog_albums)
+            .filter(album => album !== null); // Filtrer les albums null
+          
           otherAlbums.push(...permittedAlbums);
-          console.log('useBlogAlbums - Albums via permissions directes:', permittedAlbums.length);
+          console.log('useBlogAlbums - Albums via permissions directes ajoutés:', permittedAlbums.length);
+          permittedAlbums.forEach(album => {
+            console.log('useBlogAlbums - Album direct:', { id: album.id, name: album.name });
+          });
         }
 
         // 3. Récupérer les albums des autres utilisateurs autorisés via groupes
         if (authorizedUserIds && authorizedUserIds.length > 0) {
+          console.log('useBlogAlbums - Récupération albums via groupes pour userIds:', authorizedUserIds);
           const { data: otherAlbumsData, error: otherAlbumsError } = await supabase
             .from('blog_albums')
             .select(`
@@ -115,6 +131,12 @@ export const useBlogAlbums = (
             `)
             .in('author_id', authorizedUserIds)
             .order('name');
+
+          console.log('useBlogAlbums - Résultat albums via groupes:', {
+            data: otherAlbumsData,
+            error: otherAlbumsError,
+            count: otherAlbumsData?.length || 0
+          });
 
           if (otherAlbumsError) {
             console.error('useBlogAlbums - Erreur autres albums:', otherAlbumsError);
@@ -132,7 +154,13 @@ export const useBlogAlbums = (
           }
         });
         
+        console.log('useBlogAlbums - ===== RÉSUMÉ FINAL =====');
+        console.log('useBlogAlbums - Albums utilisateur:', userAlbums?.length || 0);
+        console.log('useBlogAlbums - Albums via permissions directes:', albumPermissions?.length || 0);
+        console.log('useBlogAlbums - Albums via groupes:', authorizedUserIds?.length || 0, 'utilisateurs autorisés');
         console.log('useBlogAlbums - Total albums finaux:', allAlbums.length);
+        console.log('useBlogAlbums - Albums finaux:', allAlbums.map(a => ({ id: a.id, name: a.name, author: a.profiles?.display_name })));
+        
         setAlbums(allAlbums);
       } catch (error) {
         console.error('useBlogAlbums - Erreur lors du chargement des albums:', error);
