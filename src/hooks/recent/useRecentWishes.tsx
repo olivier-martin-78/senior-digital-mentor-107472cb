@@ -16,10 +16,9 @@ export const useRecentWishes = () => {
       }
 
       try {
-        console.log('useRecentWishes - Utilisation des politiques RLS consolidées');
+        console.log('useRecentWishes - Utilisation des politiques RLS corrigées');
         
-        // Utilisation directe des politiques RLS consolidées
-        // La politique "wish_posts_final" gère automatiquement l'accès
+        // Les nouvelles politiques RLS gèrent automatiquement l'accès
         const { data: wishesData, error } = await supabase
           .from('wish_posts')
           .select(`

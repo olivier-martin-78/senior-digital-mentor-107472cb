@@ -42,10 +42,9 @@ const Wishes = () => {
     
     try {
       setLoading(true);
-      console.log('Wishes - Utilisation des politiques RLS consolidées');
+      console.log('Wishes - Utilisation des politiques RLS corrigées');
       
-      // Utilisation directe des politiques RLS consolidées
-      // La politique "wish_posts_final" gère automatiquement l'accès
+      // Les nouvelles politiques RLS gèrent automatiquement l'accès admin
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')

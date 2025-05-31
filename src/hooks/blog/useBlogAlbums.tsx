@@ -19,14 +19,9 @@ export const useBlogAlbums = () => {
 
       try {
         setLoading(true);
-        console.log('useBlogAlbums - Récupération avec politiques RLS consolidées');
+        console.log('useBlogAlbums - Récupération avec politiques RLS corrigées');
         
-        // Utilisation directe des politiques RLS consolidées
-        // La politique "blog_albums_final" gère automatiquement tous les cas :
-        // - Admin voit tout
-        // - Propriétaire voit ses albums
-        // - Utilisateurs avec permissions voient les albums autorisés
-        // - Utilisateurs du même groupe d'invitation
+        // Les nouvelles politiques RLS gèrent automatiquement l'accès admin
         const { data, error } = await supabase
           .from('blog_albums')
           .select(`
