@@ -171,7 +171,7 @@ const BlogLanding = () => {
       <section id="accueil" className="pt-16 section bg-gradient-to-br from-tranches-sage/10 to-white">
         <div className="container text-center">
           <h1 className="text-4xl md:text-6xl font-serif text-tranches-charcoal mb-6">
-            🌿 Vivre mieux, plus sereinement après 70 ans
+            🌿 Vivre mieux, plus sereinement à partir de 70 ans
           </h1>
           <p className="text-xl md:text-2xl text-tranches-warmgray mb-8 max-w-4xl mx-auto">
             Des activités sur-mesure pour le bien-être global des seniors et le soulagement des aidants.
@@ -180,7 +180,7 @@ const BlogLanding = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Santé mentale & émotions</span>
+              <span className="text-tranches-charcoal">Se former au digital et à l'IA</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
@@ -192,14 +192,14 @@ const BlogLanding = () => {
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Transmission intergénérationnelle</span>
+              <span className="text-tranches-charcoal">Santé mentale & émotions</span>
             </div>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md inline-block mb-8">
             <h3 className="text-xl font-serif text-tranches-charcoal mb-2">📞 Un premier échange offert</h3>
             <p className="text-tranches-warmgray mb-4">
-              📍 Interventions à domicile ou en petits groupes | 👥 Seniors & Proches aidants
+              📍 Interventions à domicile en Normandie - Cabourg et environs | 👥 Seniors & Proches aidants
             </p>
             <Button 
               size="lg" 
@@ -251,6 +251,7 @@ const BlogLanding = () => {
           </h2>
           <p className="text-lg text-tranches-warmgray mb-12 text-center max-w-4xl mx-auto">
             Une formation au digital douce, progressive et humaine — à son rythme, pour reprendre le pouvoir sur sa mémoire, ses liens, et ses récits.
+            Nous mettons gratuitement à votre disposition l'application Capria développée spécialement pour vous
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
