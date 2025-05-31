@@ -38,13 +38,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .select('*')
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres pour admin
-        if (searchTerm) {
-          console.log('Diary - Admin - Recherche avec terme:', searchTerm);
-          
-          // Recherche dans les champs texte avec ilike (insensible à la casse)
-          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`);
-        }
+        // Appliquer les filtres de date pour admin
         if (startDate) {
           query = query.gte('entry_date', startDate);
         }
@@ -63,13 +57,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         console.log('Diary - Réponse admin:', { 
           count: diaryData?.length || 0, 
           searchTerm: searchTerm,
-          hasSearchTerm: !!searchTerm,
-          sampleEntries: diaryData?.slice(0, 2).map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            tags: entry.tags,
-            reflections: entry.reflections?.substring(0, 100)
-          })) || []
+          hasSearchTerm: !!searchTerm
         });
         
         if (diaryData && diaryData.length > 0) {
@@ -111,37 +99,52 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             }
           }));
           
-          // Filtrage côté client pour les arrays si terme de recherche
+          // Filtrage côté client pour tous les champs (texte ET arrays)
           let filteredEntries = entriesWithProfiles;
           if (searchTerm) {
+            console.log('🔍 Diary - Filtrage admin côté client avec terme:', searchTerm);
             filteredEntries = entriesWithProfiles.filter(entry => {
               const searchLower = searchTerm.toLowerCase();
               
-              // Vérifier dans les arrays
-              const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
-              const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+              // Recherche dans les champs texte (insensible à la casse)
+              const textFields = [
+                entry.title,
+                entry.activities,
+                entry.reflections,
+                entry.positive_things,
+                entry.negative_things,
+                entry.desire_of_day,
+                entry.objectives,
+                entry.private_notes,
+                entry.physical_state,
+                entry.mental_state
+              ];
               
-              return tagsMatch || peopleMatch;
+              const textMatch = textFields.some(field => 
+                field && field.toLowerCase().includes(searchLower)
+              );
+              
+              // Recherche dans les arrays
+              const tagsMatch = entry.tags?.some(tag => 
+                tag && tag.toLowerCase().includes(searchLower)
+              ) || false;
+              
+              const peopleMatch = entry.contacted_people?.some(person => 
+                person && person.toLowerCase().includes(searchLower)
+              ) || false;
+              
+              return textMatch || tagsMatch || peopleMatch;
             });
-            
-            // Combiner avec les résultats de la requête SQL (éviter les doublons)
-            const sqlResultIds = new Set(entriesWithProfiles.map(e => e.id));
-            const arrayFilteredIds = new Set(filteredEntries.map(e => e.id));
-            
-            // Prendre l'union des deux ensembles
-            filteredEntries = entriesWithProfiles.filter(entry => 
-              sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
-            );
           }
           
-          console.log('Diary - Entrées admin récupérées après filtrage arrays:', {
+          console.log('Diary - Entrées admin récupérées après filtrage:', {
             totalCount: filteredEntries.length,
             searchApplied: !!searchTerm
           });
           
           setEntries(filteredEntries);
         } else {
-          console.log('Diary - Admin - Aucune entrée trouvée avec les critères de recherche');
+          console.log('Diary - Admin - Aucune entrée trouvée');
           setEntries([]);
         }
         return;
@@ -150,38 +153,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Récupération pour l'utilisateur effectif
       console.log('🔍 Diary - Récupération des entrées utilisateur effectif:', effectiveUserId);
       
-      // DIAGNOSTIC: Récupérer TOUTES les entrées de l'utilisateur sans filtre
-      console.log('🔍 DIAGNOSTIC - Récupération de TOUTES les entrées pour diagnostic...');
-      const { data: allUserEntries, error: allEntriesError } = await supabase
-        .from('diary_entries')
-        .select('*')
-        .eq('user_id', effectiveUserId)
-        .order('entry_date', { ascending: false });
-
-      if (allEntriesError) {
-        console.error('🔍 DIAGNOSTIC - Erreur:', allEntriesError);
-      } else {
-        console.log('🔍 DIAGNOSTIC - TOUTES vos entrées (CONTENU COMPLET):', {
-          count: allUserEntries?.length || 0,
-          entries: allUserEntries?.map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            tags: entry.tags,
-            contacted_people: entry.contacted_people,
-            activities: entry.activities,
-            reflections: entry.reflections,
-            positive_things: entry.positive_things,
-            negative_things: entry.negative_things,
-            desire_of_day: entry.desire_of_day,
-            objectives: entry.objectives,
-            private_notes: entry.private_notes,
-            physical_state: entry.physical_state,
-            mental_state: entry.mental_state
-          })) || []
-        });
-      }
-      
-      // Récupérer directement les entrées de l'utilisateur effectif avec filtre
+      // Récupérer TOUTES les entrées de l'utilisateur (sans filtre de recherche SQL)
       let userEntriesQuery = supabase
         .from('diary_entries')
         .select('*')
@@ -195,17 +167,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         userId: effectiveUserId
       });
 
-      // Appliquer les filtres aux entrées utilisateur
-      if (searchTerm) {
-        console.log('🔍 Diary - User - Recherche avec terme:', searchTerm);
-        console.log('🔍 Diary - Construction de la requête OR avec ilike...');
-        
-        // Recherche dans les champs texte avec ilike (insensible à la casse)
-        const orCondition = `title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`;
-        
-        console.log('🔍 Diary - Condition OR construite:', orCondition);
-        userEntriesQuery = userEntriesQuery.or(orCondition);
-      }
+      // Appliquer seulement les filtres de date via SQL
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
         console.log('Diary - Filtre date début appliqué:', startDate);
@@ -220,28 +182,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       
       if (userEntriesError) {
         console.error('🔍 Diary - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
-        console.error('🔍 Diary - Détails erreur:', {
-          message: userEntriesError.message,
-          details: userEntriesError.details,
-          hint: userEntriesError.hint,
-          code: userEntriesError.code
-        });
         setEntries([]);
         return;
       }
 
-      console.log('🔍 Diary - Réponse entrées utilisateur effectif (données brutes):', { 
+      console.log('🔍 Diary - Réponse entrées utilisateur effectif:', { 
         count: userEntries?.length || 0, 
         searchTerm: searchTerm,
-        hasSearchTerm: !!searchTerm,
-        rawData: userEntries,
-        sampleEntries: userEntries?.slice(0, 2).map(entry => ({
-          id: entry.id,
-          title: entry.title,
-          tags: entry.tags,
-          reflections: entry.reflections?.substring(0, 100),
-          activities: entry.activities?.substring(0, 100)
-        })) || []
+        hasSearchTerm: !!searchTerm
       });
 
       // Récupérer les utilisateurs autorisés via les groupes d'invitation
@@ -290,44 +238,51 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             }
           }));
           
-          // Filtrage côté client pour les arrays si terme de recherche
+          // Filtrage côté client pour TOUS les champs
           let filteredUserEntries = convertedUserEntries;
           if (searchTerm) {
-            console.log('🔍 Diary - Filtrage côté client pour les arrays...');
-            const arrayFiltered = convertedUserEntries.filter(entry => {
+            console.log('🔍 Diary - Filtrage utilisateur côté client avec terme:', searchTerm);
+            filteredUserEntries = convertedUserEntries.filter(entry => {
               const searchLower = searchTerm.toLowerCase();
               
-              // Vérifier dans les arrays
-              const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
-              const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+              // Recherche dans les champs texte (insensible à la casse)
+              const textFields = [
+                entry.title,
+                entry.activities,
+                entry.reflections,
+                entry.positive_things,
+                entry.negative_things,
+                entry.desire_of_day,
+                entry.objectives,
+                entry.private_notes,
+                entry.physical_state,
+                entry.mental_state
+              ];
+              
+              const textMatch = textFields.some(field => 
+                field && field.toLowerCase().includes(searchLower)
+              );
+              
+              // Recherche dans les arrays
+              const tagsMatch = entry.tags?.some(tag => 
+                tag && tag.toLowerCase().includes(searchLower)
+              ) || false;
+              
+              const peopleMatch = entry.contacted_people?.some(person => 
+                person && person.toLowerCase().includes(searchLower)
+              ) || false;
               
               console.log('🔍 Diary - Test entry:', {
                 entryId: entry.id,
                 title: entry.title,
                 tags: entry.tags,
                 searchTerm: searchTerm,
+                textMatch,
                 tagsMatch,
                 peopleMatch
               });
               
-              return tagsMatch || peopleMatch;
-            });
-            
-            console.log('🔍 Diary - Résultats filtrage arrays:', arrayFiltered.length);
-            
-            // Combiner avec les résultats de la requête SQL (éviter les doublons)
-            const sqlResultIds = new Set(convertedUserEntries.map(e => e.id));
-            const arrayFilteredIds = new Set(arrayFiltered.map(e => e.id));
-            
-            // Prendre l'union des deux ensembles
-            filteredUserEntries = convertedUserEntries.filter(entry => 
-              sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
-            );
-            
-            console.log('🔍 Diary - Union des résultats SQL et array:', {
-              sqlResults: sqlResultIds.size,
-              arrayResults: arrayFilteredIds.size,
-              finalResults: filteredUserEntries.length
+              return textMatch || tagsMatch || peopleMatch;
             });
           }
           
@@ -357,13 +312,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres aux autres entrées
-        if (searchTerm) {
-          console.log('Diary - Others - Recherche avec terme:', searchTerm);
-          
-          // Recherche dans les champs texte avec ilike (insensible à la casse)
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,positive_things.ilike.%${searchTerm}%,negative_things.ilike.%${searchTerm}%,desire_of_day.ilike.%${searchTerm}%,objectives.ilike.%${searchTerm}%,private_notes.ilike.%${searchTerm}%,physical_state.ilike.%${searchTerm}%,mental_state.ilike.%${searchTerm}%`);
-        }
+        // Appliquer seulement les filtres de date
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
         }
@@ -376,23 +325,11 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         
         if (otherEntriesError) {
           console.error('Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
-          console.error('Diary - Détails erreur autres entrées:', {
-            message: otherEntriesError.message,
-            details: otherEntriesError.details,
-            hint: otherEntriesError.hint,
-            code: otherEntriesError.code
-          });
         } else {
           otherEntries = otherEntriesData || [];
           console.log('Diary - Réponse autres entrées:', { 
             count: otherEntries.length,
-            searchTerm: searchTerm,
-            sampleEntries: otherEntries.slice(0, 2).map(entry => ({
-              id: entry.id,
-              title: entry.title,
-              tags: entry.tags,
-              reflections: entry.reflections?.substring(0, 100)
-            })) || []
+            searchTerm: searchTerm
           });
         }
       } else {
@@ -444,57 +381,59 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }
       }));
       
-      // Filtrage côté client pour les arrays si terme de recherche
+      // Filtrage côté client pour TOUS les champs
       let finalEntries = convertedEntries;
       if (searchTerm) {
-        console.log('🔍 Diary - Filtrage final côté client pour les arrays...');
-        const arrayFiltered = convertedEntries.filter(entry => {
+        console.log('🔍 Diary - Filtrage final côté client avec terme:', searchTerm);
+        finalEntries = convertedEntries.filter(entry => {
           const searchLower = searchTerm.toLowerCase();
           
-          // Vérifier dans les arrays
-          const tagsMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
-          const peopleMatch = entry.contacted_people?.some(person => person.toLowerCase().includes(searchLower)) || false;
+          // Recherche dans les champs texte (insensible à la casse)
+          const textFields = [
+            entry.title,
+            entry.activities,
+            entry.reflections,
+            entry.positive_things,
+            entry.negative_things,
+            entry.desire_of_day,
+            entry.objectives,
+            entry.private_notes,
+            entry.physical_state,
+            entry.mental_state
+          ];
+          
+          const textMatch = textFields.some(field => 
+            field && field.toLowerCase().includes(searchLower)
+          );
+          
+          // Recherche dans les arrays
+          const tagsMatch = entry.tags?.some(tag => 
+            tag && tag.toLowerCase().includes(searchLower)
+          ) || false;
+          
+          const peopleMatch = entry.contacted_people?.some(person => 
+            person && person.toLowerCase().includes(searchLower)
+          ) || false;
           
           console.log('🔍 Diary - Test final entry:', {
             entryId: entry.id,
             title: entry.title,
             tags: entry.tags,
             searchTerm: searchTerm,
+            textMatch,
             tagsMatch,
-            peopleMatch
+            peopleMatch,
+            match: textMatch || tagsMatch || peopleMatch
           });
           
-          return tagsMatch || peopleMatch;
-        });
-        
-        console.log('🔍 Diary - Résultats filtrage final arrays:', arrayFiltered.length);
-        
-        // Combiner avec les résultats de la requête SQL (éviter les doublons)
-        const sqlResultIds = new Set(convertedEntries.map(e => e.id));
-        const arrayFilteredIds = new Set(arrayFiltered.map(e => e.id));
-        
-        // Prendre l'union des deux ensembles
-        finalEntries = convertedEntries.filter(entry => 
-          sqlResultIds.has(entry.id) || arrayFilteredIds.has(entry.id)
-        );
-        
-        console.log('🔍 Diary - Union finale des résultats SQL et array:', {
-          sqlResults: sqlResultIds.size,
-          arrayResults: arrayFilteredIds.size,
-          finalResults: finalEntries.length
+          return textMatch || tagsMatch || peopleMatch;
         });
       }
       
       console.log('🔍 Diary - Total entrées finales:', {
         totalCount: finalEntries.length,
         searchTerm: searchTerm,
-        hasSearchTerm: !!searchTerm,
-        finalEntries: finalEntries.map(e => ({
-          id: e.id,
-          title: e.title,
-          tags: e.tags,
-          activities: e.activities?.substring(0, 50)
-        }))
+        hasSearchTerm: !!searchTerm
       });
       
       setEntries(finalEntries);
