@@ -21,17 +21,38 @@ export const useBlogAlbums = () => {
       try {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
-        const isAdmin = hasRole('admin'); // Ceci prend en compte l'impersonnation
+        const isAdmin = hasRole('admin');
         
-        console.log('📊 useBlogAlbums - START REQUEST:', {
+        console.log('📊 useBlogAlbums - DETAILED START REQUEST:', {
           originalUserId: user.id,
-          effectiveUserId: effectiveUserId,
           originalUserEmail: user.email,
+          effectiveUserId: effectiveUserId,
           isImpersonating: effectiveUserId !== user.id,
-          isAdmin: isAdmin
+          isAdmin: isAdmin,
+          hasRole_admin_result: hasRole('admin'),
+          hasRole_editor_result: hasRole('editor'),
+          hasRole_reader_result: hasRole('reader')
         });
 
-        // Simple query - les nouvelles politiques RLS permettent à tous les utilisateurs authentifiés de voir tous les albums
+        // Vérifier l'état d'impersonnation depuis le localStorage
+        const impersonationState = localStorage.getItem('impersonation_state');
+        if (impersonationState) {
+          try {
+            const parsedState = JSON.parse(impersonationState);
+            console.log('🎭 useBlogAlbums - État impersonnation détaillé:', {
+              isImpersonating: parsedState.isImpersonating,
+              originalUser: parsedState.originalUser?.email,
+              impersonatedUser: parsedState.impersonatedUser?.email,
+              impersonatedRoles: parsedState.impersonatedRoles,
+              hasAdminInRoles: parsedState.impersonatedRoles?.includes('admin')
+            });
+          } catch (e) {
+            console.error('🚨 useBlogAlbums - Erreur parsing impersonation state:', e);
+          }
+        } else {
+          console.log('❌ useBlogAlbums - Aucun état d\'impersonnation trouvé');
+        }
+
         console.log('🚀 useBlogAlbums - Executing Supabase query with new RLS policies');
         const startTime = Date.now();
         
@@ -63,23 +84,47 @@ export const useBlogAlbums = () => {
 
         let filteredAlbums = data || [];
 
+        console.log('🔍 useBlogAlbums - Début du filtrage côté client:', {
+          isAdmin,
+          effectiveUserId,
+          originalUserId: user.id,
+          isImpersonating: effectiveUserId !== user.id,
+          shouldFilter: !isAdmin && effectiveUserId !== user.id
+        });
+
         // Filtrage côté client SEULEMENT si on n'est pas admin ET qu'on est en mode impersonnation
         if (!isAdmin && effectiveUserId !== user.id) {
-          console.log('🎭 useBlogAlbums - Impersonation mode sans permissions admin: client-side filtering');
+          console.log('🎭 useBlogAlbums - MODE IMPERSONNATION SANS ADMIN: Filtrage côté client');
           const beforeFilterCount = filteredAlbums.length;
           
-          filteredAlbums = filteredAlbums.filter(album => album.author_id === effectiveUserId);
+          filteredAlbums = filteredAlbums.filter(album => {
+            const shouldInclude = album.author_id === effectiveUserId;
+            console.log(`📋 useBlogAlbums - Album "${album.name}":`, {
+              albumId: album.id,
+              authorId: album.author_id,
+              effectiveUserId,
+              shouldInclude
+            });
+            return shouldInclude;
+          });
 
-          console.log('📊 useBlogAlbums - Impersonation filtering result:', {
+          console.log('📊 useBlogAlbums - Résultat filtrage impersonnation:', {
             before: beforeFilterCount,
             after: filteredAlbums.length,
             effectiveUserId
           });
         } else if (isAdmin) {
-          console.log('🔑 useBlogAlbums - Admin permissions: showing all albums');
+          console.log('🔑 useBlogAlbums - PERMISSIONS ADMIN DETECTEES: showing all albums');
+          console.log('👑 useBlogAlbums - Admin context:', {
+            hasAdminRole: hasRole('admin'),
+            totalAlbumsVisible: filteredAlbums.length,
+            adminCanSeeAll: true
+          });
+        } else {
+          console.log('👤 useBlogAlbums - Mode utilisateur normal (pas d\'impersonnation)');
         }
 
-        console.log('🎉 useBlogAlbums - Final result:', {
+        console.log('🎉 useBlogAlbums - RESULTAT FINAL:', {
           count: filteredAlbums.length,
           albums: filteredAlbums.map(album => ({
             id: album.id,
