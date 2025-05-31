@@ -10,7 +10,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
 
   useEffect(() => {
     const fetchComments = async () => {
-      console.log('🔍 ===== RÉCUPÉRATION COMMENTAIRES =====');
+      console.log('🔍 ===== RÉCUPÉRATION COMMENTAIRES - DEBUG DÉTAILLÉ =====');
       console.log('🔍 Utilisateur effectif:', effectiveUserId);
       console.log('🔍 authorizedUserIds pour commentaires:', authorizedUserIds);
       console.log('🔍 hasRole admin:', hasRole('admin'));
@@ -19,7 +19,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
 
       if (hasRole('admin')) {
         console.log('🔍 MODE ADMIN - récupération tous commentaires');
-        const { data: commentsData } = await supabase
+        const { data: commentsData, error } = await supabase
           .from('blog_comments')
           .select(`
             id,
@@ -37,6 +37,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
           .limit(15);
 
         console.log('🔍 Commentaires admin récupérés:', commentsData?.length || 0);
+        console.log('🔍 Erreur admin commentaires:', error);
 
         if (commentsData) {
           items.push(...commentsData.map(comment => ({
@@ -53,18 +54,25 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
         }
       } else {
         console.log('🔍 UTILISATEUR NON-ADMIN - récupération commentaires avec permissions d\'albums');
+        console.log('🔍 Liste des utilisateurs autorisés:', authorizedUserIds);
         
         // 1. Récupérer les permissions d'albums pour cet utilisateur
-        const { data: albumPermissions } = await supabase
+        console.log('🔍 Étape 1: Récupération des permissions d\'albums pour:', effectiveUserId);
+        const { data: albumPermissions, error: albumPermError } = await supabase
           .from('album_permissions')
           .select(`
             album_id,
-            blog_albums!inner(author_id)
+            blog_albums!inner(author_id, name)
           `)
           .eq('user_id', effectiveUserId);
 
+        console.log('🔍 Permissions d\'albums trouvées:', albumPermissions?.length || 0);
+        console.log('🔍 Détail permissions albums:', albumPermissions);
+        console.log('🔍 Erreur permissions albums:', albumPermError);
+
         // 2. Récupérer les commentaires de l'utilisateur effectif
-        const { data: userComments } = await supabase
+        console.log('🔍 Étape 2: Récupération des commentaires de l\'utilisateur effectif');
+        const { data: userComments, error: userCommentsError } = await supabase
           .from('blog_comments')
           .select(`
             id,
@@ -75,6 +83,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             post:blog_posts(
               id, 
               title,
+              album_id,
               blog_albums(name)
             )
           `)
@@ -82,10 +91,17 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
           .order('created_at', { ascending: false })
           .limit(10);
 
+        console.log('🔍 Commentaires utilisateur effectif:', userComments?.length || 0);
+        console.log('🔍 Détail commentaires utilisateur:', userComments);
+        console.log('🔍 Erreur commentaires utilisateur:', userCommentsError);
+
         // 3. Récupérer les commentaires sur les posts des albums autorisés
         let albumComments: any[] = [];
         if (albumPermissions && albumPermissions.length > 0) {
-          const { data: commentsOnAlbumPosts } = await supabase
+          const albumIds = albumPermissions.map(p => p.album_id);
+          console.log('🔍 Étape 3: Récupération des commentaires pour les albums autorisés:', albumIds);
+          
+          const { data: commentsOnAlbumPosts, error: albumCommentsError } = await supabase
             .from('blog_comments')
             .select(`
               id,
@@ -100,23 +116,74 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
                 blog_albums(name)
               )
             `)
-            .in('post.album_id', albumPermissions.map(p => p.album_id))
+            .in('post.album_id', albumIds)
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(20);
+          
+          console.log('🔍 Commentaires sur albums autorisés:', commentsOnAlbumPosts?.length || 0);
+          console.log('🔍 Détail commentaires albums:', commentsOnAlbumPosts);
+          console.log('🔍 Erreur commentaires albums:', albumCommentsError);
           
           albumComments = commentsOnAlbumPosts || [];
+        } else {
+          console.log('🔍 Aucune permission d\'album trouvée, pas de commentaires d\'albums à récupérer');
         }
 
-        const allComments = [...(userComments || []), ...albumComments];
+        // 4. Récupérer également les commentaires des autres utilisateurs autorisés (via life_story_permissions, groupes, etc.)
+        console.log('🔍 Étape 4: Récupération des commentaires des utilisateurs autorisés via autres permissions');
+        let otherAuthorizedComments: any[] = [];
+        const otherAuthorizedUserIds = authorizedUserIds.filter(id => id !== effectiveUserId);
+        
+        if (otherAuthorizedUserIds.length > 0) {
+          console.log('🔍 Autres utilisateurs autorisés:', otherAuthorizedUserIds);
+          
+          const { data: otherComments, error: otherCommentsError } = await supabase
+            .from('blog_comments')
+            .select(`
+              id,
+              content,
+              created_at,
+              author_id,
+              profiles(display_name),
+              post:blog_posts(
+                id, 
+                title,
+                album_id,
+                blog_albums(name)
+              )
+            `)
+            .in('author_id', otherAuthorizedUserIds)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+          console.log('🔍 Commentaires des autres utilisateurs autorisés:', otherComments?.length || 0);
+          console.log('🔍 Détail commentaires autres utilisateurs:', otherComments);
+          console.log('🔍 Erreur commentaires autres utilisateurs:', otherCommentsError);
+          
+          otherAuthorizedComments = otherComments || [];
+        }
+
+        // Combiner tous les commentaires
+        const allComments = [...(userComments || []), ...albumComments, ...otherAuthorizedComments];
 
         // Éliminer les doublons par ID
         const uniqueComments = allComments.filter((comment, index, self) => 
           index === self.findIndex(c => c.id === comment.id)
         );
 
+        console.log('🔍 ===== RÉSUMÉ COMMENTAIRES =====');
         console.log('🔍 Commentaires utilisateur effectif:', userComments?.length || 0);
         console.log('🔍 Commentaires albums autorisés:', albumComments.length);
+        console.log('🔍 Commentaires autres utilisateurs autorisés:', otherAuthorizedComments.length);
+        console.log('🔍 Total commentaires avant déduplication:', allComments.length);
         console.log('🔍 Total commentaires uniques:', uniqueComments.length);
+        console.log('🔍 Liste finale des commentaires:', uniqueComments.map(c => ({
+          id: c.id,
+          author_id: c.author_id,
+          post_title: c.post?.title,
+          album_name: c.post?.blog_albums?.name,
+          content_preview: c.content?.substring(0, 50) + '...'
+        })));
 
         if (uniqueComments.length > 0) {
           items.push(...uniqueComments.map(comment => ({
@@ -133,6 +200,8 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
         }
       }
 
+      console.log('🔍 ===== FIN RÉCUPÉRATION COMMENTAIRES =====');
+      console.log('🔍 Total items commentaires à afficher:', items.length);
       setComments(items);
     };
 
