@@ -9,7 +9,7 @@ import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Blog = () => {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, getEffectiveUserId, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState<string>('');
   const [startDate, setStartDate] = useState('');
@@ -21,6 +21,18 @@ const Blog = () => {
     loading, 
     hasCreatePermission 
   } = useBlogData(searchTerm, selectedAlbum, startDate, endDate, null);
+
+  console.log('Blog.tsx - Données de la page Blog:', {
+    user: user?.email,
+    effectiveUserId: getEffectiveUserId(),
+    effectiveProfile: profile?.email,
+    albumsCount: albums.length,
+    postsCount: posts.length,
+    hasCreatePermission,
+    isAdmin: hasRole('admin'),
+    isEditor: hasRole('editor'),
+    loading
+  });
 
   const handleClearFilters = () => {
     setStartDate('');

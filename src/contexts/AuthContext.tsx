@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
@@ -37,6 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (impersonationState) {
         const parsedState = JSON.parse(impersonationState);
         if (parsedState.isImpersonating && parsedState.impersonatedRoles) {
+          console.log('AuthContext.hasRole - Mode impersonnation:', {
+            requestedRole: role,
+            impersonatedRoles: parsedState.impersonatedRoles,
+            hasRequestedRole: parsedState.impersonatedRoles.includes(role),
+            impersonatedUser: parsedState.impersonatedUser?.email
+          });
           return parsedState.impersonatedRoles.includes(role);
         }
       }
@@ -47,7 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Sinon, utiliser la logique normale
-    return originalHasRole(role);
+    const normalResult = originalHasRole(role);
+    console.log('AuthContext.hasRole - Mode normal:', {
+      requestedRole: role,
+      userRoles: roles,
+      hasRequestedRole: normalResult,
+      userEmail: user?.email
+    });
+    return normalResult;
   };
 
   // Fonction pour obtenir l'utilisateur effectif (impersonné ou réel)
@@ -57,6 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (impersonationState) {
         const parsedState = JSON.parse(impersonationState);
         if (parsedState.isImpersonating && parsedState.impersonatedUser) {
+          console.log('AuthContext.getEffectiveUser - Utilisateur impersonné:', {
+            originalUser: user?.email,
+            impersonatedUser: parsedState.impersonatedUser?.email
+          });
           return parsedState.impersonatedUser;
         }
       }
@@ -65,13 +81,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       secureStorage.removeItem('impersonation_state');
     }
 
+    console.log('AuthContext.getEffectiveUser - Utilisateur normal:', user?.email);
     return profile;
   };
 
   // Fonction pour obtenir l'ID utilisateur effectif
   const getEffectiveUserId = () => {
     const effectiveUser = getEffectiveUser();
-    return effectiveUser?.id || user?.id;
+    const effectiveUserId = effectiveUser?.id || user?.id;
+    console.log('AuthContext.getEffectiveUserId - ID utilisateur effectif:', {
+      effectiveUserId,
+      effectiveUserEmail: effectiveUser?.email,
+      originalUserId: user?.id,
+      originalUserEmail: user?.email
+    });
+    return effectiveUserId;
   };
 
   // Vérification initiale de session et configuration du listener d'événements d'authentification

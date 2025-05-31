@@ -5,13 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BlogAlbum } from '@/types/supabase';
 
 export const useBlogAlbums = () => {
-  const { user } = useAuth();
+  const { user, getEffectiveUserId, profile } = useAuth();
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAlbums = async () => {
       if (!user) {
+        console.log('useBlogAlbums - Pas d\'utilisateur connecté');
         setAlbums([]);
         setLoading(false);
         return;
@@ -19,9 +20,17 @@ export const useBlogAlbums = () => {
 
       try {
         setLoading(true);
-        console.log('useBlogAlbums - Récupération avec nouvelles politiques RLS simplifiées');
+        const effectiveUserId = getEffectiveUserId();
         
-        // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
+        console.log('useBlogAlbums - Données utilisateur:', {
+          originalUserId: user.id,
+          effectiveUserId: effectiveUserId,
+          originalUserEmail: user.email,
+          effectiveUserProfile: profile,
+          isImpersonating: effectiveUserId !== user.id
+        });
+
+        // Les nouvelles politiques RLS restrictives filtrent automatiquement l'accès
         const { data, error } = await supabase
           .from('blog_albums')
           .select(`
@@ -30,13 +39,39 @@ export const useBlogAlbums = () => {
           `)
           .order('name');
 
+        console.log('useBlogAlbums - Requête Supabase:', {
+          query: 'blog_albums avec join profiles',
+          effectiveUserId,
+          currentAuthUid: (await supabase.auth.getUser()).data.user?.id,
+        });
+
         if (error) {
-          console.error('useBlogAlbums - Erreur:', error);
+          console.error('useBlogAlbums - Erreur Supabase:', error);
           throw error;
         }
         
-        console.log('useBlogAlbums - Albums récupérés:', data?.length || 0);
-        setAlbums(data || []);
+        console.log('useBlogAlbums - Albums récupérés:', {
+          count: data?.length || 0,
+          albums: data?.map(album => ({
+            id: album.id,
+            name: album.name,
+            author_id: album.author_id,
+            author_email: album.profiles?.email
+          })) || []
+        });
+
+        // Vérification supplémentaire côté client pour debug
+        const filteredAlbums = data || [];
+        console.log('useBlogAlbums - Albums après filtrage RLS:', {
+          totalCount: filteredAlbums.length,
+          albumsByAuthor: filteredAlbums.reduce((acc, album) => {
+            const authorEmail = album.profiles?.email || 'unknown';
+            acc[authorEmail] = (acc[authorEmail] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        });
+        
+        setAlbums(filteredAlbums);
         
       } catch (error) {
         console.error('useBlogAlbums - Erreur lors du chargement des albums:', error);
@@ -47,7 +82,7 @@ export const useBlogAlbums = () => {
     };
 
     fetchAlbums();
-  }, [user]);
+  }, [user, getEffectiveUserId, profile]);
 
   return { albums, loading };
 };
