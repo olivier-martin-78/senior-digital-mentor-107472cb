@@ -18,27 +18,32 @@ interface BlogPostCardProps {
 }
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, userId }) => {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, getEffectiveUserId } = useAuth();
   
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
+
+  // CORRECTION : Utiliser l'ID utilisateur effectif pour les vérifications d'impersonnation
+  const effectiveUserId = getEffectiveUserId();
+  const originalUserId = user?.id;
 
   // Un post est visible si :
   // - Il est publié ET (l'utilisateur a les permissions OU c'est son propre post)
   // - OU si l'utilisateur est l'auteur (même non publié) - CORRECTION PRINCIPALE
   // - OU si l'utilisateur est admin
   const isVisible = post.published || 
-                   (user && post.author_id === user.id) || 
+                   (effectiveUserId && post.author_id === effectiveUserId) || 
                    hasRole('admin');
   
-  console.log('BlogPostCard - Vérification visibilité:', {
+  console.log('BlogPostCard - Vérification visibilité (CORRIGÉE):', {
     postId: post.id,
     title: post.title,
     published: post.published,
     authorId: post.author_id,
-    currentUserId: user?.id,
-    isAuthor: user && post.author_id === user.id,
+    effectiveUserId: effectiveUserId,
+    originalUserId: originalUserId,
+    isAuthor: effectiveUserId && post.author_id === effectiveUserId,
     isAdmin: hasRole('admin'),
     isVisible
   });
@@ -104,7 +109,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       <CardFooter>
         <Button asChild variant="outline">
           <Link to={`/blog/${post.id}`}>
-            {!post.published && user && post.author_id === user.id ? 'Modifier/Publier' : 'Lire la suite'}
+            {!post.published && effectiveUserId && post.author_id === effectiveUserId ? 'Modifier/Publier' : 'Lire la suite'}
           </Link>
         </Button>
       </CardFooter>

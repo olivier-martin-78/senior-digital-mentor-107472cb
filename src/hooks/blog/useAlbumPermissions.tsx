@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BlogAlbum } from '@/types/supabase';
 
 export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
-  const { user } = useAuth();
+  const { user, getEffectiveUserId } = useAuth();
   const [accessibleAlbums, setAccessibleAlbums] = useState<BlogAlbum[]>([]);
 
   useEffect(() => {
@@ -14,16 +14,20 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       return;
     }
 
-    console.log('AlbumPermissions - Utilisation des nouvelles politiques RLS simplifiées');
+    const effectiveUserId = getEffectiveUserId();
+
+    console.log('AlbumPermissions - Filtrage côté client avec utilisateur effectif:', {
+      effectiveUserId,
+      originalUserId: user.id,
+      isImpersonating: effectiveUserId !== user.id,
+      totalAlbums: allAlbums.length
+    });
     
-    // Avec les nouvelles politiques RLS simplifiées, les albums dans allAlbums
-    // sont déjà filtrés automatiquement par les politiques qui utilisent is_admin()
-    // qui gère :
-    // - Admin voit tout (via "Admin can access all blog albums")  
-    // - Propriétaire voit ses albums (via "Users can access their own blog albums")
-    console.log('AlbumPermissions - Albums filtrés par RLS:', allAlbums.length);
+    // Filtrage côté client basé sur l'utilisateur effectif
+    // Les albums dans allAlbums sont déjà filtrés par les hooks parent selon l'impersonnation
+    console.log('AlbumPermissions - Albums après filtrage RLS et impersonnation:', allAlbums.length);
     setAccessibleAlbums(allAlbums);
-  }, [allAlbums, user]);
+  }, [allAlbums, user, getEffectiveUserId]);
 
   return { accessibleAlbums, setAccessibleAlbums };
 };

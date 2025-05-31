@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BlogAlbum } from '@/types/supabase';
 
 export const useBlogAlbums = () => {
-  const { user, getEffectiveUserId, profile } = useAuth();
+  const { user, getEffectiveUserId, profile, hasRole } = useAuth();
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,16 +22,18 @@ export const useBlogAlbums = () => {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('useBlogAlbums - Données utilisateur:', {
+        console.log('useBlogAlbums - Données utilisateur (CORRIGÉES):', {
           originalUserId: user.id,
           effectiveUserId: effectiveUserId,
           originalUserEmail: user.email,
           effectiveUserProfile: profile,
-          isImpersonating: effectiveUserId !== user.id
+          isImpersonating: effectiveUserId !== user.id,
+          isAdmin: hasRole('admin')
         });
 
-        // Les nouvelles politiques RLS restrictives filtrent automatiquement l'accès
-        const { data, error } = await supabase
+        // APPROCHE CORRIGÉE : Récupérer tous les albums si admin réel, 
+        // puis filtrer côté client selon l'impersonnation
+        let albumsQuery = supabase
           .from('blog_albums')
           .select(`
             *,
@@ -39,38 +41,55 @@ export const useBlogAlbums = () => {
           `)
           .order('name');
 
-        console.log('useBlogAlbums - Requête Supabase:', {
+        // Si l'utilisateur réel n'est pas admin, appliquer des filtres côté requête
+        if (!hasRole('admin')) {
+          albumsQuery = albumsQuery.eq('author_id', effectiveUserId);
+        }
+
+        console.log('useBlogAlbums - Requête Supabase (CORRIGÉE):', {
           query: 'blog_albums avec join profiles',
           effectiveUserId,
           currentAuthUid: (await supabase.auth.getUser()).data.user?.id,
+          isAdminRealUser: hasRole('admin'),
+          willFilterClientSide: hasRole('admin') && effectiveUserId !== user.id
         });
+
+        const { data, error } = await albumsQuery;
 
         if (error) {
           console.error('useBlogAlbums - Erreur Supabase:', error);
           throw error;
         }
         
-        console.log('useBlogAlbums - Albums récupérés:', {
-          count: data?.length || 0,
-          albums: data?.map(album => ({
+        let filteredAlbums = data || [];
+
+        // FILTRAGE CÔTÉ CLIENT pour l'impersonnation
+        if (hasRole('admin') && effectiveUserId !== user.id) {
+          // En mode impersonnation : montrer seulement les albums de l'utilisateur impersonné
+          console.log('useBlogAlbums - Mode impersonnation : filtrage côté client');
+          filteredAlbums = filteredAlbums.filter(album => {
+            const canSee = album.author_id === effectiveUserId;
+            console.log('useBlogAlbums - Album filtrage:', {
+              albumId: album.id,
+              albumName: album.name,
+              albumAuthorId: album.author_id,
+              effectiveUserId,
+              canSee
+            });
+            return canSee;
+          });
+        }
+
+        console.log('useBlogAlbums - Albums récupérés (APRÈS FILTRAGE):', {
+          count: filteredAlbums.length,
+          albums: filteredAlbums.map(album => ({
             id: album.id,
             name: album.name,
             author_id: album.author_id,
             author_email: album.profiles?.email
-          })) || []
+          }))
         });
 
-        // Vérification supplémentaire côté client pour debug
-        const filteredAlbums = data || [];
-        console.log('useBlogAlbums - Albums après filtrage RLS:', {
-          totalCount: filteredAlbums.length,
-          albumsByAuthor: filteredAlbums.reduce((acc, album) => {
-            const authorEmail = album.profiles?.email || 'unknown';
-            acc[authorEmail] = (acc[authorEmail] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>)
-        });
-        
         setAlbums(filteredAlbums);
         
       } catch (error) {
@@ -82,7 +101,7 @@ export const useBlogAlbums = () => {
     };
 
     fetchAlbums();
-  }, [user, getEffectiveUserId, profile]);
+  }, [user, getEffectiveUserId, profile, hasRole]);
 
   return { albums, loading };
 };
