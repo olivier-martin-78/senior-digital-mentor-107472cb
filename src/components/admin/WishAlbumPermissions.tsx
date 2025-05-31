@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,9 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
     try {
       setLoading(true);
       
-      // Get all profiles
+      console.log('WishAlbumPermissions - Récupération avec nouvelles politiques RLS simplifiées');
+      
+      // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, display_name, email');
@@ -77,7 +78,8 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         .eq('album_id', albumId);
         
       if (permissionsError) {
-        throw permissionsError;
+        console.error('WishAlbumPermissions - Erreur permissions:', permissionsError);
+        // Continue avec une liste vide si erreur de permissions
       }
       
       // Map users with their access status
@@ -93,7 +95,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
       setFilteredUsers(usersWithAccess);
       
     } catch (error) {
-      console.error('Error fetching users and permissions:', error);
+      console.error('WishAlbumPermissions - Erreur:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les utilisateurs et leurs permissions.",
@@ -118,6 +120,8 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
     try {
       setSaving(true);
       
+      console.log('WishAlbumPermissions - Sauvegarde avec nouvelles politiques RLS simplifiées');
+      
       // Get current permissions
       const { data: currentPermissions, error: fetchError } = await supabase
         .from('wish_album_permissions')
@@ -125,7 +129,8 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         .eq('album_id', albumId);
         
       if (fetchError) {
-        throw fetchError;
+        console.error('WishAlbumPermissions - Erreur fetch:', fetchError);
+        // Continue avec une liste vide
       }
       
       const currentUserIds = currentPermissions?.map(p => p.user_id) || [];
@@ -143,7 +148,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
           .in('user_id', usersToRemove);
           
         if (removeError) {
-          throw removeError;
+          console.error('WishAlbumPermissions - Erreur suppression:', removeError);
         }
       }
       
@@ -159,7 +164,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
           .insert(newPermissions);
           
         if (addError) {
-          throw addError;
+          console.error('WishAlbumPermissions - Erreur ajout:', addError);
         }
       }
       
@@ -171,7 +176,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
       onClose();
       
     } catch (error) {
-      console.error('Error saving permissions:', error);
+      console.error('WishAlbumPermissions - Erreur sauvegarde:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les permissions.",

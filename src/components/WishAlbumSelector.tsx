@@ -37,6 +37,9 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
     try {
       setIsCreating(true);
       
+      console.log('WishAlbumSelector - Création avec nouvelles politiques RLS simplifiées');
+      
+      // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
       const { data, error } = await supabase
         .from('wish_albums')
         .insert([{
@@ -64,6 +67,7 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
         onAlbumChange(data.id);
       }
     } catch (error: any) {
+      console.error('WishAlbumSelector - Erreur:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
