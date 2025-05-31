@@ -4,22 +4,135 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Smartphone, Heart, Users, BookOpen, PenTool, MessageCircle, Star, Mail, Phone } from 'lucide-react';
+import { Check, Smartphone, Heart, Users, BookOpen, PenTool, MessageCircle, Star, Mail, Phone, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import SeniorDigitalLogo from '@/SeniorDigital.png';
 
 const BlogLanding = () => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     message: ''
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Formulaire soumis:', formData);
-    // Ici on pourrait intégrer l'envoi d'email via Supabase
+    
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    console.log('=== DÉBUT ENVOI FORMULAIRE ===');
+    
+    try {
+      // Préparer les données pour l'envoi
+      const emailData = { 
+        name: formData.name.trim(), 
+        email: formData.email.trim(), 
+        message: formData.message.trim()
+      };
+      
+      console.log('Envoi email avec données:', emailData);
+      
+      // Tentative 1: Via supabase.functions.invoke (méthode recommandée)
+      console.log('=== TENTATIVE 1: supabase.functions.invoke ===');
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('send-contact-email', {
+          body: emailData
+        });
+        
+        console.log('Réponse invoke:', { data, error });
+        
+        if (!error && data?.success) {
+          toast({
+            title: "Message envoyé",
+            description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+          });
+          
+          // Reset form
+          setFormData({
+            name: '',
+            email: '',
+            message: ''
+          });
+          
+          return; // Succès, on sort de la fonction
+        }
+        
+        // Si invoke échoue, on essaie avec fetch direct
+        throw new Error(`Invoke failed: ${error?.message || 'Réponse invalide'}`);
+        
+      } catch (invokeError) {
+        console.warn('Invoke échoué, tentative avec fetch direct:', invokeError);
+        
+        // Tentative 2: Appel direct avec fetch
+        console.log('=== TENTATIVE 2: fetch direct ===');
+        
+        const functionUrl = `https://cvcebcisijjmmmwuedcv.supabase.co/functions/v1/send-contact-email`;
+        console.log('URL fonction:', functionUrl);
+        
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE`,
+          },
+          body: JSON.stringify(emailData)
+        });
+        
+        console.log('Réponse fetch - Status:', response.status);
+        console.log('Réponse fetch - Headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Erreur fetch:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Résultat fetch:', result);
+        
+        if (result?.success) {
+          toast({
+            title: "Message envoyé",
+            description: "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+          });
+          
+          // Reset form
+          setFormData({
+            name: '',
+            email: '',
+            message: ''
+          });
+        } else {
+          throw new Error(result?.error || 'Réponse inattendue de la fonction');
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('=== ERREUR COMPLÈTE ===', error);
+      
+      toast({
+        title: "Erreur d'envoi",
+        description: `Impossible d'envoyer le message: ${error.message}. Veuillez réessayer ou nous contacter directement par email.`,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+      console.log('=== FIN TRAITEMENT ===');
+    }
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -35,9 +148,9 @@ const BlogLanding = () => {
             <img src={SeniorDigitalLogo} alt="Senior Digital Mentor" width="110"/>
           </Link>
           <nav className="hidden md:flex space-x-8">
-            <button onClick={() => scrollToSection('accueil')} className="text-gray-600 hover:text-tranches-sage transition-colors">
+            <Link to="/" className="text-gray-600 hover:text-tranches-sage transition-colors">
               Accueil
-            </button>
+            </Link>
             <button onClick={() => scrollToSection('activites')} className="text-gray-600 hover:text-tranches-sage transition-colors">
               Nos Activités
             </button>
@@ -387,15 +500,17 @@ const BlogLanding = () => {
                 type="submit" 
                 className="w-full bg-tranches-sage text-white hover:bg-tranches-sage/90"
                 size="lg"
+                disabled={loading}
               >
-                Être recontacté
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Envoyer
               </Button>
             </form>
             
             <div className="text-center mt-6">
               <p className="text-tranches-warmgray flex items-center justify-center">
                 <Mail className="h-4 w-4 mr-2" />
-                contact@senior-digital-mentor.fr
+                contact@senior-digital-mentor.com
               </p>
             </div>
           </div>
@@ -416,6 +531,7 @@ const BlogLanding = () => {
             <div>
               <h4 className="font-serif text-lg mb-4">Navigation</h4>
               <ul className="space-y-2 text-sm text-gray-300">
+                <li><Link to="/" className="hover:text-white transition-colors">Accueil</Link></li>
                 <li><Link to="/" className="hover:text-white transition-colors">Nos Activités</Link></li>
                 <li><Link to="/" className="hover:text-white transition-colors">Qui sommes-nous</Link></li>
                 <li><Link to="/" className="hover:text-white transition-colors">Devenir partenaire</Link></li>
