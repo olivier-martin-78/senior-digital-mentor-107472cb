@@ -37,8 +37,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         // Appliquer les filtres pour admin - recherche insensible à la casse sur tous les champs
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
-          const lowerSearchTerm = searchTerm.toLowerCase();
-          query = query.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},lower(tags::text).like.%${lowerSearchTerm}%,lower(contacted_people::text).like.%${lowerSearchTerm}%`);
+          query = query.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -137,8 +136,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       // Appliquer les filtres aux entrées utilisateur - recherche insensible à la casse sur tous les champs
       if (searchTerm) {
         const searchPattern = `%${searchTerm}%`;
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        userEntriesQuery = userEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},lower(tags::text).like.%${lowerSearchTerm}%,lower(contacted_people::text).like.%${lowerSearchTerm}%`);
+        userEntriesQuery = userEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
         console.log('Diary - Filtre de recherche appliqué sur tous les champs (insensible à la casse):', searchTerm);
       }
       if (startDate) {
@@ -245,8 +243,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         // Appliquer les filtres aux autres entrées - recherche insensible à la casse sur tous les champs
         if (searchTerm) {
           const searchPattern = `%${searchTerm}%`;
-          const lowerSearchTerm = searchTerm.toLowerCase();
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},lower(tags::text).like.%${lowerSearchTerm}%,lower(contacted_people::text).like.%${lowerSearchTerm}%`);
+          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags::text.ilike.${searchPattern},contacted_people::text.ilike.${searchPattern}`);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
