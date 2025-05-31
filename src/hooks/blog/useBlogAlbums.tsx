@@ -21,13 +21,14 @@ export const useBlogAlbums = () => {
       try {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
+        const isAdmin = hasRole('admin'); // Ceci prend en compte l'impersonnation
         
         console.log('📊 useBlogAlbums - START REQUEST:', {
           originalUserId: user.id,
           effectiveUserId: effectiveUserId,
           originalUserEmail: user.email,
           isImpersonating: effectiveUserId !== user.id,
-          isAdmin: hasRole('admin')
+          isAdmin: isAdmin
         });
 
         // Simple query - les nouvelles politiques RLS permettent à tous les utilisateurs authentifiés de voir tous les albums
@@ -62,9 +63,9 @@ export const useBlogAlbums = () => {
 
         let filteredAlbums = data || [];
 
-        // Filtrage côté client pour l'impersonnation
-        if (hasRole('admin') && effectiveUserId !== user.id) {
-          console.log('🎭 useBlogAlbums - Impersonation mode: client-side filtering');
+        // Filtrage côté client SEULEMENT si on n'est pas admin ET qu'on est en mode impersonnation
+        if (!isAdmin && effectiveUserId !== user.id) {
+          console.log('🎭 useBlogAlbums - Impersonation mode sans permissions admin: client-side filtering');
           const beforeFilterCount = filteredAlbums.length;
           
           filteredAlbums = filteredAlbums.filter(album => album.author_id === effectiveUserId);
@@ -74,6 +75,8 @@ export const useBlogAlbums = () => {
             after: filteredAlbums.length,
             effectiveUserId
           });
+        } else if (isAdmin) {
+          console.log('🔑 useBlogAlbums - Admin permissions: showing all albums');
         }
 
         console.log('🎉 useBlogAlbums - Final result:', {

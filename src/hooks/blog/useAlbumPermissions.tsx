@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BlogAlbum } from '@/types/supabase';
 
 export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
-  const { user, getEffectiveUserId } = useAuth();
+  const { user, getEffectiveUserId, hasRole } = useAuth();
   const [accessibleAlbums, setAccessibleAlbums] = useState<BlogAlbum[]>([]);
 
   useEffect(() => {
@@ -15,19 +15,27 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
     }
 
     const effectiveUserId = getEffectiveUserId();
+    const isAdmin = hasRole('admin'); // Ceci prend en compte l'impersonnation
 
     console.log('AlbumPermissions - Filtrage côté client avec utilisateur effectif:', {
       effectiveUserId,
       originalUserId: user.id,
       isImpersonating: effectiveUserId !== user.id,
+      isAdmin: isAdmin,
       totalAlbums: allAlbums.length
     });
     
-    // Filtrage côté client basé sur l'utilisateur effectif
-    // Les albums dans allAlbums sont déjà filtrés par les hooks parent selon l'impersonnation
-    console.log('AlbumPermissions - Albums après filtrage RLS et impersonnation:', allAlbums.length);
-    setAccessibleAlbums(allAlbums);
-  }, [allAlbums, user, getEffectiveUserId]);
+    // Si l'utilisateur a les permissions admin (y compris via impersonnation), 
+    // il peut accéder à tous les albums
+    if (isAdmin) {
+      console.log('AlbumPermissions - Permissions admin: accès à tous les albums');
+      setAccessibleAlbums(allAlbums);
+    } else {
+      // Sinon, filtrage normal basé sur l'utilisateur effectif
+      console.log('AlbumPermissions - Albums après filtrage RLS et impersonnation:', allAlbums.length);
+      setAccessibleAlbums(allAlbums);
+    }
+  }, [allAlbums, user, getEffectiveUserId, hasRole]);
 
   return { accessibleAlbums, setAccessibleAlbums };
 };
