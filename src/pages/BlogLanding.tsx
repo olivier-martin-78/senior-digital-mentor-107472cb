@@ -424,7 +424,7 @@ const BlogLanding = () => {
                   Proposez-vous des activités à domicile ?
                 </AccordionTrigger>
                 <AccordionContent>
-                  Oui, certaines activités peuvent être organisées directement à domicile, notamment les ateliers bien-être, les échanges familiaux à distance ou l'écriture de mémoire.
+                  Oui, nos activités sont organisée directement à domicile, en résidence seniors.
                 </AccordionContent>
               </AccordionItem>
 
@@ -442,7 +442,7 @@ const BlogLanding = () => {
                   Combien cela coûte-t-il ?
                 </AccordionTrigger>
                 <AccordionContent>
-                  Les tarifs varient selon la fréquence et le format (individuel ou en groupe, à domicile ou en extérieur). Des forfaits mensuels sont proposés. Certaines aides financières ou dispositifs existent : nous vous accompagnons pour les identifier.
+                  Les tarifs varient selon la fréquence et la distance (individuel, à domicile ou en extérieur). Des forfaits mensuels d'au moins 2 heures consécutives sont proposés.
                 </AccordionContent>
               </AccordionItem>
 
