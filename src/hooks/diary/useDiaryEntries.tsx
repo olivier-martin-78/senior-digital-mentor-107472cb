@@ -33,9 +33,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .select('*')
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres pour admin - inclure les tags
+        // Appliquer les filtres pour admin - recherche sur tous les champs
         if (searchTerm) {
-          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+          const searchPattern = `%${searchTerm}%`;
+          query = query.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -131,10 +132,11 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         userId: effectiveUserId
       });
 
-      // Appliquer les filtres aux entrées utilisateur - inclure les tags
+      // Appliquer les filtres aux entrées utilisateur - recherche sur tous les champs
       if (searchTerm) {
-        userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
-        console.log('Diary - Filtre de recherche appliqué (avec tags):', searchTerm);
+        const searchPattern = `%${searchTerm}%`;
+        userEntriesQuery = userEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
+        console.log('Diary - Filtre de recherche appliqué sur tous les champs:', searchTerm);
       }
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
@@ -237,9 +239,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres aux autres entrées - inclure les tags
+        // Appliquer les filtres aux autres entrées - recherche sur tous les champs
         if (searchTerm) {
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+          const searchPattern = `%${searchTerm}%`;
+          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.${searchPattern},activities.ilike.${searchPattern},reflections.ilike.${searchPattern},positive_things.ilike.${searchPattern},negative_things.ilike.${searchPattern},desire_of_day.ilike.${searchPattern},objectives.ilike.${searchPattern},private_notes.ilike.${searchPattern},physical_state.ilike.${searchPattern},mental_state.ilike.${searchPattern},tags.cs.{${searchTerm}},contacted_people.cs.{${searchTerm}}`);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
