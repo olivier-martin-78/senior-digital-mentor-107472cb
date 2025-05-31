@@ -24,9 +24,9 @@ export const useBlogPosts = (
 
       try {
         setLoading(true);
-        console.log('useBlogPosts - Récupération avec politiques RLS corrigées');
+        console.log('useBlogPosts - Récupération avec nouvelles politiques RLS simplifiées');
         
-        // Les nouvelles politiques RLS gèrent automatiquement l'accès admin
+        // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
         let query = supabase
           .from('blog_posts')
           .select(`

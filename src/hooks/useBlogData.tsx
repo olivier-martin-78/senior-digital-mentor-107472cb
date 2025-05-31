@@ -12,7 +12,7 @@ export const useBlogData = (
 ) => {
   const { hasRole } = useAuth();
   
-  // Utilisation simplifiée avec les nouvelles politiques RLS finales
+  // Utilisation simplifiée avec les nouvelles politiques RLS simplifiées
   const { albums, loading: albumsLoading } = useBlogAlbums();
   const { posts, loading: postsLoading } = useBlogPosts(
     searchTerm,
@@ -21,7 +21,7 @@ export const useBlogData = (
     endDate
   );
 
-  // Les politiques RLS gèrent maintenant les permissions automatiquement
+  // Les nouvelles politiques RLS gèrent maintenant les permissions automatiquement
   const hasCreatePermission = hasRole('admin') || hasRole('editor');
 
   return {

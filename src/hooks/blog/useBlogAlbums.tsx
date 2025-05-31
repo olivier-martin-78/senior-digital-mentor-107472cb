@@ -19,9 +19,9 @@ export const useBlogAlbums = () => {
 
       try {
         setLoading(true);
-        console.log('useBlogAlbums - Récupération avec politiques RLS corrigées');
+        console.log('useBlogAlbums - Récupération avec nouvelles politiques RLS simplifiées');
         
-        // Les nouvelles politiques RLS gèrent automatiquement l'accès admin
+        // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
         const { data, error } = await supabase
           .from('blog_albums')
           .select(`

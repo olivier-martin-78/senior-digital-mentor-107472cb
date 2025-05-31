@@ -14,15 +14,13 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       return;
     }
 
-    console.log('AlbumPermissions - Utilisation des politiques RLS finales');
+    console.log('AlbumPermissions - Utilisation des nouvelles politiques RLS simplifiées');
     
-    // Avec les nouvelles politiques RLS finales, les albums dans allAlbums
-    // sont déjà filtrés automatiquement par la politique "blog_albums_final"
+    // Avec les nouvelles politiques RLS simplifiées, les albums dans allAlbums
+    // sont déjà filtrés automatiquement par les politiques qui utilisent is_admin()
     // qui gère :
-    // - Admin voit tout
-    // - Propriétaire voit ses albums
-    // - Utilisateurs avec permissions voient les albums autorisés
-    // - Utilisateurs du même groupe d'invitation
+    // - Admin voit tout (via "Admin can access all blog albums")  
+    // - Propriétaire voit ses albums (via "Users can access their own blog albums")
     console.log('AlbumPermissions - Albums filtrés par RLS:', allAlbums.length);
     setAccessibleAlbums(allAlbums);
   }, [allAlbums, user]);

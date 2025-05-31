@@ -14,12 +14,12 @@ export const useBlogPermissions = () => {
       return;
     }
 
-    console.log('useBlogPermissions - Utilisation des politiques RLS finales');
+    console.log('useBlogPermissions - Utilisation des nouvelles politiques RLS simplifiées');
     
-    // Avec les nouvelles politiques RLS finales, la gestion des permissions
+    // Avec les nouvelles politiques RLS simplifiées, la gestion des permissions
     // est entièrement déléguée aux politiques de base de données.
-    // Plus besoin de gérer la logique côté client car les politiques 
-    // "blog_albums_final" et "blog_posts_final" s'occupent de tout
+    // Les politiques utilisent la fonction is_admin() pour donner accès complet aux admins
+    // et permettent aux utilisateurs de voir leurs propres contenus
     setAuthorizedUserIds([user.id]);
     setLoading(false);
   }, [user]);
