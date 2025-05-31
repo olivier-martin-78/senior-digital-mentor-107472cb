@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
       
       console.log('WishAlbumPermissions - Récupération avec nouvelles politiques RLS simplifiées');
       
-      // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
+      // Les nouvelles politiques RLS simplifiées permettent l'accès direct aux profils
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, display_name, email');
@@ -71,7 +72,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         return;
       }
       
-      // Get album permissions
+      // Récupérer les permissions d'album (réservé aux admins avec les nouvelles politiques)
       const { data: permissions, error: permissionsError } = await supabase
         .from('wish_album_permissions')
         .select('user_id')
@@ -79,10 +80,10 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         
       if (permissionsError) {
         console.error('WishAlbumPermissions - Erreur permissions:', permissionsError);
-        // Continue avec une liste vide si erreur de permissions
+        // Continuer avec une liste vide si erreur de permissions
       }
       
-      // Map users with their access status
+      // Mapper les utilisateurs avec leur statut d'accès
       const userIds = permissions ? permissions.map(p => p.user_id) : [];
       setSelectedUsers(userIds);
       
@@ -122,7 +123,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
       
       console.log('WishAlbumPermissions - Sauvegarde avec nouvelles politiques RLS simplifiées');
       
-      // Get current permissions
+      // Récupérer les permissions actuelles
       const { data: currentPermissions, error: fetchError } = await supabase
         .from('wish_album_permissions')
         .select('user_id')
@@ -130,16 +131,16 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         
       if (fetchError) {
         console.error('WishAlbumPermissions - Erreur fetch:', fetchError);
-        // Continue avec une liste vide
+        // Continuer avec une liste vide
       }
       
       const currentUserIds = currentPermissions?.map(p => p.user_id) || [];
       
-      // Determine users to add and remove
+      // Déterminer les utilisateurs à ajouter et supprimer
       const usersToAdd = selectedUsers.filter(id => !currentUserIds.includes(id));
       const usersToRemove = currentUserIds.filter(id => !selectedUsers.includes(id));
       
-      // Remove permissions for deselected users
+      // Supprimer les permissions pour les utilisateurs désélectionnés
       if (usersToRemove.length > 0) {
         const { error: removeError } = await supabase
           .from('wish_album_permissions')
@@ -152,7 +153,7 @@ const WishAlbumPermissions = ({ albumId, onClose }: WishAlbumPermissionsProps) =
         }
       }
       
-      // Add permissions for newly selected users
+      // Ajouter les permissions pour les utilisateurs nouvellement sélectionnés
       if (usersToAdd.length > 0) {
         const newPermissions = usersToAdd.map(userId => ({
           album_id: albumId,

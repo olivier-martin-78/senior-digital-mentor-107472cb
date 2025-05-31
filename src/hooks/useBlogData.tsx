@@ -21,7 +21,7 @@ export const useBlogData = (
     endDate
   );
 
-  // Les nouvelles politiques RLS gèrent maintenant les permissions automatiquement
+  // Les nouvelles politiques RLS simplifient l'accès basé sur les rôles
   const hasCreatePermission = hasRole('admin') || hasRole('editor');
 
   return {

@@ -39,7 +39,7 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
       
       console.log('WishAlbumSelector - Création avec nouvelles politiques RLS simplifiées');
       
-      // Les nouvelles politiques RLS simplifiées gèrent automatiquement l'accès admin
+      // Les nouvelles politiques RLS simplifiées permettent la création directe
       const { data, error } = await supabase
         .from('wish_albums')
         .insert([{
