@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,9 +33,9 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .select('*')
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres
+        // Appliquer les filtres pour admin - inclure les tags
         if (searchTerm) {
-          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
         }
         if (startDate) {
           query = query.gte('entry_date', startDate);
@@ -132,10 +131,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         userId: effectiveUserId
       });
 
-      // Appliquer les filtres aux entrées utilisateur
+      // Appliquer les filtres aux entrées utilisateur - inclure les tags
       if (searchTerm) {
-        userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
-        console.log('Diary - Filtre de recherche appliqué:', searchTerm);
+        userEntriesQuery = userEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+        console.log('Diary - Filtre de recherche appliqué (avec tags):', searchTerm);
       }
       if (startDate) {
         userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
@@ -238,9 +237,9 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           .in('user_id', groupCreatorIds)
           .order('entry_date', { ascending: false });
 
-        // Appliquer les filtres aux autres entrées
+        // Appliquer les filtres aux autres entrées - inclure les tags
         if (searchTerm) {
-          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%`);
+          otherEntriesQuery = otherEntriesQuery.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%,reflections.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
         }
         if (startDate) {
           otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
