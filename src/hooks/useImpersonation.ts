@@ -54,9 +54,8 @@ export const useImpersonation = () => {
         .from('group_members')
         .select(`
           group_id,
-          invitation_groups!inner(
-            created_by,
-            profiles!inner(id, email)
+          invitation_groups(
+            created_by
           )
         `)
         .eq('user_id', targetUser.id);
@@ -70,7 +69,7 @@ export const useImpersonation = () => {
         for (const membership of groupMemberships) {
           const groupCreatorId = membership.invitation_groups?.created_by;
           if (groupCreatorId) {
-            console.log('🔍 Vérification si le créateur du groupe est admin:', membership.invitation_groups.profiles?.email);
+            console.log('🔍 Vérification si le créateur du groupe est admin:', groupCreatorId);
             
             const { data: creatorRoles, error: creatorRolesError } = await supabase
               .from('user_roles')
