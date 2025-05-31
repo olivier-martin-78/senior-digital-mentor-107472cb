@@ -22,14 +22,13 @@ export const useBlogAlbums = () => {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('📊 useBlogAlbums - DÉBUT REQUÊTE - Données utilisateur:', {
+        console.log('📊 useBlogAlbums - DÉBUT REQUÊTE avec nouvelles politiques RLS simplifiées:', {
           originalUserId: user.id,
           effectiveUserId: effectiveUserId,
           originalUserEmail: user.email,
           effectiveUserProfile: profile,
           isImpersonating: effectiveUserId !== user.id,
           isAdmin: hasRole('admin'),
-          userRoles: user,
           timestamp: new Date().toISOString()
         });
 
@@ -41,9 +40,10 @@ export const useBlogAlbums = () => {
           userEmail: session.session?.user?.email
         });
 
-        console.log('🎯 useBlogAlbums - STRATÉGIE: Récupérer tous les albums si admin, filtrer côté client selon impersonnation');
+        console.log('🎯 useBlogAlbums - STRATÉGIE: Récupérer tous les albums avec nouvelles politiques RLS, filtrer côté client selon impersonnation');
         
-        let albumsQuery = supabase
+        // Avec les nouvelles politiques RLS simplifiées, tous les utilisateurs authentifiés peuvent voir tous les albums
+        const albumsQuery = supabase
           .from('blog_albums')
           .select(`
             *,
@@ -51,22 +51,7 @@ export const useBlogAlbums = () => {
           `)
           .order('name');
 
-        console.log('🔍 useBlogAlbums - Construction requête:', {
-          table: 'blog_albums',
-          isAdminRealUser: hasRole('admin'),
-          willApplyRLSFilter: !hasRole('admin'),
-          effectiveUserId: effectiveUserId
-        });
-
-        // Si l'utilisateur réel n'est pas admin, appliquer des filtres côté requête
-        if (!hasRole('admin')) {
-          console.log('👤 useBlogAlbums - Utilisateur non-admin: application filtre author_id');
-          albumsQuery = albumsQuery.eq('author_id', effectiveUserId);
-        } else {
-          console.log('👑 useBlogAlbums - Utilisateur admin: récupération de tous les albums');
-        }
-
-        console.log('🚀 useBlogAlbums - EXÉCUTION REQUÊTE Supabase');
+        console.log('🚀 useBlogAlbums - EXÉCUTION REQUÊTE Supabase avec politiques RLS simplifiées');
         const startTime = Date.now();
         
         const { data, error } = await albumsQuery;
