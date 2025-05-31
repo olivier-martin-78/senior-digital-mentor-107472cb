@@ -17,14 +17,18 @@ export const useBlogPermissions = (effectiveUserId: string) => {
 
       try {
         setLoading(true);
+        console.log('useBlogPermissions - Utilisation des nouvelles politiques consolidées');
         
         if (hasRole('admin')) {
-          // Admins can see everything, no need to fetch specific permissions
+          // Admins peuvent tout voir, pas besoin de permissions spécifiques
+          console.log('useBlogPermissions - Admin: pas de restrictions');
           setAuthorizedUserIds([]);
           setLoading(false);
           return;
         }
 
+        // Avec les nouvelles politiques RLS consolidées, la gestion des permissions
+        // est simplifiée car les politiques gèrent automatiquement l'accès
         // Récupérer les utilisateurs autorisés via les groupes d'invitation
         const { data: groupPermissions, error: groupError } = await supabase
           .from('group_members')
@@ -40,11 +44,12 @@ export const useBlogPermissions = (effectiveUserId: string) => {
           return;
         }
 
-        // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
+        // IDs des utilisateurs autorisés via les groupes d'invitation
         const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== effectiveUserId) || [];
         
         console.log('useBlogPermissions - Utilisateurs autorisés via groupes:', groupCreatorIds);
         setAuthorizedUserIds(groupCreatorIds);
+        
       } catch (error) {
         console.error('useBlogPermissions - Erreur lors de la récupération des permissions:', error);
         setAuthorizedUserIds([]);

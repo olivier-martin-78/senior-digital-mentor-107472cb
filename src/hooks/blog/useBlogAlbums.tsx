@@ -17,12 +17,12 @@ export const useBlogAlbums = (
     const fetchAlbums = async () => {
       try {
         setLoading(true);
-        console.log('useBlogAlbums - Début fetchAlbums');
+        console.log('useBlogAlbums - Début fetchAlbums avec nouvelles politiques consolidées');
         
         if (hasRole('admin')) {
-          // Les admins voient tous les albums
-          console.log('useBlogAlbums - Admin: voir tous les albums');
-          let query = supabase
+          // Les admins voient tous les albums avec la nouvelle politique consolidée
+          console.log('useBlogAlbums - Admin: utilisation de la politique consolidée');
+          const { data, error } = await supabase
             .from('blog_albums')
             .select(`
               *,
@@ -30,138 +30,42 @@ export const useBlogAlbums = (
             `)
             .order('name');
 
-          if (selectedUserId) {
-            query = query.eq('author_id', selectedUserId);
+          if (error) {
+            console.error('useBlogAlbums - Erreur admin:', error);
+            throw error;
           }
-
-          const { data, error } = await query;
-          if (error) throw error;
+          
           console.log('useBlogAlbums - Albums récupérés (admin):', data?.length || 0);
           setAlbums(data || []);
           return;
         }
 
-        // Pour les utilisateurs non-admin
-        if (selectedUserId && selectedUserId !== effectiveUserId) {
-          // Vérifier les permissions groupes pour cet utilisateur
-          const hasGroupPermission = authorizedUserIds?.includes(selectedUserId);
-
-          if (hasGroupPermission) {
-            const { data, error } = await supabase
-              .from('blog_albums')
-              .select(`
-                *,
-                profiles(id, display_name, email, avatar_url, created_at)
-              `)
-              .eq('author_id', selectedUserId)
-              .order('name');
-
-            if (error) throw error;
-            console.log('useBlogAlbums - Albums utilisateur autorisé récupérés:', data?.length || 0);
-            setAlbums(data || []);
-          } else {
-            console.log('useBlogAlbums - Pas de permissions pour voir les albums de cet utilisateur');
-            setAlbums([]);
-          }
-          return;
-        }
-
-        // Récupération avec permissions des groupes d'invitation
-        console.log('useBlogAlbums - Récupération des albums avec permissions groupes');
+        // Pour les utilisateurs non-admin, utilisation des nouvelles politiques consolidées
+        console.log('useBlogAlbums - Utilisateur standard: utilisation des politiques consolidées');
         
-        // 1. Ses propres albums
-        const { data: userAlbums, error: userAlbumsError } = await supabase
+        // Récupération directe avec les politiques RLS consolidées
+        // La politique "blog_albums_select_consolidated" gère maintenant automatiquement :
+        // - Les albums du propriétaire
+        // - Les albums avec permissions directes
+        // - La logique admin
+        const { data, error } = await supabase
           .from('blog_albums')
           .select(`
             *,
             profiles(id, display_name, email, avatar_url, created_at)
           `)
-          .eq('author_id', effectiveUserId)
           .order('name');
 
-        if (userAlbumsError) {
-          console.error('useBlogAlbums - Erreur albums utilisateur:', userAlbumsError);
-          setAlbums([]);
-          return;
+        if (error) {
+          console.error('useBlogAlbums - Erreur politique consolidée:', error);
+          throw error;
         }
 
-        console.log('useBlogAlbums - Albums utilisateur récupérés:', userAlbums?.length || 0);
-
-        let otherAlbums: BlogAlbum[] = [];
-
-        // 2. Récupérer TOUS les albums via les permissions directes (album_permissions)
-        console.log('useBlogAlbums - Récupération albums via permissions directes pour utilisateur:', effectiveUserId);
-        const { data: albumPermissions, error: albumPermissionsError } = await supabase
-          .from('album_permissions')
-          .select(`
-            album_id,
-            blog_albums(
-              *,
-              profiles(id, display_name, email, avatar_url, created_at)
-            )
-          `)
-          .eq('user_id', effectiveUserId);
-
-        console.log('useBlogAlbums - Résultat permissions directes:', {
-          data: albumPermissions,
-          error: albumPermissionsError,
-          count: albumPermissions?.length || 0
-        });
-
-        if (!albumPermissionsError && albumPermissions) {
-          const permittedAlbums = albumPermissions
-            .map(p => p.blog_albums)
-            .filter(album => album !== null); // Filtrer les albums null
-          
-          otherAlbums.push(...permittedAlbums);
-          console.log('useBlogAlbums - Albums via permissions directes ajoutés:', permittedAlbums.length);
-          permittedAlbums.forEach(album => {
-            console.log('useBlogAlbums - Album direct:', { id: album.id, name: album.name });
-          });
-        }
-
-        // 3. Récupérer les albums des autres utilisateurs autorisés via groupes
-        if (authorizedUserIds && authorizedUserIds.length > 0) {
-          console.log('useBlogAlbums - Récupération albums via groupes pour userIds:', authorizedUserIds);
-          const { data: otherAlbumsData, error: otherAlbumsError } = await supabase
-            .from('blog_albums')
-            .select(`
-              *,
-              profiles(id, display_name, email, avatar_url, created_at)
-            `)
-            .in('author_id', authorizedUserIds)
-            .order('name');
-
-          console.log('useBlogAlbums - Résultat albums via groupes:', {
-            data: otherAlbumsData,
-            error: otherAlbumsError,
-            count: otherAlbumsData?.length || 0
-          });
-
-          if (otherAlbumsError) {
-            console.error('useBlogAlbums - Erreur autres albums:', otherAlbumsError);
-          } else {
-            otherAlbums.push(...(otherAlbumsData || []));
-            console.log('useBlogAlbums - Autres albums autorisés récupérés:', otherAlbumsData?.length || 0);
-          }
-        }
-
-        // Combiner ses albums avec les albums autorisés des autres (en évitant les doublons)
-        const allAlbums = [...(userAlbums || [])];
-        otherAlbums.forEach(album => {
-          if (!allAlbums.find(existing => existing.id === album.id)) {
-            allAlbums.push(album);
-          }
-        });
+        console.log('useBlogAlbums - Albums récupérés avec politique consolidée:', data?.length || 0);
+        console.log('useBlogAlbums - Albums détails:', data?.map(a => ({ id: a.id, name: a.name, author: a.profiles?.display_name })));
         
-        console.log('useBlogAlbums - ===== RÉSUMÉ FINAL =====');
-        console.log('useBlogAlbums - Albums utilisateur:', userAlbums?.length || 0);
-        console.log('useBlogAlbums - Albums via permissions directes:', albumPermissions?.length || 0);
-        console.log('useBlogAlbums - Albums via groupes:', authorizedUserIds?.length || 0, 'utilisateurs autorisés');
-        console.log('useBlogAlbums - Total albums finaux:', allAlbums.length);
-        console.log('useBlogAlbums - Albums finaux:', allAlbums.map(a => ({ id: a.id, name: a.name, author: a.profiles?.display_name })));
+        setAlbums(data || []);
         
-        setAlbums(allAlbums);
       } catch (error) {
         console.error('useBlogAlbums - Erreur lors du chargement des albums:', error);
         setAlbums([]);

@@ -19,63 +19,27 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       }
 
       try {
-        console.log('AlbumPermissions - Chargement des albums accessibles pour user:', user.id);
-        console.log('AlbumPermissions - Email utilisateur:', user.email);
-        console.log('AlbumPermissions - Rôles:', { hasAdmin: hasRole('admin'), hasEditor: hasRole('editor') });
-        console.log('AlbumPermissions - Tous les albums disponibles:', allAlbums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })));
-
-        if (hasRole('admin')) {
-          // Seuls les administrateurs voient automatiquement tous les albums
-          console.log('AlbumPermissions - Administrateur: tous les albums visibles');
-          setAccessibleAlbums(allAlbums);
-        } else {
-          // Pour les éditeurs et utilisateurs normaux, vérification stricte des permissions
-          console.log('AlbumPermissions - Éditeur/Utilisateur: vérification stricte des permissions');
-          
-          // Récupérer les permissions d'albums pour cet utilisateur
-          const { data: albumPermissions, error: permissionsError } = await supabase
-            .from('album_permissions')
-            .select('*')
-            .eq('user_id', user.id);
-
-          if (permissionsError) {
-            console.error('AlbumPermissions - Erreur lors de la récupération des permissions:', permissionsError);
-            throw permissionsError;
-          }
-
-          console.log('AlbumPermissions - Permissions trouvées dans la DB:', albumPermissions);
-          const permittedAlbumIds = albumPermissions?.map(p => p.album_id) || [];
-          console.log('AlbumPermissions - IDs albums autorisés via permissions:', permittedAlbumIds);
-
-          // Filtrer les albums accessibles
-          const userAccessibleAlbums = allAlbums.filter(album => {
-            const isOwned = album.author_id === user.id;
-            const hasDirectPermission = permittedAlbumIds.includes(album.id);
-            
-            console.log(`AlbumPermissions - Album "${album.name}" (ID: ${album.id}):`, {
-              author_id: album.author_id,
-              user_id: user.id,
-              isOwned,
-              hasDirectPermission,
-              accessible: isOwned || hasDirectPermission
-            });
-            
-            return isOwned || hasDirectPermission;
-          });
-
-          console.log('AlbumPermissions - Albums finaux accessibles:', userAccessibleAlbums.map(a => ({ name: a.name, id: a.id })));
-          setAccessibleAlbums(userAccessibleAlbums);
-        }
+        console.log('AlbumPermissions - Utilisation des nouvelles politiques consolidées');
+        
+        // Avec les nouvelles politiques RLS consolidées, nous pouvons grandement simplifier
+        // La politique "blog_albums_select_consolidated" gère automatiquement :
+        // - Admin voit tout
+        // - Propriétaire voit ses albums
+        // - Utilisateurs avec permissions voient les albums autorisés
+        
+        // Les albums dans allAlbums sont déjà filtrés par les politiques RLS
+        // donc nous pouvons les utiliser directement
+        console.log('AlbumPermissions - Albums déjà filtrés par RLS:', allAlbums.length);
+        setAccessibleAlbums(allAlbums);
+        
       } catch (error: any) {
-        console.error('AlbumPermissions - Erreur lors de la récupération des albums accessibles:', error);
-        // En cas d'erreur, montrer seulement les albums de l'utilisateur
-        const userOwnedAlbums = allAlbums.filter(album => album.author_id === user.id);
-        console.log('AlbumPermissions - Fallback: albums possédés par l\'utilisateur:', userOwnedAlbums.length);
-        setAccessibleAlbums(userOwnedAlbums);
+        console.error('AlbumPermissions - Erreur:', error);
+        // En cas d'erreur, utiliser une liste vide
+        setAccessibleAlbums([]);
         
         toast({
           title: "Erreur",
-          description: "Impossible de charger toutes les permissions. Seuls vos albums sont affichés.",
+          description: "Impossible de charger les albums accessibles.",
           variant: "destructive"
         });
       }
