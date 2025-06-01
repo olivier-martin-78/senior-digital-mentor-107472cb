@@ -152,6 +152,7 @@ export const useBlogPosts = (
             userPostsQuery = userPostsQuery.lte('created_at', endDate);
           }
 
+          // CORRECTION : Exécuter la requête et ajouter la promesse
           postsPromises.push(userPostsQuery);
 
           // 2. Posts des albums accessibles (seulement publiés)
@@ -184,6 +185,7 @@ export const useBlogPosts = (
               albumPostsQuery = albumPostsQuery.lte('created_at', endDate);
             }
 
+            // CORRECTION : Exécuter la requête et ajouter la promesse
             postsPromises.push(albumPostsQuery);
           }
 
