@@ -13,7 +13,6 @@ serve(async (req) => {
   console.log('=== DEBUT FONCTION sync-invitation-permissions ===');
   console.log('URL de la requête:', req.url);
   console.log('Méthode:', req.method);
-  console.log('Headers:', JSON.stringify(Array.from(req.headers.entries())));
   
   if (req.method === 'OPTIONS') {
     console.log('Requête OPTIONS reçue, renvoi des headers CORS');
@@ -51,51 +50,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('Client Supabase créé avec succès');
 
-    // Vérification de l'autorisation - optionnelle, nous utilisons la service key
-    console.log('Vérification de l\'autorisation...');
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.log('Pas de header Authorization, continuons quand même avec service key');
-    } else {
-      console.log('Header Authorization présent:', authHeader.substring(0, 20) + '...');
-    }
-
-    // Tenter d'obtenir l'utilisateur actuel pour vérification admin
-    let isAdmin = false;
-    if (authHeader) {
-      try {
-        console.log('Tentative de récupération des infos utilisateur...');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(
-          authHeader.replace('Bearer ', '')
-        );
-
-        if (authError) {
-          console.log('Erreur lors de la récupération de l\'utilisateur:', authError);
-        } else if (user) {
-          console.log('Utilisateur authentifié:', user.id);
-          
-          // Vérifier le rôle admin
-          console.log('Vérification du rôle admin...');
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
-            .single();
-
-          if (roleError) {
-            console.log('Erreur lors de la vérification du rôle:', roleError);
-          } else if (roleData?.role === 'admin') {
-            isAdmin = true;
-            console.log('Utilisateur confirmé comme admin');
-          } else {
-            console.log('Utilisateur n\'est pas admin:', roleData?.role);
-          }
-        }
-      } catch (authCheckError) {
-        console.log('Erreur lors de la vérification auth (continuons):', authCheckError);
-      }
-    }
-
     // Vérifier si on cible un utilisateur spécifique
     const targetUserId = requestBody.targetUserId;
     if (targetUserId) {
@@ -121,54 +75,208 @@ serve(async (req) => {
       console.log('🎯 Invitations trouvées pour', userProfile.email, ':', invitations?.length || 0);
       
       if (invitations && invitations.length > 0) {
+        let permissionsCreated = 0;
+        
         for (const invitation of invitations) {
-          console.log('🎯 Traitement invitation:', invitation.id);
-          const { error: syncError } = await supabase.rpc('sync_invitation_permissions', {
-            invitation_id_param: invitation.id
-          });
+          console.log('🎯 Traitement invitation:', invitation.id, 'de', invitation.invited_by);
           
-          if (syncError) {
-            console.error('❌ Erreur sync invitation', invitation.id, ':', syncError);
-          } else {
-            console.log('✅ Sync invitation', invitation.id, 'réussie');
+          // Créer les permissions d'albums si blog_access = true
+          if (invitation.blog_access) {
+            console.log('📚 Création permissions albums pour invitation', invitation.id);
+            const { data: albums } = await supabase
+              .from('blog_albums')
+              .select('id')
+              .eq('author_id', invitation.invited_by);
+            
+            console.log('📚 Albums trouvés:', albums?.length || 0);
+            
+            if (albums) {
+              for (const album of albums) {
+                const { error: albumPermError } = await supabase
+                  .from('album_permissions')
+                  .insert({
+                    album_id: album.id,
+                    user_id: targetUserId
+                  });
+                
+                if (!albumPermError) {
+                  permissionsCreated++;
+                  console.log('✅ Permission album créée:', album.id);
+                } else if (albumPermError.code !== '23505') { // Ignorer les doublons
+                  console.error('❌ Erreur création permission album:', albumPermError);
+                }
+              }
+            }
+          }
+          
+          // Créer les permissions d'histoires de vie si life_story_access = true
+          if (invitation.life_story_access) {
+            console.log('📖 Création permissions histoires de vie pour invitation', invitation.id);
+            const { error: lifeStoryPermError } = await supabase
+              .from('life_story_permissions')
+              .insert({
+                story_owner_id: invitation.invited_by,
+                permitted_user_id: targetUserId,
+                permission_level: 'read',
+                granted_by: invitation.invited_by
+              });
+            
+            if (!lifeStoryPermError) {
+              permissionsCreated++;
+              console.log('✅ Permission histoire de vie créée');
+            } else if (lifeStoryPermError.code !== '23505') { // Ignorer les doublons
+              console.error('❌ Erreur création permission histoire de vie:', lifeStoryPermError);
+            }
+          }
+          
+          // Créer les permissions de journal si diary_access = true
+          if (invitation.diary_access) {
+            console.log('📔 Création permissions journal pour invitation', invitation.id);
+            const { error: diaryPermError } = await supabase
+              .from('diary_permissions')
+              .insert({
+                diary_owner_id: invitation.invited_by,
+                permitted_user_id: targetUserId,
+                permission_level: 'read',
+                granted_by: invitation.invited_by
+              });
+            
+            if (!diaryPermError) {
+              permissionsCreated++;
+              console.log('✅ Permission journal créée');
+            } else if (diaryPermError.code !== '23505') { // Ignorer les doublons
+              console.error('❌ Erreur création permission journal:', diaryPermError);
+            }
+          }
+        }
+        
+        console.log('🎯 Synchronisation terminée. Permissions créées:', permissionsCreated);
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Permissions synchronisées pour l'utilisateur ${targetUserId}`,
+          details: `${permissionsCreated} nouvelles permissions créées à partir de ${invitations?.length || 0} invitations`
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Aucune invitation trouvée pour l'utilisateur ${targetUserId}`,
+          details: `Email: ${userProfile.email}`
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    console.log('🔧 Synchronisation globale - Exécution de la fonction fix_existing_invitation_permissions...');
+    
+    // Récupérer toutes les invitations utilisées avec groupe
+    const { data: usedInvitations, error: invitationsError } = await supabase
+      .from('invitations')
+      .select('*')
+      .not('used_at', 'is', null)
+      .not('group_id', 'is', null);
+    
+    if (invitationsError) {
+      console.error('❌ Erreur récupération invitations:', invitationsError);
+      throw invitationsError;
+    }
+    
+    console.log('📋 Invitations utilisées trouvées:', usedInvitations?.length || 0);
+    
+    let totalPermissionsCreated = 0;
+    
+    if (usedInvitations && usedInvitations.length > 0) {
+      for (const invitation of usedInvitations) {
+        console.log('🔄 Traitement invitation globale:', invitation.id);
+        
+        // Trouver l'utilisateur associé à cette invitation via le groupe
+        const { data: groupMember } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', invitation.group_id)
+          .eq('role', 'guest')
+          .single();
+        
+        if (!groupMember) {
+          console.log('⚠️ Aucun membre de groupe trouvé pour invitation:', invitation.id);
+          continue;
+        }
+        
+        const userId = groupMember.user_id;
+        console.log('👤 Utilisateur trouvé:', userId);
+        
+        // Créer les permissions comme dans la version ciblée
+        if (invitation.blog_access) {
+          const { data: albums } = await supabase
+            .from('blog_albums')
+            .select('id')
+            .eq('author_id', invitation.invited_by);
+          
+          if (albums) {
+            for (const album of albums) {
+              const { error: albumPermError } = await supabase
+                .from('album_permissions')
+                .insert({
+                  album_id: album.id,
+                  user_id: userId
+                });
+              
+              if (!albumPermError) {
+                totalPermissionsCreated++;
+              } else if (albumPermError.code !== '23505') {
+                console.error('❌ Erreur création permission album globale:', albumPermError);
+              }
+            }
+          }
+        }
+        
+        if (invitation.life_story_access) {
+          const { error: lifeStoryPermError } = await supabase
+            .from('life_story_permissions')
+            .insert({
+              story_owner_id: invitation.invited_by,
+              permitted_user_id: userId,
+              permission_level: 'read',
+              granted_by: invitation.invited_by
+            });
+          
+          if (!lifeStoryPermError) {
+            totalPermissionsCreated++;
+          } else if (lifeStoryPermError.code !== '23505') {
+            console.error('❌ Erreur création permission histoire globale:', lifeStoryPermError);
+          }
+        }
+        
+        if (invitation.diary_access) {
+          const { error: diaryPermError } = await supabase
+            .from('diary_permissions')
+            .insert({
+              diary_owner_id: invitation.invited_by,
+              permitted_user_id: userId,
+              permission_level: 'read',
+              granted_by: invitation.invited_by
+            });
+          
+          if (!diaryPermError) {
+            totalPermissionsCreated++;
+          } else if (diaryPermError.code !== '23505') {
+            console.error('❌ Erreur création permission journal globale:', diaryPermError);
           }
         }
       }
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: `Permissions synchronisées pour l'utilisateur ${targetUserId}`,
-        details: `${invitations?.length || 0} invitations traitées`
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
 
-    console.log('Exécution de la fonction fix_existing_invitation_permissions...');
-    
-    // Exécuter directement la fonction de rattrapage sans vérification préalable
-    const { data: rpcData, error: syncError } = await supabase.rpc('fix_existing_invitation_permissions');
-
-    if (syncError) {
-      console.error('Erreur lors de la synchronisation:', syncError);
-      return new Response(JSON.stringify({ 
-        error: `Erreur RPC: ${syncError.message}`,
-        details: syncError,
-        code: syncError.code
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Synchronisation des permissions terminée avec succès');
-    console.log('Données retournées par RPC:', rpcData);
+    console.log('🔧 Synchronisation globale terminée. Total permissions créées:', totalPermissionsCreated);
 
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Permissions synchronisées avec succès',
-      details: 'La fonction a été exécutée correctement'
+      details: `${totalPermissionsCreated} nouvelles permissions créées à partir de ${usedInvitations?.length || 0} invitations`
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

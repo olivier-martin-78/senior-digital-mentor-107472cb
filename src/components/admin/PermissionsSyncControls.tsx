@@ -19,13 +19,27 @@ const PermissionsSyncControls = () => {
       // Récupérer toutes les invitations utilisées
       const { data: usedInvitations, error: invitationsError } = await supabase
         .from('invitations')
-        .select(`
-          *,
-          inviter:profiles!invitations_invited_by_fkey(display_name, email)
-        `)
+        .select('*')
         .not('used_at', 'is', null);
 
       if (invitationsError) throw invitationsError;
+
+      // Récupérer les informations des inviteurs pour chaque invitation
+      const invitationsWithInviters = [];
+      if (usedInvitations) {
+        for (const invitation of usedInvitations) {
+          const { data: inviterData } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', invitation.invited_by)
+            .single();
+          
+          invitationsWithInviters.push({
+            ...invitation,
+            inviter: inviterData
+          });
+        }
+      }
 
       // Récupérer tous les membres de groupes
       const { data: groupMembers, error: groupError } = await supabase
@@ -47,11 +61,11 @@ const PermissionsSyncControls = () => {
 
       const diagnostic = {
         invitations: {
-          total: usedInvitations?.length || 0,
-          withBlogAccess: usedInvitations?.filter(i => i.blog_access).length || 0,
-          withLifeStoryAccess: usedInvitations?.filter(i => i.life_story_access).length || 0,
-          withDiaryAccess: usedInvitations?.filter(i => i.diary_access).length || 0,
-          details: usedInvitations || []
+          total: invitationsWithInviters?.length || 0,
+          withBlogAccess: invitationsWithInviters?.filter(i => i.blog_access).length || 0,
+          withLifeStoryAccess: invitationsWithInviters?.filter(i => i.life_story_access).length || 0,
+          withDiaryAccess: invitationsWithInviters?.filter(i => i.diary_access).length || 0,
+          details: invitationsWithInviters || []
         },
         groups: {
           total: groupMembers?.length || 0,

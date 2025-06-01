@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, Settings } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -23,7 +23,6 @@ import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import SyncPermissionsButton from '@/components/admin/SyncPermissionsButton';
 import { useImpersonationContext } from '@/contexts/ImpersonationContext';
-import { Database } from 'lucide-react';
 
 interface UserWithRoles extends Profile {
   roles: AppRole[];
@@ -227,6 +226,14 @@ const AdminUsers = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des utilisateurs</h1>
           <div className="flex gap-2">
+            <Button
+              onClick={() => navigate('/admin/permissions-diagnostic')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Diagnostic des permissions
+            </Button>
             <SyncPermissionsButton />
             <InviteUserDialog />
           </div>
