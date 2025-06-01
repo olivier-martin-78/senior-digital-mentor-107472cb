@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -83,15 +82,39 @@ serve(async (req) => {
           // Créer les permissions d'albums si blog_access = true
           if (invitation.blog_access) {
             console.log('📚 Création permissions albums pour invitation', invitation.id);
-            const { data: albums } = await supabase
+            
+            // NOUVELLE LOGIQUE: Récupérer TOUS les albums auxquels l'inviteur a accès
+            // 1. Albums créés par l'inviteur
+            const { data: ownedAlbums } = await supabase
               .from('blog_albums')
-              .select('id')
+              .select('id, name')
               .eq('author_id', invitation.invited_by);
             
-            console.log('📚 Albums trouvés:', albums?.length || 0);
+            // 2. Albums auxquels l'inviteur a des permissions
+            const { data: permittedAlbums } = await supabase
+              .from('album_permissions')
+              .select('album_id, blog_albums(id, name)')
+              .eq('user_id', invitation.invited_by);
             
-            if (albums) {
-              for (const album of albums) {
+            // Combiner les deux listes d'albums
+            const allAlbums = [
+              ...(ownedAlbums || []),
+              ...(permittedAlbums?.map(p => p.blog_albums).filter(Boolean) || [])
+            ];
+            
+            // Éliminer les doublons basés sur l'ID
+            const uniqueAlbums = allAlbums.reduce((acc, album) => {
+              if (!acc.find(a => a.id === album.id)) {
+                acc.push(album);
+              }
+              return acc;
+            }, []);
+            
+            console.log('📚 Albums trouvés pour l\'inviteur:', uniqueAlbums?.length || 0);
+            console.log('📚 Détail des albums:', uniqueAlbums?.map(a => `${a.name} (${a.id})`));
+            
+            if (uniqueAlbums) {
+              for (const album of uniqueAlbums) {
                 const { error: albumPermError } = await supabase
                   .from('album_permissions')
                   .insert({
@@ -101,9 +124,11 @@ serve(async (req) => {
                 
                 if (!albumPermError) {
                   permissionsCreated++;
-                  console.log('✅ Permission album créée:', album.id);
+                  console.log('✅ Permission album créée:', album.name, '(', album.id, ')');
                 } else if (albumPermError.code !== '23505') { // Ignorer les doublons
                   console.error('❌ Erreur création permission album:', albumPermError);
+                } else {
+                  console.log('ℹ️ Permission album déjà existante:', album.name);
                 }
               }
             }
@@ -126,6 +151,8 @@ serve(async (req) => {
               console.log('✅ Permission histoire de vie créée');
             } else if (lifeStoryPermError.code !== '23505') { // Ignorer les doublons
               console.error('❌ Erreur création permission histoire de vie:', lifeStoryPermError);
+            } else {
+              console.log('ℹ️ Permission histoire de vie déjà existante');
             }
           }
           
@@ -146,6 +173,8 @@ serve(async (req) => {
               console.log('✅ Permission journal créée');
             } else if (diaryPermError.code !== '23505') { // Ignorer les doublons
               console.error('❌ Erreur création permission journal:', diaryPermError);
+            } else {
+              console.log('ℹ️ Permission journal déjà existante');
             }
           }
         }
@@ -210,15 +239,33 @@ serve(async (req) => {
         const userId = groupMember.user_id;
         console.log('👤 Utilisateur trouvé:', userId);
         
-        // Créer les permissions comme dans la version ciblée
+        // Créer les permissions avec la nouvelle logique
         if (invitation.blog_access) {
-          const { data: albums } = await supabase
+          // Récupérer tous les albums auxquels l'inviteur a accès
+          const { data: ownedAlbums } = await supabase
             .from('blog_albums')
-            .select('id')
+            .select('id, name')
             .eq('author_id', invitation.invited_by);
           
-          if (albums) {
-            for (const album of albums) {
+          const { data: permittedAlbums } = await supabase
+            .from('album_permissions')
+            .select('album_id, blog_albums(id, name)')
+            .eq('user_id', invitation.invited_by);
+          
+          const allAlbums = [
+            ...(ownedAlbums || []),
+            ...(permittedAlbums?.map(p => p.blog_albums).filter(Boolean) || [])
+          ];
+          
+          const uniqueAlbums = allAlbums.reduce((acc, album) => {
+            if (!acc.find(a => a.id === album.id)) {
+              acc.push(album);
+            }
+            return acc;
+          }, []);
+          
+          if (uniqueAlbums) {
+            for (const album of uniqueAlbums) {
               const { error: albumPermError } = await supabase
                 .from('album_permissions')
                 .insert({

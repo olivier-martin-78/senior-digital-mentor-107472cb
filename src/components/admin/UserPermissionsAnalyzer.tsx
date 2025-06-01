@@ -122,7 +122,6 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
 
           if (!inviterData) continue;
 
-          // Récupérer les contenus de l'inviteur selon les permissions accordées
           const inviterContent: InviterPermissions = {
             inviter: inviterData,
             albums: [],
@@ -131,13 +130,38 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
             invitation
           };
 
-          // Albums si blog_access = true
+          // Albums si blog_access = true - NOUVELLE LOGIQUE
           if (invitation.blog_access) {
-            const { data: inviterAlbums } = await supabase
+            console.log('🔍 Analyse des albums pour inviteur:', inviterData.email);
+            
+            // 1. Albums créés par l'inviteur
+            const { data: ownedAlbums } = await supabase
               .from('blog_albums')
               .select('*')
               .eq('author_id', invitation.invited_by);
-            inviterContent.albums = inviterAlbums || [];
+            
+            // 2. Albums auxquels l'inviteur a des permissions
+            const { data: permittedAlbums } = await supabase
+              .from('album_permissions')
+              .select('album_id, blog_albums(id, name, author_id)')
+              .eq('user_id', invitation.invited_by);
+            
+            // Combiner les deux listes
+            const allAlbums = [
+              ...(ownedAlbums || []),
+              ...(permittedAlbums?.map(p => p.blog_albums).filter(Boolean) || [])
+            ];
+            
+            // Éliminer les doublons
+            const uniqueAlbums = allAlbums.reduce((acc, album) => {
+              if (!acc.find(a => a.id === album.id)) {
+                acc.push(album);
+              }
+              return acc;
+            }, []);
+            
+            console.log('🔍 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
+            inviterContent.albums = uniqueAlbums;
           }
 
           // Histoires de vie si life_story_access = true
@@ -169,6 +193,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
 
       console.log('🔍 Analyse terminée:', {
         inviterPermissions: inviterPermissions.length,
+        totalInviterAlbums: inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0),
         currentPermissions: {
           albums: albumPermissions.data?.length || 0,
           lifeStories: lifeStoryPermissions.data?.length || 0,
@@ -298,6 +323,9 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                 <CardTitle className="flex items-center gap-2">
                   <UserPlus className="h-5 w-5 text-blue-600" />
                   Permissions des inviteurs
+                  <Badge variant="secondary" className="ml-2">
+                    {permissionData.inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0)} albums total
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
