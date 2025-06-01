@@ -125,7 +125,7 @@ const BlogPost = () => {
     }
   };
 
-  // Vérifications d'autorisation explicites et corrigées
+  // CORRECTION DÉFINITIVE des permissions
   const isAuthor = user && post && user.id === post.author_id;
   const isAdmin = user && hasRole('admin');
   const isEditor = user && hasRole('editor');
@@ -133,12 +133,12 @@ const BlogPost = () => {
   // L'utilisateur peut modifier si : il est l'auteur OU admin OU éditeur
   const canEditPost = isAuthor || isAdmin || isEditor;
 
-  // CORRECTION IMPORTANTE : L'utilisateur peut supprimer SEULEMENT si : il est l'auteur OU admin
+  // CORRECTION CRITIQUE : Seuls l'auteur ou l'admin peuvent supprimer
   // Les éditeurs ne peuvent PAS supprimer s'ils ne sont pas l'auteur
   const canDeletePost = isAuthor || isAdmin;
 
   // Debug logs pour vérifier les permissions
-  console.log('BlogPost permissions check (CORRIGÉ):', {
+  console.log('BlogPost permissions check (CORRECTION DÉFINITIVE):', {
     userId: user?.id,
     postAuthorId: post?.author_id,
     userEmail: user?.email,
@@ -146,7 +146,7 @@ const BlogPost = () => {
     isAdmin,
     isEditor,
     canEditPost,
-    canDeletePost: canDeletePost, // Cette valeur doit être false pour un éditeur non-auteur
+    canDeletePost, // Cette valeur doit être false pour un éditeur non-auteur
     roles: user ? ['admin', 'editor', 'reader'].filter(role => hasRole(role as any)) : []
   });
 
@@ -211,7 +211,7 @@ const BlogPost = () => {
                 </Button>
               )}
               
-              {/* CORRECTION : Bouton supprimer affiché SEULEMENT pour auteur ou admin */}
+              {/* CORRECTION CRITIQUE : Bouton supprimer affiché SEULEMENT pour auteur ou admin */}
               {canDeletePost && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

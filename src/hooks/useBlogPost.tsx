@@ -19,6 +19,8 @@ export const useBlogPost = (postId: string) => {
   useEffect(() => {
     const fetchPostDetails = async () => {
       try {
+        console.log('🔍 useBlogPost - CORRECTION - Début récupération post:', postId);
+        
         // Fetch post with author
         const { data: postData, error: postError } = await supabase
           .from('blog_posts')
@@ -30,7 +32,7 @@ export const useBlogPost = (postId: string) => {
           .single();
 
         if (postError) {
-          console.error('Error fetching post:', postError);
+          console.error('🔍 useBlogPost - CORRECTION - Error fetching post:', postError);
           toast({
             title: "Erreur",
             description: "L'article n'a pas pu être chargé.",
@@ -39,6 +41,13 @@ export const useBlogPost = (postId: string) => {
           navigate('/blog');
           return;
         }
+
+        console.log('🔍 useBlogPost - CORRECTION - Post récupéré:', {
+          id: postData.id,
+          title: postData.title,
+          author_id: postData.author_id,
+          published: postData.published
+        });
 
         setPost(postData as PostWithAuthor);
 
@@ -92,7 +101,7 @@ export const useBlogPost = (postId: string) => {
         }
 
       } catch (error) {
-        console.error('Error:', error);
+        console.error('🔍 useBlogPost - CORRECTION - Error:', error);
         toast({
           title: "Erreur",
           description: "Une erreur est survenue lors du chargement de l'article.",
@@ -103,7 +112,9 @@ export const useBlogPost = (postId: string) => {
       }
     };
 
-    fetchPostDetails();
+    if (postId) {
+      fetchPostDetails();
+    }
   }, [postId, navigate, toast]);
 
   const addComment = async (content: string, userId: string) => {
