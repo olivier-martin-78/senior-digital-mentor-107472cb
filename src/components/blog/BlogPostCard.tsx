@@ -24,28 +24,32 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
 
-  // CORRECTION : Utiliser l'ID utilisateur effectif pour les vérifications d'impersonnation
   const effectiveUserId = getEffectiveUserId();
   const originalUserId = user?.id;
 
-  // Un post est visible si :
-  // - Il est publié ET (l'utilisateur a les permissions OU c'est son propre post)
-  // - OU si l'utilisateur est l'auteur (même non publié) - CORRECTION PRINCIPALE
-  // - OU si l'utilisateur est admin
-  const isVisible = post.published || 
-                   (effectiveUserId && post.author_id === effectiveUserId) || 
-                   hasRole('admin');
+  // CORRECTION CRITIQUE : Un post est visible si :
+  // 1. Il est publié ET l'utilisateur a accès à l'album (déjà filtré par useBlogPosts)
+  // 2. OU si l'utilisateur est l'auteur (même non publié)
+  // 3. OU si l'utilisateur est admin
+  const isAuthor = effectiveUserId && post.author_id === effectiveUserId;
+  const isAdmin = hasRole('admin');
   
-  console.log('BlogPostCard - Vérification visibilité (CORRIGÉE):', {
+  // Si le post arrive jusqu'ici depuis useBlogPosts, c'est qu'il est soit :
+  // - publié dans un album accessible
+  // - créé par l'utilisateur (publié ou non)
+  // Donc on peut simplifier la logique de visibilité
+  const isVisible = post.published || isAuthor || isAdmin;
+  
+  console.log('BlogPostCard - Vérification visibilité (CORRECTION FINALE):', {
     postId: post.id,
     title: post.title,
     published: post.published,
     authorId: post.author_id,
     effectiveUserId: effectiveUserId,
-    originalUserId: originalUserId,
-    isAuthor: effectiveUserId && post.author_id === effectiveUserId,
-    isAdmin: hasRole('admin'),
-    isVisible
+    isAuthor,
+    isAdmin,
+    isVisible,
+    albumId: post.album_id
   });
   
   if (!isVisible) {
@@ -109,7 +113,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       <CardFooter>
         <Button asChild variant="outline">
           <Link to={`/blog/${post.id}`}>
-            {!post.published && effectiveUserId && post.author_id === effectiveUserId ? 'Modifier/Publier' : 'Lire la suite'}
+            {!post.published && isAuthor ? 'Modifier/Publier' : 'Lire la suite'}
           </Link>
         </Button>
       </CardFooter>
