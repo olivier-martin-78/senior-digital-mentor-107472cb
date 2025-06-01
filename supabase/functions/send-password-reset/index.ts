@@ -15,44 +15,12 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Log request details for debugging
     console.log(`send-password-reset: Request URL: ${req.url}`);
-    console.log(`send-password-reset: Request headers:`, Object.fromEntries(req.headers.entries()));
+    console.log(`send-password-reset: Content-Type: ${req.headers.get('content-type')}`);
     
-    // Read the entire request body first
-    const bodyText = await req.text();
-    console.log(`send-password-reset: Raw body text: "${bodyText}"`);
-    
-    if (!bodyText || bodyText.trim() === '') {
-      console.error("send-password-reset: Request body is empty");
-      return new Response(
-        JSON.stringify({ 
-          error: "Le corps de la requête est vide" 
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Parse the JSON
-    let requestData;
-    try {
-      requestData = JSON.parse(bodyText);
-      console.log(`send-password-reset: Parsed request data:`, requestData);
-    } catch (parseError) {
-      console.error("send-password-reset: JSON parse error:", parseError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Format de requête invalide. Le JSON est malformé." 
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+    // Use req.json() directly as recommended for Supabase functions
+    const requestData = await req.json();
+    console.log(`send-password-reset: Parsed request data:`, requestData);
 
     const { email } = requestData;
     console.log(`send-password-reset: Processing request for email: ${email}`);
