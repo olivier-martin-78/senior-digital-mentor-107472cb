@@ -21,84 +21,11 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Lecture du corps de la requête...");
     
-    let email: string;
+    const requestBody = await req.json();
+    console.log("Corps de la requête parsé:", requestBody);
+
+    const email = requestBody?.email;
     
-    // Amélioration du parsing JSON avec gestion d'erreurs détaillée
-    try {
-      const contentType = req.headers.get('content-type') || '';
-      const contentLength = req.headers.get('content-length') || '';
-      console.log(`Content-Type: ${contentType}`);
-      console.log(`Content-Length: ${contentLength}`);
-      
-      // Vérifier tous les headers pour diagnostic
-      console.log("Headers reçus:");
-      for (const [key, value] of req.headers.entries()) {
-        console.log(`  ${key}: ${value}`);
-      }
-
-      // Vérifier si le corps existe
-      if (!req.body) {
-        console.error("Aucun corps de requête (req.body est null)");
-        return new Response(
-          JSON.stringify({ error: "Corps de requête manquant" }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // Cloner la requête pour pouvoir lire le corps plusieurs fois si nécessaire
-      const requestClone = req.clone();
-      
-      // Lire le corps de la requête comme texte d'abord
-      const bodyText = await requestClone.text();
-      console.log(`Corps brut reçu: "${bodyText}"`);
-      console.log(`Longueur du corps: ${bodyText.length}`);
-      
-      if (!bodyText || bodyText.trim() === '') {
-        console.error("Corps de requête vide");
-        return new Response(
-          JSON.stringify({ error: "Corps de requête vide - aucune donnée reçue" }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // Essayer de parser le JSON
-      let requestBody;
-      try {
-        requestBody = JSON.parse(bodyText);
-        console.log("Corps de la requête parsé avec succès:", requestBody);
-      } catch (parseError) {
-        console.error("Erreur parsing JSON:", parseError);
-        console.log("Tentative de récupération manuelle des données...");
-        
-        // Essayer de récupérer l'email d'une autre façon
-        const url = new URL(req.url);
-        const emailFromUrl = url.searchParams.get('email');
-        
-        if (emailFromUrl) {
-          console.log(`Email récupéré depuis l'URL: ${emailFromUrl}`);
-          email = emailFromUrl;
-        } else {
-          throw new Error(`Corps non-JSON reçu: "${bodyText}"`);
-        }
-      }
-      
-      if (!email && requestBody) {
-        email = requestBody.email;
-      }
-      
-    } catch (jsonError) {
-      console.error("Erreur lors du traitement de la requête:", jsonError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Format de requête invalide",
-          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing",
-          received_content_type: req.headers.get('content-type'),
-          received_content_length: req.headers.get('content-length')
-        }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     // Validation de l'email
     if (!email || typeof email !== 'string' || email.trim() === '') {
       console.error("Email manquant ou invalide:", { email, type: typeof email });
@@ -182,60 +109,49 @@ const handler = async (req: Request): Promise<Response> => {
     const resetUrl = `${origin}/reset-password?token=${token}&type=${type}`;
     console.log(`URL de réinitialisation: ${resetUrl}`);
 
-    // Envoyer l'email via Resend UNIQUEMENT
+    // Envoyer l'email via Resend
     console.log("Envoi de l'email via Resend...");
     
-    try {
-      const resend = new Resend(resendApiKey);
-      
-      const emailResponse = await resend.emails.send({
-        from: 'noreply@resend.dev', // Utilisez votre domaine vérifié si disponible
-        to: [email.trim()],
-        subject: 'Réinitialisation de votre mot de passe',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Réinitialisation de mot de passe</h2>
-            <p>Bonjour,</p>
-            <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
-            <p style="margin: 30px 0;">
-              <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Réinitialiser mon mot de passe
-              </a>
-            </p>
-            <p style="color: #666; font-size: 14px;">
-              Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
-            </p>
-            <p style="color: #666; font-size: 14px;">
-              Ce lien est valide pendant 60 minutes.
-            </p>
-          </div>
-        `,
-      });
+    const resend = new Resend(resendApiKey);
+    
+    const emailResponse = await resend.emails.send({
+      from: 'noreply@resend.dev',
+      to: [email.trim()],
+      subject: 'Réinitialisation de votre mot de passe',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Réinitialisation de mot de passe</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
+          <p style="margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Réinitialiser mon mot de passe
+            </a>
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Ce lien est valide pendant 60 minutes.
+          </p>
+        </div>
+      `,
+    });
 
-      if (emailResponse.error) {
-        throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
-      }
-
-      console.log("Email envoyé avec succès via Resend:", emailResponse);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Email de réinitialisation envoyé avec succès"
-        }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-      
-    } catch (resendError) {
-      console.error("Erreur lors de l'envoi via Resend:", resendError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Erreur lors de l'envoi de l'email de réinitialisation",
-          details: resendError instanceof Error ? resendError.message : "Erreur inconnue"
-        }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (emailResponse.error) {
+      console.error("Erreur Resend:", emailResponse.error);
+      throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
     }
+
+    console.log("Email envoyé avec succès via Resend:", emailResponse);
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Email de réinitialisation envoyé avec succès"
+      }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
 
   } catch (error: any) {
     console.error("ERREUR dans send-password-reset:", error);

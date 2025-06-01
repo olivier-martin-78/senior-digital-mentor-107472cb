@@ -377,86 +377,37 @@ const Auth = () => {
       console.log("Email:", email);
       console.log("Environnement:", { isMobileDevice, connectionInfo });
       
-      // Méthode 1: Essayer la fonction Edge avec un appel corrigé
-      try {
-        console.log("Tentative 1: Appel de la fonction Edge send-password-reset");
-        
-        // Appel corrigé avec body explicite
-        const edgeResponse = await supabase.functions.invoke('send-password-reset', {
-          body: JSON.stringify({ email: email.trim() }),
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+      // Appel corrigé de la fonction Edge
+      console.log("Tentative: Appel de la fonction Edge send-password-reset avec l'email:", email.trim());
+      
+      const edgeResponse = await supabase.functions.invoke('send-password-reset', {
+        body: { email: email.trim() }
+      });
 
-        console.log("Réponse de la fonction Edge:", {
-          data: edgeResponse.data,
-          error: edgeResponse.error
-        });
+      console.log("Réponse de la fonction Edge:", {
+        data: edgeResponse.data,
+        error: edgeResponse.error
+      });
 
-        if (edgeResponse.error) {
-          console.error("Erreur de la fonction Edge:", edgeResponse.error);
-          throw new Error(`Fonction Edge: ${edgeResponse.error.message || 'Erreur inconnue'}`);
-        }
-
-        if (edgeResponse.data?.error) {
-          console.error("Erreur dans les données de la fonction Edge:", edgeResponse.data.error);
-          throw new Error(`Données fonction Edge: ${edgeResponse.data.error}`);
-        }
-
-        console.log("✅ Fonction Edge réussie!");
-        
-        toast({
-          title: "Email envoyé",
-          description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
-        });
-        
-        setActiveTab('login');
-        setEmail('');
-        return;
-        
-      } catch (edgeError: any) {
-        console.error("❌ Échec de la fonction Edge:", {
-          message: edgeError.message,
-          name: edgeError.name,
-          stack: edgeError.stack
-        });
-        
-        // Si la fonction Edge échoue, essayer le fallback
-        console.log("Tentative 2: Fallback vers la méthode native Supabase");
-        
-        try {
-          const fallbackResponse = await supabase.auth.resetPasswordForEmail(email.trim(), {
-            redirectTo: `${window.location.origin}/reset-password`
-          });
-
-          console.log("Réponse du fallback Supabase:", {
-            data: fallbackResponse.data,
-            error: fallbackResponse.error
-          });
-
-          if (fallbackResponse.error) {
-            throw new Error(`Fallback Supabase: ${fallbackResponse.error.message}`);
-          }
-
-          console.log("✅ Fallback Supabase réussi!");
-          
-          toast({
-            title: "Email envoyé",
-            description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
-          });
-          
-          setActiveTab('login');
-          setEmail('');
-          return;
-          
-        } catch (fallbackError: any) {
-          console.error("❌ Échec du fallback Supabase:", fallbackError);
-          
-          // Les deux méthodes ont échoué
-          throw new Error(`Toutes les méthodes ont échoué. Edge: ${edgeError.message}. Fallback: ${fallbackError.message}`);
-        }
+      if (edgeResponse.error) {
+        console.error("Erreur de la fonction Edge:", edgeResponse.error);
+        throw new Error(`Fonction Edge: ${edgeResponse.error.message || 'Erreur inconnue'}`);
       }
+
+      if (edgeResponse.data?.error) {
+        console.error("Erreur dans les données de la fonction Edge:", edgeResponse.data.error);
+        throw new Error(`Données fonction Edge: ${edgeResponse.data.error}`);
+      }
+
+      console.log("✅ Fonction Edge réussie!");
+      
+      toast({
+        title: "Email envoyé",
+        description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
+      });
+      
+      setActiveTab('login');
+      setEmail('');
       
     } catch (error: any) {
       console.error("=== ERREUR FINALE ===", {
@@ -472,8 +423,6 @@ const Auth = () => {
         errorMessage = "Impossible de contacter le serveur. Vérifiez votre connexion internet.";
       } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         errorMessage = "Problème de réseau. Vérifiez votre connexion internet.";
-      } else if (error.message?.includes('Edge') && error.message?.includes('Fallback')) {
-        errorMessage = "Les services de réinitialisation sont temporairement indisponibles. Veuillez réessayer plus tard.";
       } else if (error.message) {
         errorMessage = error.message;
       }
