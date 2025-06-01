@@ -44,7 +44,7 @@ const EntryContent: React.FC<EntryContentProps> = ({ entry }) => {
       </div>
 
       <EntrySection
-        title="Personnes contactées"
+        title="Personne avec qui j'ai bien échangé aujourd'hui"
         tags={entry.contacted_people}
       />
 
