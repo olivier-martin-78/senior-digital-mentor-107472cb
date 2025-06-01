@@ -27,15 +27,14 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('useBlogPosts - Données utilisateur (CORRIGÉES):', {
+        console.log('🚀 useBlogPosts - NOUVELLE LOGIQUE: récupération posts des albums accessibles');
+        console.log('🚀 useBlogPosts - Données utilisateur:', {
           originalUserId: user.id,
           effectiveUserId: effectiveUserId,
           isImpersonating: effectiveUserId !== user.id,
           isAdmin: hasRole('admin')
         });
 
-        console.log('useBlogPosts - Récupération avec nouvelles politiques RLS simplifiées');
-        
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -44,10 +43,53 @@ export const useBlogPosts = (
           `)
           .order('created_at', { ascending: false });
 
-        // Si l'utilisateur réel n'est pas admin, appliquer des filtres côté requête
-        if (!hasRole('admin')) {
-          // Utilisateur non-admin : voir seulement ses posts
-          query = query.eq('author_id', effectiveUserId);
+        if (hasRole('admin')) {
+          console.log('🔑 useBlogPosts - Mode admin: récupération de tous les posts publiés');
+          // Admin peut voir tous les posts publiés
+          query = query.eq('published', true);
+        } else {
+          console.log('👤 useBlogPosts - Mode utilisateur: récupération albums accessibles');
+          
+          // Récupérer d'abord les albums accessibles
+          const accessibleAlbumIds: string[] = [];
+          
+          // 1. Albums créés par l'utilisateur
+          const { data: ownedAlbums } = await supabase
+            .from('blog_albums')
+            .select('id')
+            .eq('author_id', effectiveUserId);
+          
+          if (ownedAlbums) {
+            accessibleAlbumIds.push(...ownedAlbums.map(album => album.id));
+            console.log('📋 useBlogPosts - Albums créés par l\'utilisateur:', ownedAlbums.length);
+          }
+          
+          // 2. Albums avec permissions
+          const { data: permittedAlbums } = await supabase
+            .from('album_permissions')
+            .select('album_id')
+            .eq('user_id', effectiveUserId);
+          
+          if (permittedAlbums) {
+            const permittedAlbumIds = permittedAlbums.map(p => p.album_id);
+            accessibleAlbumIds.push(...permittedAlbumIds);
+            console.log('🔑 useBlogPosts - Albums avec permissions:', permittedAlbumIds.length);
+          }
+          
+          // Supprimer les doublons
+          const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
+          console.log('🎯 useBlogPosts - Albums accessibles uniques:', {
+            count: uniqueAccessibleAlbumIds.length,
+            albumIds: uniqueAccessibleAlbumIds
+          });
+          
+          if (uniqueAccessibleAlbumIds.length > 0) {
+            // Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
+            query = query.or(`and(album_id.in.(${uniqueAccessibleAlbumIds.join(',')}),published.eq.true),author_id.eq.${effectiveUserId}`);
+          } else {
+            // Aucun album accessible, récupérer seulement les posts de l'utilisateur
+            query = query.eq('author_id', effectiveUserId);
+          }
         }
 
         // Filtres de recherche
@@ -76,16 +118,23 @@ export const useBlogPosts = (
 
         let filteredPosts = data || [];
 
-        // FILTRAGE CÔTÉ CLIENT pour l'impersonnation
+        console.log('✅ useBlogPosts - Posts récupérés AVANT filtrage final:', {
+          count: filteredPosts.length,
+          posts: filteredPosts.map(post => ({
+            id: post.id,
+            title: post.title,
+            author_id: post.author_id,
+            album_id: post.album_id,
+            published: post.published
+          }))
+        });
+
+        // FILTRAGE CÔTÉ CLIENT pour l'impersonnation (si nécessaire)
         if (hasRole('admin') && effectiveUserId !== user.id) {
-          // En mode impersonnation : filtrer pour montrer seulement ce que l'utilisateur impersonné peut voir
-          console.log('useBlogPosts - Mode impersonnation : filtrage côté client');
+          console.log('🔄 useBlogPosts - Mode impersonnation admin: filtrage côté client');
           filteredPosts = filteredPosts.filter(post => {
-            // L'utilisateur impersonné peut voir :
-            // - Ses propres posts (publiés ou non)
-            // - Les posts publiés des autres (logique métier normale)
             const canSee = post.author_id === effectiveUserId || post.published;
-            console.log('useBlogPosts - Post filtrage:', {
+            console.log('🔍 useBlogPosts - Post filtrage impersonnation:', {
               postId: post.id,
               title: post.title,
               authorId: post.author_id,
@@ -97,12 +146,13 @@ export const useBlogPosts = (
           });
         }
 
-        console.log('useBlogPosts - Posts récupérés (APRÈS FILTRAGE):', {
+        console.log('🎉 useBlogPosts - Posts FINAUX (APRÈS FILTRAGE):', {
           count: filteredPosts.length,
           posts: filteredPosts.map(post => ({
             id: post.id,
             title: post.title,
             author_id: post.author_id,
+            album_id: post.album_id,
             published: post.published
           }))
         });
