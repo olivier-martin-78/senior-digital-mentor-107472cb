@@ -52,7 +52,7 @@ const BlogPost = () => {
   useEffect(() => {
     const checkAlbumAccess = async () => {
       if (!post || !post.album_id || !user) {
-        console.log('🔍 BlogPost - Pas d\'album ou pas d\'utilisateur:', {
+        console.log('🔍 BlogPost - CORRECTION - Pas d\'album ou pas d\'utilisateur:', {
           postId: post?.id,
           albumId: post?.album_id,
           hasUser: !!user
@@ -62,62 +62,62 @@ const BlogPost = () => {
       }
 
       try {
-        // CORRECTION : Utiliser l'ID utilisateur IMPERSONNÉ pour vérifier les permissions
-        const userIdToCheck = isImpersonating ? user.id : user.id;
+        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
+        const effectiveUserId = getEffectiveUserId();
         
-        console.log('🔍 BlogPost - Vérification accès album:', {
+        console.log('🔍 BlogPost - CORRECTION - Vérification accès album:', {
           postId: post.id,
           albumId: post.album_id,
-          userIdToCheck,
+          effectiveUserId,
+          realUserId: isImpersonating ? originalUser?.id : user?.id,
           isImpersonating,
-          originalUserId: originalUser?.id,
-          effectiveUserId: getEffectiveUserId()
+          userEmail: user.email
         });
 
-        // Vérifier si l'utilisateur (impersonné) est propriétaire de l'album
+        // Vérifier si l'utilisateur EFFECTIF (impersonné) est propriétaire de l'album
         const { data: albumData } = await supabase
           .from('blog_albums')
           .select('author_id')
           .eq('id', post.album_id)
           .single();
 
-        if (albumData && albumData.author_id === userIdToCheck) {
-          console.log('✅ BlogPost - Propriétaire de l\'album:', {
+        if (albumData && albumData.author_id === effectiveUserId) {
+          console.log('✅ BlogPost - CORRECTION - Utilisateur effectif propriétaire de l\'album:', {
             postId: post.id,
             albumId: post.album_id,
             albumAuthorId: albumData.author_id,
-            userIdToCheck
+            effectiveUserId
           });
           setHasAlbumAccess(true);
           return;
         }
 
-        // Vérifier les permissions d'album pour l'utilisateur (impersonné)
+        // Vérifier les permissions d'album pour l'utilisateur EFFECTIF (impersonné)
         const { data: permissions } = await supabase
           .from('album_permissions')
           .select('id')
           .eq('album_id', post.album_id)
-          .eq('user_id', userIdToCheck)
+          .eq('user_id', effectiveUserId)
           .maybeSingle();
 
         const hasPermission = !!permissions;
-        console.log('🔍 BlogPost - Résultat vérification permissions:', {
+        console.log('🔍 BlogPost - CORRECTION - Résultat vérification permissions:', {
           postId: post.id,
           albumId: post.album_id,
-          userIdToCheck,
+          effectiveUserId,
           hasPermission,
           permissionId: permissions?.id
         });
 
         setHasAlbumAccess(hasPermission);
       } catch (error) {
-        console.error('❌ BlogPost - Erreur lors de la vérification des permissions d\'album:', error);
+        console.error('❌ BlogPost - CORRECTION - Erreur lors de la vérification des permissions d\'album:', error);
         setHasAlbumAccess(false);
       }
     };
 
     checkAlbumAccess();
-  }, [post, user, isImpersonating, originalUser]);
+  }, [post, user, isImpersonating, originalUser, getEffectiveUserId]);
 
   // Charger l'URL de l'image de couverture si elle existe
   useEffect(() => {
@@ -227,7 +227,7 @@ const BlogPost = () => {
     isRealAdmin
   );
 
-  console.log('🎯 BlogPost - Permissions CORRIGÉES:', {
+  console.log('🎯 BlogPost - CORRECTION - Permissions:', {
     postId: post?.id,
     postAuthorId: post?.author_id,
     realUserId,
@@ -273,7 +273,7 @@ const BlogPost = () => {
 
   // Vérifier si l'utilisateur peut voir ce post
   if (!canViewPost) {
-    console.log('🚫 BlogPost - Accès refusé au post:', {
+    console.log('🚫 BlogPost - CORRECTION - Accès refusé au post:', {
       postId: post.id,
       reason: !hasAlbumAccess ? 'Pas d\'accès album' : 'Post non publié',
       albumId: post.album_id,

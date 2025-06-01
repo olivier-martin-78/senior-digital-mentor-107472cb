@@ -43,71 +43,70 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       }
 
       try {
-        // CORRECTION : Utiliser l'ID utilisateur IMPERSONNÉ pour vérifier les permissions
-        const userIdToCheck = isImpersonating ? user.id : user.id;
+        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
+        const effectiveUserId = getEffectiveUserId();
         
-        console.log('🔍 BlogPostCard - Vérification accès album:', {
+        console.log('🔍 BlogPostCard - CORRECTION - Vérification accès album:', {
           postId: post.id,
           postTitle: post.title,
           albumId: post.album_id,
-          userIdToCheck,
+          effectiveUserId,
+          realUserId: isImpersonating ? originalUser?.id : user?.id,
           isImpersonating,
-          originalUserId: originalUser?.id,
-          effectiveUserId: getEffectiveUserId()
+          userEmail: user.email
         });
 
-        // Vérifier si l'utilisateur (impersonné) est propriétaire de l'album
+        // Vérifier si l'utilisateur EFFECTIF (impersonné) est propriétaire de l'album
         const { data: albumData } = await supabase
           .from('blog_albums')
           .select('author_id')
           .eq('id', post.album_id)
           .single();
 
-        if (albumData && albumData.author_id === userIdToCheck) {
-          console.log('✅ BlogPostCard - Propriétaire de l\'album:', {
+        if (albumData && albumData.author_id === effectiveUserId) {
+          console.log('✅ BlogPostCard - CORRECTION - Utilisateur effectif propriétaire de l\'album:', {
             postId: post.id,
             albumId: post.album_id,
             albumAuthorId: albumData.author_id,
-            userIdToCheck
+            effectiveUserId
           });
           setHasAlbumAccess(true);
           return;
         }
 
-        // Vérifier les permissions d'album pour l'utilisateur (impersonné)
+        // Vérifier les permissions d'album pour l'utilisateur EFFECTIF (impersonné)
         const { data: permissions } = await supabase
           .from('album_permissions')
           .select('id')
           .eq('album_id', post.album_id)
-          .eq('user_id', userIdToCheck)
+          .eq('user_id', effectiveUserId)
           .maybeSingle();
 
         const hasPermission = !!permissions;
-        console.log('🔍 BlogPostCard - Résultat vérification permissions:', {
+        console.log('🔍 BlogPostCard - CORRECTION - Résultat vérification permissions:', {
           postId: post.id,
           albumId: post.album_id,
-          userIdToCheck,
+          effectiveUserId,
           hasPermission,
           permissionId: permissions?.id
         });
 
         setHasAlbumAccess(hasPermission);
       } catch (error) {
-        console.error('❌ BlogPostCard - Erreur lors de la vérification des permissions d\'album:', error);
+        console.error('❌ BlogPostCard - CORRECTION - Erreur lors de la vérification des permissions d\'album:', error);
         setHasAlbumAccess(false);
       }
     };
 
     checkAlbumAccess();
-  }, [post.album_id, user, isImpersonating, originalUser]);
+  }, [post.album_id, user, isImpersonating, originalUser, getEffectiveUserId]);
 
   const effectiveUserId = getEffectiveUserId();
   const realUserId = isImpersonating ? originalUser?.id : user?.id;
 
   // Logique de visibilité CORRIGÉE
-  const isRealAuthor = realUserId && post.author_id === realUserId;
-  const isRealAdmin = !isImpersonating && hasRole('admin');
   const isEffectiveAuthor = effectiveUserId && post.author_id === effectiveUserId;
+  const isRealAdmin = !isImpersonating && hasRole('admin');
   
   // CORRECTION PRINCIPALE : Le post est visible si :
   // 1. Il est publié ET l'utilisateur (impersonné) a accès à l'album
@@ -117,7 +116,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
                    isEffectiveAuthor || 
                    isRealAdmin;
   
-  console.log('🎯 BlogPostCard - Calcul visibilité CORRIGÉ:', {
+  console.log('🎯 BlogPostCard - CORRECTION - Calcul visibilité:', {
     postId: post.id,
     postTitle: post.title,
     postAuthorId: post.author_id,
@@ -133,7 +132,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
   });
   
   if (!isVisible) {
-    console.log('🚫 BlogPostCard - Post non visible, masqué:', {
+    console.log('🚫 BlogPostCard - CORRECTION - Post non visible, masqué:', {
       postId: post.id,
       postTitle: post.title,
       reason: !post.published ? 'Non publié' : !hasAlbumAccess ? 'Pas d\'accès album' : 'Autres raisons'
