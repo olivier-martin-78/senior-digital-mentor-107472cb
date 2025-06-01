@@ -374,14 +374,19 @@ const Auth = () => {
     }
 
     try {
-      // Utiliser la méthode native Supabase au lieu de la fonction Edge
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+      console.log("Calling send-password-reset function for email:", email);
+      
+      // Utiliser la fonction Edge corrigée
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email }
       });
 
       if (error) {
+        console.error("Password reset function error:", error);
         throw error;
       }
+
+      console.log("Password reset function response:", data);
 
       toast({
         title: "Email envoyé",

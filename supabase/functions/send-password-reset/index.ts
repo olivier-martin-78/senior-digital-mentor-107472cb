@@ -8,14 +8,18 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  console.log(`send-password-reset: Request method: ${req.method}`);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { email } = await req.json();
+    console.log(`send-password-reset: Processing request for email: ${email}`);
 
     if (!email) {
+      console.error("send-password-reset: Email is required");
       throw new Error("L'email est requis");
     }
 
@@ -25,17 +29,21 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Use the correct application domain for redirect URL
+    const redirectTo = "https://senior-digital-mentor.com/auth?reset=true";
+    console.log(`send-password-reset: Using redirect URL: ${redirectTo}`);
+
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${new URL(req.url).origin}/auth?reset=true`,
+      redirectTo: redirectTo,
     });
 
     if (error) {
-      console.error("Password reset error:", error);
+      console.error("send-password-reset: Supabase error:", error);
       throw error;
     }
 
-    console.log("Password reset email sent successfully for:", email);
+    console.log("send-password-reset: Password reset email sent successfully for:", email);
 
     return new Response(
       JSON.stringify({ 
@@ -49,7 +57,7 @@ serve(async (req: Request) => {
     );
 
   } catch (error: any) {
-    console.error("Error in send-password-reset function:", error);
+    console.error("send-password-reset: Error in function:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message || "Une erreur s'est produite lors de l'envoi de l'email" 
