@@ -122,8 +122,8 @@ export const useBlogPosts = (
             userEmail: user.email
           });
 
-          // CORRECTION : Faire deux requêtes séparées et les combiner
-          const postsPromises: Promise<any>[] = [];
+          // CORRECTION FINALE : Faire deux requêtes séparées et les combiner
+          allPosts = [];
 
           // 1. Posts de l'utilisateur (tous, publiés ou non)
           let userPostsQuery = supabase
@@ -152,8 +152,24 @@ export const useBlogPosts = (
             userPostsQuery = userPostsQuery.lte('created_at', endDate);
           }
 
-          // CORRECTION FINALE : Exécuter la requête et ajouter la promesse
-          postsPromises.push(userPostsQuery.then(result => ({ ...result, queryType: 'user' })));
+          // Exécuter la requête pour les posts de l'utilisateur
+          const { data: userPosts, error: userPostsError } = await userPostsQuery;
+          
+          if (userPostsError) {
+            console.error('❌ useBlogPosts - Erreur posts utilisateur:', userPostsError);
+          } else if (userPosts) {
+            allPosts.push(...userPosts);
+            console.log('✅ useBlogPosts - Posts utilisateur récupérés:', {
+              count: userPosts.length,
+              posts: userPosts.map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                author_id: p.author_id,
+                album_id: p.album_id,
+                published: p.published
+              }))
+            });
+          }
 
           // 2. Posts des albums accessibles (seulement publiés)
           if (uniqueAccessibleAlbumIds.length > 0) {
@@ -185,23 +201,16 @@ export const useBlogPosts = (
               albumPostsQuery = albumPostsQuery.lte('created_at', endDate);
             }
 
-            // CORRECTION FINALE : Exécuter la requête et ajouter la promesse
-            postsPromises.push(albumPostsQuery.then(result => ({ ...result, queryType: 'albums' })));
-          }
-
-          // Exécuter toutes les requêtes en parallèle
-          const results = await Promise.all(postsPromises);
-          
-          // Combiner tous les résultats
-          allPosts = [];
-          results.forEach((result, index) => {
-            if (result.error) {
-              console.error(`❌ useBlogPosts - Erreur requête ${index}:`, result.error);
-            } else if (result.data) {
-              allPosts.push(...result.data);
-              console.log(`✅ useBlogPosts - Requête ${index} (${result.queryType}) réussie:`, {
-                count: result.data.length,
-                posts: result.data.map((p: any) => ({
+            // Exécuter la requête pour les posts des albums
+            const { data: albumPosts, error: albumPostsError } = await albumPostsQuery;
+            
+            if (albumPostsError) {
+              console.error('❌ useBlogPosts - Erreur posts albums:', albumPostsError);
+            } else if (albumPosts) {
+              allPosts.push(...albumPosts);
+              console.log('✅ useBlogPosts - Posts albums récupérés:', {
+                count: albumPosts.length,
+                posts: albumPosts.map((p: any) => ({
                   id: p.id,
                   title: p.title,
                   author_id: p.author_id,
@@ -210,7 +219,7 @@ export const useBlogPosts = (
                 }))
               });
             }
-          });
+          }
 
           // Supprimer les doublons par ID et trier par date
           const uniquePosts = allPosts.filter((post, index, self) => 
