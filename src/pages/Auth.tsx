@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, cleanupAuthState } from '@/contexts/AuthContext';
@@ -392,8 +391,7 @@ const Auth = () => {
 
         console.log("Réponse de la fonction Edge:", {
           data: edgeResponse.data,
-          error: edgeResponse.error,
-          status: edgeResponse.status
+          error: edgeResponse.error
         });
 
         if (edgeResponse.error) {
