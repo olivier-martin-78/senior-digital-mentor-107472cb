@@ -125,11 +125,18 @@ const BlogPost = () => {
     }
   };
 
-  // Déterminer si l'utilisateur peut modifier/supprimer l'article
+  // Déterminer si l'utilisateur peut modifier l'article
   const canEditPost = user && (
     user.id === post?.author_id || 
     hasRole('admin') || 
     hasRole('editor')
+  );
+
+  // Déterminer si l'utilisateur peut supprimer l'article
+  // Seuls l'auteur ou un admin peuvent supprimer
+  const canDeletePost = user && (
+    user.id === post?.author_id || 
+    hasRole('admin')
   );
 
   if (loading) {
@@ -182,42 +189,46 @@ const BlogPost = () => {
           <Link to="/blog" className="text-tranches-sage hover:underline">
             &larr; Retour au blog
           </Link>
-          {canEditPost && (
+          {(canEditPost || canDeletePost) && (
             <div className="flex gap-2">
-              <Button asChild variant="outline">
-                <Link to={`/blog/edit/${post.id}`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Modifier
-                </Link>
-              </Button>
+              {canEditPost && (
+                <Button asChild variant="outline">
+                  <Link to={`/blog/edit/${post.id}`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Modifier
+                  </Link>
+                </Button>
+              )}
               
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.
-                      Tous les commentaires et médias associés seront également supprimés.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeletePost}
-                      disabled={isDeleting}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      {isDeleting ? 'Suppression...' : 'Supprimer'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {canDeletePost && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="text-red-600 hover:text-red-700">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Supprimer
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.
+                        Tous les commentaires et médias associés seront également supprimés.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeletePost}
+                        disabled={isDeleting}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {isDeleting ? 'Suppression...' : 'Supprimer'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           )}
         </div>
