@@ -27,7 +27,7 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC DÉTAILLÉ');
+        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC DÉTAILLÉ AVEC LOGS RENFORCÉS');
         console.log('🔍 useBlogPosts - Utilisateur connecté:', {
           originalUserId: user.id,
           originalUserEmail: user.email,
@@ -158,7 +158,7 @@ export const useBlogPosts = (
             }
           });
 
-          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles (CORRECTION CRITIQUE)
+          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles
           if (uniqueAccessibleAlbumIds.length > 0) {
             console.log('📝 ÉTAPE 5 - Récupération TOUS posts publiés des albums accessibles');
             
@@ -169,7 +169,7 @@ export const useBlogPosts = (
                 profiles(id, display_name, email, avatar_url, created_at)
               `)
               .in('album_id', uniqueAccessibleAlbumIds)
-              .eq('published', true)  // CORRECTION: Récupérer TOUS les posts publiés, pas seulement ceux de l'utilisateur
+              .eq('published', true)
               .order('created_at', { ascending: false });
 
             // Appliquer les filtres
@@ -206,11 +206,20 @@ export const useBlogPosts = (
                       id: p.id,
                       title: p.title,
                       author_id: p.author_id,
+                      author_email: p.profiles?.email,
                       published: p.published,
                       isOwnPost: p.author_id === effectiveUserId
                     }))
                   };
-                })
+                }),
+                postsDétaillés: accessiblePosts.map(p => ({
+                  id: p.id,
+                  title: p.title,
+                  author_id: p.author_id,
+                  author_email: p.profiles?.email,
+                  album_id: p.album_id,
+                  published: p.published
+                }))
               });
             }
           } else {
@@ -270,7 +279,7 @@ export const useBlogPosts = (
           );
         }
 
-        console.log('🏁 useBlogPosts - RÉSULTAT FINAL DIAGNOSTIC:', {
+        console.log('🏁 useBlogPosts - RÉSULTAT FINAL AVEC LOGS RENFORCÉS:', {
           totalPosts: allPosts.length,
           userEmail: user.email,
           effectiveUserId,
@@ -279,10 +288,23 @@ export const useBlogPosts = (
             id: post.id,
             title: post.title,
             author_id: post.author_id,
+            author_email: post.profiles?.email || 'Email non disponible',
             album_id: post.album_id,
             published: post.published,
             isOwnPost: post.author_id === effectiveUserId
-          }))
+          })),
+          postsParAuteur: allPosts.reduce((acc, post) => {
+            const authorEmail = post.profiles?.email || 'Email non disponible';
+            if (!acc[authorEmail]) {
+              acc[authorEmail] = [];
+            }
+            acc[authorEmail].push({
+              id: post.id,
+              title: post.title,
+              album_id: post.album_id
+            });
+            return acc;
+          }, {} as Record<string, any[]>)
         });
 
         setPosts(allPosts);

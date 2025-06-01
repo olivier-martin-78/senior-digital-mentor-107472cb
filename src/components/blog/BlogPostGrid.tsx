@@ -22,7 +22,7 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
   selectedAlbum,
   selectedCategories
 }) => {
-  console.log('🎯 BlogPostGrid - Rendu avec données:', {
+  console.log('🎯 BlogPostGrid - LOGS RENFORCÉS - Rendu avec données:', {
     postsCount: posts.length,
     albumsCount: albums.length,
     albumNames: albums.map(a => a.name),
@@ -30,7 +30,23 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
     searchQuery,
     selectedAlbum,
     selectedCategories,
-    albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
+    albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })),
+    postsReceived: posts.map(post => ({
+      id: post.id,
+      title: post.title,
+      author_id: post.author_id,
+      author_email: post.profiles?.email || 'Email non disponible',
+      album_id: post.album_id,
+      published: post.published
+    })),
+    postsParAuteur: posts.reduce((acc, post) => {
+      const authorEmail = post.profiles?.email || 'Email non disponible';
+      if (!acc[authorEmail]) {
+        acc[authorEmail] = 0;
+      }
+      acc[authorEmail]++;
+      return acc;
+    }, {} as Record<string, number>)
   });
 
   if (loading) {
@@ -49,7 +65,7 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
   }
 
   if (posts.length === 0) {
-    console.log('🎯 BlogPostGrid - Aucun post à afficher');
+    console.log('🎯 BlogPostGrid - LOGS RENFORCÉS - Aucun post à afficher');
     return (
       <div className="text-center py-12">
         <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun article trouvé</h3>
@@ -62,18 +78,22 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
     );
   }
 
+  let renderedCount = 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {posts.map((post) => {
-        console.log('🎯 BlogPostGrid - Rendu post individuel:', {
+        console.log('🎯 BlogPostGrid - LOGS RENFORCÉS - Tentative rendu post:', {
           id: post.id,
           title: post.title,
-          album_id: post.album_id,
           author_id: post.author_id,
-          published: post.published
+          author_email: post.profiles?.email || 'Email non disponible',
+          album_id: post.album_id,
+          published: post.published,
+          renderedCount: renderedCount + 1
         });
         
-        return (
+        const cardComponent = (
           <BlogPostCard
             key={post.id}
             post={post}
@@ -81,6 +101,16 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
             postImages={postImages}
           />
         );
+        
+        renderedCount++;
+        
+        console.log('🎯 BlogPostGrid - LOGS RENFORCÉS - Post rendu avec succès:', {
+          id: post.id,
+          title: post.title,
+          totalRendered: renderedCount
+        });
+        
+        return cardComponent;
       })}
     </div>
   );

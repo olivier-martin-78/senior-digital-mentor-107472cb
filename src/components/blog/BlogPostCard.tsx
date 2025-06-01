@@ -27,35 +27,53 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
   const effectiveUserId = getEffectiveUserId();
   const originalUserId = user?.id;
 
-  // CORRECTION CRITIQUE : Un post est visible si :
-  // 1. Il est publié ET l'utilisateur a accès à l'album (déjà filtré par useBlogPosts)
-  // 2. OU si l'utilisateur est l'auteur (même non publié)
-  // 3. OU si l'utilisateur est admin
+  // LOGS RENFORCÉS : Diagnostic complet de la visibilité
   const isAuthor = effectiveUserId && post.author_id === effectiveUserId;
   const isAdmin = hasRole('admin');
   
-  // Si le post arrive jusqu'ici depuis useBlogPosts, c'est qu'il est soit :
-  // - publié dans un album accessible
-  // - créé par l'utilisateur (publié ou non)
-  // Donc on peut simplifier la logique de visibilité
-  const isVisible = post.published || isAuthor || isAdmin;
-  
-  console.log('BlogPostCard - Vérification visibilité (CORRECTION FINALE):', {
+  console.log('🔍 BlogPostCard - LOGS RENFORCÉS - DÉBUT ANALYSE VISIBILITÉ:', {
     postId: post.id,
     title: post.title,
     published: post.published,
     authorId: post.author_id,
+    authorEmail: post.profiles?.email || 'Email non disponible',
     effectiveUserId: effectiveUserId,
     isAuthor,
     isAdmin,
-    isVisible,
     albumId: post.album_id
   });
   
+  // Logique de visibilité simplifiée :
+  // - Si le post est publié, il est visible (car il a déjà été filtré par useBlogPosts selon les permissions)
+  // - Si l'utilisateur est l'auteur, il peut voir ses brouillons
+  // - Si l'utilisateur est admin, il peut tout voir
+  const isVisible = post.published || isAuthor || isAdmin;
+  
+  console.log('🔍 BlogPostCard - LOGS RENFORCÉS - RÉSULTAT VISIBILITÉ:', {
+    postId: post.id,
+    title: post.title,
+    published: post.published,
+    isAuthor,
+    isAdmin,
+    isVisible,
+    raisonVisibilité: post.published ? 'Post publié' : (isAuthor ? 'Auteur du post' : (isAdmin ? 'Utilisateur admin' : 'Non visible')),
+    authorEmail: post.profiles?.email || 'Email non disponible'
+  });
+  
   if (!isVisible) {
-    console.log('BlogPostCard - Post non visible, ignoré');
+    console.log('🚫 BlogPostCard - LOGS RENFORCÉS - Post non visible, ignoré:', {
+      postId: post.id,
+      title: post.title,
+      authorEmail: post.profiles?.email || 'Email non disponible'
+    });
     return null;
   }
+
+  console.log('✅ BlogPostCard - LOGS RENFORCÉS - Post visible, rendu en cours:', {
+    postId: post.id,
+    title: post.title,
+    authorEmail: post.profiles?.email || 'Email non disponible'
+  });
 
   // Trouver l'album associé à ce post
   const postAlbum = albums.find(a => a.id === post.album_id);
