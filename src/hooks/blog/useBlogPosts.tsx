@@ -27,9 +27,10 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🚀 useBlogPosts - NOUVELLE LOGIQUE: récupération posts des albums accessibles');
+        console.log('🚀 useBlogPosts - LOGIQUE CORRIGÉE: récupération posts des albums accessibles');
         console.log('🚀 useBlogPosts - Données utilisateur:', {
           originalUserId: user.id,
+          originalUserEmail: user.email,
           effectiveUserId: effectiveUserId,
           isImpersonating: effectiveUserId !== user.id,
           isAdmin: hasRole('admin')
@@ -54,40 +55,54 @@ export const useBlogPosts = (
           const accessibleAlbumIds: string[] = [];
           
           // 1. Albums créés par l'utilisateur
-          const { data: ownedAlbums } = await supabase
+          const { data: ownedAlbums, error: ownedError } = await supabase
             .from('blog_albums')
             .select('id')
             .eq('author_id', effectiveUserId);
           
-          if (ownedAlbums) {
+          if (ownedError) {
+            console.error('❌ useBlogPosts - Erreur albums possédés:', ownedError);
+          } else if (ownedAlbums) {
             accessibleAlbumIds.push(...ownedAlbums.map(album => album.id));
-            console.log('📋 useBlogPosts - Albums créés par l\'utilisateur:', ownedAlbums.length);
+            console.log('📋 useBlogPosts - Albums créés par l\'utilisateur:', {
+              count: ownedAlbums.length,
+              albums: ownedAlbums.map(a => a.id)
+            });
           }
           
-          // 2. Albums avec permissions
-          const { data: permittedAlbums } = await supabase
+          // 2. Albums avec permissions - CORRECTION IMPORTANTE
+          const { data: permittedAlbums, error: permissionsError } = await supabase
             .from('album_permissions')
             .select('album_id')
             .eq('user_id', effectiveUserId);
           
-          if (permittedAlbums) {
+          if (permissionsError) {
+            console.error('❌ useBlogPosts - Erreur permissions albums:', permissionsError);
+          } else if (permittedAlbums) {
             const permittedAlbumIds = permittedAlbums.map(p => p.album_id);
             accessibleAlbumIds.push(...permittedAlbumIds);
-            console.log('🔑 useBlogPosts - Albums avec permissions:', permittedAlbumIds.length);
+            console.log('🔑 useBlogPosts - Albums avec permissions CORRIGÉ:', {
+              count: permittedAlbumIds.length,
+              albumIds: permittedAlbumIds,
+              userEmail: user.email
+            });
           }
           
           // Supprimer les doublons
           const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
-          console.log('🎯 useBlogPosts - Albums accessibles uniques:', {
+          console.log('🎯 useBlogPosts - Albums accessibles uniques CORRIGÉ:', {
             count: uniqueAccessibleAlbumIds.length,
-            albumIds: uniqueAccessibleAlbumIds
+            albumIds: uniqueAccessibleAlbumIds,
+            userEmail: user.email
           });
           
           if (uniqueAccessibleAlbumIds.length > 0) {
-            // Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
+            // CORRECTION : Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
+            console.log('🔍 useBlogPosts - Construction requête avec albums accessibles');
             query = query.or(`and(album_id.in.(${uniqueAccessibleAlbumIds.join(',')}),published.eq.true),author_id.eq.${effectiveUserId}`);
           } else {
             // Aucun album accessible, récupérer seulement les posts de l'utilisateur
+            console.log('⚠️ useBlogPosts - Aucun album accessible, posts utilisateur seulement');
             query = query.eq('author_id', effectiveUserId);
           }
         }
@@ -118,8 +133,9 @@ export const useBlogPosts = (
 
         let filteredPosts = data || [];
 
-        console.log('✅ useBlogPosts - Posts récupérés AVANT filtrage final:', {
+        console.log('✅ useBlogPosts - Posts récupérés AVANT filtrage final CORRIGÉ:', {
           count: filteredPosts.length,
+          userEmail: user.email,
           posts: filteredPosts.map(post => ({
             id: post.id,
             title: post.title,
@@ -146,8 +162,9 @@ export const useBlogPosts = (
           });
         }
 
-        console.log('🎉 useBlogPosts - Posts FINAUX (APRÈS FILTRAGE):', {
+        console.log('🎉 useBlogPosts - Posts FINAUX (APRÈS FILTRAGE) CORRIGÉ:', {
           count: filteredPosts.length,
+          userEmail: user.email,
           posts: filteredPosts.map(post => ({
             id: post.id,
             title: post.title,
