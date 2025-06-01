@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
+import { getThumbnailUrlSync, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds: string[]) => {
   const { hasRole } = useAuth();
@@ -43,15 +44,27 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
             return acc;
           }, {} as { [key: string]: string }) || {};
 
-          items.push(...entries.map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          })));
+          items.push(...entries.map(entry => {
+            // Corriger l'URL des médias pour le bucket diary_media
+            let mediaUrl = entry.media_url;
+            if (mediaUrl) {
+              // Si l'URL est déjà complète, la garder telle quelle
+              if (!mediaUrl.startsWith('http')) {
+                // Sinon, construire l'URL correcte avec le bon bucket
+                mediaUrl = getThumbnailUrlSync(mediaUrl, DIARY_MEDIA_BUCKET);
+              }
+            }
+            
+            return {
+              id: entry.id,
+              title: entry.title,
+              type: 'diary' as const,
+              created_at: entry.created_at,
+              author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+              content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+              media_url: mediaUrl
+            };
+          }));
         }
       } else {
         // Récupérer SEULEMENT les entrées de journal de l'utilisateur effectif (impersonné)
@@ -78,15 +91,27 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         });
 
         if (entries) {
-          items.push(...entries.map(entry => ({
-            id: entry.id,
-            title: entry.title,
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: 'Moi',
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          })));
+          items.push(...entries.map(entry => {
+            // Corriger l'URL des médias pour le bucket diary_media
+            let mediaUrl = entry.media_url;
+            if (mediaUrl) {
+              // Si l'URL est déjà complète, la garder telle quelle
+              if (!mediaUrl.startsWith('http')) {
+                // Sinon, construire l'URL correcte avec le bon bucket
+                mediaUrl = getThumbnailUrlSync(mediaUrl, DIARY_MEDIA_BUCKET);
+              }
+            }
+            
+            return {
+              id: entry.id,
+              title: entry.title,
+              type: 'diary' as const,
+              created_at: entry.created_at,
+              author: 'Moi',
+              content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+              media_url: mediaUrl
+            };
+          }));
         }
       }
 

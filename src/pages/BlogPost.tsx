@@ -4,7 +4,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { useBlogPost } from '@/hooks/useBlogPost';
 import PostHeader from '@/components/blog/PostHeader';
 import PostMedia from '@/components/blog/PostMedia';
@@ -12,13 +12,28 @@ import CommentForm from '@/components/blog/CommentForm';
 import CommentList from '@/components/blog/CommentList';
 import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
 import { getThumbnailUrl, getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
   const { user, profile, hasRole } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const {
     post,
@@ -54,7 +69,63 @@ const BlogPost = () => {
     await addComment(content, user.id);
   };
 
-  // Déterminer si l'utilisateur peut modifier l'article
+  const handleDeletePost = async () => {
+    if (!post || !user) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // Supprimer d'abord les médias associés
+      const { error: mediaError } = await supabase
+        .from('blog_media')
+        .delete()
+        .eq('post_id', post.id);
+      
+      if (mediaError) throw mediaError;
+      
+      // Supprimer les commentaires
+      const { error: commentsError } = await supabase
+        .from('blog_comments')
+        .delete()
+        .eq('post_id', post.id);
+      
+      if (commentsError) throw commentsError;
+      
+      // Supprimer les associations catégories
+      const { error: categoriesError } = await supabase
+        .from('post_categories')
+        .delete()
+        .eq('post_id', post.id);
+      
+      if (categoriesError) throw categoriesError;
+      
+      // Supprimer le post
+      const { error: postError } = await supabase
+        .from('blog_posts')
+        .delete()
+        .eq('id', post.id);
+      
+      if (postError) throw postError;
+      
+      toast({
+        title: "Article supprimé",
+        description: "L'article a été supprimé avec succès."
+      });
+      
+      navigate('/blog');
+    } catch (error: any) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'article.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Déterminer si l'utilisateur peut modifier/supprimer l'article
   const canEditPost = user && (
     user.id === post?.author_id || 
     hasRole('admin') || 
@@ -119,6 +190,34 @@ const BlogPost = () => {
                   Modifier
                 </Link>
               </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="text-red-600 hover:text-red-700">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.
+                      Tous les commentaires et médias associés seront également supprimés.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeletePost}
+                      disabled={isDeleting}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {isDeleting ? 'Suppression...' : 'Supprimer'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>

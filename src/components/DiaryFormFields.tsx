@@ -1,189 +1,81 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormControl, 
-  FormDescription, 
-  FormMessage
-} from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Slider } from '@/components/ui/slider';
-import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import { Button } from '@/components/ui/button';
-import { X, Calendar as CalendarIcon, ImageIcon } from 'lucide-react';
+import { CalendarIcon, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 
 interface DiaryFormFieldsProps {
   form: UseFormReturn<any>;
-  onMediaChange: (file: File | null) => void;
-  existingMediaUrl?: string | null;
-  existingMediaType?: string | null;
+  onMediaChange?: (file: File | null) => void;
 }
 
-export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({ 
-  form, 
-  onMediaChange, 
-  existingMediaUrl,
-  existingMediaType 
-}) => {
-  const [tagInput, setTagInput] = useState('');
-  const [contactInput, setContactInput] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [isPreviewError, setIsPreviewError] = useState(false);
+const DiaryFormFields = ({ form, onMediaChange }: DiaryFormFieldsProps) => {
+  const [newPerson, setNewPerson] = useState('');
+  const [newTag, setNewTag] = useState('');
 
-  useEffect(() => {
-    // Si un média existant est fourni, l'utiliser pour la prévisualisation
-    if (existingMediaUrl && !selectedFile) {
-      setIsPreviewLoading(true);
-      setIsPreviewError(false);
+  const addPerson = () => {
+    if (newPerson.trim()) {
+      const currentPeople = form.getValues('contacted_people') || [];
+      form.setValue('contacted_people', [...currentPeople, newPerson.trim()]);
+      setNewPerson('');
     }
-  }, [existingMediaUrl, selectedFile]);
+  };
+
+  const removePerson = (index: number) => {
+    const currentPeople = form.getValues('contacted_people') || [];
+    form.setValue('contacted_people', currentPeople.filter((_: string, i: number) => i !== index));
+  };
 
   const addTag = () => {
-    if (!tagInput.trim()) return;
-    const currentTags = form.getValues('tags') || [];
-    form.setValue('tags', [...currentTags, tagInput.trim()]);
-    setTagInput('');
+    if (newTag.trim()) {
+      const currentTags = form.getValues('tags') || [];
+      form.setValue('tags', [...currentTags, newTag.trim()]);
+      setNewTag('');
+    }
   };
 
   const removeTag = (index: number) => {
     const currentTags = form.getValues('tags') || [];
-    form.setValue('tags', currentTags.filter((_, i) => i !== index));
-  };
-
-  const addContact = () => {
-    if (!contactInput.trim()) return;
-    const currentContacts = form.getValues('contacted_people') || [];
-    form.setValue('contacted_people', [...currentContacts, contactInput.trim()]);
-    setContactInput('');
-  };
-
-  const removeContact = (index: number) => {
-    const currentContacts = form.getValues('contacted_people') || [];
-    form.setValue('contacted_people', currentContacts.filter((_, i) => i !== index));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
-    
-    // Supprimer l'ancienne URL de prévisualisation si elle existe
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    
-    if (file) {
-      setSelectedFile(file);
-      setIsPreviewError(false);
-      setIsPreviewLoading(true);
-      const newPreviewUrl = URL.createObjectURL(file);
-      setPreviewUrl(newPreviewUrl);
-      onMediaChange(file);
-      
-      // Pour les images, charger la prévisualisation
-      if (file.type.startsWith('image/')) {
-        const img = new Image();
-        img.onload = () => {
-          setIsPreviewLoading(false);
-        };
-        img.onerror = () => {
-          setIsPreviewError(true);
-          setIsPreviewLoading(false);
-        };
-        img.src = newPreviewUrl;
-      } else {
-        // Pour les autres types de médias, ne pas afficher de chargement
-        setIsPreviewLoading(false);
-      }
-    } else {
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      onMediaChange(null);
-    }
-  };
-
-  useEffect(() => {
-    // Nettoyer les URL blob à la destruction du composant
-    return () => {
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
-  const renderMediaPreview = () => {
-    if (selectedFile) {
-      if (selectedFile.type.startsWith('image/') && previewUrl) {
-        return (
-          <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative">
-            {isPreviewLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10">
-                <div className="w-8 h-8 border-4 border-tranches-sage border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
-            <img 
-              src={previewUrl} 
-              alt="Prévisualisation" 
-              className={`max-h-48 object-contain ${isPreviewError ? 'hidden' : ''}`}
-              onLoad={() => setIsPreviewLoading(false)}
-              onError={() => setIsPreviewError(true)}
-            />
-            {isPreviewError && (
-              <div className="p-6 flex flex-col items-center justify-center">
-                <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />
-                <p className="text-gray-500">Impossible de charger l'aperçu</p>
-              </div>
-            )}
-          </div>
-        );
-      }
-      
-      return (
-        <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm font-medium">{selectedFile.name}</p>
-          <p className="text-xs text-gray-500 mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · {selectedFile.type}</p>
-        </div>
-      );
-    }
-    
-    return null;
+    form.setValue('tags', currentTags.filter((_: string, i: number) => i !== index));
   };
 
   return (
-    <>
+    <div className="space-y-6">
       {/* Date */}
       <FormField
         control={form.control}
         name="entry_date"
         render={({ field }) => (
           <FormItem className="flex flex-col">
-            <FormLabel>Date</FormLabel>
+            <FormLabel>Date de l'entrée</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
                 <FormControl>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full pl-3 text-left font-normal",
+                      "w-[240px] pl-3 text-left font-normal",
                       !field.value && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {field.value ? (
-                      format(field.value, "d MMMM yyyy", { locale: fr })
+                      format(field.value, "PPP", { locale: fr })
                     ) : (
-                      <span>Choisir une date</span>
+                      <span>Sélectionner une date</span>
                     )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button>
                 </FormControl>
               </PopoverTrigger>
@@ -192,6 +84,9 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
                   mode="single"
                   selected={field.value}
                   onSelect={field.onChange}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
                   initialFocus
                 />
               </PopoverContent>
@@ -200,34 +95,34 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
           </FormItem>
         )}
       />
-      
+
       {/* Titre */}
       <FormField
         control={form.control}
         name="title"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Titre *</FormLabel>
+            <FormLabel>Titre de l'entrée</FormLabel>
             <FormControl>
-              <Input placeholder="Titre de votre entrée" {...field} />
+              <Input placeholder="Donnez un titre à votre journée..." {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      
-      {/* Ce que j'ai fait aujourd'hui */}
+
+      {/* Activités */}
       <FormField
         control={form.control}
         name="activities"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Ce que j'ai fait aujourd'hui</FormLabel>
+            <FormLabel>Activités de la journée</FormLabel>
             <FormControl>
-              <Textarea 
-                placeholder="Décrivez vos activités de la journée..." 
-                className="min-h-[100px]" 
-                {...field} 
+              <Textarea
+                placeholder="Décrivez vos activités de la journée..."
+                className="min-h-[100px]"
+                {...field}
                 value={field.value || ''}
               />
             </FormControl>
@@ -236,47 +131,43 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
         )}
       />
 
-      {/* Humeur du jour */}
+      {/* Humeur */}
       <FormField
         control={form.control}
         name="mood_rating"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Humeur du jour</FormLabel>
-            <FormControl>
-              <div className="space-y-2">
-                <Slider
-                  min={1}
-                  max={5}
-                  step={1}
-                  defaultValue={[field.value || 3]}
-                  onValueChange={(value) => field.onChange(value[0])}
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>😔</span>
-                  <span>😐</span>
-                  <span>😊</span>
-                  <span>😃</span>
-                  <span>🤩</span>
-                </div>
-              </div>
-            </FormControl>
+            <FormLabel>Humeur générale (1-5)</FormLabel>
+            <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez votre humeur" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="1">1 - Très difficile</SelectItem>
+                <SelectItem value="2">2 - Difficile</SelectItem>
+                <SelectItem value="3">3 - Neutre</SelectItem>
+                <SelectItem value="4">4 - Bonne</SelectItem>
+                <SelectItem value="5">5 - Excellente</SelectItem>
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
       />
-      
+
       {/* Choses positives */}
       <FormField
         control={form.control}
         name="positive_things"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Choses positives</FormLabel>
+            <FormLabel>Choses positives de la journée</FormLabel>
             <FormControl>
-              <Textarea 
-                placeholder="Les choses positives de votre journée..." 
-                {...field} 
+              <Textarea
+                placeholder="Qu'est-ce qui s'est bien passé aujourd'hui ?"
+                {...field}
                 value={field.value || ''}
               />
             </FormControl>
@@ -284,18 +175,18 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
           </FormItem>
         )}
       />
-      
+
       {/* Choses négatives */}
       <FormField
         control={form.control}
         name="negative_things"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Choses négatives</FormLabel>
+            <FormLabel>Difficultés rencontrées</FormLabel>
             <FormControl>
-              <Textarea 
-                placeholder="Les choses négatives de votre journée..." 
-                {...field} 
+              <Textarea
+                placeholder="Y a-t-il eu des difficultés aujourd'hui ?"
+                {...field}
                 value={field.value || ''}
               />
             </FormControl>
@@ -303,135 +194,102 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
           </FormItem>
         )}
       />
-      
-      {/* Forme physique */}
+
+      {/* État physique */}
       <FormField
         control={form.control}
         name="physical_state"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Forme physique</FormLabel>
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value || ''}
-                className="flex space-x-4"
-              >
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="fatigué" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Fatigué</FormLabel>
-                </FormItem>
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="dormi" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Bien dormi</FormLabel>
-                </FormItem>
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="énergique" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Énergique</FormLabel>
-                </FormItem>
-              </RadioGroup>
-            </FormControl>
+            <FormLabel>État physique</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || ''}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Comment vous sentiez-vous physiquement ?" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="fatigué">Fatigué</SelectItem>
+                <SelectItem value="dormi">Bien reposé</SelectItem>
+                <SelectItem value="énergique">Énergique</SelectItem>
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
       />
-      
-      {/* Forme mentale */}
+
+      {/* État mental */}
       <FormField
         control={form.control}
         name="mental_state"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Forme mentale</FormLabel>
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value || ''}
-                className="flex space-x-4"
-              >
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="stressé" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Stressé</FormLabel>
-                </FormItem>
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="calme" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Calme</FormLabel>
-                </FormItem>
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <RadioGroupItem value="motivé" />
-                  </FormControl>
-                  <FormLabel className="font-normal">Motivé</FormLabel>
-                </FormItem>
-              </RadioGroup>
-            </FormControl>
+            <FormLabel>État mental</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || ''}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Comment vous sentiez-vous mentalement ?" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="stressé">Stressé</SelectItem>
+                <SelectItem value="calme">Calme</SelectItem>
+                <SelectItem value="motivé">Motivé</SelectItem>
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
       />
-      
-      {/* Personnes contactées */}
+
+      {/* Personnes contactées - LIBELLÉ MODIFIÉ */}
       <FormField
         control={form.control}
         name="contacted_people"
-        render={() => (
+        render={({ field }) => (
           <FormItem>
-            <FormLabel>Personnes contactées</FormLabel>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Nom de la personne"
-                value={contactInput}
-                onChange={(e) => setContactInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addContact();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addContact}>Ajouter</Button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(form.getValues('contacted_people') || []).map((contact: string, index: number) => (
-                <Badge key={index} variant="secondary">
-                  {contact}
-                  <button 
-                    type="button" 
-                    className="ml-1 text-xs" 
-                    onClick={() => removeContact(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
+            <FormLabel>Personne avec qui j'ai bien échangé aujourd'hui</FormLabel>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nom de la personne..."
+                  value={newPerson}
+                  onChange={(e) => setNewPerson(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPerson())}
+                />
+                <Button type="button" onClick={addPerson} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(field.value || []).map((person: string, index: number) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {person}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removePerson(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
             </div>
             <FormMessage />
           </FormItem>
         )}
       />
-      
-      {/* Réflexions du jour */}
+
+      {/* Réflexions */}
       <FormField
         control={form.control}
         name="reflections"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Réflexions du jour</FormLabel>
+            <FormLabel>Réflexions</FormLabel>
             <FormControl>
-              <Textarea 
-                placeholder="Vos réflexions sur la journée..." 
-                className="min-h-[100px]" 
-                {...field} 
+              <Textarea
+                placeholder="Vos réflexions sur la journée..."
+                {...field}
                 value={field.value || ''}
               />
             </FormControl>
@@ -439,142 +297,150 @@ export const DiaryFormFields: React.FC<DiaryFormFieldsProps> = ({
           </FormItem>
         )}
       />
-      
-      {/* Média */}
-      <FormItem>
-        <FormLabel>Média (photo/vidéo/audio)</FormLabel>
-        <FormControl>
-          <Input
-            type="file"
-            accept="image/*,video/*,audio/*"
-            onChange={handleFileChange}
-          />
-        </FormControl>
-        {renderMediaPreview()}
-        <FormDescription>
-          Ajoutez une photo, vidéo ou un enregistrement audio lié à votre journée
-        </FormDescription>
-      </FormItem>
-      
-      {/* Envie du jour */}
+
+      {/* Désir du jour */}
       <FormField
         control={form.control}
         name="desire_of_day"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Envie du jour</FormLabel>
+            <FormLabel>Désir/Envie du jour</FormLabel>
             <FormControl>
-              <Input placeholder="Ce que vous aimeriez faire..." {...field} value={field.value || ''} />
+              <Textarea
+                placeholder="Qu'avez-vous envie de faire demain ?"
+                {...field}
+                value={field.value || ''}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      
-      {/* Tags ou catégories */}
+
+      {/* Objectifs */}
       <FormField
         control={form.control}
-        name="tags"
-        render={() => (
+        name="objectives"
+        render={({ field }) => (
           <FormItem>
-            <FormLabel>Tags ou catégories</FormLabel>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Ajouter un tag"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
+            <FormLabel>Objectifs pour demain</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Quels sont vos objectifs pour demain ?"
+                {...field}
+                value={field.value || ''}
               />
-              <Button type="button" onClick={addTag}>Ajouter</Button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(form.getValues('tags') || []).map((tag: string, index: number) => (
-                <Badge key={index} variant="outline">
-                  {tag}
-                  <button 
-                    type="button" 
-                    className="ml-1 text-xs" 
-                    onClick={() => removeTag(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <FormDescription>
-              Ajoutez des tags ou des catégories pour organiser vos entrées (ex: travail, famille, sport)
-            </FormDescription>
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      
+
+      {/* Tags */}
+      <FormField
+        control={form.control}
+        name="tags"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mots-clés</FormLabel>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ajouter un mot-clé..."
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                />
+                <Button type="button" onClick={addTag} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(field.value || []).map((tag: string, index: number) => (
+                  <Badge key={index} variant="outline" className="flex items-center gap-1">
+                    #{tag}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeTag(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Notes privées */}
-      <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="private_notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Notes privées</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Notes personnelles (visibles seulement par vous)..."
+                {...field}
+                value={field.value || ''}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Verrouillage des notes privées */}
+      <FormField
+        control={form.control}
+        name="is_private_notes_locked"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">
+                Verrouiller les notes privées
+              </FormLabel>
+              <div className="text-sm text-muted-foreground">
+                Empêche la modification accidentelle de vos notes privées
+              </div>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      {/* Média */}
+      {onMediaChange && (
         <FormField
           control={form.control}
-          name="private_notes"
+          name="media"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes privées</FormLabel>
+              <FormLabel>Média (photo/vidéo)</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="Vos notes privées..." 
-                  className="min-h-[100px]" 
-                  {...field} 
-                  value={field.value || ''}
+                <Input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    field.onChange(file);
+                    onMediaChange(file);
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={form.control}
-          name="is_private_notes_locked"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel>Verrouiller les notes privées</FormLabel>
-                <FormDescription>
-                  Les notes privées seront masquées jusqu'à ce que vous choisissiez de les afficher.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-      </div>
-      
-      {/* Objectifs ou tâches */}
-      <FormField
-        control={form.control}
-        name="objectives"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Objectifs ou tâches</FormLabel>
-            <FormControl>
-              <Textarea 
-                placeholder="Vos objectifs pour demain..." 
-                {...field} 
-                value={field.value || ''}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </>
+      )}
+    </div>
   );
 };
+
+export default DiaryFormFields;
