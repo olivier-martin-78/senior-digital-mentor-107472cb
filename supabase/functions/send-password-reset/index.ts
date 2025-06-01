@@ -15,9 +15,44 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Read request body as JSON directly
-    const requestData = await req.json();
-    console.log(`send-password-reset: Request data received:`, requestData);
+    // Log request details for debugging
+    console.log(`send-password-reset: Request URL: ${req.url}`);
+    console.log(`send-password-reset: Request headers:`, Object.fromEntries(req.headers.entries()));
+    
+    // Read the entire request body first
+    const bodyText = await req.text();
+    console.log(`send-password-reset: Raw body text: "${bodyText}"`);
+    
+    if (!bodyText || bodyText.trim() === '') {
+      console.error("send-password-reset: Request body is empty");
+      return new Response(
+        JSON.stringify({ 
+          error: "Le corps de la requête est vide" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Parse the JSON
+    let requestData;
+    try {
+      requestData = JSON.parse(bodyText);
+      console.log(`send-password-reset: Parsed request data:`, requestData);
+    } catch (parseError) {
+      console.error("send-password-reset: JSON parse error:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Format de requête invalide. Le JSON est malformé." 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     const { email } = requestData;
     console.log(`send-password-reset: Processing request for email: ${email}`);
@@ -78,19 +113,6 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     console.error("send-password-reset: Error in function:", error);
-    
-    // Handle JSON parsing errors specifically
-    if (error.name === 'SyntaxError' || error.message?.includes('JSON')) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Format de requête invalide. Veuillez envoyer du JSON valide." 
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
     
     return new Response(
       JSON.stringify({ 
