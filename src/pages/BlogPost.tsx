@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -125,19 +124,27 @@ const BlogPost = () => {
     }
   };
 
-  // Déterminer si l'utilisateur peut modifier l'article
-  const canEditPost = user && (
-    user.id === post?.author_id || 
-    hasRole('admin') || 
-    hasRole('editor')
-  );
+  // Vérifications d'autorisation explicites
+  const isAuthor = user && post && user.id === post.author_id;
+  const isAdmin = user && hasRole('admin');
+  const isEditor = user && hasRole('editor');
 
-  // Déterminer si l'utilisateur peut supprimer l'article
-  // Seuls l'auteur ou un admin peuvent supprimer
-  const canDeletePost = user && (
-    user.id === post?.author_id || 
-    hasRole('admin')
-  );
+  // L'utilisateur peut modifier si : il est l'auteur OU admin OU éditeur
+  const canEditPost = isAuthor || isAdmin || isEditor;
+
+  // L'utilisateur peut supprimer si : il est l'auteur OU admin (PAS éditeur)
+  const canDeletePost = isAuthor || isAdmin;
+
+  // Debug logs pour vérifier les permissions
+  console.log('BlogPost permissions check:', {
+    userId: user?.id,
+    postAuthorId: post?.author_id,
+    isAuthor,
+    isAdmin,
+    isEditor,
+    canEditPost,
+    canDeletePost
+  });
 
   if (loading) {
     return (
