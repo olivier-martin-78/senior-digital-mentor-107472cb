@@ -195,42 +195,54 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
           console.log('📚 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
           inviterContent.albums = uniqueAlbums;
 
-          // Histoires de vie - TOUJOURS récupérer les histoires de l'inviteur
+          // Histoires de vie - CORRECTION: Requête directe avec gestion d'erreur explicite
           console.log('🔍 Recherche histoires de vie pour inviteur:', inviterData.email, '(ID:', invitation.invited_by, ')');
           
-          const { data: inviterLifeStories, error: lifeStoriesError } = await supabase
-            .from('life_stories')
-            .select('*')
-            .eq('user_id', invitation.invited_by);
-          
-          if (lifeStoriesError) {
-            console.error('❌ Erreur récupération histoires de vie:', lifeStoriesError);
-            inviterContent.lifeStories = [];
-          } else {
-            console.log('📖 Histoires de vie trouvées pour', inviterData.email, ':', inviterLifeStories?.length || 0);
-            if (inviterLifeStories && inviterLifeStories.length > 0) {
-              console.log('📖 Détail des histoires:', inviterLifeStories.map(story => ({ id: story.id, title: story.title })));
+          try {
+            const { data: inviterLifeStories, error: lifeStoriesError } = await supabase
+              .from('life_stories')
+              .select('*')
+              .eq('user_id', invitation.invited_by);
+            
+            if (lifeStoriesError) {
+              console.error('❌ Erreur récupération histoires de vie:', lifeStoriesError);
+              inviterContent.lifeStories = [];
+            } else {
+              console.log('📖 Histoires de vie trouvées pour', inviterData.email, ':', inviterLifeStories?.length || 0);
+              console.log('📖 DÉTAILS histoires récupérées:', inviterLifeStories);
+              if (inviterLifeStories && inviterLifeStories.length > 0) {
+                console.log('📖 Détail des histoires:', inviterLifeStories.map(story => ({ id: story.id, title: story.title })));
+              }
+              inviterContent.lifeStories = inviterLifeStories || [];
             }
-            inviterContent.lifeStories = inviterLifeStories || [];
+          } catch (error) {
+            console.error('❌ Exception lors récupération histoires de vie:', error);
+            inviterContent.lifeStories = [];
           }
 
-          // Entrées de journal - TOUJOURS récupérer les entrées de l'inviteur
+          // Entrées de journal - CORRECTION: Requête directe avec gestion d'erreur explicite
           console.log('🔍 Recherche entrées de journal pour inviteur:', inviterData.email, '(ID:', invitation.invited_by, ')');
           
-          const { data: inviterDiaryEntries, error: diaryEntriesError } = await supabase
-            .from('diary_entries')
-            .select('*')
-            .eq('user_id', invitation.invited_by);
-          
-          if (diaryEntriesError) {
-            console.error('❌ Erreur récupération entrées de journal:', diaryEntriesError);
-            inviterContent.diaryEntries = [];
-          } else {
-            console.log('📔 Entrées de journal trouvées pour', inviterData.email, ':', inviterDiaryEntries?.length || 0);
-            if (inviterDiaryEntries && inviterDiaryEntries.length > 0) {
-              console.log('📔 Détail des entrées:', inviterDiaryEntries.map(entry => ({ id: entry.id, title: entry.title, date: entry.entry_date })));
+          try {
+            const { data: inviterDiaryEntries, error: diaryEntriesError } = await supabase
+              .from('diary_entries')
+              .select('*')
+              .eq('user_id', invitation.invited_by);
+            
+            if (diaryEntriesError) {
+              console.error('❌ Erreur récupération entrées de journal:', diaryEntriesError);
+              inviterContent.diaryEntries = [];
+            } else {
+              console.log('📔 Entrées de journal trouvées pour', inviterData.email, ':', inviterDiaryEntries?.length || 0);
+              console.log('📔 DÉTAILS entrées récupérées:', inviterDiaryEntries);
+              if (inviterDiaryEntries && inviterDiaryEntries.length > 0) {
+                console.log('📔 Détail des entrées:', inviterDiaryEntries.map(entry => ({ id: entry.id, title: entry.title, date: entry.entry_date })));
+              }
+              inviterContent.diaryEntries = inviterDiaryEntries || [];
             }
-            inviterContent.diaryEntries = inviterDiaryEntries || [];
+          } catch (error) {
+            console.error('❌ Exception lors récupération entrées de journal:', error);
+            inviterContent.diaryEntries = [];
           }
 
           console.log('📊 Contenu final pour inviteur', inviterData.email, ':', {
@@ -287,12 +299,16 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         }
       });
 
-      console.log('🚀 APPEL setPermissionData avec:', finalData);
+      console.log('🚀 APPEL setPermissionData avec finalData complet:', finalData);
+
+      // CORRECTION: S'assurer qu'on ne réinitialise pas l'état ailleurs
+      console.log('🔧 État permissionData AVANT setPermissionData:', permissionData);
       setPermissionData(finalData);
+      console.log('🔧 État permissionData APRÈS setPermissionData (immédiat):', finalData);
       
-      // Log après setPermissionData pour vérifier l'état
+      // Log pour vérifier que l'état n'est pas écrasé
       setTimeout(() => {
-        console.log('🔍 État après setPermissionData - permissionData dans state:', permissionData);
+        console.log('🔍 VÉRIFICATION État après 100ms - permissionData devrait contenir les données:', permissionData);
       }, 100);
 
     } catch (error) {
@@ -340,7 +356,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
 
   const selectedUser = users.find(u => u.id === selectedUserId);
 
-  // Log avant le rendu
+  // Log DÉTAILLÉ avant le rendu
   console.log('🖥️ RENDU COMPONENT - permissionData actuel:', permissionData);
   if (permissionData) {
     console.log('🖥️ RENDU COMPONENT - inviterPermissions détaillé:', permissionData.inviterPermissions.map(inv => ({
