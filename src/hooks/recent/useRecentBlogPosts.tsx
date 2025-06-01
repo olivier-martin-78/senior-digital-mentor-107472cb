@@ -37,6 +37,11 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           .limit(15);
 
         if (posts) {
+          console.log('🔍 Posts admin récupérés:', {
+            count: posts.length,
+            albums: posts.map(p => ({ title: p.title, album: p.blog_albums?.name }))
+          });
+          
           items.push(...posts.map(post => ({
             id: post.id,
             title: post.title,
@@ -77,6 +82,11 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         });
 
         if (userBlogPosts) {
+          console.log('🔍 Posts utilisateur récupérés:', {
+            count: userBlogPosts.length,
+            albums: userBlogPosts.map(p => ({ title: p.title, album: p.blog_albums?.name, published: p.published }))
+          });
+          
           items.push(...userBlogPosts.map(post => ({
             id: post.id,
             title: post.title,
@@ -88,7 +98,24 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             album_name: post.blog_albums?.name || undefined
           })));
         }
+
+        // Vérification spécifique pour les albums "Tiago" et "Nana"
+        const tiaoPost = items.find(item => item.album_name?.toLowerCase().includes('tiago'));
+        const nanaPost = items.find(item => item.album_name?.toLowerCase().includes('nana'));
+        
+        console.log('🎯 Recent Blog - Vérification albums spécifiques dans les posts:', {
+          tiaoPostFound: !!tiaoPost,
+          tiaoPost: tiaoPost ? { title: tiaoPost.title, album: tiaoPost.album_name } : null,
+          nanaPostFound: !!nanaPost,
+          nanaPost: nanaPost ? { title: nanaPost.title, album: nanaPost.album_name } : null,
+          effectiveUserId
+        });
       }
+
+      console.log('🔍 Articles blog finaux pour Recent:', {
+        count: items.length,
+        albums: items.map(i => i.album_name).filter(Boolean)
+      });
 
       setBlogPosts(items);
     };

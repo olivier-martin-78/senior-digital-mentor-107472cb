@@ -23,7 +23,8 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       originalUserEmail: user.email,
       isImpersonating: effectiveUserId !== user.id,
       isAdmin: isAdmin,
-      totalAlbums: allAlbums.length
+      totalAlbums: allAlbums.length,
+      albumNames: allAlbums.map(a => a.name)
     });
 
     // Les albums passés en paramètre ont déjà été filtrés par useBlogAlbums
@@ -35,12 +36,25 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       console.log('👤 AlbumPermissions - Utilisateur normal: albums déjà filtrés par useBlogAlbums');
       // Les albums reçus ont déjà été filtrés pour inclure les permissions
       setAccessibleAlbums(allAlbums);
+      
+      // Vérification spécifique pour "Tiago" et "Nana"
+      const tiaoAlbum = allAlbums.find(album => album.name.toLowerCase().includes('tiago'));
+      const nanaAlbum = allAlbums.find(album => album.name.toLowerCase().includes('nana'));
+      
+      console.log('🎯 AlbumPermissions - Vérification albums spécifiques dans le résultat final:', {
+        tiaoFound: !!tiaoAlbum,
+        tiaoAlbum: tiaoAlbum ? { id: tiaoAlbum.id, name: tiaoAlbum.name } : null,
+        nanaFound: !!nanaAlbum,
+        nanaAlbum: nanaAlbum ? { id: nanaAlbum.id, name: nanaAlbum.name } : null,
+        userEmail: user.email
+      });
     }
   }, [allAlbums, user, getEffectiveUserId, hasRole]);
 
   console.log('📤 AlbumPermissions - Hook return:', {
     accessibleAlbumsCount: accessibleAlbums.length,
-    inputAlbumsCount: allAlbums.length
+    inputAlbumsCount: allAlbums.length,
+    accessibleAlbumNames: accessibleAlbums.map(a => a.name)
   });
 
   return { accessibleAlbums, setAccessibleAlbums };

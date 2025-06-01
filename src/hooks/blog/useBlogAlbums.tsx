@@ -49,7 +49,8 @@ export const useBlogAlbums = () => {
           }
 
           console.log('✅ useBlogAlbums - Admin data received:', {
-            count: data?.length || 0
+            count: data?.length || 0,
+            albumNames: data?.map(album => album.name) || []
           });
 
           setAlbums(data || []);
@@ -57,6 +58,8 @@ export const useBlogAlbums = () => {
           // Pour les utilisateurs non-admin, récupérer :
           // 1. Les albums qu'ils ont créés
           // 2. Les albums auxquels ils ont accès via album_permissions
+          
+          console.log('👤 useBlogAlbums - Mode utilisateur non-admin, recherche albums créés ET avec permissions');
           
           // Albums créés par l'utilisateur
           const { data: ownedAlbums, error: ownedError } = await supabase
@@ -72,7 +75,15 @@ export const useBlogAlbums = () => {
             throw ownedError;
           }
 
+          console.log('📋 useBlogAlbums - Albums créés par l\'utilisateur:', {
+            count: ownedAlbums?.length || 0,
+            albumNames: ownedAlbums?.map(album => album.name) || [],
+            albums: ownedAlbums?.map(album => ({ id: album.id, name: album.name, author_id: album.author_id })) || []
+          });
+
           // Albums avec permissions
+          console.log('🔍 useBlogAlbums - Recherche des permissions pour l\'utilisateur:', effectiveUserId);
+          
           const { data: permittedAlbums, error: permissionsError } = await supabase
             .from('album_permissions')
             .select(`
@@ -89,9 +100,10 @@ export const useBlogAlbums = () => {
             // Continue sans les permissions plutôt que de tout faire échouer
           }
 
-          console.log('📋 useBlogAlbums - Raw data:', {
-            ownedAlbums: ownedAlbums?.length || 0,
-            permittedAlbums: permittedAlbums?.length || 0
+          console.log('🔑 useBlogAlbums - Permissions trouvées:', {
+            count: permittedAlbums?.length || 0,
+            rawData: permittedAlbums,
+            albumNames: permittedAlbums?.map(p => p.blog_albums?.name).filter(Boolean) || []
           });
 
           // Combiner les albums possédés et les albums avec permissions
@@ -100,15 +112,28 @@ export const useBlogAlbums = () => {
           // Ajouter les albums possédés
           if (ownedAlbums) {
             allAccessibleAlbums.push(...ownedAlbums);
+            console.log('➕ useBlogAlbums - Albums possédés ajoutés:', ownedAlbums.length);
           }
 
           // Ajouter les albums avec permissions (en évitant les doublons)
           if (permittedAlbums) {
+            let addedCount = 0;
             permittedAlbums.forEach(permission => {
               if (permission.blog_albums && !allAccessibleAlbums.find(album => album.id === permission.blog_albums.id)) {
                 allAccessibleAlbums.push(permission.blog_albums as BlogAlbum);
+                addedCount++;
+                console.log('➕ useBlogAlbums - Album avec permission ajouté:', {
+                  id: permission.blog_albums.id,
+                  name: permission.blog_albums.name,
+                  author_id: permission.blog_albums.author_id
+                });
+              } else if (permission.blog_albums) {
+                console.log('⚠️ useBlogAlbums - Album déjà présent (doublon évité):', permission.blog_albums.name);
+              } else {
+                console.log('⚠️ useBlogAlbums - Permission sans album associé:', permission);
               }
             });
+            console.log('➕ useBlogAlbums - Albums avec permissions ajoutés:', addedCount);
           }
 
           // Trier par nom
@@ -121,6 +146,17 @@ export const useBlogAlbums = () => {
               name: album.name,
               author_id: album.author_id
             }))
+          });
+
+          // Vérification spécifique pour "Tiago" et "Nana"
+          const tiaoAlbum = allAccessibleAlbums.find(album => album.name.toLowerCase().includes('tiago'));
+          const nanaAlbum = allAccessibleAlbums.find(album => album.name.toLowerCase().includes('nana'));
+          
+          console.log('🎯 useBlogAlbums - Vérification albums spécifiques:', {
+            tiaoFound: !!tiaoAlbum,
+            tiaoAlbum: tiaoAlbum ? { id: tiaoAlbum.id, name: tiaoAlbum.name } : null,
+            nanaFound: !!nanaAlbum,
+            nanaAlbum: nanaAlbum ? { id: nanaAlbum.id, name: nanaAlbum.name } : null
           });
 
           setAlbums(allAccessibleAlbums);
@@ -141,6 +177,7 @@ export const useBlogAlbums = () => {
 
   console.log('📤 useBlogAlbums - Hook return:', {
     albumsCount: albums.length,
+    albumNames: albums.map(a => a.name),
     loading
   });
 

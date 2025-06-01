@@ -17,6 +17,10 @@ export const useRecentPermissions = () => {
         setLoading(true);
         let userIds = [effectiveUserId];
 
+        console.log('🔍 ===== RÉCUPÉRATION PERMISSIONS RECENT =====');
+        console.log('🔍 Utilisateur effectif:', effectiveUserId);
+        console.log('🔍 hasRole admin:', hasRole('admin'));
+
         if (!hasRole('admin')) {
           console.log('🔍 Utilisateur NON-ADMIN - Vérification des permissions');
           
@@ -77,6 +81,54 @@ export const useRecentPermissions = () => {
           });
 
           console.log('🔍 Utilisateurs autorisés finaux:', userIds);
+          
+          // Vérification spécifique pour les albums "Tiago" et "Nana"
+          console.log('🎯 Recent Permissions - Vérification spécifique albums "Tiago" et "Nana"');
+          
+          // Rechercher si l'utilisateur a des permissions sur des albums nommés "Tiago" ou "Nana"
+          const { data: specificAlbumPermissions, error: specificError } = await supabase
+            .from('album_permissions')
+            .select(`
+              album_id,
+              blog_albums!inner(id, name, author_id)
+            `)
+            .eq('user_id', effectiveUserId);
+
+          if (specificError) {
+            console.error('🔍 Erreur permissions albums spécifiques:', specificError);
+          } else {
+            console.log('🎯 Permissions albums spécifiques trouvées:', {
+              count: specificAlbumPermissions?.length || 0,
+              albums: specificAlbumPermissions?.map(p => ({
+                id: p.blog_albums?.id,
+                name: p.blog_albums?.name,
+                author_id: p.blog_albums?.author_id
+              })) || []
+            });
+
+            // Chercher spécifiquement "Tiago" et "Nana"
+            const tiaoAlbumPermission = specificAlbumPermissions?.find(p => 
+              p.blog_albums?.name?.toLowerCase().includes('tiago')
+            );
+            const nanaAlbumPermission = specificAlbumPermissions?.find(p => 
+              p.blog_albums?.name?.toLowerCase().includes('nana')
+            );
+            
+            console.log('🎯 Albums "Tiago" et "Nana" trouvés:', {
+              tiaoFound: !!tiaoAlbumPermission,
+              tiaoAlbum: tiaoAlbumPermission ? {
+                id: tiaoAlbumPermission.blog_albums?.id,
+                name: tiaoAlbumPermission.blog_albums?.name,
+                author_id: tiaoAlbumPermission.blog_albums?.author_id
+              } : null,
+              nanaFound: !!nanaAlbumPermission,
+              nanaAlbum: nanaAlbumPermission ? {
+                id: nanaAlbumPermission.blog_albums?.id,
+                name: nanaAlbumPermission.blog_albums?.name,
+                author_id: nanaAlbumPermission.blog_albums?.author_id
+              } : null
+            });
+          }
         }
 
         setAuthorizedUserIds(userIds);
