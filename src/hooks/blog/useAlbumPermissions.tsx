@@ -23,51 +23,17 @@ export const useAlbumPermissions = (allAlbums: BlogAlbum[]) => {
       originalUserEmail: user.email,
       isImpersonating: effectiveUserId !== user.id,
       isAdmin: isAdmin,
-      totalAlbums: allAlbums.length,
-      hasRole_admin: hasRole('admin'),
-      hasRole_editor: hasRole('editor'),
-      hasRole_reader: hasRole('reader')
+      totalAlbums: allAlbums.length
     });
 
-    // Vérifier l'état d'impersonnation depuis le localStorage
-    const impersonationState = localStorage.getItem('impersonation_state');
-    if (impersonationState) {
-      try {
-        const parsedState = JSON.parse(impersonationState);
-        console.log('🎭 AlbumPermissions - État impersonnation localStorage:', {
-          isImpersonating: parsedState.isImpersonating,
-          originalUser: parsedState.originalUser?.email,
-          impersonatedUser: parsedState.impersonatedUser?.email,
-          impersonatedRoles: parsedState.impersonatedRoles,
-          hasAdminInImpersonatedRoles: parsedState.impersonatedRoles?.includes('admin')
-        });
-      } catch (e) {
-        console.error('🚨 AlbumPermissions - Erreur parsing impersonation state:', e);
-      }
-    }
-    
-    // Si l'utilisateur a les permissions admin (y compris via impersonnation), 
-    // il peut accéder à tous les albums
+    // Les albums passés en paramètre ont déjà été filtrés par useBlogAlbums
+    // qui inclut maintenant les permissions, donc on peut les afficher tous
     if (isAdmin) {
       console.log('🔑 AlbumPermissions - PERMISSIONS ADMIN CONFIRMEES: accès à tous les albums');
-      console.log('👑 AlbumPermissions - Détails admin:', {
-        albumsToShow: allAlbums.length,
-        albumsList: allAlbums.map(album => ({
-          id: album.id,
-          name: album.name,
-          author_id: album.author_id
-        }))
-      });
       setAccessibleAlbums(allAlbums);
     } else {
-      console.log('❌ AlbumPermissions - PAS DE PERMISSIONS ADMIN:', {
-        reason: 'hasRole(admin) returned false',
-        effectiveUserId,
-        isImpersonating: effectiveUserId !== user.id,
-        albumsReceived: allAlbums.length
-      });
-      // Sinon, filtrage normal basé sur l'utilisateur effectif
-      console.log('📋 AlbumPermissions - Albums après filtrage RLS et impersonnation:', allAlbums.length);
+      console.log('👤 AlbumPermissions - Utilisateur normal: albums déjà filtrés par useBlogAlbums');
+      // Les albums reçus ont déjà été filtrés pour inclure les permissions
       setAccessibleAlbums(allAlbums);
     }
   }, [allAlbums, user, getEffectiveUserId, hasRole]);

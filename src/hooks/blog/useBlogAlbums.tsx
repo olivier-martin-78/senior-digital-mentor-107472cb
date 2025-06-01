@@ -28,112 +28,103 @@ export const useBlogAlbums = () => {
           originalUserEmail: user.email,
           effectiveUserId: effectiveUserId,
           isImpersonating: effectiveUserId !== user.id,
-          isAdmin: isAdmin,
-          hasRole_admin_result: hasRole('admin'),
-          hasRole_editor_result: hasRole('editor'),
-          hasRole_reader_result: hasRole('reader')
+          isAdmin: isAdmin
         });
 
-        // Vérifier l'état d'impersonnation depuis le localStorage
-        const impersonationState = localStorage.getItem('impersonation_state');
-        if (impersonationState) {
-          try {
-            const parsedState = JSON.parse(impersonationState);
-            console.log('🎭 useBlogAlbums - État impersonnation détaillé:', {
-              isImpersonating: parsedState.isImpersonating,
-              originalUser: parsedState.originalUser?.email,
-              impersonatedUser: parsedState.impersonatedUser?.email,
-              impersonatedRoles: parsedState.impersonatedRoles,
-              hasAdminInRoles: parsedState.impersonatedRoles?.includes('admin')
-            });
-          } catch (e) {
-            console.error('🚨 useBlogAlbums - Erreur parsing impersonation state:', e);
+        console.log('🚀 useBlogAlbums - Executing Supabase query with permissions logic');
+        
+        if (isAdmin) {
+          // Admin peut voir tous les albums
+          const { data, error } = await supabase
+            .from('blog_albums')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .order('name');
+
+          if (error) {
+            console.error('❌ useBlogAlbums - Supabase error:', error);
+            throw error;
           }
+
+          console.log('✅ useBlogAlbums - Admin data received:', {
+            count: data?.length || 0
+          });
+
+          setAlbums(data || []);
         } else {
-          console.log('❌ useBlogAlbums - Aucun état d\'impersonnation trouvé');
-        }
-
-        console.log('🚀 useBlogAlbums - Executing Supabase query with new RLS policies');
-        const startTime = Date.now();
-        
-        const { data, error } = await supabase
-          .from('blog_albums')
-          .select(`
-            *,
-            profiles(id, display_name, email, avatar_url, created_at)
-          `)
-          .order('name');
-        
-        const endTime = Date.now();
-        console.log(`⏱️ useBlogAlbums - Query completed in ${endTime - startTime}ms`);
-
-        if (error) {
-          console.error('❌ useBlogAlbums - Supabase error:', error);
-          throw error;
-        }
-        
-        console.log('✅ useBlogAlbums - Raw data received:', {
-          count: data?.length || 0,
-          albums: data?.map(album => ({
-            id: album.id,
-            name: album.name,
-            author_id: album.author_id,
-            author_email: album.profiles?.email
-          }))
-        });
-
-        let filteredAlbums = data || [];
-
-        console.log('🔍 useBlogAlbums - Début du filtrage côté client:', {
-          isAdmin,
-          effectiveUserId,
-          originalUserId: user.id,
-          isImpersonating: effectiveUserId !== user.id,
-          shouldFilter: !isAdmin && effectiveUserId !== user.id
-        });
-
-        // Filtrage côté client SEULEMENT si on n'est pas admin ET qu'on est en mode impersonnation
-        if (!isAdmin && effectiveUserId !== user.id) {
-          console.log('🎭 useBlogAlbums - MODE IMPERSONNATION SANS ADMIN: Filtrage côté client');
-          const beforeFilterCount = filteredAlbums.length;
+          // Pour les utilisateurs non-admin, récupérer :
+          // 1. Les albums qu'ils ont créés
+          // 2. Les albums auxquels ils ont accès via album_permissions
           
-          filteredAlbums = filteredAlbums.filter(album => {
-            const shouldInclude = album.author_id === effectiveUserId;
-            console.log(`📋 useBlogAlbums - Album "${album.name}":`, {
-              albumId: album.id,
-              authorId: album.author_id,
-              effectiveUserId,
-              shouldInclude
+          // Albums créés par l'utilisateur
+          const { data: ownedAlbums, error: ownedError } = await supabase
+            .from('blog_albums')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .eq('author_id', effectiveUserId);
+
+          if (ownedError) {
+            console.error('❌ useBlogAlbums - Error fetching owned albums:', ownedError);
+            throw ownedError;
+          }
+
+          // Albums avec permissions
+          const { data: permittedAlbums, error: permissionsError } = await supabase
+            .from('album_permissions')
+            .select(`
+              album_id,
+              blog_albums(
+                *,
+                profiles(id, display_name, email, avatar_url, created_at)
+              )
+            `)
+            .eq('user_id', effectiveUserId);
+
+          if (permissionsError) {
+            console.error('❌ useBlogAlbums - Error fetching permitted albums:', permissionsError);
+            // Continue sans les permissions plutôt que de tout faire échouer
+          }
+
+          console.log('📋 useBlogAlbums - Raw data:', {
+            ownedAlbums: ownedAlbums?.length || 0,
+            permittedAlbums: permittedAlbums?.length || 0
+          });
+
+          // Combiner les albums possédés et les albums avec permissions
+          const allAccessibleAlbums: BlogAlbum[] = [];
+          
+          // Ajouter les albums possédés
+          if (ownedAlbums) {
+            allAccessibleAlbums.push(...ownedAlbums);
+          }
+
+          // Ajouter les albums avec permissions (en évitant les doublons)
+          if (permittedAlbums) {
+            permittedAlbums.forEach(permission => {
+              if (permission.blog_albums && !allAccessibleAlbums.find(album => album.id === permission.blog_albums.id)) {
+                allAccessibleAlbums.push(permission.blog_albums as BlogAlbum);
+              }
             });
-            return shouldInclude;
+          }
+
+          // Trier par nom
+          allAccessibleAlbums.sort((a, b) => a.name.localeCompare(b.name));
+
+          console.log('🎉 useBlogAlbums - RESULTAT FINAL avec permissions:', {
+            count: allAccessibleAlbums.length,
+            albums: allAccessibleAlbums.map(album => ({
+              id: album.id,
+              name: album.name,
+              author_id: album.author_id
+            }))
           });
 
-          console.log('📊 useBlogAlbums - Résultat filtrage impersonnation:', {
-            before: beforeFilterCount,
-            after: filteredAlbums.length,
-            effectiveUserId
-          });
-        } else if (isAdmin) {
-          console.log('🔑 useBlogAlbums - PERMISSIONS ADMIN DETECTEES: showing all albums');
-          console.log('👑 useBlogAlbums - Admin context:', {
-            hasAdminRole: hasRole('admin'),
-            totalAlbumsVisible: filteredAlbums.length,
-            adminCanSeeAll: true
-          });
-        } else {
-          console.log('👤 useBlogAlbums - Mode utilisateur normal (pas d\'impersonnation)');
+          setAlbums(allAccessibleAlbums);
         }
-
-        console.log('🎉 useBlogAlbums - RESULTAT FINAL:', {
-          count: filteredAlbums.length,
-          albums: filteredAlbums.map(album => ({
-            id: album.id,
-            name: album.name,
-            author_id: album.author_id
-          }))
-        });
-
-        setAlbums(filteredAlbums);
         
       } catch (error) {
         console.error('💥 useBlogAlbums - Critical error:', error);
