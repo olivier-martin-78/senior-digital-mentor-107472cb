@@ -36,18 +36,44 @@ export const useBlogPosts = (
           isAdmin: hasRole('admin')
         });
 
-        let query = supabase
-          .from('blog_posts')
-          .select(`
-            *,
-            profiles(id, display_name, email, avatar_url, created_at)
-          `)
-          .order('created_at', { ascending: false });
+        let allPosts: any[] = [];
 
         if (hasRole('admin')) {
           console.log('🔑 useBlogPosts - Mode admin: récupération de tous les posts publiés');
-          // Admin peut voir tous les posts publiés
-          query = query.eq('published', true);
+          let query = supabase
+            .from('blog_posts')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .eq('published', true)
+            .order('created_at', { ascending: false });
+
+          // Appliquer les filtres
+          if (searchTerm) {
+            query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+          }
+
+          if (selectedAlbum && selectedAlbum !== 'none') {
+            query = query.eq('album_id', selectedAlbum);
+          }
+
+          if (startDate) {
+            query = query.gte('created_at', startDate);
+          }
+
+          if (endDate) {
+            query = query.lte('created_at', endDate);
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('useBlogPosts - Erreur Supabase admin:', error);
+            throw error;
+          }
+
+          allPosts = data || [];
         } else {
           console.log('👤 useBlogPosts - Mode utilisateur: récupération albums accessibles');
           
@@ -70,7 +96,7 @@ export const useBlogPosts = (
             });
           }
           
-          // 2. Albums avec permissions - CORRECTION IMPORTANTE
+          // 2. Albums avec permissions
           const { data: permittedAlbums, error: permissionsError } = await supabase
             .from('album_permissions')
             .select('album_id')
@@ -95,48 +121,109 @@ export const useBlogPosts = (
             albumIds: uniqueAccessibleAlbumIds,
             userEmail: user.email
           });
-          
-          if (uniqueAccessibleAlbumIds.length > 0) {
-            // CORRECTION : Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
-            console.log('🔍 useBlogPosts - Construction requête avec albums accessibles');
-            query = query.or(`and(album_id.in.(${uniqueAccessibleAlbumIds.join(',')}),published.eq.true),author_id.eq.${effectiveUserId}`);
-          } else {
-            // Aucun album accessible, récupérer seulement les posts de l'utilisateur
-            console.log('⚠️ useBlogPosts - Aucun album accessible, posts utilisateur seulement');
-            query = query.eq('author_id', effectiveUserId);
+
+          // CORRECTION : Faire deux requêtes séparées et les combiner
+          const postsPromises: Promise<any>[] = [];
+
+          // 1. Posts de l'utilisateur (tous, publiés ou non)
+          let userPostsQuery = supabase
+            .from('blog_posts')
+            .select(`
+              *,
+              profiles(id, display_name, email, avatar_url, created_at)
+            `)
+            .eq('author_id', effectiveUserId)
+            .order('created_at', { ascending: false });
+
+          // Appliquer les filtres aux posts de l'utilisateur
+          if (searchTerm) {
+            userPostsQuery = userPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
           }
+
+          if (selectedAlbum && selectedAlbum !== 'none') {
+            userPostsQuery = userPostsQuery.eq('album_id', selectedAlbum);
+          }
+
+          if (startDate) {
+            userPostsQuery = userPostsQuery.gte('created_at', startDate);
+          }
+
+          if (endDate) {
+            userPostsQuery = userPostsQuery.lte('created_at', endDate);
+          }
+
+          postsPromises.push(userPostsQuery);
+
+          // 2. Posts des albums accessibles (seulement publiés)
+          if (uniqueAccessibleAlbumIds.length > 0) {
+            let albumPostsQuery = supabase
+              .from('blog_posts')
+              .select(`
+                *,
+                profiles(id, display_name, email, avatar_url, created_at)
+              `)
+              .in('album_id', uniqueAccessibleAlbumIds)
+              .eq('published', true)
+              .neq('author_id', effectiveUserId) // Éviter les doublons avec les posts de l'utilisateur
+              .order('created_at', { ascending: false });
+
+            // Appliquer les filtres aux posts des albums
+            if (searchTerm) {
+              albumPostsQuery = albumPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+            }
+
+            if (selectedAlbum && selectedAlbum !== 'none') {
+              albumPostsQuery = albumPostsQuery.eq('album_id', selectedAlbum);
+            }
+
+            if (startDate) {
+              albumPostsQuery = albumPostsQuery.gte('created_at', startDate);
+            }
+
+            if (endDate) {
+              albumPostsQuery = albumPostsQuery.lte('created_at', endDate);
+            }
+
+            postsPromises.push(albumPostsQuery);
+          }
+
+          // Exécuter toutes les requêtes en parallèle
+          const results = await Promise.all(postsPromises);
+          
+          // Combiner tous les résultats
+          allPosts = [];
+          results.forEach((result, index) => {
+            if (result.error) {
+              console.error(`❌ useBlogPosts - Erreur requête ${index}:`, result.error);
+            } else if (result.data) {
+              allPosts.push(...result.data);
+              console.log(`✅ useBlogPosts - Requête ${index} réussie:`, {
+                count: result.data.length,
+                posts: result.data.map((p: any) => ({
+                  id: p.id,
+                  title: p.title,
+                  author_id: p.author_id,
+                  album_id: p.album_id,
+                  published: p.published
+                }))
+              });
+            }
+          });
+
+          // Supprimer les doublons par ID et trier par date
+          const uniquePosts = allPosts.filter((post, index, self) => 
+            index === self.findIndex(p => p.id === post.id)
+          );
+          
+          allPosts = uniquePosts.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
         }
-
-        // Filtres de recherche
-        if (searchTerm) {
-          query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
-        }
-
-        if (selectedAlbum && selectedAlbum !== 'none') {
-          query = query.eq('album_id', selectedAlbum);
-        }
-
-        if (startDate) {
-          query = query.gte('created_at', startDate);
-        }
-
-        if (endDate) {
-          query = query.lte('created_at', endDate);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('useBlogPosts - Erreur Supabase:', error);
-          throw error;
-        }
-
-        let filteredPosts = data || [];
 
         console.log('✅ useBlogPosts - Posts récupérés AVANT filtrage final CORRIGÉ:', {
-          count: filteredPosts.length,
+          count: allPosts.length,
           userEmail: user.email,
-          posts: filteredPosts.map(post => ({
+          posts: allPosts.map(post => ({
             id: post.id,
             title: post.title,
             author_id: post.author_id,
@@ -144,28 +231,11 @@ export const useBlogPosts = (
             published: post.published
           }))
         });
-
-        // FILTRAGE CÔTÉ CLIENT pour l'impersonnation (si nécessaire)
-        if (hasRole('admin') && effectiveUserId !== user.id) {
-          console.log('🔄 useBlogPosts - Mode impersonnation admin: filtrage côté client');
-          filteredPosts = filteredPosts.filter(post => {
-            const canSee = post.author_id === effectiveUserId || post.published;
-            console.log('🔍 useBlogPosts - Post filtrage impersonnation:', {
-              postId: post.id,
-              title: post.title,
-              authorId: post.author_id,
-              published: post.published,
-              effectiveUserId,
-              canSee
-            });
-            return canSee;
-          });
-        }
 
         console.log('🎉 useBlogPosts - Posts FINAUX (APRÈS FILTRAGE) CORRIGÉ:', {
-          count: filteredPosts.length,
+          count: allPosts.length,
           userEmail: user.email,
-          posts: filteredPosts.map(post => ({
+          posts: allPosts.map(post => ({
             id: post.id,
             title: post.title,
             author_id: post.author_id,
@@ -174,7 +244,7 @@ export const useBlogPosts = (
           }))
         });
 
-        setPosts(filteredPosts);
+        setPosts(allPosts);
       } catch (error) {
         console.error('useBlogPosts - Erreur lors du chargement des posts:', error);
         setPosts([]);
