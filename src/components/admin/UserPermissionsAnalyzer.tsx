@@ -87,7 +87,12 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
 
     try {
       const userProfile = users.find(u => u.id === userId);
-      if (!userProfile) return;
+      if (!userProfile) {
+        console.error('❌ Utilisateur non trouvé dans la liste');
+        return;
+      }
+
+      console.log('👤 Profil utilisateur trouvé:', userProfile.email);
 
       // Récupérer les permissions actuelles de l'utilisateur
       const [albumPermissions, lifeStoryPermissions, diaryPermissions] = await Promise.all([
@@ -101,26 +106,46 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         supabase.from('diary_permissions').select('*').eq('permitted_user_id', userId)
       ]);
 
+      console.log('📊 Permissions actuelles récupérées:', {
+        albums: albumPermissions.data?.length || 0,
+        lifeStories: lifeStoryPermissions.data?.length || 0,
+        diary: diaryPermissions.data?.length || 0
+      });
+
       // Récupérer les invitations pour cet utilisateur
-      const { data: invitations } = await supabase
+      const { data: invitations, error: invitationsError } = await supabase
         .from('invitations')
         .select('*')
         .eq('email', userProfile.email)
         .not('used_at', 'is', null);
+
+      if (invitationsError) {
+        console.error('❌ Erreur récupération invitations:', invitationsError);
+        throw invitationsError;
+      }
+
+      console.log('📧 Invitations trouvées:', invitations?.length || 0);
 
       // Pour chaque invitation, récupérer le contenu disponible de l'inviteur
       const inviterPermissions: InviterPermissions[] = [];
       
       if (invitations) {
         for (const invitation of invitations) {
+          console.log('🎯 Traitement invitation:', invitation.id, 'de', invitation.invited_by);
+
           // Récupérer les informations de l'inviteur
-          const { data: inviterData } = await supabase
+          const { data: inviterData, error: inviterError } = await supabase
             .from('profiles')
             .select('id, display_name, email')
             .eq('id', invitation.invited_by)
             .single();
 
-          if (!inviterData) continue;
+          if (inviterError || !inviterData) {
+            console.error('❌ Erreur récupération inviteur:', inviterError);
+            continue;
+          }
+
+          console.log('👤 Inviteur trouvé:', inviterData.email, '(', inviterData.id, ')');
 
           const inviterContent: InviterPermissions = {
             inviter: inviterData,
@@ -131,19 +156,27 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
           };
 
           // Albums - TOUJOURS récupérer les albums de l'inviteur
-          console.log('🔍 Analyse des albums pour inviteur:', inviterData.email);
+          console.log('🔍 Recherche albums pour inviteur:', inviterData.email);
           
           // 1. Albums créés par l'inviteur
-          const { data: ownedAlbums } = await supabase
+          const { data: ownedAlbums, error: ownedAlbumsError } = await supabase
             .from('blog_albums')
             .select('*')
             .eq('author_id', invitation.invited_by);
           
+          if (ownedAlbumsError) {
+            console.error('❌ Erreur récupération albums possédés:', ownedAlbumsError);
+          }
+          
           // 2. Albums auxquels l'inviteur a des permissions
-          const { data: permittedAlbums } = await supabase
+          const { data: permittedAlbums, error: permittedAlbumsError } = await supabase
             .from('album_permissions')
             .select('album_id, blog_albums(id, name, author_id)')
             .eq('user_id', invitation.invited_by);
+          
+          if (permittedAlbumsError) {
+            console.error('❌ Erreur récupération albums autorisés:', permittedAlbumsError);
+          }
           
           // Combiner les deux listes
           const allAlbums = [
@@ -159,24 +192,46 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
             return acc;
           }, []);
           
-          console.log('🔍 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
+          console.log('📚 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
           inviterContent.albums = uniqueAlbums;
 
           // Histoires de vie - TOUJOURS récupérer les histoires de l'inviteur
-          const { data: inviterLifeStories } = await supabase
+          console.log('🔍 Recherche histoires de vie pour inviteur:', inviterData.email, '(ID:', invitation.invited_by, ')');
+          
+          const { data: inviterLifeStories, error: lifeStoriesError } = await supabase
             .from('life_stories')
             .select('*')
             .eq('user_id', invitation.invited_by);
-          inviterContent.lifeStories = inviterLifeStories || [];
-          console.log('🔍 Histoires de vie trouvées pour', inviterData.email, ':', inviterLifeStories?.length || 0);
+          
+          if (lifeStoriesError) {
+            console.error('❌ Erreur récupération histoires de vie:', lifeStoriesError);
+            inviterContent.lifeStories = [];
+          } else {
+            console.log('📖 Histoires de vie trouvées pour', inviterData.email, ':', inviterLifeStories?.length || 0);
+            if (inviterLifeStories && inviterLifeStories.length > 0) {
+              console.log('📖 Détail des histoires:', inviterLifeStories.map(story => ({ id: story.id, title: story.title })));
+            }
+            inviterContent.lifeStories = inviterLifeStories || [];
+          }
 
           // Entrées de journal - TOUJOURS récupérer les entrées de l'inviteur
-          const { data: inviterDiaryEntries } = await supabase
+          console.log('🔍 Recherche entrées de journal pour inviteur:', inviterData.email, '(ID:', invitation.invited_by, ')');
+          
+          const { data: inviterDiaryEntries, error: diaryEntriesError } = await supabase
             .from('diary_entries')
             .select('*')
             .eq('user_id', invitation.invited_by);
-          inviterContent.diaryEntries = inviterDiaryEntries || [];
-          console.log('🔍 Entrées de journal trouvées pour', inviterData.email, ':', inviterDiaryEntries?.length || 0);
+          
+          if (diaryEntriesError) {
+            console.error('❌ Erreur récupération entrées de journal:', diaryEntriesError);
+            inviterContent.diaryEntries = [];
+          } else {
+            console.log('📔 Entrées de journal trouvées pour', inviterData.email, ':', inviterDiaryEntries?.length || 0);
+            if (inviterDiaryEntries && inviterDiaryEntries.length > 0) {
+              console.log('📔 Détail des entrées:', inviterDiaryEntries.map(entry => ({ id: entry.id, title: entry.title, date: entry.entry_date })));
+            }
+            inviterContent.diaryEntries = inviterDiaryEntries || [];
+          }
 
           inviterPermissions.push(inviterContent);
         }
@@ -191,7 +246,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         }
       });
 
-      console.log('🔍 Analyse terminée:', {
+      console.log('✅ Analyse terminée:', {
         inviterPermissions: inviterPermissions.length,
         totalInviterAlbums: inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0),
         totalInviterLifeStories: inviterPermissions.reduce((sum, p) => sum + p.lifeStories.length, 0),
@@ -204,7 +259,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
       });
 
     } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
+      console.error('❌ Erreur lors de l\'analyse:', error);
       toast({
         title: "Erreur d'analyse",
         description: "Impossible d'analyser les permissions de l'utilisateur",
