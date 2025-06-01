@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { DiaryFormFields } from '@/components/DiaryFormFields';
+import DiaryFormFields from '@/components/DiaryFormFields';
 
 const diaryFormSchema = z.object({
   entry_date: z.date(),

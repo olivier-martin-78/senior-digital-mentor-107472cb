@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,7 @@ import { parseISO } from 'date-fns';
 import { DiaryEntry } from '@/types/diary';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { DiaryFormFields } from '@/components/DiaryFormFields';
+import DiaryFormFields from '@/components/DiaryFormFields';
 import { ArrowLeft } from 'lucide-react';
 import { getPublicUrl, getPathFromUrl, DIARY_MEDIA_BUCKET } from '@/utils/storageUtils';
 import { getThumbnailUrl } from '@/utils/thumbnailtUtils';
