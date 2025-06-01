@@ -27,7 +27,7 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🚀 useBlogPosts - LOGIQUE CORRIGÉE: récupération posts des albums accessibles');
+        console.log('🚀 useBlogPosts - CORRECTION FINALE: récupération posts des albums accessibles');
         console.log('🚀 useBlogPosts - Données utilisateur:', {
           originalUserId: user.id,
           originalUserEmail: user.email,
@@ -107,7 +107,7 @@ export const useBlogPosts = (
           } else if (permittedAlbums) {
             const permittedAlbumIds = permittedAlbums.map(p => p.album_id);
             accessibleAlbumIds.push(...permittedAlbumIds);
-            console.log('🔑 useBlogPosts - Albums avec permissions CORRIGÉ:', {
+            console.log('🔑 useBlogPosts - Albums avec permissions:', {
               count: permittedAlbumIds.length,
               albumIds: permittedAlbumIds,
               userEmail: user.email
@@ -116,16 +116,67 @@ export const useBlogPosts = (
           
           // Supprimer les doublons
           const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
-          console.log('🎯 useBlogPosts - Albums accessibles uniques CORRIGÉ:', {
+          console.log('🎯 useBlogPosts - Albums accessibles uniques:', {
             count: uniqueAccessibleAlbumIds.length,
             albumIds: uniqueAccessibleAlbumIds,
             userEmail: user.email
           });
 
-          // CORRECTION FINALE : Faire deux requêtes séparées et les combiner
+          // CORRECTION CRITIQUE : Une seule requête pour tous les posts accessibles
           allPosts = [];
 
-          // 1. Posts de l'utilisateur (tous, publiés ou non)
+          if (uniqueAccessibleAlbumIds.length > 0) {
+            console.log('🔍 useBlogPosts - Récupération de TOUS les posts des albums accessibles');
+            
+            let postsQuery = supabase
+              .from('blog_posts')
+              .select(`
+                *,
+                profiles(id, display_name, email, avatar_url, created_at)
+              `)
+              .in('album_id', uniqueAccessibleAlbumIds)
+              .or(`author_id.eq.${effectiveUserId},published.eq.true`) // Posts de l'utilisateur OU posts publiés
+              .order('created_at', { ascending: false });
+
+            // Appliquer les filtres
+            if (searchTerm) {
+              postsQuery = postsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+            }
+
+            if (selectedAlbum && selectedAlbum !== 'none') {
+              postsQuery = postsQuery.eq('album_id', selectedAlbum);
+            }
+
+            if (startDate) {
+              postsQuery = postsQuery.gte('created_at', startDate);
+            }
+
+            if (endDate) {
+              postsQuery = postsQuery.lte('created_at', endDate);
+            }
+
+            const { data: accessiblePosts, error: accessiblePostsError } = await postsQuery;
+            
+            if (accessiblePostsError) {
+              console.error('❌ useBlogPosts - Erreur posts accessibles:', accessiblePostsError);
+            } else if (accessiblePosts) {
+              allPosts = accessiblePosts;
+              console.log('✅ useBlogPosts - Posts accessibles récupérés:', {
+                count: accessiblePosts.length,
+                posts: accessiblePosts.map((p: any) => ({
+                  id: p.id,
+                  title: p.title,
+                  author_id: p.author_id,
+                  album_id: p.album_id,
+                  published: p.published
+                }))
+              });
+            }
+          } else {
+            console.log('⚠️ useBlogPosts - Aucun album accessible trouvé');
+          }
+
+          // Récupérer aussi les posts de l'utilisateur qui ne sont dans aucun album
           let userPostsQuery = supabase
             .from('blog_posts')
             .select(`
@@ -133,14 +184,16 @@ export const useBlogPosts = (
               profiles(id, display_name, email, avatar_url, created_at)
             `)
             .eq('author_id', effectiveUserId)
+            .is('album_id', null)
             .order('created_at', { ascending: false });
 
-          // Appliquer les filtres aux posts de l'utilisateur
+          // Appliquer les filtres
           if (searchTerm) {
             userPostsQuery = userPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
           }
 
           if (selectedAlbum && selectedAlbum !== 'none') {
+            // Si un album spécifique est sélectionné, on ignore les posts sans album
             userPostsQuery = userPostsQuery.eq('album_id', selectedAlbum);
           }
 
@@ -152,98 +205,29 @@ export const useBlogPosts = (
             userPostsQuery = userPostsQuery.lte('created_at', endDate);
           }
 
-          // Exécuter la requête pour les posts de l'utilisateur
-          const { data: userPosts, error: userPostsError } = await userPostsQuery;
+          const { data: userPostsWithoutAlbum, error: userPostsError } = await userPostsQuery;
           
           if (userPostsError) {
-            console.error('❌ useBlogPosts - Erreur posts utilisateur:', userPostsError);
-          } else if (userPosts) {
-            allPosts.push(...userPosts);
-            console.log('✅ useBlogPosts - Posts utilisateur récupérés:', {
-              count: userPosts.length,
-              posts: userPosts.map((p: any) => ({
-                id: p.id,
-                title: p.title,
-                author_id: p.author_id,
-                album_id: p.album_id,
-                published: p.published
-              }))
+            console.error('❌ useBlogPosts - Erreur posts utilisateur sans album:', userPostsError);
+          } else if (userPostsWithoutAlbum) {
+            // Ajouter les posts sans album en évitant les doublons
+            userPostsWithoutAlbum.forEach(post => {
+              if (!allPosts.find(p => p.id === post.id)) {
+                allPosts.push(post);
+              }
+            });
+            console.log('✅ useBlogPosts - Posts utilisateur sans album ajoutés:', {
+              count: userPostsWithoutAlbum.length
             });
           }
 
-          // 2. Posts des albums accessibles (seulement publiés)
-          if (uniqueAccessibleAlbumIds.length > 0) {
-            let albumPostsQuery = supabase
-              .from('blog_posts')
-              .select(`
-                *,
-                profiles(id, display_name, email, avatar_url, created_at)
-              `)
-              .in('album_id', uniqueAccessibleAlbumIds)
-              .eq('published', true)
-              .neq('author_id', effectiveUserId) // Éviter les doublons avec les posts de l'utilisateur
-              .order('created_at', { ascending: false });
-
-            // Appliquer les filtres aux posts des albums
-            if (searchTerm) {
-              albumPostsQuery = albumPostsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
-            }
-
-            if (selectedAlbum && selectedAlbum !== 'none') {
-              albumPostsQuery = albumPostsQuery.eq('album_id', selectedAlbum);
-            }
-
-            if (startDate) {
-              albumPostsQuery = albumPostsQuery.gte('created_at', startDate);
-            }
-
-            if (endDate) {
-              albumPostsQuery = albumPostsQuery.lte('created_at', endDate);
-            }
-
-            // Exécuter la requête pour les posts des albums
-            const { data: albumPosts, error: albumPostsError } = await albumPostsQuery;
-            
-            if (albumPostsError) {
-              console.error('❌ useBlogPosts - Erreur posts albums:', albumPostsError);
-            } else if (albumPosts) {
-              allPosts.push(...albumPosts);
-              console.log('✅ useBlogPosts - Posts albums récupérés:', {
-                count: albumPosts.length,
-                posts: albumPosts.map((p: any) => ({
-                  id: p.id,
-                  title: p.title,
-                  author_id: p.author_id,
-                  album_id: p.album_id,
-                  published: p.published
-                }))
-              });
-            }
-          }
-
-          // Supprimer les doublons par ID et trier par date
-          const uniquePosts = allPosts.filter((post, index, self) => 
-            index === self.findIndex(p => p.id === post.id)
-          );
-          
-          allPosts = uniquePosts.sort((a, b) => 
+          // Trier par date
+          allPosts.sort((a, b) => 
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
         }
 
-        console.log('✅ useBlogPosts - Posts récupérés AVANT filtrage final CORRIGÉ:', {
-          count: allPosts.length,
-          userEmail: user.email,
-          posts: allPosts.map(post => ({
-            id: post.id,
-            title: post.title,
-            author_id: post.author_id,
-            album_id: post.album_id,
-            published: post.published
-          }))
-        });
-
-        console.log('🎉 useBlogPosts - Posts FINAUX (APRÈS FILTRAGE) CORRIGÉ:', {
+        console.log('✅ useBlogPosts - Posts FINAUX CORRIGÉS:', {
           count: allPosts.length,
           userEmail: user.email,
           posts: allPosts.map(post => ({
