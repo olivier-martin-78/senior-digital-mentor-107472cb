@@ -22,16 +22,21 @@ const Blog = () => {
     hasCreatePermission 
   } = useBlogData(searchTerm, selectedAlbum, startDate, endDate, null);
 
-  console.log('Blog.tsx - Données de la page Blog:', {
+  console.log('🎯 Blog.tsx - RENDU PAGE BLOG avec données complètes:', {
     user: user?.email,
     effectiveUserId: getEffectiveUserId(),
     effectiveProfile: profile?.email,
     albumsCount: albums.length,
+    albumNames: albums.map(a => a.name),
     postsCount: posts.length,
+    postTitles: posts.map(p => p.title),
     hasCreatePermission,
     isAdmin: hasRole('admin'),
     isEditor: hasRole('editor'),
-    loading
+    loading,
+    searchTerm,
+    selectedAlbum,
+    albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
   });
 
   const handleClearFilters = () => {

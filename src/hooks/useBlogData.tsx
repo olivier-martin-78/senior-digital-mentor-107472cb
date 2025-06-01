@@ -21,6 +21,17 @@ export const useBlogData = (
     endDate
   );
 
+  console.log('🎯 useBlogData - HOOK PRINCIPAL avec données:', {
+    albumsCount: albums.length,
+    albumNames: albums.map(a => a.name),
+    postsCount: posts.length,
+    postTitles: posts.map(p => p.title),
+    albumsLoading,
+    postsLoading,
+    totalLoading: albumsLoading || postsLoading,
+    albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
+  });
+
   // Les nouvelles politiques RLS simplifient l'accès basé sur les rôles
   const hasCreatePermission = hasRole('admin') || hasRole('editor');
 
