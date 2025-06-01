@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +19,6 @@ const InviteUserDialog = () => {
     lastName: '',
     email: '',
     blogAccess: false,
-    wishesAccess: false,
     diaryAccess: false,
     lifeStoryAccess: false
   });
@@ -64,7 +62,7 @@ const InviteUserDialog = () => {
           invited_by: user.id,
           token,
           blog_access: formData.blogAccess,
-          wishes_access: formData.wishesAccess,
+          wishes_access: false, // Toujours false maintenant
           diary_access: formData.diaryAccess,
           life_story_access: formData.lifeStoryAccess
         });
@@ -84,7 +82,7 @@ const InviteUserDialog = () => {
         inviterEmail: profile.email,
         accessTypes: {
           blogAccess: formData.blogAccess,
-          wishesAccess: formData.wishesAccess,
+          wishesAccess: false, // Toujours false maintenant
           diaryAccess: formData.diaryAccess,
           lifeStoryAccess: formData.lifeStoryAccess
         }
@@ -121,7 +119,6 @@ const InviteUserDialog = () => {
         lastName: '',
         email: '',
         blogAccess: false,
-        wishesAccess: false,
         diaryAccess: false,
         lifeStoryAccess: false
       });
@@ -194,14 +191,6 @@ const InviteUserDialog = () => {
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, blogAccess: !!checked }))}
                 />
                 <Label htmlFor="blogAccess">Blog (Photos/Vidéos)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="wishesAccess"
-                  checked={formData.wishesAccess}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, wishesAccess: !!checked }))}
-                />
-                <Label htmlFor="wishesAccess">Souhaits</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
