@@ -5,6 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 serve(async (req) => {
@@ -15,7 +17,10 @@ serve(async (req) => {
   
   if (req.method === 'OPTIONS') {
     console.log('Requête OPTIONS reçue, renvoi des headers CORS');
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -91,32 +96,21 @@ serve(async (req) => {
       }
     }
 
-    console.log('Vérification de l\'existence de la fonction fix_existing_invitation_permissions...');
+    console.log('Exécution de la fonction fix_existing_invitation_permissions...');
     
-    // Tester d'abord si la fonction existe
-    const { data: functionExists, error: functionCheckError } = await supabase
-      .rpc('pg_function_exists', { function_name: 'fix_existing_invitation_permissions' });
-
-    if (functionCheckError) {
-      console.error('Erreur lors de la vérification de la fonction:', functionCheckError);
-      throw new Error(`Erreur de vérification de fonction: ${functionCheckError.message}`);
-    }
-
-    console.log('Résultat de la vérification de fonction:', functionExists);
-
-    if (!functionExists) {
-      console.error('La fonction fix_existing_invitation_permissions n\'existe pas');
-      throw new Error('La fonction fix_existing_invitation_permissions n\'a pas été créée en base de données');
-    }
-
-    console.log('Fonction fix_existing_invitation_permissions trouvée, exécution...');
-    
-    // Exécuter la fonction de rattrapage
+    // Exécuter directement la fonction de rattrapage sans vérification préalable
     const { data: rpcData, error: syncError } = await supabase.rpc('fix_existing_invitation_permissions');
 
     if (syncError) {
       console.error('Erreur lors de la synchronisation:', syncError);
-      throw new Error(`Erreur RPC: ${syncError.message} (Code: ${syncError.code})`);
+      return new Response(JSON.stringify({ 
+        error: `Erreur RPC: ${syncError.message}`,
+        details: syncError,
+        code: syncError.code
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Synchronisation des permissions terminée avec succès');
@@ -127,6 +121,7 @@ serve(async (req) => {
       message: 'Permissions synchronisées avec succès',
       details: 'La fonction a été exécutée correctement'
     }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
