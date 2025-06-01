@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -12,8 +11,9 @@ interface UseLifeStoryProps {
 }
 
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
-  const { getEffectiveUserId } = useAuth();
+  const { getEffectiveUserId, hasRole } = useAuth();
   const effectiveUserId = targetUserId || getEffectiveUserId?.() || '';
+  const isReader = hasRole('reader');
   
   const [data, setData] = useState<LifeStory>(
     existingStory || {
@@ -47,14 +47,15 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const hasLoadedRef = useRef(false);
   const savingRef = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastAutoSaveRef = useRef<string>(''); // Pour éviter les sauvegardes identiques
-  const lastToastRef = useRef<string>(''); // Pour éviter les toasts identiques
+  const lastAutoSaveRef = useRef<string>('');
+  const lastToastRef = useRef<string>('');
 
   // DEBUG: Log du hook principal
   console.log('📚 useLifeStory - Initialisation:', {
     targetUserId,
     effectiveUserId,
-    hasExistingStory: !!existingStory
+    hasExistingStory: !!existingStory,
+    isReader
   });
 
   // Fonction pour charger l'histoire existante de l'utilisateur
@@ -84,6 +85,23 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
       if (error) {
         console.error('Erreur lors du chargement de l\'histoire:', error);
+        
+        // Si on est en mode reader et que les données ne sont pas accessibles via RLS,
+        // ne pas créer une nouvelle histoire vide mais afficher un message approprié
+        if (isReader) {
+          console.log('Mode reader - impossible de charger l\'histoire du propriétaire');
+          // Pour les readers, on garde les chapitres initiaux mais on ne sauvegarde pas
+          setData(prev => ({
+            ...prev,
+            user_id: effectiveUserId || '',
+            chapters: initialChapters
+          }));
+          hasLoadedRef.current = true;
+          setIsLoading(false);
+          loadingRef.current = false;
+          return;
+        }
+        
         return;
       }
 
@@ -203,6 +221,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
+    // Les readers ne peuvent pas modifier, donc pas de focus spécial
+    if (isReader) return;
+    
     setActiveQuestion(questionId);
     setData(prev => ({
       ...prev,
@@ -212,6 +233,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
+    // Les readers ne peuvent pas modifier
+    if (isReader) return;
+    
     console.log('Mise à jour de la réponse:', { chapterId, questionId, answer });
     setData(prev => ({
       ...prev,
@@ -232,6 +256,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
+    // Les readers ne peuvent pas modifier
+    if (isReader) return;
+    
     console.log('📚 useLifeStory - handleAudioUrlChange:', { 
       chapterId, 
       questionId, 
@@ -298,6 +325,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
+    // Les readers ne peuvent pas enregistrer
+    if (isReader) return;
+    
     console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload');
     
     setData(prev => ({
@@ -318,6 +348,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string, showToast: boolean = true) => {
+    // Les readers ne peuvent pas supprimer
+    if (isReader) return;
+    
     console.log('Suppression audio:', { chapterId, questionId, showToast });
     setData(prev => {
       const newData = {
@@ -345,6 +378,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const saveNow = async () => {
+    // Les readers ne peuvent pas sauvegarder
+    if (isReader) {
+      console.log('Mode reader - sauvegarde désactivée');
+      return;
+    }
+    
     if (!effectiveUserId || isSaving || savingRef.current) {
       console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
@@ -430,31 +469,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       savingRef.current = false;
     }
   };
-
-  // Initialiser l'état des questions fermées par défaut
-  useEffect(() => {
-    const initialOpenState: { [key: string]: boolean } = {};
-    data.chapters.forEach(chapter => {
-      initialOpenState[chapter.id] = false; // Fermé par défaut
-    });
-    setOpenQuestions(initialOpenState);
-  }, [data.chapters]);
-
-  useEffect(() => {
-    const totalQuestions = data.chapters.reduce(
-      (sum, chapter) => sum + (chapter.questions?.length || 0),
-      0
-    );
-    const answeredQuestions = data.chapters.reduce(
-      (sum, chapter) =>
-        sum + (chapter.questions?.filter(q => q.answer || q.audioUrl).length || 0),
-      0
-    );
-    setProgress({
-      totalQuestions,
-      answeredQuestions,
-    });
-  }, [data]);
 
   // Nettoyer les timeouts à la destruction du composant
   useEffect(() => {

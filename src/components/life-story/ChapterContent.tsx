@@ -25,7 +25,8 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
+  const isReader = hasRole('reader');
 
   return (
     <Card>
@@ -36,6 +37,9 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
           {profile && (
             <div className="mt-2 text-sm text-gray-600">
               <span className="font-medium">Auteur :</span> {profile.display_name || profile.email}
+              {isReader && (
+                <span className="ml-3 text-blue-600 font-medium">[Mode lecture seule]</span>
+              )}
             </div>
           )}
         </CardDescription>
