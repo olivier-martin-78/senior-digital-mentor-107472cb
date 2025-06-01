@@ -374,47 +374,94 @@ const Auth = () => {
     }
 
     try {
-      console.log("Attempting password reset for email:", email);
+      console.log("=== DÉBUT DE LA RÉINITIALISATION ===");
+      console.log("Email:", email);
+      console.log("Environnement:", { isMobileDevice, connectionInfo });
       
-      // Test basic connectivity first
-      const isConnected = await checkConnection();
-      if (!isConnected) {
-        throw new Error("Problème de connexion. Veuillez vérifier votre connexion internet.");
-      }
-      
-      console.log("Connection test passed, calling Edge function...");
-      
-      // Call the Edge function with better error handling
-      const response = await supabase.functions.invoke('send-password-reset', {
-        body: { email },
-        headers: {
-          'Content-Type': 'application/json',
+      // Méthode 1: Essayer la fonction Edge avec diagnostics détaillés
+      try {
+        console.log("Tentative 1: Appel de la fonction Edge send-password-reset");
+        
+        // Test direct sans vérification de connexion préalable
+        const edgeResponse = await supabase.functions.invoke('send-password-reset', {
+          body: { email },
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        console.log("Réponse de la fonction Edge:", {
+          data: edgeResponse.data,
+          error: edgeResponse.error,
+          status: edgeResponse.status
+        });
+
+        if (edgeResponse.error) {
+          console.error("Erreur de la fonction Edge:", edgeResponse.error);
+          throw new Error(`Fonction Edge: ${edgeResponse.error.message || 'Erreur inconnue'}`);
         }
-      });
 
-      console.log("Edge function response:", response);
+        if (edgeResponse.data?.error) {
+          console.error("Erreur dans les données de la fonction Edge:", edgeResponse.data.error);
+          throw new Error(`Données fonction Edge: ${edgeResponse.data.error}`);
+        }
 
-      if (response.error) {
-        console.error("Edge function returned error:", response.error);
-        throw new Error(response.error.message || "Erreur lors de l'appel à la fonction");
+        console.log("✅ Fonction Edge réussie!");
+        
+        toast({
+          title: "Email envoyé",
+          description: "Un lien de réinitialisation a été envoyé à votre adresse email via notre fonction Edge.",
+        });
+        
+        setActiveTab('login');
+        setEmail('');
+        return;
+        
+      } catch (edgeError: any) {
+        console.error("❌ Échec de la fonction Edge:", {
+          message: edgeError.message,
+          name: edgeError.name,
+          stack: edgeError.stack
+        });
+        
+        // Si la fonction Edge échoue, essayer le fallback
+        console.log("Tentative 2: Fallback vers la méthode native Supabase");
+        
+        try {
+          const fallbackResponse = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth?reset=true`
+          });
+
+          console.log("Réponse du fallback Supabase:", {
+            data: fallbackResponse.data,
+            error: fallbackResponse.error
+          });
+
+          if (fallbackResponse.error) {
+            throw new Error(`Fallback Supabase: ${fallbackResponse.error.message}`);
+          }
+
+          console.log("✅ Fallback Supabase réussi!");
+          
+          toast({
+            title: "Email envoyé",
+            description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
+          });
+          
+          setActiveTab('login');
+          setEmail('');
+          return;
+          
+        } catch (fallbackError: any) {
+          console.error("❌ Échec du fallback Supabase:", fallbackError);
+          
+          // Les deux méthodes ont échoué
+          throw new Error(`Toutes les méthodes ont échoué. Edge: ${edgeError.message}. Fallback: ${fallbackError.message}`);
+        }
       }
-
-      if (response.data?.error) {
-        console.error("Edge function data contains error:", response.data.error);
-        throw new Error(response.data.error);
-      }
-
-      console.log("Password reset email sent successfully");
-
-      toast({
-        title: "Email envoyé",
-        description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
-      });
       
-      setActiveTab('login');
-      setEmail('');
     } catch (error: any) {
-      console.error("Password reset error details:", {
+      console.error("=== ERREUR FINALE ===", {
         message: error.message,
         name: error.name,
         stack: error.stack,
@@ -424,9 +471,11 @@ const Auth = () => {
       let errorMessage = "Une erreur s'est produite lors de l'envoi de l'email";
       
       if (error.message?.includes('Failed to send a request')) {
-        errorMessage = "Problème de connexion avec le serveur. Veuillez réessayer.";
-      } else if (error.message?.includes('network')) {
+        errorMessage = "Impossible de contacter le serveur. Vérifiez votre connexion internet.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         errorMessage = "Problème de réseau. Vérifiez votre connexion internet.";
+      } else if (error.message?.includes('Edge') && error.message?.includes('Fallback')) {
+        errorMessage = "Les services de réinitialisation sont temporairement indisponibles. Veuillez réessayer plus tard.";
       } else if (error.message) {
         errorMessage = error.message;
       }
