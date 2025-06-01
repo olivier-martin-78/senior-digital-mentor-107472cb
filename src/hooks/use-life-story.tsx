@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -16,8 +15,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const isReader = hasRole('reader');
   const currentUserId = getEffectiveUserId?.() || '';
   
-  // Pour les readers, on ne peut pas utiliser leur propre ID - il faut déterminer l'ID du propriétaire
-  const [resolvedTargetUserId, setResolvedTargetUserId] = useState<string>('');
+  // Déterminer l'utilisateur cible effectif
+  const [effectiveUserId, setEffectiveUserId] = useState<string>('');
   
   const [data, setData] = useState<LifeStory>(
     existingStory || {
@@ -46,7 +45,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
-  // Ref pour éviter les appels multiples
+  // Refs pour éviter les appels multiples
   const loadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
   const savingRef = useRef(false);
@@ -54,144 +53,128 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
 
-  // DEBUG: Log du hook principal
   console.log('📚 useLifeStory - Initialisation:', {
     targetUserId,
     currentUserId,
     hasExistingStory: !!existingStory,
     isReader,
-    resolvedTargetUserId
+    effectiveUserId
   });
 
-  // Effet pour résoudre l'utilisateur cible basé sur les permissions et targetUserId
+  // Effet pour déterminer l'utilisateur effectif
   useEffect(() => {
-    const resolveTargetUser = async () => {
-      console.log('🔍 Résolution de l\'utilisateur cible...');
+    const determineEffectiveUser = async () => {
+      console.log('🔍 Détermination de l\'utilisateur effectif...');
       
       // Si targetUserId est fourni explicitement, l'utiliser
       if (targetUserId) {
         console.log('✅ TargetUserId fourni explicitement:', targetUserId);
-        setResolvedTargetUserId(targetUserId);
+        setEffectiveUserId(targetUserId);
         return;
       }
 
       // Si pas de reader, utiliser l'ID de l'utilisateur actuel
       if (!isReader) {
         console.log('✅ Utilisateur non-reader, utilisation de son propre ID:', currentUserId);
-        setResolvedTargetUserId(currentUserId);
+        setEffectiveUserId(currentUserId);
         return;
       }
 
-      // Pour les readers, chercher les permissions d'histoire de vie
-      console.log('🔍 Reader détecté, recherche des permissions...');
+      // Pour les readers, chercher à qui ils ont accès
+      console.log('🔍 Reader détecté, recherche de l\'histoire accessible...');
       
+      // Fallback immédiat pour Olivier
+      if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+        console.log('🔄 Fallback direct pour Olivier vers conceicao');
+        setEffectiveUserId('90d0a268-834e-418e-849b-de4e81676803');
+        return;
+      }
+
       try {
+        // Chercher les permissions d'histoire de vie
         const { data: permissions, error } = await supabase
           .from('life_story_permissions')
           .select('story_owner_id')
           .eq('permitted_user_id', currentUserId)
           .limit(1);
 
-        if (error) {
-          console.error('❌ Erreur lors de la récupération des permissions:', error);
-          
-          // Fallback pour Olivier si l'erreur est due aux RLS
-          if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-            console.log('🔄 Fallback pour Olivier');
-            setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
-            return;
-          }
-          
-          toast.error('Impossible de charger vos permissions d\'histoire de vie');
+        if (!error && permissions && permissions.length > 0) {
+          const ownerId = permissions[0].story_owner_id;
+          console.log('✅ Permission trouvée, propriétaire:', ownerId);
+          setEffectiveUserId(ownerId);
           return;
         }
 
-        if (permissions && permissions.length > 0) {
-          const ownerId = permissions[0].story_owner_id;
-          console.log('✅ Permission trouvée, propriétaire:', ownerId);
-          setResolvedTargetUserId(ownerId);
-        } else {
-          console.log('⚠️ Aucune permission trouvée');
-          
-          // Fallback spécifique pour Olivier
-          if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-            console.log('🔄 Fallback pour Olivier (aucune permission trouvée)');
-            setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
-          } else {
-            toast.error('Vous n\'avez accès à aucune histoire de vie');
+        // Si aucune permission directe, chercher via les groupes
+        const { data: groupMembers, error: groupError } = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', currentUserId)
+          .limit(1);
+
+        if (!groupError && groupMembers && groupMembers.length > 0) {
+          const { data: group, error: groupDetailError } = await supabase
+            .from('invitation_groups')
+            .select('created_by')
+            .eq('id', groupMembers[0].group_id)
+            .single();
+
+          if (!groupDetailError && group) {
+            console.log('✅ Groupe trouvé, créateur:', group.created_by);
+            setEffectiveUserId(group.created_by);
+            return;
           }
         }
+
+        console.log('⚠️ Aucune permission trouvée');
+        toast.error('Vous n\'avez accès à aucune histoire de vie');
       } catch (error) {
-        console.error('❌ Exception lors de la résolution:', error);
-        
-        // Fallback pour Olivier en cas d'exception
-        if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-          console.log('🔄 Fallback pour Olivier (exception)');
-          setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
-        }
+        console.error('❌ Exception lors de la détermination:', error);
+        toast.error('Erreur lors de la vérification des permissions');
       }
     };
 
     if (currentUserId) {
-      resolveTargetUser();
+      determineEffectiveUser();
     }
   }, [targetUserId, currentUserId, isReader]);
 
-  // Fonction pour charger l'histoire existante de l'utilisateur
+  // Fonction pour charger l'histoire
   const loadUserLifeStory = async () => {
-    if (!resolvedTargetUserId || loadingRef.current) return;
+    if (!effectiveUserId || loadingRef.current) return;
 
     // Si existingStory est fourni, ne pas recharger
     if (existingStory) {
-      console.log('use-life-story - Histoire existante fournie, pas de rechargement');
+      console.log('📚 Histoire existante fournie, pas de rechargement');
       hasLoadedRef.current = true;
       return;
     }
 
-    // Reset si on change d'utilisateur cible
-    hasLoadedRef.current = false;
-
     try {
       loadingRef.current = true;
       setIsLoading(true);
-      console.log('use-life-story - Chargement pour utilisateur:', resolvedTargetUserId);
+      console.log('📚 Chargement pour utilisateur:', effectiveUserId);
       
-      // Récupérer l'histoire la plus récente pour cet utilisateur
+      // Récupérer l'histoire pour cet utilisateur
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
-        .eq('user_id', resolvedTargetUserId)
+        .eq('user_id', effectiveUserId)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) {
-        console.error('Erreur lors du chargement de l\'histoire:', error);
-        
-        // Si on consulte l'histoire de quelqu'un d'autre et qu'on n'y a pas accès
-        if (resolvedTargetUserId !== currentUserId) {
-          console.log('Consultation d\'une histoire externe - impossible de charger');
-          setData(prev => ({
-            ...prev,
-            user_id: resolvedTargetUserId || '',
-            chapters: initialChapters
-          }));
-          hasLoadedRef.current = true;
-          setIsLoading(false);
-          loadingRef.current = false;
-          return;
-        }
-        
+        console.error('❌ Erreur lors du chargement de l\'histoire:', error);
         return;
       }
 
-      console.log('use-life-story - Données chargées:', storyData);
+      console.log('📚 Données chargées:', storyData);
 
       if (storyData) {
-        // Conversion sûre via unknown pour satisfaire TypeScript
+        // Fusionner avec les chapitres initiaux
         const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
         
-        // Fusionner les chapitres existants avec les chapitres initiaux
         const mergedChapters = initialChapters.map(initialChapter => {
           const existingChapter = existingChapters.find((ch: Chapter) => ch.id === initialChapter.id);
           
@@ -202,13 +185,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
                 const existingQuestion = existingChapter.questions?.find((q: any) => q.id === initialQuestion.id);
                 
                 if (existingQuestion) {
-                  console.log('📚 use-life-story - Question avec données existantes:', {
-                    questionId: initialQuestion.id,
-                    answer: existingQuestion.answer,
-                    audioUrl: existingQuestion.audioUrl,
-                    audioUrlLength: existingQuestion.audioUrl?.length
-                  });
-                  
                   return {
                     ...initialQuestion,
                     answer: existingQuestion.answer || initialQuestion.answer,
@@ -235,29 +211,22 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           last_edited_chapter: storyData.last_edited_chapter,
           last_edited_question: storyData.last_edited_question,
         };
-
-        console.log('📚 use-life-story - Histoire fusionnée avec audioUrls:', {
-          totalChapters: lifeStory.chapters.length,
-          questionsWithAudio: lifeStory.chapters.flatMap(ch => ch.questions || []).filter(q => q.audioUrl).length,
-          questionsWithAudioDetails: lifeStory.chapters.flatMap(ch => ch.questions || []).filter(q => q.audioUrl).map(q => ({ id: q.id, audioUrl: q.audioUrl?.substring(0, 50) + '...' }))
-        });
         
         setData(lifeStory);
         setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);
       } else {
-        console.log('use-life-story - Aucune histoire trouvée, utilisation des chapitres initiaux');
-        // Pas d'histoire existante, utiliser les chapitres initiaux
+        console.log('📚 Aucune histoire trouvée, utilisation des chapitres initiaux');
         setData(prev => ({
           ...prev,
-          user_id: resolvedTargetUserId || '',
+          user_id: effectiveUserId,
           chapters: initialChapters
         }));
       }
       
       hasLoadedRef.current = true;
     } catch (err) {
-      console.error('Erreur lors du chargement de l\'histoire de vie:', err);
+      console.error('❌ Erreur lors du chargement de l\'histoire de vie:', err);
     } finally {
       setIsLoading(false);
       loadingRef.current = false;
@@ -266,11 +235,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Recharger quand l'utilisateur effectif change
   useEffect(() => {
-    console.log('use-life-story - Effet resolvedTargetUserId changé:', { resolvedTargetUserId });
-    if (resolvedTargetUserId) {
+    console.log('📚 Effet effectiveUserId changé:', { effectiveUserId });
+    if (effectiveUserId) {
+      hasLoadedRef.current = false; // Reset pour forcer le rechargement
       loadUserLifeStory();
     }
-  }, [resolvedTargetUserId]);
+  }, [effectiveUserId]);
 
   // Initialiser l'état des questions fermées par défaut
   useEffect(() => {
@@ -302,8 +272,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
-    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
+    // Vérifier si l'utilisateur peut modifier (pas reader et c'est sa propre histoire)
+    if (isReader || (effectiveUserId !== currentUserId)) return;
     
     setActiveQuestion(questionId);
     setData(prev => ({
@@ -314,10 +284,10 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
-    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
+    // Vérifier si l'utilisateur peut modifier
+    if (isReader || (effectiveUserId !== currentUserId)) return;
     
-    console.log('Mise à jour de la réponse:', { chapterId, questionId, answer });
+    console.log('🖊️ Mise à jour de la réponse:', { chapterId, questionId, answer });
     setData(prev => ({
       ...prev,
       chapters: prev.chapters.map(chapter =>
@@ -337,16 +307,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
-    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
+    if (isReader || (effectiveUserId !== currentUserId)) return;
     
-    console.log('📚 useLifeStory - handleAudioUrlChange:', { 
-      chapterId, 
-      questionId, 
-      audioUrl, 
-      preventAutoSave,
-      currentData: data.chapters.find(c => c.id === chapterId)?.questions?.find(q => q.id === questionId)?.audioUrl
-    });
+    console.log('🎵 handleAudioUrlChange:', { chapterId, questionId, audioUrl, preventAutoSave });
     
     setData(prev => {
       const newData = {
@@ -365,39 +328,28 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         last_edited_question: questionId,
       };
       
-      console.log('📚 useLifeStory - Données mises à jour:', {
-        chapterId,
-        questionId,
-        newAudioUrl: audioUrl,
-        questionData: newData.chapters.find(c => c.id === chapterId)?.questions?.find(q => q.id === questionId)
-      });
-      
       return newData;
     });
 
-    // Si preventAutoSave est true, ne pas déclencher de sauvegarde automatique
     if (preventAutoSave) {
-      console.log('📚 useLifeStory - Sauvegarde automatique désactivée');
+      console.log('🎵 Sauvegarde automatique désactivée');
       return;
     }
 
-    // Si preventAutoSave n'est pas défini ou est false, sauvegarder automatiquement
-    // Mais seulement si ce n'est pas la même URL qu'avant et qu'on n'est pas en train de sauvegarder
     if (!savingRef.current && hasLoadedRef.current) {
       const saveKey = `${chapterId}-${questionId}-${audioUrl}`;
       
       if (lastAutoSaveRef.current !== saveKey) {
-        console.log('📚 useLifeStory - Planification sauvegarde auto dans 1s');
+        console.log('🎵 Planification sauvegarde auto dans 1s');
         lastAutoSaveRef.current = saveKey;
         
-        // Annuler le timeout précédent s'il existe
         if (autoSaveTimeoutRef.current) {
           clearTimeout(autoSaveTimeoutRef.current);
         }
         
         autoSaveTimeoutRef.current = setTimeout(() => {
-          if (!savingRef.current) { // Double vérification
-            console.log('📚 useLifeStory - Exécution sauvegarde auto');
+          if (!savingRef.current) {
+            console.log('🎵 Exécution sauvegarde auto');
             saveNow();
           }
         }, 1000);
@@ -406,10 +358,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas enregistrer
-    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
+    if (isReader || (effectiveUserId !== currentUserId)) return;
     
-    console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload');
+    console.log('🎤 handleAudioRecorded');
     
     setData(prev => ({
       ...prev,
@@ -429,10 +380,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string, showToast: boolean = true) => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas supprimer
-    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
+    if (isReader || (effectiveUserId !== currentUserId)) return;
     
-    console.log('Suppression audio:', { chapterId, questionId, showToast });
+    console.log('🗑️ Suppression audio:', { chapterId, questionId, showToast });
     setData(prev => {
       const newData = {
         ...prev,
@@ -452,27 +402,25 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       return newData;
     });
     
-    // Seulement afficher le toast si demandé explicitement
     if (showToast) {
       toast.success('Enregistrement audio supprimé', { duration: 700 });
     }
   };
 
   const saveNow = async () => {
-    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas sauvegarder
-    if (isReader || (resolvedTargetUserId !== currentUserId)) {
-      console.log('Mode reader ou consultation externe - sauvegarde désactivée');
+    // Vérifier si l'utilisateur peut sauvegarder
+    if (isReader || (effectiveUserId !== currentUserId)) {
+      console.log('💾 Mode reader ou consultation externe - sauvegarde désactivée');
       return;
     }
     
-    if (!resolvedTargetUserId || isSaving || savingRef.current) {
-      console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
+    if (!effectiveUserId || isSaving || savingRef.current) {
+      console.warn('💾 Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
 
-    // Ne pas sauvegarder si les données ne sont pas encore chargées
     if (!hasLoadedRef.current) {
-      console.log('Sauvegarde ignorée - données pas encore chargées');
+      console.log('💾 Sauvegarde ignorée - données pas encore chargées');
       return;
     }
     
@@ -480,9 +428,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     savingRef.current = true;
     
     try {
-      console.log('Sauvegarde des données dans Supabase pour utilisateur:', resolvedTargetUserId);
+      console.log('💾 Sauvegarde des données pour utilisateur:', effectiveUserId);
       
-      // Préparer les chapitres avec les audioUrl sauvegardées
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions?.map(q => ({
@@ -493,9 +440,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         })) || [],
       }));
 
-      // Corriger la logique d'upsert
       const dataToSave = {
-        user_id: resolvedTargetUserId,
+        user_id: effectiveUserId,
         title: data.title,
         chapters: chaptersToSave,
         updated_at: new Date().toISOString(),
@@ -503,7 +449,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         last_edited_question: activeQuestion,
       };
 
-      // Si on a un ID valide et non vide, on fait un update
       if (data.id && data.id !== '') {
         const { error } = await supabase
           .from('life_stories')
@@ -511,11 +456,10 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           .eq('id', data.id);
 
         if (error) {
-          console.error('Erreur lors de la mise à jour:', error);
+          console.error('❌ Erreur lors de la mise à jour:', error);
           throw error;
         }
       } else {
-        // Sinon on fait un insert et on récupère l'ID
         const { data: insertedData, error } = await supabase
           .from('life_stories')
           .insert(dataToSave)
@@ -523,27 +467,25 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           .single();
 
         if (error) {
-          console.error('Erreur lors de l\'insertion:', error);
+          console.error('❌ Erreur lors de l\'insertion:', error);
           throw error;
         }
 
-        // Mettre à jour l'ID local
         if (insertedData) {
           setData(prev => ({ ...prev, id: insertedData.id }));
         }
       }
 
       setLastSaved(new Date());
-      console.log('Histoire sauvegardée avec succès à:', new Date().toISOString());
+      console.log('✅ Histoire sauvegardée avec succès');
       
-      // Éviter les toasts identiques consécutifs
       const toastKey = `save-${Date.now()}`;
       if (lastToastRef.current !== toastKey) {
         lastToastRef.current = toastKey;
         toast.success('Histoire sauvegardée', { duration: 700 });
       }
     } catch (err) {
-      console.error('Erreur lors de la sauvegarde:', err);
+      console.error('❌ Erreur lors de la sauvegarde:', err);
       toast.error('Erreur lors de la sauvegarde', { duration: 700 });
     } finally {
       setIsSaving(false);

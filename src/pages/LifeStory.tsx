@@ -27,20 +27,26 @@ const LifeStory = () => {
     }
   }, [session, navigate, user]);
 
-  // Charger la dernière sélection depuis localStorage
+  // Pour les non-readers, charger la dernière sélection depuis localStorage
   useEffect(() => {
-    const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
-    if (savedSelection && savedSelection !== 'null') {
-      setSelectedUserId(savedSelection);
+    if (!isReader) {
+      const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
+      if (savedSelection && savedSelection !== 'null') {
+        console.log('📂 Chargement sélection sauvegardée:', savedSelection);
+        setSelectedUserId(savedSelection);
+      }
     }
-  }, []);
+    // Pour les readers, on laisse selectedUserId à null pour utiliser la logique automatique
+  }, [isReader]);
 
-  // Sauvegarder la sélection dans localStorage
+  // Sauvegarder la sélection dans localStorage (seulement pour les non-readers)
   useEffect(() => {
-    localStorage.setItem('lifeStory_selectedUserId', selectedUserId || 'null');
-  }, [selectedUserId]);
+    if (!isReader) {
+      localStorage.setItem('lifeStory_selectedUserId', selectedUserId || 'null');
+    }
+  }, [selectedUserId, isReader]);
 
-  // Le hook se charge maintenant de déterminer le bon utilisateur cible
+  // Le hook se charge de déterminer le bon utilisateur cible
   const lifeStoryData = useLifeStory({
     targetUserId: selectedUserId || undefined
   });
@@ -61,7 +67,7 @@ const LifeStory = () => {
           setStoryOwnerInfo(ownerProfile);
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération des infos du propriétaire:', error);
+        console.error('❌ Erreur lors de la récupération des infos du propriétaire:', error);
       }
     };
 
@@ -75,6 +81,7 @@ const LifeStory = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
+    console.log('👤 Changement d\'utilisateur sélectionné:', userId);
     setSelectedUserId(userId);
   };
 
