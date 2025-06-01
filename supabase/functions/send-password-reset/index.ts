@@ -149,9 +149,8 @@ const handler = async (req: Request): Promise<Response> => {
     
     const resend = new Resend(resendApiKey);
     
-    // Utiliser une adresse from générique pour éviter les problèmes de domaine
     const emailResponse = await resend.emails.send({
-      from: 'Tranches de Vie <onboarding@resend.dev>',
+      from: 'Tranches de Vie <contact@senior-digital-mentor.com>',
       to: [email.trim()],
       subject: 'Réinitialisation de votre mot de passe',
       html: `
