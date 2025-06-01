@@ -20,40 +20,18 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Lecture du corps de la requête...");
     
-    // Vérifier que la requête a un corps
-    const contentType = req.headers.get("content-type");
-    console.log("Content-Type:", contentType);
+    let email: string;
     
-    if (!contentType || !contentType.includes("application/json")) {
-      console.error("Content-Type manquant ou invalide");
-      return new Response(
-        JSON.stringify({ 
-          error: "Content-Type doit être application/json"
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Lire le corps de la requête avec gestion d'erreur
-    let requestBody;
     try {
-      const bodyText = await req.text();
-      console.log("Corps de la requête (text):", bodyText);
-      
-      if (!bodyText || bodyText.trim() === '') {
-        throw new Error("Corps de la requête vide");
-      }
-      
-      requestBody = JSON.parse(bodyText);
-    } catch (parseError) {
-      console.error("Erreur lors du parsing JSON:", parseError);
+      const requestBody = await req.json();
+      console.log("Corps de la requête reçu:", requestBody);
+      email = requestBody.email;
+    } catch (jsonError) {
+      console.error("Erreur lors du parsing JSON:", jsonError);
       return new Response(
         JSON.stringify({ 
-          error: "Corps de la requête JSON invalide",
-          details: parseError instanceof Error ? parseError.message : "Erreur de parsing"
+          error: "Format de requête invalide - JSON attendu",
+          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing"
         }),
         {
           status: 400,
@@ -61,9 +39,6 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
-
-    const { email } = requestBody;
-    console.log("Corps de la requête parsé:", { email });
 
     console.log("Validation des paramètres...");
     if (!email || typeof email !== 'string' || email.trim() === '') {
