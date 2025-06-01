@@ -96,6 +96,55 @@ serve(async (req) => {
       }
     }
 
+    // Vérifier si on cible un utilisateur spécifique
+    const targetUserId = requestBody.targetUserId;
+    if (targetUserId) {
+      console.log('🎯 Synchronisation ciblée pour utilisateur:', targetUserId);
+      
+      // Récupérer toutes les invitations pour cet utilisateur
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', targetUserId)
+        .single();
+      
+      if (!userProfile) {
+        throw new Error('Utilisateur introuvable');
+      }
+      
+      const { data: invitations, error: invError } = await supabase
+        .from('invitations')
+        .select('*')
+        .eq('email', userProfile.email)
+        .not('used_at', 'is', null);
+      
+      console.log('🎯 Invitations trouvées pour', userProfile.email, ':', invitations?.length || 0);
+      
+      if (invitations && invitations.length > 0) {
+        for (const invitation of invitations) {
+          console.log('🎯 Traitement invitation:', invitation.id);
+          const { error: syncError } = await supabase.rpc('sync_invitation_permissions', {
+            invitation_id_param: invitation.id
+          });
+          
+          if (syncError) {
+            console.error('❌ Erreur sync invitation', invitation.id, ':', syncError);
+          } else {
+            console.log('✅ Sync invitation', invitation.id, 'réussie');
+          }
+        }
+      }
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Permissions synchronisées pour l'utilisateur ${targetUserId}`,
+        details: `${invitations?.length || 0} invitations traitées`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('Exécution de la fonction fix_existing_invitation_permissions...');
     
     // Exécuter directement la fonction de rattrapage sans vérification préalable

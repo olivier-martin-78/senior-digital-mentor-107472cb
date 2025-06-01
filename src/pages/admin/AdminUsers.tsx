@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +23,7 @@ import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import SyncPermissionsButton from '@/components/admin/SyncPermissionsButton';
 import { useImpersonationContext } from '@/contexts/ImpersonationContext';
+import { Database } from 'lucide-react';
 
 interface UserWithRoles extends Profile {
   roles: AppRole[];

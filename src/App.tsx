@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,6 +35,7 @@ import AdminDiary from "./pages/admin/AdminDiary";
 import AdminLifeStories from "./pages/admin/AdminLifeStories";
 import AdminLifeStoryEdit from "./pages/admin/AdminLifeStoryEdit";
 import AdminInvitationGroups from "./pages/admin/AdminInvitationGroups";
+import AdminPermissionsDiagnostic from "./pages/admin/AdminPermissionsDiagnostic";
 import BlogLanding from "./pages/BlogLanding";
 import AILanding from "./pages/AILanding";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -81,6 +81,7 @@ const App = () => (
                 <Route path="/admin/life-stories" element={<AdminLifeStories />} />
                 <Route path="/admin/life-stories/:userId" element={<AdminLifeStoryEdit />} />
                 <Route path="/admin/invitation-groups" element={<AdminInvitationGroups />} />
+                <Route path="/admin/permissions-diagnostic" element={<AdminPermissionsDiagnostic />} />
               </Route>
               <Route path="/blog-landing" element={<BlogLanding />} />
               <Route path="/ai-landing" element={<AILanding />} />
