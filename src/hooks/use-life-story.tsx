@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -62,7 +63,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     resolvedTargetUserId
   });
 
-  // Effet pour résoudre l'utilisateur cible basé sur les permissions
+  // Effet pour résoudre l'utilisateur cible basé sur les permissions et targetUserId
   useEffect(() => {
     const resolveTargetUser = async () => {
       console.log('🔍 Résolution de l\'utilisateur cible...');
@@ -138,7 +139,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
-    if (!resolvedTargetUserId || loadingRef.current || hasLoadedRef.current) return;
+    if (!resolvedTargetUserId || loadingRef.current) return;
 
     // Si existingStory est fourni, ne pas recharger
     if (existingStory) {
@@ -146,6 +147,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       hasLoadedRef.current = true;
       return;
     }
+
+    // Reset si on change d'utilisateur cible
+    hasLoadedRef.current = false;
 
     try {
       loadingRef.current = true;
@@ -164,11 +168,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       if (error) {
         console.error('Erreur lors du chargement de l\'histoire:', error);
         
-        // Si on est en mode reader et que les données ne sont pas accessibles via RLS,
-        // ne pas créer une nouvelle histoire vide mais afficher un message approprié
-        if (isReader) {
-          console.log('Mode reader - impossible de charger l\'histoire du propriétaire');
-          // Pour les readers, on garde les chapitres initiaux mais on ne sauvegarde pas
+        // Si on consulte l'histoire de quelqu'un d'autre et qu'on n'y a pas accès
+        if (resolvedTargetUserId !== currentUserId) {
+          console.log('Consultation d\'une histoire externe - impossible de charger');
           setData(prev => ({
             ...prev,
             user_id: resolvedTargetUserId || '',
@@ -266,7 +268,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   useEffect(() => {
     console.log('use-life-story - Effet resolvedTargetUserId changé:', { resolvedTargetUserId });
     if (resolvedTargetUserId) {
-      hasLoadedRef.current = false; // Reset pour permettre le rechargement
       loadUserLifeStory();
     }
   }, [resolvedTargetUserId]);
@@ -301,8 +302,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
-    // Les readers ne peuvent pas modifier, donc pas de focus spécial
-    if (isReader) return;
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
+    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
     
     setActiveQuestion(questionId);
     setData(prev => ({
@@ -313,8 +314,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
-    // Les readers ne peuvent pas modifier
-    if (isReader) return;
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
+    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
     
     console.log('Mise à jour de la réponse:', { chapterId, questionId, answer });
     setData(prev => ({
@@ -336,8 +337,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    // Les readers ne peuvent pas modifier
-    if (isReader) return;
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas modifier
+    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
     
     console.log('📚 useLifeStory - handleAudioUrlChange:', { 
       chapterId, 
@@ -405,8 +406,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    // Les readers ne peuvent pas enregistrer
-    if (isReader) return;
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas enregistrer
+    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
     
     console.log('handleAudioRecorded - AudioRecorder s\'occupe de l\'upload');
     
@@ -428,8 +429,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string, showToast: boolean = true) => {
-    // Les readers ne peuvent pas supprimer
-    if (isReader) return;
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas supprimer
+    if (isReader || (resolvedTargetUserId !== currentUserId)) return;
     
     console.log('Suppression audio:', { chapterId, questionId, showToast });
     setData(prev => {
@@ -458,9 +459,9 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const saveNow = async () => {
-    // Les readers ne peuvent pas sauvegarder
-    if (isReader) {
-      console.log('Mode reader - sauvegarde désactivée');
+    // Les readers ou ceux qui consultent l'histoire d'un autre ne peuvent pas sauvegarder
+    if (isReader || (resolvedTargetUserId !== currentUserId)) {
+      console.log('Mode reader ou consultation externe - sauvegarde désactivée');
       return;
     }
     

@@ -1,5 +1,4 @@
 
-// src/components/life-story/ChapterContent.tsx
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import QuestionItem from './QuestionItem';
@@ -25,7 +24,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
-  const { profile, hasRole } = useAuth();
+  const { hasRole } = useAuth();
   const isReader = hasRole('reader');
 
   return (
@@ -34,12 +33,9 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
         <CardTitle>{chapter.title}</CardTitle>
         <CardDescription>
           {chapter.description}
-          {profile && (
-            <div className="mt-2 text-sm text-gray-600">
-              <span className="font-medium">Auteur :</span> {profile.display_name || profile.email}
-              {isReader && (
-                <span className="ml-3 text-blue-600 font-medium">[Mode lecture seule]</span>
-              )}
+          {isReader && (
+            <div className="mt-2 text-sm text-blue-600">
+              <span className="font-medium">[Mode lecture seule]</span>
             </div>
           )}
         </CardDescription>

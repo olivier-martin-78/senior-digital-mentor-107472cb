@@ -6,6 +6,7 @@ import { useLifeStory } from '@/hooks/use-life-story';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
+import LifeStoryUserSelector from '@/components/life-story/LifeStoryUserSelector';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import { Button } from '@/components/ui/button';
 import { Save, Eye } from 'lucide-react';
@@ -14,6 +15,7 @@ import { toast } from '@/components/ui/sonner';
 const LifeStory = () => {
   const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [storyOwnerInfo, setStoryOwnerInfo] = useState<{ display_name: string | null; email: string } | null>(null);
   
   const isReader = hasRole('reader');
@@ -25,13 +27,28 @@ const LifeStory = () => {
     }
   }, [session, navigate, user]);
 
-  // Le hook se charge maintenant automatiquement de déterminer le bon utilisateur cible
-  const lifeStoryData = useLifeStory({});
+  // Charger la dernière sélection depuis localStorage
+  useEffect(() => {
+    const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
+    if (savedSelection && savedSelection !== 'null') {
+      setSelectedUserId(savedSelection);
+    }
+  }, []);
+
+  // Sauvegarder la sélection dans localStorage
+  useEffect(() => {
+    localStorage.setItem('lifeStory_selectedUserId', selectedUserId || 'null');
+  }, [selectedUserId]);
+
+  // Le hook se charge maintenant de déterminer le bon utilisateur cible
+  const lifeStoryData = useLifeStory({
+    targetUserId: selectedUserId || undefined
+  });
 
   // Récupérer les informations du propriétaire de l'histoire pour l'affichage
   useEffect(() => {
     const getStoryOwnerInfo = async () => {
-      if (!lifeStoryData.data?.user_id || !isReader) return;
+      if (!lifeStoryData.data?.user_id) return;
 
       try {
         const { data: ownerProfile } = await supabase
@@ -49,7 +66,7 @@ const LifeStory = () => {
     };
 
     getStoryOwnerInfo();
-  }, [lifeStoryData.data?.user_id, isReader]);
+  }, [lifeStoryData.data?.user_id]);
 
   const handleSave = async () => {
     if (lifeStoryData.saveNow) {
@@ -57,8 +74,13 @@ const LifeStory = () => {
     }
   };
 
-  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur)
-  const canSave = !hasRole('reader');
+  const handleUserChange = (userId: string | null) => {
+    setSelectedUserId(userId);
+  };
+
+  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
+  const canSave = !hasRole('reader') && (!selectedUserId || selectedUserId === user?.id);
+  const isViewingOthersStory = selectedUserId && selectedUserId !== user?.id;
 
   if (lifeStoryData.isLoading) {
     return (
@@ -84,6 +106,10 @@ const LifeStory = () => {
 
   // Déterminer le titre à afficher
   const getPageTitle = () => {
+    if (isViewingOthersStory && storyOwnerInfo) {
+      const ownerName = storyOwnerInfo.display_name || storyOwnerInfo.email;
+      return `Histoire de ${ownerName}`;
+    }
     if (isReader && storyOwnerInfo) {
       const ownerName = storyOwnerInfo.display_name || storyOwnerInfo.email;
       return `Histoire de ${ownerName}`;
@@ -95,10 +121,20 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
+        {/* Sélecteur d'utilisateur pour les non-lecteurs */}
+        {!isReader && (
+          <div className="mb-6">
+            <LifeStoryUserSelector
+              selectedUserId={selectedUserId}
+              onUserChange={handleUserChange}
+            />
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
-            {isReader && (
+            {(isReader || isViewingOthersStory) && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
                 <span>Mode lecture seule</span>
@@ -125,7 +161,7 @@ const LifeStory = () => {
                 )}
               </Button>
             )}
-            {!isReader && <InviteUserDialog />}
+            {!isReader && !isViewingOthersStory && <InviteUserDialog />}
           </div>
         </div>
         
