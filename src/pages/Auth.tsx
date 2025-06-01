@@ -19,6 +19,7 @@ import {
 } from '@/utils/authUtils';
 import { checkConnection, isMobileClient } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { signIn, signUp, isLoading, user } = useAuth();
@@ -30,12 +31,16 @@ const Auth = () => {
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'reset' | 'update-password'>('login');
   
   // Error states
   const [loginError, setLoginError] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
   
   // Environment detection
   const { 
@@ -55,6 +60,23 @@ const Auth = () => {
     success: boolean | null,
     latency: number | null
   }>({ lastChecked: null, success: null, latency: null });
+
+  // Check URL parameters for password reset
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isReset = urlParams.has('reset');
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    
+    if (isReset && accessToken && refreshToken) {
+      // User clicked reset link in email
+      setActiveTab('update-password');
+      toast({
+        title: "Réinitialisation du mot de passe",
+        description: "Veuillez saisir votre nouveau mot de passe.",
+      });
+    }
+  }, [toast]);
 
   // Check if user is on mobile
   useEffect(() => {
@@ -99,63 +121,63 @@ const Auth = () => {
   }, [user, navigate, from, recoveryAttempted, isMobileDevice, isMobileViewport]);
 
   // Function to check connection status
-const handleCheckConnection = useCallback(async () => {
-  setIsCheckingConnection(true);
+  const handleCheckConnection = useCallback(async () => {
+    setIsCheckingConnection(true);
 
-  try {
-    // First test basic connectivity
-    const probeResult = await probeConnectivity();
+    try {
+      // First test basic connectivity
+      const probeResult = await probeConnectivity();
 
-    // Then test Supabase connection if basic connectivity works
-    let supabaseStatus: { success: boolean; error: string | null; duration: number } = {
-      success: false,
-      error: null,
-      duration: 0,
-    };
-    if (probeResult.success) {
-      supabaseStatus = await checkSupabaseConnection();
-    }
+      // Then test Supabase connection if basic connectivity works
+      let supabaseStatus: { success: boolean; error: string | null; duration: number } = {
+        success: false,
+        error: null,
+        duration: 0,
+      };
+      if (probeResult.success) {
+        supabaseStatus = await checkSupabaseConnection();
+      }
 
-    const success = probeResult.success && supabaseStatus.success;
+      const success = probeResult.success && supabaseStatus.success;
 
-    setConnectionCheck({
-      lastChecked: Date.now(),
-      success: success,
-      latency: probeResult.latency,
-    });
-
-    if (success) {
-      setConnectionError(null);
-      toast({
-        title: "Connexion rétablie",
-        description: "Votre connexion à l'application fonctionne correctement.",
+      setConnectionCheck({
+        lastChecked: Date.now(),
+        success: success,
+        latency: probeResult.latency,
       });
-    } else {
-      // If still having connection issues, show detailed error
-      const errorDetails = !probeResult.success
-        ? "Problème de connexion internet"
-        : `Problème de connexion au serveur: ${supabaseStatus.error || 'Erreur inconnue'}`;
 
-      setConnectionError(`Une erreur de connexion persiste: ${errorDetails}`);
+      if (success) {
+        setConnectionError(null);
+        toast({
+          title: "Connexion rétablie",
+          description: "Votre connexion à l'application fonctionne correctement.",
+        });
+      } else {
+        // If still having connection issues, show detailed error
+        const errorDetails = !probeResult.success
+          ? "Problème de connexion internet"
+          : `Problème de connexion au serveur: ${supabaseStatus.error || 'Erreur inconnue'}`;
 
-      toast({
-        title: "Problème de connexion",
-        description: errorDetails,
-        variant: "destructive",
+        setConnectionError(`Une erreur de connexion persiste: ${errorDetails}`);
+
+        toast({
+          title: "Problème de connexion",
+          description: errorDetails,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Connection check failed:", error);
+      setConnectionCheck({
+        lastChecked: Date.now(),
+        success: false,
+        latency: null,
       });
+      setConnectionError(`Erreur lors de la vérification de connexion: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setIsCheckingConnection(false);
     }
-  } catch (error) {
-    console.error("Connection check failed:", error);
-    setConnectionCheck({
-      lastChecked: Date.now(),
-      success: false,
-      latency: null,
-    });
-    setConnectionError(`Erreur lors de la vérification de connexion: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-  } finally {
-    setIsCheckingConnection(false);
-  }
-}, [toast]);
+  }, [toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,20 +208,17 @@ const handleCheckConnection = useCallback(async () => {
         userAgent: navigator.userAgent
       });
       
-      // Clean up auth state before login attempt
       cleanupAuthState();
       
-      // Check connection first
       const connectionStatus = await checkConnection();
       if (!connectionStatus) {
         throw new Error("Problème de connexion au serveur. Veuillez vérifier votre connexion internet.");
       }
       
-      // Attempt login with retry
       await retryWithBackoff(
         async () => await signIn(email, password),
-        isMobileDevice ? 2 : 1, // More retries on mobile
-        1000, // Start with 1s delay
+        isMobileDevice ? 2 : 1,
+        1000,
         (attempt) => {
           if (attempt > 1) {
             toast({
@@ -210,7 +229,6 @@ const handleCheckConnection = useCallback(async () => {
         }
       );
       
-      // Navigation will happen in the useEffect when user state is updated
       toast({
         title: "Connexion en cours",
         description: "Vous allez être redirigé...",
@@ -220,7 +238,6 @@ const handleCheckConnection = useCallback(async () => {
       console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : "Une erreur inconnue s'est produite";
       
-      // Handle connection errors specifically
       if (errorMessage.includes('network') || 
           errorMessage.includes('connection') || 
           errorMessage.includes('internet') ||
@@ -229,7 +246,6 @@ const handleCheckConnection = useCallback(async () => {
         
         setConnectionError(`Erreur de connexion: ${errorMessage}`);
         
-        // Show mobile-specific advice
         if (isMobileDevice) {
           toast({
             title: "Problème de connexion sur mobile",
@@ -237,7 +253,6 @@ const handleCheckConnection = useCallback(async () => {
             variant: "destructive"
           });
           
-          // Attempt connection check
           handleCheckConnection();
         } else {
           toast({
@@ -247,7 +262,6 @@ const handleCheckConnection = useCallback(async () => {
           });
         }
       } else {
-        // Handle other errors
         setLoginError(errorMessage);
         toast({
           title: "Échec de la connexion",
@@ -285,20 +299,17 @@ const handleCheckConnection = useCallback(async () => {
         connectionInfo
       });
       
-      // Clean up auth state before signup attempt
       cleanupAuthState();
       
-      // Check connection first
       const connectionStatus = await checkConnection();
       if (!connectionStatus) {
         throw new Error("Problème de connexion au serveur. Veuillez vérifier votre connexion internet.");
       }
       
-      // Attempt signup with retry for mobile devices
       await retryWithBackoff(
         async () => await signUp(email, password, displayName),
-        isMobileDevice ? 2 : 1, // More retries on mobile
-        1000, // Start with 1s delay
+        isMobileDevice ? 2 : 1,
+        1000,
         (attempt) => {
           if (attempt > 1) {
             toast({
@@ -319,7 +330,6 @@ const handleCheckConnection = useCallback(async () => {
       console.error("Signup error:", error);
       const errorMessage = error instanceof Error ? error.message : "Une erreur inconnue s'est produite";
       
-      // Handle connection errors specifically for signup
       if (errorMessage.includes('network') || 
           errorMessage.includes('connection') || 
           errorMessage.includes('internet') ||
@@ -327,7 +337,6 @@ const handleCheckConnection = useCallback(async () => {
         
         setConnectionError(`Erreur de connexion lors de l'inscription: ${errorMessage}`);
         
-        // Show mobile-specific advice and check connection
         if (isMobileDevice) {
           toast({
             title: "Problème de connexion sur mobile",
@@ -335,7 +344,6 @@ const handleCheckConnection = useCallback(async () => {
             variant: "destructive"
           });
           
-          // Attempt connection check
           handleCheckConnection();
         }
       } else {
@@ -349,30 +357,139 @@ const handleCheckConnection = useCallback(async () => {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setLoginError(null);
+    
+    if (!email) {
+      setLoginError("Veuillez saisir votre email");
+      toast({
+        title: "Email manquant",
+        description: "Veuillez saisir votre email pour recevoir le lien de réinitialisation",
+        variant: "destructive"
+      });
+      setResetLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email envoyé",
+        description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
+      });
+      
+      setActiveTab('login');
+      setEmail('');
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      const errorMessage = error.message || "Une erreur s'est produite lors de l'envoi de l'email";
+      setLoginError(errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdateLoading(true);
+    setLoginError(null);
+    
+    if (!newPassword || !confirmPassword) {
+      setLoginError("Veuillez remplir tous les champs");
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez saisir et confirmer votre nouveau mot de passe",
+        variant: "destructive"
+      });
+      setUpdateLoading(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setLoginError("Les mots de passe ne correspondent pas");
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive"
+      });
+      setUpdateLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setLoginError("Le mot de passe doit contenir au moins 6 caractères");
+      toast({
+        title: "Mot de passe trop court",
+        description: "Le mot de passe doit contenir au moins 6 caractères",
+        variant: "destructive"
+      });
+      setUpdateLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Mot de passe mis à jour",
+        description: "Votre mot de passe a été mis à jour avec succès.",
+      });
+      
+      // Redirect to main page
+      navigate('/', { replace: true });
+    } catch (error: any) {
+      console.error("Password update error:", error);
+      const errorMessage = error.message || "Une erreur s'est produite lors de la mise à jour du mot de passe";
+      setLoginError(errorMessage);
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   // Function to attempt connection recovery
   const handleRetryConnection = async () => {
     setConnectionError("Vérification de la connexion en cours...");
     
     try {
-      // Clean up auth state
       cleanupAuthState();
       
-      // Show recovery message
       toast({
         title: "Tentative de reconnexion",
         description: "Nous essayons de résoudre le problème de connexion...",
       });
       
-      // Check connection
       await handleCheckConnection();
       
-      // Try to recover auth state if connection is good
       if (connectionCheck.success) {
         const recovered = await attemptAuthRecovery();
         setRecoveryAttempted(true);
         
         if (!recovered) {
-          // If no redirect happened, show success
           toast({
             title: "Connexion rétablie",
             description: "Veuillez réessayer de vous connecter maintenant.",
@@ -449,7 +566,7 @@ const handleCheckConnection = useCallback(async () => {
               </Alert>
             )}
             
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup' | 'reset' | 'update-password')}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Connexion</TabsTrigger>
                 <TabsTrigger value="signup">Inscription</TabsTrigger>
@@ -495,6 +612,17 @@ const handleCheckConnection = useCallback(async () => {
                       "Se connecter"
                     )}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-tranches-sage hover:text-tranches-sage/80"
+                      onClick={() => setActiveTab('reset')}
+                    >
+                      J'ai oublié mon mot de passe
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
               
@@ -547,6 +675,91 @@ const handleCheckConnection = useCallback(async () => {
                       </>
                     ) : (
                       "S'inscrire"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="reset">
+                <form onSubmit={handlePasswordReset} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <label htmlFor="reset-email" className="text-sm font-medium">Email</label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="votre@email.com"
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      "Envoyer le lien de réinitialisation"
+                    )}
+                  </Button>
+                  
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-gray-600 hover:text-gray-800"
+                      onClick={() => setActiveTab('login')}
+                    >
+                      Retour à la connexion
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="update-password">
+                <form onSubmit={handlePasswordUpdate} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <label htmlFor="new-password" className="text-sm font-medium">Nouveau mot de passe</label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="confirm-password" className="text-sm font-medium">Confirmer le mot de passe</label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                    disabled={updateLoading}
+                  >
+                    {updateLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        Mise à jour en cours...
+                      </>
+                    ) : (
+                      "Mettre à jour le mot de passe"
                     )}
                   </Button>
                 </form>
