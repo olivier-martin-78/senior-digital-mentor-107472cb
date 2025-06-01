@@ -374,19 +374,37 @@ const Auth = () => {
     }
 
     try {
-      console.log("Calling send-password-reset function for email:", email);
+      console.log("Attempting password reset for email:", email);
       
-      // Utiliser la fonction Edge corrigée
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: { email }
+      // Test basic connectivity first
+      const isConnected = await checkConnection();
+      if (!isConnected) {
+        throw new Error("Problème de connexion. Veuillez vérifier votre connexion internet.");
+      }
+      
+      console.log("Connection test passed, calling Edge function...");
+      
+      // Call the Edge function with better error handling
+      const response = await supabase.functions.invoke('send-password-reset', {
+        body: { email },
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
-      if (error) {
-        console.error("Password reset function error:", error);
-        throw error;
+      console.log("Edge function response:", response);
+
+      if (response.error) {
+        console.error("Edge function returned error:", response.error);
+        throw new Error(response.error.message || "Erreur lors de l'appel à la fonction");
       }
 
-      console.log("Password reset function response:", data);
+      if (response.data?.error) {
+        console.error("Edge function data contains error:", response.data.error);
+        throw new Error(response.data.error);
+      }
+
+      console.log("Password reset email sent successfully");
 
       toast({
         title: "Email envoyé",
@@ -396,8 +414,23 @@ const Auth = () => {
       setActiveTab('login');
       setEmail('');
     } catch (error: any) {
-      console.error("Password reset error:", error);
-      const errorMessage = error.message || "Une erreur s'est produite lors de l'envoi de l'email";
+      console.error("Password reset error details:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        cause: error.cause
+      });
+      
+      let errorMessage = "Une erreur s'est produite lors de l'envoi de l'email";
+      
+      if (error.message?.includes('Failed to send a request')) {
+        errorMessage = "Problème de connexion avec le serveur. Veuillez réessayer.";
+      } else if (error.message?.includes('network')) {
+        errorMessage = "Problème de réseau. Vérifiez votre connexion internet.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setLoginError(errorMessage);
       toast({
         title: "Erreur",

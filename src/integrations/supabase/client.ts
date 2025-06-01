@@ -5,9 +5,6 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
 // Enhanced mobile detection with fallbacks
 const detectMobilePlatform = () => {
   if (typeof navigator === 'undefined') return false;
@@ -145,7 +142,7 @@ console.log('Supabase client initialization:', {
   online: typeof navigator !== 'undefined' ? navigator.onLine : true
 });
 
-// Create and export the Supabase client with mobile-friendly config
+// Create and export the Supabase client with simplified config to avoid Edge function conflicts
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: storageAdapter,
@@ -162,26 +159,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'x-client-info': `mobile-${isMobile ? 'true' : 'false'}`,
       'x-connection-type': typeof navigator !== 'undefined' && 'connection' in navigator ? 
         String((navigator as any).connection?.effectiveType || 'unknown') : 'unknown'
-    },
-    // Increase timeouts for mobile connections
-    fetch: (url, options) => {
-      const timeoutDuration = isMobile ? 60000 : 30000; // 1 minute for mobile, 30s otherwise
-      
-      const controller = new AbortController();
-      const { signal } = controller;
-      
-      // Create timeout that aborts the fetch
-      const timeout = setTimeout(() => {
-        controller.abort();
-        console.warn('Supabase fetch timeout after', timeoutDuration);
-      }, timeoutDuration);
-      
-      return fetch(url, {
-        ...options,
-        signal
-      }).finally(() => {
-        clearTimeout(timeout);
-      });
     }
   },
   // Better for mobile connections
