@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +13,7 @@ import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
 import { getThumbnailUrl, getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,12 +28,14 @@ import {
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, profile, hasRole } = useAuth();
+  const { user, profile, hasRole, getEffectiveUserId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isImpersonating, originalUser } = useImpersonationContext();
   
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [hasAlbumAccess, setHasAlbumAccess] = useState(false);
   
   const {
     post,
@@ -45,6 +47,53 @@ const BlogPost = () => {
     addComment,
     deleteComment
   } = useBlogPost(id as string);
+
+  // Vérifier l'accès à l'album si le post en fait partie
+  useEffect(() => {
+    const checkAlbumAccess = async () => {
+      if (!post || !post.album_id || !user) {
+        setHasAlbumAccess(true); // Pas d'album = accès libre
+        return;
+      }
+
+      try {
+        // Utiliser l'ID utilisateur RÉEL (pas impersonné) pour vérifier les permissions
+        const realUserId = isImpersonating ? originalUser?.id : user.id;
+        
+        if (!realUserId) {
+          setHasAlbumAccess(false);
+          return;
+        }
+
+        // Vérifier si l'utilisateur réel est propriétaire de l'album
+        const { data: albumData } = await supabase
+          .from('blog_albums')
+          .select('author_id')
+          .eq('id', post.album_id)
+          .single();
+
+        if (albumData && albumData.author_id === realUserId) {
+          setHasAlbumAccess(true);
+          return;
+        }
+
+        // Vérifier les permissions d'album pour l'utilisateur réel
+        const { data: permissions } = await supabase
+          .from('album_permissions')
+          .select('id')
+          .eq('album_id', post.album_id)
+          .eq('user_id', realUserId)
+          .maybeSingle();
+
+        setHasAlbumAccess(!!permissions);
+      } catch (error) {
+        console.error('Erreur lors de la vérification des permissions d\'album:', error);
+        setHasAlbumAccess(false);
+      }
+    };
+
+    checkAlbumAccess();
+  }, [post, user, isImpersonating, originalUser]);
 
   // Charger l'URL de l'image de couverture si elle existe
   useEffect(() => {
@@ -125,29 +174,46 @@ const BlogPost = () => {
     }
   };
 
-  // CORRECTION DÉFINITIVE des permissions
-  const isAuthor = user && post && user.id === post.author_id;
-  const isAdmin = user && hasRole('admin');
-  const isEditor = user && hasRole('editor');
+  // PERMISSIONS CORRIGÉES : utiliser l'utilisateur RÉEL pour les vérifications
+  const effectiveUserId = getEffectiveUserId();
+  const realUserId = isImpersonating ? originalUser?.id : user?.id;
+  
+  // Vérifier si l'utilisateur RÉEL est l'auteur
+  const isRealAuthor = realUserId && post && realUserId === post.author_id;
+  
+  // Vérifier si l'utilisateur RÉEL est admin (pas via impersonnation)
+  const isRealAdmin = !isImpersonating && user && hasRole('admin');
+  
+  // Vérifier si l'utilisateur RÉEL est éditeur (pas via impersonnation)
+  const isRealEditor = !isImpersonating && user && hasRole('editor');
 
-  // L'utilisateur peut modifier si : il est l'auteur OU admin OU éditeur
-  const canEditPost = isAuthor || isAdmin || isEditor;
+  // PERMISSIONS DE MODIFICATION : auteur réel OU admin réel OU éditeur réel
+  const canEditPost = isRealAuthor || isRealAdmin || isRealEditor;
 
-  // CORRECTION CRITIQUE : Seuls l'auteur ou l'admin peuvent supprimer
-  // Les éditeurs ne peuvent PAS supprimer s'ils ne sont pas l'auteur
-  const canDeletePost = isAuthor || isAdmin;
+  // PERMISSIONS DE SUPPRESSION : SEULEMENT auteur réel OU admin réel
+  const canDeletePost = isRealAuthor || isRealAdmin;
 
-  // Debug logs pour vérifier les permissions
-  console.log('BlogPost permissions check (CORRECTION DÉFINITIVE):', {
-    userId: user?.id,
+  // VÉRIFICATION DE VISIBILITÉ : doit avoir accès à l'album
+  const canViewPost = hasAlbumAccess && (
+    post?.published || 
+    isRealAuthor || 
+    isRealAdmin ||
+    (isImpersonating && hasRole('admin')) // Admin peut voir via impersonnation
+  );
+
+  console.log('BlogPost permissions (CORRIGÉES):', {
+    realUserId,
+    effectiveUserId,
+    isImpersonating,
     postAuthorId: post?.author_id,
-    userEmail: user?.email,
-    isAuthor,
-    isAdmin,
-    isEditor,
+    isRealAuthor,
+    isRealAdmin,
+    isRealEditor,
     canEditPost,
-    canDeletePost, // Cette valeur doit être false pour un éditeur non-auteur
-    roles: user ? ['admin', 'editor', 'reader'].filter(role => hasRole(role as any)) : []
+    canDeletePost,
+    canViewPost,
+    hasAlbumAccess,
+    albumId: post?.album_id
   });
 
   if (loading) {
@@ -176,14 +242,19 @@ const BlogPost = () => {
     );
   }
 
-  // Si l'article n'est pas publié et que l'utilisateur n'est pas l'auteur ou admin
-  if (!post.published && (!user || (user.id !== post.author_id && !hasRole('admin')))) {
+  // Vérifier si l'utilisateur peut voir ce post
+  if (!canViewPost) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
         <div className="container mx-auto px-4 py-16 flex flex-col items-center">
-          <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Article non publié</h1>
-          <p className="mb-8 text-gray-600">Cet article n'est pas encore publié.</p>
+          <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Accès refusé</h1>
+          <p className="mb-8 text-gray-600">
+            {post.album_id 
+              ? "Vous n'avez pas accès à cet album." 
+              : "Cet article n'est pas encore publié."
+            }
+          </p>
           <Button asChild>
             <Link to="/blog">Retour au blog</Link>
           </Button>
@@ -211,7 +282,6 @@ const BlogPost = () => {
                 </Button>
               )}
               
-              {/* CORRECTION CRITIQUE : Bouton supprimer affiché SEULEMENT pour auteur ou admin */}
               {canDeletePost && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -246,11 +316,9 @@ const BlogPost = () => {
         </div>
 
         <article className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Album thumbnail */}
           <AlbumThumbnail album={album} title={post.title} coverImage={coverImageUrl} />
 
           <div className="p-6">
-            {/* Post header with title, author, date, categories */}
             <PostHeader 
               title={post.title}
               isPublished={post.published}
@@ -260,10 +328,8 @@ const BlogPost = () => {
               categories={categories}
             />
 
-            {/* Media gallery */}
             <PostMedia media={media} />
 
-            {/* Post Content */}
             <div className="prose max-w-none">
               {post.content.split('\n').map((paragraph, i) => (
                 <p key={i} className="mb-4">{paragraph}</p>
@@ -272,18 +338,15 @@ const BlogPost = () => {
           </div>
         </article>
 
-        {/* Comments Section */}
         <section className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-serif text-tranches-charcoal mb-6">Commentaires ({comments.length})</h2>
           
-          {/* Comment Form */}
           <CommentForm 
             user={user}
             profile={profile}
             onSubmit={handleCommentSubmit}
           />
 
-          {/* Comment List */}
           <CommentList 
             comments={comments}
             currentUserId={user?.id}

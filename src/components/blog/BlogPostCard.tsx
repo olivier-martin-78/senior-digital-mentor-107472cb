@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AlbumThumbnail from './AlbumThumbnail';
 import { useAuth } from '@/contexts/AuthContext';
+import { useImpersonationContext } from '@/contexts/ImpersonationContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BlogPostCardProps {
   post: PostWithAuthor;
@@ -19,20 +20,76 @@ interface BlogPostCardProps {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, userId }) => {
   const { user, hasRole, getEffectiveUserId } = useAuth();
+  const { isImpersonating, originalUser } = useImpersonationContext();
+  const [hasAlbumAccess, setHasAlbumAccess] = useState(false);
   
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
 
-  const effectiveUserId = getEffectiveUserId();
+  // Vérifier l'accès à l'album
+  useEffect(() => {
+    const checkAlbumAccess = async () => {
+      if (!post.album_id || !user) {
+        setHasAlbumAccess(true); // Pas d'album = accès libre
+        return;
+      }
 
-  // Logique de visibilité simplifiée
-  const isAuthor = effectiveUserId && post.author_id === effectiveUserId;
-  const isAdmin = hasRole('admin');
+      try {
+        // Utiliser l'ID utilisateur RÉEL pour vérifier les permissions
+        const realUserId = isImpersonating ? originalUser?.id : user.id;
+        
+        if (!realUserId) {
+          setHasAlbumAccess(false);
+          return;
+        }
+
+        // Vérifier si l'utilisateur réel est propriétaire de l'album
+        const { data: albumData } = await supabase
+          .from('blog_albums')
+          .select('author_id')
+          .eq('id', post.album_id)
+          .single();
+
+        if (albumData && albumData.author_id === realUserId) {
+          setHasAlbumAccess(true);
+          return;
+        }
+
+        // Vérifier les permissions d'album pour l'utilisateur réel
+        const { data: permissions } = await supabase
+          .from('album_permissions')
+          .select('id')
+          .eq('album_id', post.album_id)
+          .eq('user_id', realUserId)
+          .maybeSingle();
+
+        setHasAlbumAccess(!!permissions);
+      } catch (error) {
+        console.error('Erreur lors de la vérification des permissions d\'album:', error);
+        setHasAlbumAccess(false);
+      }
+    };
+
+    checkAlbumAccess();
+  }, [post.album_id, user, isImpersonating, originalUser]);
+
+  const effectiveUserId = getEffectiveUserId();
+  const realUserId = isImpersonating ? originalUser?.id : user?.id;
+
+  // Logique de visibilité corrigée
+  const isRealAuthor = realUserId && post.author_id === realUserId;
+  const isRealAdmin = !isImpersonating && hasRole('admin');
   
-  // Les posts publiés sont visibles grâce aux politiques RLS
-  // Les brouillons ne sont visibles que par leur auteur ou les admins
-  const isVisible = post.published || isAuthor || isAdmin;
+  // Le post est visible si :
+  // 1. Il est publié ET l'utilisateur a accès à l'album
+  // 2. OU l'utilisateur réel est l'auteur
+  // 3. OU l'utilisateur réel est admin
+  // 4. OU admin via impersonnation (pour la supervision)
+  const isVisible = (post.published && hasAlbumAccess) || 
+                   isRealAuthor || 
+                   isRealAdmin ||
+                   (isImpersonating && hasRole('admin'));
   
   if (!isVisible) {
     return null;
@@ -93,7 +150,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       <CardFooter>
         <Button asChild variant="outline">
           <Link to={`/blog/${post.id}`}>
-            {!post.published && isAuthor ? 'Modifier/Publier' : 'Lire la suite'}
+            {!post.published && isRealAuthor ? 'Modifier/Publier' : 'Lire la suite'}
           </Link>
         </Button>
       </CardFooter>
