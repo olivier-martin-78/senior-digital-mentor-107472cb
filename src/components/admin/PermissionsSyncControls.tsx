@@ -41,16 +41,26 @@ const PermissionsSyncControls = () => {
         }
       }
 
-      // Récupérer tous les membres de groupes
+      // Récupérer tous les membres de groupes séparément
       const { data: groupMembers, error: groupError } = await supabase
         .from('group_members')
-        .select(`
-          *,
-          user:profiles!group_members_user_id_fkey(display_name, email),
-          invitation_groups(name, created_by)
-        `);
+        .select('*');
 
       if (groupError) throw groupError;
+
+      // Récupérer les groupes séparément
+      const { data: invitationGroups } = await supabase
+        .from('invitation_groups')
+        .select('*');
+
+      // Associer les groupes aux membres
+      const groupMembersWithGroups = groupMembers?.map(member => {
+        const group = invitationGroups?.find(g => g.id === member.group_id);
+        return {
+          ...member,
+          invitation_group: group
+        };
+      }) || [];
 
       // Récupérer toutes les permissions actuelles
       const [albumPerms, lifeStoryPerms, diaryPerms] = await Promise.all([
@@ -68,8 +78,8 @@ const PermissionsSyncControls = () => {
           details: invitationsWithInviters || []
         },
         groups: {
-          total: groupMembers?.length || 0,
-          details: groupMembers || []
+          total: groupMembersWithGroups?.length || 0,
+          details: groupMembersWithGroups || []
         },
         currentPermissions: {
           albums: albumPerms.data?.length || 0,
@@ -91,7 +101,7 @@ const PermissionsSyncControls = () => {
       console.error('Erreur lors du diagnostic:', error);
       toast({
         title: "Erreur de diagnostic",
-        description: "Impossible d'analyser l'état des permissions",
+        description: `Impossible d'analyser l'état des permissions: ${error.message}`,
         variant: "destructive"
       });
     } finally {

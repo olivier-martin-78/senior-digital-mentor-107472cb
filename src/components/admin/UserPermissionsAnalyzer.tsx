@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, User, CheckCircle, XCircle } from 'lucide-react';
+import { RefreshCw, User, UserPlus, UserCheck } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -14,22 +14,21 @@ interface UserProfile {
   email: string;
 }
 
+interface InviterPermissions {
+  inviter: {
+    id: string;
+    display_name: string | null;
+    email: string;
+  };
+  albums: any[];
+  lifeStories: any[];
+  diary: boolean;
+  invitation: any;
+}
+
 interface UserPermissionData {
-  directPermissions: {
-    albums: any[];
-    lifeStories: any[];
-    diary: any[];
-  };
-  inheritedPermissions: {
-    groups: any[];
-    invitations: any[];
-  };
-  expectedAccess: {
-    albums: any[];
-    lifeStories: any[];
-    diary: any[];
-  };
-  missingPermissions: {
+  inviterPermissions: InviterPermissions[];
+  currentPermissions: {
     albums: any[];
     lifeStories: any[];
     diary: any[];
@@ -87,132 +86,93 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
     console.log('🔍 Analyse des permissions pour utilisateur:', userId);
 
     try {
-      // Récupérer les permissions directes
+      const userProfile = users.find(u => u.id === userId);
+      if (!userProfile) return;
+
+      // Récupérer les permissions actuelles de l'utilisateur
       const [albumPermissions, lifeStoryPermissions, diaryPermissions] = await Promise.all([
         supabase.from('album_permissions').select(`
           *,
           blog_albums(id, name, author_id)
         `).eq('user_id', userId),
         
-        supabase.from('life_story_permissions').select(`
-          *
-        `).eq('permitted_user_id', userId),
+        supabase.from('life_story_permissions').select('*').eq('permitted_user_id', userId),
         
-        supabase.from('diary_permissions').select(`
-          *
-        `).eq('permitted_user_id', userId)
+        supabase.from('diary_permissions').select('*').eq('permitted_user_id', userId)
       ]);
 
-      // Récupérer les groupes et invitations
-      const { data: groupMemberships } = await supabase
-        .from('group_members')
-        .select(`
-          *,
-          invitation_groups(
-            id, name, created_by
-          )
-        `)
-        .eq('user_id', userId);
-
       // Récupérer les invitations pour cet utilisateur
-      const userProfile = users.find(u => u.id === userId);
       const { data: invitations } = await supabase
         .from('invitations')
         .select('*')
-        .eq('email', userProfile?.email)
+        .eq('email', userProfile.email)
         .not('used_at', 'is', null);
 
-      // Récupérer les informations des inviteurs séparément
-      const invitationsWithInviters = [];
+      // Pour chaque invitation, récupérer les permissions de l'inviteur
+      const inviterPermissions: InviterPermissions[] = [];
+      
       if (invitations) {
         for (const invitation of invitations) {
+          // Récupérer les informations de l'inviteur
           const { data: inviterData } = await supabase
             .from('profiles')
-            .select('display_name, email')
+            .select('id, display_name, email')
             .eq('id', invitation.invited_by)
             .single();
-          
-          invitationsWithInviters.push({
-            ...invitation,
-            inviter: inviterData
-          });
-        }
-      }
 
-      // Calculer l'accès attendu basé sur les invitations
-      const expectedAccess = {
-        albums: [] as any[],
-        lifeStories: [] as any[],
-        diary: [] as any[]
-      };
+          if (!inviterData) continue;
 
-      if (invitationsWithInviters) {
-        for (const invitation of invitationsWithInviters) {
+          // Récupérer les contenus de l'inviteur selon les permissions accordées
+          const inviterContent: InviterPermissions = {
+            inviter: inviterData,
+            albums: [],
+            lifeStories: [],
+            diary: false,
+            invitation
+          };
+
+          // Albums si blog_access = true
           if (invitation.blog_access) {
             const { data: inviterAlbums } = await supabase
               .from('blog_albums')
               .select('*')
               .eq('author_id', invitation.invited_by);
-            expectedAccess.albums.push(...(inviterAlbums || []));
+            inviterContent.albums = inviterAlbums || [];
           }
-          
+
+          // Histoires de vie si life_story_access = true
           if (invitation.life_story_access) {
             const { data: inviterLifeStories } = await supabase
               .from('life_stories')
               .select('*')
               .eq('user_id', invitation.invited_by);
-            expectedAccess.lifeStories.push(...(inviterLifeStories || []));
+            inviterContent.lifeStories = inviterLifeStories || [];
           }
-          
+
+          // Journal si diary_access = true
           if (invitation.diary_access) {
-            expectedAccess.diary.push({
-              owner_id: invitation.invited_by,
-              owner_email: invitation.inviter?.email
-            });
+            inviterContent.diary = true;
           }
+
+          inviterPermissions.push(inviterContent);
         }
       }
 
-      // Calculer les permissions manquantes
-      const currentAlbumIds = albumPermissions.data?.map(p => p.album_id) || [];
-      const currentLifeStoryOwners = lifeStoryPermissions.data?.map(p => p.story_owner_id) || [];
-      const currentDiaryOwners = diaryPermissions.data?.map(p => p.diary_owner_id) || [];
-
-      const missingPermissions = {
-        albums: expectedAccess.albums.filter(album => !currentAlbumIds.includes(album.id)),
-        lifeStories: expectedAccess.lifeStories.filter(story => !currentLifeStoryOwners.includes(story.user_id)),
-        diary: expectedAccess.diary.filter(diary => !currentDiaryOwners.includes(diary.owner_id))
-      };
-
       setPermissionData({
-        directPermissions: {
+        inviterPermissions,
+        currentPermissions: {
           albums: albumPermissions.data || [],
           lifeStories: lifeStoryPermissions.data || [],
           diary: diaryPermissions.data || []
-        },
-        inheritedPermissions: {
-          groups: groupMemberships || [],
-          invitations: invitationsWithInviters || []
-        },
-        expectedAccess,
-        missingPermissions
+        }
       });
 
       console.log('🔍 Analyse terminée:', {
-        directPermissions: {
+        inviterPermissions: inviterPermissions.length,
+        currentPermissions: {
           albums: albumPermissions.data?.length || 0,
           lifeStories: lifeStoryPermissions.data?.length || 0,
           diary: diaryPermissions.data?.length || 0
-        },
-        expectedAccess: {
-          albums: expectedAccess.albums.length,
-          lifeStories: expectedAccess.lifeStories.length,
-          diary: expectedAccess.diary.length
-        },
-        missingPermissions: {
-          albums: missingPermissions.albums.length,
-          lifeStories: missingPermissions.lifeStories.length,
-          diary: missingPermissions.diary.length
         }
       });
 
@@ -228,63 +188,30 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
     }
   };
 
-  const fixMissingPermissions = async () => {
-    if (!selectedUserId || !permissionData) return;
+  const syncUserPermissions = async () => {
+    if (!selectedUserId) return;
 
     setLoading(true);
     try {
-      let fixed = 0;
+      const { data, error } = await supabase.functions.invoke('sync-invitation-permissions', {
+        body: { targetUserId: selectedUserId }
+      });
 
-      // Corriger les permissions d'albums manquantes
-      for (const album of permissionData.missingPermissions.albums) {
-        const { error } = await supabase
-          .from('album_permissions')
-          .insert({
-            album_id: album.id,
-            user_id: selectedUserId
-          });
-        if (!error) fixed++;
-      }
-
-      // Corriger les permissions d'histoires de vie manquantes
-      for (const story of permissionData.missingPermissions.lifeStories) {
-        const { error } = await supabase
-          .from('life_story_permissions')
-          .insert({
-            story_owner_id: story.user_id,
-            permitted_user_id: selectedUserId,
-            permission_level: 'read',
-            granted_by: story.user_id
-          });
-        if (!error) fixed++;
-      }
-
-      // Corriger les permissions de journal manquantes
-      for (const diary of permissionData.missingPermissions.diary) {
-        const { error } = await supabase
-          .from('diary_permissions')
-          .insert({
-            diary_owner_id: diary.owner_id,
-            permitted_user_id: selectedUserId,
-            permission_level: 'read',
-            granted_by: diary.owner_id
-          });
-        if (!error) fixed++;
-      }
+      if (error) throw error;
 
       toast({
-        title: "Permissions corrigées",
-        description: `${fixed} permissions ont été ajoutées avec succès`
+        title: "Synchronisation réussie",
+        description: data.message || "Permissions synchronisées avec succès"
       });
 
       // Recharger l'analyse
       await analyzeUserPermissions(selectedUserId);
 
     } catch (error) {
-      console.error('Erreur lors de la correction:', error);
+      console.error('Erreur lors de la synchronisation:', error);
       toast({
-        title: "Erreur de correction",
-        description: "Impossible de corriger toutes les permissions",
+        title: "Erreur de synchronisation",
+        description: "Impossible de synchroniser les permissions",
         variant: "destructive"
       });
     } finally {
@@ -320,163 +247,160 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         </div>
         
         {selectedUserId && (
-          <Button
-            onClick={() => analyzeUserPermissions(selectedUserId)}
-            disabled={analyzing}
-            variant="outline"
-          >
-            {analyzing ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Analyse...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Réanalyser
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => analyzeUserPermissions(selectedUserId)}
+              disabled={analyzing}
+              variant="outline"
+            >
+              {analyzing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Analyse...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réanalyser
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={syncUserPermissions}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Sync...
+                </>
+              ) : (
+                'Synchroniser les permissions'
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
       {/* Résultats de l'analyse */}
       {selectedUser && permissionData && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              Analyse pour {selectedUser.display_name || selectedUser.email}
-            </h3>
-            {(permissionData.missingPermissions.albums.length > 0 || 
-              permissionData.missingPermissions.lifeStories.length > 0 || 
-              permissionData.missingPermissions.diary.length > 0) && (
-              <Button
-                onClick={fixMissingPermissions}
-                disabled={loading}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Correction...
-                  </>
-                ) : (
-                  'Corriger les permissions manquantes'
-                )}
-              </Button>
-            )}
-          </div>
+          <h3 className="text-lg font-semibold">
+            Analyse pour {selectedUser.display_name || selectedUser.email}
+          </h3>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Permissions actuelles */}
+            {/* Carte 1: Permissions des inviteurs */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Permissions actuelles
+                  <UserPlus className="h-5 w-5 text-blue-600" />
+                  Permissions des inviteurs
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Albums ({permissionData.directPermissions.albums.length})</h4>
-                  {permissionData.directPermissions.albums.map((perm, idx) => (
-                    <Badge key={idx} variant="outline" className="mr-2 mb-1">
-                      {perm.blog_albums?.name || 'Album inconnu'}
-                    </Badge>
-                  ))}
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Histoires de vie ({permissionData.directPermissions.lifeStories.length})</h4>
-                  {permissionData.directPermissions.lifeStories.map((perm, idx) => (
-                    <Badge key={idx} variant="outline" className="mr-2 mb-1">
-                      Propriétaire: {perm.story_owner_id}
-                    </Badge>
-                  ))}
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Journaux ({permissionData.directPermissions.diary.length})</h4>
-                  {permissionData.directPermissions.diary.map((perm, idx) => (
-                    <Badge key={idx} variant="outline" className="mr-2 mb-1">
-                      Propriétaire: {perm.diary_owner_id}
-                    </Badge>
-                  ))}
-                </div>
+                {permissionData.inviterPermissions.length === 0 ? (
+                  <p className="text-gray-500">Aucune invitation trouvée</p>
+                ) : (
+                  permissionData.inviterPermissions.map((inviterPerm, idx) => (
+                    <div key={idx} className="p-3 border rounded bg-gray-50">
+                      <div className="font-medium mb-2">
+                        {inviterPerm.inviter.display_name || inviterPerm.inviter.email}
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-medium">Albums ({inviterPerm.albums.length}):</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {inviterPerm.albums.map((album, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {album.name}
+                              </Badge>
+                            ))}
+                            {inviterPerm.albums.length === 0 && <span className="text-gray-400">Aucun</span>}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="font-medium">Histoires de vie ({inviterPerm.lifeStories.length}):</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {inviterPerm.lifeStories.map((story, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {story.title}
+                              </Badge>
+                            ))}
+                            {inviterPerm.lifeStories.length === 0 && <span className="text-gray-400">Aucune</span>}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="font-medium">Journal:</span>
+                          <span className={`ml-2 ${inviterPerm.diary ? 'text-green-600' : 'text-gray-400'}`}>
+                            {inviterPerm.diary ? 'Accès accordé' : 'Pas d\'accès'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
 
-            {/* Permissions manquantes */}
+            {/* Carte 2: Permissions actuelles de l'invité */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-red-600" />
-                  Permissions manquantes
+                  <UserCheck className="h-5 w-5 text-green-600" />
+                  Permissions de l'invité
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-medium mb-2">Albums manqués ({permissionData.missingPermissions.albums.length})</h4>
-                  {permissionData.missingPermissions.albums.map((album, idx) => (
-                    <Badge key={idx} variant="destructive" className="mr-2 mb-1">
-                      {album.name}
-                    </Badge>
-                  ))}
+                  <h4 className="font-medium mb-2">Albums ({permissionData.currentPermissions.albums.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {permissionData.currentPermissions.albums.map((perm, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {perm.blog_albums?.name || 'Album inconnu'}
+                      </Badge>
+                    ))}
+                    {permissionData.currentPermissions.albums.length === 0 && (
+                      <span className="text-gray-400">Aucune permission d'album</span>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Histoires de vie manquées ({permissionData.missingPermissions.lifeStories.length})</h4>
-                  {permissionData.missingPermissions.lifeStories.map((story, idx) => (
-                    <Badge key={idx} variant="destructive" className="mr-2 mb-1">
-                      Histoire #{story.id}
-                    </Badge>
-                  ))}
+                  <h4 className="font-medium mb-2">Histoires de vie ({permissionData.currentPermissions.lifeStories.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {permissionData.currentPermissions.lifeStories.map((perm, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        Propriétaire: {perm.story_owner_id}
+                      </Badge>
+                    ))}
+                    {permissionData.currentPermissions.lifeStories.length === 0 && (
+                      <span className="text-gray-400">Aucune permission d'histoire</span>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Journaux manqués ({permissionData.missingPermissions.diary.length})</h4>
-                  {permissionData.missingPermissions.diary.map((diary, idx) => (
-                    <Badge key={idx} variant="destructive" className="mr-2 mb-1">
-                      {diary.owner_email}
-                    </Badge>
-                  ))}
+                  <h4 className="font-medium mb-2">Journaux ({permissionData.currentPermissions.diary.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {permissionData.currentPermissions.diary.map((perm, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        Propriétaire: {perm.diary_owner_id}
+                      </Badge>
+                    ))}
+                    {permissionData.currentPermissions.diary.length === 0 && (
+                      <span className="text-gray-400">Aucune permission de journal</span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* Détails des invitations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Invitations reçues</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {permissionData.inheritedPermissions.invitations.length === 0 ? (
-                <p className="text-gray-500">Aucune invitation trouvée</p>
-              ) : (
-                <div className="space-y-2">
-                  {permissionData.inheritedPermissions.invitations.map((invitation, idx) => (
-                    <div key={idx} className="p-3 border rounded bg-gray-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">
-                          Invité par: {invitation.inviter?.display_name || invitation.inviter?.email}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {invitation.used_at ? 'Utilisée' : 'En attente'}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        {invitation.blog_access && <Badge>Blog</Badge>}
-                        {invitation.life_story_access && <Badge>Histoire de vie</Badge>}
-                        {invitation.diary_access && <Badge>Journal</Badge>}
-                        {invitation.wishes_access && <Badge>Souhaits</Badge>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       )}
 
