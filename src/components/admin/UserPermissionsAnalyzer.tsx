@@ -233,30 +233,40 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
             inviterContent.diaryEntries = inviterDiaryEntries || [];
           }
 
+          console.log('📊 Contenu final pour inviteur', inviterData.email, ':', {
+            albums: inviterContent.albums.length,
+            lifeStories: inviterContent.lifeStories.length,
+            diaryEntries: inviterContent.diaryEntries.length
+          });
+
           inviterPermissions.push(inviterContent);
         }
       }
 
-      setPermissionData({
+      const finalData = {
         inviterPermissions,
         currentPermissions: {
           albums: albumPermissions.data || [],
           lifeStories: lifeStoryPermissions.data || [],
           diary: diaryPermissions.data || []
         }
-      });
+      };
 
-      console.log('✅ Analyse terminée:', {
-        inviterPermissions: inviterPermissions.length,
-        totalInviterAlbums: inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0),
-        totalInviterLifeStories: inviterPermissions.reduce((sum, p) => sum + p.lifeStories.length, 0),
-        totalInviterDiaryEntries: inviterPermissions.reduce((sum, p) => sum + p.diaryEntries.length, 0),
+      console.log('✅ Données finales avant setPermissionData:', {
+        inviterPermissions: finalData.inviterPermissions.map(inv => ({
+          inviter: inv.inviter.email,
+          albums: inv.albums.length,
+          lifeStories: inv.lifeStories.length,
+          diaryEntries: inv.diaryEntries.length
+        })),
         currentPermissions: {
-          albums: albumPermissions.data?.length || 0,
-          lifeStories: lifeStoryPermissions.data?.length || 0,
-          diary: diaryPermissions.data?.length || 0
+          albums: finalData.currentPermissions.albums.length,
+          lifeStories: finalData.currentPermissions.lifeStories.length,
+          diary: finalData.currentPermissions.diary.length
         }
       });
+
+      setPermissionData(finalData);
 
     } catch (error) {
       console.error('❌ Erreur lors de l\'analyse:', error);
@@ -302,6 +312,15 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
   };
 
   const selectedUser = users.find(u => u.id === selectedUserId);
+
+  console.log('🖥️ Rendu avec permissionData:', permissionData ? {
+    inviterPermissions: permissionData.inviterPermissions.map(inv => ({
+      inviter: inv.inviter.email,
+      albums: inv.albums.length,
+      lifeStories: inv.lifeStories.length,
+      diaryEntries: inv.diaryEntries.length
+    }))
+  } : 'null');
 
   return (
     <div className="space-y-6">
@@ -389,58 +408,66 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                 {permissionData.inviterPermissions.length === 0 ? (
                   <p className="text-gray-500">Aucune invitation trouvée</p>
                 ) : (
-                  permissionData.inviterPermissions.map((inviterPerm, idx) => (
-                    <div key={idx} className="p-3 border rounded bg-gray-50">
-                      <div className="font-medium mb-2">
-                        {inviterPerm.inviter.display_name || inviterPerm.inviter.email}
-                      </div>
-                      
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Albums ({inviterPerm.albums.length}):</span>
-                          {inviterPerm.invitation.blog_access ? (
-                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
-                          ) : (
-                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
-                          )}
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {inviterPerm.albums.map((album, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {album.name}
-                              </Badge>
-                            ))}
-                            {inviterPerm.albums.length === 0 && <span className="text-gray-400">Aucun</span>}
-                          </div>
+                  permissionData.inviterPermissions.map((inviterPerm, idx) => {
+                    console.log('🖥️ Affichage inviteur:', inviterPerm.inviter.email, {
+                      albums: inviterPerm.albums?.length || 0,
+                      lifeStories: inviterPerm.lifeStories?.length || 0,
+                      diaryEntries: inviterPerm.diaryEntries?.length || 0
+                    });
+                    
+                    return (
+                      <div key={idx} className="p-3 border rounded bg-gray-50">
+                        <div className="font-medium mb-2">
+                          {inviterPerm.inviter.display_name || inviterPerm.inviter.email}
                         </div>
                         
-                        <div>
-                          <span className="font-medium">Histoires de vie ({inviterPerm.lifeStories.length}):</span>
-                          {inviterPerm.invitation.life_story_access ? (
-                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
-                          ) : (
-                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
-                          )}
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {inviterPerm.lifeStories.map((story, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {story.title}
-                              </Badge>
-                            ))}
-                            {inviterPerm.lifeStories.length === 0 && <span className="text-gray-400">Aucune</span>}
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="font-medium">Albums ({inviterPerm.albums?.length || 0}):</span>
+                            {inviterPerm.invitation.blog_access ? (
+                              <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                            ) : (
+                              <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                            )}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(inviterPerm.albums || []).map((album, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {album.name}
+                                </Badge>
+                              ))}
+                              {(!inviterPerm.albums || inviterPerm.albums.length === 0) && <span className="text-gray-400">Aucun</span>}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Histoires de vie ({inviterPerm.lifeStories?.length || 0}):</span>
+                            {inviterPerm.invitation.life_story_access ? (
+                              <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                            ) : (
+                              <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                            )}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(inviterPerm.lifeStories || []).map((story, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {story.title}
+                                </Badge>
+                              ))}
+                              {(!inviterPerm.lifeStories || inviterPerm.lifeStories.length === 0) && <span className="text-gray-400">Aucune</span>}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Journal ({inviterPerm.diaryEntries?.length || 0} entrées):</span>
+                            {inviterPerm.invitation.diary_access ? (
+                              <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                            ) : (
+                              <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                            )}
                           </div>
                         </div>
-                        
-                        <div>
-                          <span className="font-medium">Journal ({inviterPerm.diaryEntries.length} entrées):</span>
-                          {inviterPerm.invitation.diary_access ? (
-                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
-                          ) : (
-                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </CardContent>
             </Card>
