@@ -15,27 +15,23 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Check if request has a body and is valid JSON
-    const contentType = req.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      console.error("send-password-reset: Content-Type is not application/json");
-      throw new Error("Content-Type doit être application/json");
-    }
-
-    const text = await req.text();
-    console.log(`send-password-reset: Request body text: ${text}`);
-    
-    if (!text || text.trim() === "") {
-      console.error("send-password-reset: Request body is empty");
-      throw new Error("Le corps de la requête est vide");
-    }
-
     let requestData;
+    
+    // Lire le corps de la requête de manière plus robuste
     try {
+      const text = await req.text();
+      console.log(`send-password-reset: Request body text: "${text}"`);
+      
+      if (!text || text.trim() === "") {
+        console.error("send-password-reset: Request body is empty");
+        throw new Error("Le corps de la requête est vide");
+      }
+      
       requestData = JSON.parse(text);
+      console.log(`send-password-reset: Parsed data:`, requestData);
     } catch (parseError) {
-      console.error("send-password-reset: JSON parse error:", parseError);
-      throw new Error("Corps de la requête JSON invalide");
+      console.error("send-password-reset: Error reading/parsing request:", parseError);
+      throw new Error("Erreur lors de la lecture de la requête");
     }
 
     const { email } = requestData;
