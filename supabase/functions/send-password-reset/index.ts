@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-connection-type",
 };
 
-const handler = async (req: Request) => {
+const handler = async (req: Request): Promise<Response> => {
   console.log("=== DÉBUT FONCTION send-password-reset ===");
   console.log(`Méthode de requête: ${req.method}`);
 
@@ -25,7 +25,15 @@ const handler = async (req: Request) => {
     console.log("Validation des paramètres...");
     if (!email || typeof email !== 'string' || email.trim() === '') {
       console.error("Email manquant ou invalide");
-      throw new Error("L'email est requis et doit être valide");
+      return new Response(
+        JSON.stringify({ 
+          error: "L'email est requis et doit être valide"
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
     console.log("Paramètres validés avec succès");
 
@@ -35,7 +43,15 @@ const handler = async (req: Request) => {
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Variables d'environnement Supabase manquantes");
-      throw new Error("Configuration Supabase manquante");
+      return new Response(
+        JSON.stringify({ 
+          error: "Configuration Supabase manquante"
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
     console.log("Variables d'environnement trouvées");
 
@@ -43,8 +59,9 @@ const handler = async (req: Request) => {
     console.log("Création du client Supabase...");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use the correct application domain for redirect URL
-    const redirectTo = "https://senior-digital-mentor.com/auth?reset=true";
+    // Get the origin from the request headers for dynamic redirect URL
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
+    const redirectTo = `${origin}/auth?reset=true`;
     console.log(`URL de redirection utilisée: ${redirectTo}`);
 
     console.log(`Envoi de l'email de réinitialisation pour: ${email.trim()}`);
@@ -56,7 +73,16 @@ const handler = async (req: Request) => {
 
     if (error) {
       console.error("Erreur Supabase lors de l'envoi:", error);
-      throw new Error(error.message || "Erreur lors de l'envoi de l'email de réinitialisation");
+      return new Response(
+        JSON.stringify({ 
+          error: "Erreur lors de l'envoi de l'email de réinitialisation",
+          details: error.message
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("SUCCESS - Email de réinitialisation envoyé avec succès");
