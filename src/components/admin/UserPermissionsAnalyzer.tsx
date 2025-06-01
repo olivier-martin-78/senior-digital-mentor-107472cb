@@ -239,7 +239,25 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
             diaryEntries: inviterContent.diaryEntries.length
           });
 
+          console.log('🔍 AVANT PUSH - inviterContent détaillé:', {
+            inviterEmail: inviterContent.inviter.email,
+            albumsArray: inviterContent.albums,
+            albumsLength: inviterContent.albums?.length || 0,
+            lifeStoriesArray: inviterContent.lifeStories,
+            lifeStoriesLength: inviterContent.lifeStories?.length || 0,
+            diaryEntriesArray: inviterContent.diaryEntries,
+            diaryEntriesLength: inviterContent.diaryEntries?.length || 0
+          });
+
           inviterPermissions.push(inviterContent);
+          
+          console.log('🔍 APRÈS PUSH - inviterPermissions.length:', inviterPermissions.length);
+          console.log('🔍 APRÈS PUSH - dernier élément:', {
+            inviterEmail: inviterPermissions[inviterPermissions.length - 1]?.inviter?.email,
+            albums: inviterPermissions[inviterPermissions.length - 1]?.albums?.length || 0,
+            lifeStories: inviterPermissions[inviterPermissions.length - 1]?.lifeStories?.length || 0,
+            diaryEntries: inviterPermissions[inviterPermissions.length - 1]?.diaryEntries?.length || 0
+          });
         }
       }
 
@@ -252,12 +270,15 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         }
       };
 
-      console.log('✅ Données finales avant setPermissionData:', {
+      console.log('✅ Données finales AVANT setPermissionData:', {
         inviterPermissions: finalData.inviterPermissions.map(inv => ({
           inviter: inv.inviter.email,
           albums: inv.albums.length,
           lifeStories: inv.lifeStories.length,
-          diaryEntries: inv.diaryEntries.length
+          diaryEntries: inv.diaryEntries.length,
+          albumsArray: inv.albums,
+          lifeStoriesArray: inv.lifeStories,
+          diaryEntriesArray: inv.diaryEntries
         })),
         currentPermissions: {
           albums: finalData.currentPermissions.albums.length,
@@ -266,7 +287,13 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         }
       });
 
+      console.log('🚀 APPEL setPermissionData avec:', finalData);
       setPermissionData(finalData);
+      
+      // Log après setPermissionData pour vérifier l'état
+      setTimeout(() => {
+        console.log('🔍 État après setPermissionData - permissionData dans state:', permissionData);
+      }, 100);
 
     } catch (error) {
       console.error('❌ Erreur lors de l\'analyse:', error);
@@ -313,14 +340,19 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
 
   const selectedUser = users.find(u => u.id === selectedUserId);
 
-  console.log('🖥️ Rendu avec permissionData:', permissionData ? {
-    inviterPermissions: permissionData.inviterPermissions.map(inv => ({
+  // Log avant le rendu
+  console.log('🖥️ RENDU COMPONENT - permissionData actuel:', permissionData);
+  if (permissionData) {
+    console.log('🖥️ RENDU COMPONENT - inviterPermissions détaillé:', permissionData.inviterPermissions.map(inv => ({
       inviter: inv.inviter.email,
-      albums: inv.albums.length,
-      lifeStories: inv.lifeStories.length,
-      diaryEntries: inv.diaryEntries.length
-    }))
-  } : 'null');
+      albums: inv.albums?.length || 0,
+      lifeStories: inv.lifeStories?.length || 0,
+      diaryEntries: inv.diaryEntries?.length || 0,
+      albumsData: inv.albums,
+      lifeStoriesData: inv.lifeStories,
+      diaryEntriesData: inv.diaryEntries
+    })));
+  }
 
   return (
     <div className="space-y-6">
@@ -400,7 +432,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                   <UserPlus className="h-5 w-5 text-blue-600" />
                   Contenu disponible chez les inviteurs
                   <Badge variant="secondary" className="ml-2">
-                    {permissionData.inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0)} albums total
+                    {permissionData.inviterPermissions.reduce((sum, p) => sum + (p.albums?.length || 0), 0)} albums total
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -409,10 +441,13 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                   <p className="text-gray-500">Aucune invitation trouvée</p>
                 ) : (
                   permissionData.inviterPermissions.map((inviterPerm, idx) => {
-                    console.log('🖥️ Affichage inviteur:', inviterPerm.inviter.email, {
+                    console.log('🖥️ Affichage inviteur dans JSX:', inviterPerm.inviter.email, {
                       albums: inviterPerm.albums?.length || 0,
                       lifeStories: inviterPerm.lifeStories?.length || 0,
-                      diaryEntries: inviterPerm.diaryEntries?.length || 0
+                      diaryEntries: inviterPerm.diaryEntries?.length || 0,
+                      albumsData: inviterPerm.albums,
+                      lifeStoriesData: inviterPerm.lifeStories,
+                      diaryEntriesData: inviterPerm.diaryEntries
                     });
                     
                     return (
