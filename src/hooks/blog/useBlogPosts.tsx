@@ -152,8 +152,8 @@ export const useBlogPosts = (
             userPostsQuery = userPostsQuery.lte('created_at', endDate);
           }
 
-          // CORRECTION : Exécuter la requête et ajouter la promesse
-          postsPromises.push(userPostsQuery);
+          // CORRECTION FINALE : Exécuter la requête et ajouter la promesse
+          postsPromises.push(userPostsQuery.then(result => ({ ...result, queryType: 'user' })));
 
           // 2. Posts des albums accessibles (seulement publiés)
           if (uniqueAccessibleAlbumIds.length > 0) {
@@ -185,8 +185,8 @@ export const useBlogPosts = (
               albumPostsQuery = albumPostsQuery.lte('created_at', endDate);
             }
 
-            // CORRECTION : Exécuter la requête et ajouter la promesse
-            postsPromises.push(albumPostsQuery);
+            // CORRECTION FINALE : Exécuter la requête et ajouter la promesse
+            postsPromises.push(albumPostsQuery.then(result => ({ ...result, queryType: 'albums' })));
           }
 
           // Exécuter toutes les requêtes en parallèle
@@ -199,7 +199,7 @@ export const useBlogPosts = (
               console.error(`❌ useBlogPosts - Erreur requête ${index}:`, result.error);
             } else if (result.data) {
               allPosts.push(...result.data);
-              console.log(`✅ useBlogPosts - Requête ${index} réussie:`, {
+              console.log(`✅ useBlogPosts - Requête ${index} (${result.queryType}) réussie:`, {
                 count: result.data.length,
                 posts: result.data.map((p: any) => ({
                   id: p.id,
