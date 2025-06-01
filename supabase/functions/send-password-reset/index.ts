@@ -15,40 +15,24 @@ serve(async (req: Request) => {
   }
 
   try {
-    let requestData;
-    
-    // Try to read the request body using different methods
-    try {
-      // First try to read as JSON directly
-      requestData = await req.json();
-      console.log(`send-password-reset: Direct JSON parse successful:`, requestData);
-    } catch (jsonError) {
-      console.log(`send-password-reset: Direct JSON parse failed, trying text:`, jsonError);
-      
-      // If that fails, try reading as text first
-      try {
-        const text = await req.text();
-        console.log(`send-password-reset: Request body text: "${text}"`);
-        
-        if (!text || text.trim() === "") {
-          console.error("send-password-reset: Request body is empty");
-          throw new Error("Le corps de la requête est vide");
-        }
-        
-        requestData = JSON.parse(text);
-        console.log(`send-password-reset: Text then JSON parse successful:`, requestData);
-      } catch (parseError) {
-        console.error("send-password-reset: Error reading/parsing request:", parseError);
-        throw new Error("Erreur lors de la lecture de la requête");
-      }
-    }
+    // Read request body as JSON directly
+    const requestData = await req.json();
+    console.log(`send-password-reset: Request data received:`, requestData);
 
     const { email } = requestData;
     console.log(`send-password-reset: Processing request for email: ${email}`);
 
-    if (!email) {
+    if (!email || typeof email !== 'string' || email.trim() === '') {
       console.error("send-password-reset: Email is required");
-      throw new Error("L'email est requis");
+      return new Response(
+        JSON.stringify({ 
+          error: "L'email est requis et doit être valide" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     // Create Supabase client with service role key for admin operations
@@ -62,13 +46,21 @@ serve(async (req: Request) => {
     console.log(`send-password-reset: Using redirect URL: ${redirectTo}`);
 
     // Send password reset email
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: redirectTo,
     });
 
     if (error) {
       console.error("send-password-reset: Supabase error:", error);
-      throw error;
+      return new Response(
+        JSON.stringify({ 
+          error: error.message || "Erreur lors de l'envoi de l'email de réinitialisation" 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("send-password-reset: Password reset email sent successfully for:", email);
@@ -86,12 +78,26 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     console.error("send-password-reset: Error in function:", error);
+    
+    // Handle JSON parsing errors specifically
+    if (error.name === 'SyntaxError' || error.message?.includes('JSON')) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Format de requête invalide. Veuillez envoyer du JSON valide." 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || "Une erreur s'est produite lors de l'envoi de l'email" 
       }),
       {
-        status: 400,
+        status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
