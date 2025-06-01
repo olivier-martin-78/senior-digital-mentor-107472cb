@@ -21,10 +21,19 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Lecture du corps de la requête...");
     
     let email: string;
+    let requestBody: any;
     
     try {
-      const requestBody = await req.json();
-      console.log("Corps de la requête reçu:", requestBody);
+      // Clone the request to read the body as text first for debugging
+      const bodyText = await req.text();
+      console.log("Corps de la requête brut:", bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error("Corps de la requête vide");
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      console.log("Corps de la requête parsé:", requestBody);
       email = requestBody.email;
     } catch (jsonError) {
       console.error("Erreur lors du parsing JSON:", jsonError);
