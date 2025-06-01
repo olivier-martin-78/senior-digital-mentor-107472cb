@@ -91,17 +91,15 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
       const [albumPermissions, lifeStoryPermissions, diaryPermissions] = await Promise.all([
         supabase.from('album_permissions').select(`
           *,
-          blog_albums(id, name, author_id, profiles!blog_albums_author_id_fkey(display_name, email))
+          blog_albums(id, name, author_id)
         `).eq('user_id', userId),
         
         supabase.from('life_story_permissions').select(`
-          *,
-          story_owner:profiles!life_story_permissions_story_owner_id_fkey(display_name, email)
+          *
         `).eq('permitted_user_id', userId),
         
         supabase.from('diary_permissions').select(`
-          *,
-          diary_owner:profiles!diary_permissions_diary_owner_id_fkey(display_name, email)
+          *
         `).eq('permitted_user_id', userId)
       ]);
 
@@ -111,8 +109,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         .select(`
           *,
           invitation_groups(
-            id, name, created_by,
-            creator:profiles!invitation_groups_created_by_fkey(display_name, email)
+            id, name, created_by
           )
         `)
         .eq('user_id', userId);
@@ -121,12 +118,26 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
       const userProfile = users.find(u => u.id === userId);
       const { data: invitations } = await supabase
         .from('invitations')
-        .select(`
-          *,
-          inviter:profiles!invitations_invited_by_fkey(display_name, email)
-        `)
+        .select('*')
         .eq('email', userProfile?.email)
         .not('used_at', 'is', null);
+
+      // Récupérer les informations des inviteurs séparément
+      const invitationsWithInviters = [];
+      if (invitations) {
+        for (const invitation of invitations) {
+          const { data: inviterData } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', invitation.invited_by)
+            .single();
+          
+          invitationsWithInviters.push({
+            ...invitation,
+            inviter: inviterData
+          });
+        }
+      }
 
       // Calculer l'accès attendu basé sur les invitations
       const expectedAccess = {
@@ -135,8 +146,8 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         diary: [] as any[]
       };
 
-      if (invitations) {
-        for (const invitation of invitations) {
+      if (invitationsWithInviters) {
+        for (const invitation of invitationsWithInviters) {
           if (invitation.blog_access) {
             const { data: inviterAlbums } = await supabase
               .from('blog_albums')
@@ -181,7 +192,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         },
         inheritedPermissions: {
           groups: groupMemberships || [],
-          invitations: invitations || []
+          invitations: invitationsWithInviters || []
         },
         expectedAccess,
         missingPermissions
@@ -379,7 +390,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                   <h4 className="font-medium mb-2">Histoires de vie ({permissionData.directPermissions.lifeStories.length})</h4>
                   {permissionData.directPermissions.lifeStories.map((perm, idx) => (
                     <Badge key={idx} variant="outline" className="mr-2 mb-1">
-                      {perm.story_owner?.display_name || perm.story_owner?.email || 'Propriétaire inconnu'}
+                      Propriétaire: {perm.story_owner_id}
                     </Badge>
                   ))}
                 </div>
@@ -388,7 +399,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                   <h4 className="font-medium mb-2">Journaux ({permissionData.directPermissions.diary.length})</h4>
                   {permissionData.directPermissions.diary.map((perm, idx) => (
                     <Badge key={idx} variant="outline" className="mr-2 mb-1">
-                      {perm.diary_owner?.display_name || perm.diary_owner?.email || 'Propriétaire inconnu'}
+                      Propriétaire: {perm.diary_owner_id}
                     </Badge>
                   ))}
                 </div>
