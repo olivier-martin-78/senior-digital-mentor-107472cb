@@ -158,24 +158,9 @@ export const useBlogPosts = (
             }
           });
 
-          // Vérification spécifique pour les albums "Tiago" et "Papy & Mamie"
-          const allAccessibleAlbums = [
-            ...(ownedAlbums || []),
-            ...permittedAlbumsDetails
-          ];
-          const tiaoAlbum = allAccessibleAlbums.find(album => album.name.toLowerCase().includes('tiago'));
-          const papyMamieAlbum = allAccessibleAlbums.find(album => album.name.toLowerCase().includes('papy') || album.name.toLowerCase().includes('mamie'));
-          
-          console.log('🔍 VÉRIFICATION SPÉCIFIQUE - Albums Tiago et Papy & Mamie:', {
-            tiaoTrouvé: !!tiaoAlbum,
-            tiaoAlbum: tiaoAlbum ? { id: tiaoAlbum.id, name: tiaoAlbum.name, author_id: tiaoAlbum.author_id } : null,
-            papyMamieTrouvé: !!papyMamieAlbum,
-            papyMamieAlbum: papyMamieAlbum ? { id: papyMamieAlbum.id, name: papyMamieAlbum.name, author_id: papyMamieAlbum.author_id } : null
-          });
-
-          // ÉTAPE 5: Récupérer les posts des albums accessibles
+          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles (CORRECTION CRITIQUE)
           if (uniqueAccessibleAlbumIds.length > 0) {
-            console.log('📝 ÉTAPE 5 - Récupération posts des albums accessibles');
+            console.log('📝 ÉTAPE 5 - Récupération TOUS posts publiés des albums accessibles');
             
             let postsQuery = supabase
               .from('blog_posts')
@@ -184,6 +169,7 @@ export const useBlogPosts = (
                 profiles(id, display_name, email, avatar_url, created_at)
               `)
               .in('album_id', uniqueAccessibleAlbumIds)
+              .eq('published', true)  // CORRECTION: Récupérer TOUS les posts publiés, pas seulement ceux de l'utilisateur
               .order('created_at', { ascending: false });
 
             // Appliquer les filtres
@@ -209,48 +195,29 @@ export const useBlogPosts = (
               console.error('❌ ÉTAPE 5 - Erreur posts accessibles:', accessiblePostsError);
             } else if (accessiblePosts) {
               allPosts = accessiblePosts;
-              console.log('✅ ÉTAPE 5 - Posts des albums accessibles récupérés:', {
+              console.log('✅ ÉTAPE 5 - TOUS posts publiés des albums accessibles récupérés:', {
                 count: accessiblePosts.length,
-                postsParAlbum: uniqueAccessibleAlbumIds.map(albumId => ({
-                  albumId,
-                  posts: accessiblePosts.filter(p => p.album_id === albumId).map(p => ({
-                    id: p.id,
-                    title: p.title,
-                    author_id: p.author_id,
-                    published: p.published
-                  }))
-                }))
+                postsParAlbum: uniqueAccessibleAlbumIds.map(albumId => {
+                  const albumPosts = accessiblePosts.filter(p => p.album_id === albumId);
+                  return {
+                    albumId,
+                    postsCount: albumPosts.length,
+                    posts: albumPosts.map(p => ({
+                      id: p.id,
+                      title: p.title,
+                      author_id: p.author_id,
+                      published: p.published,
+                      isOwnPost: p.author_id === effectiveUserId
+                    }))
+                  };
+                })
               });
-
-              // Vérification spécifique pour les posts des albums "Tiago" et "Papy & Mamie"
-              const tiaoAlbumId = tiaoAlbum?.id;
-              const papyMamieAlbumId = papyMamieAlbum?.id;
-              
-              if (tiaoAlbumId) {
-                const tiaoPosts = accessiblePosts.filter(p => p.album_id === tiaoAlbumId);
-                console.log('🔍 POSTS ALBUM TIAGO:', {
-                  albumId: tiaoAlbumId,
-                  albumName: tiaoAlbum.name,
-                  postsCount: tiaoPosts.length,
-                  posts: tiaoPosts.map(p => ({ id: p.id, title: p.title, published: p.published }))
-                });
-              }
-              
-              if (papyMamieAlbumId) {
-                const papyMamiePosts = accessiblePosts.filter(p => p.album_id === papyMamieAlbumId);
-                console.log('🔍 POSTS ALBUM PAPY & MAMIE:', {
-                  albumId: papyMamieAlbumId,
-                  albumName: papyMamieAlbum.name,
-                  postsCount: papyMamiePosts.length,
-                  posts: papyMamiePosts.map(p => ({ id: p.id, title: p.title, published: p.published }))
-                });
-              }
             }
           } else {
             console.log('⚠️ ÉTAPE 5 - Aucun album accessible trouvé');
           }
 
-          // ÉTAPE 6: Récupérer les posts de l'utilisateur qui ne sont dans aucun album
+          // ÉTAPE 6: Ajouter les posts de l'utilisateur qui ne sont dans aucun album (brouillons inclus)
           console.log('📝 ÉTAPE 6 - Récupération posts utilisateur sans album');
           let userPostsQuery = supabase
             .from('blog_posts')
@@ -313,7 +280,8 @@ export const useBlogPosts = (
             title: post.title,
             author_id: post.author_id,
             album_id: post.album_id,
-            published: post.published
+            published: post.published,
+            isOwnPost: post.author_id === effectiveUserId
           }))
         });
 
