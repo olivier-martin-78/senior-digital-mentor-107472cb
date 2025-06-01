@@ -11,7 +11,6 @@ const corsHeaders = {
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== DÉBUT FONCTION send-password-reset ===");
   console.log(`Méthode de requête: ${req.method}`);
-  console.log(`Headers:`, Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -23,68 +22,60 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Lecture du corps de la requête...");
     
     let email: string;
-    let requestBody: any;
     
-    // Diagnostic approfondi du parsing JSON
+    // Amélioration du parsing JSON avec gestion d'erreurs détaillée
     try {
       const contentType = req.headers.get('content-type') || '';
       console.log(`Content-Type: ${contentType}`);
       
-      if (!contentType.includes('application/json')) {
-        console.warn(`Content-Type inattendu: ${contentType}`);
+      // Vérifier si le corps existe
+      if (!req.body) {
+        console.error("Aucun corps de requête");
+        return new Response(
+          JSON.stringify({ error: "Corps de requête manquant" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
+
+      // Lire le corps de la requête comme texte d'abord
+      const bodyText = await req.text();
+      console.log(`Corps brut reçu: "${bodyText}"`);
+      console.log(`Longueur du corps: ${bodyText.length}`);
       
-      // Vérification si le body est lisible
-      const hasBody = req.body !== null;
-      console.log(`Corps de requête présent: ${hasBody}`);
-      
-      if (!hasBody) {
-        throw new Error("Aucun corps de requête détecté");
+      if (!bodyText || bodyText.trim() === '') {
+        console.error("Corps de requête vide");
+        return new Response(
+          JSON.stringify({ error: "Corps de requête vide" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
-      
-      requestBody = await req.json();
+
+      const requestBody = JSON.parse(bodyText);
       console.log("Corps de la requête parsé avec succès:", requestBody);
       email = requestBody.email;
     } catch (jsonError) {
-      console.error("Erreur lors du parsing JSON:", {
-        error: jsonError,
-        message: jsonError instanceof Error ? jsonError.message : 'Erreur inconnue',
-        name: jsonError instanceof Error ? jsonError.name : 'Inconnu'
-      });
-      
+      console.error("Erreur lors du parsing JSON:", jsonError);
       return new Response(
         JSON.stringify({ 
           error: "Format de requête invalide - JSON attendu",
-          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing",
-          debug: {
-            contentType: req.headers.get('content-type'),
-            hasBody: req.body !== null,
-            method: req.method
-          }
+          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing"
         }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Validation des paramètres...");
+    // Validation de l'email
     if (!email || typeof email !== 'string' || email.trim() === '') {
       console.error("Email manquant ou invalide:", { email, type: typeof email });
       return new Response(
-        JSON.stringify({ 
-          error: "L'email est requis et doit être valide"
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "L'email est requis et doit être valide" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    console.log("Paramètres validés avec succès");
 
-    console.log("Vérification des variables d'environnement...");
+    console.log(`Email validé: ${email.trim()}`);
+
+    // Vérification des variables d'environnement
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -92,47 +83,43 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Variables d'environnement Supabase manquantes");
       return new Response(
-        JSON.stringify({ 
-          error: "Configuration Supabase manquante"
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "Configuration Supabase manquante" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    
-    console.log("Variables d'environnement Supabase trouvées");
-    console.log(`Resend API Key disponible: ${!!resendApiKey}`);
+
+    if (!resendApiKey) {
+      console.error("Clé API Resend manquante");
+      return new Response(
+        JSON.stringify({ error: "Configuration Resend manquante" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Variables d'environnement vérifiées avec succès");
 
     // Create Supabase client with service role key
-    console.log("Création du client Supabase...");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Generate reset token and get user info
-    console.log(`Génération du token de réinitialisation pour: ${email.trim()}`);
-    
-    // First, check if user exists
+    // Vérifier si l'utilisateur existe
+    console.log(`Vérification de l'existence de l'utilisateur: ${email.trim()}`);
     const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.trim());
     
     if (userError || !userData.user) {
       console.error("Utilisateur non trouvé:", userError);
-      // Don't reveal if user exists or not for security
+      // Pour la sécurité, on ne révèle pas si l'utilisateur existe ou non
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: "Si cet email existe, un lien de réinitialisation a été envoyé"
         }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     console.log("Utilisateur trouvé, génération du token...");
 
-    // Generate reset token
+    // Générer le token de réinitialisation
     const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email.trim(),
@@ -141,135 +128,89 @@ const handler = async (req: Request): Promise<Response> => {
     if (tokenError || !tokenData) {
       console.error("Erreur lors de la génération du token:", tokenError);
       return new Response(
-        JSON.stringify({ 
-          error: "Erreur lors de la génération du token de réinitialisation"
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "Erreur lors de la génération du token de réinitialisation" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     console.log("Token généré avec succès");
 
-    // Get the origin for the reset URL
+    // Récupérer l'origine pour l'URL de réinitialisation
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     
-    // Extract token from the generated link
+    // Extraire le token du lien généré
     const linkUrl = new URL(tokenData.properties.action_link);
     const token = linkUrl.searchParams.get('token');
     const type = linkUrl.searchParams.get('type');
     
+    // Créer l'URL de réinitialisation vers notre page dédiée
     const resetUrl = `${origin}/reset-password?token=${token}&type=${type}`;
     console.log(`URL de réinitialisation: ${resetUrl}`);
 
-    // Send email using Resend if available, otherwise fallback to Supabase
-    if (resendApiKey) {
-      console.log("Envoi de l'email via Resend...");
-      
-      try {
-        const resend = new Resend(resendApiKey);
-        
-        const emailResponse = await resend.emails.send({
-          from: 'noreply@resend.dev', // Change this to your verified domain
-          to: [email.trim()],
-          subject: 'Réinitialisation de votre mot de passe',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Réinitialisation de mot de passe</h2>
-              <p>Bonjour,</p>
-              <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
-              <p style="margin: 30px 0;">
-                <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Réinitialiser mon mot de passe
-                </a>
-              </p>
-              <p style="color: #666; font-size: 14px;">
-                Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
-              </p>
-              <p style="color: #666; font-size: 14px;">
-                Ce lien est valide pendant 60 minutes.
-              </p>
-            </div>
-          `,
-        });
-
-        if (emailResponse.error) {
-          throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
-        }
-
-        console.log("Email envoyé avec succès via Resend:", emailResponse);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: "Email de réinitialisation envoyé avec succès",
-            method: "resend"
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
-        
-      } catch (resendError) {
-        console.error("Erreur Resend, fallback vers Supabase:", resendError);
-        // Continue to Supabase fallback below
-      }
-    }
-
-    // Fallback to Supabase auth email
-    console.log("Envoi de l'email via Supabase Auth...");
+    // Envoyer l'email via Resend
+    console.log("Envoi de l'email via Resend...");
     
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: resetUrl,
-    });
+    try {
+      const resend = new Resend(resendApiKey);
+      
+      const emailResponse = await resend.emails.send({
+        from: 'noreply@resend.dev', // Changez ceci par votre domaine vérifié
+        to: [email.trim()],
+        subject: 'Réinitialisation de votre mot de passe',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Réinitialisation de mot de passe</h2>
+            <p>Bonjour,</p>
+            <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
+            <p style="margin: 30px 0;">
+              <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Réinitialiser mon mot de passe
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">
+              Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
+            </p>
+            <p style="color: #666; font-size: 14px;">
+              Ce lien est valide pendant 60 minutes.
+            </p>
+          </div>
+        `,
+      });
 
-    if (authError) {
-      console.error("Erreur Supabase lors de l'envoi:", authError);
+      if (emailResponse.error) {
+        throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
+      }
+
+      console.log("Email envoyé avec succès via Resend:", emailResponse);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Email de réinitialisation envoyé avec succès"
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+      
+    } catch (resendError) {
+      console.error("Erreur lors de l'envoi via Resend:", resendError);
       return new Response(
         JSON.stringify({ 
           error: "Erreur lors de l'envoi de l'email de réinitialisation",
-          details: authError.message
+          details: resendError instanceof Error ? resendError.message : "Erreur inconnue"
         }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("SUCCESS - Email de réinitialisation envoyé via Supabase");
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email de réinitialisation envoyé avec succès",
-        method: "supabase"
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-
   } catch (error: any) {
-    console.error("ERREUR dans send-password-reset:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
-    });
+    console.error("ERREUR dans send-password-reset:", error);
     
     return new Response(
       JSON.stringify({ 
         error: "Erreur lors de l'envoi de l'email de réinitialisation",
         details: error.message
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
