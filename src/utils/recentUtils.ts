@@ -1,15 +1,17 @@
+
 import { RecentItem } from '@/hooks/useRecentItems';
 
 export const getItemLink = (item: RecentItem) => {
   switch (item.type) {
     case 'blog':
-      return `/blog/${item.id}`; // CORRECTION: Utiliser /blog/ au lieu de /blog/post/
+      return `/blog/${item.id}`;
     case 'wish':
       return `/wishes/${item.id}`;
     case 'diary':
       return `/diary/${item.id}`;
     case 'comment':
-      return `/blog/${item.id}`; // Lien vers le post commenté
+      // Pour les commentaires, utiliser post_id s'il existe, sinon fallback sur item.id
+      return `/blog/${item.post_id || item.id}`;
     default:
       return '#';
   }

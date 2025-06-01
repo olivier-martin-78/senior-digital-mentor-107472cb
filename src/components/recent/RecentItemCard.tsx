@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { RecentItem } from '@/hooks/useRecentItems';
@@ -27,14 +28,14 @@ const RecentItemCard = ({ item }: RecentItemCardProps) => {
   const getLink = () => {
     switch (item.type) {
       case 'blog':
-        return `/blog/${item.id}`; // CORRECTION: Utiliser /blog/ au lieu de /blog/post/
+        return `/blog/${item.id}`;
       case 'wish':
         return `/wishes/${item.id}`;
       case 'diary':
         return `/diary/${item.id}`;
       case 'comment':
-        // Pour les commentaires, on redirige vers l'article
-        return `/blog/${item.id}`;
+        // Pour les commentaires, utiliser post_id s'il existe, sinon fallback sur item.id
+        return `/blog/${item.post_id || item.id}`;
       default:
         return '#';
     }

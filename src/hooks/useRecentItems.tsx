@@ -17,9 +17,10 @@ export interface RecentItem {
   cover_image?: string;
   first_name?: string;
   post_title?: string;
+  post_id?: string; // Nouveau champ pour l'ID du post pour les commentaires
   comment_content?: string;
   media_url?: string;
-  album_name?: string; // Nouveau champ pour le nom de l'album
+  album_name?: string;
 }
 
 export const useRecentItems = () => {

@@ -48,6 +48,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
             content_preview: comment.content?.substring(0, 150) + '...',
             post_title: comment.post?.title,
+            post_id: comment.post?.id, // Ajouter l'ID du post
             comment_content: comment.content,
             album_name: comment.post?.blog_albums?.name
           })));
@@ -194,6 +195,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             author: comment.author_id === effectiveUserId ? 'Moi' : (comment.profiles?.display_name || 'Anonyme'),
             content_preview: comment.content?.substring(0, 150) + '...',
             post_title: comment.post?.title,
+            post_id: comment.post?.id, // Ajouter l'ID du post
             comment_content: comment.content,
             album_name: comment.post?.blog_albums?.name
           })));
