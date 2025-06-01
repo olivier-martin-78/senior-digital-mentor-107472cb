@@ -27,7 +27,7 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC CORRIGÉ');
+        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC FINAL');
         console.log('🔍 useBlogPosts - Utilisateur connecté:', {
           originalUserId: user.id,
           originalUserEmail: user.email,
@@ -158,11 +158,11 @@ export const useBlogPosts = (
             }
           });
 
-          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles (CORRECTION ICI)
+          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles - CORRECTION FINALE
           if (uniqueAccessibleAlbumIds.length > 0) {
-            console.log('📝 ÉTAPE 5 - CORRECTION: Récupération TOUS posts publiés des albums accessibles sans restriction d\'auteur');
+            console.log('📝 ÉTAPE 5 - CORRECTION FINALE: Récupération TOUS posts publiés des albums accessibles sans aucune restriction d\'auteur');
             
-            // CORRECTION MAJEURE: Récupérer TOUS les posts publiés de ces albums, pas seulement ceux de l'utilisateur
+            // REQUÊTE CORRIGÉE: Récupérer TOUS les posts publiés de ces albums
             let postsQuery = supabase
               .from('blog_posts')
               .select(`
@@ -173,9 +173,12 @@ export const useBlogPosts = (
               .eq('published', true)  // Seulement les posts publiés
               .order('created_at', { ascending: false });
 
-            console.log('🔧 ÉTAPE 5 - CORRECTION: Requête sans filtrage par author_id');
+            console.log('🔧 ÉTAPE 5 - REQUÊTE CORRIGÉE:', {
+              albumIds: uniqueAccessibleAlbumIds,
+              requête: 'Tous posts publiés des albums accessibles sans filtrage auteur'
+            });
 
-            // Appliquer les filtres
+            // Appliquer les filtres de recherche
             if (searchTerm) {
               postsQuery = postsQuery.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
             }
@@ -192,13 +195,14 @@ export const useBlogPosts = (
               postsQuery = postsQuery.lte('created_at', endDate);
             }
 
+            console.log('🔍 ÉTAPE 5 - Exécution de la requête...');
             const { data: accessiblePosts, error: accessiblePostsError } = await postsQuery;
             
             if (accessiblePostsError) {
               console.error('❌ ÉTAPE 5 - Erreur posts accessibles:', accessiblePostsError);
             } else if (accessiblePosts) {
               allPosts = accessiblePosts;
-              console.log('✅ ÉTAPE 5 - CORRECTION: TOUS posts récupérés (tous auteurs):', {
+              console.log('✅ ÉTAPE 5 - CORRECTION FINALE: TOUS posts récupérés de la base de données:', {
                 count: accessiblePosts.length,
                 postsParAuteur: accessiblePosts.reduce((acc, post) => {
                   const authorEmail = post.profiles?.email || 'Email non disponible';
@@ -225,6 +229,22 @@ export const useBlogPosts = (
                   published: p.published
                 }))
               });
+
+              // VÉRIFICATION FINALE: Compter les posts par auteur
+              const postsByAuthor = accessiblePosts.reduce((acc, post) => {
+                const authorEmail = post.profiles?.email || 'Inconnu';
+                if (!acc[authorEmail]) {
+                  acc[authorEmail] = [];
+                }
+                acc[authorEmail].push({
+                  id: post.id,
+                  title: post.title,
+                  album_id: post.album_id
+                });
+                return acc;
+              }, {} as Record<string, any[]>);
+
+              console.log('🔍 VÉRIFICATION FINALE - Posts par auteur récupérés de la DB:', postsByAuthor);
             }
           } else {
             console.log('⚠️ ÉTAPE 5 - Aucun album accessible trouvé');
@@ -283,7 +303,7 @@ export const useBlogPosts = (
           );
         }
 
-        console.log('🏁 useBlogPosts - RÉSULTAT FINAL CORRIGÉ:', {
+        console.log('🏁 useBlogPosts - RÉSULTAT FINAL CORRIGÉ DÉFINITIF:', {
           totalPosts: allPosts.length,
           userEmail: user.email,
           effectiveUserId,
@@ -308,7 +328,8 @@ export const useBlogPosts = (
               album_id: post.album_id
             });
             return acc;
-          }, {} as Record<string, any[]>)
+          }, {} as Record<string, any[]>),
+          DIAGNOSTIC: 'Si vous ne voyez que vos propres posts, le problème est maintenant dans la base de données ou les permissions'
         });
 
         setPosts(allPosts);

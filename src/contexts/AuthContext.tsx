@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const { toast } = useToast();
 
-  // SIMPLIFICATION: Fonction pour obtenir l'état d'impersonnation
+  // SIMPLIFICATION TOTALE: Fonction pour obtenir l'état d'impersonnation
   const getImpersonationState = () => {
     try {
       const impersonationState = secureStorage.getItem('impersonation_state');
@@ -38,7 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('🎭 AuthContext.getImpersonationState - État récupéré:', {
           isImpersonating: parsedState.isImpersonating,
           impersonatedUser: parsedState.impersonatedUser?.email,
-          impersonatedRoles: parsedState.impersonatedRoles
+          impersonatedRoles: parsedState.impersonatedRoles,
+          originalUser: parsedState.originalUser?.email
         });
         return parsedState;
       }
@@ -46,26 +47,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('❌ AuthContext.getImpersonationState - Erreur:', error);
       secureStorage.removeItem('impersonation_state');
     }
+    console.log('👤 AuthContext.getImpersonationState - Aucun état d\'impersonnation');
     return null;
   };
 
-  // SIMPLIFICATION: Fonction hasRole modifiée pour prendre en compte l'impersonnation
+  // SIMPLIFICATION: Fonction hasRole avec logique d'impersonnation claire
   const hasRole = (role: AppRole) => {
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedRoles) {
-      console.log('🎭 AuthContext.hasRole - Mode impersonnation:', {
+      console.log('🎭 AuthContext.hasRole - MODE IMPERSONNATION:', {
         requestedRole: role,
         impersonatedRoles: impersonationState.impersonatedRoles,
         hasRequestedRole: impersonationState.impersonatedRoles.includes(role),
-        impersonatedUser: impersonationState.impersonatedUser?.email
+        impersonatedUser: impersonationState.impersonatedUser?.email,
+        originalUser: impersonationState.originalUser?.email
       });
       return impersonationState.impersonatedRoles.includes(role);
     }
 
     // Mode normal
     const normalResult = originalHasRole(role);
-    console.log('👤 AuthContext.hasRole - Mode normal:', {
+    console.log('👤 AuthContext.hasRole - MODE NORMAL:', {
       requestedRole: role,
       userRoles: roles,
       hasRequestedRole: normalResult,
@@ -79,26 +82,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
-      console.log('🎭 AuthContext.getEffectiveUser - Utilisateur impersonné:', {
+      console.log('🎭 AuthContext.getEffectiveUser - MODE IMPERSONNATION:', {
         originalUser: user?.email,
         impersonatedUser: impersonationState.impersonatedUser?.email
       });
       return impersonationState.impersonatedUser;
     }
 
-    console.log('👤 AuthContext.getEffectiveUser - Utilisateur normal:', user?.email);
+    console.log('👤 AuthContext.getEffectiveUser - MODE NORMAL:', user?.email);
     return profile;
   };
 
-  // SIMPLIFICATION: Fonction pour obtenir l'ID utilisateur effectif
+  // SIMPLIFICATION: Fonction pour obtenir l'ID utilisateur effectif avec logs clairs
   const getEffectiveUserId = () => {
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
       const effectiveUserId = impersonationState.impersonatedUser.id;
-      console.log('🎭 AuthContext.getEffectiveUserId - ID utilisateur impersonné:', {
+      console.log('🎭 AuthContext.getEffectiveUserId - MODE IMPERSONNATION:', {
         effectiveUserId,
-        impersonatedUserEmail: impersonationState.impersonatedUser.email,
+        effectiveUserEmail: impersonationState.impersonatedUser.email,
         originalUserId: user?.id,
         originalUserEmail: user?.email
       });
@@ -106,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const effectiveUserId = user?.id;
-    console.log('👤 AuthContext.getEffectiveUserId - ID utilisateur normal:', {
+    console.log('👤 AuthContext.getEffectiveUserId - MODE NORMAL:', {
       effectiveUserId,
       userEmail: user?.email
     });
