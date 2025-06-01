@@ -17,21 +17,30 @@ serve(async (req: Request) => {
   try {
     let requestData;
     
-    // Lire le corps de la requête de manière plus robuste
+    // Try to read the request body using different methods
     try {
-      const text = await req.text();
-      console.log(`send-password-reset: Request body text: "${text}"`);
+      // First try to read as JSON directly
+      requestData = await req.json();
+      console.log(`send-password-reset: Direct JSON parse successful:`, requestData);
+    } catch (jsonError) {
+      console.log(`send-password-reset: Direct JSON parse failed, trying text:`, jsonError);
       
-      if (!text || text.trim() === "") {
-        console.error("send-password-reset: Request body is empty");
-        throw new Error("Le corps de la requête est vide");
+      // If that fails, try reading as text first
+      try {
+        const text = await req.text();
+        console.log(`send-password-reset: Request body text: "${text}"`);
+        
+        if (!text || text.trim() === "") {
+          console.error("send-password-reset: Request body is empty");
+          throw new Error("Le corps de la requête est vide");
+        }
+        
+        requestData = JSON.parse(text);
+        console.log(`send-password-reset: Text then JSON parse successful:`, requestData);
+      } catch (parseError) {
+        console.error("send-password-reset: Error reading/parsing request:", parseError);
+        throw new Error("Erreur lors de la lecture de la requête");
       }
-      
-      requestData = JSON.parse(text);
-      console.log(`send-password-reset: Parsed data:`, requestData);
-    } catch (parseError) {
-      console.error("send-password-reset: Error reading/parsing request:", parseError);
-      throw new Error("Erreur lors de la lecture de la requête");
     }
 
     const { email } = requestData;
