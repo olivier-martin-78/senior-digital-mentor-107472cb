@@ -22,7 +22,7 @@ interface InviterPermissions {
   };
   albums: any[];
   lifeStories: any[];
-  diary: boolean;
+  diaryEntries: any[];
   invitation: any;
 }
 
@@ -108,7 +108,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
         .eq('email', userProfile.email)
         .not('used_at', 'is', null);
 
-      // Pour chaque invitation, récupérer les permissions de l'inviteur
+      // Pour chaque invitation, récupérer le contenu disponible de l'inviteur
       const inviterPermissions: InviterPermissions[] = [];
       
       if (invitations) {
@@ -126,57 +126,57 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
             inviter: inviterData,
             albums: [],
             lifeStories: [],
-            diary: false,
+            diaryEntries: [],
             invitation
           };
 
-          // Albums si blog_access = true - NOUVELLE LOGIQUE
-          if (invitation.blog_access) {
-            console.log('🔍 Analyse des albums pour inviteur:', inviterData.email);
-            
-            // 1. Albums créés par l'inviteur
-            const { data: ownedAlbums } = await supabase
-              .from('blog_albums')
-              .select('*')
-              .eq('author_id', invitation.invited_by);
-            
-            // 2. Albums auxquels l'inviteur a des permissions
-            const { data: permittedAlbums } = await supabase
-              .from('album_permissions')
-              .select('album_id, blog_albums(id, name, author_id)')
-              .eq('user_id', invitation.invited_by);
-            
-            // Combiner les deux listes
-            const allAlbums = [
-              ...(ownedAlbums || []),
-              ...(permittedAlbums?.map(p => p.blog_albums).filter(Boolean) || [])
-            ];
-            
-            // Éliminer les doublons
-            const uniqueAlbums = allAlbums.reduce((acc, album) => {
-              if (!acc.find(a => a.id === album.id)) {
-                acc.push(album);
-              }
-              return acc;
-            }, []);
-            
-            console.log('🔍 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
-            inviterContent.albums = uniqueAlbums;
-          }
+          // Albums - TOUJOURS récupérer les albums de l'inviteur
+          console.log('🔍 Analyse des albums pour inviteur:', inviterData.email);
+          
+          // 1. Albums créés par l'inviteur
+          const { data: ownedAlbums } = await supabase
+            .from('blog_albums')
+            .select('*')
+            .eq('author_id', invitation.invited_by);
+          
+          // 2. Albums auxquels l'inviteur a des permissions
+          const { data: permittedAlbums } = await supabase
+            .from('album_permissions')
+            .select('album_id, blog_albums(id, name, author_id)')
+            .eq('user_id', invitation.invited_by);
+          
+          // Combiner les deux listes
+          const allAlbums = [
+            ...(ownedAlbums || []),
+            ...(permittedAlbums?.map(p => p.blog_albums).filter(Boolean) || [])
+          ];
+          
+          // Éliminer les doublons
+          const uniqueAlbums = allAlbums.reduce((acc, album) => {
+            if (!acc.find(a => a.id === album.id)) {
+              acc.push(album);
+            }
+            return acc;
+          }, []);
+          
+          console.log('🔍 Albums trouvés pour', inviterData.email, ':', uniqueAlbums.length);
+          inviterContent.albums = uniqueAlbums;
 
-          // Histoires de vie si life_story_access = true
-          if (invitation.life_story_access) {
-            const { data: inviterLifeStories } = await supabase
-              .from('life_stories')
-              .select('*')
-              .eq('user_id', invitation.invited_by);
-            inviterContent.lifeStories = inviterLifeStories || [];
-          }
+          // Histoires de vie - TOUJOURS récupérer les histoires de l'inviteur
+          const { data: inviterLifeStories } = await supabase
+            .from('life_stories')
+            .select('*')
+            .eq('user_id', invitation.invited_by);
+          inviterContent.lifeStories = inviterLifeStories || [];
+          console.log('🔍 Histoires de vie trouvées pour', inviterData.email, ':', inviterLifeStories?.length || 0);
 
-          // Journal si diary_access = true
-          if (invitation.diary_access) {
-            inviterContent.diary = true;
-          }
+          // Entrées de journal - TOUJOURS récupérer les entrées de l'inviteur
+          const { data: inviterDiaryEntries } = await supabase
+            .from('diary_entries')
+            .select('*')
+            .eq('user_id', invitation.invited_by);
+          inviterContent.diaryEntries = inviterDiaryEntries || [];
+          console.log('🔍 Entrées de journal trouvées pour', inviterData.email, ':', inviterDiaryEntries?.length || 0);
 
           inviterPermissions.push(inviterContent);
         }
@@ -194,6 +194,8 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
       console.log('🔍 Analyse terminée:', {
         inviterPermissions: inviterPermissions.length,
         totalInviterAlbums: inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0),
+        totalInviterLifeStories: inviterPermissions.reduce((sum, p) => sum + p.lifeStories.length, 0),
+        totalInviterDiaryEntries: inviterPermissions.reduce((sum, p) => sum + p.diaryEntries.length, 0),
         currentPermissions: {
           albums: albumPermissions.data?.length || 0,
           lifeStories: lifeStoryPermissions.data?.length || 0,
@@ -317,12 +319,12 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
           </h3>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Carte 1: Permissions des inviteurs */}
+            {/* Carte 1: Contenu disponible chez les inviteurs */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UserPlus className="h-5 w-5 text-blue-600" />
-                  Permissions des inviteurs
+                  Contenu disponible chez les inviteurs
                   <Badge variant="secondary" className="ml-2">
                     {permissionData.inviterPermissions.reduce((sum, p) => sum + p.albums.length, 0)} albums total
                   </Badge>
@@ -341,6 +343,11 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                       <div className="space-y-2 text-sm">
                         <div>
                           <span className="font-medium">Albums ({inviterPerm.albums.length}):</span>
+                          {inviterPerm.invitation.blog_access ? (
+                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                          ) : (
+                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                          )}
                           <div className="flex flex-wrap gap-1 mt-1">
                             {inviterPerm.albums.map((album, i) => (
                               <Badge key={i} variant="outline" className="text-xs">
@@ -353,6 +360,11 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                         
                         <div>
                           <span className="font-medium">Histoires de vie ({inviterPerm.lifeStories.length}):</span>
+                          {inviterPerm.invitation.life_story_access ? (
+                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                          ) : (
+                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                          )}
                           <div className="flex flex-wrap gap-1 mt-1">
                             {inviterPerm.lifeStories.map((story, i) => (
                               <Badge key={i} variant="outline" className="text-xs">
@@ -364,10 +376,12 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
                         </div>
                         
                         <div>
-                          <span className="font-medium">Journal:</span>
-                          <span className={`ml-2 ${inviterPerm.diary ? 'text-green-600' : 'text-gray-400'}`}>
-                            {inviterPerm.diary ? 'Accès accordé' : 'Pas d\'accès'}
-                          </span>
+                          <span className="font-medium">Journal ({inviterPerm.diaryEntries.length} entrées):</span>
+                          {inviterPerm.invitation.diary_access ? (
+                            <span className="ml-2 text-green-600">✓ Accès accordé</span>
+                          ) : (
+                            <span className="ml-2 text-orange-600">⚠ Accès non accordé</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -381,7 +395,7 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-green-600" />
-                  Permissions de l'invité
+                  Permissions actuelles de l'invité
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
