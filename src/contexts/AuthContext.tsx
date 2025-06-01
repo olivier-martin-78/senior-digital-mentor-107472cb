@@ -29,91 +29,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const { toast } = useToast();
 
-  // SIMPLIFICATION TOTALE: Fonction pour obtenir l'état d'impersonnation
+  // Fonction pour obtenir l'état d'impersonnation (optimisée)
   const getImpersonationState = () => {
     try {
       const impersonationState = secureStorage.getItem('impersonation_state');
       if (impersonationState) {
-        const parsedState = JSON.parse(impersonationState);
-        console.log('🎭 AuthContext.getImpersonationState - État récupéré:', {
-          isImpersonating: parsedState.isImpersonating,
-          impersonatedUser: parsedState.impersonatedUser?.email,
-          impersonatedRoles: parsedState.impersonatedRoles,
-          originalUser: parsedState.originalUser?.email
-        });
-        return parsedState;
+        return JSON.parse(impersonationState);
       }
     } catch (error) {
       console.error('❌ AuthContext.getImpersonationState - Erreur:', error);
       secureStorage.removeItem('impersonation_state');
     }
-    console.log('👤 AuthContext.getImpersonationState - Aucun état d\'impersonnation');
     return null;
   };
 
-  // SIMPLIFICATION: Fonction hasRole avec logique d'impersonnation claire
+  // Fonction hasRole avec logique d'impersonnation optimisée
   const hasRole = (role: AppRole) => {
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedRoles) {
-      console.log('🎭 AuthContext.hasRole - MODE IMPERSONNATION:', {
-        requestedRole: role,
-        impersonatedRoles: impersonationState.impersonatedRoles,
-        hasRequestedRole: impersonationState.impersonatedRoles.includes(role),
-        impersonatedUser: impersonationState.impersonatedUser?.email,
-        originalUser: impersonationState.originalUser?.email
-      });
       return impersonationState.impersonatedRoles.includes(role);
     }
 
-    // Mode normal
-    const normalResult = originalHasRole(role);
-    console.log('👤 AuthContext.hasRole - MODE NORMAL:', {
-      requestedRole: role,
-      userRoles: roles,
-      hasRequestedRole: normalResult,
-      userEmail: user?.email
-    });
-    return normalResult;
+    return originalHasRole(role);
   };
 
-  // SIMPLIFICATION: Fonction pour obtenir l'utilisateur effectif
+  // Fonction pour obtenir l'utilisateur effectif (optimisée)
   const getEffectiveUser = () => {
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
-      console.log('🎭 AuthContext.getEffectiveUser - MODE IMPERSONNATION:', {
-        originalUser: user?.email,
-        impersonatedUser: impersonationState.impersonatedUser?.email
-      });
       return impersonationState.impersonatedUser;
     }
 
-    console.log('👤 AuthContext.getEffectiveUser - MODE NORMAL:', user?.email);
     return profile;
   };
 
-  // SIMPLIFICATION: Fonction pour obtenir l'ID utilisateur effectif avec logs clairs
+  // Fonction pour obtenir l'ID utilisateur effectif (optimisée)
   const getEffectiveUserId = () => {
     const impersonationState = getImpersonationState();
     
     if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
-      const effectiveUserId = impersonationState.impersonatedUser.id;
-      console.log('🎭 AuthContext.getEffectiveUserId - MODE IMPERSONNATION:', {
-        effectiveUserId,
-        effectiveUserEmail: impersonationState.impersonatedUser.email,
-        originalUserId: user?.id,
-        originalUserEmail: user?.email
-      });
-      return effectiveUserId;
+      return impersonationState.impersonatedUser.id;
     }
 
-    const effectiveUserId = user?.id;
-    console.log('👤 AuthContext.getEffectiveUserId - MODE NORMAL:', {
-      effectiveUserId,
-      userEmail: user?.email
-    });
-    return effectiveUserId;
+    return user?.id;
   };
 
   // Vérification initiale de session et configuration du listener d'événements d'authentification

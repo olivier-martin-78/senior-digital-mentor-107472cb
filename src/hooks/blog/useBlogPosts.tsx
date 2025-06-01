@@ -26,20 +26,20 @@ export const useBlogPosts = (
       try {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
+        const isAdmin = hasRole('admin');
         
-        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC FINAL');
-        console.log('🔍 useBlogPosts - Utilisateur connecté:', {
+        console.log('🚀 useBlogPosts - DÉBUT RÉCUPÉRATION POSTS CORRIGÉE');
+        console.log('🔍 useBlogPosts - Utilisateur:', {
           originalUserId: user.id,
           originalUserEmail: user.email,
           effectiveUserId: effectiveUserId,
-          isImpersonating: effectiveUserId !== user.id,
-          isAdmin: hasRole('admin')
+          isAdmin: isAdmin
         });
 
         let allPosts: any[] = [];
 
-        if (hasRole('admin')) {
-          console.log('🔑 useBlogPosts - Mode admin: récupération de tous les posts publiés');
+        if (isAdmin) {
+          console.log('🔑 useBlogPosts - Mode admin: tous les posts publiés');
           let query = supabase
             .from('blog_posts')
             .select(`
@@ -69,17 +69,17 @@ export const useBlogPosts = (
           const { data, error } = await query;
 
           if (error) {
-            console.error('❌ useBlogPosts - Erreur Supabase admin:', error);
+            console.error('❌ useBlogPosts - Erreur admin:', error);
             throw error;
           }
 
           allPosts = data || [];
           console.log('✅ useBlogPosts - Posts admin récupérés:', allPosts.length);
         } else {
-          console.log('👤 useBlogPosts - Mode utilisateur: récupération albums accessibles');
+          console.log('👤 useBlogPosts - Mode utilisateur: récupération posts accessibles');
           
           // ÉTAPE 1: Récupérer les albums créés par l'utilisateur
-          console.log('📋 ÉTAPE 1 - Recherche albums créés par utilisateur:', effectiveUserId);
+          console.log('📋 ÉTAPE 1 - Albums créés par utilisateur:', effectiveUserId);
           const { data: ownedAlbums, error: ownedError } = await supabase
             .from('blog_albums')
             .select('id, name, author_id')
@@ -87,95 +87,61 @@ export const useBlogPosts = (
           
           if (ownedError) {
             console.error('❌ ÉTAPE 1 - Erreur albums possédés:', ownedError);
-          } else {
-            console.log('✅ ÉTAPE 1 - Albums créés par l\'utilisateur:', {
-              count: ownedAlbums?.length || 0,
-              albums: ownedAlbums?.map(a => ({ id: a.id, name: a.name, author_id: a.author_id })) || []
-            });
           }
           
-          // ÉTAPE 2: Récupérer les permissions d'albums
-          console.log('🔑 ÉTAPE 2 - Recherche permissions albums pour utilisateur:', effectiveUserId);
+          const ownedAlbumIds = ownedAlbums?.map(album => album.id) || [];
+          console.log('✅ ÉTAPE 1 - Albums possédés:', {
+            count: ownedAlbumIds.length,
+            albumIds: ownedAlbumIds
+          });
+          
+          // ÉTAPE 2: Récupérer les albums avec permissions
+          console.log('🔑 ÉTAPE 2 - Albums avec permissions pour:', effectiveUserId);
           const { data: albumPermissions, error: permissionsError } = await supabase
             .from('album_permissions')
-            .select('album_id, user_id')
+            .select('album_id')
             .eq('user_id', effectiveUserId);
           
           if (permissionsError) {
-            console.error('❌ ÉTAPE 2 - Erreur permissions albums:', permissionsError);
-          } else {
-            console.log('✅ ÉTAPE 2 - Permissions albums trouvées:', {
-              count: albumPermissions?.length || 0,
-              permissions: albumPermissions?.map(p => ({ album_id: p.album_id, user_id: p.user_id })) || []
-            });
+            console.error('❌ ÉTAPE 2 - Erreur permissions:', permissionsError);
           }
+          
+          const permittedAlbumIds = albumPermissions?.map(p => p.album_id) || [];
+          console.log('✅ ÉTAPE 2 - Albums avec permissions:', {
+            count: permittedAlbumIds.length,
+            albumIds: permittedAlbumIds
+          });
 
-          // ÉTAPE 3: Récupérer les détails des albums avec permissions
-          let permittedAlbumsDetails: any[] = [];
-          if (albumPermissions && albumPermissions.length > 0) {
-            console.log('🔍 ÉTAPE 3 - Récupération détails albums avec permissions');
-            const permittedAlbumIds = albumPermissions.map(p => p.album_id);
-            
-            const { data: albumsDetails, error: albumsDetailsError } = await supabase
-              .from('blog_albums')
-              .select('id, name, author_id')
-              .in('id', permittedAlbumIds);
-            
-            if (albumsDetailsError) {
-              console.error('❌ ÉTAPE 3 - Erreur détails albums:', albumsDetailsError);
-            } else {
-              permittedAlbumsDetails = albumsDetails || [];
-              console.log('✅ ÉTAPE 3 - Détails albums avec permissions:', {
-                count: permittedAlbumsDetails.length,
-                albums: permittedAlbumsDetails.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
-              });
-            }
-          }
-
-          // ÉTAPE 4: Combiner tous les albums accessibles
-          const accessibleAlbumIds: string[] = [];
+          // ÉTAPE 3: Combiner tous les albums accessibles
+          const allAccessibleAlbumIds = [...new Set([...ownedAlbumIds, ...permittedAlbumIds])];
           
-          // Ajouter albums possédés
-          if (ownedAlbums) {
-            accessibleAlbumIds.push(...ownedAlbums.map(album => album.id));
-          }
-          
-          // Ajouter albums avec permissions
-          if (permittedAlbumsDetails) {
-            accessibleAlbumIds.push(...permittedAlbumsDetails.map(album => album.id));
-          }
-          
-          // Supprimer les doublons
-          const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
-          
-          console.log('🎯 ÉTAPE 4 - Albums accessibles finaux:', {
-            count: uniqueAccessibleAlbumIds.length,
-            albumIds: uniqueAccessibleAlbumIds,
+          console.log('🎯 ÉTAPE 3 - TOUS albums accessibles:', {
+            count: allAccessibleAlbumIds.length,
+            albumIds: allAccessibleAlbumIds,
             détails: {
-              albumsPossédés: ownedAlbums?.length || 0,
-              albumsAvecPermissions: permittedAlbumsDetails.length,
-              totalUnique: uniqueAccessibleAlbumIds.length
+              albumsPossédés: ownedAlbumIds.length,
+              albumsAvecPermissions: permittedAlbumIds.length,
+              totalUnique: allAccessibleAlbumIds.length
             }
           });
 
-          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles - CORRECTION FINALE
-          if (uniqueAccessibleAlbumIds.length > 0) {
-            console.log('📝 ÉTAPE 5 - CORRECTION FINALE: Récupération TOUS posts publiés des albums accessibles sans aucune restriction d\'auteur');
+          // ÉTAPE 4: Récupérer TOUS les posts publiés des albums accessibles (CORRECTION FINALE)
+          if (allAccessibleAlbumIds.length > 0) {
+            console.log('📝 ÉTAPE 4 - RÉCUPÉRATION FINALE: Tous posts publiés des albums accessibles');
             
-            // REQUÊTE CORRIGÉE: Récupérer TOUS les posts publiés de ces albums
             let postsQuery = supabase
               .from('blog_posts')
               .select(`
                 *,
                 profiles(id, display_name, email, avatar_url, created_at)
               `)
-              .in('album_id', uniqueAccessibleAlbumIds)
-              .eq('published', true)  // Seulement les posts publiés
+              .in('album_id', allAccessibleAlbumIds)
+              .eq('published', true)
               .order('created_at', { ascending: false });
 
-            console.log('🔧 ÉTAPE 5 - REQUÊTE CORRIGÉE:', {
-              albumIds: uniqueAccessibleAlbumIds,
-              requête: 'Tous posts publiés des albums accessibles sans filtrage auteur'
+            console.log('🔧 ÉTAPE 4 - Requête sans filtrage auteur:', {
+              albumIds: allAccessibleAlbumIds,
+              note: 'AUCUN filtrage par author_id - tous les auteurs inclus'
             });
 
             // Appliquer les filtres de recherche
@@ -195,14 +161,14 @@ export const useBlogPosts = (
               postsQuery = postsQuery.lte('created_at', endDate);
             }
 
-            console.log('🔍 ÉTAPE 5 - Exécution de la requête...');
             const { data: accessiblePosts, error: accessiblePostsError } = await postsQuery;
             
             if (accessiblePostsError) {
-              console.error('❌ ÉTAPE 5 - Erreur posts accessibles:', accessiblePostsError);
+              console.error('❌ ÉTAPE 4 - Erreur récupération posts:', accessiblePostsError);
             } else if (accessiblePosts) {
-              allPosts = accessiblePosts;
-              console.log('✅ ÉTAPE 5 - CORRECTION FINALE: TOUS posts récupérés de la base de données:', {
+              allPosts.push(...accessiblePosts);
+              
+              console.log('✅ ÉTAPE 4 - TOUS POSTS RÉCUPÉRÉS (CORRECTION FINALE):', {
                 count: accessiblePosts.length,
                 postsParAuteur: accessiblePosts.reduce((acc, post) => {
                   const authorEmail = post.profiles?.email || 'Email non disponible';
@@ -212,7 +178,7 @@ export const useBlogPosts = (
                   acc[authorEmail]++;
                   return acc;
                 }, {} as Record<string, number>),
-                postsParAlbum: uniqueAccessibleAlbumIds.map(albumId => {
+                postsParAlbum: allAccessibleAlbumIds.map(albumId => {
                   const albumPosts = accessiblePosts.filter(p => p.album_id === albumId);
                   return {
                     albumId,
@@ -229,29 +195,11 @@ export const useBlogPosts = (
                   published: p.published
                 }))
               });
-
-              // VÉRIFICATION FINALE: Compter les posts par auteur
-              const postsByAuthor = accessiblePosts.reduce((acc, post) => {
-                const authorEmail = post.profiles?.email || 'Inconnu';
-                if (!acc[authorEmail]) {
-                  acc[authorEmail] = [];
-                }
-                acc[authorEmail].push({
-                  id: post.id,
-                  title: post.title,
-                  album_id: post.album_id
-                });
-                return acc;
-              }, {} as Record<string, any[]>);
-
-              console.log('🔍 VÉRIFICATION FINALE - Posts par auteur récupérés de la DB:', postsByAuthor);
             }
-          } else {
-            console.log('⚠️ ÉTAPE 5 - Aucun album accessible trouvé');
           }
 
-          // ÉTAPE 6: Ajouter les posts de l'utilisateur qui ne sont dans aucun album (brouillons inclus)
-          console.log('📝 ÉTAPE 6 - Récupération posts utilisateur sans album');
+          // ÉTAPE 5: Ajouter les posts de l'utilisateur sans album
+          console.log('📝 ÉTAPE 5 - Posts utilisateur sans album');
           let userPostsQuery = supabase
             .from('blog_posts')
             .select(`
@@ -268,7 +216,6 @@ export const useBlogPosts = (
           }
 
           if (selectedAlbum && selectedAlbum !== 'none') {
-            // Si un album spécifique est sélectionné, on ignore les posts sans album
             userPostsQuery = userPostsQuery.eq('album_id', selectedAlbum);
           }
 
@@ -283,18 +230,14 @@ export const useBlogPosts = (
           const { data: userPostsWithoutAlbum, error: userPostsError } = await userPostsQuery;
           
           if (userPostsError) {
-            console.error('❌ ÉTAPE 6 - Erreur posts utilisateur sans album:', userPostsError);
+            console.error('❌ ÉTAPE 5 - Erreur posts utilisateur:', userPostsError);
           } else if (userPostsWithoutAlbum) {
-            // Ajouter les posts sans album en évitant les doublons
             userPostsWithoutAlbum.forEach(post => {
               if (!allPosts.find(p => p.id === post.id)) {
                 allPosts.push(post);
               }
             });
-            console.log('✅ ÉTAPE 6 - Posts utilisateur sans album ajoutés:', {
-              count: userPostsWithoutAlbum.length,
-              posts: userPostsWithoutAlbum.map(p => ({ id: p.id, title: p.title }))
-            });
+            console.log('✅ ÉTAPE 5 - Posts utilisateur sans album ajoutés:', userPostsWithoutAlbum.length);
           }
 
           // Trier par date
@@ -303,20 +246,11 @@ export const useBlogPosts = (
           );
         }
 
-        console.log('🏁 useBlogPosts - RÉSULTAT FINAL CORRIGÉ DÉFINITIF:', {
+        console.log('🏁 useBlogPosts - RÉSULTAT FINAL (TOUS AUTEURS):', {
           totalPosts: allPosts.length,
           userEmail: user.email,
           effectiveUserId,
-          isAdmin: hasRole('admin'),
-          posts: allPosts.map(post => ({
-            id: post.id,
-            title: post.title,
-            author_id: post.author_id,
-            author_email: post.profiles?.email || 'Email non disponible',
-            album_id: post.album_id,
-            published: post.published,
-            isOwnPost: post.author_id === effectiveUserId
-          })),
+          isAdmin,
           postsParAuteur: allPosts.reduce((acc, post) => {
             const authorEmail = post.profiles?.email || 'Email non disponible';
             if (!acc[authorEmail]) {
@@ -329,12 +263,12 @@ export const useBlogPosts = (
             });
             return acc;
           }, {} as Record<string, any[]>),
-          DIAGNOSTIC: 'Si vous ne voyez que vos propres posts, le problème est maintenant dans la base de données ou les permissions'
+          vérificationFinale: 'Tous les posts publiés des albums accessibles doivent être visibles'
         });
 
         setPosts(allPosts);
       } catch (error) {
-        console.error('💥 useBlogPosts - Erreur critique lors du chargement des posts:', error);
+        console.error('💥 useBlogPosts - Erreur critique:', error);
         setPosts([]);
       } finally {
         setLoading(false);
