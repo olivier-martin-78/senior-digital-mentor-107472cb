@@ -1,10 +1,9 @@
-
 import { RecentItem } from '@/hooks/useRecentItems';
 
 export const getItemLink = (item: RecentItem) => {
   switch (item.type) {
     case 'blog':
-      return `/blog/${item.id}`;
+      return `/blog/${item.id}`; // CORRECTION: Utiliser /blog/ au lieu de /blog/post/
     case 'wish':
       return `/wishes/${item.id}`;
     case 'diary':

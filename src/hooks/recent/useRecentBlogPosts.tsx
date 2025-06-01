@@ -10,7 +10,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
 
   useEffect(() => {
     const fetchBlogPosts = async () => {
-      console.log('🔍 ===== RÉCUPÉRATION ARTICLES BLOG =====');
+      console.log('🔍 ===== RÉCUPÉRATION ARTICLES BLOG RECENT =====');
       console.log('🔍 Utilisateur effectif:', effectiveUserId);
       console.log('🔍 authorizedUserIds:', authorizedUserIds);
       console.log('🔍 hasRole admin:', hasRole('admin'));
@@ -29,6 +29,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             cover_image,
             author_id,
             album_id,
+            published,
             profiles(display_name),
             blog_albums(name)
           `)
@@ -54,10 +55,42 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           })));
         }
       } else {
-        // Récupérer SEULEMENT les posts de l'utilisateur effectif (impersonné)
-        console.log('🔍 UTILISATEUR NON-ADMIN - récupération posts de l\'utilisateur effectif uniquement');
+        console.log('🔍 UTILISATEUR NON-ADMIN - récupération posts des albums accessibles');
         
-        const { data: userBlogPosts, error: userPostsError } = await supabase
+        // Récupérer d'abord les albums accessibles (même logique que useBlogPosts)
+        const accessibleAlbumIds: string[] = [];
+        
+        // 1. Albums créés par l'utilisateur
+        const { data: ownedAlbums } = await supabase
+          .from('blog_albums')
+          .select('id')
+          .eq('author_id', effectiveUserId);
+        
+        if (ownedAlbums) {
+          accessibleAlbumIds.push(...ownedAlbums.map(album => album.id));
+          console.log('📋 Recent - Albums créés par l\'utilisateur:', ownedAlbums.length);
+        }
+        
+        // 2. Albums avec permissions
+        const { data: permittedAlbums } = await supabase
+          .from('album_permissions')
+          .select('album_id')
+          .eq('user_id', effectiveUserId);
+        
+        if (permittedAlbums) {
+          const permittedAlbumIds = permittedAlbums.map(p => p.album_id);
+          accessibleAlbumIds.push(...permittedAlbumIds);
+          console.log('🔑 Recent - Albums avec permissions:', permittedAlbumIds.length);
+        }
+        
+        // Supprimer les doublons
+        const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
+        console.log('🎯 Recent - Albums accessibles uniques:', {
+          count: uniqueAccessibleAlbumIds.length,
+          albumIds: uniqueAccessibleAlbumIds
+        });
+
+        let query = supabase
           .from('blog_posts')
           .select(`
             id,
@@ -66,23 +99,32 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             created_at,
             cover_image,
             author_id,
-            published,
             album_id,
+            published,
             profiles(display_name),
             blog_albums(name)
           `)
-          .eq('author_id', effectiveUserId)
           .order('created_at', { ascending: false })
           .limit(15);
 
-        console.log('🔍 Requête posts utilisateur effectif:', {
+        if (uniqueAccessibleAlbumIds.length > 0) {
+          // Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
+          query = query.or(`and(album_id.in.(${uniqueAccessibleAlbumIds.join(',')}),published.eq.true),author_id.eq.${effectiveUserId}`);
+        } else {
+          // Aucun album accessible, récupérer seulement les posts de l'utilisateur
+          query = query.eq('author_id', effectiveUserId);
+        }
+
+        const { data: userBlogPosts, error: userPostsError } = await query;
+
+        console.log('🔍 Requête posts albums accessibles:', {
           data: userBlogPosts,
           error: userPostsError,
           count: userBlogPosts?.length || 0
         });
 
         if (userBlogPosts) {
-          console.log('🔍 Posts utilisateur récupérés:', {
+          console.log('🔍 Posts albums accessibles récupérés:', {
             count: userBlogPosts.length,
             albums: userBlogPosts.map(p => ({ title: p.title, album: p.blog_albums?.name, published: p.published }))
           });
@@ -92,7 +134,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             title: post.title,
             type: 'blog' as const,
             created_at: post.created_at,
-            author: 'Moi',
+            author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || 'Utilisateur'),
             content_preview: post.content?.substring(0, 150) + '...',
             cover_image: post.cover_image,
             album_name: post.blog_albums?.name || undefined
