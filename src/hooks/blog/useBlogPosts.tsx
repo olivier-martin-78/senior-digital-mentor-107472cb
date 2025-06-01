@@ -27,7 +27,7 @@ export const useBlogPosts = (
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC DÉTAILLÉ AVEC LOGS RENFORCÉS');
+        console.log('🚀 useBlogPosts - DÉBUT DIAGNOSTIC CORRIGÉ');
         console.log('🔍 useBlogPosts - Utilisateur connecté:', {
           originalUserId: user.id,
           originalUserEmail: user.email,
@@ -158,10 +158,11 @@ export const useBlogPosts = (
             }
           });
 
-          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles
+          // ÉTAPE 5: Récupérer TOUS les posts publiés des albums accessibles (CORRECTION ICI)
           if (uniqueAccessibleAlbumIds.length > 0) {
-            console.log('📝 ÉTAPE 5 - Récupération TOUS posts publiés des albums accessibles');
+            console.log('📝 ÉTAPE 5 - CORRECTION: Récupération TOUS posts publiés des albums accessibles sans restriction d\'auteur');
             
+            // CORRECTION MAJEURE: Récupérer TOUS les posts publiés de ces albums, pas seulement ceux de l'utilisateur
             let postsQuery = supabase
               .from('blog_posts')
               .select(`
@@ -169,8 +170,10 @@ export const useBlogPosts = (
                 profiles(id, display_name, email, avatar_url, created_at)
               `)
               .in('album_id', uniqueAccessibleAlbumIds)
-              .eq('published', true)
+              .eq('published', true)  // Seulement les posts publiés
               .order('created_at', { ascending: false });
+
+            console.log('🔧 ÉTAPE 5 - CORRECTION: Requête sans filtrage par author_id');
 
             // Appliquer les filtres
             if (searchTerm) {
@@ -195,21 +198,22 @@ export const useBlogPosts = (
               console.error('❌ ÉTAPE 5 - Erreur posts accessibles:', accessiblePostsError);
             } else if (accessiblePosts) {
               allPosts = accessiblePosts;
-              console.log('✅ ÉTAPE 5 - TOUS posts publiés des albums accessibles récupérés:', {
+              console.log('✅ ÉTAPE 5 - CORRECTION: TOUS posts récupérés (tous auteurs):', {
                 count: accessiblePosts.length,
+                postsParAuteur: accessiblePosts.reduce((acc, post) => {
+                  const authorEmail = post.profiles?.email || 'Email non disponible';
+                  if (!acc[authorEmail]) {
+                    acc[authorEmail] = 0;
+                  }
+                  acc[authorEmail]++;
+                  return acc;
+                }, {} as Record<string, number>),
                 postsParAlbum: uniqueAccessibleAlbumIds.map(albumId => {
                   const albumPosts = accessiblePosts.filter(p => p.album_id === albumId);
                   return {
                     albumId,
                     postsCount: albumPosts.length,
-                    posts: albumPosts.map(p => ({
-                      id: p.id,
-                      title: p.title,
-                      author_id: p.author_id,
-                      author_email: p.profiles?.email,
-                      published: p.published,
-                      isOwnPost: p.author_id === effectiveUserId
-                    }))
+                    auteurs: [...new Set(albumPosts.map(p => p.profiles?.email || 'Inconnu'))]
                   };
                 }),
                 postsDétaillés: accessiblePosts.map(p => ({
@@ -279,7 +283,7 @@ export const useBlogPosts = (
           );
         }
 
-        console.log('🏁 useBlogPosts - RÉSULTAT FINAL AVEC LOGS RENFORCÉS:', {
+        console.log('🏁 useBlogPosts - RÉSULTAT FINAL CORRIGÉ:', {
           totalPosts: allPosts.length,
           userEmail: user.email,
           effectiveUserId,

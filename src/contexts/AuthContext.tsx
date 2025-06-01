@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
@@ -28,32 +29,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const { toast } = useToast();
 
-  // Fonction hasRole modifiée pour prendre en compte l'impersonnation sécurisée
-  const hasRole = (role: AppRole) => {
-    // Vérifier si nous sommes dans le contexte d'impersonnation
+  // SIMPLIFICATION: Fonction pour obtenir l'état d'impersonnation
+  const getImpersonationState = () => {
     try {
       const impersonationState = secureStorage.getItem('impersonation_state');
       if (impersonationState) {
         const parsedState = JSON.parse(impersonationState);
-        if (parsedState.isImpersonating && parsedState.impersonatedRoles) {
-          console.log('AuthContext.hasRole - Mode impersonnation:', {
-            requestedRole: role,
-            impersonatedRoles: parsedState.impersonatedRoles,
-            hasRequestedRole: parsedState.impersonatedRoles.includes(role),
-            impersonatedUser: parsedState.impersonatedUser?.email
-          });
-          return parsedState.impersonatedRoles.includes(role);
-        }
+        console.log('🎭 AuthContext.getImpersonationState - État récupéré:', {
+          isImpersonating: parsedState.isImpersonating,
+          impersonatedUser: parsedState.impersonatedUser?.email,
+          impersonatedRoles: parsedState.impersonatedRoles
+        });
+        return parsedState;
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification des rôles d\'impersonnation:', error);
-      // En cas d'erreur, nettoyer l'état d'impersonnation corrompu
+      console.error('❌ AuthContext.getImpersonationState - Erreur:', error);
       secureStorage.removeItem('impersonation_state');
     }
+    return null;
+  };
 
-    // Sinon, utiliser la logique normale
+  // SIMPLIFICATION: Fonction hasRole modifiée pour prendre en compte l'impersonnation
+  const hasRole = (role: AppRole) => {
+    const impersonationState = getImpersonationState();
+    
+    if (impersonationState?.isImpersonating && impersonationState.impersonatedRoles) {
+      console.log('🎭 AuthContext.hasRole - Mode impersonnation:', {
+        requestedRole: role,
+        impersonatedRoles: impersonationState.impersonatedRoles,
+        hasRequestedRole: impersonationState.impersonatedRoles.includes(role),
+        impersonatedUser: impersonationState.impersonatedUser?.email
+      });
+      return impersonationState.impersonatedRoles.includes(role);
+    }
+
+    // Mode normal
     const normalResult = originalHasRole(role);
-    console.log('AuthContext.hasRole - Mode normal:', {
+    console.log('👤 AuthContext.hasRole - Mode normal:', {
       requestedRole: role,
       userRoles: roles,
       hasRequestedRole: normalResult,
@@ -62,38 +74,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return normalResult;
   };
 
-  // Fonction pour obtenir l'utilisateur effectif (impersonné ou réel)
+  // SIMPLIFICATION: Fonction pour obtenir l'utilisateur effectif
   const getEffectiveUser = () => {
-    try {
-      const impersonationState = secureStorage.getItem('impersonation_state');
-      if (impersonationState) {
-        const parsedState = JSON.parse(impersonationState);
-        if (parsedState.isImpersonating && parsedState.impersonatedUser) {
-          console.log('AuthContext.getEffectiveUser - Utilisateur impersonné:', {
-            originalUser: user?.email,
-            impersonatedUser: parsedState.impersonatedUser?.email
-          });
-          return parsedState.impersonatedUser;
-        }
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération de l\'utilisateur effectif:', error);
-      secureStorage.removeItem('impersonation_state');
+    const impersonationState = getImpersonationState();
+    
+    if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
+      console.log('🎭 AuthContext.getEffectiveUser - Utilisateur impersonné:', {
+        originalUser: user?.email,
+        impersonatedUser: impersonationState.impersonatedUser?.email
+      });
+      return impersonationState.impersonatedUser;
     }
 
-    console.log('AuthContext.getEffectiveUser - Utilisateur normal:', user?.email);
+    console.log('👤 AuthContext.getEffectiveUser - Utilisateur normal:', user?.email);
     return profile;
   };
 
-  // Fonction pour obtenir l'ID utilisateur effectif
+  // SIMPLIFICATION: Fonction pour obtenir l'ID utilisateur effectif
   const getEffectiveUserId = () => {
-    const effectiveUser = getEffectiveUser();
-    const effectiveUserId = effectiveUser?.id || user?.id;
-    console.log('AuthContext.getEffectiveUserId - ID utilisateur effectif:', {
+    const impersonationState = getImpersonationState();
+    
+    if (impersonationState?.isImpersonating && impersonationState.impersonatedUser) {
+      const effectiveUserId = impersonationState.impersonatedUser.id;
+      console.log('🎭 AuthContext.getEffectiveUserId - ID utilisateur impersonné:', {
+        effectiveUserId,
+        impersonatedUserEmail: impersonationState.impersonatedUser.email,
+        originalUserId: user?.id,
+        originalUserEmail: user?.email
+      });
+      return effectiveUserId;
+    }
+
+    const effectiveUserId = user?.id;
+    console.log('👤 AuthContext.getEffectiveUserId - ID utilisateur normal:', {
       effectiveUserId,
-      effectiveUserEmail: effectiveUser?.email,
-      originalUserId: user?.id,
-      originalUserEmail: user?.email
+      userEmail: user?.email
     });
     return effectiveUserId;
   };

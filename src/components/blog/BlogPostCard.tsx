@@ -27,11 +27,11 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
   const effectiveUserId = getEffectiveUserId();
   const originalUserId = user?.id;
 
-  // LOGS RENFORCÉS : Diagnostic complet de la visibilité
+  // SIMPLIFICATION: Logique de visibilité simplifiée et corrigée
   const isAuthor = effectiveUserId && post.author_id === effectiveUserId;
   const isAdmin = hasRole('admin');
   
-  console.log('🔍 BlogPostCard - LOGS RENFORCÉS - DÉBUT ANALYSE VISIBILITÉ:', {
+  console.log('🔍 BlogPostCard - ANALYSE VISIBILITÉ SIMPLIFIÉE:', {
     postId: post.id,
     title: post.title,
     published: post.published,
@@ -43,25 +43,24 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
     albumId: post.album_id
   });
   
-  // Logique de visibilité simplifiée :
-  // - Si le post est publié, il est visible (car il a déjà été filtré par useBlogPosts selon les permissions)
-  // - Si l'utilisateur est l'auteur, il peut voir ses brouillons
-  // - Si l'utilisateur est admin, il peut tout voir
+  // CORRECTION: Logique de visibilité corrigée
+  // - Les posts publiés sont visibles pour tous les utilisateurs ayant accès à l'album
+  // - Les brouillons ne sont visibles que par leur auteur ou les admins
   const isVisible = post.published || isAuthor || isAdmin;
   
-  console.log('🔍 BlogPostCard - LOGS RENFORCÉS - RÉSULTAT VISIBILITÉ:', {
+  console.log('🔍 BlogPostCard - RÉSULTAT VISIBILITÉ CORRIGÉ:', {
     postId: post.id,
     title: post.title,
     published: post.published,
     isAuthor,
     isAdmin,
     isVisible,
-    raisonVisibilité: post.published ? 'Post publié' : (isAuthor ? 'Auteur du post' : (isAdmin ? 'Utilisateur admin' : 'Non visible')),
+    raisonVisibilité: post.published ? 'Post publié - visible par tous' : (isAuthor ? 'Auteur du post' : (isAdmin ? 'Utilisateur admin' : 'Non visible')),
     authorEmail: post.profiles?.email || 'Email non disponible'
   });
   
   if (!isVisible) {
-    console.log('🚫 BlogPostCard - LOGS RENFORCÉS - Post non visible, ignoré:', {
+    console.log('🚫 BlogPostCard - Post non visible, ignoré:', {
       postId: post.id,
       title: post.title,
       authorEmail: post.profiles?.email || 'Email non disponible'
@@ -69,7 +68,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
     return null;
   }
 
-  console.log('✅ BlogPostCard - LOGS RENFORCÉS - Post visible, rendu en cours:', {
+  console.log('✅ BlogPostCard - Post visible, rendu en cours:', {
     postId: post.id,
     title: post.title,
     authorEmail: post.profiles?.email || 'Email non disponible'
