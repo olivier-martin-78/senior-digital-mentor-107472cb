@@ -802,6 +802,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      user_can_access_album: {
+        Args: { album_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "editor" | "reader"

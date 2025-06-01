@@ -25,54 +25,18 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
   };
 
   const effectiveUserId = getEffectiveUserId();
-  const originalUserId = user?.id;
 
-  // SIMPLIFICATION: Logique de visibilité simplifiée et corrigée
+  // Logique de visibilité simplifiée
   const isAuthor = effectiveUserId && post.author_id === effectiveUserId;
   const isAdmin = hasRole('admin');
   
-  console.log('🔍 BlogPostCard - ANALYSE VISIBILITÉ SIMPLIFIÉE:', {
-    postId: post.id,
-    title: post.title,
-    published: post.published,
-    authorId: post.author_id,
-    authorEmail: post.profiles?.email || 'Email non disponible',
-    effectiveUserId: effectiveUserId,
-    isAuthor,
-    isAdmin,
-    albumId: post.album_id
-  });
-  
-  // CORRECTION: Logique de visibilité corrigée
-  // - Les posts publiés sont visibles pour tous les utilisateurs ayant accès à l'album
-  // - Les brouillons ne sont visibles que par leur auteur ou les admins
+  // Les posts publiés sont visibles grâce aux politiques RLS
+  // Les brouillons ne sont visibles que par leur auteur ou les admins
   const isVisible = post.published || isAuthor || isAdmin;
   
-  console.log('🔍 BlogPostCard - RÉSULTAT VISIBILITÉ CORRIGÉ:', {
-    postId: post.id,
-    title: post.title,
-    published: post.published,
-    isAuthor,
-    isAdmin,
-    isVisible,
-    raisonVisibilité: post.published ? 'Post publié - visible par tous' : (isAuthor ? 'Auteur du post' : (isAdmin ? 'Utilisateur admin' : 'Non visible')),
-    authorEmail: post.profiles?.email || 'Email non disponible'
-  });
-  
   if (!isVisible) {
-    console.log('🚫 BlogPostCard - Post non visible, ignoré:', {
-      postId: post.id,
-      title: post.title,
-      authorEmail: post.profiles?.email || 'Email non disponible'
-    });
     return null;
   }
-
-  console.log('✅ BlogPostCard - Post visible, rendu en cours:', {
-    postId: post.id,
-    title: post.title,
-    authorEmail: post.profiles?.email || 'Email non disponible'
-  });
 
   // Trouver l'album associé à ce post
   const postAlbum = albums.find(a => a.id === post.album_id);
@@ -111,7 +75,6 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
         </CardTitle>
         <CardDescription>
           {post.profiles?.display_name || 'Utilisateur'} • {formatDate(post.created_at)}
-          {/* Affichage du nom de l'album pour tous les utilisateurs */}
           {postAlbum && (
             <span className="ml-2 text-tranches-sage">• Album: {postAlbum.name}</span>
           )}
