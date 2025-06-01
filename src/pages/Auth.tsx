@@ -377,37 +377,75 @@ const Auth = () => {
       console.log("Email:", email);
       console.log("Environnement:", { isMobileDevice, connectionInfo });
       
-      // Appel corrigé de la fonction Edge
-      console.log("Tentative: Appel de la fonction Edge send-password-reset avec l'email:", email.trim());
+      // Méthode 1: Essayer avec la fonction Edge
+      console.log("Tentative 1: Appel de la fonction Edge send-password-reset");
       
-      const edgeResponse = await supabase.functions.invoke('send-password-reset', {
-        body: { email: email.trim() }
-      });
+      try {
+        const response = await fetch(`https://cvcebcisijjmmmwuedcv.supabase.co/functions/v1/send-password-reset`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'apikey': supabase.supabaseKey
+          },
+          body: JSON.stringify({ email: email.trim() })
+        });
 
-      console.log("Réponse de la fonction Edge:", {
-        data: edgeResponse.data,
-        error: edgeResponse.error
-      });
+        console.log("Réponse de la fonction Edge:", {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
 
-      if (edgeResponse.error) {
-        console.error("Erreur de la fonction Edge:", edgeResponse.error);
-        throw new Error(`Fonction Edge: ${edgeResponse.error.message || 'Erreur inconnue'}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erreur de la fonction Edge:", errorText);
+          throw new Error(`Fonction Edge: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log("Résultat de la fonction Edge:", result);
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        console.log("✅ Fonction Edge réussie!");
+        
+        toast({
+          title: "Email envoyé",
+          description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
+        });
+        
+        setActiveTab('login');
+        setEmail('');
+        return;
+
+      } catch (edgeError) {
+        console.warn("Échec de la fonction Edge, essai avec l'API native Supabase:", edgeError);
+        
+        // Méthode 2: Utiliser l'API native de Supabase en fallback
+        console.log("Tentative 2: Utilisation de l'API native Supabase");
+        
+        const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/reset-password`
+        });
+
+        if (supabaseError) {
+          console.error("Erreur API Supabase:", supabaseError);
+          throw supabaseError;
+        }
+
+        console.log("✅ API native Supabase réussie!");
+        
+        toast({
+          title: "Email envoyé",
+          description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
+        });
+        
+        setActiveTab('login');
+        setEmail('');
       }
-
-      if (edgeResponse.data?.error) {
-        console.error("Erreur dans les données de la fonction Edge:", edgeResponse.data.error);
-        throw new Error(`Données fonction Edge: ${edgeResponse.data.error}`);
-      }
-
-      console.log("✅ Fonction Edge réussie!");
-      
-      toast({
-        title: "Email envoyé",
-        description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
-      });
-      
-      setActiveTab('login');
-      setEmail('');
       
     } catch (error: any) {
       console.error("=== ERREUR FINALE ===", {

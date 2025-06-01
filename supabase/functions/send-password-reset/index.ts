@@ -11,39 +11,89 @@ const corsHeaders = {
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== DÉBUT FONCTION send-password-reset ===");
   console.log(`Méthode de requête: ${req.method}`);
+  console.log(`URL complète: ${req.url}`);
+  console.log(`Headers reçus:`, Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    console.log("Requête OPTIONS reçue");
+    console.log("Requête OPTIONS reçue - retour CORS");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Lecture du corps de la requête...");
+    console.log("=== LECTURE DU CORPS DE REQUÊTE ===");
     
-    const requestBody = await req.json();
-    console.log("Corps de la requête parsé:", requestBody);
+    // Vérifier si le corps existe
+    const contentLength = req.headers.get('content-length');
+    console.log(`Content-Length: ${contentLength}`);
+    
+    if (!contentLength || contentLength === '0') {
+      console.error("❌ Corps de requête vide détecté");
+      return new Response(
+        JSON.stringify({ error: "Corps de requête vide - veuillez fournir un email" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Lire le corps avec gestion d'erreur robuste
+    let requestBody;
+    let rawBody;
+    
+    try {
+      rawBody = await req.text();
+      console.log(`Corps brut reçu (${rawBody.length} caractères):`, rawBody);
+      
+      if (!rawBody || rawBody.trim() === '') {
+        throw new Error("Corps de requête vide après lecture");
+      }
+      
+      requestBody = JSON.parse(rawBody);
+      console.log("Corps de requête parsé avec succès:", requestBody);
+      
+    } catch (parseError) {
+      console.error("❌ Erreur de parsing du JSON:", parseError);
+      console.log("Corps brut qui a causé l'erreur:", rawBody);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: "Format JSON invalide", 
+          details: parseError.message,
+          receivedBody: rawBody 
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const email = requestBody?.email;
     
     // Validation de l'email
     if (!email || typeof email !== 'string' || email.trim() === '') {
-      console.error("Email manquant ou invalide:", { email, type: typeof email });
+      console.error("❌ Email manquant ou invalide:", { 
+        email, 
+        type: typeof email, 
+        requestBody 
+      });
       return new Response(
         JSON.stringify({ error: "L'email est requis et doit être valide" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log(`Email validé: ${email.trim()}`);
+    console.log(`✅ Email validé: ${email.trim()}`);
 
     // Vérification des variables d'environnement
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
+    console.log("Variables d'environnement:", {
+      supabaseUrl: supabaseUrl ? "✅ Présente" : "❌ Manquante",
+      supabaseServiceKey: supabaseServiceKey ? "✅ Présente" : "❌ Manquante",
+      resendApiKey: resendApiKey ? "✅ Présente" : "❌ Manquante"
+    });
+    
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Variables d'environnement Supabase manquantes");
+      console.error("❌ Variables d'environnement Supabase manquantes");
       return new Response(
         JSON.stringify({ error: "Configuration Supabase manquante" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -51,24 +101,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!resendApiKey) {
-      console.error("Clé API Resend manquante");
+      console.error("❌ Clé API Resend manquante");
       return new Response(
         JSON.stringify({ error: "Configuration Resend manquante" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Variables d'environnement vérifiées avec succès");
+    console.log("✅ Variables d'environnement vérifiées avec succès");
 
     // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Vérifier si l'utilisateur existe
-    console.log(`Vérification de l'existence de l'utilisateur: ${email.trim()}`);
+    console.log(`🔍 Vérification de l'existence de l'utilisateur: ${email.trim()}`);
     const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.trim());
     
     if (userError || !userData.user) {
-      console.error("Utilisateur non trouvé:", userError);
+      console.error("❌ Utilisateur non trouvé:", userError);
       // Pour la sécurité, on ne révèle pas si l'utilisateur existe ou non
       return new Response(
         JSON.stringify({ 
@@ -79,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Utilisateur trouvé, génération du token...");
+    console.log("✅ Utilisateur trouvé, génération du token...");
 
     // Générer le token de réinitialisation
     const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
@@ -88,14 +138,14 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (tokenError || !tokenData) {
-      console.error("Erreur lors de la génération du token:", tokenError);
+      console.error("❌ Erreur lors de la génération du token:", tokenError);
       return new Response(
         JSON.stringify({ error: "Erreur lors de la génération du token de réinitialisation" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Token généré avec succès");
+    console.log("✅ Token généré avec succès");
 
     // Récupérer l'origine pour l'URL de réinitialisation
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
@@ -107,10 +157,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Créer l'URL de réinitialisation vers notre page dédiée
     const resetUrl = `${origin}/reset-password?token=${token}&type=${type}`;
-    console.log(`URL de réinitialisation: ${resetUrl}`);
+    console.log(`🔗 URL de réinitialisation: ${resetUrl}`);
 
     // Envoyer l'email via Resend
-    console.log("Envoi de l'email via Resend...");
+    console.log("📧 Envoi de l'email via Resend...");
     
     const resend = new Resend(resendApiKey);
     
@@ -139,11 +189,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailResponse.error) {
-      console.error("Erreur Resend:", emailResponse.error);
+      console.error("❌ Erreur Resend:", emailResponse.error);
       throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
     }
 
-    console.log("Email envoyé avec succès via Resend:", emailResponse);
+    console.log("✅ Email envoyé avec succès via Resend:", emailResponse);
     
     return new Response(
       JSON.stringify({ 
@@ -154,7 +204,8 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("ERREUR dans send-password-reset:", error);
+    console.error("💥 ERREUR dans send-password-reset:", error);
+    console.error("Stack trace:", error.stack);
     
     return new Response(
       JSON.stringify({ 
