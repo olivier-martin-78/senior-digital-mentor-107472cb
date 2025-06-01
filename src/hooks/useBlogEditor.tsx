@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, getEffectiveUserId } = useAuth();
+  const { isImpersonating, originalUser } = useImpersonationContext();
   const { toast } = useToast();
   const isEditing = !!id;
 
@@ -83,8 +85,38 @@ export const useBlogEditor = () => {
           return;
         }
 
-        // Check if user has permission to edit this post
-        if (data.author_id !== user?.id && !hasRole('admin')) {
+        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
+        const effectiveUserId = getEffectiveUserId();
+        const realUserId = isImpersonating ? originalUser?.id : user?.id;
+        
+        console.log('🔍 useBlogEditor - CORRECTION - Vérification permissions édition:', {
+          postId: data.id,
+          postTitle: data.title,
+          postAuthorId: data.author_id,
+          effectiveUserId,
+          realUserId,
+          isImpersonating,
+          userEmail: user?.email
+        });
+
+        // Vérifier si l'utilisateur EFFECTIF (impersonné) est l'auteur OU si l'utilisateur RÉEL est admin
+        const isEffectiveAuthor = effectiveUserId && data.author_id === effectiveUserId;
+        const isRealAdmin = !isImpersonating && hasRole('admin');
+        const canEdit = isEffectiveAuthor || isRealAdmin;
+
+        console.log('🎯 useBlogEditor - CORRECTION - Calcul permissions édition:', {
+          postId: data.id,
+          isEffectiveAuthor,
+          isRealAdmin,
+          canEdit
+        });
+
+        if (!canEdit) {
+          console.log('🚫 useBlogEditor - CORRECTION - Accès refusé à l\'édition:', {
+            postId: data.id,
+            reason: !isEffectiveAuthor ? 'Pas l\'auteur effectif' : 'Pas admin réel'
+          });
+          
           toast({
             title: "Accès refusé",
             description: "Vous n'avez pas l'autorisation de modifier cet article.",
@@ -93,6 +125,11 @@ export const useBlogEditor = () => {
           navigate('/blog');
           return;
         }
+
+        console.log('✅ useBlogEditor - CORRECTION - Accès autorisé à l\'édition:', {
+          postId: data.id,
+          postTitle: data.title
+        });
 
         setPost(data as BlogPost);
         setTitle(data.title);
@@ -142,7 +179,7 @@ export const useBlogEditor = () => {
     } else {
       setLoading(false);
     }
-  }, [id, user, hasRole, navigate, toast, isEditing]);
+  }, [id, user, hasRole, navigate, toast, isEditing, getEffectiveUserId, isImpersonating, originalUser]);
 
   // Fonction pour télécharger la miniature de l'article
   const uploadCoverImage = async (postId: string): Promise<string | null> => {
