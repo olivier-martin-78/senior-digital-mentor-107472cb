@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, cleanupAuthState } from '@/contexts/AuthContext';
@@ -19,6 +20,9 @@ import {
 import { checkConnection, isMobileClient } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const SUPABASE_URL = "https://cvcebcisijjmmmwuedcv.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE";
 
 const Auth = () => {
   const { signIn, signUp, isLoading, user } = useAuth();
@@ -381,12 +385,12 @@ const Auth = () => {
       console.log("Tentative 1: Appel de la fonction Edge send-password-reset");
       
       try {
-        const response = await fetch(`https://cvcebcisijjmmmwuedcv.supabase.co/functions/v1/send-password-reset`, {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/send-password-reset`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
-            'apikey': supabase.supabaseKey
+            'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': SUPABASE_PUBLISHABLE_KEY
           },
           body: JSON.stringify({ email: email.trim() })
         });

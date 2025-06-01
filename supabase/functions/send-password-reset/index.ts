@@ -111,27 +111,18 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("✅ Variables d'environnement vérifiées avec succès");
 
     // Create Supabase client with service role key
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
-    // Vérifier si l'utilisateur existe
-    console.log(`🔍 Vérification de l'existence de l'utilisateur: ${email.trim()}`);
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.trim());
+    console.log("✅ Client Supabase créé avec la clé de service");
+
+    // Générer directement le token de réinitialisation sans vérifier l'utilisateur
+    console.log(`🔗 Génération du token de réinitialisation pour: ${email.trim()}`);
     
-    if (userError || !userData.user) {
-      console.error("❌ Utilisateur non trouvé:", userError);
-      // Pour la sécurité, on ne révèle pas si l'utilisateur existe ou non
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Si cet email existe, un lien de réinitialisation a été envoyé"
-        }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log("✅ Utilisateur trouvé, génération du token...");
-
-    // Générer le token de réinitialisation
     const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email.trim(),
@@ -139,9 +130,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (tokenError || !tokenData) {
       console.error("❌ Erreur lors de la génération du token:", tokenError);
+      
+      // Pour la sécurité, ne pas révéler si l'utilisateur existe ou non
       return new Response(
-        JSON.stringify({ error: "Erreur lors de la génération du token de réinitialisation" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ 
+          success: true, 
+          message: "Si cet email existe, un lien de réinitialisation a été envoyé"
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
