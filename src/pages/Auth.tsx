@@ -404,6 +404,13 @@ const Auth = () => {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Erreur de la fonction Edge:", errorText);
+          
+          // Si c'est une erreur de domaine Resend, utiliser le fallback Supabase
+          if (errorText.includes('verify a domain') || errorText.includes('own email address')) {
+            console.log("Erreur de domaine Resend détectée, passage au fallback Supabase");
+            throw new Error("RESEND_DOMAIN_ERROR");
+          }
+          
           throw new Error(`Fonction Edge: ${response.status} - ${errorText}`);
         }
 
@@ -411,6 +418,11 @@ const Auth = () => {
         console.log("Résultat de la fonction Edge:", result);
 
         if (result.error) {
+          // Si c'est une erreur de domaine Resend, utiliser le fallback
+          if (result.details && (result.details.includes('verify a domain') || result.details.includes('own email address'))) {
+            console.log("Erreur de domaine Resend dans la réponse, passage au fallback Supabase");
+            throw new Error("RESEND_DOMAIN_ERROR");
+          }
           throw new Error(result.error);
         }
 
@@ -426,10 +438,14 @@ const Auth = () => {
         return;
 
       } catch (edgeError) {
-        console.warn("Échec de la fonction Edge, essai avec l'API native Supabase:", edgeError);
+        console.warn("Échec de la fonction Edge:", edgeError);
         
-        // Méthode 2: Utiliser l'API native de Supabase en fallback
-        console.log("Tentative 2: Utilisation de l'API native Supabase");
+        // Si c'est spécifiquement une erreur de domaine Resend, utiliser le fallback Supabase
+        if (edgeError.message === "RESEND_DOMAIN_ERROR") {
+          console.log("Tentative 2: Utilisation de l'API native Supabase (fallback pour Resend)");
+        } else {
+          console.log("Tentative 2: Utilisation de l'API native Supabase (fallback général)");
+        }
         
         const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: `${window.location.origin}/reset-password`
@@ -437,6 +453,12 @@ const Auth = () => {
 
         if (supabaseError) {
           console.error("Erreur API Supabase:", supabaseError);
+          
+          // Gérer spécifiquement l'erreur de limitation de taux
+          if (supabaseError.message.includes('you can only request this after')) {
+            throw new Error("Veuillez attendre avant de demander un nouveau lien de réinitialisation. Pour des raisons de sécurité, un délai est imposé entre les demandes.");
+          }
+          
           throw supabaseError;
         }
 
@@ -461,7 +483,9 @@ const Auth = () => {
       
       let errorMessage = "Une erreur s'est produite lors de l'envoi de l'email";
       
-      if (error.message?.includes('Failed to send a request')) {
+      if (error.message?.includes('you can only request this after')) {
+        errorMessage = "Veuillez attendre avant de demander un nouveau lien. Un délai de sécurité est en cours.";
+      } else if (error.message?.includes('Failed to send a request')) {
         errorMessage = "Impossible de contacter le serveur. Vérifiez votre connexion internet.";
       } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         errorMessage = "Problème de réseau. Vérifiez votre connexion internet.";

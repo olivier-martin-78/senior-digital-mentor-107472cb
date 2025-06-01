@@ -23,7 +23,6 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("=== LECTURE DU CORPS DE REQUÊTE ===");
     
-    // Vérifier si le corps existe
     const contentLength = req.headers.get('content-length');
     console.log(`Content-Length: ${contentLength}`);
     
@@ -35,7 +34,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Lire le corps avec gestion d'erreur robuste
     let requestBody;
     let rawBody;
     
@@ -66,7 +64,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const email = requestBody?.email;
     
-    // Validation de l'email
     if (!email || typeof email !== 'string' || email.trim() === '') {
       console.error("❌ Email manquant ou invalide:", { 
         email, 
@@ -81,7 +78,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`✅ Email validé: ${email.trim()}`);
 
-    // Vérification des variables d'environnement
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -110,7 +106,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("✅ Variables d'environnement vérifiées avec succès");
 
-    // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -120,7 +115,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("✅ Client Supabase créé avec la clé de service");
 
-    // Générer directement le token de réinitialisation sans vérifier l'utilisateur
     console.log(`🔗 Génération du token de réinitialisation pour: ${email.trim()}`);
     
     const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
@@ -131,7 +125,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (tokenError || !tokenData) {
       console.error("❌ Erreur lors de la génération du token:", tokenError);
       
-      // Pour la sécurité, ne pas révéler si l'utilisateur existe ou non
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -143,25 +136,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("✅ Token généré avec succès");
 
-    // Récupérer l'origine pour l'URL de réinitialisation
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     
-    // Extraire le token du lien généré
     const linkUrl = new URL(tokenData.properties.action_link);
     const token = linkUrl.searchParams.get('token');
     const type = linkUrl.searchParams.get('type');
     
-    // Créer l'URL de réinitialisation vers notre page dédiée
     const resetUrl = `${origin}/reset-password?token=${token}&type=${type}`;
     console.log(`🔗 URL de réinitialisation: ${resetUrl}`);
 
-    // Envoyer l'email via Resend
     console.log("📧 Envoi de l'email via Resend...");
     
     const resend = new Resend(resendApiKey);
     
+    // Utiliser une adresse from générique pour éviter les problèmes de domaine
     const emailResponse = await resend.emails.send({
-      from: 'noreply@resend.dev',
+      from: 'Tranches de Vie <onboarding@resend.dev>',
       to: [email.trim()],
       subject: 'Réinitialisation de votre mot de passe',
       html: `
