@@ -19,9 +19,11 @@ import { useState } from 'react';
 interface DiaryFormFieldsProps {
   form: UseFormReturn<any>;
   onMediaChange?: (file: File | null) => void;
+  existingMediaUrl?: string | null;
+  existingMediaType?: string | null;
 }
 
-const DiaryFormFields = ({ form, onMediaChange }: DiaryFormFieldsProps) => {
+const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaType }: DiaryFormFieldsProps) => {
   const [newPerson, setNewPerson] = useState('');
   const [newTag, setNewTag] = useState('');
 
@@ -426,7 +428,7 @@ const DiaryFormFields = ({ form, onMediaChange }: DiaryFormFieldsProps) => {
               <FormControl>
                 <Input
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,audio/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     field.onChange(file);
