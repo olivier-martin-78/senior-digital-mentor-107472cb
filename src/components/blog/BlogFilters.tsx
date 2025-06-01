@@ -40,8 +40,8 @@ const BlogFilters: React.FC<BlogFiltersProps> = ({
           />
         </div>
         <Select value={selectedAlbum || 'all'} onValueChange={(value) => setSelectedAlbum(value === 'all' ? null : value)}>
-          <SelectTrigger className="w-full md:w-1/4">
-            <SelectValue placeholder="Tous les albums" />
+          <SelectTrigger className="w-full md:w-1/3">
+            <SelectValue placeholder="Sélectionner un album" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les albums</SelectItem>

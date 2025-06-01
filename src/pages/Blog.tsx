@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
 import BlogSearch from '@/components/blog/BlogSearch';
+import BlogFilters from '@/components/blog/BlogFilters';
 import { useBlogData } from '@/hooks/useBlogData';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const Blog = () => {
   const { user, hasRole, getEffectiveUserId, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAlbum, setSelectedAlbum] = useState<string>('');
+  const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
@@ -20,7 +22,7 @@ const Blog = () => {
     albums, 
     loading, 
     hasCreatePermission 
-  } = useBlogData(searchTerm, selectedAlbum, startDate, endDate, null);
+  } = useBlogData(searchTerm, selectedAlbum || '', startDate, endDate, null);
 
   console.log('🎯 Blog.tsx - RENDU PAGE BLOG avec données complètes:', {
     user: user?.email,
@@ -42,28 +44,40 @@ const Blog = () => {
   const handleClearFilters = () => {
     setStartDate('');
     setEndDate('');
+    setSelectedAlbum(null);
+    setSelectedCategories([]);
   };
 
   const handleSearch = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm);
   };
 
+  const toggleCategorySelection = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Blog (Photos/Vidéos)</h1>
-        </div>
-        
         <BlogHeader 
           albums={albums}
           hasCreatePermission={hasCreatePermission}
         />
         
-        <BlogSearch 
-          onSearch={handleSearch}
-          initialSearchTerm={searchTerm}
+        <BlogFilters 
+          searchQuery={searchTerm}
+          setSearchQuery={setSearchTerm}
+          selectedAlbum={selectedAlbum}
+          setSelectedAlbum={setSelectedAlbum}
+          selectedCategories={selectedCategories}
+          toggleCategorySelection={toggleCategorySelection}
+          albums={albums}
+          categories={[]} // Pour l'instant, on garde les catégories vides car elles ne sont pas encore implémentées dans useBlogData
         />
         
         <DateRangeFilter
@@ -80,8 +94,8 @@ const Blog = () => {
           albums={albums}
           postImages={{}}
           searchQuery={searchTerm}
-          selectedAlbum={selectedAlbum}
-          selectedCategories={[]}
+          selectedAlbum={selectedAlbum || ''}
+          selectedCategories={selectedCategories}
         />
       </div>
     </div>
