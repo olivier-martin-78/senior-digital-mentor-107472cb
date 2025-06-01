@@ -9,13 +9,26 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('=== DEBUT FONCTION sync-invitation-permissions ===');
+  console.log('URL de la requête:', req.url);
+  console.log('Méthode:', req.method);
+  console.log('Headers:', JSON.stringify(Array.from(req.headers.entries())));
   
   if (req.method === 'OPTIONS') {
-    console.log('Requête OPTIONS reçue');
+    console.log('Requête OPTIONS reçue, renvoi des headers CORS');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Vérifier le body de la requête
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Body de la requête:', JSON.stringify(requestBody));
+    } catch (parseError) {
+      console.log('Pas de body JSON ou erreur de parsing:', parseError.message);
+      requestBody = {};
+    }
+
     // Créer un client Supabase avec la clé service
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -33,35 +46,44 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('Client Supabase créé avec succès');
 
-    // Simplifier l'authentification - utiliser directement la service key
-    // Pas besoin de vérifier le token utilisateur puisqu'on utilise la service key
+    // Vérification de l'autorisation - optionnelle, nous utilisons la service key
     console.log('Vérification de l\'autorisation...');
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.log('Pas de header Authorization, continuons quand même avec service key');
+    } else {
+      console.log('Header Authorization présent:', authHeader.substring(0, 20) + '...');
     }
 
     // Tenter d'obtenir l'utilisateur actuel pour vérification admin
     let isAdmin = false;
     if (authHeader) {
       try {
+        console.log('Tentative de récupération des infos utilisateur...');
         const { data: { user }, error: authError } = await supabase.auth.getUser(
           authHeader.replace('Bearer ', '')
         );
 
-        if (!authError && user) {
+        if (authError) {
+          console.log('Erreur lors de la récupération de l\'utilisateur:', authError);
+        } else if (user) {
           console.log('Utilisateur authentifié:', user.id);
           
           // Vérifier le rôle admin
+          console.log('Vérification du rôle admin...');
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id)
             .single();
 
-          if (!roleError && roleData?.role === 'admin') {
+          if (roleError) {
+            console.log('Erreur lors de la vérification du rôle:', roleError);
+          } else if (roleData?.role === 'admin') {
             isAdmin = true;
             console.log('Utilisateur confirmé comme admin');
+          } else {
+            console.log('Utilisateur n\'est pas admin:', roleData?.role);
           }
         }
       } catch (authCheckError) {
@@ -69,23 +91,18 @@ serve(async (req) => {
       }
     }
 
-    if (!isAdmin) {
-      console.log('Utilisateur non-admin ou erreur auth - utilisation service key pour exécution');
-    }
-
     console.log('Vérification de l\'existence de la fonction fix_existing_invitation_permissions...');
     
     // Tester d'abord si la fonction existe
     const { data: functionExists, error: functionCheckError } = await supabase
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'fix_existing_invitation_permissions')
-      .maybeSingle();
+      .rpc('pg_function_exists', { function_name: 'fix_existing_invitation_permissions' });
 
     if (functionCheckError) {
       console.error('Erreur lors de la vérification de la fonction:', functionCheckError);
       throw new Error(`Erreur de vérification de fonction: ${functionCheckError.message}`);
     }
+
+    console.log('Résultat de la vérification de fonction:', functionExists);
 
     if (!functionExists) {
       console.error('La fonction fix_existing_invitation_permissions n\'existe pas');
@@ -127,5 +144,7 @@ serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  } finally {
+    console.log('=== FIN FONCTION sync-invitation-permissions ===');
   }
 });

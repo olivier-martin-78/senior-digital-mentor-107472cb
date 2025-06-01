@@ -19,15 +19,27 @@ import {
 const SyncPermissionsButton = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const handleSyncPermissions = async () => {
     setLoading(true);
+    setErrorDetails(null);
     console.log('=== DEBUT SYNCHRONISATION PERMISSIONS ===');
+    console.log('Timestamp de requête:', new Date().toISOString());
 
     try {
+      // Préparer les données à envoyer
+      const requestData = { 
+        timestamp: new Date().toISOString(),
+        clientInfo: navigator.userAgent
+      };
+      
+      console.log('Données de requête:', requestData);
+
       // Appel à la fonction Edge avec plus de détails
+      console.log('Envoi de la requête à la fonction Edge...');
       const { data, error } = await supabase.functions.invoke('sync-invitation-permissions', {
-        body: { timestamp: new Date().toISOString() }
+        body: requestData
       });
 
       console.log('Réponse complète de la fonction:', { data, error });
@@ -36,7 +48,10 @@ const SyncPermissionsButton = () => {
         console.error('Erreur détaillée:', {
           message: error.message,
           context: error.context,
-          details: error.details
+          details: error.details,
+          name: error.name,
+          stack: error.stack,
+          code: error.code
         });
         throw new Error(`Erreur de la fonction Edge: ${error.message || 'Erreur inconnue'}`);
       }
@@ -58,13 +73,28 @@ const SyncPermissionsButton = () => {
       console.error('Message:', error.message);
       console.error('Erreur complète:', error);
       
+      // Récupérer autant de détails que possible
       let errorMessage = "Erreur lors de la synchronisation des permissions";
+      let details = "";
       
       if (error.message) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
+
+      // Collecter les détails techniques
+      if (error.stack) {
+        details += `Stack: ${error.stack}\n`;
+      }
+      if (error.code) {
+        details += `Code: ${error.code}\n`;
+      }
+      if (error.details) {
+        details += `Détails: ${typeof error.details === 'object' ? JSON.stringify(error.details) : error.details}\n`;
+      }
+
+      setErrorDetails(details || "Pas de détails techniques disponibles");
 
       toast({
         title: "Erreur de synchronisation",
@@ -95,9 +125,12 @@ const SyncPermissionsButton = () => {
             Cela résoudra les problèmes d'accès pour les utilisateurs comme Olivier qui ne voient pas 
             les contenus auxquels ils devraient avoir accès selon leur invitation.
             
-            <br /><br />
-            <strong>Note:</strong> Cette opération utilise une fonction de base de données sécurisée 
-            et peut prendre quelques secondes à s'exécuter.
+            {errorDetails && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs font-mono text-red-800 whitespace-pre-wrap overflow-auto max-h-[200px]">
+                <p className="font-bold mb-1">Détails techniques de la dernière erreur:</p>
+                {errorDetails}
+              </div>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
