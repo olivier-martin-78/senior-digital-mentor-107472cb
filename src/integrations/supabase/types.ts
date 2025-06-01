@@ -783,6 +783,10 @@ export type Database = {
         Args: { user_id_to_delete: string }
         Returns: undefined
       }
+      fix_existing_invitation_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -801,6 +805,10 @@ export type Database = {
       is_group_creator: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
+      }
+      sync_invitation_permissions: {
+        Args: { invitation_id_param: string }
+        Returns: undefined
       }
       user_can_access_album: {
         Args: { album_id_param: string; user_id_param: string }
