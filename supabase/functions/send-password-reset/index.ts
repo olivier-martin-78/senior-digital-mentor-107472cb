@@ -26,39 +26,74 @@ const handler = async (req: Request): Promise<Response> => {
     // Amélioration du parsing JSON avec gestion d'erreurs détaillée
     try {
       const contentType = req.headers.get('content-type') || '';
+      const contentLength = req.headers.get('content-length') || '';
       console.log(`Content-Type: ${contentType}`);
+      console.log(`Content-Length: ${contentLength}`);
       
+      // Vérifier tous les headers pour diagnostic
+      console.log("Headers reçus:");
+      for (const [key, value] of req.headers.entries()) {
+        console.log(`  ${key}: ${value}`);
+      }
+
       // Vérifier si le corps existe
       if (!req.body) {
-        console.error("Aucun corps de requête");
+        console.error("Aucun corps de requête (req.body est null)");
         return new Response(
           JSON.stringify({ error: "Corps de requête manquant" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
+      // Cloner la requête pour pouvoir lire le corps plusieurs fois si nécessaire
+      const requestClone = req.clone();
+      
       // Lire le corps de la requête comme texte d'abord
-      const bodyText = await req.text();
+      const bodyText = await requestClone.text();
       console.log(`Corps brut reçu: "${bodyText}"`);
       console.log(`Longueur du corps: ${bodyText.length}`);
       
       if (!bodyText || bodyText.trim() === '') {
         console.error("Corps de requête vide");
         return new Response(
-          JSON.stringify({ error: "Corps de requête vide" }),
+          JSON.stringify({ error: "Corps de requête vide - aucune donnée reçue" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
-      const requestBody = JSON.parse(bodyText);
-      console.log("Corps de la requête parsé avec succès:", requestBody);
-      email = requestBody.email;
+      // Essayer de parser le JSON
+      let requestBody;
+      try {
+        requestBody = JSON.parse(bodyText);
+        console.log("Corps de la requête parsé avec succès:", requestBody);
+      } catch (parseError) {
+        console.error("Erreur parsing JSON:", parseError);
+        console.log("Tentative de récupération manuelle des données...");
+        
+        // Essayer de récupérer l'email d'une autre façon
+        const url = new URL(req.url);
+        const emailFromUrl = url.searchParams.get('email');
+        
+        if (emailFromUrl) {
+          console.log(`Email récupéré depuis l'URL: ${emailFromUrl}`);
+          email = emailFromUrl;
+        } else {
+          throw new Error(`Corps non-JSON reçu: "${bodyText}"`);
+        }
+      }
+      
+      if (!email && requestBody) {
+        email = requestBody.email;
+      }
+      
     } catch (jsonError) {
-      console.error("Erreur lors du parsing JSON:", jsonError);
+      console.error("Erreur lors du traitement de la requête:", jsonError);
       return new Response(
         JSON.stringify({ 
-          error: "Format de requête invalide - JSON attendu",
-          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing"
+          error: "Format de requête invalide",
+          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing",
+          received_content_type: req.headers.get('content-type'),
+          received_content_length: req.headers.get('content-length')
         }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
@@ -147,14 +182,14 @@ const handler = async (req: Request): Promise<Response> => {
     const resetUrl = `${origin}/reset-password?token=${token}&type=${type}`;
     console.log(`URL de réinitialisation: ${resetUrl}`);
 
-    // Envoyer l'email via Resend
+    // Envoyer l'email via Resend UNIQUEMENT
     console.log("Envoi de l'email via Resend...");
     
     try {
       const resend = new Resend(resendApiKey);
       
       const emailResponse = await resend.emails.send({
-        from: 'noreply@resend.dev', // Changez ceci par votre domaine vérifié
+        from: 'noreply@resend.dev', // Utilisez votre domaine vérifié si disponible
         to: [email.trim()],
         subject: 'Réinitialisation de votre mot de passe',
         html: `

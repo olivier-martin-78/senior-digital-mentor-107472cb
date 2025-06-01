@@ -377,13 +377,13 @@ const Auth = () => {
       console.log("Email:", email);
       console.log("Environnement:", { isMobileDevice, connectionInfo });
       
-      // Méthode 1: Essayer la fonction Edge avec diagnostics détaillés
+      // Méthode 1: Essayer la fonction Edge avec un appel corrigé
       try {
         console.log("Tentative 1: Appel de la fonction Edge send-password-reset");
         
-        // Test direct sans vérification de connexion préalable
+        // Appel corrigé avec body explicite
         const edgeResponse = await supabase.functions.invoke('send-password-reset', {
-          body: { email },
+          body: JSON.stringify({ email: email.trim() }),
           headers: {
             'Content-Type': 'application/json',
           }
@@ -408,7 +408,7 @@ const Auth = () => {
         
         toast({
           title: "Email envoyé",
-          description: "Un lien de réinitialisation a été envoyé à votre adresse email via notre fonction Edge.",
+          description: "Un lien de réinitialisation a été envoyé à votre adresse email.",
         });
         
         setActiveTab('login');
@@ -426,8 +426,8 @@ const Auth = () => {
         console.log("Tentative 2: Fallback vers la méthode native Supabase");
         
         try {
-          const fallbackResponse = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth?reset=true`
+          const fallbackResponse = await supabase.auth.resetPasswordForEmail(email.trim(), {
+            redirectTo: `${window.location.origin}/reset-password`
           });
 
           console.log("Réponse du fallback Supabase:", {
