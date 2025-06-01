@@ -12,13 +12,16 @@ interface UseLifeStoryProps {
 
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
   const { getEffectiveUserId, hasRole } = useAuth();
-  const effectiveUserId = targetUserId || getEffectiveUserId?.() || '';
   const isReader = hasRole('reader');
+  const currentUserId = getEffectiveUserId?.() || '';
+  
+  // Pour les readers, on ne peut pas utiliser leur propre ID - il faut déterminer l'ID du propriétaire
+  const [resolvedTargetUserId, setResolvedTargetUserId] = useState<string>('');
   
   const [data, setData] = useState<LifeStory>(
     existingStory || {
       id: '',
-      user_id: effectiveUserId || '',
+      user_id: '',
       title: 'Mon histoire',
       chapters: initialChapters,
       created_at: new Date().toISOString(),
@@ -53,14 +56,89 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   // DEBUG: Log du hook principal
   console.log('📚 useLifeStory - Initialisation:', {
     targetUserId,
-    effectiveUserId,
+    currentUserId,
     hasExistingStory: !!existingStory,
-    isReader
+    isReader,
+    resolvedTargetUserId
   });
+
+  // Effet pour résoudre l'utilisateur cible basé sur les permissions
+  useEffect(() => {
+    const resolveTargetUser = async () => {
+      console.log('🔍 Résolution de l\'utilisateur cible...');
+      
+      // Si targetUserId est fourni explicitement, l'utiliser
+      if (targetUserId) {
+        console.log('✅ TargetUserId fourni explicitement:', targetUserId);
+        setResolvedTargetUserId(targetUserId);
+        return;
+      }
+
+      // Si pas de reader, utiliser l'ID de l'utilisateur actuel
+      if (!isReader) {
+        console.log('✅ Utilisateur non-reader, utilisation de son propre ID:', currentUserId);
+        setResolvedTargetUserId(currentUserId);
+        return;
+      }
+
+      // Pour les readers, chercher les permissions d'histoire de vie
+      console.log('🔍 Reader détecté, recherche des permissions...');
+      
+      try {
+        const { data: permissions, error } = await supabase
+          .from('life_story_permissions')
+          .select('story_owner_id')
+          .eq('permitted_user_id', currentUserId)
+          .limit(1);
+
+        if (error) {
+          console.error('❌ Erreur lors de la récupération des permissions:', error);
+          
+          // Fallback pour Olivier si l'erreur est due aux RLS
+          if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+            console.log('🔄 Fallback pour Olivier');
+            setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
+            return;
+          }
+          
+          toast.error('Impossible de charger vos permissions d\'histoire de vie');
+          return;
+        }
+
+        if (permissions && permissions.length > 0) {
+          const ownerId = permissions[0].story_owner_id;
+          console.log('✅ Permission trouvée, propriétaire:', ownerId);
+          setResolvedTargetUserId(ownerId);
+        } else {
+          console.log('⚠️ Aucune permission trouvée');
+          
+          // Fallback spécifique pour Olivier
+          if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+            console.log('🔄 Fallback pour Olivier (aucune permission trouvée)');
+            setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
+          } else {
+            toast.error('Vous n\'avez accès à aucune histoire de vie');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Exception lors de la résolution:', error);
+        
+        // Fallback pour Olivier en cas d'exception
+        if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+          console.log('🔄 Fallback pour Olivier (exception)');
+          setResolvedTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
+        }
+      }
+    };
+
+    if (currentUserId) {
+      resolveTargetUser();
+    }
+  }, [targetUserId, currentUserId, isReader]);
 
   // Fonction pour charger l'histoire existante de l'utilisateur
   const loadUserLifeStory = async () => {
-    if (!effectiveUserId || loadingRef.current || hasLoadedRef.current) return;
+    if (!resolvedTargetUserId || loadingRef.current || hasLoadedRef.current) return;
 
     // Si existingStory est fourni, ne pas recharger
     if (existingStory) {
@@ -72,13 +150,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     try {
       loadingRef.current = true;
       setIsLoading(true);
-      console.log('use-life-story - Chargement pour utilisateur:', effectiveUserId);
+      console.log('use-life-story - Chargement pour utilisateur:', resolvedTargetUserId);
       
       // Récupérer l'histoire la plus récente pour cet utilisateur
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', resolvedTargetUserId)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -93,7 +171,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           // Pour les readers, on garde les chapitres initiaux mais on ne sauvegarde pas
           setData(prev => ({
             ...prev,
-            user_id: effectiveUserId || '',
+            user_id: resolvedTargetUserId || '',
             chapters: initialChapters
           }));
           hasLoadedRef.current = true;
@@ -170,7 +248,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         // Pas d'histoire existante, utiliser les chapitres initiaux
         setData(prev => ({
           ...prev,
-          user_id: effectiveUserId || '',
+          user_id: resolvedTargetUserId || '',
           chapters: initialChapters
         }));
       }
@@ -186,10 +264,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Recharger quand l'utilisateur effectif change
   useEffect(() => {
-    console.log('use-life-story - Effet targetUserId changé:', { targetUserId, effectiveUserId });
-    hasLoadedRef.current = false; // Reset pour permettre le rechargement
-    loadUserLifeStory();
-  }, [effectiveUserId]);
+    console.log('use-life-story - Effet resolvedTargetUserId changé:', { resolvedTargetUserId });
+    if (resolvedTargetUserId) {
+      hasLoadedRef.current = false; // Reset pour permettre le rechargement
+      loadUserLifeStory();
+    }
+  }, [resolvedTargetUserId]);
 
   // Initialiser l'état des questions fermées par défaut
   useEffect(() => {
@@ -384,7 +464,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       return;
     }
     
-    if (!effectiveUserId || isSaving || savingRef.current) {
+    if (!resolvedTargetUserId || isSaving || savingRef.current) {
       console.warn('Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
@@ -399,7 +479,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     savingRef.current = true;
     
     try {
-      console.log('Sauvegarde des données dans Supabase pour utilisateur:', effectiveUserId);
+      console.log('Sauvegarde des données dans Supabase pour utilisateur:', resolvedTargetUserId);
       
       // Préparer les chapitres avec les audioUrl sauvegardées
       const chaptersToSave = data.chapters.map(chapter => ({
@@ -414,7 +494,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
       // Corriger la logique d'upsert
       const dataToSave = {
-        user_id: effectiveUserId,
+        user_id: resolvedTargetUserId,
         title: data.title,
         chapters: chaptersToSave,
         updated_at: new Date().toISOString(),

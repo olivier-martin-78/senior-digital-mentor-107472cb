@@ -12,13 +12,11 @@ import { Save, Eye } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 const LifeStory = () => {
-  const { user, session, hasRole, getEffectiveUserId } = useAuth();
+  const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [targetUserId, setTargetUserId] = useState<string>('');
   const [storyOwnerInfo, setStoryOwnerInfo] = useState<{ display_name: string | null; email: string } | null>(null);
   
   const isReader = hasRole('reader');
-  const effectiveUserId = getEffectiveUserId() || '';
 
   useEffect(() => {
     if (!session) {
@@ -27,79 +25,31 @@ const LifeStory = () => {
     }
   }, [session, navigate, user]);
 
-  // Déterminer quel utilisateur cibler pour charger l'histoire
+  // Le hook se charge maintenant automatiquement de déterminer le bon utilisateur cible
+  const lifeStoryData = useLifeStory({});
+
+  // Récupérer les informations du propriétaire de l'histoire pour l'affichage
   useEffect(() => {
-    const determineTargetUser = async () => {
-      if (!effectiveUserId) return;
+    const getStoryOwnerInfo = async () => {
+      if (!lifeStoryData.data?.user_id || !isReader) return;
 
-      if (isReader) {
-        console.log('👤 Utilisateur reader détecté, recherche des permissions d\'histoire de vie...');
+      try {
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', lifeStoryData.data.user_id)
+          .single();
         
-        try {
-          // Chercher les permissions d'histoire de vie pour cet utilisateur reader
-          const { data: permissions, error } = await supabase
-            .from('life_story_permissions')
-            .select('story_owner_id')
-            .eq('permitted_user_id', effectiveUserId)
-            .limit(1);
-
-          if (error) {
-            console.error('❌ Erreur lors de la récupération des permissions:', error);
-            // Fallback: essayer les données connues pour Olivier
-            if (effectiveUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-              console.log('🔄 Utilisation du fallback pour Olivier');
-              setTargetUserId('90d0a268-834e-418e-849b-de4e81676803');
-              
-              // Récupérer les infos du propriétaire
-              const { data: ownerProfile } = await supabase
-                .from('profiles')
-                .select('display_name, email')
-                .eq('id', '90d0a268-834e-418e-849b-de4e81676803')
-                .single();
-              
-              if (ownerProfile) {
-                setStoryOwnerInfo(ownerProfile);
-              }
-            } else {
-              toast.error('Impossible de charger vos permissions d\'histoire de vie');
-            }
-            return;
-          }
-
-          if (permissions && permissions.length > 0) {
-            const ownerId = permissions[0].story_owner_id;
-            console.log('✅ Permission trouvée, propriétaire de l\'histoire:', ownerId);
-            setTargetUserId(ownerId);
-            
-            // Récupérer les informations du propriétaire pour l'affichage
-            const { data: ownerProfile } = await supabase
-              .from('profiles')
-              .select('display_name, email')
-              .eq('id', ownerId)
-              .single();
-            
-            if (ownerProfile) {
-              setStoryOwnerInfo(ownerProfile);
-            }
-          } else {
-            console.log('⚠️ Aucune permission d\'histoire de vie trouvée');
-            toast.error('Vous n\'avez accès à aucune histoire de vie');
-          }
-        } catch (error) {
-          console.error('❌ Erreur lors de la détermination de l\'utilisateur cible:', error);
-          toast.error('Erreur lors du chargement des permissions');
+        if (ownerProfile) {
+          setStoryOwnerInfo(ownerProfile);
         }
-      } else {
-        // Pour les utilisateurs non-readers, utiliser leur propre ID
-        console.log('👤 Utilisateur non-reader, utilisation de son propre ID');
-        setTargetUserId(effectiveUserId);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des infos du propriétaire:', error);
       }
     };
 
-    determineTargetUser();
-  }, [effectiveUserId, isReader]);
-
-  const lifeStoryData = useLifeStory({ targetUserId });
+    getStoryOwnerInfo();
+  }, [lifeStoryData.data?.user_id, isReader]);
 
   const handleSave = async () => {
     if (lifeStoryData.saveNow) {
@@ -110,7 +60,7 @@ const LifeStory = () => {
   // Vérifier si l'utilisateur peut enregistrer (pas un lecteur)
   const canSave = !hasRole('reader');
 
-  if (lifeStoryData.isLoading || !targetUserId) {
+  if (lifeStoryData.isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
