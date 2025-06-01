@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -254,6 +255,17 @@ export const useBlogEditor = () => {
         finalCoverImage = null;
       }
 
+      // CORRECTION: Utiliser l'ID utilisateur réel pour les opérations de base de données
+      // car les politiques RLS n'ont accès qu'à auth.uid() qui est toujours l'utilisateur réel
+      const dbUserId = user?.id; // Toujours l'utilisateur réel pour les opérations DB
+
+      console.log('💾 useBlogEditor - Sauvegarde avec utilisateur:', {
+        effectiveUserId: getEffectiveUserId(),
+        dbUserId,
+        isImpersonating,
+        selectedCategoriesCount: selectedCategories.length
+      });
+
       if (isEditing && post) {
         // Update existing post
         const { error } = await supabase
@@ -270,25 +282,40 @@ export const useBlogEditor = () => {
 
         if (error) throw error;
 
-        // Update categories
-        // First, delete all existing category associations
-        await supabase
-          .from('post_categories')
-          .delete()
-          .eq('post_id', post.id);
-
-        // Then, add new category associations
-        if (selectedCategories.length > 0) {
-          const categoryInserts = selectedCategories.map(category => ({
-            post_id: post.id,
-            category_id: category.id
-          }));
-
-          const { error: insertError } = await supabase
+        // CORRECTION: Gérer les catégories uniquement si pas en mode impersonnation
+        // ou si l'utilisateur réel est admin
+        const canManageCategories = !isImpersonating || hasRole('admin');
+        
+        if (canManageCategories) {
+          console.log('📂 useBlogEditor - Gestion des catégories autorisée');
+          
+          // Update categories
+          // First, delete all existing category associations
+          await supabase
             .from('post_categories')
-            .insert(categoryInserts);
+            .delete()
+            .eq('post_id', post.id);
 
-          if (insertError) throw insertError;
+          // Then, add new category associations
+          if (selectedCategories.length > 0) {
+            const categoryInserts = selectedCategories.map(category => ({
+              post_id: post.id,
+              category_id: category.id
+            }));
+
+            const { error: insertError } = await supabase
+              .from('post_categories')
+              .insert(categoryInserts);
+
+            if (insertError) throw insertError;
+          }
+        } else {
+          console.log('⚠️ useBlogEditor - Gestion des catégories ignorée en mode impersonnation');
+          toast({
+            title: "Note",
+            description: "Les catégories ne peuvent pas être modifiées en mode impersonnation.",
+            variant: "default"
+          });
         }
 
         toast({
@@ -298,13 +325,13 @@ export const useBlogEditor = () => {
             : "Les modifications ont été enregistrées."
         });
       } else {
-        // Create new post
+        // Create new post - utiliser l'ID utilisateur effectif (impersonné) pour l'auteur
         const { data, error } = await supabase
           .from('blog_posts')
           .insert({
             title: title.trim(),
             content: content.trim(),
-            author_id: user?.id,
+            author_id: getEffectiveUserId(), // Utilisateur effectif pour l'auteur
             album_id: albumId,
             published: publish,
             cover_image: null // On commence sans cover_image
@@ -330,8 +357,12 @@ export const useBlogEditor = () => {
           }
         }
 
-        // Add categories
-        if (selectedCategories.length > 0) {
+        // CORRECTION: Gérer les catégories uniquement si pas en mode impersonnation
+        const canManageCategories = !isImpersonating || hasRole('admin');
+        
+        if (canManageCategories && selectedCategories.length > 0) {
+          console.log('📂 useBlogEditor - Ajout des catégories pour nouvel article');
+          
           const categoryInserts = selectedCategories.map(category => ({
             post_id: data.id,
             category_id: category.id
@@ -341,7 +372,12 @@ export const useBlogEditor = () => {
             .from('post_categories')
             .insert(categoryInserts);
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Erreur lors de l\'ajout des catégories:', insertError);
+            // Ne pas faire échouer toute l'opération pour les catégories
+          }
+        } else if (selectedCategories.length > 0) {
+          console.log('⚠️ useBlogEditor - Catégories ignorées pour nouvel article en mode impersonnation');
         }
 
         toast({
