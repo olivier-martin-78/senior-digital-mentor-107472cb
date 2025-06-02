@@ -73,7 +73,8 @@ const LifeStory = () => {
     hasData: !!lifeStoryData.data,
     dataUserId: lifeStoryData.data?.user_id,
     chaptersCount: lifeStoryData.data?.chapters?.length,
-    isLoading: lifeStoryData.isLoading
+    isLoading: lifeStoryData.isLoading,
+    chapters: lifeStoryData.data?.chapters
   });
 
   // Récupérer les informations du propriétaire de l'histoire pour l'affichage
@@ -176,26 +177,19 @@ const LifeStory = () => {
     return 'Mon Histoire de Vie';
   };
 
-  // Convert activeTab from number to string for component compatibility
-  const activeTabString = lifeStoryData.activeTab.toString();
-  
-  // Convert openQuestions Set to object for component compatibility
-  const openQuestionsObject: { [key: string]: boolean } = {};
-  lifeStoryData.openQuestions.forEach(key => {
-    openQuestionsObject[key] = true;
-  });
-  
-  // Wrapper function to convert string to number for setActiveTab
-  const handleSetActiveTab = (tab: string) => {
-    const tabIndex = parseInt(tab, 10);
-    if (!isNaN(tabIndex)) {
-      lifeStoryData.setActiveTab(tabIndex);
-    }
-  };
-  
   // Wrapper function to match expected audio recording signature
   const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
     lifeStoryData.handleAudioRecorded(questionId, blob, '');
+  };
+
+  // Wrapper function for audio URL change
+  const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null) => {
+    lifeStoryData.handleAudioUrlChange(questionId, audioUrl);
+  };
+
+  // Wrapper function for audio deleted
+  const handleAudioDeleted = (chapterId: string, questionId: string) => {
+    lifeStoryData.handleAudioDeleted(questionId);
   };
 
   return (
@@ -248,16 +242,25 @@ const LifeStory = () => {
         
         <LifeStoryLayout 
           chapters={lifeStoryData.data.chapters}
-          activeTab={activeTabString}
-          openQuestions={openQuestionsObject}
+          activeTab={lifeStoryData.data.chapters[lifeStoryData.activeTab]?.id || lifeStoryData.data.chapters[0]?.id || ''}
+          openQuestions={Object.fromEntries(Array.from(lifeStoryData.openQuestions).map(key => [key, true]))}
           activeQuestion={lifeStoryData.activeQuestion}
-          setActiveTab={handleSetActiveTab}
+          setActiveTab={(tabId: string) => {
+            const tabIndex = lifeStoryData.data.chapters.findIndex(ch => ch.id === tabId);
+            if (tabIndex !== -1) {
+              lifeStoryData.setActiveTab(tabIndex);
+            }
+          }}
           toggleQuestions={lifeStoryData.toggleQuestions}
-          handleQuestionFocus={lifeStoryData.handleQuestionFocus}
-          updateAnswer={lifeStoryData.updateAnswer}
+          handleQuestionFocus={(chapterId: string, questionId: string) => {
+            lifeStoryData.handleQuestionFocus(questionId);
+          }}
+          updateAnswer={(chapterId: string, questionId: string, answer: string) => {
+            lifeStoryData.updateAnswer(questionId, answer);
+          }}
           onAudioRecorded={handleAudioRecorded}
-          onAudioDeleted={lifeStoryData.handleAudioDeleted}
-          onAudioUrlChange={lifeStoryData.handleAudioUrlChange}
+          onAudioDeleted={handleAudioDeleted}
+          onAudioUrlChange={handleAudioUrlChange}
         />
       </div>
     </div>
