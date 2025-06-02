@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -113,21 +114,32 @@ const MyInvitationGroups = () => {
 
   const loadGroupMembers = async (groupId: string) => {
     try {
-      const { data: membersData, error } = await supabase
+      // Récupérer d'abord les membres du groupe
+      const { data: membersData, error: membersError } = await supabase
         .from('group_members')
-        .select(`
-          id, 
-          user_id, 
-          role, 
-          added_at,
-          profiles(display_name, email)
-        `)
+        .select('id, user_id, role, added_at')
         .eq('group_id', groupId)
         .order('added_at', { ascending: false });
 
-      if (error) throw error;
+      if (membersError) throw membersError;
 
-      setGroupMembers(membersData || []);
+      // Récupérer les profils pour chaque membre
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member) => {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', member.user_id)
+            .single();
+
+          return {
+            ...member,
+            profiles: profileError ? null : profileData
+          };
+        })
+      );
+
+      setGroupMembers(membersWithProfiles);
     } catch (error: any) {
       console.error('Erreur lors du chargement des membres:', error);
       toast.error('Erreur lors du chargement des membres du groupe');
