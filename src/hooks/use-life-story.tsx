@@ -10,6 +10,16 @@ interface UseLifeStoryProps {
   targetUserId?: string;
 }
 
+// Interface pour le résultat de debug RLS
+interface DebugLifeStoryResult {
+  current_user_id: string;
+  target_user_id: string;
+  is_owner: boolean;
+  has_direct_permission: boolean;
+  has_group_access: boolean;
+  should_have_access: boolean;
+}
+
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
   const { user, hasRole } = useAuth();
   const isReader = hasRole('reader');
@@ -60,7 +70,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastToastRef = useRef<string>('');
 
   // Fonction de debug pour tester l'accès RLS
-  const debugLifeStoryAccess = async (targetUser: string) => {
+  const debugLifeStoryAccess = async (targetUser: string): Promise<DebugLifeStoryResult | null> => {
     try {
       console.log('🔍 DEBUG RLS - Test d\'accès pour:', targetUser);
       const { data: debugResult, error } = await supabase.rpc('debug_life_story_access', {
@@ -73,7 +83,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       
       console.log('🔍 DEBUG RLS - Résultat:', debugResult);
-      return debugResult;
+      return debugResult as DebugLifeStoryResult;
     } catch (error) {
       console.error('❌ Exception debug RLS:', error);
       return null;
