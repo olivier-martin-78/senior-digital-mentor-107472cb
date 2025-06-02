@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,13 +31,25 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
 
       // NOUVEAU: Test direct de auth.uid() côté base de données
       console.log('🔍 Diary Simple - Test auth.uid() côté base...');
-      const { data: authTest, error: authError } = await supabase
-        .rpc('get_current_user_id');
+      try {
+        const { data: authTest, error: authError } = await supabase
+          .rpc('get_current_user_id' as any);
 
-      if (authError) {
-        console.error('🔍 Diary Simple - Erreur test auth.uid():', authError);
-      } else {
-        console.log('🔍 Diary Simple - Résultat auth.uid():', authTest);
+        if (authError) {
+          console.error('🔍 Diary Simple - Erreur test auth.uid():', authError);
+        } else {
+          console.log('🔍 Diary Simple - Résultat auth.uid():', authTest);
+          
+          // Comparer avec la session côté client
+          const clientUserId = session?.user?.id;
+          console.log('🔍 Diary Simple - Comparaison:', {
+            clientUserId,
+            dbUserId: authTest,
+            match: clientUserId === authTest
+          });
+        }
+      } catch (rpcError) {
+        console.error('🔍 Diary Simple - Erreur RPC auth.uid():', rpcError);
       }
 
       // Vérifier la synchronisation de l'authentification avant de faire des requêtes
@@ -92,18 +103,28 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         
         // NOUVEAU: Test pour voir s'il y a des entrées dans la base (sans RLS)
         console.log('🔍 Diary Simple - Test: Y a-t-il des entrées en base ?');
-        const { data: allEntries, error: allError } = await supabase
-          .from('diary_entries')
-          .select('id, user_id, title', { count: 'exact' })
-          .limit(5);
-          
-        if (allError) {
-          console.error('🔍 Diary Simple - Erreur test entrées globales:', allError);
-        } else {
-          console.log('🔍 Diary Simple - Entrées trouvées en base (tous utilisateurs):', {
-            count: allEntries?.length || 0,
-            entries: allEntries
-          });
+        try {
+          const { data: allEntries, error: allError, count } = await supabase
+            .from('diary_entries')
+            .select('id, user_id, title, entry_date', { count: 'exact' })
+            .limit(10);
+            
+          if (allError) {
+            console.error('🔍 Diary Simple - Erreur test entrées globales:', allError);
+          } else {
+            console.log('🔍 Diary Simple - Entrées trouvées en base (tous utilisateurs):', {
+              count: count || 0,
+              actualEntries: allEntries?.length || 0,
+              entries: allEntries?.map(e => ({
+                id: e.id,
+                title: e.title,
+                user_id: e.user_id,
+                entry_date: e.entry_date
+              }))
+            });
+          }
+        } catch (testError) {
+          console.error('🔍 Diary Simple - Erreur test global:', testError);
         }
         
         setEntries([]);
