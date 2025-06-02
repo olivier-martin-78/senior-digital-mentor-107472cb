@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -124,7 +123,9 @@ const UserPermissionsAnalyzer: React.FC<UserPermissionsAnalyzerProps> = ({
           private_notes: null,
           reflections: null,
           tags: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          email_notification_sent: false,
+          email_notification_requested: false
         }]
       };
     }
