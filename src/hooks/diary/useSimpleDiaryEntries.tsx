@@ -1,11 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { DiaryEntryWithAuthor } from '@/types/diary';
+import { fetchUserDiaryEntries } from './useUserDiaryEntries';
 import { detectAuthDesync } from '@/utils/authRecovery';
 
 export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
-  const { session } = useAuth();
+  const { session, getEffectiveUserId } = useAuth();
   const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,35 +23,19 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
     try {
       setLoading(true);
       
+      const effectiveUserId = getEffectiveUserId();
+      if (!effectiveUserId) {
+        console.log('🔍 Diary Simple - Pas d\'utilisateur effectif');
+        setEntries([]);
+        return;
+      }
+
       console.log('🔍 Diary Simple - Début fetchEntries:', {
         searchTerm,
         startDate,
         endDate,
-        sessionUserId: session?.user?.id
+        effectiveUserId
       });
-
-      // NOUVEAU: Test direct de auth.uid() côté base de données
-      console.log('🔍 Diary Simple - Test auth.uid() côté base...');
-      try {
-        const { data: authTest, error: authError } = await supabase
-          .rpc('get_current_user_id' as any);
-
-        if (authError) {
-          console.error('🔍 Diary Simple - Erreur test auth.uid():', authError);
-        } else {
-          console.log('🔍 Diary Simple - Résultat auth.uid():', authTest);
-          
-          // Comparer avec la session côté client
-          const clientUserId = session?.user?.id;
-          console.log('🔍 Diary Simple - Comparaison:', {
-            clientUserId,
-            dbUserId: authTest,
-            match: clientUserId === authTest
-          });
-        }
-      } catch (rpcError) {
-        console.error('🔍 Diary Simple - Erreur RPC auth.uid():', rpcError);
-      }
 
       // Vérifier la synchronisation de l'authentification avant de faire des requêtes
       const isDesynced = await detectAuthDesync();
@@ -60,158 +45,23 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         return;
       }
 
-      console.log('🔍 Diary Simple - Tentative de récupération des entrées...');
+      console.log('🔍 Diary Simple - Utilisation de fetchUserDiaryEntries pour gérer les permissions...');
       
-      let query = supabase
-        .from('diary_entries')
-        .select('*')
-        .order('entry_date', { ascending: false });
-
-      // Appliquer les filtres de date si présents
-      if (startDate) {
-        query = query.gte('entry_date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('entry_date', endDate);
-      }
-
-      const { data: entriesData, error } = await query;
+      // Utiliser la même logique que useUserDiaryEntries qui gère correctement les permissions
+      const result = await fetchUserDiaryEntries(effectiveUserId, searchTerm, startDate, endDate);
       
-      if (error) {
-        console.error('🔍 Diary Simple - Erreur lors de la récupération:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        setEntries([]);
-        return;
-      }
-
-      console.log('🔍 Diary Simple - Entrées récupérées depuis Supabase:', {
-        count: entriesData?.length || 0,
-        entries: entriesData?.map(e => ({ 
+      console.log('🔍 Diary Simple - Entrées récupérées avec permissions:', {
+        count: result.length,
+        entries: result.map(e => ({ 
           id: e.id, 
           title: e.title, 
           user_id: e.user_id,
-          entry_date: e.entry_date
+          entry_date: e.entry_date,
+          author: e.profiles?.email
         }))
       });
 
-      if (!entriesData || entriesData.length === 0) {
-        console.log('🔍 Diary Simple - Aucune entrée trouvée');
-        
-        // NOUVEAU: Test pour voir s'il y a des entrées dans la base (sans RLS)
-        console.log('🔍 Diary Simple - Test: Y a-t-il des entrées en base ?');
-        try {
-          const { data: allEntries, error: allError, count } = await supabase
-            .from('diary_entries')
-            .select('id, user_id, title, entry_date', { count: 'exact' })
-            .limit(10);
-            
-          if (allError) {
-            console.error('🔍 Diary Simple - Erreur test entrées globales:', allError);
-          } else {
-            console.log('🔍 Diary Simple - Entrées trouvées en base (tous utilisateurs):', {
-              count: count || 0,
-              actualEntries: allEntries?.length || 0,
-              entries: allEntries?.map(e => ({
-                id: e.id,
-                title: e.title,
-                user_id: e.user_id,
-                entry_date: e.entry_date
-              }))
-            });
-          }
-        } catch (testError) {
-          console.error('🔍 Diary Simple - Erreur test global:', testError);
-        }
-        
-        setEntries([]);
-        return;
-      }
-
-      // Récupérer les profils des auteurs
-      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, avatar_url, created_at')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('🔍 Diary Simple - Erreur lors de la récupération des profils:', profilesError);
-        setEntries([]);
-        return;
-      }
-
-      console.log('🔍 Diary Simple - Profils récupérés:', {
-        count: profiles?.length || 0,
-        profiles: profiles?.map(p => ({ id: p.id, email: p.email }))
-      });
-
-      // Combiner les entrées avec leurs profils
-      const entriesWithAuthors: DiaryEntryWithAuthor[] = entriesData.map(entry => {
-        const profile = profiles?.find(p => p.id === entry.user_id);
-        return {
-          ...entry,
-          profiles: profile || {
-            id: entry.user_id,
-            email: 'Utilisateur inconnu',
-            display_name: null,
-            avatar_url: null,
-            created_at: new Date().toISOString()
-          }
-        };
-      });
-
-      let filteredEntries = entriesWithAuthors;
-
-      // Filtrage côté client pour le terme de recherche uniquement
-      if (searchTerm && searchTerm.trim()) {
-        const searchLower = searchTerm.toLowerCase();
-        filteredEntries = filteredEntries.filter(entry => {
-          // Recherche dans les champs texte
-          const textFields = [
-            entry.title,
-            entry.activities,
-            entry.reflections,
-            entry.positive_things,
-            entry.negative_things,
-            entry.desire_of_day,
-            entry.objectives,
-            entry.private_notes,
-            entry.physical_state,
-            entry.mental_state
-          ];
-          
-          const textMatch = textFields.some(field => 
-            field && field.toLowerCase().includes(searchLower)
-          );
-          
-          // Recherche dans les arrays
-          const tagsMatch = entry.tags?.some(tag => 
-            tag && tag.toLowerCase().includes(searchLower)
-          ) || false;
-          
-          const peopleMatch = entry.contacted_people?.some(person => 
-            person && person.toLowerCase().includes(searchLower)
-          ) || false;
-          
-          return textMatch || tagsMatch || peopleMatch;
-        });
-
-        console.log('🔍 Diary Simple - Après filtrage par terme de recherche:', {
-          searchTerm,
-          filteredCount: filteredEntries.length
-        });
-      }
-
-      console.log('🔍 Diary Simple - Entrées finales à afficher:', {
-        count: filteredEntries.length,
-        entries: filteredEntries.map(e => ({ id: e.id, title: e.title, author: e.profiles?.email }))
-      });
-
-      setEntries(filteredEntries);
+      setEntries(result);
     } catch (error) {
       console.error('🔍 Diary Simple - Erreur lors du chargement des entrées:', error);
       setEntries([]);
