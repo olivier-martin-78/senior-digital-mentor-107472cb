@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { getPublicUrl } from '@/utils/storageUtils';
 
 // Nom du bucket Supabase pour stocker les fichiers audio
 export const AUDIO_BUCKET_NAME = 'life-story-audios';
@@ -27,6 +26,55 @@ export const checkBucketAccess = async (): Promise<boolean> => {
   } catch (error) {
     console.error(`💥 Exception lors de la vérification du bucket ${AUDIO_BUCKET_NAME}:`, error);
     return false;
+  }
+};
+
+/**
+ * Génère une URL signée pour accéder au fichier audio
+ * @param filePath Chemin du fichier dans le bucket
+ * @returns URL signée ou null en cas d'erreur
+ */
+export const getSignedAudioUrl = async (filePath: string): Promise<string | null> => {
+  try {
+    console.log('🔗 Génération URL signée pour:', filePath);
+    
+    const { data, error } = await supabase.storage
+      .from(AUDIO_BUCKET_NAME)
+      .createSignedUrl(filePath, 3600); // URL valide pendant 1 heure
+    
+    if (error) {
+      console.error('❌ Erreur création URL signée:', error);
+      return null;
+    }
+    
+    console.log('✅ URL signée générée:', data.signedUrl);
+    return data.signedUrl;
+  } catch (error) {
+    console.error('💥 Exception lors de la création de l\'URL signée:', error);
+    return null;
+  }
+};
+
+/**
+ * Extraire le chemin du fichier à partir d'une URL
+ * @param url URL complète du fichier
+ * @returns Chemin du fichier dans le bucket
+ */
+export const extractFilePathFromUrl = (url: string): string | null => {
+  try {
+    // Pattern pour les URLs publiques Supabase
+    const publicUrlPattern = new RegExp(`/storage/v1/object/public/${AUDIO_BUCKET_NAME}/(.+)$`);
+    const match = url.match(publicUrlPattern);
+    
+    if (match && match[1]) {
+      return decodeURIComponent(match[1]);
+    }
+    
+    console.warn('❌ Format d\'URL non reconnu:', url);
+    return null;
+  } catch (error) {
+    console.error('💥 Erreur extraction chemin:', error);
+    return null;
   }
 };
 
@@ -103,14 +151,18 @@ export const uploadAudio = async (
       throw new Error(`Erreur de téléchargement: ${error.message}`);
     }
     
-    console.log('✅ Téléchargement réussi, récupération de l\'URL publique...');
+    console.log('✅ Téléchargement réussi, génération de l\'URL signée...');
     
-    // Récupération de l'URL publique en passant explicitement le bon bucket
-    const publicUrl = getPublicUrl(fileName, AUDIO_BUCKET_NAME);
-    console.log('🔗 URL publique obtenue:', publicUrl);
+    // Générer une URL signée au lieu d'une URL publique
+    const signedUrl = await getSignedAudioUrl(fileName);
+    if (!signedUrl) {
+      throw new Error("Impossible de générer l'URL d'accès au fichier");
+    }
+    
+    console.log('🔗 URL signée obtenue:', signedUrl);
     console.log('🪣 Bucket utilisé pour l\'URL:', AUDIO_BUCKET_NAME);
     
-    safeCallback(onSuccess, publicUrl);
+    safeCallback(onSuccess, signedUrl);
   } catch (error: any) {
     console.error('💥 Erreur lors du téléchargement audio:', error);
     
@@ -144,20 +196,18 @@ export const deleteAudio = async (
     console.log('🗑️ Tentative de suppression du fichier audio:', audioUrl);
     
     // Extraction du chemin du fichier à partir de l'URL
-    const matches = audioUrl.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.*?)(\?.*)?$/);
+    const filePath = extractFilePathFromUrl(audioUrl);
     
-    if (!matches || !matches[1] || !matches[2]) {
-      console.error('❌ Format d\'URL non reconnu:', audioUrl);
+    if (!filePath) {
+      console.error('❌ Impossible d\'extraire le chemin depuis l\'URL:', audioUrl);
       throw new Error('Format d\'URL non reconnu');
     }
     
-    const bucketName = matches[1];
-    const filePath = decodeURIComponent(matches[2]);
-    console.log(`🗂️ Suppression du fichier ${filePath} du bucket ${bucketName}...`);
+    console.log(`🗂️ Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);
     
     // Suppression du fichier
     const { error } = await supabase.storage
-      .from(bucketName)
+      .from(AUDIO_BUCKET_NAME)
       .remove([filePath]);
     
     if (error) {

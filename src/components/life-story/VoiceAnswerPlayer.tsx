@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash, Download, AlertCircle, Play, Pause } from 'lucide-react';
+import { Trash, Download, AlertCircle, Play, Pause, RefreshCw } from 'lucide-react';
 import { handleExportAudio, validateAudioUrl, preloadAudio } from './utils/audioUtils';
+import { getSignedAudioUrl, extractFilePathFromUrl } from '@/utils/audioUploadUtils';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,6 +24,8 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loadAttempts, setLoadAttempts] = useState(0);
+  const [actualAudioUrl, setActualAudioUrl] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
@@ -40,15 +43,56 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown',
     readOnly
   });
+
+  // Fonction pour régénérer une URL signée
+  const refreshAudioUrl = async () => {
+    if (!audioUrl) return;
+    
+    setIsRefreshing(true);
+    console.log('🔄 Régénération URL signée pour:', audioUrl);
+    
+    try {
+      const filePath = extractFilePathFromUrl(audioUrl);
+      if (!filePath) {
+        throw new Error('Impossible d\'extraire le chemin du fichier');
+      }
+      
+      const newSignedUrl = await getSignedAudioUrl(filePath);
+      if (newSignedUrl) {
+        console.log('✅ Nouvelle URL signée générée:', newSignedUrl);
+        setActualAudioUrl(newSignedUrl);
+        setHasError(false);
+        setLoadAttempts(0);
+      } else {
+        throw new Error('Impossible de générer une nouvelle URL signée');
+      }
+    } catch (error) {
+      console.error('❌ Erreur régénération URL:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de régénérer l'URL audio",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   // Chargement de l'audio avec gestion d'erreur améliorée
   useEffect(() => {
     let mounted = true;
     
-    console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { audioUrl, mounted, loadAttempts });
+    console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { 
+      audioUrl, 
+      actualAudioUrl, 
+      mounted, 
+      loadAttempts 
+    });
     
-    if (!validateAudioUrl(audioUrl)) {
-      console.log('🎵 VoiceAnswerPlayer - ❌ URL audio invalide:', audioUrl);
+    const urlToUse = actualAudioUrl || audioUrl;
+    
+    if (!validateAudioUrl(urlToUse)) {
+      console.log('🎵 VoiceAnswerPlayer - ❌ URL audio invalide:', urlToUse);
       setHasError(true);
       setIsLoading(false);
       return;
@@ -60,12 +104,12 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         return;
       }
       
-      console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS} pour URL:`, audioUrl);
+      console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS} pour URL:`, urlToUse);
       
       // Créer un nouvel élément audio
       const audio = new Audio();
       audio.preload = "auto";
-      audio.crossOrigin = "anonymous"; // Ajouter pour éviter les problèmes CORS
+      audio.crossOrigin = "anonymous";
       audioRef.current = audio;
       
       const onLoadedMetadata = () => {
@@ -149,27 +193,14 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           // Toast d'erreur avec plus d'informations
           toast({
             title: "Erreur de lecture audio",
-            description: `Impossible de charger l'enregistrement (code: ${errorCode}). Le fichier est peut-être corrompu ou inaccessible.`,
+            description: `L'URL d'accès au fichier a peut-être expiré. Essayez de régénérer l'URL.`,
             variant: "destructive",
             duration: 5000
           });
         }
       };
       
-      const onCanPlay = () => {
-        console.log('🎵 VoiceAnswerPlayer - 🎯 Audio prêt à être lu (canplay)');
-      };
-      
-      const onLoadStart = () => {
-        console.log('🎵 VoiceAnswerPlayer - 🔄 Début du chargement audio');
-      };
-      
-      const onProgress = () => {
-        console.log('🎵 VoiceAnswerPlayer - 📊 Progression du chargement:', {
-          buffered: audio.buffered.length > 0 ? audio.buffered.end(0) : 0,
-          duration: audio.duration
-        });
-      };
+      // ... keep existing code (event listeners setup)
       
       // Ajouter les écouteurs d'événements
       audio.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -178,14 +209,11 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       audio.addEventListener('pause', onPause);
       audio.addEventListener('ended', onEnded);
       audio.addEventListener('error', onError);
-      audio.addEventListener('canplay', onCanPlay);
-      audio.addEventListener('loadstart', onLoadStart);
-      audio.addEventListener('progress', onProgress);
       
       // Charger l'audio
       try {
-        console.log('🎵 VoiceAnswerPlayer - 📥 Définition de la source audio:', audioUrl);
-        audio.src = audioUrl;
+        console.log('🎵 VoiceAnswerPlayer - 📥 Définition de la source audio:', urlToUse);
+        audio.src = urlToUse;
         audio.load();
       } catch (error) {
         console.error("🎵 VoiceAnswerPlayer - 💥 Exception lors du chargement:", error);
@@ -201,9 +229,6 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audio.removeEventListener('pause', onPause);
         audio.removeEventListener('ended', onEnded);
         audio.removeEventListener('error', onError);
-        audio.removeEventListener('canplay', onCanPlay);
-        audio.removeEventListener('loadstart', onLoadStart);
-        audio.removeEventListener('progress', onProgress);
         audio.pause();
         audio.src = '';
       };
@@ -222,7 +247,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         cleanup();
       }
     };
-  }, [audioUrl, loadAttempts]);
+  }, [audioUrl, actualAudioUrl, loadAttempts]);
   
   const handlePlayPause = () => {
     if (!audioRef.current || hasError) {
@@ -282,7 +307,8 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   
   const handleExport = () => {
     console.log('🎵 VoiceAnswerPlayer - 📤 Export demandé');
-    handleExportAudio(audioUrl);
+    const urlToExport = actualAudioUrl || audioUrl;
+    handleExportAudio(urlToExport);
   };
   
   // DEBUG: Log des états de rendu
@@ -312,20 +338,34 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   return (
     <div>
       <div className="relative mb-2">
-        {isLoading && (
+        {(isLoading || isRefreshing) && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-60 z-10 rounded-md">
             <Spinner className="h-6 w-6 border-gray-500" />
-            <span className="ml-2 text-sm text-gray-600">Chargement audio...</span>
+            <span className="ml-2 text-sm text-gray-600">
+              {isRefreshing ? 'Actualisation...' : 'Chargement audio...'}
+            </span>
           </div>
         )}
         
         {hasError ? (
-          <div className="p-3 bg-amber-50 text-amber-700 rounded-md flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-            <span>Impossible de charger l'enregistrement. Vérifiez la console pour plus de détails.</span>
+          <div className="p-3 bg-amber-50 text-amber-700 rounded-md">
+            <div className="flex items-center mb-2">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <span>Impossible de charger l'enregistrement.</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshAudioUrl}
+              disabled={isRefreshing}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Actualiser l'URL
+            </Button>
           </div>
         ) : (
-          <div className={`rounded-md border border-gray-200 p-3 ${isLoading ? 'opacity-60' : 'opacity-100'} transition-opacity`}>
+          <div className={`rounded-md border border-gray-200 p-3 ${(isLoading || isRefreshing) ? 'opacity-60' : 'opacity-100'} transition-opacity`}>
             {isMobile ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -334,7 +374,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                     size="sm"
                     variant="outline"
                     className="h-8 w-8 p-0 flex-shrink-0 active:bg-blue-100"
-                    disabled={isLoading || hasError}
+                    disabled={isLoading || hasError || isRefreshing}
                     onClick={handlePlayPause}
                     aria-label={isPlaying ? "Pause" : "Lecture"}
                   >
@@ -348,7 +388,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                       value={currentTime}
                       className="w-full accent-blue-600"
                       onChange={handleSliderChange}
-                      disabled={isLoading || hasError || duration === 0}
+                      disabled={isLoading || hasError || duration === 0 || isRefreshing}
                     />
                   </div>
                   <div className="text-xs text-gray-500 min-w-[40px] text-right">
@@ -360,7 +400,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
               <audio 
                 controls 
                 className="w-full"
-                src={audioUrl}
+                src={actualAudioUrl || audioUrl}
                 onError={(e) => {
                   console.log("🎵 VoiceAnswerPlayer - ❌ Erreur audio natif:", e);
                 }}
@@ -382,7 +422,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           size="sm"
           onClick={handleExport}
           className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-          disabled={isPlaying || isLoading || hasError}
+          disabled={isPlaying || isLoading || hasError || isRefreshing}
         >
           <Download className="w-4 h-4 mr-1" /> Exporter l'audio
         </Button>
@@ -393,7 +433,7 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
             size="sm" 
             onClick={handleDelete}
             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            disabled={isPlaying || isLoading}
+            disabled={isPlaying || isLoading || isRefreshing}
           >
             <Trash className="w-4 h-4 mr-1" /> Supprimer
           </Button>
