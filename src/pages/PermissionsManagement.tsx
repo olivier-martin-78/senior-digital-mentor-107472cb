@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,7 +50,7 @@ const PermissionsManagement = () => {
   const loadInvitedUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('🔍 Début du chargement des utilisateurs invités');
+      console.log('🔍 ===== CHARGEMENT UTILISATEURS INVITÉS (VERSION CORRIGÉE) =====');
       console.log('👤 Utilisateur actuel:', {
         userId: user?.id,
         userEmail: user?.email,
@@ -117,10 +116,10 @@ const PermissionsManagement = () => {
 
           console.log(`✅ Profil récupéré pour ${member.user_id}:`, profile);
 
-          // Récupérer les permissions d'invitation - CORRECTION: une seule invitation par groupe/inviteur
+          // Récupérer les permissions d'invitation - VERSION CORRIGÉE avec validation
           const { data: invitations, error: invitationsError } = await supabase
             .from('invitations')
-            .select('blog_access, life_story_access, diary_access, wishes_access')
+            .select('blog_access, life_story_access, diary_access, wishes_access, used_at')
             .eq('group_id', group.id)
             .eq('invited_by', user?.id)
             .not('used_at', 'is', null)
@@ -134,36 +133,46 @@ const PermissionsManagement = () => {
 
           console.log(`✅ Invitations récupérées pour le groupe ${group.id}:`, invitations);
 
-          // Utiliser les permissions de l'invitation la plus récente
+          // Utiliser les permissions de l'invitation la plus récente avec validation
           const invitation = invitations?.[0];
           if (invitation) {
+            // VALIDATION : S'assurer que les permissions sont cohérentes
+            const validatedPermissions = {
+              blog_access: Boolean(invitation.blog_access),
+              life_story_access: Boolean(invitation.life_story_access),
+              diary_access: Boolean(invitation.diary_access),
+              wishes_access: Boolean(invitation.wishes_access)
+            };
+
+            console.log(`🔐 Permissions validées pour ${profile.display_name || profile.email}:`, {
+              original: {
+                blog_access: invitation.blog_access,
+                life_story_access: invitation.life_story_access,
+                diary_access: invitation.diary_access,
+                wishes_access: invitation.wishes_access
+              },
+              validated: validatedPermissions
+            });
+
             const invitedUser: InvitedUser = {
               id: member.user_id,
               user_id: member.user_id,
               group_id: group.id,
               email: profile.email || '',
               display_name: profile.display_name,
-              blog_access: invitation.blog_access || false,
-              life_story_access: invitation.life_story_access || false,
-              diary_access: invitation.diary_access || false,
-              wishes_access: invitation.wishes_access || false,
+              ...validatedPermissions
             };
 
             allInvitedUsers.push(invitedUser);
-            console.log(`✅ Utilisateur invité ajouté avec permissions correctes:`, {
+            console.log(`✅ Utilisateur invité ajouté avec permissions validées:`, {
               user: invitedUser.display_name || invitedUser.email,
-              permissions: {
-                blog_access: invitedUser.blog_access,
-                life_story_access: invitedUser.life_story_access,
-                diary_access: invitedUser.diary_access,
-                wishes_access: invitedUser.wishes_access
-              }
+              permissions: validatedPermissions
             });
           }
         }
       }
 
-      console.log('🎯 Résultat final - Utilisateurs invités:', allInvitedUsers);
+      console.log('🎯 Résultat final - Utilisateurs invités (version corrigée):', allInvitedUsers);
       setInvitedUsers(allInvitedUsers);
 
     } catch (error) {
@@ -171,7 +180,7 @@ const PermissionsManagement = () => {
       toast.error('Erreur lors du chargement des utilisateurs');
     } finally {
       setIsLoading(false);
-      console.log('🏁 Fin du chargement des utilisateurs invités');
+      console.log('🏁 Fin du chargement des utilisateurs invités (version corrigée)');
     }
   };
 
