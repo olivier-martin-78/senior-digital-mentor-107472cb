@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -59,98 +60,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
 
-  // 🔥 NOUVEAU: Fonction pour créer les permissions manquantes
-  const ensurePermissionsExist = async (effectiveUserId: string) => {
-    console.log('🔧 CRÉATION PERMISSIONS - Début pour:', { effectiveUserId, currentUserId });
-    
-    try {
-      // Vérifier si une permission existe déjà
-      const { data: existingPermission, error: permError } = await supabase
-        .from('life_story_permissions')
-        .select('*')
-        .eq('story_owner_id', effectiveUserId)
-        .eq('permitted_user_id', currentUserId)
-        .single();
-
-      console.log('🔧 Permission existante:', { existingPermission, permError });
-
-      if (!existingPermission && permError?.code === 'PGRST116') {
-        console.log('🔧 CRÉATION de la permission manquante...');
-        
-        const { data: newPermission, error: createError } = await supabase
-          .from('life_story_permissions')
-          .insert({
-            story_owner_id: effectiveUserId,
-            permitted_user_id: currentUserId,
-            permission_level: 'read',
-            granted_by: effectiveUserId // On assume que c'est accordé par le propriétaire
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('❌ Erreur création permission:', createError);
-        } else {
-          console.log('✅ Permission créée avec succès:', newPermission);
-        }
-      } else {
-        console.log('✅ Permission déjà existante ou autre erreur');
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de la vérification/création des permissions:', error);
-    }
-  };
-
-  // 🔥 NOUVEAU: Fonction pour créer l'histoire si elle n'existe pas
-  const ensureStoryExists = async (effectiveUserId: string) => {
-    console.log('📖 CRÉATION HISTOIRE - Vérification existence pour:', effectiveUserId);
-    
-    try {
-      // Vérifier si l'histoire existe
-      const { data: existingStory, error: storyError } = await supabase
-        .from('life_stories')
-        .select('*')
-        .eq('user_id', effectiveUserId)
-        .single();
-
-      console.log('📖 Histoire existante:', { existingStory, storyError });
-
-      if (!existingStory && storyError?.code === 'PGRST116') {
-        console.log('📖 CRÉATION de l\'histoire manquante...');
-        
-        // Convertir les chapitres en JSON pour Supabase
-        const chaptersAsJson = JSON.parse(JSON.stringify(initialChapters));
-        
-        const { data: newStory, error: createError } = await supabase
-          .from('life_stories')
-          .insert({
-            user_id: effectiveUserId,
-            title: 'Mon histoire',
-            chapters: chaptersAsJson,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('❌ Erreur création histoire:', createError);
-        } else {
-          console.log('✅ Histoire créée avec succès:', newStory);
-          return newStory;
-        }
-      } else if (existingStory) {
-        console.log('✅ Histoire déjà existante');
-        return existingStory;
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de la vérification/création de l\'histoire:', error);
-    }
-    
-    return null;
-  };
-
-  // 🔥 CORRECTION: Utiliser une approche plus directe pour déterminer l'utilisateur effectif
+  // Fonction pour déterminer l'utilisateur effectif
   const getEffectiveUserId = async (): Promise<string> => {
     console.log('🔍 getEffectiveUserId - Début:', {
       targetUserId,
@@ -247,42 +157,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
       
-      // 🔥 NOUVEAU: S'assurer que les permissions et l'histoire existent
-      await ensurePermissionsExist(effectiveUserId);
-      const ensuredStory = await ensureStoryExists(effectiveUserId);
-      
-      // 🔥 NOUVEAU: Vérifier d'abord les permissions explicitement
-      console.log('🔐 VÉRIFICATION PERMISSIONS - Début pour utilisateur:', currentUserId);
-      
-      // Test 1: Vérifier si l'utilisateur est propriétaire
-      const isOwner = currentUserId === effectiveUserId;
-      console.log('👤 Test propriétaire:', { isOwner, currentUserId, effectiveUserId });
-      
-      // Test 2: Vérifier permissions directes
-      const { data: permissionsCheck, error: permError } = await supabase
-        .from('life_story_permissions')
-        .select('*')
-        .eq('story_owner_id', effectiveUserId)
-        .eq('permitted_user_id', currentUserId);
-      
-      console.log('🔐 Permissions directes:', { permissionsCheck, permError });
-      
-      // Test 3: Vérifier permissions via groupes
-      const { data: groupCheck, error: groupError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          user_id,
-          role,
-          invitation_groups!inner(
-            created_by
-          )
-        `)
-        .eq('user_id', currentUserId);
-      
-      console.log('🔐 Permissions via groupes:', { groupCheck, groupError });
-      
-      // Récupérer l'histoire pour cet utilisateur avec gestion d'erreur détaillée
+      // Récupérer l'histoire pour cet utilisateur
       console.log('📚 🔍 REQUÊTE HISTOIRE - Début pour:', effectiveUserId);
       const { data: storyData, error } = await supabase
         .from('life_stories')
@@ -309,7 +184,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       });
 
       if (error) {
-        console.error('❌ ERREUR DÉTAILLÉE lors du chargement de l\'histoire:', {
+        console.error('❌ ERREUR lors du chargement de l\'histoire:', {
           message: error.message,
           code: error.code,
           details: error.details,
@@ -319,7 +194,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           isReader
         });
         
-        // 🔥 NOUVEAU: Afficher plus d'informations sur l'erreur de permission
         if (error.message?.includes('permission') || error.code === 'PGRST116') {
           console.error('❌ ERREUR DE PERMISSION RLS détectée !');
           toast.error('Erreur de permission pour accéder à cette histoire');
@@ -327,13 +201,10 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         return;
       }
 
-      // 🔥 NOUVEAU: Utiliser l'histoire assurée si aucune n'est trouvée
-      const finalStoryData = storyData || ensuredStory;
-
-      if (finalStoryData) {
-        // 🔥 CHANGEMENT CRITIQUE: Utiliser directement les données de la base
+      if (storyData) {
+        // Fusion avec les chapitres initiaux
         console.log('🔄 FUSION DONNÉES - Début fusion avec initialChapters');
-        const existingChapters = (finalStoryData.chapters as unknown as Chapter[]) || [];
+        const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
         
         // Créer les chapitres finaux en préservant les données existantes
         const finalChapters = initialChapters.map(initialChapter => {
@@ -374,14 +245,14 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         });
 
         const lifeStory: LifeStory = {
-          id: finalStoryData.id,
-          user_id: finalStoryData.user_id,
-          title: finalStoryData.title,
+          id: storyData.id,
+          user_id: storyData.user_id,
+          title: storyData.title,
           chapters: finalChapters,
-          created_at: finalStoryData.created_at,
-          updated_at: finalStoryData.updated_at,
-          last_edited_chapter: finalStoryData.last_edited_chapter,
-          last_edited_question: finalStoryData.last_edited_question,
+          created_at: storyData.created_at,
+          updated_at: storyData.updated_at,
+          last_edited_chapter: storyData.last_edited_chapter,
+          last_edited_question: storyData.last_edited_question,
         };
         
         console.log('✅ 🎯 HISTOIRE FINALE CONSTRUITE:', {
@@ -391,15 +262,16 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           chaptersCount: lifeStory.chapters.length
         });
         
-        // 🔥 IMPORTANT: Appliquer les données chargées
+        // Appliquer les données chargées
         console.log('📝 SETDATA - Application des données chargées...');
         setData(lifeStory);
-        setActiveTab(finalStoryData.last_edited_chapter || (finalChapters[0]?.id || ''));
-        setActiveQuestion(finalStoryData.last_edited_question);
+        setActiveTab(storyData.last_edited_chapter || (finalChapters[0]?.id || ''));
+        setActiveQuestion(storyData.last_edited_question);
         
         console.log('✅ 🎯 DONNÉES APPLIQUÉES AVEC SUCCÈS');
       } else {
-        console.log('📚 Aucune histoire trouvée et impossible de créer pour:', effectiveUserId);
+        console.log('📚 Aucune histoire trouvée pour:', effectiveUserId);
+        // Utiliser les chapitres initiaux par défaut
         setData(prev => ({
           ...prev,
           user_id: effectiveUserId,
@@ -419,7 +291,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }
   };
 
-  // 🔥 CORRECTION: Charger l'histoire au montage du composant
+  // Charger l'histoire au montage du composant
   useEffect(() => {
     const initializeLifeStory = async () => {
       if (!currentUserId) {
