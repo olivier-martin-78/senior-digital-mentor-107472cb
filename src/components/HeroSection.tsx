@@ -17,11 +17,9 @@ const HeroSection = () => {
       
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
         <div className="max-w-3xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold text-white mb-4">
-            Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
-          </h1>
+
           <p className="text-xl md:text-2xl text-white mb-8">
-            Formation au digital chez vous et à votre rythme
+            Offrez-leur le digital, ils vous raconteront leurs plus belles histoires.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream" asChild>
