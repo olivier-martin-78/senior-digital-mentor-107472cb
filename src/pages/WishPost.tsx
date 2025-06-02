@@ -237,7 +237,7 @@ const WishPost = () => {
           <div className="mb-8">
             {/* Vignette du souhait */}
             {wish.cover_image && (
-              <div className="mb-6 max-w-4xl mx-auto">
+              <div className="mb-6 max-w-2xl mx-auto">
                 <AspectRatio ratio={imageAspectRatio}>
                   <img
                     src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
