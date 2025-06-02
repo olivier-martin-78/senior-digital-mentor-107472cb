@@ -117,8 +117,10 @@ function App() {
                   <Route path="/wishes/form/:id" element={<ProtectedRoute />}>
                     <Route index element={<WishEditForm />} />
                   </Route>
+                  <Route path="/wishes/:id" element={<ProtectedRoute />}>
+                    <Route index element={<WishPost />} />
+                  </Route>
                   <Route path="/wish-form" element={<WishForm />} />
-                  <Route path="/wish/:id" element={<WishPost />} />
 
                   {/* Admin routes */}
                   <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
