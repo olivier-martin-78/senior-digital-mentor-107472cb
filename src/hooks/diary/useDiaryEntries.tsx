@@ -3,45 +3,41 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiaryEntryWithAuthor } from '@/types/diary';
 import { fetchAdminDiaryEntries } from './useAdminDiaryEntries';
-import { fetchUserDiaryEntries } from './useUserDiaryEntries';
+import { useSimpleDiaryEntries } from './useSimpleDiaryEntries';
 
 export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
-  const { session, hasRole, getEffectiveUserId } = useAuth();
+  const { session, hasRole } = useAuth();
   const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const effectiveUserId = getEffectiveUserId();
+  // Utiliser le nouveau hook simplifié pour les utilisateurs normaux
+  const { entries: simpleEntries, loading: simpleLoading } = useSimpleDiaryEntries(searchTerm, startDate, endDate);
 
   useEffect(() => {
     if (!session) return;
-    fetchEntries();
-  }, [session, effectiveUserId, searchTerm, startDate, endDate]);
-
-  const fetchEntries = async () => {
-    if (!effectiveUserId) return;
     
+    if (hasRole('admin')) {
+      fetchAdminEntries();
+    } else {
+      // Pour les utilisateurs normaux, utiliser le hook simplifié
+      setEntries(simpleEntries);
+      setLoading(simpleLoading);
+    }
+  }, [session, simpleEntries, simpleLoading, hasRole, searchTerm, startDate, endDate]);
+
+  const fetchAdminEntries = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Diary - Début fetchEntries:', {
-        currentUserId: effectiveUserId,
-        isAdmin: hasRole('admin'),
-        searchTerm: searchTerm,
-        searchTermLength: searchTerm?.length || 0,
+      console.log('🔍 Diary - Admin fetchEntries:', {
+        searchTerm,
         startDate,
         endDate
       });
       
-      let result: DiaryEntryWithAuthor[] = [];
-      
-      if (hasRole('admin')) {
-        result = await fetchAdminDiaryEntries(searchTerm, startDate, endDate);
-      } else {
-        result = await fetchUserDiaryEntries(effectiveUserId, searchTerm, startDate, endDate);
-      }
-      
+      const result = await fetchAdminDiaryEntries(searchTerm, startDate, endDate);
       setEntries(result);
     } catch (error) {
-      console.error('Diary - Erreur lors du chargement des entrées:', error);
+      console.error('Diary - Erreur lors du chargement des entrées admin:', error);
       setEntries([]);
     } finally {
       setLoading(false);
