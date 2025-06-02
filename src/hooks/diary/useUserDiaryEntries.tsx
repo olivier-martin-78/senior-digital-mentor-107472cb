@@ -51,26 +51,36 @@ export const fetchUserDiaryEntries = async (
   const directAuthorizedIds = directPermissions?.map(p => p.diary_owner_id) || [];
   console.log('🔍 Diary - Permissions directes trouvées:', directAuthorizedIds);
 
-  // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
-  console.log('🔍 Diary - Vérification des groupes pour:', effectiveUserId);
-  const { data: groupPermissions, error: groupError } = await supabase
+  // 3. Récupérer les utilisateurs autorisés via les invitations avec accès journal
+  console.log('🔍 Diary - Vérification des invitations avec accès journal pour:', effectiveUserId);
+  const { data: invitationPermissions, error: invitationError } = await supabase
     .from('group_members')
     .select(`
       group_id,
-      invitation_groups!inner(created_by)
+      invitation_groups!inner(
+        created_by,
+        invitations!inner(
+          invited_by,
+          diary_access,
+          used_at
+        )
+      )
     `)
     .eq('user_id', effectiveUserId)
-    .eq('role', 'guest');
+    .eq('role', 'guest')
+    .eq('invitation_groups.invitations.diary_access', true)
+    .not('invitation_groups.invitations.used_at', 'is', null);
 
-  if (groupError) {
-    console.error('🔍 Diary - Erreur groupes:', groupError);
+  if (invitationError) {
+    console.error('🔍 Diary - Erreur invitations avec accès journal:', invitationError);
   }
 
-  const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by) || [];
-  console.log('🔍 Diary - Créateurs de groupes trouvés:', groupCreatorIds);
+  // Extraire les IDs des créateurs ayant accordé l'accès journal
+  const invitationAuthorizedIds = invitationPermissions?.map(p => p.invitation_groups.created_by) || [];
+  console.log('🔍 Diary - Permissions via invitations trouvées:', invitationAuthorizedIds);
 
   // 4. Combiner tous les IDs autorisés (sauf l'utilisateur effectif lui-même)
-  const allAuthorizedIds = [...new Set([...directAuthorizedIds, ...groupCreatorIds])]
+  const allAuthorizedIds = [...new Set([...directAuthorizedIds, ...invitationAuthorizedIds])]
     .filter(id => id !== effectiveUserId);
   
   console.log('🔍 Diary - Tous les utilisateurs autorisés:', allAuthorizedIds);
