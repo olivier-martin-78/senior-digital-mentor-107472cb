@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
@@ -28,6 +27,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
   
   const { toast } = useToast();
+
+  // Debug: ajouter des logs pour surveiller les changements de session
+  useEffect(() => {
+    console.log('🔍 AuthContext - Session changed:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      accessToken: session?.access_token ? 'présent' : 'absent',
+      isLoading
+    });
+  }, [session, isLoading]);
 
   // Fonction pour obtenir l'état d'impersonnation (optimisée)
   const getImpersonationState = () => {
@@ -79,13 +88,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Vérification initiale de session et configuration du listener d'événements d'authentification
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('AuthContext - Initial session:', session);
+      console.log('🔍 AuthContext - Initial session check:', {
+        hasSession: !!session,
+        userId: session?.user?.id
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('AuthContext - Auth state changed:', session);
+      console.log('🔍 AuthContext - Auth state changed:', {
+        event: _event,
+        hasSession: !!session,
+        userId: session?.user?.id
+      });
     });
 
     return () => subscription.unsubscribe();
