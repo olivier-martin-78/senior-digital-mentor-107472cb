@@ -117,13 +117,14 @@ const PermissionsManagement = () => {
 
           console.log(`✅ Profil récupéré pour ${member.user_id}:`, profile);
 
-          // Récupérer les permissions d'invitation
+          // Récupérer les permissions d'invitation - CORRECTION: une seule invitation par groupe/inviteur
           const { data: invitations, error: invitationsError } = await supabase
             .from('invitations')
             .select('blog_access, life_story_access, diary_access, wishes_access')
             .eq('group_id', group.id)
             .eq('invited_by', user?.id)
             .not('used_at', 'is', null)
+            .order('used_at', { ascending: false })
             .limit(1);
 
           if (invitationsError) {
@@ -133,6 +134,7 @@ const PermissionsManagement = () => {
 
           console.log(`✅ Invitations récupérées pour le groupe ${group.id}:`, invitations);
 
+          // Utiliser les permissions de l'invitation la plus récente
           const invitation = invitations?.[0];
           if (invitation) {
             const invitedUser: InvitedUser = {
@@ -148,7 +150,15 @@ const PermissionsManagement = () => {
             };
 
             allInvitedUsers.push(invitedUser);
-            console.log(`✅ Utilisateur invité ajouté:`, invitedUser);
+            console.log(`✅ Utilisateur invité ajouté avec permissions correctes:`, {
+              user: invitedUser.display_name || invitedUser.email,
+              permissions: {
+                blog_access: invitedUser.blog_access,
+                life_story_access: invitedUser.life_story_access,
+                diary_access: invitedUser.diary_access,
+                wishes_access: invitedUser.wishes_access
+              }
+            });
           }
         }
       }
@@ -169,6 +179,16 @@ const PermissionsManagement = () => {
     setSelectedUserId(userId);
     const selectedUser = invitedUsers.find(u => u.user_id === userId);
     if (selectedUser) {
+      console.log('🔄 Sélection utilisateur:', {
+        user: selectedUser.display_name || selectedUser.email,
+        permissions: {
+          blog_access: selectedUser.blog_access,
+          life_story_access: selectedUser.life_story_access,
+          diary_access: selectedUser.diary_access,
+          wishes_access: selectedUser.wishes_access
+        }
+      });
+      
       setPermissions({
         blog_access: selectedUser.blog_access,
         life_story_access: selectedUser.life_story_access,
@@ -179,6 +199,7 @@ const PermissionsManagement = () => {
   };
 
   const handlePermissionChange = (permission: keyof typeof permissions, value: boolean) => {
+    console.log(`🔐 Changement permission ${permission}: ${value}`);
     setPermissions(prev => ({
       ...prev,
       [permission]: value,
@@ -432,14 +453,7 @@ const PermissionsManagement = () => {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="wishes-access">Accès aux souhaits</Label>
-                    <Switch
-                      id="wishes-access"
-                      checked={permissions.wishes_access}
-                      onCheckedChange={(value) => handlePermissionChange('wishes_access', value)}
-                    />
-                  </div>
+                  {/* Masquer l'accès aux souhaits car ils sont publics par défaut */}
 
                   <div className="pt-4">
                     <Button 
