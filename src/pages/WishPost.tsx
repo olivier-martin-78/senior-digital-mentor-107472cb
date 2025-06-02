@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail,
 import { useToast } from '@/hooks/use-toast';
 import { WishPost as WishPostType } from '@/types/supabase';
 import { sanitizeInput, isValidUrl } from '@/utils/securityUtils';
+import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 
 const WishPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -224,8 +224,23 @@ const WishPost = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-          {/* Header */}
+          {/* Header avec vignette */}
           <div className="mb-8">
+            {/* Vignette du souhait */}
+            {wish.cover_image && (
+              <div className="mb-6">
+                <img
+                  src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
+                  alt={`Vignette de ${sanitizeInput(wish.title)}`}
+                  className="w-full max-w-2xl h-64 object-cover rounded-lg shadow-md mx-auto"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <h1 className="text-3xl font-serif text-tranches-charcoal">
                 {sanitizeInput(wish.title)}
