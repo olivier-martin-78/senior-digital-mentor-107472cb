@@ -184,7 +184,39 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
       
-      // Récupérer l'histoire pour cet utilisateur
+      // 🔥 NOUVEAU: Vérifier d'abord les permissions explicitement
+      console.log('🔐 VÉRIFICATION PERMISSIONS - Début pour utilisateur:', currentUserId);
+      
+      // Test 1: Vérifier si l'utilisateur est propriétaire
+      const isOwner = currentUserId === effectiveUserId;
+      console.log('👤 Test propriétaire:', { isOwner, currentUserId, effectiveUserId });
+      
+      // Test 2: Vérifier permissions directes
+      const { data: permissionsCheck, error: permError } = await supabase
+        .from('life_story_permissions')
+        .select('*')
+        .eq('story_owner_id', effectiveUserId)
+        .eq('permitted_user_id', currentUserId);
+      
+      console.log('🔐 Permissions directes:', { permissionsCheck, permError });
+      
+      // Test 3: Vérifier permissions via groupes
+      const { data: groupCheck, error: groupError } = await supabase
+        .from('group_members')
+        .select(`
+          group_id,
+          user_id,
+          role,
+          invitation_groups!inner(
+            created_by
+          )
+        `)
+        .eq('user_id', currentUserId);
+      
+      console.log('🔐 Permissions via groupes:', { groupCheck, groupError });
+      
+      // Récupérer l'histoire pour cet utilisateur avec gestion d'erreur détaillée
+      console.log('📚 🔍 REQUÊTE HISTOIRE - Début pour:', effectiveUserId);
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
@@ -214,11 +246,30 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
             } : null
           } : null
         } : null,
-        error
+        error: error ? {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        } : null
       });
 
       if (error) {
-        console.error('❌ Erreur lors du chargement de l\'histoire:', error);
+        console.error('❌ ERREUR DÉTAILLÉE lors du chargement de l\'histoire:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          effectiveUserId,
+          currentUserId,
+          isReader
+        });
+        
+        // 🔥 NOUVEAU: Afficher plus d'informations sur l'erreur de permission
+        if (error.message?.includes('permission') || error.code === 'PGRST116') {
+          console.error('❌ ERREUR DE PERMISSION RLS détectée !');
+          toast.error('Erreur de permission pour accéder à cette histoire');
+        }
         return;
       }
 
@@ -317,7 +368,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       hasLoadedRef.current = true;
       console.log('✅ 🎯 CHARGEMENT TERMINÉ - hasLoadedRef = true');
     } catch (err) {
-      console.error('❌ Erreur lors du chargement de l\'histoire de vie:', err);
+      console.error('❌ Exception lors du chargement de l\'histoire de vie:', err);
+      toast.error('Erreur technique lors du chargement');
     } finally {
       setIsLoading(false);
       loadingRef.current = false;
