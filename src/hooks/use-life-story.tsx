@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,22 +171,37 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         updated_at: new Date().toISOString(),
         last_edited_chapter: data.last_edited_chapter || null,
         last_edited_question: data.last_edited_question || null,
-        // Ne pas inclure created_at lors de l'update, seulement pour les nouvelles entrées
-        ...(data.created_at && { created_at: data.created_at }),
+        // Pour les nouvelles entrées, ajouter created_at
+        ...((!data.id && !data.created_at) && { created_at: new Date().toISOString() }),
       };
 
-      // Utiliser upsert avec la contrainte unique sur user_id, mais sans inclure l'id
-      // pour éviter les conflits de clé primaire
-      const { error } = await supabase
+      // Vérifier d'abord si l'entrée existe
+      const { data: existingStory } = await supabase
         .from('life_stories')
-        .upsert(dataToSave, { 
-          onConflict: 'user_id',
-          ignoreDuplicates: false 
-        });
+        .select('id')
+        .eq('user_id', effectiveUserId)
+        .single();
 
-      if (error) {
-        console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', error);
-        throw error;
+      let result;
+      
+      if (existingStory) {
+        // Mettre à jour l'entrée existante
+        console.log('📝 Mise à jour de l\'histoire existante');
+        result = await supabase
+          .from('life_stories')
+          .update(dataToSave)
+          .eq('user_id', effectiveUserId);
+      } else {
+        // Créer une nouvelle entrée
+        console.log('🆕 Création d\'une nouvelle histoire');
+        result = await supabase
+          .from('life_stories')
+          .insert(dataToSave);
+      }
+
+      if (result.error) {
+        console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', result.error);
+        throw result.error;
       }
 
       console.log('✅ Histoire de vie sauvegardée avec succès.');
