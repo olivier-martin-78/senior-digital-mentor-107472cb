@@ -59,6 +59,94 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
 
+  // 🔥 NOUVEAU: Fonction pour créer les permissions manquantes
+  const ensurePermissionsExist = async (effectiveUserId: string) => {
+    console.log('🔧 CRÉATION PERMISSIONS - Début pour:', { effectiveUserId, currentUserId });
+    
+    try {
+      // Vérifier si une permission existe déjà
+      const { data: existingPermission, error: permError } = await supabase
+        .from('life_story_permissions')
+        .select('*')
+        .eq('story_owner_id', effectiveUserId)
+        .eq('permitted_user_id', currentUserId)
+        .single();
+
+      console.log('🔧 Permission existante:', { existingPermission, permError });
+
+      if (!existingPermission && permError?.code === 'PGRST116') {
+        console.log('🔧 CRÉATION de la permission manquante...');
+        
+        const { data: newPermission, error: createError } = await supabase
+          .from('life_story_permissions')
+          .insert({
+            story_owner_id: effectiveUserId,
+            permitted_user_id: currentUserId,
+            permission_level: 'read',
+            granted_by: effectiveUserId // On assume que c'est accordé par le propriétaire
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('❌ Erreur création permission:', createError);
+        } else {
+          console.log('✅ Permission créée avec succès:', newPermission);
+        }
+      } else {
+        console.log('✅ Permission déjà existante ou autre erreur');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la vérification/création des permissions:', error);
+    }
+  };
+
+  // 🔥 NOUVEAU: Fonction pour créer l'histoire si elle n'existe pas
+  const ensureStoryExists = async (effectiveUserId: string) => {
+    console.log('📖 CRÉATION HISTOIRE - Vérification existence pour:', effectiveUserId);
+    
+    try {
+      // Vérifier si l'histoire existe
+      const { data: existingStory, error: storyError } = await supabase
+        .from('life_stories')
+        .select('*')
+        .eq('user_id', effectiveUserId)
+        .single();
+
+      console.log('📖 Histoire existante:', { existingStory, storyError });
+
+      if (!existingStory && storyError?.code === 'PGRST116') {
+        console.log('📖 CRÉATION de l\'histoire manquante...');
+        
+        const { data: newStory, error: createError } = await supabase
+          .from('life_stories')
+          .insert({
+            user_id: effectiveUserId,
+            title: 'Mon histoire',
+            chapters: initialChapters,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('❌ Erreur création histoire:', createError);
+        } else {
+          console.log('✅ Histoire créée avec succès:', newStory);
+          return newStory;
+        }
+      } else if (existingStory) {
+        console.log('✅ Histoire déjà existante');
+        return existingStory;
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la vérification/création de l\'histoire:', error);
+    }
+    
+    return null;
+  };
+
   // 🔥 CORRECTION: Utiliser une approche plus directe pour déterminer l'utilisateur effectif
   const getEffectiveUserId = async (): Promise<string> => {
     console.log('🔍 getEffectiveUserId - Début:', {
@@ -156,6 +244,10 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
       
+      // 🔥 NOUVEAU: S'assurer que les permissions et l'histoire existent
+      await ensurePermissionsExist(effectiveUserId);
+      const ensuredStory = await ensureStoryExists(effectiveUserId);
+      
       // 🔥 NOUVEAU: Vérifier d'abord les permissions explicitement
       console.log('🔐 VÉRIFICATION PERMISSIONS - Début pour utilisateur:', currentUserId);
       
@@ -203,20 +295,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           user_id: storyData.user_id,
           title: storyData.title,
           hasChapters: !!storyData.chapters,
-          chaptersLength: Array.isArray(storyData.chapters) ? storyData.chapters.length : 0,
-          firstChapterPreview: storyData.chapters?.[0] ? {
-            id: storyData.chapters[0].id,
-            title: storyData.chapters[0].title,
-            questionsCount: storyData.chapters[0].questions?.length || 0,
-            firstQuestionPreview: storyData.chapters[0].questions?.[0] ? {
-              id: storyData.chapters[0].questions[0].id,
-              text: storyData.chapters[0].questions[0].text?.substring(0, 50) + '...',
-              hasAnswer: !!storyData.chapters[0].questions[0].answer,
-              answer: storyData.chapters[0].questions[0].answer,
-              hasAudioUrl: !!storyData.chapters[0].questions[0].audioUrl,
-              audioUrl: storyData.chapters[0].questions[0].audioUrl
-            } : null
-          } : null
+          chaptersLength: Array.isArray(storyData.chapters) ? storyData.chapters.length : 0
         } : null,
         error: error ? {
           message: error.message,
@@ -245,10 +324,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         return;
       }
 
-      if (storyData) {
+      // 🔥 NOUVEAU: Utiliser l'histoire assurée si aucune n'est trouvée
+      const finalStoryData = storyData || ensuredStory;
+
+      if (finalStoryData) {
         // 🔥 CHANGEMENT CRITIQUE: Utiliser directement les données de la base
         console.log('🔄 FUSION DONNÉES - Début fusion avec initialChapters');
-        const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
+        const existingChapters = (finalStoryData.chapters as unknown as Chapter[]) || [];
         
         // Créer les chapitres finaux en préservant les données existantes
         const finalChapters = initialChapters.map(initialChapter => {
@@ -257,14 +339,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           if (existingChapter && existingChapter.questions) {
             console.log(`🔄 FUSION CHAPITRE ${initialChapter.id}:`, {
               initialQuestionsCount: initialChapter.questions.length,
-              existingQuestionsCount: existingChapter.questions.length,
-              firstExistingQuestion: existingChapter.questions[0] ? {
-                id: existingChapter.questions[0].id,
-                hasAnswer: !!existingChapter.questions[0].answer,
-                answer: existingChapter.questions[0].answer,
-                hasAudioUrl: !!existingChapter.questions[0].audioUrl,
-                audioUrl: existingChapter.questions[0].audioUrl
-              } : null
+              existingQuestionsCount: existingChapter.questions.length
             });
             
             return {
@@ -296,40 +371,32 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         });
 
         const lifeStory: LifeStory = {
-          id: storyData.id,
-          user_id: storyData.user_id,
-          title: storyData.title,
+          id: finalStoryData.id,
+          user_id: finalStoryData.user_id,
+          title: finalStoryData.title,
           chapters: finalChapters,
-          created_at: storyData.created_at,
-          updated_at: storyData.updated_at,
-          last_edited_chapter: storyData.last_edited_chapter,
-          last_edited_question: storyData.last_edited_question,
+          created_at: finalStoryData.created_at,
+          updated_at: finalStoryData.updated_at,
+          last_edited_chapter: finalStoryData.last_edited_chapter,
+          last_edited_question: finalStoryData.last_edited_question,
         };
         
         console.log('✅ 🎯 HISTOIRE FINALE CONSTRUITE:', {
           storyId: lifeStory.id,
           userId: lifeStory.user_id,
           title: lifeStory.title,
-          chaptersCount: lifeStory.chapters.length,
-          firstChapterFirstQuestion: lifeStory.chapters[0]?.questions[0] ? {
-            id: lifeStory.chapters[0].questions[0].id,
-            text: lifeStory.chapters[0].questions[0].text.substring(0, 50) + '...',
-            answer: lifeStory.chapters[0].questions[0].answer,
-            audioUrl: lifeStory.chapters[0].questions[0].audioUrl,
-            hasAnswer: !!lifeStory.chapters[0].questions[0].answer,
-            hasAudioUrl: !!lifeStory.chapters[0].questions[0].audioUrl
-          } : null
+          chaptersCount: lifeStory.chapters.length
         });
         
         // 🔥 IMPORTANT: Appliquer les données chargées
         console.log('📝 SETDATA - Application des données chargées...');
         setData(lifeStory);
-        setActiveTab(storyData.last_edited_chapter || (finalChapters[0]?.id || ''));
-        setActiveQuestion(storyData.last_edited_question);
+        setActiveTab(finalStoryData.last_edited_chapter || (finalChapters[0]?.id || ''));
+        setActiveQuestion(finalStoryData.last_edited_question);
         
         console.log('✅ 🎯 DONNÉES APPLIQUÉES AVEC SUCCÈS');
       } else {
-        console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, ', utilisation des chapitres initiaux');
+        console.log('📚 Aucune histoire trouvée et impossible de créer pour:', effectiveUserId);
         setData(prev => ({
           ...prev,
           user_id: effectiveUserId,
