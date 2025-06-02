@@ -1,237 +1,183 @@
 
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Book,
-  BookOpen,
-  FileText,
-  Heart,
-  Image,
-  LogOut,
-  Settings,
-  Users,
-  Clock,
-  Camera,
-  PenTool,
-  UserCheck,
-} from "lucide-react"
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Settings, LogOut, User, Shield, Users, Calendar, Pen, Heart, BookOpen, Clock } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import NotificationButton from './NotificationButton';
 
 const Header = () => {
-  const { user, session, signOut, hasRole, profile } = useAuth();
+  const { user, profile, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignOut = async () => {
     try {
+      setIsLoading(true);
       await signOut();
-      navigate('/auth');
-    } catch (error: any) {
       toast({
-        title: 'Erreur',
-        description: error.message || 'Impossible de se déconnecter',
-        variant: 'destructive',
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès."
       });
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la déconnexion.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
+  const isActive = (path: string) => location.pathname === path;
+
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email.slice(0, 2).toUpperCase();
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 fixed top-0 left-0 w-full z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Link to="/">
-            <img 
-              src="/SeniorDigital.png" 
-              alt="Senior Digital Logo" 
-              width="100"
-              className="object-contain cursor-pointer hover:opacity-80 transition-opacity"
-            />
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="text-2xl font-serif text-tranches-charcoal hover:text-tranches-sage transition-colors">
+            Tranches de Vie
           </Link>
-        </div>
 
-        {/* Navigation principale */}
-        {session && (
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link 
-              to="/recent" 
-              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
-            >
-              <Clock className="w-4 h-4" />
-              <span>Récents</span>
-            </Link>
-            <Link 
-              to="/blog" 
-              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Blog (Photos/Vidéos)</span>
-            </Link>
-            <Link 
-              to="/diary" 
-              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
-            >
-              <PenTool className="w-4 h-4" />
-              <span>Journal</span>
-            </Link>
-            <Link 
-              to="/life-story" 
-              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
-            >
-              <Book className="w-4 h-4" />
-              <span>Histoire de vie</span>
-            </Link>
-            <Link 
-              to="/wishes" 
-              className="flex items-center space-x-1 text-tranches-charcoal hover:text-tranches-sage transition-colors"
-            >
-              <Heart className="w-4 h-4" />
-              <span>Souhaits</span>
-            </Link>
-          </nav>
-        )}
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link 
+                  to="/recent" 
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                    isActive('/recent') ? 'text-tranches-sage' : 'text-gray-600'
+                  }`}
+                >
+                  <Clock className="w-4 h-4 mr-1" />
+                  Récent
+                </Link>
+                <Link 
+                  to="/blog" 
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                    isActive('/blog') ? 'text-tranches-sage' : 'text-gray-600'
+                  }`}
+                >
+                  <Pen className="w-4 h-4 mr-1" />
+                  Blog
+                </Link>
+                <Link 
+                  to="/diary" 
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                    isActive('/diary') ? 'text-tranches-sage' : 'text-gray-600'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 mr-1" />
+                  Journal
+                </Link>
+                <Link 
+                  to="/life-story" 
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                    isActive('/life-story') ? 'text-tranches-sage' : 'text-gray-600'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Histoire
+                </Link>
+                <Link 
+                  to="/wishes" 
+                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                    isActive('/wishes') ? 'text-tranches-sage' : 'text-gray-600'
+                  }`}
+                >
+                  <Heart className="w-4 h-4 mr-1" />
+                  Souhaits
+                </Link>
+              </nav>
 
-        <nav>
-          {session ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="outline-none">
-                <Avatar className="h-9 w-9 cursor-pointer">
-                  <AvatarImage src={profile?.avatar_url || undefined} alt="Avatar" />
-                  <AvatarFallback className="bg-tranches-sage text-white">
-                    {getInitials(user?.email || '??')}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Mon profil
-                  </Link>
-                </DropdownMenuItem>
+              <NotificationButton />
 
-                {/* Gestion des permissions pour les non-readers */}
-                {!hasRole('reader') && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/permissions" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      Gérer les permissions
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-
-                {/* Navigation mobile */}
-                <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.avatar_url || ''} alt={profile?.display_name || user.email || ''} />
+                      <AvatarFallback>
+                        {getInitials(profile?.display_name || null, user.email || '')}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{profile?.display_name || 'Utilisateur'}</p>
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/recent" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Récents
+                    <Link to="/profile" className="w-full cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profil
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/blog" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <Camera className="mr-2 h-4 w-4" />
-                      Blog (Photos/Vidéos)
-                    </Link>
+                  {(hasRole('admin') || hasRole('editor')) && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/permissions" className="w-full cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Permissions
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-groups" className="w-full cursor-pointer">
+                          <Users className="mr-2 h-4 w-4" />
+                          Mes groupes
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {hasRole('admin') && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/users" className="w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Administration
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    disabled={isLoading}
+                    className="cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {isLoading ? 'Déconnexion...' : 'Se déconnecter'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <PenTool className="mr-2 h-4 w-4" />
-                      Journal
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/life-story" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <Book className="mr-2 h-4 w-4" />
-                      Histoire de vie
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/wishes" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                      <Heart className="mr-2 h-4 w-4" />
-                      Souhaits
-                    </Link>
-                  </DropdownMenuItem>
-                </div>
-
-                {hasRole('admin') && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/users" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <Users className="mr-2 h-4 w-4" />
-                        Gestion des utilisateurs
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/invitation-groups" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <Users className="mr-2 h-4 w-4" />
-                        Groupes d'invitation
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/posts" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Articles de blog
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/albums" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <Image className="mr-2 h-4 w-4" />
-                        Blog photos
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/wish-albums" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <Heart className="mr-2 h-4 w-4" />
-                        Souhaits
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/diary" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        Journal
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/life-stories" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
-                        <Book className="mr-2 h-4 w-4" />
-                        Histoires de vie
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="cursor-pointer px-2 py-2 text-gray-700 hover:bg-gray-50"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
-            <div>
-              <Link to="/auth" className="text-tranches-charcoal hover:text-tranches-sage">
-                Se connecter
-              </Link>
+            <div className="flex items-center space-x-4">
+              <Button asChild variant="ghost">
+                <Link to="/auth">Se connecter</Link>
+              </Button>
             </div>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

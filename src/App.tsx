@@ -13,6 +13,7 @@ import AuthConfirm from "./pages/AuthConfirm";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import PermissionsManagement from "./pages/PermissionsManagement";
+import MyInvitationGroups from "./pages/MyInvitationGroups";
 import Blog from "./pages/Blog";
 import BlogLanding from "./pages/BlogLanding";
 import BlogPost from "./pages/BlogPost";
