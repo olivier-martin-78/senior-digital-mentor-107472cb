@@ -53,8 +53,10 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     
     try {
       const filePath = extractFilePathFromUrl(audioUrl);
+      console.log('🔍 Chemin extrait pour régénération:', filePath);
+      
       if (!filePath) {
-        throw new Error('Impossible d\'extraire le chemin du fichier');
+        throw new Error('Impossible d\'extraire le chemin du fichier depuis l\'URL');
       }
       
       const newSignedUrl = await getSignedAudioUrl(filePath);
@@ -63,15 +65,22 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         setActualAudioUrl(newSignedUrl);
         setHasError(false);
         setLoadAttempts(0);
+        
+        toast({
+          title: "URL actualisée",
+          description: "L'URL d'accès au fichier audio a été régénérée avec succès",
+          duration: 3000
+        });
       } else {
         throw new Error('Impossible de générer une nouvelle URL signée');
       }
     } catch (error) {
       console.error('❌ Erreur régénération URL:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de régénérer l'URL audio",
-        variant: "destructive"
+        title: "Erreur de régénération",
+        description: `Impossible de régénérer l'URL audio: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setIsRefreshing(false);

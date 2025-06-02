@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Nom du bucket Supabase pour stocker les fichiers audio
@@ -62,15 +61,28 @@ export const getSignedAudioUrl = async (filePath: string): Promise<string | null
  */
 export const extractFilePathFromUrl = (url: string): string | null => {
   try {
-    // Pattern pour les URLs publiques Supabase
-    const publicUrlPattern = new RegExp(`/storage/v1/object/public/${AUDIO_BUCKET_NAME}/(.+)$`);
-    const match = url.match(publicUrlPattern);
+    console.log('🔍 Extraction du chemin depuis URL:', url);
     
-    if (match && match[1]) {
-      return decodeURIComponent(match[1]);
+    // Pattern amélioré pour les URLs publiques Supabase
+    const patterns = [
+      // Pattern pour URLs publiques: /storage/v1/object/public/bucket-name/path
+      new RegExp(`/storage/v1/object/public/${AUDIO_BUCKET_NAME}/(.+)$`),
+      // Pattern pour URLs signées: /storage/v1/object/sign/bucket-name/path
+      new RegExp(`/storage/v1/object/sign/${AUDIO_BUCKET_NAME}/(.+)\\?`),
+      // Pattern simple pour bucket dans l'URL
+      new RegExp(`/${AUDIO_BUCKET_NAME}/(.+)$`)
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        const extractedPath = decodeURIComponent(match[1]);
+        console.log('✅ Chemin extrait:', extractedPath);
+        return extractedPath;
+      }
     }
     
-    console.warn('❌ Format d\'URL non reconnu:', url);
+    console.warn('❌ Aucun pattern reconnu pour URL:', url);
     return null;
   } catch (error) {
     console.error('💥 Erreur extraction chemin:', error);
@@ -151,18 +163,21 @@ export const uploadAudio = async (
       throw new Error(`Erreur de téléchargement: ${error.message}`);
     }
     
-    console.log('✅ Téléchargement réussi, génération de l\'URL signée...');
+    console.log('✅ Téléchargement réussi, génération de l\'URL publique...');
     
-    // Générer une URL signée au lieu d'une URL publique
-    const signedUrl = await getSignedAudioUrl(fileName);
-    if (!signedUrl) {
-      throw new Error("Impossible de générer l'URL d'accès au fichier");
+    // Générer l'URL publique au lieu d'une URL signée pour l'usage initial
+    const { data: publicUrlData } = supabase.storage
+      .from(AUDIO_BUCKET_NAME)
+      .getPublicUrl(fileName);
+    
+    if (!publicUrlData?.publicUrl) {
+      throw new Error("Impossible de générer l'URL publique du fichier");
     }
     
-    console.log('🔗 URL signée obtenue:', signedUrl);
+    console.log('🔗 URL publique obtenue:', publicUrlData.publicUrl);
     console.log('🪣 Bucket utilisé pour l\'URL:', AUDIO_BUCKET_NAME);
     
-    safeCallback(onSuccess, signedUrl);
+    safeCallback(onSuccess, publicUrlData.publicUrl);
   } catch (error: any) {
     console.error('💥 Erreur lors du téléchargement audio:', error);
     
