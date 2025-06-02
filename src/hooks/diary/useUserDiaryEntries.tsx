@@ -203,6 +203,30 @@ export const fetchUserDiaryEntries = async (
   if (allAuthorizedIds.length > 0) {
     console.log('🔍 Diary - Récupération des entrées des utilisateurs autorisés:', allAuthorizedIds);
     
+    // CORRECTION: Vérifier d'abord combien d'entrées existent pour ces utilisateurs
+    const { data: countCheck, error: countError } = await supabase
+      .from('diary_entries')
+      .select('user_id, id, title, entry_date')
+      .in('user_id', allAuthorizedIds);
+
+    if (countError) {
+      console.error('🔍 Diary - Erreur lors de la vérification du nombre d\'entrées:', countError);
+    } else {
+      console.log('🔍 Diary - Vérification des entrées existantes:', {
+        totalEntries: countCheck?.length || 0,
+        entriesByUser: countCheck?.reduce((acc, entry) => {
+          acc[entry.user_id] = (acc[entry.user_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {},
+        sampleEntries: countCheck?.slice(0, 3).map(e => ({
+          user_id: e.user_id,
+          id: e.id,
+          title: e.title,
+          entry_date: e.entry_date
+        })) || []
+      });
+    }
+    
     let otherEntriesQuery = supabase
       .from('diary_entries')
       .select('*')
