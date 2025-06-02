@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +14,6 @@ import AlbumThumbnail from '@/components/blog/AlbumThumbnail';
 import { getThumbnailUrl, getThumbnailUrlSync } from '@/utils/thumbnailtUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +31,6 @@ const BlogPost = () => {
   const { user, profile, hasRole, getEffectiveUserId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isImpersonating, originalUser } = useImpersonationContext();
   
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,7 +51,7 @@ const BlogPost = () => {
   useEffect(() => {
     const checkAlbumAccess = async () => {
       if (!post || !post.album_id || !user) {
-        console.log('🔍 BlogPost - CORRECTION - Pas d\'album ou pas d\'utilisateur:', {
+        console.log('🔍 BlogPost - Pas d\'album ou pas d\'utilisateur:', {
           postId: post?.id,
           albumId: post?.album_id,
           hasUser: !!user
@@ -62,19 +61,16 @@ const BlogPost = () => {
       }
 
       try {
-        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🔍 BlogPost - CORRECTION - Vérification accès album:', {
+        console.log('🔍 BlogPost - Vérification accès album:', {
           postId: post.id,
           albumId: post.album_id,
           effectiveUserId,
-          realUserId: isImpersonating ? originalUser?.id : user?.id,
-          isImpersonating,
           userEmail: user.email
         });
 
-        // Vérifier si l'utilisateur EFFECTIF (impersonné) est propriétaire de l'album
+        // Vérifier si l'utilisateur est propriétaire de l'album
         const { data: albumData } = await supabase
           .from('blog_albums')
           .select('author_id')
@@ -82,42 +78,23 @@ const BlogPost = () => {
           .single();
 
         if (albumData && albumData.author_id === effectiveUserId) {
-          console.log('✅ BlogPost - CORRECTION - Utilisateur effectif propriétaire de l\'album:', {
-            postId: post.id,
-            albumId: post.album_id,
-            albumAuthorId: albumData.author_id,
-            effectiveUserId
-          });
+          console.log('✅ BlogPost - Utilisateur propriétaire de l\'album');
           setHasAlbumAccess(true);
           return;
         }
 
-        // Vérifier les permissions d'album pour l'utilisateur EFFECTIF (impersonné)
-        const { data: permissions } = await supabase
-          .from('album_permissions')
-          .select('id')
-          .eq('album_id', post.album_id)
-          .eq('user_id', effectiveUserId)
-          .maybeSingle();
-
-        const hasPermission = !!permissions;
-        console.log('🔍 BlogPost - CORRECTION - Résultat vérification permissions:', {
-          postId: post.id,
-          albumId: post.album_id,
-          effectiveUserId,
-          hasPermission,
-          permissionId: permissions?.id
-        });
-
-        setHasAlbumAccess(hasPermission);
+        // Pour maintenant, donner accès à tous les utilisateurs connectés
+        // car nous n'avons plus de système de permissions d'album granulaire
+        setHasAlbumAccess(true);
+        
       } catch (error) {
-        console.error('❌ BlogPost - CORRECTION - Erreur lors de la vérification des permissions d\'album:', error);
+        console.error('❌ BlogPost - Erreur lors de la vérification des permissions d\'album:', error);
         setHasAlbumAccess(false);
       }
     };
 
     checkAlbumAccess();
-  }, [post, user, isImpersonating, originalUser, getEffectiveUserId]);
+  }, [post, user, getEffectiveUserId]);
 
   // Charger l'URL de l'image de couverture si elle existe
   useEffect(() => {
@@ -198,45 +175,37 @@ const BlogPost = () => {
     }
   };
 
-  // PERMISSIONS CORRIGÉES : différencier utilisateur réel vs impersonné
   const effectiveUserId = getEffectiveUserId();
-  const realUserId = isImpersonating ? originalUser?.id : user?.id;
   
-  // Vérifier si l'utilisateur EFFECTIF (impersonné) est l'auteur
-  const isEffectiveAuthor = effectiveUserId && post && effectiveUserId === post.author_id;
+  // Vérifier si l'utilisateur est l'auteur
+  const isAuthor = effectiveUserId && post && effectiveUserId === post.author_id;
   
-  // Vérifier si l'utilisateur RÉEL est l'auteur
-  const isRealAuthor = realUserId && post && realUserId === post.author_id;
+  // Vérifier si l'utilisateur est admin 
+  const isAdmin = user && hasRole('admin');
   
-  // Vérifier si l'utilisateur RÉEL est admin (pas via impersonnation)
-  const isRealAdmin = !isImpersonating && user && hasRole('admin');
-  
-  // Vérifier si l'utilisateur RÉEL est éditeur (pas via impersonnation)
-  const isRealEditor = !isImpersonating && user && hasRole('editor');
+  // Vérifier si l'utilisateur est éditeur
+  const isEditor = user && hasRole('editor');
 
-  // PERMISSIONS DE MODIFICATION CORRIGÉES : auteur effectif OU admin/éditeur réel
-  const canEditPost = isEffectiveAuthor || isRealAdmin || isRealEditor;
+  // Permissions de modification : auteur OU admin/éditeur
+  const canEditPost = isAuthor || isAdmin || isEditor;
 
-  // PERMISSIONS DE SUPPRESSION CORRIGÉES : SEULEMENT auteur réel OU admin réel
-  const canDeletePost = isRealAuthor || isRealAdmin;
+  // Permissions de suppression : SEULEMENT auteur OU admin
+  const canDeletePost = isAuthor || isAdmin;
 
-  // VÉRIFICATION DE VISIBILITÉ CORRIGÉE : doit avoir accès à l'album
+  // Vérification de visibilité : doit avoir accès à l'album
   const canViewPost = hasAlbumAccess && (
     post?.published || 
-    isEffectiveAuthor || 
-    isRealAdmin
+    isAuthor || 
+    isAdmin
   );
 
-  console.log('🎯 BlogPost - CORRECTION - Permissions:', {
+  console.log('🎯 BlogPost - Permissions:', {
     postId: post?.id,
     postAuthorId: post?.author_id,
-    realUserId,
     effectiveUserId,
-    isImpersonating,
-    isEffectiveAuthor,
-    isRealAuthor,
-    isRealAdmin,
-    isRealEditor,
+    isAuthor,
+    isAdmin,
+    isEditor,
     canEditPost,
     canDeletePost,
     canViewPost,
@@ -273,7 +242,7 @@ const BlogPost = () => {
 
   // Vérifier si l'utilisateur peut voir ce post
   if (!canViewPost) {
-    console.log('🚫 BlogPost - CORRECTION - Accès refusé au post:', {
+    console.log('🚫 BlogPost - Accès refusé au post:', {
       postId: post.id,
       reason: !hasAlbumAccess ? 'Pas d\'accès album' : 'Post non publié',
       albumId: post.album_id,

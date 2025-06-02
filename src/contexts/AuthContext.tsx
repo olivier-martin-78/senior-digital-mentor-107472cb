@@ -11,6 +11,7 @@ interface AuthContextType {
   roles: AppRole[];
   isLoading: boolean;
   hasRole: (role: AppRole) => boolean;
+  getEffectiveUserId: () => string | undefined;
   signOut: () => Promise<void>;
   checkEmailConfirmation: () => Promise<boolean>;
 }
@@ -20,6 +21,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, user, profile, roles, isLoading, hasRole } = useAuthState();
   const [emailConfirmed, setEmailConfirmed] = useState<boolean | null>(null);
+
+  const getEffectiveUserId = () => {
+    return user?.id;
+  };
 
   const signOut = async () => {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -54,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     roles,
     isLoading,
     hasRole,
+    getEffectiveUserId,
     signOut,
     checkEmailConfirmation
   };

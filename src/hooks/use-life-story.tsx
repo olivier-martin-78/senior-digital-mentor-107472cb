@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { LifeStory, Chapter } from '@/types/lifeStory';
 import { toast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid';
 import { initialChapters } from '@/components/life-story/initialChapters';
 
 interface UseLifeStoryProps {
@@ -51,7 +50,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           if (typeof storyData.chapters === 'string') {
             parsedChapters = JSON.parse(storyData.chapters);
           } else if (Array.isArray(storyData.chapters)) {
-            parsedChapters = storyData.chapters as Chapter[];
+            parsedChapters = storyData.chapters as unknown as Chapter[];
           } else {
             parsedChapters = initialChapters;
           }
@@ -89,17 +88,22 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   };
 
   const saveNow = async () => {
-    if (!data || !user) return;
+    if (!data || !user || !effectiveUserId) return;
 
     try {
       setIsSaving(true);
       console.log('💾 Sauvegarde de l\'histoire de vie:', data);
 
-      // Préparer les données pour la sauvegarde
+      // Préparer les données pour la sauvegarde avec user_id requis
       const dataToSave = {
-        ...data,
+        user_id: effectiveUserId,
+        title: data.title,
         chapters: JSON.stringify(data.chapters),
         updated_at: new Date().toISOString(),
+        last_edited_chapter: data.last_edited_chapter || null,
+        last_edited_question: data.last_edited_question || null,
+        ...(data.id && { id: data.id }),
+        ...(data.created_at && { created_at: data.created_at }),
       };
 
       const { error } = await supabase

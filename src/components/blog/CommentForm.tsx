@@ -80,7 +80,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
     );
   }
 
-  const isSubmitDisabled = submitting || !commentContent.trim() || emailConfirmed === false;
+  const isSubmitDisabled = submitting || !commentContent.trim() || !emailConfirmed;
 
   return (
     <form onSubmit={handleSubmit} className="mb-8">

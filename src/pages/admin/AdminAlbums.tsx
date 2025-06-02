@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Loader2, Pencil, Trash2, ChevronLeft, Search } from 'lucide-react';
+import { Loader2, Pencil, Trash2, ChevronLeft, Search, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -16,9 +16,14 @@ import { Link } from 'react-router-dom';
 interface Album {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
+  author_id: string;
+  author_email: string;
+  author_display_name: string;
+  thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
+  post_count: number;
 }
 
 const AdminAlbums = () => {
@@ -36,7 +41,6 @@ const AdminAlbums = () => {
       navigate('/unauthorized');
       return;
     }
-    
     loadAlbums();
   }, [hasRole, navigate]);
 
@@ -44,18 +48,66 @@ const AdminAlbums = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // Récupérer tous les albums avec les informations des auteurs
+      const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
 
-      if (error) {
-        console.error('Erreur Supabase:', error);
-        throw new Error(`Erreur Supabase: ${error.message} (code: ${error.code})`);
+      if (albumsError) {
+        console.error('Erreur Supabase (albums):', albumsError);
+        throw new Error(`Erreur Supabase: ${albumsError.message} (code: ${albumsError.code})`);
       }
 
-      if (data) {
-        setAlbums(data);
+      if (albumsData) {
+        // Récupérer tous les profils d'utilisateurs
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name');
+
+        if (profilesError) {
+          console.error('Erreur Supabase (profils):', profilesError);
+          throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
+        }
+
+        // Créer un dictionnaire de profils pour faciliter l'accès
+        const profilesMap: {[key: string]: any} = {};
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            profilesMap[profile.id] = profile;
+          });
+        }
+
+        // Compter les posts pour chaque album
+        const { data: postsCount, error: postsError } = await supabase
+          .from('blog_posts')
+          .select('album_id');
+
+        if (postsError) {
+          console.error('Erreur Supabase (posts count):', postsError);
+        }
+
+        const postsCountMap: {[key: string]: number} = {};
+        if (postsCount) {
+          postsCount.forEach(post => {
+            if (post.album_id) {
+              postsCountMap[post.album_id] = (postsCountMap[post.album_id] || 0) + 1;
+            }
+          });
+        }
+
+        // Formater les albums avec les informations des auteurs
+        const formattedAlbums: Album[] = albumsData.map(album => {
+          const userProfile = profilesMap[album.author_id];
+          return {
+            ...album,
+            updated_at: album.created_at, // Use created_at as fallback for updated_at
+            author_email: userProfile?.email || 'Non disponible',
+            author_display_name: userProfile?.display_name || 'Utilisateur inconnu',
+            post_count: postsCountMap[album.id] || 0
+          };
+        });
+
+        setAlbums(formattedAlbums);
       } else {
         throw new Error('Aucune donnée reçue de l\'API');
       }
@@ -64,7 +116,7 @@ const AdminAlbums = () => {
       toast({
         title: 'Erreur',
         description: `Impossible de charger les albums : ${error.message}`,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -82,30 +134,37 @@ const AdminAlbums = () => {
 
   const handleDeleteConfirm = async () => {
     if (!albumToDelete) return;
-    
+
     try {
       setIsDeleting(true);
-      
+
+      // Supprimer les posts associés d'abord
+      const { error: postsError } = await supabase
+        .from('blog_posts')
+        .delete()
+        .eq('album_id', albumToDelete.id);
+
+      if (postsError) throw postsError;
+
+      // Supprimer l'album
       const { error } = await supabase
         .from('blog_albums')
         .delete()
         .eq('id', albumToDelete.id);
-      
+
       if (error) throw error;
-      
+
       setAlbums(prev => prev.filter(album => album.id !== albumToDelete.id));
-      
       toast({
         title: 'Album supprimé',
-        description: `L'album "${albumToDelete.name}" a été supprimé avec succès`,
+        description: `L'album "${albumToDelete.name}" a été supprimé avec succès`
       });
-      
       setDeleteDialogOpen(false);
     } catch (error: any) {
       toast({
         title: 'Erreur',
         description: `Impossible de supprimer l'album : ${error.message}`,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setIsDeleting(false);
@@ -114,10 +173,11 @@ const AdminAlbums = () => {
 
   // Filtrer les albums selon le terme de recherche
   const filteredAlbums = albums.filter(album => 
-    album.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    album.description.toLowerCase().includes(searchTerm.toLowerCase())
+    album.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    album.author_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    album.author_display_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -132,7 +192,7 @@ const AdminAlbums = () => {
             Retour
           </Button>
           <h1 className="text-3xl font-serif text-tranches-charcoal">
-            Administration des albums photos
+            Administration des albums
           </h1>
         </div>
 
@@ -144,7 +204,8 @@ const AdminAlbums = () => {
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Rechercher..."
+                type="text"
+                placeholder="Rechercher un album..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="pl-8"
@@ -154,108 +215,111 @@ const AdminAlbums = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center my-10">
-            <Loader2 className="h-12 w-12 animate-spin text-tranches-sage" />
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-tranches-sage" />
           </div>
         ) : (
-          <>
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Dernière modification</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+          <div className="bg-white rounded-lg shadow-sm border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Auteur</TableHead>
+                  <TableHead>Posts</TableHead>
+                  <TableHead>Créé le</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAlbums.map((album) => (
+                  <TableRow key={album.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{album.name}</div>
+                        {album.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {album.description}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{album.author_display_name}</div>
+                        <div className="text-sm text-gray-500">{album.author_email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {album.post_count} posts
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(album.created_at), 'dd MMM yyyy', { locale: fr })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                        >
+                          <Link to={`/blog?album=${album.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(album)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAlbums.length > 0 ? (
-                    filteredAlbums.map((album) => (
-                      <TableRow key={album.id}>
-                        <TableCell className="font-medium">{album.name}</TableCell>
-                        <TableCell>{album.description}</TableCell>
-                        <TableCell>
-                          {album.updated_at 
-                            ? format(new Date(album.updated_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-                            : 'Non disponible'}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <Link to={`/admin/albums/${album.id}`}>
-                              <Pencil className="h-4 w-4 mr-1" />
-                              Éditer
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
-                            onClick={() => handleDeleteClick(album)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Supprimer
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                        {searchTerm 
-                          ? 'Aucun album ne correspond à votre recherche' 
-                          : 'Aucun album n\'a été trouvé'}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Dialog de confirmation de suppression */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmer la suppression</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p>
-                    Êtes-vous sûr de vouloir supprimer l'album "{albumToDelete?.name}" ?
-                    <br />
-                    <span className="text-red-500 font-semibold">Cette action est irréversible.</span>
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    disabled={isDeleting}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteConfirm}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Suppression...
-                      </>
-                    ) : (
-                      'Supprimer'
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
+
+        {/* Dialog de confirmation de suppression */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer l'album</DialogTitle>
+            </DialogHeader>
+            <p>
+              Êtes-vous sûr de vouloir supprimer l'album "{albumToDelete?.name}" ?
+              Cette action supprimera également tous les posts associés et est irréversible.
+            </p>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={isDeleting}
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
