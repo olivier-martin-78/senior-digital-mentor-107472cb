@@ -20,6 +20,14 @@ const LifeStory = () => {
   
   const isReader = hasRole('reader');
 
+  console.log('🏠 LifeStory - Début du composant:', {
+    userId: user?.id,
+    userEmail: user?.email,
+    selectedUserId,
+    isReader,
+    hasSession: !!session
+  });
+
   useEffect(() => {
     if (!session) {
       navigate('/auth');
@@ -29,8 +37,10 @@ const LifeStory = () => {
 
   // Pour les non-readers, charger la dernière sélection depuis localStorage
   useEffect(() => {
+    console.log('🏠 LifeStory - Effet localStorage:', { isReader });
     if (!isReader) {
       const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
+      console.log('🏠 LifeStory - Sélection sauvegardée:', savedSelection);
       if (savedSelection && savedSelection !== 'null') {
         console.log('📂 Chargement sélection sauvegardée:', savedSelection);
         setSelectedUserId(savedSelection);
@@ -51,20 +61,35 @@ const LifeStory = () => {
     targetUserId: selectedUserId || undefined
   });
 
+  console.log('🏠 LifeStory - Données du hook:', {
+    dataUserId: lifeStoryData.data?.user_id,
+    dataTitle: lifeStoryData.data?.title,
+    isLoading: lifeStoryData.isLoading,
+    hasData: !!lifeStoryData.data
+  });
+
   // Récupérer les informations du propriétaire de l'histoire pour l'affichage
   useEffect(() => {
     const getStoryOwnerInfo = async () => {
-      if (!lifeStoryData.data?.user_id) return;
+      if (!lifeStoryData.data?.user_id) {
+        console.log('🏠 LifeStory - Pas d\'user_id dans les données, skip');
+        return;
+      }
+
+      console.log('🏠 LifeStory - Récupération infos propriétaire:', lifeStoryData.data.user_id);
 
       try {
-        const { data: ownerProfile } = await supabase
+        const { data: ownerProfile, error } = await supabase
           .from('profiles')
           .select('display_name, email')
           .eq('id', lifeStoryData.data.user_id)
           .single();
         
-        if (ownerProfile) {
+        console.log('🏠 LifeStory - Profil propriétaire:', { ownerProfile, error });
+        
+        if (ownerProfile && !error) {
           setStoryOwnerInfo(ownerProfile);
+          console.log('✅ LifeStory - Informations propriétaire définies:', ownerProfile);
         }
       } catch (error) {
         console.error('❌ Erreur lors de la récupération des infos du propriétaire:', error);
@@ -88,6 +113,13 @@ const LifeStory = () => {
   // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
   const canSave = !hasRole('reader') && (!selectedUserId || selectedUserId === user?.id);
   const isViewingOthersStory = selectedUserId && selectedUserId !== user?.id;
+
+  console.log('🏠 LifeStory - État final:', {
+    canSave,
+    isViewingOthersStory,
+    storyOwnerInfo,
+    effectiveStoryOwner: lifeStoryData.data?.user_id
+  });
 
   if (lifeStoryData.isLoading) {
     return (
@@ -128,6 +160,19 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
+        {/* NOUVEAU: Affichage debug du propriétaire de l'histoire */}
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-semibold text-blue-800 mb-2">🔍 Debug - Propriétaire de l'histoire chargée</h3>
+          <div className="text-sm text-blue-700">
+            <p><strong>ID de l'histoire:</strong> {lifeStoryData.data.user_id || 'Non défini'}</p>
+            <p><strong>Nom du propriétaire:</strong> {storyOwnerInfo?.display_name || 'Non trouvé'}</p>
+            <p><strong>Email du propriétaire:</strong> {storyOwnerInfo?.email || 'Non trouvé'}</p>
+            <p><strong>Utilisateur connecté:</strong> {user?.email}</p>
+            <p><strong>Mode reader:</strong> {isReader ? 'Oui' : 'Non'}</p>
+            <p><strong>Sélection utilisateur:</strong> {selectedUserId || 'Aucune'}</p>
+          </div>
+        </div>
+
         {/* Sélecteur d'utilisateur pour les non-lecteurs */}
         {!isReader && (
           <div className="mb-6">
