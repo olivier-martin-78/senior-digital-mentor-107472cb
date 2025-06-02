@@ -364,7 +364,7 @@ const BlogPost = () => {
               categories={categories}
             />
 
-            <PostMedia media={media} />
+            <PostMedia media={media} postTitle={post.title} />
 
             <div className="prose max-w-none">
               {post.content.split('\n').map((paragraph, i) => (

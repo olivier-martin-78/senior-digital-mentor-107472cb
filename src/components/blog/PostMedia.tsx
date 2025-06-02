@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
+import MediaDownloader from './MediaDownloader';
 
 interface PostMediaProps {
   media: BlogMedia[];
+  postTitle?: string;
 }
 
-const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
+const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
@@ -118,6 +119,8 @@ const PostMedia: React.FC<PostMediaProps> = ({ media }) => {
   return (
     <>
       <div className="mb-8">
+        <MediaDownloader media={media} postTitle={postTitle} />
+        
         {mediaRows.map((row, rowIndex) => (
           <div key={rowIndex} className="flex w-full">
             {row.map((item, itemIndex) => (
