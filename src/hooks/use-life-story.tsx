@@ -157,7 +157,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
       
-      // Récupérer l'histoire pour cet utilisateur
+      // Récupérer l'histoire pour cet utilisateur avec la politique RLS corrigée
       console.log('📚 🔍 REQUÊTE HISTOIRE - Début pour:', effectiveUserId);
       const { data: storyData, error } = await supabase
         .from('life_stories')
@@ -202,8 +202,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
 
       if (storyData) {
+        console.log('🎉 HISTOIRE TROUVÉE - Construction des données...');
         // Fusion avec les chapitres initiaux
-        console.log('🔄 FUSION DONNÉES - Début fusion avec initialChapters');
         const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
         
         // Créer les chapitres finaux en préservant les données existantes
@@ -223,9 +223,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
                 
                 if (existingQuestion) {
                   console.log(`✅ QUESTION TROUVÉE ${existingQuestion.id}:`, {
-                    answer: existingQuestion.answer,
-                    audioUrl: existingQuestion.audioUrl,
-                    audioBlob: existingQuestion.audioBlob
+                    hasAnswer: !!existingQuestion.answer,
+                    hasAudio: !!existingQuestion.audioUrl
                   });
                   
                   return {
@@ -255,23 +254,16 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           last_edited_question: storyData.last_edited_question,
         };
         
-        console.log('✅ 🎯 HISTOIRE FINALE CONSTRUITE:', {
-          storyId: lifeStory.id,
-          userId: lifeStory.user_id,
-          title: lifeStory.title,
-          chaptersCount: lifeStory.chapters.length
-        });
+        console.log('✅ 🎯 HISTOIRE FINALE CONSTRUITE avec succès');
         
         // Appliquer les données chargées
-        console.log('📝 SETDATA - Application des données chargées...');
         setData(lifeStory);
         setActiveTab(storyData.last_edited_chapter || (finalChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);
         
-        console.log('✅ 🎯 DONNÉES APPLIQUÉES AVEC SUCCÈS');
       } else {
-        console.log('📚 Aucune histoire trouvée pour:', effectiveUserId);
-        // Utiliser les chapitres initiaux par défaut
+        console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, '- Utilisation chapitres par défaut');
+        // Utiliser les chapitres initiaux par défaut avec l'ID utilisateur correct
         setData(prev => ({
           ...prev,
           user_id: effectiveUserId,
@@ -280,7 +272,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       
       hasLoadedRef.current = true;
-      console.log('✅ 🎯 CHARGEMENT TERMINÉ - hasLoadedRef = true');
+      console.log('✅ 🎯 CHARGEMENT TERMINÉ avec succès');
     } catch (err) {
       console.error('❌ Exception lors du chargement de l\'histoire de vie:', err);
       toast.error('Erreur technique lors du chargement');
