@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
-import { UserCheck, Save, Users, Info } from 'lucide-react';
+import { UserCheck, Save, Users } from 'lucide-react';
 
 interface InvitedUser {
   id: string;
@@ -51,91 +51,69 @@ const PermissionsManagement = () => {
   const loadInvitedUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('🔍 Chargement des utilisateurs invités avec le nouveau système simplifié');
+      console.log('🔍 Chargement des utilisateurs invités - recherche plus exhaustive');
 
-      // Étape 1: Chercher les groupes créés par l'utilisateur actuel
-      const { data: userGroups, error: groupsError } = await supabase
-        .from('invitation_groups')
-        .select('id, name, created_at')
-        .eq('created_by', user?.id);
+      // Chercher TOUTES les invitations créées par l'utilisateur, qu'elles soient utilisées ou non
+      const { data: allInvitations, error: invitationsError } = await supabase
+        .from('invitations')
+        .select('*')
+        .eq('invited_by', user?.id)
+        .order('created_at', { ascending: false });
 
-      if (groupsError) {
-        console.error('❌ Erreur lors de la récupération des groupes:', groupsError);
-        throw groupsError;
+      if (invitationsError) {
+        console.error('❌ Erreur lors de la récupération des invitations:', invitationsError);
+        throw invitationsError;
       }
 
-      if (!userGroups || userGroups.length === 0) {
-        console.log('⚠️ Aucun groupe trouvé pour cet utilisateur');
+      console.log('📋 Toutes les invitations trouvées:', allInvitations?.length || 0);
+
+      if (!allInvitations || allInvitations.length === 0) {
+        console.log('⚠️ Aucune invitation trouvée pour cet utilisateur');
         setInvitedUsers([]);
         return;
       }
 
-      // Étape 2: Pour chaque groupe, récupérer les membres
       const allInvitedUsers: InvitedUser[] = [];
 
-      for (const group of userGroups) {
-        // Récupérer les membres du groupe
-        const { data: groupMembers, error: membersError } = await supabase
-          .from('group_members')
-          .select('user_id, group_id, role')
-          .eq('group_id', group.id)
-          .eq('role', 'guest');
+      // Pour chaque invitation, rechercher l'utilisateur correspondant
+      for (const invitation of allInvitations) {
+        console.log('🔍 Traitement invitation:', invitation.email, 'utilisée:', !!invitation.used_at);
 
-        if (membersError) {
-          console.error(`❌ Erreur lors de la récupération des membres du groupe ${group.id}:`, membersError);
+        // Chercher l'utilisateur par email dans les profils
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .eq('email', invitation.email)
+          .single();
+
+        if (profileError) {
+          console.log('⚠️ Utilisateur non trouvé pour l\'email:', invitation.email);
           continue;
         }
 
-        // Pour chaque membre, récupérer ses informations de profil et permissions
-        for (const member of groupMembers || []) {
-          // Récupérer le profil
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('email, display_name')
-            .eq('id', member.user_id)
-            .single();
+        console.log('✅ Utilisateur trouvé:', userProfile.display_name || userProfile.email);
 
-          if (profileError) {
-            console.error(`❌ Erreur lors de la récupération du profil ${member.user_id}:`, profileError);
-            continue;
-          }
+        // Ajouter l'utilisateur invité avec ses permissions
+        const invitedUser: InvitedUser = {
+          id: userProfile.id,
+          user_id: userProfile.id,
+          group_id: invitation.group_id || '',
+          email: userProfile.email,
+          display_name: userProfile.display_name,
+          blog_access: Boolean(invitation.blog_access),
+          life_story_access: Boolean(invitation.life_story_access),
+          diary_access: Boolean(invitation.diary_access),
+          wishes_access: Boolean(invitation.wishes_access)
+        };
 
-          // Récupérer les permissions d'invitation
-          const { data: invitations, error: invitationsError } = await supabase
-            .from('invitations')
-            .select('blog_access, life_story_access, diary_access, wishes_access, used_at')
-            .eq('group_id', group.id)
-            .eq('invited_by', user?.id)
-            .not('used_at', 'is', null)
-            .order('used_at', { ascending: false })
-            .limit(1);
-
-          if (invitationsError) {
-            console.error(`❌ Erreur lors de la récupération des invitations pour le groupe ${group.id}:`, invitationsError);
-            continue;
-          }
-
-          // Utiliser les permissions de l'invitation la plus récente
-          const invitation = invitations?.[0];
-          if (invitation) {
-            const invitedUser: InvitedUser = {
-              id: member.user_id,
-              user_id: member.user_id,
-              group_id: group.id,
-              email: profile.email || '',
-              display_name: profile.display_name,
-              blog_access: Boolean(invitation.blog_access),
-              life_story_access: Boolean(invitation.life_story_access),
-              diary_access: Boolean(invitation.diary_access),
-              wishes_access: Boolean(invitation.wishes_access)
-            };
-
-            allInvitedUsers.push(invitedUser);
-          }
+        // Éviter les doublons
+        if (!allInvitedUsers.find(u => u.user_id === userProfile.id)) {
+          allInvitedUsers.push(invitedUser);
         }
       }
 
-      console.log('🎯 Utilisateurs invités chargés:', allInvitedUsers);
+      console.log('🎯 Utilisateurs invités finaux chargés:', allInvitedUsers.length);
+      console.log('📝 Liste des utilisateurs:', allInvitedUsers.map(u => u.display_name || u.email));
       setInvitedUsers(allInvitedUsers);
 
     } catch (error) {
@@ -179,7 +157,7 @@ const PermissionsManagement = () => {
         throw new Error('Utilisateur non trouvé');
       }
 
-      // Mettre à jour les permissions dans la table invitations
+      // Mettre à jour les permissions dans la table invitations pour cet email
       const { error } = await supabase
         .from('invitations')
         .update({
@@ -189,8 +167,7 @@ const PermissionsManagement = () => {
           wishes_access: permissions.wishes_access,
         })
         .eq('invited_by', user?.id)
-        .eq('group_id', selectedUser.group_id)
-        .not('used_at', 'is', null);
+        .eq('email', selectedUser.email);
 
       if (error) {
         console.error('❌ Erreur lors de la mise à jour des invitations:', error);
@@ -235,23 +212,6 @@ const PermissionsManagement = () => {
             Modifiez les accès accordés aux personnes que vous avez invitées.
           </p>
         </div>
-
-        {/* Note d'information sur le nouveau système */}
-        <Card className="mb-6 border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-blue-900">
-              <Info className="w-5 h-5 mr-2" />
-              Système simplifié
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-blue-800 text-sm">
-              Avec le nouveau système, les permissions fonctionnent automatiquement : 
-              les utilisateurs invités peuvent voir votre contenu s'ils sont dans votre groupe 
-              et si vous leur avez accordé l'accès correspondant. Plus besoin de synchronisation manuelle !
-            </p>
-          </CardContent>
-        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Sélection de l'utilisateur */}
