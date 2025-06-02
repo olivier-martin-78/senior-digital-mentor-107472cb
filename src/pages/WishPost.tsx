@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail, Calendar } from 'lucide-react';
@@ -22,6 +23,7 @@ const WishPost = () => {
   const [wish, setWish] = useState<WishPostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(16/9);
 
   useEffect(() => {
     const fetchWishPost = async () => {
@@ -179,6 +181,13 @@ const WishPost = () => {
     }
   };
 
+  // Fonction pour déterminer le ratio de l'image
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.target as HTMLImageElement;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    setImageAspectRatio(ratio);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -228,16 +237,19 @@ const WishPost = () => {
           <div className="mb-8">
             {/* Vignette du souhait */}
             {wish.cover_image && (
-              <div className="mb-6">
-                <img
-                  src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
-                  alt={`Vignette de ${sanitizeInput(wish.title)}`}
-                  className="w-full max-w-2xl h-64 object-cover rounded-lg shadow-md mx-auto"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
+              <div className="mb-6 max-w-4xl mx-auto">
+                <AspectRatio ratio={imageAspectRatio}>
+                  <img
+                    src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
+                    alt={`Vignette de ${sanitizeInput(wish.title)}`}
+                    className="w-full h-full object-contain rounded-lg shadow-md bg-gray-50"
+                    onLoad={handleImageLoad}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </AspectRatio>
               </div>
             )}
             
