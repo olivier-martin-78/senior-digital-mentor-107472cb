@@ -12,7 +12,6 @@ import Auth from "./pages/Auth";
 import AuthConfirm from "./pages/AuthConfirm";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
-import PermissionsManagement from "./pages/PermissionsManagement";
 import MyInvitationGroups from "./pages/MyInvitationGroups";
 import Blog from "./pages/Blog";
 import BlogLanding from "./pages/BlogLanding";
@@ -71,8 +70,8 @@ function App() {
                 <Route path="/profile" element={<ProtectedRoute />}>
                   <Route index element={<Profile />} />
                 </Route>
-                <Route path="/permissions" element={<ProtectedRoute />}>
-                  <Route index element={<PermissionsManagement />} />
+                <Route path="/my-groups" element={<ProtectedRoute />}>
+                  <Route index element={<MyInvitationGroups />} />
                 </Route>
                 <Route path="/recent" element={<ProtectedRoute />}>
                   <Route index element={<Recent />} />

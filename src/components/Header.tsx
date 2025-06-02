@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -129,20 +128,12 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   {(hasRole('admin') || hasRole('editor')) && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/permissions" className="w-full cursor-pointer">
-                          <Shield className="mr-2 h-4 w-4" />
-                          Permissions
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/my-groups" className="w-full cursor-pointer">
-                          <Users className="mr-2 h-4 w-4" />
-                          Mes groupes
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-groups" className="w-full cursor-pointer">
+                        <Users className="mr-2 h-4 w-4" />
+                        Mes groupes
+                      </Link>
+                    </DropdownMenuItem>
                   )}
                   {hasRole('admin') && (
                     <>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +25,7 @@ interface GroupMember {
   profiles: {
     display_name: string | null;
     email: string;
-  };
+  } | null;
 }
 
 interface PendingInvitation {
@@ -280,9 +279,9 @@ const MyInvitationGroups = () => {
                       <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">
-                            {member.profiles.display_name || member.profiles.email}
+                            {member.profiles?.display_name || member.profiles?.email || 'Utilisateur inconnu'}
                           </p>
-                          <p className="text-sm text-gray-500">{member.profiles.email}</p>
+                          <p className="text-sm text-gray-500">{member.profiles?.email || 'Email non disponible'}</p>
                         </div>
                         <div className="text-right">
                           <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
