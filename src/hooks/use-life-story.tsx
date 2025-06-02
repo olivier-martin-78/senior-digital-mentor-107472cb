@@ -83,7 +83,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       
       console.log('🔍 DEBUG RLS - Résultat:', debugResult);
-      return debugResult as DebugLifeStoryResult;
+      return debugResult as unknown as DebugLifeStoryResult;
     } catch (error) {
       console.error('❌ Exception debug RLS:', error);
       return null;
