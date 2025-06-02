@@ -26,13 +26,17 @@ const Auth = () => {
     
     try {
       if (isSignUp) {
+        // Vérifier que le nom public est fourni
+        if (!displayName || displayName.trim().length === 0) {
+          setIsLoading(false);
+          return;
+        }
+        
         // Vérifier l'unicité du nom public avant l'inscription
-        if (displayName && displayName.trim().length > 0) {
-          const isUnique = await checkDisplayNameUniqueness(displayName);
-          if (!isUnique) {
-            setIsLoading(false);
-            return; // Arrêter si le nom n'est pas unique
-          }
+        const isUnique = await checkDisplayNameUniqueness(displayName);
+        if (!isUnique) {
+          setIsLoading(false);
+          return; // Arrêter si le nom n'est pas unique
         }
         
         await signUp(email, password, displayName);
@@ -98,12 +102,15 @@ const Auth = () => {
             
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="displayName">Nom public (optionnel)</Label>
+                <Label htmlFor="displayName">
+                  Nom public <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="displayName"
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  required
                   placeholder="Votre nom d'affichage"
                 />
                 <p className="text-sm text-gray-600">
@@ -115,7 +122,7 @@ const Auth = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading || isChecking}
+              disabled={isLoading || isChecking || (isSignUp && !displayName.trim())}
             >
               {isLoading || isChecking
                 ? (isChecking ? 'Vérification...' : 'Chargement...') 
