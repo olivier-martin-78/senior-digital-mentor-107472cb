@@ -20,7 +20,7 @@ const LifeStory = () => {
   
   const isReader = hasRole('reader');
 
-  console.log('🏠 LifeStory - Début du composant:', {
+  console.log('🏠 LifeStory - État de la page:', {
     userId: user?.id,
     userEmail: user?.email,
     selectedUserId,
@@ -37,16 +37,14 @@ const LifeStory = () => {
 
   // Pour les non-readers, charger la dernière sélection depuis localStorage
   useEffect(() => {
-    console.log('🏠 LifeStory - Effet localStorage:', { isReader });
     if (!isReader) {
       const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
-      console.log('🏠 LifeStory - Sélection sauvegardée:', savedSelection);
       if (savedSelection && savedSelection !== 'null') {
         console.log('📂 Chargement sélection sauvegardée:', savedSelection);
         setSelectedUserId(savedSelection);
       }
     }
-    // Pour les readers, on laisse selectedUserId à null pour utiliser la logique automatique
+    // Pour les readers, on laisse selectedUserId à null pour utiliser leur propre histoire
   }, [isReader]);
 
   // Sauvegarder la sélection dans localStorage (seulement pour les non-readers)
@@ -56,43 +54,58 @@ const LifeStory = () => {
     }
   }, [selectedUserId, isReader]);
 
-  // Le hook se charge de déterminer le bon utilisateur cible
-  const lifeStoryData = useLifeStory({
-    targetUserId: selectedUserId || undefined
+  // Déterminer l'utilisateur cible selon le contexte
+  const targetUserId = isReader ? user?.id : selectedUserId;
+
+  console.log('🎯 Utilisateur cible déterminé:', {
+    targetUserId,
+    isReader,
+    selectedUserId,
+    currentUserId: user?.id
   });
 
-  console.log('🏠 LifeStory - Données du hook:', {
+  // Le hook se charge de charger les données pour l'utilisateur cible
+  const lifeStoryData = useLifeStory({
+    targetUserId: targetUserId || undefined
+  });
+
+  console.log('📊 Données chargées:', {
+    hasData: !!lifeStoryData.data,
     dataUserId: lifeStoryData.data?.user_id,
-    dataTitle: lifeStoryData.data?.title,
-    isLoading: lifeStoryData.isLoading,
-    hasData: !!lifeStoryData.data
+    chaptersCount: lifeStoryData.data?.chapters?.length,
+    isLoading: lifeStoryData.isLoading
   });
 
   // Récupérer les informations du propriétaire de l'histoire pour l'affichage
   useEffect(() => {
     const getStoryOwnerInfo = async () => {
-      if (!lifeStoryData.data?.user_id) {
-        console.log('🏠 LifeStory - Pas d\'user_id dans les données, skip');
+      const ownerUserId = lifeStoryData.data?.user_id;
+      if (!ownerUserId) {
+        console.log('🏠 Pas d\'owner ID, reset des infos propriétaire');
+        setStoryOwnerInfo(null);
         return;
       }
 
-      console.log('🏠 LifeStory - Récupération infos propriétaire:', lifeStoryData.data.user_id);
+      console.log('🏠 Récupération infos propriétaire pour:', ownerUserId);
 
       try {
         const { data: ownerProfile, error } = await supabase
           .from('profiles')
           .select('display_name, email')
-          .eq('id', lifeStoryData.data.user_id)
+          .eq('id', ownerUserId)
           .single();
         
-        console.log('🏠 LifeStory - Profil propriétaire:', { ownerProfile, error });
+        console.log('🏠 Profil propriétaire récupéré:', { ownerProfile, error });
         
         if (ownerProfile && !error) {
           setStoryOwnerInfo(ownerProfile);
-          console.log('✅ LifeStory - Informations propriétaire définies:', ownerProfile);
+          console.log('✅ Informations propriétaire définies:', ownerProfile);
+        } else {
+          setStoryOwnerInfo(null);
         }
       } catch (error) {
         console.error('❌ Erreur lors de la récupération des infos du propriétaire:', error);
+        setStoryOwnerInfo(null);
       }
     };
 
@@ -110,11 +123,11 @@ const LifeStory = () => {
     setSelectedUserId(userId);
   };
 
-  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
-  const canSave = !hasRole('reader') && (!selectedUserId || selectedUserId === user?.id);
-  const isViewingOthersStory = selectedUserId && selectedUserId !== user?.id;
+  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire ou il est admin)
+  const canSave = !hasRole('reader') && (!targetUserId || targetUserId === user?.id || hasRole('admin'));
+  const isViewingOthersStory = targetUserId && targetUserId !== user?.id;
 
-  console.log('🏠 LifeStory - État final:', {
+  console.log('🏠 Permissions calculées:', {
     canSave,
     isViewingOthersStory,
     storyOwnerInfo,
@@ -137,7 +150,14 @@ const LifeStory = () => {
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Aucune histoire de vie trouvée.</p>
+            {!isReader && (
+              <p className="text-sm text-gray-500">
+                Sélectionnez un utilisateur ci-dessus pour voir son histoire.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -151,7 +171,7 @@ const LifeStory = () => {
     }
     if (isReader && storyOwnerInfo) {
       const ownerName = storyOwnerInfo.display_name || storyOwnerInfo.email;
-      return `Histoire de ${ownerName}`;
+      return `Mon Histoire de Vie`;
     }
     return 'Mon Histoire de Vie';
   };

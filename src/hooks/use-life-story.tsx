@@ -20,8 +20,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Déterminer l'utilisateur cible
+  // Déterminer l'utilisateur cible - utiliser targetUserId s'il est fourni, sinon l'utilisateur connecté
   const effectiveUserId = targetUserId || user?.id;
+
+  console.log('🔍 useLifeStory - Configuration:', {
+    targetUserId,
+    currentUserId: user?.id,
+    effectiveUserId,
+    hasUser: !!user
+  });
 
   const loadLifeStory = async (userId: string) => {
     if (!user) return;
@@ -59,9 +66,39 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           parsedChapters = initialChapters;
         }
 
+        // Fusionner avec les chapitres initiaux pour s'assurer que toutes les questions sont présentes
+        const mergedChapters = initialChapters.map(initialChapter => {
+          const existingChapter = parsedChapters.find(ch => ch.id === initialChapter.id);
+          
+          if (existingChapter) {
+            // Fusionner les questions pour garantir qu'elles sont toutes présentes
+            const mergedQuestions = initialChapter.questions.map(initialQuestion => {
+              const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
+              
+              if (existingQuestion) {
+                return {
+                  ...initialQuestion,
+                  answer: existingQuestion.answer || initialQuestion.answer,
+                  audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+                  audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
+                };
+              }
+              
+              return initialQuestion;
+            });
+            
+            return {
+              ...initialChapter,
+              questions: mergedQuestions
+            };
+          }
+          
+          return initialChapter;
+        });
+
         setData({
           ...storyData,
-          chapters: parsedChapters
+          chapters: mergedChapters
         });
       } else {
         console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux');
@@ -76,6 +113,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         setData(newStory);
       }
     } catch (error: any) {
+      console.error('❌ Erreur lors du chargement:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de charger l'histoire de vie : ${error.message}`,
@@ -151,6 +189,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const updateAnswer = (questionId: string, answer: string) => {
     if (!data) return;
 
+    console.log('📝 Mise à jour réponse:', { questionId, answer });
+    
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
@@ -163,6 +203,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
     if (!data) return;
+
+    console.log('🎤 Audio enregistré:', { questionId, audioUrl });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -179,6 +221,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioDeleted = (questionId: string) => {
     if (!data) return;
 
+    console.log('🗑️ Audio supprimé:', { questionId });
+
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
@@ -193,6 +237,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
   const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
     if (!data) return;
+
+    console.log('🔄 Changement URL audio:', { questionId, audioUrl });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -217,6 +263,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
   useEffect(() => {
     if (effectiveUserId) {
+      console.log('🔄 Rechargement pour utilisateur:', effectiveUserId);
       loadLifeStory(effectiveUserId);
     } else {
       setData(null);
