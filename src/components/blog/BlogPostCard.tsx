@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,136 +9,27 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AlbumThumbnail from './AlbumThumbnail';
 import { useAuth } from '@/contexts/AuthContext';
-import { useImpersonationContext } from '@/contexts/ImpersonationContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface BlogPostCardProps {
   post: PostWithAuthor;
   albums: BlogAlbum[];
   postImages: Record<string, string>;
-  userId?: string;
 }
 
-const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, userId }) => {
-  const { user, hasRole, getEffectiveUserId } = useAuth();
-  const { isImpersonating, originalUser } = useImpersonationContext();
-  const [hasAlbumAccess, setHasAlbumAccess] = useState(false);
+const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages }) => {
+  const { user, hasRole } = useAuth();
   
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: fr });
   };
 
-  // Vérifier l'accès à l'album
-  useEffect(() => {
-    const checkAlbumAccess = async () => {
-      if (!post.album_id || !user) {
-        console.log('🔍 BlogPostCard - Pas d\'album ou pas d\'utilisateur:', {
-          postId: post.id,
-          postTitle: post.title,
-          albumId: post.album_id,
-          hasUser: !!user
-        });
-        setHasAlbumAccess(true); // Pas d'album = accès libre
-        return;
-      }
-
-      try {
-        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
-        const effectiveUserId = getEffectiveUserId();
-        
-        console.log('🔍 BlogPostCard - CORRECTION - Vérification accès album:', {
-          postId: post.id,
-          postTitle: post.title,
-          albumId: post.album_id,
-          effectiveUserId,
-          realUserId: isImpersonating ? originalUser?.id : user?.id,
-          isImpersonating,
-          userEmail: user.email
-        });
-
-        // Vérifier si l'utilisateur EFFECTIF (impersonné) est propriétaire de l'album
-        const { data: albumData } = await supabase
-          .from('blog_albums')
-          .select('author_id')
-          .eq('id', post.album_id)
-          .single();
-
-        if (albumData && albumData.author_id === effectiveUserId) {
-          console.log('✅ BlogPostCard - CORRECTION - Utilisateur effectif propriétaire de l\'album:', {
-            postId: post.id,
-            albumId: post.album_id,
-            albumAuthorId: albumData.author_id,
-            effectiveUserId
-          });
-          setHasAlbumAccess(true);
-          return;
-        }
-
-        // Vérifier les permissions d'album pour l'utilisateur EFFECTIF (impersonné)
-        const { data: permissions } = await supabase
-          .from('album_permissions')
-          .select('id')
-          .eq('album_id', post.album_id)
-          .eq('user_id', effectiveUserId)
-          .maybeSingle();
-
-        const hasPermission = !!permissions;
-        console.log('🔍 BlogPostCard - CORRECTION - Résultat vérification permissions:', {
-          postId: post.id,
-          albumId: post.album_id,
-          effectiveUserId,
-          hasPermission,
-          permissionId: permissions?.id
-        });
-
-        setHasAlbumAccess(hasPermission);
-      } catch (error) {
-        console.error('❌ BlogPostCard - CORRECTION - Erreur lors de la vérification des permissions d\'album:', error);
-        setHasAlbumAccess(false);
-      }
-    };
-
-    checkAlbumAccess();
-  }, [post.album_id, user, isImpersonating, originalUser, getEffectiveUserId]);
-
-  const effectiveUserId = getEffectiveUserId();
-  const realUserId = isImpersonating ? originalUser?.id : user?.id;
-
-  // Logique de visibilité CORRIGÉE
-  const isEffectiveAuthor = effectiveUserId && post.author_id === effectiveUserId;
-  const isRealAdmin = !isImpersonating && hasRole('admin');
+  // Logique de visibilité simplifiée
+  const isAuthor = user?.id === post.author_id;
+  const isAdmin = hasRole('admin');
   
-  // CORRECTION PRINCIPALE : Le post est visible si :
-  // 1. Il est publié ET l'utilisateur (impersonné) a accès à l'album
-  // 2. OU l'utilisateur effectif (impersonné) est l'auteur
-  // 3. OU l'utilisateur réel est admin ET pas en impersonnation
-  const isVisible = (post.published && hasAlbumAccess) || 
-                   isEffectiveAuthor || 
-                   isRealAdmin;
-  
-  console.log('🎯 BlogPostCard - CORRECTION - Calcul visibilité:', {
-    postId: post.id,
-    postTitle: post.title,
-    postAuthorId: post.author_id,
-    effectiveUserId,
-    realUserId,
-    isImpersonating,
-    published: post.published,
-    hasAlbumAccess,
-    isEffectiveAuthor,
-    isRealAdmin,
-    isVisible,
-    albumId: post.album_id
-  });
-  
-  if (!isVisible) {
-    console.log('🚫 BlogPostCard - CORRECTION - Post non visible, masqué:', {
-      postId: post.id,
-      postTitle: post.title,
-      reason: !post.published ? 'Non publié' : !hasAlbumAccess ? 'Pas d\'accès album' : 'Autres raisons'
-    });
-    return null;
-  }
+  // Le post est visible si les nouvelles politiques RLS l'autorisent
+  // (cette vérification est déjà faite côté serveur, mais on garde la logique pour l'affichage)
+  const canEdit = isAuthor || isAdmin;
 
   // Trouver l'album associé à ce post
   const postAlbum = albums.find(a => a.id === post.album_id);
@@ -158,7 +49,6 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
             alt={post.title}
             className="w-full h-full object-cover"
             onError={(e) => {
-              console.error('Post image failed to load:', postImages[post.id]);
               (e.target as HTMLImageElement).src = '/placeholder.svg';
             }}
           />
@@ -195,7 +85,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages, u
       <CardFooter>
         <Button asChild variant="outline">
           <Link to={`/blog/${post.id}`}>
-            {!post.published && isEffectiveAuthor ? 'Modifier/Publier' : 'Lire la suite'}
+            {!post.published && canEdit ? 'Modifier/Publier' : 'Lire la suite'}
           </Link>
         </Button>
       </CardFooter>

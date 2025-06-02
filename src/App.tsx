@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { ThemeProvider } from "next-themes";
 
 import Index from "./pages/Index";
@@ -58,102 +57,100 @@ function App() {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <ImpersonationProvider>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth/confirm" element={<AuthConfirm />} />
-                  <Route path="/auth/reset-password" element={<ResetPassword />} />
-                  <Route path="/blog-landing" element={<BlogLanding />} />
-                  <Route path="/ai-landing" element={<AILanding />} />
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  
-                  {/* Protected routes */}
-                  <Route path="/profile" element={<ProtectedRoute />}>
-                    <Route index element={<Profile />} />
-                  </Route>
-                  <Route path="/permissions" element={<ProtectedRoute />}>
-                    <Route index element={<PermissionsManagement />} />
-                  </Route>
-                  <Route path="/recent" element={<ProtectedRoute />}>
-                    <Route index element={<Recent />} />
-                  </Route>
-                  <Route path="/blog" element={<ProtectedRoute />}>
-                    <Route index element={<Blog />} />
-                  </Route>
-                  <Route path="/blog/:id" element={<ProtectedRoute />}>
-                    <Route index element={<BlogPost />} />
-                  </Route>
-                  <Route path="/blog/new" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
-                    <Route index element={<BlogEditor />} />
-                  </Route>
-                  <Route path="/blog/edit/:id" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
-                    <Route index element={<BlogEditor />} />
-                  </Route>
-                  <Route path="/diary" element={<ProtectedRoute />}>
-                    <Route index element={<Diary />} />
-                  </Route>
-                  <Route path="/diary/new" element={<ProtectedRoute />}>
-                    <Route index element={<DiaryNew />} />
-                  </Route>
-                  <Route path="/diary/edit/:id" element={<ProtectedRoute />}>
-                    <Route index element={<DiaryEdit />} />
-                  </Route>
-                  <Route path="/diary/:id" element={<ProtectedRoute />}>
-                    <Route index element={<DiaryEntry />} />
-                  </Route>
-                  <Route path="/life-story" element={<ProtectedRoute />}>
-                    <Route index element={<LifeStory />} />
-                  </Route>
-                  <Route path="/wishes" element={<ProtectedRoute />}>
-                    <Route index element={<Wishes />} />
-                  </Route>
-                  <Route path="/wishes/new" element={<ProtectedRoute />}>
-                    <Route index element={<WishNew />} />
-                  </Route>
-                  <Route path="/wishes/edit/:id" element={<ProtectedRoute />}>
-                    <Route index element={<WishEdit />} />
-                  </Route>
-                  <Route path="/wishes/form/:id" element={<ProtectedRoute />}>
-                    <Route index element={<WishEditForm />} />
-                  </Route>
-                  <Route path="/wishes/:id" element={<ProtectedRoute />}>
-                    <Route index element={<WishPost />} />
-                  </Route>
-                  <Route path="/wish-form" element={<WishForm />} />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/confirm" element={<AuthConfirm />} />
+                <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/blog-landing" element={<BlogLanding />} />
+                <Route path="/ai-landing" element={<AILanding />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Protected routes */}
+                <Route path="/profile" element={<ProtectedRoute />}>
+                  <Route index element={<Profile />} />
+                </Route>
+                <Route path="/permissions" element={<ProtectedRoute />}>
+                  <Route index element={<PermissionsManagement />} />
+                </Route>
+                <Route path="/recent" element={<ProtectedRoute />}>
+                  <Route index element={<Recent />} />
+                </Route>
+                <Route path="/blog" element={<ProtectedRoute />}>
+                  <Route index element={<Blog />} />
+                </Route>
+                <Route path="/blog/:id" element={<ProtectedRoute />}>
+                  <Route index element={<BlogPost />} />
+                </Route>
+                <Route path="/blog/new" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
+                  <Route index element={<BlogEditor />} />
+                </Route>
+                <Route path="/blog/edit/:id" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
+                  <Route index element={<BlogEditor />} />
+                </Route>
+                <Route path="/diary" element={<ProtectedRoute />}>
+                  <Route index element={<Diary />} />
+                </Route>
+                <Route path="/diary/new" element={<ProtectedRoute />}>
+                  <Route index element={<DiaryNew />} />
+                </Route>
+                <Route path="/diary/edit/:id" element={<ProtectedRoute />}>
+                  <Route index element={<DiaryEdit />} />
+                </Route>
+                <Route path="/diary/:id" element={<ProtectedRoute />}>
+                  <Route index element={<DiaryEntry />} />
+                </Route>
+                <Route path="/life-story" element={<ProtectedRoute />}>
+                  <Route index element={<LifeStory />} />
+                </Route>
+                <Route path="/wishes" element={<ProtectedRoute />}>
+                  <Route index element={<Wishes />} />
+                </Route>
+                <Route path="/wishes/new" element={<ProtectedRoute />}>
+                  <Route index element={<WishNew />} />
+                </Route>
+                <Route path="/wishes/edit/:id" element={<ProtectedRoute />}>
+                  <Route index element={<WishEdit />} />
+                </Route>
+                <Route path="/wishes/form/:id" element={<ProtectedRoute />}>
+                  <Route index element={<WishEditForm />} />
+                </Route>
+                <Route path="/wishes/:id" element={<ProtectedRoute />}>
+                  <Route index element={<WishPost />} />
+                </Route>
+                <Route path="/wish-form" element={<WishForm />} />
 
-                  {/* Admin routes */}
-                  <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminUsers />} />
-                  </Route>
-                  <Route path="/admin/posts" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminPosts />} />
-                  </Route>
-                  <Route path="/admin/albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminAlbums />} />
-                  </Route>
-                  <Route path="/admin/wish-albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminWishAlbums />} />
-                  </Route>
-                  <Route path="/admin/diary" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminDiary />} />
-                  </Route>
-                  <Route path="/admin/life-stories" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminLifeStories />} />
-                  </Route>
-                  <Route path="/admin/life-stories/edit/:id" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminLifeStoryEdit />} />
-                  </Route>
-                  <Route path="/admin/invitation-groups" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminInvitationGroups />} />
-                  </Route>
-                  <Route path="/admin/permissions-diagnostic" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                    <Route index element={<AdminPermissionsDiagnostic />} />
-                  </Route>
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </ImpersonationProvider>
+                {/* Admin routes */}
+                <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminUsers />} />
+                </Route>
+                <Route path="/admin/posts" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminPosts />} />
+                </Route>
+                <Route path="/admin/albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminAlbums />} />
+                </Route>
+                <Route path="/admin/wish-albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminWishAlbums />} />
+                </Route>
+                <Route path="/admin/diary" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminDiary />} />
+                </Route>
+                <Route path="/admin/life-stories" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminLifeStories />} />
+                </Route>
+                <Route path="/admin/life-stories/edit/:id" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminLifeStoryEdit />} />
+                </Route>
+                <Route path="/admin/invitation-groups" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminInvitationGroups />} />
+                </Route>
+                <Route path="/admin/permissions-diagnostic" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminPermissionsDiagnostic />} />
+                </Route>
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>

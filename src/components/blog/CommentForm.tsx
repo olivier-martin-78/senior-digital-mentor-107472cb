@@ -1,14 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { Send } from 'lucide-react';
+import { Send, AlertCircle } from 'lucide-react';
 import { Profile } from '@/types/supabase';
 import { getInitials } from './PostHeader';
 import EmojiPicker from './EmojiPicker';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CommentFormProps {
   user: any | null;
@@ -17,8 +18,16 @@ interface CommentFormProps {
 }
 
 const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) => {
+  const { checkEmailConfirmation } = useAuth();
   const [commentContent, setCommentContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      checkEmailConfirmation().then(setEmailConfirmed);
+    }
+  }, [user, checkEmailConfirmation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +63,23 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
     );
   }
 
+  if (emailConfirmed === false) {
+    return (
+      <Card className="mb-8 border-orange-200 bg-orange-50">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 text-orange-800 mb-4">
+            <AlertCircle className="h-5 w-5" />
+            <p className="font-medium">Confirmation d'email requise</p>
+          </div>
+          <p className="text-orange-700">
+            Vous devez confirmer votre adresse email avant de pouvoir laisser des commentaires. 
+            Vérifiez votre boîte de réception pour le lien de confirmation.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="mb-8">
       <div className="flex gap-4 mb-4 items-start">
@@ -73,7 +99,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
             <EmojiPicker onEmojiSelect={handleEmojiSelect} />
             <Button 
               type="submit" 
-              disabled={submitting || !commentContent.trim()}
+              disabled={submitting || !commentContent.trim() || emailConfirmed === false}
               className="bg-tranches-sage hover:bg-tranches-sage/90"
             >
               {submitting ? 'Envoi...' : 'Publier'}

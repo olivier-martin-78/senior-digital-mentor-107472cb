@@ -9,35 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      album_permissions: {
-        Row: {
-          album_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          album_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          album_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "album_permissions_album_id_fkey"
-            columns: ["album_id"]
-            isOneToOne: false
-            referencedRelation: "blog_albums"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       blog_albums: {
         Row: {
           author_id: string
@@ -300,36 +271,6 @@ export type Database = {
         }
         Relationships: []
       }
-      diary_permissions: {
-        Row: {
-          created_at: string
-          diary_owner_id: string
-          granted_by: string
-          id: string
-          permission_level: string
-          permitted_user_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          diary_owner_id: string
-          granted_by: string
-          id?: string
-          permission_level: string
-          permitted_user_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          diary_owner_id?: string
-          granted_by?: string
-          id?: string
-          permission_level?: string
-          permitted_user_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       group_members: {
         Row: {
           added_at: string
@@ -478,36 +419,6 @@ export type Database = {
         }
         Relationships: []
       }
-      life_story_permissions: {
-        Row: {
-          created_at: string
-          granted_by: string
-          id: string
-          permission_level: string
-          permitted_user_id: string
-          story_owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          granted_by: string
-          id?: string
-          permission_level: string
-          permitted_user_id: string
-          story_owner_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          granted_by?: string
-          id?: string
-          permission_level?: string
-          permitted_user_id?: string
-          story_owner_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       media: {
         Row: {
           blob_url: string | null
@@ -639,62 +550,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      user_section_permissions: {
-        Row: {
-          can_read: boolean | null
-          created_at: string
-          granted_by: string | null
-          id: string
-          section: string
-          user_id: string
-        }
-        Insert: {
-          can_read?: boolean | null
-          created_at?: string
-          granted_by?: string | null
-          id?: string
-          section: string
-          user_id: string
-        }
-        Update: {
-          can_read?: boolean | null
-          created_at?: string
-          granted_by?: string | null
-          id?: string
-          section?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      wish_album_permissions: {
-        Row: {
-          album_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          album_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          album_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wish_album_permissions_album_id_fkey"
-            columns: ["album_id"]
-            isOneToOne: false
-            referencedRelation: "wish_albums"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       wish_albums: {
         Row: {
@@ -864,6 +719,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_email_confirmed: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       is_group_creator: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
@@ -874,6 +733,10 @@ export type Database = {
       }
       user_can_access_album: {
         Args: { album_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
+      users_in_same_group: {
+        Args: { user1_id: string; user2_id: string }
         Returns: boolean
       }
     }
