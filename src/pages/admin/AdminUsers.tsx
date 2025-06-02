@@ -1,40 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Profile, UserRole, AppRole } from '@/types/supabase';
+import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Pencil, Trash2, ChevronLeft, Search, UserPlus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import InviteUserDialog from '@/components/InviteUserDialog';
+import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
+import { AppRole } from '@/types/supabase';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Switch } from '@/components/ui/switch';
-import { UserCheck, Settings } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
-import InviteUserDialog from '@/components/InviteUserDialog';
-import SyncPermissionsButton from '@/components/admin/SyncPermissionsButton';
-import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 
-interface UserWithRoles extends Profile {
-  roles: AppRole[];
+interface UserAdmin {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at: string;
+  role: AppRole;
+  display_name: string | null;
 }
 
 const AdminUsers = () => {
-  const { hasRole, user: currentUser } = useAuth();
+  const { user: authUser, hasRole } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
-  const { startImpersonation } = useImpersonationContext();
+  const [users, setUsers] = useState<UserAdmin[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserAdmin | null>(null);
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -42,312 +41,209 @@ const AdminUsers = () => {
       return;
     }
 
-    fetchUsers();
+    loadUsers();
   }, [hasRole, navigate]);
 
-  const fetchUsers = async () => {
+  const loadUsers = async () => {
     try {
-      // Fetch all profiles
-      const { data: profiles, error: profilesError } = await supabase
+      setLoading(true);
+
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          id,
+          email,
+          created_at,
+          last_sign_in_at,
+          role,
+          display_name
+        `)
         .order('created_at', { ascending: false });
 
-      if (profilesError) {
-        throw profilesError;
+      if (usersError) {
+        console.error('Erreur Supabase (utilisateurs):', usersError);
+        throw new Error(`Erreur Supabase: ${usersError.message} (code: ${usersError.code})`);
       }
 
-      // Fetch all user roles
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-
-      if (rolesError) {
-        throw rolesError;
+      if (usersData) {
+        setUsers(usersData);
+      } else {
+        throw new Error('Aucune donnée reçue de l\'API');
       }
-
-      // Map roles to users
-      const usersWithRoles = profiles.map((profile: Profile) => {
-        const roles = userRoles
-          .filter((role: UserRole) => role.user_id === profile.id)
-          .map((role: UserRole) => role.role);
-        
-        return { ...profile, roles };
-      });
-
-      setUsers(usersWithRoles);
     } catch (error: any) {
-      console.error('Error fetching users:', error);
+      console.error('Erreur complète:', error);
       toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors du chargement des utilisateurs.",
-        variant: "destructive"
+        title: 'Erreur',
+        description: `Impossible de charger les utilisateurs : ${error.message}`,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: AppRole) => {
-    try {
-      // Don't allow changing your own role
-      if (userId === currentUser?.id) {
-        toast({
-          title: "Action refusée",
-          description: "Vous ne pouvez pas modifier votre propre rôle.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // First, fetch all current roles for this user
-      const { data: existingRoles, error: fetchError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (fetchError) throw fetchError;
-
-      // If the user already has this role, do nothing
-      if (existingRoles.some((role: UserRole) => role.role === newRole)) {
-        return;
-      }
-
-      // Remove all existing roles for this user
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) throw deleteError;
-
-      // Add the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) throw insertError;
-
-      // Update the UI
-      setUsers(users.map(u => {
-        if (u.id === userId) {
-          return { ...u, roles: [newRole] };
-        }
-        return u;
-      }));
-
-      toast({
-        title: "Rôle mis à jour",
-        description: "Le rôle de l'utilisateur a été modifié avec succès."
-      });
-    } catch (error: any) {
-      console.error('Error updating role:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la mise à jour du rôle.",
-        variant: "destructive"
-      });
-    }
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
-  const toggleReceiveContacts = async (userId: string, currentValue: boolean) => {
+  const handleInviteDialogOpen = () => {
+    setInviteDialogOpen(true);
+  };
+
+  const handleDeleteClick = (user: UserAdmin) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
     try {
-      console.log('Tentative de modification receive_contacts pour utilisateur:', userId, 'valeur actuelle:', currentValue);
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ receive_contacts: !currentValue })
-        .eq('id', userId);
+      // Supprimer l'utilisateur via Supabase Auth
+      const { error } = await supabase.auth.admin.deleteUser(userToDelete.id);
 
       if (error) {
-        console.error('Erreur lors de la mise à jour:', error);
+        console.error('Erreur lors de la suppression de l\'utilisateur:', error);
         throw error;
       }
 
-      // Update the UI
-      setUsers(users.map(u => {
-        if (u.id === userId) {
-          return { ...u, receive_contacts: !currentValue };
-        }
-        return u;
-      }));
+      // Mettre à jour l'état local après la suppression réussie
+      setUsers(prev => prev.filter(user => user.id !== userToDelete.id));
 
       toast({
-        title: "Préférence mise à jour",
-        description: "La préférence de réception des contacts a été mise à jour avec succès."
+        title: 'Utilisateur supprimé',
+        description: `L'utilisateur "${userToDelete.email}" a été supprimé avec succès`,
       });
+
+      setDeleteDialogOpen(false);
     } catch (error: any) {
-      console.error('Error toggling receive contacts:', error);
       toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la mise à jour de la préférence.",
-        variant: "destructive"
+        title: 'Erreur',
+        description: `Impossible de supprimer l'utilisateur : ${error.message}`,
+        variant: 'destructive',
       });
     }
   };
 
-  const handleUserDeleted = () => {
-    // Refresh the users list
-    fetchUsers();
-  };
-
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
-  };
-
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
-  };
-
-  const getRoleDisplay = (roles: AppRole[]) => {
-    if (roles.includes('admin')) return 'Administrateur';
-    if (roles.includes('editor')) return 'Éditeur';
-    return 'Lecteur';
-  };
-
-  const getCurrentRole = (roles: AppRole[]): AppRole => {
-    if (roles.includes('admin')) return 'admin';
-    if (roles.includes('editor')) return 'editor';
-    return 'reader';
-  };
-
-  const handleImpersonateUser = async (user: UserWithRoles) => {
-    const success = await startImpersonation(user);
-    if (success) {
-      // Rediriger vers la page principale en tant qu'utilisateur impersonné
-      navigate('/');
-    }
-  };
+  // Filtrer les utilisateurs selon le terme de recherche
+  const filteredUsers = users.filter(user =>
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des utilisateurs</h1>
-          <div className="flex gap-2">
+      <div className="container mx-auto px-4 py-24">
+        <div className="mb-8 flex items-center">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mr-auto"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Retour
+          </Button>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">
+            Administration des utilisateurs
+          </h1>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-gray-600">
+              Total : {users.length} utilisateurs
+            </p>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-8"
+              />
+            </div>
             <Button
-              onClick={() => navigate('/admin/permissions-diagnostic')}
-              variant="outline"
-              className="flex items-center gap-2"
+              variant="default"
+              onClick={handleInviteDialogOpen}
             >
-              <Settings className="h-4 w-4" />
-              Diagnostic des permissions
+              <UserPlus className="mr-2 h-4 w-4" />
+              Inviter un utilisateur
             </Button>
-            <SyncPermissionsButton />
-            <InviteUserDialog />
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+          <div className="flex justify-center my-10">
+            <Loader2 className="h-12 w-12 animate-spin text-tranches-sage" />
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Utilisateur</TableHead>
                   <TableHead>Nom</TableHead>
-                  <TableHead>Date d'inscription</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
-                  <TableHead>Recevoir contacts</TableHead>
-                  <TableHead className="w-[250px]">Actions</TableHead>
+                  <TableHead>Date de création</TableHead>
+                  <TableHead>Dernière connexion</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.length === 0 ? (
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{user.role}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      </TableCell>
+                      <TableCell>
+                        {user.last_sign_in_at
+                          ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
+                          : 'Jamais'}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => handleDeleteClick(user)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Supprimer
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      Aucun utilisateur trouvé.
+                      {searchTerm
+                        ? 'Aucun utilisateur ne correspond à votre recherche'
+                        : 'Aucun utilisateur n\'a été trouvé'}
                     </TableCell>
                   </TableRow>
-                ) : (
-                  users.map(user => {
-                    const isCurrentUser = user.id === currentUser?.id;
-                    const isAdmin = getCurrentRole(user.roles) === 'admin';
-                    
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar_url || undefined} alt="Avatar" />
-                            <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{user.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.display_name || '-'}</TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
-                        <TableCell>
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs ${
-                            getCurrentRole(user.roles) === 'admin' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : getCurrentRole(user.roles) === 'editor'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {getRoleDisplay(user.roles)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {isAdmin ? (
-                            <Switch 
-                              checked={!!user.receive_contacts}
-                              onCheckedChange={() => toggleReceiveContacts(user.id, !!user.receive_contacts)}
-                              disabled={false}
-                            />
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Select
-                              value={getCurrentRole(user.roles)}
-                              onValueChange={(value: string) => handleRoleChange(user.id, value as AppRole)}
-                              disabled={isCurrentUser}
-                            >
-                              <SelectTrigger className="w-[130px]">
-                                <SelectValue placeholder="Changer le rôle" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Administrateur</SelectItem>
-                                <SelectItem value="editor">Éditeur</SelectItem>
-                                <SelectItem value="reader">Lecteur</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            {!isCurrentUser && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleImpersonateUser(user)}
-                                className="text-blue-600 hover:text-blue-800"
-                                title="Se connecter en tant que cet utilisateur"
-                              >
-                                <UserCheck className="h-4 w-4" />
-                              </Button>
-                            )}
-                            
-                            <DeleteUserDialog
-                              userId={user.id}
-                              userEmail={user.email}
-                              onUserDeleted={handleUserDeleted}
-                              disabled={isCurrentUser}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
                 )}
               </TableBody>
             </Table>
           </div>
         )}
+
+        {/* Dialog d'invitation d'un utilisateur */}
+        <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} onUserInvited={loadUsers} />
+
+        {/* Dialog de confirmation de suppression */}
+        <DeleteUserDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          userToDelete={userToDelete}
+          onDeleteConfirm={handleDeleteConfirm}
+        />
       </div>
     </div>
   );

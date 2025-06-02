@@ -80,6 +80,8 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
     );
   }
 
+  const isSubmitDisabled = submitting || !commentContent.trim() || emailConfirmed === false;
+
   return (
     <form onSubmit={handleSubmit} className="mb-8">
       <div className="flex gap-4 mb-4 items-start">
@@ -99,7 +101,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
             <EmojiPicker onEmojiSelect={handleEmojiSelect} />
             <Button 
               type="submit" 
-              disabled={submitting || !commentContent.trim() || emailConfirmed === false}
+              disabled={isSubmitDisabled}
               className="bg-tranches-sage hover:bg-tranches-sage/90"
             >
               {submitting ? 'Envoi...' : 'Publier'}

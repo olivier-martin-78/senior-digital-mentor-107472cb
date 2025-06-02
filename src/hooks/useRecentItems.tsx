@@ -1,81 +1,71 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRecentPermissions } from './recent/useRecentPermissions';
 import { useRecentBlogPosts } from './recent/useRecentBlogPosts';
-import { useRecentWishes } from './recent/useRecentWishes';
-import { useRecentDiaryEntries } from './recent/useRecentDiaryEntries';
 import { useRecentComments } from './recent/useRecentComments';
+import { useRecentDiaryEntries } from './recent/useRecentDiaryEntries';
+import { useRecentWishes } from './recent/useRecentWishes';
 
 export interface RecentItem {
   id: string;
   title: string;
-  type: 'blog' | 'wish' | 'diary' | 'comment';
+  type: 'blog' | 'comment' | 'diary' | 'wish';
   created_at: string;
-  author?: string;
+  author: string;
   content_preview?: string;
   cover_image?: string;
-  first_name?: string;
   post_title?: string;
-  post_id?: string; // Nouveau champ pour l'ID du post pour les commentaires
+  post_id?: string;
   comment_content?: string;
-  media_url?: string;
   album_name?: string;
 }
 
 export const useRecentItems = () => {
-  const { user, getEffectiveUserId } = useAuth();
-  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
+  const { user, hasRole } = useAuth();
+  const [allItems, setAllItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const effectiveUserId = getEffectiveUserId() || '';
+  // Utilisateur effectif = utilisateur connecté dans le nouveau système simplifié
+  const effectiveUserId = user?.id || '';
   
-  const { authorizedUserIds, loading: permissionsLoading } = useRecentPermissions();
+  // Dans le nouveau système basé sur les groupes, les utilisateurs autorisés
+  // sont gérés automatiquement par RLS, donc on passe juste l'utilisateur actuel
+  const authorizedUserIds = effectiveUserId ? [effectiveUserId] : [];
+
   const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
-  const wishes = useRecentWishes(); // CORRECTION: Suppression de l'argument effectiveUserId
-  const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
+  const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
+  const wishes = useRecentWishes(effectiveUserId, authorizedUserIds);
 
   useEffect(() => {
-    if (!user || permissionsLoading) {
-      setLoading(true);
+    if (!user) {
+      setAllItems([]);
+      setLoading(false);
       return;
     }
 
-    try {
-      console.log('🔍 ===== DÉBOGAGE RECENT - DÉBUT =====');
-      console.log('🔍 Utilisateur original:', {
-        id: user.id,
-        email: user.email
-      });
-      console.log('🔍 Utilisateur effectif (impersonné):', {
-        id: effectiveUserId
-      });
+    console.log('🔍 ===== ASSEMBLAGE FINAL RECENT ITEMS =====');
+    console.log('🔍 Blog posts:', blogPosts.length);
+    console.log('🔍 Comments:', comments.length);
+    console.log('🔍 Diary entries:', diaryEntries.length);
+    console.log('🔍 Wishes:', wishes.length);
 
-      // Combiner tous les éléments
-      const allItems = [...blogPosts, ...wishes, ...diaryEntries, ...comments];
-      
-      // Trier tous les éléments par date de création
-      allItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const combined = [
+      ...blogPosts,
+      ...comments,
+      ...diaryEntries,
+      ...wishes
+    ];
 
-      console.log('🔍 ===== RÉSUMÉ FINAL =====');
-      console.log('🔍 Total éléments récupérés:', allItems.length);
-      console.log('🔍 Répartition par type:', {
-        blog: allItems.filter(i => i.type === 'blog').length,
-        wish: allItems.filter(i => i.type === 'wish').length,
-        diary: allItems.filter(i => i.type === 'diary').length,
-        comment: allItems.filter(i => i.type === 'comment').length
-      });
-      console.log('🔍 ===== DÉBOGAGE RECENT - FIN =====');
+    // Trier par date de création (plus récent en premier)
+    const sorted = combined.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
-      setRecentItems(allItems.slice(0, 40)); // Garder les 40 plus récents
-    } catch (error) {
-      console.error('🔍 ❌ Erreur lors du chargement des éléments récents:', error);
-      setRecentItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, effectiveUserId, permissionsLoading, blogPosts, wishes, diaryEntries, comments]);
+    console.log('🔍 Total items triés:', sorted.length);
+    setAllItems(sorted);
+    setLoading(false);
+  }, [blogPosts, comments, diaryEntries, wishes, user]);
 
-  return { recentItems, loading };
+  return { items: allItems, loading };
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,9 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { FolderPlus, Edit, Trash, Users } from 'lucide-react';
-import WishAlbumPermissions from '@/components/admin/WishAlbumPermissions';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 
 interface WishAlbum {
   id: string;
@@ -219,9 +220,9 @@ const AdminWishAlbums = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-24">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des albums de souhaits</h1>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -384,24 +385,6 @@ const AdminWishAlbums = () => {
                 Mettre à jour
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Permissions Dialog */}
-        <Dialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Gestion des accès à l'album</DialogTitle>
-              <DialogDescription>
-                Définissez quels utilisateurs peuvent accéder à cet album de souhaits.
-              </DialogDescription>
-            </DialogHeader>
-            {selectedAlbumId && (
-              <WishAlbumPermissions
-                albumId={selectedAlbumId} 
-                onClose={() => setIsPermissionsDialogOpen(false)}
-              />
-            )}
           </DialogContent>
         </Dialog>
       </div>
