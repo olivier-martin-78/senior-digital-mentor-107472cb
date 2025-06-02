@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { UserPlus } from 'lucide-react';
@@ -17,10 +17,7 @@ const InviteUserDialog = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
-    blogAccess: false,
-    diaryAccess: false,
-    lifeStoryAccess: false
+    email: ''
   });
 
   // Vérifier si l'utilisateur a les droits
@@ -61,10 +58,10 @@ const InviteUserDialog = () => {
           email: formData.email,
           invited_by: user.id,
           token,
-          blog_access: formData.blogAccess,
-          wishes_access: false, // Toujours false maintenant
-          diary_access: formData.diaryAccess,
-          life_story_access: formData.lifeStoryAccess
+          blog_access: false,
+          wishes_access: false,
+          diary_access: false,
+          life_story_access: false
         });
 
       if (invitationError) {
@@ -81,10 +78,10 @@ const InviteUserDialog = () => {
         inviterName: profile.display_name || profile.email,
         inviterEmail: profile.email,
         accessTypes: {
-          blogAccess: formData.blogAccess,
-          wishesAccess: false, // Toujours false maintenant
-          diaryAccess: formData.diaryAccess,
-          lifeStoryAccess: formData.lifeStoryAccess
+          blogAccess: false,
+          wishesAccess: false,
+          diaryAccess: false,
+          lifeStoryAccess: false
         }
       };
 
@@ -117,10 +114,7 @@ const InviteUserDialog = () => {
       setFormData({
         firstName: '',
         lastName: '',
-        email: '',
-        blogAccess: false,
-        diaryAccess: false,
-        lifeStoryAccess: false
+        email: ''
       });
       setIsOpen(false);
 
@@ -179,36 +173,6 @@ const InviteUserDialog = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               required
             />
-          </div>
-          
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Accès aux sections</Label>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="blogAccess"
-                  checked={formData.blogAccess}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, blogAccess: !!checked }))}
-                />
-                <Label htmlFor="blogAccess">Blog (Photos/Vidéos)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="diaryAccess"
-                  checked={formData.diaryAccess}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, diaryAccess: !!checked }))}
-                />
-                <Label htmlFor="diaryAccess">Journal partagé</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="lifeStoryAccess"
-                  checked={formData.lifeStoryAccess}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, lifeStoryAccess: !!checked }))}
-                />
-                <Label htmlFor="lifeStoryAccess">Histoire de vie</Label>
-              </div>
-            </div>
           </div>
 
           <div className="flex justify-end gap-2">
