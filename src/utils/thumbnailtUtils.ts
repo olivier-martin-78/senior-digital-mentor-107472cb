@@ -102,7 +102,7 @@ export const normalizeMediaUrl = (url: string | null, bucket: string = ALBUM_THU
       return data.publicUrl;
     }
   } catch (error) {
-    console.error('Erreur lors de la normalisation de l'URL média:', {
+    console.error('Erreur lors de la normalisation de l\'URL média:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       url,
       bucket,
@@ -150,7 +150,7 @@ export const getThumbnailUrlSync = (
     console.warn(`Impossible de générer l'URL publique pour ${url} dans ${actualBucket}`);
     return '/placeholder.svg';
   } catch (error) {
-    console.error('Erreur lors de la génération de l'URL publique:', {
+    console.error('Erreur lors de la génération de l\'URL publique:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       url,
       bucket,
