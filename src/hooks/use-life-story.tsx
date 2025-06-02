@@ -19,21 +19,21 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Déterminer l'utilisateur cible - utiliser targetUserId s'il est fourni, sinon l'utilisateur connecté
+  // CORRECTION CRITIQUE: Déterminer l'utilisateur cible de manière cohérente
   const effectiveUserId = targetUserId || user?.id;
 
-  console.log('🔍 useLifeStory - Configuration détaillée:', {
+  console.log('🔍 useLifeStory - Configuration:', {
     targetUserId,
     currentUserId: user?.id,
     effectiveUserId,
-    hasUser: !!user,
-    userIsAdmin: hasRole('admin'),
-    shouldLoadTargetUser: !!targetUserId
+    hasUser: !!user
   });
 
   const loadLifeStory = async (userId: string) => {
     if (!user) {
       console.log('🔍 useLifeStory - Pas d\'utilisateur connecté, abandon');
+      setData(null);
+      setIsLoading(false);
       return;
     }
 
@@ -60,9 +60,9 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           matchesRequest: storyData.user_id === userId
         });
         
-        // Vérifier que les données correspondent bien à l'utilisateur demandé
+        // VALIDATION CRITIQUE: Vérifier que les données correspondent bien à l'utilisateur demandé
         if (storyData.user_id !== userId) {
-          console.error('❌ Incohérence: les données chargées ne correspondent pas à l\'utilisateur demandé', {
+          console.error('❌ ERREUR CRITIQUE: les données chargées ne correspondent pas à l\'utilisateur demandé', {
             expected: userId,
             received: storyData.user_id
           });
@@ -89,12 +89,10 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           const existingChapter = parsedChapters.find(ch => ch.id === initialChapter.id);
           
           if (existingChapter) {
-            // Fusionner les questions pour garantir qu'elles sont toutes présentes
             const mergedQuestions = initialChapter.questions.map(initialQuestion => {
               const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
               
               if (existingQuestion) {
-                // Normaliser l'audioUrl - traiter les chaînes vides comme null
                 const normalizedAudioUrl = existingQuestion.audioUrl && existingQuestion.audioUrl.trim() !== '' 
                   ? existingQuestion.audioUrl 
                   : null;
@@ -130,13 +128,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
         setData({
           ...storyData,
+          user_id: userId, // S'ASSURER que l'user_id est cohérent
           chapters: mergedChapters
         });
       } else {
         console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux pour utilisateur:', userId);
-        // Créer une nouvelle histoire avec les chapitres initiaux
         const newStory: LifeStory = {
-          user_id: userId, // S'assurer que l'user_id correspond à l'utilisateur demandé
+          user_id: userId, // IMPORTANT: Utiliser le userId demandé
           title: 'Mon Histoire de Vie',
           chapters: initialChapters,
           created_at: new Date().toISOString(),
@@ -182,8 +180,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }
 
     // CORRECTION CRITIQUE: S'assurer que data.user_id correspond à effectiveUserId
-    if (data.user_id && data.user_id !== effectiveUserId) {
-      console.warn('⚠️ Correction de l\'user_id incohérent:', {
+    if (data.user_id !== effectiveUserId) {
+      console.warn('⚠️ CORRECTION de l\'user_id incohérent:', {
         currentDataUserId: data.user_id,
         expectedUserId: effectiveUserId
       });
@@ -212,7 +210,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions.map(question => {
-          // Normaliser l'audioUrl avant la sauvegarde
           const normalizedAudioUrl = question.audioUrl && question.audioUrl.trim() !== '' 
             ? question.audioUrl 
             : null;
@@ -221,7 +218,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
             id: question.id,
             text: question.text,
             answer: question.answer || '',
-            audioUrl: normalizedAudioUrl, // Préserver l'URL audio existante
+            audioUrl: normalizedAudioUrl,
           };
         })
       }));
@@ -243,7 +240,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         audioCount: audioUrls.length
       });
 
-      // Utiliser upsert avec la bonne gestion des conflits
       const { data: savedData, error } = await supabase
         .from('life_stories')
         .upsert(dataToSave, { 
@@ -331,7 +327,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // Sauvegarder automatiquement après un délai
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
@@ -355,7 +350,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // Sauvegarder automatiquement après l'enregistrement audio
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
@@ -379,7 +373,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // Sauvegarder automatiquement après suppression
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
@@ -392,7 +385,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     console.log('🔄 Changement URL audio:', { questionId, audioUrl, dataUserId: data.user_id, effectiveUserId });
 
-    // Normaliser l'URL avant de l'enregistrer
     const normalizedAudioUrl = audioUrl && audioUrl.trim() !== '' ? audioUrl : null;
 
     const updatedChapters = data.chapters.map(chapter => ({
@@ -406,7 +398,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // Sauvegarder automatiquement après changement d'URL
     if (normalizedAudioUrl) {
       setTimeout(() => {
         if (!isSaving) {
@@ -425,7 +416,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     return { totalQuestions, answeredQuestions };
   })() : { totalQuestions: 0, answeredQuestions: 0 };
 
+  // EFFET PRINCIPAL: Charger l'histoire quand effectiveUserId change
   useEffect(() => {
+    console.log('🔄 useEffect déclenché:', {
+      effectiveUserId,
+      hasUser: !!user,
+      userId: user?.id,
+      targetUserId
+    });
+
     if (effectiveUserId && user) {
       console.log('🔄 Rechargement pour utilisateur:', {
         effectiveUserId,
@@ -438,7 +437,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       setData(null);
       setIsLoading(false);
     }
-  }, [effectiveUserId, user?.id]);
+  }, [effectiveUserId, user?.id]); // DÉPENDANCES CRITIQUES
 
   return {
     data,
