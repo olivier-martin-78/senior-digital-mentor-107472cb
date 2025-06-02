@@ -30,6 +30,17 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         sessionUserId: session?.user?.id
       });
 
+      // NOUVEAU: Test direct de auth.uid() côté base de données
+      console.log('🔍 Diary Simple - Test auth.uid() côté base...');
+      const { data: authTest, error: authError } = await supabase
+        .rpc('get_current_user_id');
+
+      if (authError) {
+        console.error('🔍 Diary Simple - Erreur test auth.uid():', authError);
+      } else {
+        console.log('🔍 Diary Simple - Résultat auth.uid():', authTest);
+      }
+
       // Vérifier la synchronisation de l'authentification avant de faire des requêtes
       const isDesynced = await detectAuthDesync();
       if (isDesynced) {
@@ -78,6 +89,23 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
 
       if (!entriesData || entriesData.length === 0) {
         console.log('🔍 Diary Simple - Aucune entrée trouvée');
+        
+        // NOUVEAU: Test pour voir s'il y a des entrées dans la base (sans RLS)
+        console.log('🔍 Diary Simple - Test: Y a-t-il des entrées en base ?');
+        const { data: allEntries, error: allError } = await supabase
+          .from('diary_entries')
+          .select('id, user_id, title', { count: 'exact' })
+          .limit(5);
+          
+        if (allError) {
+          console.error('🔍 Diary Simple - Erreur test entrées globales:', allError);
+        } else {
+          console.log('🔍 Diary Simple - Entrées trouvées en base (tous utilisateurs):', {
+            count: allEntries?.length || 0,
+            entries: allEntries
+          });
+        }
+        
         setEntries([]);
         return;
       }
