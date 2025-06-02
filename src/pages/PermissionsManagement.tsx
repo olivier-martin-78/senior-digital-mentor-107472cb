@@ -51,59 +51,117 @@ const PermissionsManagement = () => {
   const loadInvitedUsers = async () => {
     try {
       setIsLoading(true);
-      
-      // Récupérer tous les utilisateurs invités par l'utilisateur actuel
-      const { data: groupMembers, error } = await supabase
-        .from('group_members')
-        .select(`
-          user_id,
-          group_id,
-          profiles:user_id(email, display_name),
-          invitation_groups:group_id(
-            created_by,
-            invitations(
-              blog_access,
-              life_story_access,
-              diary_access,
-              wishes_access,
-              used_at
-            )
-          )
-        `)
-        .eq('role', 'guest');
+      console.log('🔍 Début du chargement des utilisateurs invités');
+      console.log('👤 Utilisateur actuel:', {
+        userId: user?.id,
+        userEmail: user?.email,
+        isReader
+      });
 
-      if (error) {
-        throw error;
+      // Étape 1: Chercher les groupes créés par l'utilisateur actuel
+      console.log('📋 Étape 1: Recherche des groupes créés par l\'utilisateur');
+      const { data: userGroups, error: groupsError } = await supabase
+        .from('invitation_groups')
+        .select('id, name, created_at')
+        .eq('created_by', user?.id);
+
+      if (groupsError) {
+        console.error('❌ Erreur lors de la récupération des groupes:', groupsError);
+        throw groupsError;
       }
 
-      // Filtrer pour ne garder que les invités de l'utilisateur actuel
-      const filteredUsers = groupMembers
-        ?.filter((member: any) => 
-          member.invitation_groups?.created_by === user?.id &&
-          member.invitation_groups?.invitations?.some((inv: any) => inv.used_at !== null)
-        )
-        .map((member: any) => {
-          const invitation = member.invitation_groups.invitations.find((inv: any) => inv.used_at !== null);
-          return {
-            id: member.user_id,
-            user_id: member.user_id,
-            group_id: member.group_id,
-            email: member.profiles?.email || '',
-            display_name: member.profiles?.display_name,
-            blog_access: invitation?.blog_access || false,
-            life_story_access: invitation?.life_story_access || false,
-            diary_access: invitation?.diary_access || false,
-            wishes_access: invitation?.wishes_access || false,
-          };
-        }) || [];
+      console.log('✅ Groupes trouvés:', userGroups);
 
-      setInvitedUsers(filteredUsers);
-      console.log('👥 Utilisateurs invités chargés:', filteredUsers);
+      if (!userGroups || userGroups.length === 0) {
+        console.log('⚠️ Aucun groupe trouvé pour cet utilisateur');
+        setInvitedUsers([]);
+        return;
+      }
+
+      // Étape 2: Pour chaque groupe, récupérer les membres
+      console.log('📋 Étape 2: Recherche des membres des groupes');
+      const allInvitedUsers: InvitedUser[] = [];
+
+      for (const group of userGroups) {
+        console.log(`🔍 Traitement du groupe: ${group.name} (${group.id})`);
+
+        // Récupérer les membres du groupe
+        const { data: groupMembers, error: membersError } = await supabase
+          .from('group_members')
+          .select('user_id, group_id, role')
+          .eq('group_id', group.id)
+          .eq('role', 'guest');
+
+        if (membersError) {
+          console.error(`❌ Erreur lors de la récupération des membres du groupe ${group.id}:`, membersError);
+          continue;
+        }
+
+        console.log(`✅ Membres du groupe ${group.name}:`, groupMembers);
+
+        // Pour chaque membre, récupérer ses informations de profil et permissions
+        for (const member of groupMembers || []) {
+          console.log(`👤 Traitement du membre: ${member.user_id}`);
+
+          // Récupérer le profil
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('email, display_name')
+            .eq('id', member.user_id)
+            .single();
+
+          if (profileError) {
+            console.error(`❌ Erreur lors de la récupération du profil ${member.user_id}:`, profileError);
+            continue;
+          }
+
+          console.log(`✅ Profil récupéré pour ${member.user_id}:`, profile);
+
+          // Récupérer les permissions d'invitation
+          const { data: invitations, error: invitationsError } = await supabase
+            .from('invitations')
+            .select('blog_access, life_story_access, diary_access, wishes_access')
+            .eq('group_id', group.id)
+            .eq('invited_by', user?.id)
+            .not('used_at', 'is', null)
+            .limit(1);
+
+          if (invitationsError) {
+            console.error(`❌ Erreur lors de la récupération des invitations pour le groupe ${group.id}:`, invitationsError);
+            continue;
+          }
+
+          console.log(`✅ Invitations récupérées pour le groupe ${group.id}:`, invitations);
+
+          const invitation = invitations?.[0];
+          if (invitation) {
+            const invitedUser: InvitedUser = {
+              id: member.user_id,
+              user_id: member.user_id,
+              group_id: group.id,
+              email: profile.email || '',
+              display_name: profile.display_name,
+              blog_access: invitation.blog_access || false,
+              life_story_access: invitation.life_story_access || false,
+              diary_access: invitation.diary_access || false,
+              wishes_access: invitation.wishes_access || false,
+            };
+
+            allInvitedUsers.push(invitedUser);
+            console.log(`✅ Utilisateur invité ajouté:`, invitedUser);
+          }
+        }
+      }
+
+      console.log('🎯 Résultat final - Utilisateurs invités:', allInvitedUsers);
+      setInvitedUsers(allInvitedUsers);
+
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des utilisateurs invités:', error);
+      console.error('❌ Erreur globale lors du chargement des utilisateurs invités:', error);
       toast.error('Erreur lors du chargement des utilisateurs');
     } finally {
       setIsLoading(false);
+      console.log('🏁 Fin du chargement des utilisateurs invités');
     }
   };
 
@@ -135,11 +193,15 @@ const PermissionsManagement = () => {
 
     try {
       setIsSaving(true);
+      console.log('💾 Début de la sauvegarde des permissions');
 
       const selectedUser = invitedUsers.find(u => u.user_id === selectedUserId);
       if (!selectedUser) {
         throw new Error('Utilisateur non trouvé');
       }
+
+      console.log('👤 Utilisateur sélectionné:', selectedUser);
+      console.log('🔐 Nouvelles permissions:', permissions);
 
       // Mettre à jour les permissions dans la table invitations
       const { error } = await supabase
@@ -155,8 +217,11 @@ const PermissionsManagement = () => {
         .not('used_at', 'is', null);
 
       if (error) {
+        console.error('❌ Erreur lors de la mise à jour des invitations:', error);
         throw error;
       }
+
+      console.log('✅ Invitations mises à jour avec succès');
 
       // Synchroniser les permissions avec les tables de permissions
       await syncUserPermissions(selectedUserId, permissions);
@@ -165,7 +230,7 @@ const PermissionsManagement = () => {
       await loadInvitedUsers();
       
       toast.success('Permissions mises à jour avec succès');
-      console.log('✅ Permissions mises à jour pour:', selectedUserId, permissions);
+      console.log('✅ Permissions mises à jour avec succès');
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde des permissions:', error);
       toast.error('Erreur lors de la sauvegarde des permissions');
@@ -176,12 +241,16 @@ const PermissionsManagement = () => {
 
   const syncUserPermissions = async (userId: string, perms: typeof permissions) => {
     try {
+      console.log('🔄 Synchronisation des permissions pour:', userId, perms);
+
       // Synchroniser les permissions pour les albums de blog
       if (perms.blog_access) {
         const { data: userAlbums } = await supabase
           .from('blog_albums')
           .select('id')
           .eq('author_id', user?.id);
+
+        console.log('📚 Albums de blog trouvés:', userAlbums);
 
         if (userAlbums) {
           for (const album of userAlbums) {
@@ -252,6 +321,8 @@ const PermissionsManagement = () => {
           .eq('diary_owner_id', user?.id)
           .eq('permitted_user_id', userId);
       }
+
+      console.log('✅ Synchronisation des permissions terminée');
 
     } catch (error) {
       console.error('❌ Erreur lors de la synchronisation des permissions:', error);
