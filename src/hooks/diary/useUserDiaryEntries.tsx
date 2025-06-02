@@ -51,7 +51,7 @@ export const fetchUserDiaryEntries = async (
   const directAuthorizedIds = directPermissions?.map(p => p.diary_owner_id) || [];
   console.log('🔍 Diary - Permissions directes trouvées:', directAuthorizedIds);
 
-  // 3. NOUVELLE APPROCHE SIMPLIFIÉE : Récupérer les groupes étape par étape
+  // 3. APPROCHE SIMPLIFIÉE : Récupérer les groupes étape par étape
   console.log('🔍 Diary - ÉTAPE 1: Récupération des memberships de groupe');
   
   // D'abord récupérer les memberships de l'utilisateur
@@ -75,8 +75,10 @@ export const fetchUserDiaryEntries = async (
   if (userMemberships && userMemberships.length > 0) {
     console.log('🔍 Diary - ÉTAPE 2: Récupération des détails des groupes');
     
-    // Récupérer les détails des groupes
+    // CORRECTION: Récupérer les détails des groupes avec une approche plus simple
     const groupIds = userMemberships.map(m => m.group_id);
+    console.log('🔍 Diary - Group IDs à rechercher:', groupIds);
+    
     const { data: groupDetails, error: groupDetailsError } = await supabase
       .from('invitation_groups')
       .select('id, created_by, name')
@@ -84,12 +86,18 @@ export const fetchUserDiaryEntries = async (
 
     if (groupDetailsError) {
       console.error('🔍 Diary - Erreur détails groupes:', groupDetailsError);
+      console.error('🔍 Diary - Détails de l\'erreur:', {
+        message: groupDetailsError.message,
+        details: groupDetailsError.details,
+        hint: groupDetailsError.hint,
+        code: groupDetailsError.code
+      });
+    } else {
+      console.log('🔍 Diary - Détails des groupes récupérés avec succès:', {
+        count: groupDetails?.length || 0,
+        groups: groupDetails?.map(g => ({ id: g.id, created_by: g.created_by, name: g.name }))
+      });
     }
-
-    console.log('🔍 Diary - Détails des groupes:', {
-      count: groupDetails?.length || 0,
-      groups: groupDetails?.map(g => ({ id: g.id, created_by: g.created_by, name: g.name }))
-    });
 
     if (groupDetails && groupDetails.length > 0) {
       console.log('🔍 Diary - ÉTAPE 3: Vérification des invitations avec accès journal');
@@ -135,6 +143,38 @@ export const fetchUserDiaryEntries = async (
           }
         } else {
           console.log(`🔍 Diary - ❌ Aucune invitation avec accès journal pour le groupe ${group.id}`);
+        }
+      }
+    } else {
+      console.log('🔍 Diary - ❌ Aucun détail de groupe récupéré - Vérification directe des invitations');
+      
+      // Si la récupération des groupes échoue, essayer une approche directe
+      // Récupérer directement les invitations pour les groupes de l'utilisateur
+      for (const membership of userMemberships) {
+        console.log(`🔍 Diary - Vérification directe des invitations pour le groupe ${membership.group_id}`);
+        
+        const { data: directInvitations, error: directInvError } = await supabase
+          .from('invitations')
+          .select('invited_by, diary_access, used_at')
+          .eq('group_id', membership.group_id)
+          .eq('diary_access', true)
+          .not('used_at', 'is', null);
+
+        if (directInvError) {
+          console.error(`🔍 Diary - Erreur invitations directes pour groupe ${membership.group_id}:`, directInvError);
+          continue;
+        }
+
+        console.log(`🔍 Diary - Invitations directes trouvées pour groupe ${membership.group_id}:`, {
+          count: directInvitations?.length || 0,
+          invitations: directInvitations
+        });
+
+        if (directInvitations && directInvitations.length > 0) {
+          // Ajouter les créateurs des invitations (invited_by)
+          const creators = directInvitations.map(inv => inv.invited_by);
+          invitationAuthorizedIds.push(...creators);
+          console.log(`🔍 Diary - ✅ Ajout des créateurs d'invitations: ${creators.join(', ')}`);
         }
       }
     }
