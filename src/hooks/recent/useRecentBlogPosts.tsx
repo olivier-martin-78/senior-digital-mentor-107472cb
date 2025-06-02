@@ -55,41 +55,10 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           })));
         }
       } else {
-        console.log('🔍 UTILISATEUR NON-ADMIN - récupération posts des albums accessibles');
+        console.log('🔍 UTILISATEUR NON-ADMIN - récupération posts avec RLS automatique');
         
-        // Récupérer d'abord les albums accessibles (même logique que useBlogPosts)
-        const accessibleAlbumIds: string[] = [];
-        
-        // 1. Albums créés par l'utilisateur
-        const { data: ownedAlbums } = await supabase
-          .from('blog_albums')
-          .select('id')
-          .eq('author_id', effectiveUserId);
-        
-        if (ownedAlbums) {
-          accessibleAlbumIds.push(...ownedAlbums.map(album => album.id));
-          console.log('📋 Recent - Albums créés par l\'utilisateur:', ownedAlbums.length);
-        }
-        
-        // 2. Albums avec permissions
-        const { data: permittedAlbums } = await supabase
-          .from('album_permissions')
-          .select('album_id')
-          .eq('user_id', effectiveUserId);
-        
-        if (permittedAlbums) {
-          const permittedAlbumIds = permittedAlbums.map(p => p.album_id);
-          accessibleAlbumIds.push(...permittedAlbumIds);
-          console.log('🔑 Recent - Albums avec permissions:', permittedAlbumIds.length);
-        }
-        
-        // Supprimer les doublons
-        const uniqueAccessibleAlbumIds = [...new Set(accessibleAlbumIds)];
-        console.log('🎯 Recent - Albums accessibles uniques:', {
-          count: uniqueAccessibleAlbumIds.length,
-          albumIds: uniqueAccessibleAlbumIds
-        });
-
+        // Avec le nouveau système RLS, une simple requête suffit
+        // Les politiques RLS gèrent automatiquement les permissions
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -107,24 +76,16 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           .order('created_at', { ascending: false })
           .limit(15);
 
-        if (uniqueAccessibleAlbumIds.length > 0) {
-          // Récupérer tous les posts des albums accessibles (publiés) + posts de l'utilisateur (publiés ou non)
-          query = query.or(`and(album_id.in.(${uniqueAccessibleAlbumIds.join(',')}),published.eq.true),author_id.eq.${effectiveUserId}`);
-        } else {
-          // Aucun album accessible, récupérer seulement les posts de l'utilisateur
-          query = query.eq('author_id', effectiveUserId);
-        }
-
         const { data: userBlogPosts, error: userPostsError } = await query;
 
-        console.log('🔍 Requête posts albums accessibles:', {
+        console.log('🔍 Posts récupérés avec RLS:', {
           data: userBlogPosts,
           error: userPostsError,
           count: userBlogPosts?.length || 0
         });
 
         if (userBlogPosts) {
-          console.log('🔍 Posts albums accessibles récupérés:', {
+          console.log('🔍 Posts accessibles récupérés:', {
             count: userBlogPosts.length,
             albums: userBlogPosts.map(p => ({ title: p.title, album: p.blog_albums?.name, published: p.published }))
           });
@@ -140,18 +101,6 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
             album_name: post.blog_albums?.name || undefined
           })));
         }
-
-        // Vérification spécifique pour les albums "Tiago" et "Nana"
-        const tiaoPost = items.find(item => item.album_name?.toLowerCase().includes('tiago'));
-        const nanaPost = items.find(item => item.album_name?.toLowerCase().includes('nana'));
-        
-        console.log('🎯 Recent Blog - Vérification albums spécifiques dans les posts:', {
-          tiaoPostFound: !!tiaoPost,
-          tiaoPost: tiaoPost ? { title: tiaoPost.title, album: tiaoPost.album_name } : null,
-          nanaPostFound: !!nanaPost,
-          nanaPost: nanaPost ? { title: nanaPost.title, album: nanaPost.album_name } : null,
-          effectiveUserId
-        });
       }
 
       console.log('🔍 Articles blog finaux pour Recent:', {

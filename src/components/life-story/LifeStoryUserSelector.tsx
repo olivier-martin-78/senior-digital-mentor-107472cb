@@ -51,30 +51,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
           users.push(...allUsers);
         }
       } else {
-        // Pour les autres utilisateurs, récupérer via les permissions d'histoire de vie
-        const { data: lifeStoryPermissions, error: permError } = await supabase
-          .from('life_story_permissions')
-          .select('story_owner_id')
-          .eq('permitted_user_id', user.id);
-
-        console.log('📋 Permissions trouvées:', lifeStoryPermissions);
-
-        if (!permError && lifeStoryPermissions) {
-          // Récupérer les profils des propriétaires d'histoires
-          for (const permission of lifeStoryPermissions) {
-            const { data: ownerProfile, error: profileError } = await supabase
-              .from('profiles')
-              .select('id, display_name, email')
-              .eq('id', permission.story_owner_id)
-              .single();
-
-            if (!profileError && ownerProfile) {
-              users.push(ownerProfile);
-            }
-          }
-        }
-
-        // Récupérer aussi via les groupes d'invitation
+        // Pour les autres utilisateurs, récupérer via les groupes d'invitation
         const { data: groupMembers, error: groupError } = await supabase
           .from('group_members')
           .select('group_id')

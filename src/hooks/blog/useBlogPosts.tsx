@@ -10,7 +10,7 @@ export const useBlogPosts = (
   startDate?: string,
   endDate?: string
 ) => {
-  const { user, hasRole, getEffectiveUserId } = useAuth();
+  const { user, hasRole } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,12 +25,11 @@ export const useBlogPosts = (
 
       try {
         setLoading(true);
-        const effectiveUserId = getEffectiveUserId();
         const isAdmin = hasRole('admin');
         
         console.log('🚀 useBlogPosts - Récupération posts pour:', {
           userEmail: user.email,
-          effectiveUserId,
+          userId: user.id,
           isAdmin
         });
 
@@ -91,7 +90,7 @@ export const useBlogPosts = (
     };
 
     fetchPosts();
-  }, [user, searchTerm, selectedAlbum, startDate, endDate, getEffectiveUserId, hasRole]);
+  }, [user, searchTerm, selectedAlbum, startDate, endDate, hasRole]);
 
   return { posts, loading };
 };
