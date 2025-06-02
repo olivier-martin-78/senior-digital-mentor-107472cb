@@ -18,7 +18,7 @@ const HeroSection = () => {
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold text-white mb-4">
-            Aider les seniors à communiquer via le digital
+            Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
           </h1>
           <p className="text-xl md:text-2xl text-white mb-8">
             Formation au digital chez vous et à votre rythme
