@@ -96,6 +96,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           return initialChapter;
         });
 
+        console.log('🎵 Audio URLs récupérées lors du chargement:', 
+          mergedChapters.flatMap(ch => 
+            ch.questions.filter(q => q.audioUrl).map(q => ({
+              questionId: q.id,
+              audioUrl: q.audioUrl
+            }))
+          )
+        );
+
         setData({
           ...storyData,
           chapters: mergedChapters
@@ -132,11 +141,34 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       setIsSaving(true);
       console.log('💾 Sauvegarde de l\'histoire de vie:', data);
 
+      // Log des URLs audio avant sauvegarde
+      const audioUrls = data.chapters.flatMap(ch => 
+        ch.questions.filter(q => q.audioUrl).map(q => ({
+          questionId: q.id,
+          audioUrl: q.audioUrl
+        }))
+      );
+      console.log('🎵 URLs audio à sauvegarder:', audioUrls);
+
       // Préparer les données pour la sauvegarde avec user_id requis
+      // S'assurer que les audioUrl sont bien incluses dans les chapitres
+      const chaptersToSave = data.chapters.map(chapter => ({
+        ...chapter,
+        questions: chapter.questions.map(question => ({
+          id: question.id,
+          text: question.text,
+          answer: question.answer || '',
+          audioUrl: question.audioUrl || null,
+          // Note: audioBlob n'est pas sauvegardé car c'est temporaire
+        }))
+      }));
+
+      console.log('💾 Chapitres préparés pour sauvegarde:', chaptersToSave);
+
       const dataToSave = {
         user_id: effectiveUserId,
         title: data.title,
-        chapters: JSON.stringify(data.chapters),
+        chapters: JSON.stringify(chaptersToSave),
         updated_at: new Date().toISOString(),
         last_edited_chapter: data.last_edited_chapter || null,
         last_edited_question: data.last_edited_question || null,
