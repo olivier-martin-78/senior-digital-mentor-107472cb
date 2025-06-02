@@ -24,9 +24,6 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     timestamp: new Date().toISOString()
   });
   
-  // Déterminer l'utilisateur cible effectif
-  const [effectiveUserId, setEffectiveUserId] = useState<string>('');
-  
   const [data, setData] = useState<LifeStory>(
     existingStory || {
       id: '',
@@ -62,107 +59,82 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
 
-  // Effet pour déterminer l'utilisateur effectif avec priorité pour le fallback Olivier
-  useEffect(() => {
-    const determineEffectiveUser = async () => {
-      console.log('🔍 DÉBUT - Détermination de l\'utilisateur effectif...', {
-        targetUserId,
-        currentUserId,
-        currentUserEmail: user?.email,
-        isReader,
-        timestamp: new Date().toISOString()
-      });
-      
-      // PRIORITÉ 1: Si targetUserId est fourni explicitement (non-readers avec sélection)
-      if (targetUserId) {
-        console.log('✅ PRIORITÉ 1 - TargetUserId fourni explicitement:', targetUserId);
-        setEffectiveUserId(targetUserId);
-        return;
+  // 🔥 CORRECTION: Utiliser une approche plus directe pour déterminer l'utilisateur effectif
+  const getEffectiveUserId = async (): Promise<string> => {
+    console.log('🔍 getEffectiveUserId - Début:', {
+      targetUserId,
+      currentUserId,
+      isReader,
+      timestamp: new Date().toISOString()
+    });
+
+    // PRIORITÉ 1: Si targetUserId est fourni explicitement
+    if (targetUserId) {
+      console.log('✅ PRIORITÉ 1 - TargetUserId fourni:', targetUserId);
+      return targetUserId;
+    }
+
+    // PRIORITÉ 2: Fallback prioritaire pour Olivier vers conceicao
+    if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+      const conceicaoId = '90d0a268-834e-418e-849b-de4e81676803';
+      console.log('🎯 PRIORITÉ 2 - FALLBACK pour Olivier vers conceicao:', conceicaoId);
+      return conceicaoId;
+    }
+
+    // PRIORITÉ 3: Si pas reader, utiliser l'ID actuel
+    if (!isReader) {
+      console.log('✅ PRIORITÉ 3 - Non-reader, utilisation ID actuel:', currentUserId);
+      return currentUserId;
+    }
+
+    // PRIORITÉ 4: Pour les autres readers, chercher les permissions
+    console.log('🔍 PRIORITÉ 4 - Recherche permissions reader...');
+    
+    try {
+      // Chercher permissions directes
+      const { data: permissions, error: permError } = await supabase
+        .from('life_story_permissions')
+        .select('story_owner_id')
+        .eq('permitted_user_id', currentUserId)
+        .limit(1);
+
+      if (!permError && permissions && permissions.length > 0) {
+        const ownerId = permissions[0].story_owner_id;
+        console.log('✅ Permission directe trouvée:', ownerId);
+        return ownerId;
       }
 
-      // PRIORITÉ 2: Fallback immédiat et prioritaire pour Olivier
-      if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-        console.log('🎯 PRIORITÉ 2 - FALLBACK PRIORITAIRE pour Olivier vers conceicao');
-        const conceicaoId = '90d0a268-834e-418e-849b-de4e81676803';
-        setEffectiveUserId(conceicaoId);
-        console.log('✅ Olivier redirigé vers:', conceicaoId);
-        return;
-      }
+      // Chercher via groupes
+      const { data: groupMembers, error: groupError } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', currentUserId);
 
-      // PRIORITÉ 3: Si pas de reader, utiliser l'ID de l'utilisateur actuel
-      if (!isReader) {
-        console.log('✅ PRIORITÉ 3 - Utilisateur non-reader, utilisation de son propre ID:', currentUserId);
-        setEffectiveUserId(currentUserId);
-        return;
-      }
+      if (!groupError && groupMembers && groupMembers.length > 0) {
+        for (const member of groupMembers) {
+          const { data: group, error: groupDetailError } = await supabase
+            .from('invitation_groups')
+            .select('created_by')
+            .eq('id', member.group_id)
+            .single();
 
-      // PRIORITÉ 4: Pour les autres readers, chercher les permissions
-      console.log('🔍 PRIORITÉ 4 - Autre reader détecté, recherche de l\'histoire accessible...');
-      
-      try {
-        // Chercher les permissions d'histoire de vie directes
-        console.log('🔍 Recherche permissions directes pour:', currentUserId);
-        const { data: permissions, error: permError } = await supabase
-          .from('life_story_permissions')
-          .select('story_owner_id')
-          .eq('permitted_user_id', currentUserId)
-          .limit(1);
-
-        console.log('📋 Permissions directes trouvées:', { permissions, permError });
-
-        if (!permError && permissions && permissions.length > 0) {
-          const ownerId = permissions[0].story_owner_id;
-          console.log('✅ Permission directe trouvée, propriétaire:', ownerId);
-          setEffectiveUserId(ownerId);
-          return;
-        }
-
-        // Si aucune permission directe, chercher via les groupes
-        console.log('🔍 Recherche via les groupes pour:', currentUserId);
-        const { data: groupMembers, error: groupError } = await supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', currentUserId);
-
-        console.log('👥 Groupes trouvés:', { groupMembers, groupError });
-
-        if (!groupError && groupMembers && groupMembers.length > 0) {
-          for (const member of groupMembers) {
-            console.log('🔍 Vérification groupe:', member.group_id);
-            const { data: group, error: groupDetailError } = await supabase
-              .from('invitation_groups')
-              .select('created_by')
-              .eq('id', member.group_id)
-              .single();
-
-            console.log('🏢 Détail groupe:', { group, groupDetailError });
-
-            if (!groupDetailError && group) {
-              console.log('✅ Groupe trouvé, créateur:', group.created_by);
-              setEffectiveUserId(group.created_by);
-              return;
-            }
+          if (!groupDetailError && group) {
+            console.log('✅ Groupe trouvé, créateur:', group.created_by);
+            return group.created_by;
           }
         }
-
-        console.log('⚠️ Aucune permission trouvée pour ce reader');
-        toast.error('Vous n\'avez accès à aucune histoire de vie');
-      } catch (error) {
-        console.error('❌ Exception lors de la détermination:', error);
-        toast.error('Erreur lors de la vérification des permissions');
       }
-    };
 
-    if (currentUserId) {
-      console.log('🔄 Début détermination pour utilisateur:', currentUserId);
-      determineEffectiveUser();
-    } else {
-      console.log('⚠️ Pas d\'utilisateur connecté, skip détermination');
+      console.log('⚠️ Aucune permission trouvée');
+      return '';
+    } catch (error) {
+      console.error('❌ Erreur détermination utilisateur effectif:', error);
+      return '';
     }
-  }, [targetUserId, currentUserId, isReader, user?.email]);
+  };
 
   // Fonction pour charger l'histoire
-  const loadUserLifeStory = async () => {
+  const loadUserLifeStory = async (effectiveUserId: string) => {
     if (!effectiveUserId || loadingRef.current) {
       console.log('📚 loadUserLifeStory - Skip:', {
         effectiveUserId,
@@ -377,18 +349,34 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     }
   };
 
-  // Recharger quand l'utilisateur effectif change
+  // 🔥 CORRECTION: Charger l'histoire au montage du composant
   useEffect(() => {
-    console.log('📚 Effet effectiveUserId changé:', { 
-      effectiveUserId,
-      wasLoaded: hasLoadedRef.current,
-      isLoading: loadingRef.current 
-    });
-    if (effectiveUserId) {
-      hasLoadedRef.current = false; // Reset pour forcer le rechargement
-      loadUserLifeStory();
-    }
-  }, [effectiveUserId]);
+    const initializeLifeStory = async () => {
+      if (!currentUserId) {
+        console.log('⚠️ Pas d\'utilisateur connecté, skip initialisation');
+        return;
+      }
+
+      console.log('🚀 INITIALISATION - Début chargement histoire...');
+      const effectiveUserId = await getEffectiveUserId();
+      
+      console.log('🎯 UTILISATEUR EFFECTIF DÉTERMINÉ:', effectiveUserId);
+      
+      if (effectiveUserId) {
+        await loadUserLifeStory(effectiveUserId);
+      } else {
+        console.log('⚠️ Aucun utilisateur effectif trouvé');
+        // Utiliser les chapitres initiaux par défaut
+        setData(prev => ({
+          ...prev,
+          user_id: currentUserId,
+          chapters: initialChapters
+        }));
+      }
+    };
+
+    initializeLifeStory();
+  }, [currentUserId, targetUserId, isReader]);
 
   // Initialiser l'état des questions fermées par défaut
   useEffect(() => {
@@ -421,7 +409,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
     // Vérifier si l'utilisateur peut modifier (pas reader et c'est sa propre histoire)
-    if (isReader || (effectiveUserId !== currentUserId)) return;
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) return;
     
     setActiveQuestion(questionId);
     setData(prev => ({
@@ -433,7 +422,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
     // Vérifier si l'utilisateur peut modifier
-    if (isReader || (effectiveUserId !== currentUserId)) return;
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) return;
     
     console.log('🖊️ Mise à jour de la réponse:', { chapterId, questionId, answer });
     setData(prev => ({
@@ -455,7 +445,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   // Fonction simplifiée pour gérer l'audio
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    if (isReader || (effectiveUserId !== currentUserId)) return;
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) return;
     
     console.log('🎵 handleAudioUrlChange:', { chapterId, questionId, audioUrl, preventAutoSave });
     
@@ -506,7 +497,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioRecorded = async (chapterId: string, questionId: string, blob: Blob) => {
-    if (isReader || (effectiveUserId !== currentUserId)) return;
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) return;
     
     console.log('🎤 handleAudioRecorded');
     
@@ -528,7 +520,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   };
 
   const handleAudioDeleted = (chapterId: string, questionId: string, showToast: boolean = true) => {
-    if (isReader || (effectiveUserId !== currentUserId)) return;
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) return;
     
     console.log('🗑️ Suppression audio:', { chapterId, questionId, showToast });
     setData(prev => {
@@ -557,12 +550,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
   const saveNow = async () => {
     // Vérifier si l'utilisateur peut sauvegarder
-    if (isReader || (effectiveUserId !== currentUserId)) {
+    const canEdit = !isReader && (data.user_id === currentUserId);
+    if (!canEdit) {
       console.log('💾 Mode reader ou consultation externe - sauvegarde désactivée');
       return;
     }
     
-    if (!effectiveUserId || isSaving || savingRef.current) {
+    if (!data.user_id || isSaving || savingRef.current) {
       console.warn('💾 Utilisateur non connecté ou sauvegarde en cours, sauvegarde ignorée');
       return;
     }
@@ -576,7 +570,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     savingRef.current = true;
     
     try {
-      console.log('💾 Sauvegarde des données pour utilisateur:', effectiveUserId);
+      console.log('💾 Sauvegarde des données pour utilisateur:', data.user_id);
       
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
@@ -589,7 +583,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }));
 
       const dataToSave = {
-        user_id: effectiveUserId,
+        user_id: data.user_id,
         title: data.title,
         chapters: chaptersToSave,
         updated_at: new Date().toISOString(),
