@@ -24,6 +24,7 @@ import {
   Clock,
   Camera,
   PenTool,
+  UserCheck,
 } from "lucide-react"
 
 const Header = () => {
@@ -123,6 +124,16 @@ const Header = () => {
                       Mon profil
                     </Link>
                   </DropdownMenuItem>
+
+                  {/* Gestion des permissions pour les non-readers */}
+                  {!hasRole('reader') && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/permissions" className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Gérer les permissions
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
 
                   {/* Navigation mobile */}
                   <div className="md:hidden">

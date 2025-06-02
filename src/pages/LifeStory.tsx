@@ -160,19 +160,6 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* NOUVEAU: Affichage debug du propriétaire de l'histoire */}
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-800 mb-2">🔍 Debug - Propriétaire de l'histoire chargée</h3>
-          <div className="text-sm text-blue-700">
-            <p><strong>ID de l'histoire:</strong> {lifeStoryData.data.user_id || 'Non défini'}</p>
-            <p><strong>Nom du propriétaire:</strong> {storyOwnerInfo?.display_name || 'Non trouvé'}</p>
-            <p><strong>Email du propriétaire:</strong> {storyOwnerInfo?.email || 'Non trouvé'}</p>
-            <p><strong>Utilisateur connecté:</strong> {user?.email}</p>
-            <p><strong>Mode reader:</strong> {isReader ? 'Oui' : 'Non'}</p>
-            <p><strong>Sélection utilisateur:</strong> {selectedUserId || 'Aucune'}</p>
-          </div>
-        </div>
-
         {/* Sélecteur d'utilisateur pour les non-lecteurs */}
         {!isReader && (
           <div className="mb-6">
