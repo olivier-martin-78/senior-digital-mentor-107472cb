@@ -52,7 +52,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     });
     
     // Appeler la fonction du parent pour mettre à jour l'état
-    onAudioUrlChange(chapterId, questionId, audioUrl, preventAutoSave);
+    // Ne pas bloquer la sauvegarde automatique
+    onAudioUrlChange(chapterId, questionId, audioUrl, false);
     
     if (audioUrl) {
       console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice');
@@ -72,7 +73,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
 
   const handleDeleteExistingAudio = () => {
     console.log('🎤 VoiceAnswerRecorder - Suppression manuelle de l\'audio existant');
-    onAudioUrlChange(chapterId, questionId, null, false);
+    onAudioUrlChange(chapterId, questionId, null, false); // Permettre la sauvegarde
     onAudioDeleted(chapterId, questionId, true); // Afficher le toast pour la suppression manuelle
   };
 

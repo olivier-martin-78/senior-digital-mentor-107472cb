@@ -149,8 +149,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       );
       console.log('🎵 URLs audio à sauvegarder:', audioUrls);
 
-      // Préparer les données pour la sauvegarde avec user_id requis
-      // S'assurer que les audioUrl sont bien incluses dans les chapitres
+      // Préparer les données pour la sauvegarde
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions.map(question => ({
@@ -158,7 +157,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           text: question.text,
           answer: question.answer || '',
           audioUrl: question.audioUrl || null,
-          // Note: audioBlob n'est pas sauvegardé car c'est temporaire
         }))
       }));
 
@@ -171,46 +169,42 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         updated_at: new Date().toISOString(),
         last_edited_chapter: data.last_edited_chapter || null,
         last_edited_question: data.last_edited_question || null,
-        // Pour les nouvelles entrées, ajouter created_at
-        ...((!data.id && !data.created_at) && { created_at: new Date().toISOString() }),
       };
 
-      // Vérifier d'abord si l'entrée existe
-      const { data: existingStory } = await supabase
+      // Utiliser upsert avec la bonne gestion des conflits
+      const { data: savedData, error } = await supabase
         .from('life_stories')
-        .select('id')
-        .eq('user_id', effectiveUserId)
+        .upsert(dataToSave, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        })
+        .select()
         .single();
 
-      let result;
+      if (error) {
+        console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', error);
+        throw error;
+      }
+
+      console.log('✅ Histoire de vie sauvegardée avec succès:', savedData);
       
-      if (existingStory) {
-        // Mettre à jour l'entrée existante
-        console.log('📝 Mise à jour de l\'histoire existante');
-        result = await supabase
-          .from('life_stories')
-          .update(dataToSave)
-          .eq('user_id', effectiveUserId);
-      } else {
-        // Créer une nouvelle entrée
-        console.log('🆕 Création d\'une nouvelle histoire');
-        result = await supabase
-          .from('life_stories')
-          .insert(dataToSave);
+      // Mettre à jour les données locales avec l'ID retourné
+      if (savedData && savedData.id) {
+        setData(prevData => ({
+          ...prevData!,
+          id: savedData.id,
+          created_at: savedData.created_at,
+          updated_at: savedData.updated_at
+        }));
       }
-
-      if (result.error) {
-        console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', result.error);
-        throw result.error;
-      }
-
-      console.log('✅ Histoire de vie sauvegardée avec succès.');
+      
       setLastSaved(new Date());
       toast({
         title: 'Succès',
         description: 'Histoire de vie sauvegardée !',
       });
     } catch (error: any) {
+      console.error('❌ Erreur sauvegarde:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de sauvegarder l'histoire de vie : ${error.message}`,
@@ -250,6 +244,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // Sauvegarder automatiquement après un délai
+    setTimeout(() => {
+      if (!isSaving) {
+        saveNow();
+      }
+    }, 1000);
   };
 
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
@@ -267,6 +268,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // Sauvegarder automatiquement après l'enregistrement audio
+    setTimeout(() => {
+      if (!isSaving) {
+        saveNow();
+      }
+    }, 500);
   };
 
   const handleAudioDeleted = (questionId: string) => {
@@ -284,6 +292,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // Sauvegarder automatiquement après suppression
+    setTimeout(() => {
+      if (!isSaving) {
+        saveNow();
+      }
+    }, 500);
   };
 
   const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
@@ -301,6 +316,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // Sauvegarder automatiquement après changement d'URL
+    if (audioUrl) {
+      setTimeout(() => {
+        if (!isSaving) {
+          saveNow();
+        }
+      }, 500);
+    }
   };
 
   // Calculer le progrès

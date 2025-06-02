@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import VoiceRecorder from '@/components/VoiceRecorder';
@@ -54,7 +53,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
       setUploadedAudioUrl(null);
       setIsUploading(false);
       currentUploadRef.current = null;
-      onAudioUrlChange(chapterId, questionId, null, true); // Éviter l'auto-sauvegarde
+      onAudioUrlChange(chapterId, questionId, null, false); // Permettre la sauvegarde
       return;
     }
     
@@ -101,11 +100,10 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
             currentUploadRef.current = null;
-            // Passer preventAutoSave: true pour éviter la double sauvegarde
-            onAudioUrlChange(chapterId, questionId, publicUrl, true);
+            // Permettre la sauvegarde automatique
+            onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
             console.log('🎙️ AudioRecorder - Toast de succès affiché');
-            // Un seul toast de succès ici
             toast({
               title: "Enregistrement sauvegardé",
               description: "Votre enregistrement vocal a été sauvegardé avec succès",
@@ -122,26 +120,12 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             setIsUploading(false);
             currentUploadRef.current = null;
             
-            // Si c'est une erreur de bucket, proposer de continuer sans sauvegarde cloud
-            if (errorMessage.includes('Bucket not found') || errorMessage.includes('bucket')) {
-              console.log('🎙️ AudioRecorder - Bucket non trouvé, mode local uniquement');
-              toast({
-                title: "Stockage audio indisponible",
-                description: "L'enregistrement est conservé localement mais ne sera pas sauvegardé sur le serveur",
-                variant: "destructive",
-                duration: 700
-              });
-              
-              setUploadedAudioUrl('local-audio');
-              onAudioUrlChange(chapterId, questionId, null, true);
-            } else {
-              toast({
-                title: "Erreur de sauvegarde",
-                description: errorMessage,
-                variant: "destructive",
-                duration: 700
-              });
-            }
+            toast({
+              title: "Erreur de sauvegarde",
+              description: errorMessage,
+              variant: "destructive",
+              duration: 700
+            });
           }
         },
         // Callback de début d'upload
