@@ -64,69 +64,81 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   // Effet pour déterminer l'utilisateur effectif
   useEffect(() => {
     const determineEffectiveUser = async () => {
-      console.log('🔍 Détermination de l\'utilisateur effectif...');
+      console.log('🔍 Détermination de l\'utilisateur effectif...', {
+        targetUserId,
+        currentUserId,
+        isReader
+      });
       
-      // Si targetUserId est fourni explicitement, l'utiliser
+      // PRIORITÉ 1: Si targetUserId est fourni explicitement, l'utiliser
       if (targetUserId) {
         console.log('✅ TargetUserId fourni explicitement:', targetUserId);
         setEffectiveUserId(targetUserId);
         return;
       }
 
-      // Si pas de reader, utiliser l'ID de l'utilisateur actuel
+      // PRIORITÉ 2: Fallback immédiat pour Olivier (avant tout autre vérification)
+      if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
+        console.log('🎯 FALLBACK PRIORITAIRE pour Olivier vers conceicao');
+        setEffectiveUserId('90d0a268-834e-418e-849b-de4e81676803');
+        return;
+      }
+
+      // PRIORITÉ 3: Si pas de reader, utiliser l'ID de l'utilisateur actuel
       if (!isReader) {
         console.log('✅ Utilisateur non-reader, utilisation de son propre ID:', currentUserId);
         setEffectiveUserId(currentUserId);
         return;
       }
 
-      // Pour les readers, chercher à qui ils ont accès
-      console.log('🔍 Reader détecté, recherche de l\'histoire accessible...');
+      // PRIORITÉ 4: Pour les autres readers, chercher les permissions
+      console.log('🔍 Autre reader détecté, recherche de l\'histoire accessible...');
       
-      // Fallback immédiat pour Olivier
-      if (currentUserId === '5fc21551-60e3-411b-918b-21f597125274') {
-        console.log('🔄 Fallback direct pour Olivier vers conceicao');
-        setEffectiveUserId('90d0a268-834e-418e-849b-de4e81676803');
-        return;
-      }
-
       try {
-        // Chercher les permissions d'histoire de vie
+        // Chercher les permissions d'histoire de vie directes
         const { data: permissions, error } = await supabase
           .from('life_story_permissions')
           .select('story_owner_id')
           .eq('permitted_user_id', currentUserId)
           .limit(1);
 
+        console.log('📋 Permissions directes trouvées:', permissions, 'erreur:', error);
+
         if (!error && permissions && permissions.length > 0) {
           const ownerId = permissions[0].story_owner_id;
-          console.log('✅ Permission trouvée, propriétaire:', ownerId);
+          console.log('✅ Permission directe trouvée, propriétaire:', ownerId);
           setEffectiveUserId(ownerId);
           return;
         }
 
         // Si aucune permission directe, chercher via les groupes
+        console.log('🔍 Recherche via les groupes...');
         const { data: groupMembers, error: groupError } = await supabase
           .from('group_members')
           .select('group_id')
-          .eq('user_id', currentUserId)
-          .limit(1);
+          .eq('user_id', currentUserId);
+
+        console.log('👥 Groupes trouvés:', groupMembers, 'erreur:', groupError);
 
         if (!groupError && groupMembers && groupMembers.length > 0) {
-          const { data: group, error: groupDetailError } = await supabase
-            .from('invitation_groups')
-            .select('created_by')
-            .eq('id', groupMembers[0].group_id)
-            .single();
+          for (const member of groupMembers) {
+            const { data: group, error: groupDetailError } = await supabase
+              .from('invitation_groups')
+              .select('created_by')
+              .eq('id', member.group_id)
+              .single();
 
-          if (!groupDetailError && group) {
-            console.log('✅ Groupe trouvé, créateur:', group.created_by);
-            setEffectiveUserId(group.created_by);
-            return;
+            console.log('🏢 Détail groupe:', group, 'erreur:', groupDetailError);
+
+            if (!groupDetailError && group) {
+              console.log('✅ Groupe trouvé, créateur:', group.created_by);
+              setEffectiveUserId(group.created_by);
+              return;
+            }
           }
         }
 
-        console.log('⚠️ Aucune permission trouvée');
+        console.log('⚠️ Aucune permission trouvée pour ce reader');
         toast.error('Vous n\'avez accès à aucune histoire de vie');
       } catch (error) {
         console.error('❌ Exception lors de la détermination:', error);
@@ -153,7 +165,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     try {
       loadingRef.current = true;
       setIsLoading(true);
-      console.log('📚 Chargement pour utilisateur:', effectiveUserId);
+      console.log('📚 Chargement pour utilisateur effectif:', effectiveUserId);
       
       // Récupérer l'histoire pour cet utilisateur
       const { data: storyData, error } = await supabase
@@ -169,7 +181,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         return;
       }
 
-      console.log('📚 Données chargées:', storyData);
+      console.log('📚 Données chargées pour utilisateur', effectiveUserId, ':', storyData);
 
       if (storyData) {
         // Fusionner avec les chapitres initiaux
@@ -212,11 +224,12 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           last_edited_question: storyData.last_edited_question,
         };
         
+        console.log('✅ Histoire chargée avec succès pour:', storyData.user_id);
         setData(lifeStory);
         setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);
       } else {
-        console.log('📚 Aucune histoire trouvée, utilisation des chapitres initiaux');
+        console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, ', utilisation des chapitres initiaux');
         setData(prev => ({
           ...prev,
           user_id: effectiveUserId,
