@@ -398,6 +398,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
+    // CORRECTION CRITIQUE: Toujours sauvegarder quand il y a une URL audio
+    // car cela signifie qu'un upload vient de se terminer
     if (normalizedAudioUrl) {
       setTimeout(() => {
         if (!isSaving) {

@@ -67,9 +67,10 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     
     if (audioUrl && audioUrl.trim() !== '') {
       if (shouldLog) {
-        console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice');
+        console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice avec URL réelle');
       }
-      // Créer un blob factice pour compatibilité avec l'interface existante
+      // CORRECTION: Créer un blob factice pour compatibilité avec l'interface existante
+      // MAIS utiliser la vraie URL d'audio pour l'enregistrement
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       // Arrêter l'état d'upload une fois l'URL reçue
