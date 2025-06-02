@@ -9,99 +9,85 @@ export const fetchUserDiaryEntries = async (
   startDate: string,
   endDate: string
 ): Promise<DiaryEntryWithAuthor[]> => {
-  console.log('🔍 Diary - CORRECTION - Récupération des entrées utilisateur effectif:', effectiveUserId);
+  console.log('🔍 Diary - Récupération des entrées pour utilisateur:', effectiveUserId);
   
-  // CORRECTION : Récupérer d'abord TOUTES les entrées de l'utilisateur effectif
+  // 1. Récupérer les entrées de l'utilisateur effectif
   let userEntriesQuery = supabase
     .from('diary_entries')
     .select('*')
     .eq('user_id', effectiveUserId)
     .order('entry_date', { ascending: false });
 
-  console.log('🔍 Diary - CORRECTION - Requête utilisateur effectif construite, filtres:', {
-    searchTerm,
-    startDate,
-    endDate,
-    userId: effectiveUserId
-  });
-
-  // Appliquer seulement les filtres de date via SQL
+  // Appliquer les filtres de date
   if (startDate) {
     userEntriesQuery = userEntriesQuery.gte('entry_date', startDate);
-    console.log('Diary - CORRECTION - Filtre date début appliqué:', startDate);
   }
   if (endDate) {
     userEntriesQuery = userEntriesQuery.lte('entry_date', endDate);
-    console.log('Diary - CORRECTION - Filtre date fin appliqué:', endDate);
   }
 
-  console.log('🔍 Diary - CORRECTION - Exécution requête utilisateur effectif...');
   const { data: userEntries, error: userEntriesError } = await userEntriesQuery;
   
   if (userEntriesError) {
-    console.error('🔍 Diary - CORRECTION - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
+    console.error('🔍 Diary - Erreur lors de la récupération des entrées utilisateur:', userEntriesError);
     return [];
   }
 
-  console.log('🔍 Diary - CORRECTION - Réponse entrées utilisateur effectif:', { 
-    count: userEntries?.length || 0, 
-    searchTerm: searchTerm,
-    hasSearchTerm: !!searchTerm,
-    userEntries: userEntries?.map(e => ({ id: e.id, title: e.title, user_id: e.user_id }))
+  console.log('🔍 Diary - Entrées utilisateur trouvées:', { 
+    count: userEntries?.length || 0
   });
 
-  // Récupérer les utilisateurs autorisés via les groupes d'invitation
-  console.log('Diary - CORRECTION - Récupération des groupes pour utilisateur effectif:', effectiveUserId);
+  // 2. Récupérer les utilisateurs autorisés via les permissions directes
+  console.log('🔍 Diary - Vérification des permissions directes pour:', effectiveUserId);
+  const { data: directPermissions, error: directPermError } = await supabase
+    .from('diary_permissions')
+    .select('diary_owner_id')
+    .eq('permitted_user_id', effectiveUserId);
+
+  if (directPermError) {
+    console.error('🔍 Diary - Erreur permissions directes:', directPermError);
+  }
+
+  const directAuthorizedIds = directPermissions?.map(p => p.diary_owner_id) || [];
+  console.log('🔍 Diary - Permissions directes trouvées:', directAuthorizedIds);
+
+  // 3. Récupérer les utilisateurs autorisés via les groupes d'invitation
+  console.log('🔍 Diary - Vérification des groupes pour:', effectiveUserId);
   const { data: groupPermissions, error: groupError } = await supabase
     .from('group_members')
     .select(`
       group_id,
       invitation_groups!inner(created_by)
     `)
-    .eq('user_id', effectiveUserId);
+    .eq('user_id', effectiveUserId)
+    .eq('role', 'guest');
 
   if (groupError) {
-    console.error('Diary - CORRECTION - Erreur groupes:', groupError);
-    // En cas d'erreur, au moins retourner les entrées de l'utilisateur
-    if (userEntries && userEntries.length > 0) {
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, avatar_url, created_at')
-        .eq('id', effectiveUserId)
-        .single();
-
-      const filteredUserEntries = filterEntriesBySearchTerm(
-        userEntries, 
-        searchTerm, 
-        userProfile ? [userProfile] : []
-      );
-      
-      console.log('Diary - CORRECTION - Retour entrées utilisateur seulement après erreur groupes:', filteredUserEntries.length);
-      return filteredUserEntries;
-    } else {
-      return [];
-    }
+    console.error('🔍 Diary - Erreur groupes:', groupError);
   }
 
-  console.log('Diary - CORRECTION - Réponse groupes:', groupPermissions);
+  const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by) || [];
+  console.log('🔍 Diary - Créateurs de groupes trouvés:', groupCreatorIds);
 
-  // IDs des utilisateurs autorisés via les groupes d'invitation (créateurs des groupes)
-  const groupCreatorIds = groupPermissions?.map(p => p.invitation_groups.created_by).filter(id => id !== effectiveUserId) || [];
+  // 4. Combiner tous les IDs autorisés (sauf l'utilisateur effectif lui-même)
+  const allAuthorizedIds = [...new Set([...directAuthorizedIds, ...groupCreatorIds])]
+    .filter(id => id !== effectiveUserId);
   
-  console.log('Diary - CORRECTION - Utilisateurs autorisés via groupes:', groupCreatorIds);
+  console.log('🔍 Diary - Tous les utilisateurs autorisés:', allAuthorizedIds);
 
   let otherEntries: any[] = [];
 
-  // Récupérer les entrées des autres utilisateurs autorisés
-  if (groupCreatorIds.length > 0) {
-    console.log('Diary - CORRECTION - Récupération des autres entrées pour:', groupCreatorIds);
+  // 5. Récupérer les entrées des autres utilisateurs autorisés
+  if (allAuthorizedIds.length > 0) {
+    console.log('🔍 Diary - Récupération des entrées des utilisateurs autorisés:', allAuthorizedIds);
+    
     let otherEntriesQuery = supabase
       .from('diary_entries')
       .select('*')
-      .in('user_id', groupCreatorIds)
+      .in('user_id', allAuthorizedIds)
       .order('entry_date', { ascending: false });
 
-    // Appliquer seulement les filtres de date
+    // Appliquer les filtres de date
     if (startDate) {
       otherEntriesQuery = otherEntriesQuery.gte('entry_date', startDate);
     }
@@ -109,50 +95,50 @@ export const fetchUserDiaryEntries = async (
       otherEntriesQuery = otherEntriesQuery.lte('entry_date', endDate);
     }
 
-    console.log('Diary - CORRECTION - Exécution requête autres entrées...');
     const { data: otherEntriesData, error: otherEntriesError } = await otherEntriesQuery;
     
     if (otherEntriesError) {
-      console.error('Diary - CORRECTION - Erreur lors de la récupération des autres entrées:', otherEntriesError);
+      console.error('🔍 Diary - Erreur lors de la récupération des autres entrées:', otherEntriesError);
     } else {
       otherEntries = otherEntriesData || [];
-      console.log('Diary - CORRECTION - Réponse autres entrées:', { 
+      console.log('🔍 Diary - Autres entrées trouvées:', { 
         count: otherEntries.length,
-        searchTerm: searchTerm
+        fromUsers: [...new Set(otherEntries.map(e => e.user_id))]
       });
     }
   } else {
-    console.log('Diary - CORRECTION - Aucun autre utilisateur autorisé, pas de requête supplémentaire');
+    console.log('🔍 Diary - Aucun autre utilisateur autorisé trouvé');
   }
 
-  // Combiner ses entrées avec les entrées autorisées des autres
+  // 6. Combiner toutes les entrées
   const allEntries = [...(userEntries || []), ...otherEntries];
-  console.log('Diary - CORRECTION - Combinaison des entrées:', {
+  console.log('🔍 Diary - Total entrées combinées:', {
     userEntriesCount: userEntries?.length || 0,
     otherEntriesCount: otherEntries.length,
-    totalCount: allEntries.length,
-    searchTerm: searchTerm,
-    hasSearchTerm: !!searchTerm
+    totalCount: allEntries.length
   });
   
-  // Trier par date d'entrée (plus récent en premier)
+  // 7. Trier par date d'entrée (plus récent en premier)
   allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
 
-  // Récupérer tous les profils nécessaires
+  // 8. Récupérer tous les profils nécessaires
   const allUserIds = [...new Set(allEntries.map(entry => entry.user_id))];
   const { data: allProfiles } = await supabase
     .from('profiles')
     .select('id, email, display_name, avatar_url, created_at')
     .in('id', allUserIds);
 
-  // Filtrage côté client pour TOUS les champs
+  // 9. Filtrage côté client pour le terme de recherche
   const finalEntries = filterEntriesBySearchTerm(allEntries, searchTerm, allProfiles || []);
   
-  console.log('🔍 Diary - CORRECTION - Total entrées finales:', {
+  console.log('🔍 Diary - Entrées finales après filtrage:', {
     totalCount: finalEntries.length,
     searchTerm: searchTerm,
-    hasSearchTerm: !!searchTerm,
-    finalEntries: finalEntries.map(e => ({ id: e.id, title: e.title, author: e.profiles?.display_name || e.profiles?.email }))
+    entriesByUser: finalEntries.reduce((acc, entry) => {
+      const userId = entry.user_id;
+      acc[userId] = (acc[userId] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
   });
   
   return finalEntries;
