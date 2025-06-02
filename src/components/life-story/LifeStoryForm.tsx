@@ -12,6 +12,9 @@ interface LifeStoryFormProps {
 }
 
 export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) => {
+  // Déterminer l'utilisateur cible depuis l'histoire existante
+  const targetUserId = existingStory?.user_id;
+
   // Toujours utiliser tous les chapitres initiaux pour tous les utilisateurs
   const storyWithChapters = {
     ...existingStory,
@@ -49,50 +52,47 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
 
   console.log('Histoire avec chapitres complets:', storyWithChapters);
 
-  const {
-    data,
-    activeTab,
-    openQuestions,
-    activeQuestion,
-    progress,
-    isSaving,
-    lastSaved,
-    setActiveTab,
-    toggleQuestions,
-    handleQuestionFocus,
-    updateAnswer,
-    handleAudioRecorded,
-    handleAudioDeleted,
-    saveNow
-  } = useLifeStory({ existingStory: storyWithChapters });
+  const lifeStoryHook = useLifeStory({ targetUserId });
   
-  console.log('Chapitres dans LifeStoryForm:', data.chapters);
+  console.log('Chapitres dans LifeStoryForm:', lifeStoryHook.data?.chapters);
+  
+  // Si nous avons une histoire existante, utiliser ses données
+  const displayData = existingStory ? storyWithChapters : lifeStoryHook.data;
+  
+  if (!displayData) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
       <StoryHeader 
-        title={data.title} 
-        lastSaved={lastSaved} 
-        isSaving={isSaving} 
-        onSave={saveNow} 
+        title={displayData.title} 
+        lastSaved={lifeStoryHook.lastSaved} 
+        isSaving={lifeStoryHook.isSaving} 
+        onSave={lifeStoryHook.saveNow} 
       />
       
       {/* Barre de progression */}
-      <StoryProgress progress={progress} />
+      <StoryProgress progress={lifeStoryHook.progress} />
       
       {/* Layout principal avec navigation et contenu */}
-      {data.chapters.length > 0 ? (
+      {displayData.chapters.length > 0 ? (
         <LifeStoryLayout
-          chapters={data.chapters}
-          activeTab={activeTab}
-          openQuestions={openQuestions}
-          activeQuestion={activeQuestion}
-          setActiveTab={setActiveTab}
-          toggleQuestions={toggleQuestions}
-          handleQuestionFocus={handleQuestionFocus}
-          updateAnswer={updateAnswer}
-          onAudioRecorded={handleAudioRecorded}
-          onAudioDeleted={handleAudioDeleted}
+          chapters={displayData.chapters}
+          activeTab={lifeStoryHook.activeTab}
+          openQuestions={lifeStoryHook.openQuestions}
+          activeQuestion={lifeStoryHook.activeQuestion}
+          setActiveTab={lifeStoryHook.setActiveTab}
+          toggleQuestions={lifeStoryHook.toggleQuestions}
+          handleQuestionFocus={lifeStoryHook.handleQuestionFocus}
+          updateAnswer={lifeStoryHook.updateAnswer}
+          onAudioRecorded={lifeStoryHook.handleAudioRecorded}
+          onAudioDeleted={lifeStoryHook.handleAudioDeleted}
+          onAudioUrlChange={lifeStoryHook.handleAudioUrlChange}
         />
       ) : (
         <div className="p-6 text-center bg-gray-100 rounded-lg">

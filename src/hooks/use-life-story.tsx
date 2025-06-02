@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,37 +7,74 @@ import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { initialChapters } from '@/components/life-story/initialChapters';
 
-export const useLifeStory = (storyId?: string, userId?: string) => {
-  const { user, hasRole } = useAuth();
-  const [lifeStory, setLifeStory] = useState<LifeStory | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [availableUsers, setAvailableUsers] = useState<Array<{id: string, name: string}>>([]);
+interface UseLifeStoryProps {
+  targetUserId?: string;
+}
 
-  const loadLifeStory = async (storyId: string) => {
+export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
+  const { user, hasRole } = useAuth();
+  const [data, setData] = useState<LifeStory | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [openQuestions, setOpenQuestions] = useState<Set<string>>(new Set());
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Déterminer l'utilisateur cible
+  const effectiveUserId = targetUserId || user?.id;
+
+  const loadLifeStory = async (userId: string) => {
     if (!user) return;
 
     try {
-      setLoading(true);
-      console.log(`🔍 Chargement de l'histoire de vie avec l'ID: ${storyId}`);
+      setIsLoading(true);
+      console.log(`🔍 Chargement de l'histoire de vie pour l'utilisateur: ${userId}`);
 
-      const { data, error } = await supabase
+      const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
-        .eq('id', storyId)
+        .eq('user_id', userId)
         .single();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('❌ Erreur lors du chargement de l\'histoire:', error);
         throw error;
       }
 
-      if (data) {
-        console.log('✅ Histoire de vie chargée avec succès:', data);
-        setLifeStory(data);
+      if (storyData) {
+        console.log('✅ Histoire de vie chargée avec succès:', storyData);
+        
+        // Parser les chapitres JSON en toute sécurité
+        let parsedChapters: Chapter[] = [];
+        try {
+          if (typeof storyData.chapters === 'string') {
+            parsedChapters = JSON.parse(storyData.chapters);
+          } else if (Array.isArray(storyData.chapters)) {
+            parsedChapters = storyData.chapters as Chapter[];
+          } else {
+            parsedChapters = initialChapters;
+          }
+        } catch (parseError) {
+          console.error('Erreur parsing chapters:', parseError);
+          parsedChapters = initialChapters;
+        }
+
+        setData({
+          ...storyData,
+          chapters: parsedChapters
+        });
       } else {
-        console.warn('⚠️ Aucune histoire de vie trouvée avec cet ID.');
-        setLifeStory(null);
+        console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux');
+        // Créer une nouvelle histoire avec les chapitres initiaux
+        const newStory: LifeStory = {
+          user_id: userId,
+          title: 'Mon Histoire de Vie',
+          chapters: initialChapters,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setData(newStory);
       }
     } catch (error: any) {
       toast({
@@ -44,22 +82,29 @@ export const useLifeStory = (storyId?: string, userId?: string) => {
         description: `Impossible de charger l'histoire de vie : ${error.message}`,
         variant: 'destructive',
       });
-      setLifeStory(null);
+      setData(null);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const saveLifeStory = async (lifeStoryToSave: LifeStory) => {
-    if (!user) return;
+  const saveNow = async () => {
+    if (!data || !user) return;
 
     try {
-      setSaving(true);
-      console.log('💾 Sauvegarde de l\'histoire de vie:', lifeStoryToSave);
+      setIsSaving(true);
+      console.log('💾 Sauvegarde de l\'histoire de vie:', data);
+
+      // Préparer les données pour la sauvegarde
+      const dataToSave = {
+        ...data,
+        chapters: JSON.stringify(data.chapters),
+        updated_at: new Date().toISOString(),
+      };
 
       const { error } = await supabase
         .from('life_stories')
-        .upsert(lifeStoryToSave, { onConflict: 'id' });
+        .upsert(dataToSave, { onConflict: 'user_id' });
 
       if (error) {
         console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', error);
@@ -67,12 +112,11 @@ export const useLifeStory = (storyId?: string, userId?: string) => {
       }
 
       console.log('✅ Histoire de vie sauvegardée avec succès.');
+      setLastSaved(new Date());
       toast({
         title: 'Succès',
         description: 'Histoire de vie sauvegardée !',
       });
-
-      setLifeStory(lifeStoryToSave);
     } catch (error: any) {
       toast({
         title: 'Erreur',
@@ -80,165 +124,118 @@ export const useLifeStory = (storyId?: string, userId?: string) => {
         variant: 'destructive',
       });
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  const createNewLifeStory = async (title: string, userId: string) => {
-    if (!user) return;
-
-    try {
-      setSaving(true);
-      console.log('✨ Création d\'une nouvelle histoire de vie pour l\'utilisateur:', userId);
-
-      const newStory: LifeStory = {
-        user_id: userId,
-        title: title,
-        chapters: initialChapters.map(chapter => ({
-          ...chapter,
-          id: uuidv4(),
-          questions: chapter.questions.map(question => ({
-            ...question,
-            id: uuidv4()
-          }))
-        })),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from('life_stories')
-        .insert([newStory])
-        .select()
-
-      if (error) {
-        console.error('❌ Erreur lors de la création de l\'histoire:', error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        console.log('✅ Nouvelle histoire de vie créée avec succès:', data[0]);
-        toast({
-          title: 'Succès',
-          description: 'Nouvelle histoire de vie créée !',
-        });
-        setLifeStory(data[0]);
+  const toggleQuestions = (chapterId: string) => {
+    setOpenQuestions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterId)) {
+        newSet.delete(chapterId);
       } else {
-        console.error('❌ Erreur lors de la création de l\'histoire: Pas de données retournées');
-        throw new Error('Pas de données retournées lors de la création de l\'histoire');
+        newSet.add(chapterId);
       }
-    } catch (error: any) {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de créer l'histoire de vie : ${error.message}`,
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
+      return newSet;
+    });
   };
 
-  const loadAvailableUsers = async () => {
-    if (!user) return;
-
-    try {
-      console.log('🔍 Chargement des utilisateurs disponibles...');
-      
-      const isAdmin = hasRole('admin');
-      let users: Array<{id: string, name: string}> = [];
-
-      if (isAdmin) {
-        console.log('🔍 Mode admin - récupération de tous les utilisateurs');
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, display_name, email')
-          .order('display_name');
-
-        if (profiles) {
-          users = profiles.map(profile => ({
-            id: profile.id,
-            name: profile.display_name || profile.email || 'Utilisateur inconnu'
-          }));
-        }
-      } else {
-        console.log('🔍 Mode utilisateur normal - récupération via groupes');
-        
-        // Récupérer les utilisateurs du même groupe via RLS
-        // Les politiques RLS gèrent automatiquement l'accès
-        const { data: groupMembers } = await supabase
-          .from('group_members')
-          .select(`
-            user_id,
-            profiles(id, display_name, email)
-          `);
-
-        if (groupMembers) {
-          // Créer un Set pour éviter les doublons
-          const userSet = new Set();
-          
-          groupMembers.forEach(member => {
-            if (member.profiles && !userSet.has(member.profiles.id)) {
-              userSet.add(member.profiles.id);
-              users.push({
-                id: member.profiles.id,
-                name: member.profiles.display_name || member.profiles.email || 'Utilisateur inconnu'
-              });
-            }
-          });
-        }
-
-        // Toujours inclure l'utilisateur actuel
-        if (!users.find(u => u.id === user.id)) {
-          const { data: currentUserProfile } = await supabase
-            .from('profiles')
-            .select('display_name, email')
-            .eq('id', user.id)
-            .single();
-
-          users.unshift({
-            id: user.id,
-            name: currentUserProfile?.display_name || currentUserProfile?.email || 'Moi'
-          });
-        }
-      }
-
-      console.log('🔍 Utilisateurs disponibles:', users);
-      setAvailableUsers(users);
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des utilisateurs:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger la liste des utilisateurs',
-        variant: 'destructive',
-      });
-    }
+  const handleQuestionFocus = (questionId: string) => {
+    setActiveQuestion(questionId);
   };
+
+  const updateAnswer = (questionId: string, answer: string) => {
+    if (!data) return;
+
+    const updatedChapters = data.chapters.map(chapter => ({
+      ...chapter,
+      questions: chapter.questions.map(question =>
+        question.id === questionId ? { ...question, answer } : question
+      )
+    }));
+
+    setData({ ...data, chapters: updatedChapters });
+  };
+
+  const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
+    if (!data) return;
+
+    const updatedChapters = data.chapters.map(chapter => ({
+      ...chapter,
+      questions: chapter.questions.map(question =>
+        question.id === questionId 
+          ? { ...question, audioBlob, audioUrl } 
+          : question
+      )
+    }));
+
+    setData({ ...data, chapters: updatedChapters });
+  };
+
+  const handleAudioDeleted = (questionId: string) => {
+    if (!data) return;
+
+    const updatedChapters = data.chapters.map(chapter => ({
+      ...chapter,
+      questions: chapter.questions.map(question =>
+        question.id === questionId 
+          ? { ...question, audioBlob: null, audioUrl: null } 
+          : question
+      )
+    }));
+
+    setData({ ...data, chapters: updatedChapters });
+  };
+
+  const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
+    if (!data) return;
+
+    const updatedChapters = data.chapters.map(chapter => ({
+      ...chapter,
+      questions: chapter.questions.map(question =>
+        question.id === questionId 
+          ? { ...question, audioUrl } 
+          : question
+      )
+    }));
+
+    setData({ ...data, chapters: updatedChapters });
+  };
+
+  // Calculer le progrès
+  const progress = data ? (() => {
+    const totalQuestions = data.chapters.reduce((sum, chapter) => sum + chapter.questions.length, 0);
+    const answeredQuestions = data.chapters.reduce((sum, chapter) => 
+      sum + chapter.questions.filter(q => q.answer && q.answer.trim() !== '').length, 0
+    );
+    return { totalQuestions, answeredQuestions };
+  })() : { totalQuestions: 0, answeredQuestions: 0 };
 
   useEffect(() => {
-    if (storyId) {
-      loadLifeStory(storyId);
-    } else if (userId) {
-      // Si on a un userId mais pas de storyId, on ne charge pas l'histoire
-      // Cela permet de créer une nouvelle histoire pour cet utilisateur
-      setLifeStory(null);
-      setLoading(false);
+    if (effectiveUserId) {
+      loadLifeStory(effectiveUserId);
     } else {
-      setLifeStory(null);
-      setLoading(false);
+      setData(null);
+      setIsLoading(false);
     }
-  }, [storyId, user, userId]);
-
-  useEffect(() => {
-    loadAvailableUsers();
-  }, [user, hasRole]);
+  }, [effectiveUserId, user]);
 
   return {
-    lifeStory,
-    loading,
-    saving,
-    availableUsers,
-    saveLifeStory,
-    createNewLifeStory,
-    loadAvailableUsers
+    data,
+    isLoading,
+    isSaving,
+    activeTab,
+    openQuestions,
+    activeQuestion,
+    progress,
+    lastSaved,
+    setActiveTab,
+    toggleQuestions,
+    handleQuestionFocus,
+    updateAnswer,
+    handleAudioRecorded,
+    handleAudioDeleted,
+    handleAudioUrlChange,
+    saveNow
   };
 };

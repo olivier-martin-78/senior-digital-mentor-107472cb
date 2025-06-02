@@ -18,11 +18,13 @@ export interface RecentItem {
   post_id?: string;
   comment_content?: string;
   album_name?: string;
+  media_url?: string;
+  first_name?: string;
 }
 
 export const useRecentItems = () => {
-  const { user, hasRole } = useAuth();
-  const [allItems, setAllItems] = useState<RecentItem[]>([]);
+  const { user } = useAuth();
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Utilisateur effectif = utilisateur connecté dans le nouveau système simplifié
@@ -35,11 +37,11 @@ export const useRecentItems = () => {
   const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
   const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
-  const wishes = useRecentWishes(effectiveUserId, authorizedUserIds);
+  const wishes = useRecentWishes();
 
   useEffect(() => {
     if (!user) {
-      setAllItems([]);
+      setRecentItems([]);
       setLoading(false);
       return;
     }
@@ -63,9 +65,9 @@ export const useRecentItems = () => {
     );
 
     console.log('🔍 Total items triés:', sorted.length);
-    setAllItems(sorted);
+    setRecentItems(sorted);
     setLoading(false);
   }, [blogPosts, comments, diaryEntries, wishes, user]);
 
-  return { items: allItems, loading };
+  return { recentItems, loading };
 };
