@@ -33,16 +33,13 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     existingAudioUrlLength: existingAudioUrl?.length,
     isUploading,
     hasExistingAudio: !!existingAudioUrl,
-    isValidUrl: existingAudioUrl && existingAudioUrl.length > 10
+    isValidUrl: existingAudioUrl && existingAudioUrl.length > 10,
+    isReader: hasRole('reader')
   });
   
-  // Les lecteurs ne peuvent pas enregistrer d'audio
-  const canRecord = !hasRole('reader');
-
-  if (!canRecord) {
-    console.log('🎤 VoiceAnswerRecorder - Utilisateur lecteur, pas d\'enregistrement autorisé');
-    return null;
-  }
+  // Les lecteurs peuvent voir le contenu mais ne peuvent pas enregistrer
+  const isReader = hasRole('reader');
+  const canRecord = !isReader;
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     console.log('🎤 VoiceAnswerRecorder - handleAudioUrlChange:', { 
@@ -92,8 +89,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     existingAudioUrl: !!existingAudioUrl,
     existingAudioUrlValue: existingAudioUrl,
     isUploading,
+    isReader,
     condition: 'existingAudioUrl && !isUploading',
-    finalDecision: shouldShowPlayer ? 'LECTEUR' : 'ENREGISTREUR'
+    finalDecision: shouldShowPlayer ? 'LECTEUR' : (canRecord ? 'ENREGISTREUR' : 'RIEN')
   });
 
   // Si un audio existe déjà ET qu'on n'est pas en train d'uploader, afficher le lecteur
@@ -103,12 +101,19 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       <VoiceAnswerPlayer
         audioUrl={existingAudioUrl}
         onDelete={handleDeleteExistingAudio}
+        readOnly={isReader}
       />
     );
   }
 
-  // Sinon, afficher l'enregistreur
-  console.log('🎤 VoiceAnswerRecorder - ⚠️ Affichage de l\'enregistreur (pas d\'audio existant ou upload en cours)');
+  // Si pas d'audio existant et que l'utilisateur est un reader, ne rien afficher
+  if (isReader) {
+    console.log('🎤 VoiceAnswerRecorder - ⚠️ Reader sans audio existant, pas d\'affichage');
+    return null;
+  }
+
+  // Sinon, afficher l'enregistreur pour les utilisateurs qui peuvent enregistrer
+  console.log('🎤 VoiceAnswerRecorder - ⚠️ Affichage de l\'enregistreur (pas d\'audio existant et peut enregistrer)');
   return (
     <AudioRecorder
       chapterId={chapterId}

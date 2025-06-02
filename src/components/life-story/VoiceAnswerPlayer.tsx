@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash, Download, AlertCircle, Play, Pause } from 'lucide-react';
@@ -10,11 +9,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface VoiceAnswerPlayerProps {
   audioUrl: string;
   onDelete: () => void;
+  readOnly?: boolean;
 }
 
 export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   audioUrl,
-  onDelete
+  onDelete,
+  readOnly = false
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +37,8 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     isLoading,
     hasError,
     urlLength: audioUrl?.length,
-    bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown'
+    bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown',
+    readOnly
   });
   
   // Chargement de l'audio avec gestion d'erreur améliorée
@@ -290,7 +292,8 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     isValidUrl: validateAudioUrl(audioUrl),
     duration,
     isPlaying,
-    loadAttempts
+    loadAttempts,
+    readOnly
   });
   
   // Si l'URL n'est pas valide, afficher un message d'erreur
@@ -384,15 +387,17 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           <Download className="w-4 h-4 mr-1" /> Exporter l'audio
         </Button>
         
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleDelete}
-          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-          disabled={isPlaying || isLoading}
-        >
-          <Trash className="w-4 h-4 mr-1" /> Supprimer
-        </Button>
+        {!readOnly && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDelete}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            disabled={isPlaying || isLoading}
+          >
+            <Trash className="w-4 h-4 mr-1" /> Supprimer
+          </Button>
+        )}
       </div>
     </div>
   );
