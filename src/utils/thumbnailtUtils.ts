@@ -191,15 +191,39 @@ export const getThumbnailUrl = async (
     console.log(`🔗 Génération d'URL pour bucket: ${actualBucket}, chemin: ${url}`);
     
     // Vérifier d'abord l'existence du fichier
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from(actualBucket)
-      .list(url.split('/')[0] || '', {
-        search: url.split('/').pop() || ''
-      });
+    // Pour les souhaits, chercher le fichier exact plutôt qu'avec un préfixe
+    let fileExists = false;
     
-    if (fileError) {
-      console.warn('Error checking file existence:', fileError);
-    } else if (!fileData || fileData.length === 0) {
+    if (url.startsWith('wish-')) {
+      // Pour les souhaits, chercher le fichier exact
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from(actualBucket)
+        .list('', {
+          search: url
+        });
+      
+      if (fileError) {
+        console.warn('Error checking wish file existence:', fileError);
+      } else {
+        fileExists = fileData && fileData.some(file => file.name === url);
+        console.log('🔍 Wish file search result:', { url, found: fileExists, files: fileData?.map(f => f.name) });
+      }
+    } else {
+      // Pour les autres types, utiliser la logique existante
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from(actualBucket)
+        .list(url.split('/')[0] || '', {
+          search: url.split('/').pop() || ''
+        });
+      
+      if (fileError) {
+        console.warn('Error checking file existence:', fileError);
+      } else {
+        fileExists = fileData && fileData.length > 0;
+      }
+    }
+    
+    if (!fileExists) {
       console.warn('File not found in storage:', url);
       return '/placeholder.svg';
     }
