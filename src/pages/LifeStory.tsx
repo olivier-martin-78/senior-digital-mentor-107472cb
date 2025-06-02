@@ -156,6 +156,28 @@ const LifeStory = () => {
     return 'Mon Histoire de Vie';
   };
 
+  // Convert activeTab from number to string for component compatibility
+  const activeTabString = lifeStoryData.activeTab.toString();
+  
+  // Convert openQuestions Set to object for component compatibility
+  const openQuestionsObject: { [key: string]: boolean } = {};
+  lifeStoryData.openQuestions.forEach(key => {
+    openQuestionsObject[key] = true;
+  });
+  
+  // Wrapper function to convert string to number for setActiveTab
+  const handleSetActiveTab = (tab: string) => {
+    const tabIndex = parseInt(tab, 10);
+    if (!isNaN(tabIndex)) {
+      lifeStoryData.setActiveTab(tabIndex);
+    }
+  };
+  
+  // Wrapper function to match expected audio recording signature
+  const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
+    lifeStoryData.handleAudioRecorded(questionId, blob, '');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -206,14 +228,14 @@ const LifeStory = () => {
         
         <LifeStoryLayout 
           chapters={lifeStoryData.data.chapters}
-          activeTab={lifeStoryData.activeTab}
-          openQuestions={lifeStoryData.openQuestions}
+          activeTab={activeTabString}
+          openQuestions={openQuestionsObject}
           activeQuestion={lifeStoryData.activeQuestion}
-          setActiveTab={lifeStoryData.setActiveTab}
+          setActiveTab={handleSetActiveTab}
           toggleQuestions={lifeStoryData.toggleQuestions}
           handleQuestionFocus={lifeStoryData.handleQuestionFocus}
           updateAnswer={lifeStoryData.updateAnswer}
-          onAudioRecorded={lifeStoryData.handleAudioRecorded}
+          onAudioRecorded={handleAudioRecorded}
           onAudioDeleted={lifeStoryData.handleAudioDeleted}
           onAudioUrlChange={lifeStoryData.handleAudioUrlChange}
         />

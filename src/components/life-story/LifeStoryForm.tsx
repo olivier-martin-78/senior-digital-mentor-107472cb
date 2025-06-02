@@ -67,6 +67,28 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
     );
   }
   
+  // Convert activeTab from number to string for component compatibility
+  const activeTabString = lifeStoryHook.activeTab.toString();
+  
+  // Convert openQuestions Set to object for component compatibility
+  const openQuestionsObject: { [key: string]: boolean } = {};
+  lifeStoryHook.openQuestions.forEach(key => {
+    openQuestionsObject[key] = true;
+  });
+  
+  // Wrapper function to convert string to number for setActiveTab
+  const handleSetActiveTab = (tab: string) => {
+    const tabIndex = parseInt(tab, 10);
+    if (!isNaN(tabIndex)) {
+      lifeStoryHook.setActiveTab(tabIndex);
+    }
+  };
+  
+  // Wrapper function to match expected audio recording signature
+  const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
+    lifeStoryHook.handleAudioRecorded(questionId, blob, '');
+  };
+  
   return (
     <div className="space-y-6">
       <StoryHeader 
@@ -83,14 +105,14 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
       {displayData.chapters.length > 0 ? (
         <LifeStoryLayout
           chapters={displayData.chapters}
-          activeTab={lifeStoryHook.activeTab}
-          openQuestions={lifeStoryHook.openQuestions}
+          activeTab={activeTabString}
+          openQuestions={openQuestionsObject}
           activeQuestion={lifeStoryHook.activeQuestion}
-          setActiveTab={lifeStoryHook.setActiveTab}
+          setActiveTab={handleSetActiveTab}
           toggleQuestions={lifeStoryHook.toggleQuestions}
           handleQuestionFocus={lifeStoryHook.handleQuestionFocus}
           updateAnswer={lifeStoryHook.updateAnswer}
-          onAudioRecorded={lifeStoryHook.handleAudioRecorded}
+          onAudioRecorded={handleAudioRecorded}
           onAudioDeleted={lifeStoryHook.handleAudioDeleted}
           onAudioUrlChange={lifeStoryHook.handleAudioUrlChange}
         />

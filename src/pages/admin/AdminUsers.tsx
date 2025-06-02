@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Pencil, Trash2, ChevronLeft, Search, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import { AppRole } from '@/types/supabase';
@@ -20,7 +21,7 @@ interface UserAdmin {
   id: string;
   email: string;
   created_at: string;
-  last_sign_in_at: string;
+  last_sign_in_at: string | null;
   role: AppRole;
   display_name: string | null;
 }
@@ -48,25 +49,44 @@ const AdminUsers = () => {
     try {
       setLoading(true);
 
-      const { data: usersData, error: usersError } = await supabase
+      // First get profiles data
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          email,
-          created_at,
-          last_sign_in_at,
-          role,
-          display_name
-        `)
-        .order('created_at', { ascending: false });
+        .select('id, email, created_at, display_name');
 
-      if (usersError) {
-        console.error('Erreur Supabase (utilisateurs):', usersError);
-        throw new Error(`Erreur Supabase: ${usersError.message} (code: ${usersError.code})`);
+      if (profilesError) {
+        console.error('Erreur Supabase (profils):', profilesError);
+        throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
       }
 
-      if (usersData) {
-        setUsers(usersData);
+      // Then get user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.error('Erreur Supabase (rôles):', rolesError);
+        throw new Error(`Erreur Supabase: ${rolesError.message} (code: ${rolesError.code})`);
+      }
+
+      if (profilesData && rolesData) {
+        // Create a map for easy role lookup
+        const rolesMap: { [key: string]: AppRole } = {};
+        rolesData.forEach(roleEntry => {
+          rolesMap[roleEntry.user_id] = roleEntry.role;
+        });
+
+        // Combine profile and role data
+        const combinedUsers: UserAdmin[] = profilesData.map(profile => ({
+          id: profile.id,
+          email: profile.email,
+          created_at: profile.created_at,
+          last_sign_in_at: null, // We'll set this as null since it's not available in profiles
+          role: rolesMap[profile.id] || 'reader',
+          display_name: profile.display_name
+        }));
+
+        setUsers(combinedUsers);
       } else {
         throw new Error('Aucune donnée reçue de l\'API');
       }
@@ -205,7 +225,7 @@ const AdminUsers = () => {
                       <TableCell>
                         {user.last_sign_in_at
                           ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-                          : 'Jamais'}
+                          : 'Non disponible'}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
@@ -235,7 +255,11 @@ const AdminUsers = () => {
         )}
 
         {/* Dialog d'invitation d'un utilisateur */}
-        <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} onUserInvited={loadUsers} />
+        <InviteUserDialog 
+          open={inviteDialogOpen} 
+          onOpenChange={setInviteDialogOpen} 
+          onUserInvited={loadUsers} 
+        />
 
         {/* Dialog de confirmation de suppression */}
         <DeleteUserDialog
