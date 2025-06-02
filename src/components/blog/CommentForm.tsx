@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import { Profile } from '@/types/supabase';
 import { getInitials } from './PostHeader';
+import EmojiPicker from './EmojiPicker';
 
 interface CommentFormProps {
   user: any | null;
@@ -30,6 +31,10 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setCommentContent(prev => prev + emoji);
   };
 
   if (!user) {
@@ -56,23 +61,26 @@ const CommentForm: React.FC<CommentFormProps> = ({ user, profile, onSubmit }) =>
           <AvatarImage src={profile?.avatar_url || undefined} alt={user?.email || 'Utilisateur'} />
           <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
         </Avatar>
-        <Textarea
-          value={commentContent}
-          onChange={(e) => setCommentContent(e.target.value)}
-          placeholder="Ajouter un commentaire..."
-          className="flex-1"
-          rows={3}
-        />
-      </div>
-      <div className="flex justify-end">
-        <Button 
-          type="submit" 
-          disabled={submitting || !commentContent.trim()}
-          className="bg-tranches-sage hover:bg-tranches-sage/90"
-        >
-          {submitting ? 'Envoi...' : 'Publier'}
-          <Send className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="flex-1">
+          <Textarea
+            value={commentContent}
+            onChange={(e) => setCommentContent(e.target.value)}
+            placeholder="Ajouter un commentaire..."
+            className="flex-1 mb-2"
+            rows={3}
+          />
+          <div className="flex justify-between items-center">
+            <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            <Button 
+              type="submit" 
+              disabled={submitting || !commentContent.trim()}
+              className="bg-tranches-sage hover:bg-tranches-sage/90"
+            >
+              {submitting ? 'Envoi...' : 'Publier'}
+              <Send className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </form>
   );
