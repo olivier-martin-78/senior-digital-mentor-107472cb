@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Settings, LogOut, User, Shield, Users, Calendar, Pen, Heart, BookOpen, Clock } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import NotificationButton from './NotificationButton';
 
 const Header = () => {
   const { user, profile, signOut, hasRole } = useAuth();
@@ -101,8 +100,6 @@ const Header = () => {
                   Souhaits
                 </Link>
               </nav>
-
-              <NotificationButton />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

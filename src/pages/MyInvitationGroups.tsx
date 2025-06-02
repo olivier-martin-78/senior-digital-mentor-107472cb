@@ -121,7 +121,7 @@ const MyInvitationGroups = () => {
           user_id, 
           role, 
           added_at,
-          profiles!inner(display_name, email)
+          profiles(display_name, email)
         `)
         .eq('group_id', groupId)
         .order('added_at', { ascending: false });
