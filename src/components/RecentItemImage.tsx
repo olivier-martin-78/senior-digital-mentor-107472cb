@@ -21,10 +21,11 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
   className = "w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg"
 }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadThumbnail = async () => {
-      console.log('RecentItemImage - renderItemImage pour:', {
+      console.log('🖼️ RecentItemImage - Processing image for:', {
         type,
         id,
         cover_image: coverImage,
@@ -33,35 +34,35 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
 
       // Pour les commentaires, pas besoin de charger d'image
       if (type === 'comment') {
-        console.log('RecentItemImage - Commentaire détecté, utilisation de l\'icône bulle:', id);
+        console.log('🖼️ Comment detected, using bubble icon:', id);
+        setIsLoading(false);
         return;
       }
 
       let imagePath = '';
+      let bucket = ALBUM_THUMBNAILS_BUCKET;
 
       // Pour les entrées de journal, utiliser media_url avec le bucket diary_media
       if (type === 'diary' && mediaUrl) {
         imagePath = mediaUrl;
-        console.log('RecentItemImage - Traitement image journal - ID:', id, 'media_url:', mediaUrl);
+        bucket = DIARY_MEDIA_BUCKET;
+        console.log('🖼️ Diary entry - using media_url:', mediaUrl, 'with bucket:', bucket);
       }
       // Pour les souhaits et blogs, utiliser cover_image avec le bucket album-thumbnails
       else if ((type === 'wish' || type === 'blog') && coverImage) {
         imagePath = coverImage;
-        console.log('RecentItemImage - Traitement image', type, '- ID:', id, 'cover_image:', coverImage);
+        bucket = ALBUM_THUMBNAILS_BUCKET;
+        console.log('🖼️ Wish/Blog - using cover_image:', coverImage, 'with bucket:', bucket);
       }
       
       if (!imagePath) {
-        console.log('RecentItemImage - Pas d\'image pour:', type, id);
+        console.log('🖼️ No image path available for:', type, id);
+        setIsLoading(false);
         return;
       }
       
       try {
-        let bucket = ALBUM_THUMBNAILS_BUCKET;
-        if (type === 'diary') {
-          bucket = DIARY_MEDIA_BUCKET;
-        }
-        
-        console.log('RecentItemImage - Génération URL pour:', {
+        console.log('🖼️ Generating URL for:', {
           type,
           id,
           bucket,
@@ -69,14 +70,17 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
         });
         
         const url = await getThumbnailUrl(imagePath, bucket);
-        console.log('RecentItemImage - URL générée:', url);
+        console.log('🖼️ Generated URL:', url);
         setThumbnailUrl(url);
       } catch (error) {
-        console.error('RecentItemImage - Erreur génération URL:', {
+        console.error('🖼️ Error generating URL:', {
           type,
           id,
           error
         });
+        setThumbnailUrl('/placeholder.svg');
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -95,26 +99,34 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
 
   return (
     <div className={className}>
+      {isLoading && (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+          <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+        </div>
+      )}
       <img
         src={thumbnailUrl}
         alt={title}
         className="w-full h-full object-cover"
+        style={{ display: isLoading ? 'none' : 'block' }}
         onError={(e) => {
-          console.error('RecentItemImage - ERREUR chargement image:');
+          console.error('🖼️ ERROR loading image:');
           console.error('- Type:', type);
           console.error('- ID:', id);
-          console.error('- Path original:', coverImage || mediaUrl);
-          console.error('- URL finale:', thumbnailUrl);
-          console.error('- Erreur:', e);
+          console.error('- Original path:', coverImage || mediaUrl);
+          console.error('- Final URL:', thumbnailUrl);
+          console.error('- Error:', e);
           const target = e.target as HTMLImageElement;
           target.style.display = 'none';
+          setIsLoading(false);
         }}
         onLoad={() => {
-          console.log('RecentItemImage - SUCCESS image chargée pour:', {
+          console.log('🖼️ SUCCESS image loaded for:', {
             type,
             id,
             url: thumbnailUrl
           });
+          setIsLoading(false);
         }}
       />
     </div>

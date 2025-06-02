@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
-import { getThumbnailUrlSync, DIARY_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
 
 export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds: string[]) => {
   const { hasRole } = useAuth();
@@ -49,12 +48,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         }, {} as { [key: string]: string }) || {};
 
         items.push(...entries.map(entry => {
-          let mediaUrl = entry.media_url;
-          if (mediaUrl) {
-            if (!mediaUrl.startsWith('http')) {
-              mediaUrl = getThumbnailUrlSync(mediaUrl, DIARY_MEDIA_BUCKET);
-            }
-          }
+          console.log('🔍 Processing diary entry media_url:', entry.media_url);
           
           return {
             id: entry.id,
@@ -63,7 +57,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
             created_at: entry.created_at,
             author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: mediaUrl
+            media_url: entry.media_url // Garder l'URL originale, RecentItemImage s'occupera de la transformation
           };
         }));
       }
@@ -92,12 +86,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
 
       if (entries) {
         items.push(...entries.map(entry => {
-          let mediaUrl = entry.media_url;
-          if (mediaUrl) {
-            if (!mediaUrl.startsWith('http')) {
-              mediaUrl = getThumbnailUrlSync(mediaUrl, DIARY_MEDIA_BUCKET);
-            }
-          }
+          console.log('🔍 Processing diary entry media_url:', entry.media_url);
           
           return {
             id: entry.id,
@@ -106,11 +95,17 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
             created_at: entry.created_at,
             author: 'Moi',
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: mediaUrl
+            media_url: entry.media_url // Garder l'URL originale, RecentItemImage s'occupera de la transformation
           };
         }));
       }
     }
+
+    console.log('🔍 Final diary entries for Recent:', items.map(item => ({ 
+      id: item.id, 
+      title: item.title, 
+      media_url: item.media_url 
+    })));
 
     setDiaryEntries(items);
   }, [effectiveUserId, hasRole]);
