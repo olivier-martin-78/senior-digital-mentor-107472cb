@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentBlogPosts } from './recent/useRecentBlogPosts';
 import { useRecentComments } from './recent/useRecentComments';
@@ -27,12 +27,14 @@ export const useRecentItems = () => {
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Utilisateur effectif = utilisateur connecté dans le nouveau système simplifié
-  const effectiveUserId = user?.id || '';
+  // Mémoriser l'utilisateur effectif pour éviter les re-renders
+  const effectiveUserId = useMemo(() => user?.id || '', [user?.id]);
   
-  // Dans le nouveau système basé sur les groupes, les utilisateurs autorisés
-  // sont gérés automatiquement par RLS, donc on passe juste l'utilisateur actuel
-  const authorizedUserIds = effectiveUserId ? [effectiveUserId] : [];
+  // Mémoriser les IDs autorisés pour éviter les re-renders
+  const authorizedUserIds = useMemo(() => 
+    effectiveUserId ? [effectiveUserId] : [], 
+    [effectiveUserId]
+  );
 
   const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
@@ -67,7 +69,7 @@ export const useRecentItems = () => {
     console.log('🔍 Total items triés:', sorted.length);
     setRecentItems(sorted);
     setLoading(false);
-  }, [blogPosts, comments, diaryEntries, wishes, user]);
+  }, [user, blogPosts, comments, diaryEntries, wishes]);
 
   return { recentItems, loading };
 };
