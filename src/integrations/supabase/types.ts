@@ -172,6 +172,8 @@ export type Database = {
           content: string
           cover_image: string | null
           created_at: string
+          email_notification_requested: boolean | null
+          email_notification_sent: boolean | null
           id: string
           published: boolean | null
           title: string
@@ -183,6 +185,8 @@ export type Database = {
           content: string
           cover_image?: string | null
           created_at?: string
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           id?: string
           published?: boolean | null
           title: string
@@ -194,6 +198,8 @@ export type Database = {
           content?: string
           cover_image?: string | null
           created_at?: string
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           id?: string
           published?: boolean | null
           title?: string
@@ -222,6 +228,8 @@ export type Database = {
           contacted_people: string[] | null
           created_at: string | null
           desire_of_day: string | null
+          email_notification_requested: boolean | null
+          email_notification_sent: boolean | null
           entry_date: string
           id: string
           is_private_notes_locked: boolean | null
@@ -245,6 +253,8 @@ export type Database = {
           contacted_people?: string[] | null
           created_at?: string | null
           desire_of_day?: string | null
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           entry_date?: string
           id?: string
           is_private_notes_locked?: boolean | null
@@ -268,6 +278,8 @@ export type Database = {
           contacted_people?: string[] | null
           created_at?: string | null
           desire_of_day?: string | null
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           entry_date?: string
           id?: string
           is_private_notes_locked?: boolean | null
@@ -517,6 +529,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_subscriptions: {
+        Row: {
+          author_id: string
+          blog_notifications: boolean | null
+          created_at: string | null
+          diary_notifications: boolean | null
+          id: string
+          life_story_notifications: boolean | null
+          subscriber_id: string
+          updated_at: string | null
+          wish_notifications: boolean | null
+        }
+        Insert: {
+          author_id: string
+          blog_notifications?: boolean | null
+          created_at?: string | null
+          diary_notifications?: boolean | null
+          id?: string
+          life_story_notifications?: boolean | null
+          subscriber_id: string
+          updated_at?: string | null
+          wish_notifications?: boolean | null
+        }
+        Update: {
+          author_id?: string
+          blog_notifications?: boolean | null
+          created_at?: string | null
+          diary_notifications?: boolean | null
+          id?: string
+          life_story_notifications?: boolean | null
+          subscriber_id?: string
+          updated_at?: string | null
+          wish_notifications?: boolean | null
+        }
+        Relationships: []
+      }
       post_categories: {
         Row: {
           category_id: string
@@ -695,6 +743,8 @@ export type Database = {
           custom_request_type: string | null
           date: string | null
           email: string | null
+          email_notification_requested: boolean | null
+          email_notification_sent: boolean | null
           first_name: string | null
           id: string
           importance: string | null
@@ -718,6 +768,8 @@ export type Database = {
           custom_request_type?: string | null
           date?: string | null
           email?: string | null
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           first_name?: string | null
           id?: string
           importance?: string | null
@@ -741,6 +793,8 @@ export type Database = {
           custom_request_type?: string | null
           date?: string | null
           email?: string | null
+          email_notification_requested?: boolean | null
+          email_notification_sent?: boolean | null
           first_name?: string | null
           id?: string
           importance?: string | null

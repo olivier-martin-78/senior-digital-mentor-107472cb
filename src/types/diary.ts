@@ -23,6 +23,8 @@ export interface DiaryEntry {
   objectives: string | null;
   created_at: string | null;
   updated_at: string | null;
+  email_notification_sent?: boolean;
+  email_notification_requested?: boolean;
 }
 
 export interface DiaryEntryWithAuthor extends DiaryEntry {

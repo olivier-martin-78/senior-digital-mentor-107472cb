@@ -86,6 +86,8 @@ export interface BlogPost {
   album_id: string | null;
   publication_date?: string;
   cover_image: string | null;
+  email_notification_sent?: boolean;
+  email_notification_requested?: boolean;
 }
 
 export interface WishPost {
@@ -109,6 +111,8 @@ export interface WishPost {
   needs: string | null;
   offering: string | null;
   attachment_url: string | null;
+  email_notification_sent?: boolean;
+  email_notification_requested?: boolean;
   profiles?: {
     display_name: string | null;
     email: string;
@@ -149,4 +153,16 @@ export interface PostWithCategories extends PostWithAuthor {
 
 export interface AlbumWithAuthor extends BlogAlbum {
   profiles: Profile;
+}
+
+export interface NotificationSubscription {
+  id: string;
+  subscriber_id: string;
+  author_id: string;
+  blog_notifications: boolean;
+  diary_notifications: boolean;
+  wish_notifications: boolean;
+  life_story_notifications: boolean;
+  created_at: string;
+  updated_at: string;
 }
