@@ -118,12 +118,15 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       if (!existingStory && storyError?.code === 'PGRST116') {
         console.log('📖 CRÉATION de l\'histoire manquante...');
         
+        // Convertir les chapitres en JSON pour Supabase
+        const chaptersAsJson = JSON.parse(JSON.stringify(initialChapters));
+        
         const { data: newStory, error: createError } = await supabase
           .from('life_stories')
           .insert({
             user_id: effectiveUserId,
             title: 'Mon histoire',
-            chapters: initialChapters,
+            chapters: chaptersAsJson,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
