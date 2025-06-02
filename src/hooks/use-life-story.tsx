@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,10 +76,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
               const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
               
               if (existingQuestion) {
+                // Normaliser l'audioUrl - traiter les chaînes vides comme null
+                const normalizedAudioUrl = existingQuestion.audioUrl && existingQuestion.audioUrl.trim() !== '' 
+                  ? existingQuestion.audioUrl 
+                  : null;
+                
                 return {
                   ...initialQuestion,
                   answer: existingQuestion.answer || initialQuestion.answer,
-                  audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+                  audioUrl: normalizedAudioUrl,
                   audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
                 };
               }
@@ -168,15 +174,22 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       );
       console.log('🎵 URLs audio à sauvegarder:', audioUrls);
 
-      // Préparer les données pour la sauvegarde
+      // Préparer les données pour la sauvegarde - PRÉSERVER les URLs audio existantes
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
-        questions: chapter.questions.map(question => ({
-          id: question.id,
-          text: question.text,
-          answer: question.answer || '',
-          audioUrl: question.audioUrl || null,
-        }))
+        questions: chapter.questions.map(question => {
+          // Normaliser l'audioUrl avant la sauvegarde
+          const normalizedAudioUrl = question.audioUrl && question.audioUrl.trim() !== '' 
+            ? question.audioUrl 
+            : null;
+          
+          return {
+            id: question.id,
+            text: question.text,
+            answer: question.answer || '',
+            audioUrl: normalizedAudioUrl, // Préserver l'URL audio existante
+          };
+        })
       }));
 
       console.log('💾 Chapitres préparés pour sauvegarde:', chaptersToSave);
@@ -325,11 +338,14 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     console.log('🔄 Changement URL audio:', { questionId, audioUrl });
 
+    // Normaliser l'URL avant de l'enregistrer
+    const normalizedAudioUrl = audioUrl && audioUrl.trim() !== '' ? audioUrl : null;
+
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
         question.id === questionId 
-          ? { ...question, audioUrl } 
+          ? { ...question, audioUrl: normalizedAudioUrl } 
           : question
       )
     }));
@@ -337,7 +353,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     setData({ ...data, chapters: updatedChapters });
     
     // Sauvegarder automatiquement après changement d'URL
-    if (audioUrl) {
+    if (normalizedAudioUrl) {
       setTimeout(() => {
         if (!isSaving) {
           saveNow();
