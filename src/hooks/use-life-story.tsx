@@ -23,19 +23,24 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   // Déterminer l'utilisateur cible - utiliser targetUserId s'il est fourni, sinon l'utilisateur connecté
   const effectiveUserId = targetUserId || user?.id;
 
-  console.log('🔍 useLifeStory - Configuration:', {
+  console.log('🔍 useLifeStory - Configuration détaillée:', {
     targetUserId,
     currentUserId: user?.id,
     effectiveUserId,
-    hasUser: !!user
+    hasUser: !!user,
+    userIsAdmin: hasRole('admin'),
+    shouldLoadTargetUser: !!targetUserId
   });
 
   const loadLifeStory = async (userId: string) => {
-    if (!user) return;
+    if (!user) {
+      console.log('🔍 useLifeStory - Pas d\'utilisateur connecté, abandon');
+      return;
+    }
 
     try {
       setIsLoading(true);
-      console.log(`🔍 Chargement de l'histoire de vie pour l'utilisateur: ${userId}`);
+      console.log(`🔍 Chargement de l'histoire de vie pour l'utilisateur: ${userId} (demandé par: ${user.id})`);
 
       const { data: storyData, error } = await supabase
         .from('life_stories')
@@ -49,7 +54,21 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       }
 
       if (storyData) {
-        console.log('✅ Histoire de vie chargée avec succès:', storyData);
+        console.log('✅ Histoire de vie chargée avec succès:', {
+          storyId: storyData.id,
+          storyUserId: storyData.user_id,
+          requestedUserId: userId,
+          matchesRequest: storyData.user_id === userId
+        });
+        
+        // Vérifier que les données correspondent bien à l'utilisateur demandé
+        if (storyData.user_id !== userId) {
+          console.error('❌ Incohérence: les données chargées ne correspondent pas à l\'utilisateur demandé', {
+            expected: userId,
+            received: storyData.user_id
+          });
+          throw new Error(`Incohérence des données: attendu ${userId}, reçu ${storyData.user_id}`);
+        }
         
         // Parser les chapitres JSON en toute sécurité
         let parsedChapters: Chapter[] = [];
@@ -115,10 +134,10 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           chapters: mergedChapters
         });
       } else {
-        console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux');
+        console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux pour utilisateur:', userId);
         // Créer une nouvelle histoire avec les chapitres initiaux
         const newStory: LifeStory = {
-          user_id: userId,
+          user_id: userId, // S'assurer que l'user_id correspond à l'utilisateur demandé
           title: 'Mon Histoire de Vie',
           chapters: initialChapters,
           created_at: new Date().toISOString(),
@@ -143,9 +162,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     if (!data || !user) return;
     
     // Déterminer le user_id pour la sauvegarde
-    // Si c'est un admin qui édite l'histoire de quelqu'un d'autre, utiliser le user_id de l'histoire
-    // Sinon, utiliser l'utilisateur connecté
-    const userIdForSave = data.user_id || effectiveUserId;
+    // IMPORTANT: Utiliser effectiveUserId pour garantir la cohérence
+    const userIdForSave = effectiveUserId;
+    
+    if (!userIdForSave) {
+      console.error('❌ Pas d\'utilisateur effectif pour la sauvegarde');
+      return;
+    }
     
     // Vérifier les permissions avant la sauvegarde
     const isAdmin = hasRole('admin');
@@ -163,7 +186,11 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     try {
       setIsSaving(true);
-      console.log('💾 Sauvegarde de l\'histoire de vie pour user_id:', userIdForSave);
+      console.log('💾 Sauvegarde de l\'histoire de vie pour user_id:', {
+        userIdForSave,
+        effectiveUserId,
+        currentDataUserId: data.user_id
+      });
 
       // Log des URLs audio avant sauvegarde
       const audioUrls = data.chapters.flatMap(ch => 
@@ -203,6 +230,12 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         last_edited_question: data.last_edited_question || null,
       };
 
+      console.log('💾 Données à sauvegarder:', {
+        user_id: dataToSave.user_id,
+        chaptersCount: chaptersToSave.length,
+        audioCount: audioUrls.length
+      });
+
       // Utiliser upsert avec la bonne gestion des conflits
       const { data: savedData, error } = await supabase
         .from('life_stories')
@@ -218,13 +251,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         throw error;
       }
 
-      console.log('✅ Histoire de vie sauvegardée avec succès:', savedData);
+      console.log('✅ Histoire de vie sauvegardée avec succès:', {
+        savedId: savedData?.id,
+        savedUserId: savedData?.user_id,
+        expectedUserId: userIdForSave
+      });
       
       // Mettre à jour les données locales avec l'ID retourné
       if (savedData && savedData.id) {
         setData(prevData => ({
           ...prevData!,
           id: savedData.id,
+          user_id: savedData.user_id, // S'assurer que l'user_id est cohérent
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
         }));
@@ -288,7 +326,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
     if (!data) return;
 
-    console.log('🎤 Audio enregistré:', { questionId, audioUrl });
+    console.log('🎤 Audio enregistré:', { questionId, audioUrl, dataUserId: data.user_id });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -312,7 +350,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioDeleted = (questionId: string) => {
     if (!data) return;
 
-    console.log('🗑️ Audio supprimé:', { questionId });
+    console.log('🗑️ Audio supprimé:', { questionId, dataUserId: data.user_id });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -336,7 +374,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
     if (!data) return;
 
-    console.log('🔄 Changement URL audio:', { questionId, audioUrl });
+    console.log('🔄 Changement URL audio:', { questionId, audioUrl, dataUserId: data.user_id });
 
     // Normaliser l'URL avant de l'enregistrer
     const normalizedAudioUrl = audioUrl && audioUrl.trim() !== '' ? audioUrl : null;
@@ -373,9 +411,14 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
   useEffect(() => {
     if (effectiveUserId) {
-      console.log('🔄 Rechargement pour utilisateur:', effectiveUserId);
+      console.log('🔄 Rechargement pour utilisateur:', {
+        effectiveUserId,
+        targetUserId,
+        currentUserId: user?.id
+      });
       loadLifeStory(effectiveUserId);
     } else {
+      console.log('🔄 Pas d\'utilisateur effectif, reset des données');
       setData(null);
       setIsLoading(false);
     }
