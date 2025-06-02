@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const ALBUM_THUMBNAILS_BUCKET = 'album-thumbnails';
@@ -101,7 +102,7 @@ export const normalizeMediaUrl = (url: string | null, bucket: string = ALBUM_THU
       return data.publicUrl;
     }
   } catch (error) {
-    console.error('Erreur lors de la normalisation de l’URL média:', {
+    console.error('Erreur lors de la normalisation de l'URL média:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       url,
       bucket,
@@ -149,7 +150,7 @@ export const getThumbnailUrlSync = (
     console.warn(`Impossible de générer l'URL publique pour ${url} dans ${actualBucket}`);
     return '/placeholder.svg';
   } catch (error) {
-    console.error('Erreur lors de la génération de l’URL publique:', {
+    console.error('Erreur lors de la génération de l'URL publique:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       url,
       bucket,
@@ -159,7 +160,7 @@ export const getThumbnailUrlSync = (
 };
 
 /**
- * Get a thumbnail preview URL asynchronously
+ * Get a thumbnail preview URL asynchronously with improved error handling
  */
 export const getThumbnailUrl = async (
   url: string | null,
@@ -182,33 +183,50 @@ export const getThumbnailUrl = async (
   
   try {
     if (url.startsWith('http')) {
+      console.log("URL already complete:", url);
       return url;
     }
     
     const actualBucket = bucket;
-    console.log(`Génération d'URL pour bucket: ${actualBucket}, chemin: ${url}`);
+    console.log(`🔗 Génération d'URL pour bucket: ${actualBucket}, chemin: ${url}`);
     
+    // Vérifier d'abord l'existence du fichier
+    const { data: fileData, error: fileError } = await supabase.storage
+      .from(actualBucket)
+      .list(url.split('/')[0] || '', {
+        search: url.split('/').pop() || ''
+      });
+    
+    if (fileError) {
+      console.warn('Error checking file existence:', fileError);
+    } else if (!fileData || fileData.length === 0) {
+      console.warn('File not found in storage:', url);
+      return '/placeholder.svg';
+    }
+    
+    // Essayer de créer une URL signée d'abord
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(actualBucket)
       .createSignedUrl(url, 3600);
         
-    if (signedUrlData && !signedUrlError) {
-      console.log("URL signée générée avec succès:", signedUrlData.signedUrl);
+    if (signedUrlData?.signedUrl && !signedUrlError) {
+      console.log("✅ URL signée générée avec succès:", signedUrlData.signedUrl);
       return signedUrlData.signedUrl;
     }
     
+    // Fallback vers l'URL publique
     const { data } = supabase.storage
       .from(actualBucket)
       .getPublicUrl(url);
       
     if (data?.publicUrl) {
-      console.log('URL publique générée pour', actualBucket, ':', data.publicUrl);
+      console.log('✅ URL publique générée pour', actualBucket, ':', data.publicUrl);
       return data.publicUrl;
     }
     
     throw new Error("Impossible de générer l'URL publique ou signée");
   } catch (error) {
-    console.error('Erreur lors de la génération de l’URL:', {
+    console.error('❌ Erreur lors de la génération de l\'URL:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       url,
       bucket,

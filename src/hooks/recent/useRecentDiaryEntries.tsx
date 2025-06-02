@@ -22,7 +22,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
     const items: RecentItem[] = [];
 
     if (hasRole('admin')) {
-      const { data: entries } = await supabase
+      const { data: entries, error: entriesError } = await supabase
         .from('diary_entries')
         .select(`
           id, 
@@ -30,10 +30,13 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           created_at, 
           activities, 
           media_url,
+          media_type,
           user_id
         `)
         .order('created_at', { ascending: false })
         .limit(15);
+
+      console.log('🔍 Admin diary entries query result:', { entries, error: entriesError });
 
       if (entries) {
         const userIds = [...new Set(entries.map(entry => entry.user_id))];
@@ -48,16 +51,21 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         }, {} as { [key: string]: string }) || {};
 
         items.push(...entries.map(entry => {
-          console.log('🔍 Processing diary entry media_url:', entry.media_url);
+          console.log('🔍 Processing admin diary entry:', {
+            id: entry.id,
+            title: entry.title,
+            media_url: entry.media_url,
+            media_type: entry.media_type
+          });
           
           return {
             id: entry.id,
-            title: entry.title,
+            title: entry.title || 'Entrée sans titre',
             type: 'diary' as const,
             created_at: entry.created_at,
             author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url // Garder l'URL originale, RecentItemImage s'occupera de la transformation
+            media_url: entry.media_url
           };
         }));
       }
@@ -72,6 +80,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           created_at, 
           activities, 
           media_url,
+          media_type,
           user_id
         `)
         .eq('user_id', effectiveUserId)
@@ -86,16 +95,21 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
 
       if (entries) {
         items.push(...entries.map(entry => {
-          console.log('🔍 Processing diary entry media_url:', entry.media_url);
+          console.log('🔍 Processing user diary entry:', {
+            id: entry.id,
+            title: entry.title,
+            media_url: entry.media_url,
+            media_type: entry.media_type
+          });
           
           return {
             id: entry.id,
-            title: entry.title,
+            title: entry.title || 'Entrée sans titre',
             type: 'diary' as const,
             created_at: entry.created_at,
             author: 'Moi',
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url // Garder l'URL originale, RecentItemImage s'occupera de la transformation
+            media_url: entry.media_url
           };
         }));
       }
@@ -104,7 +118,8 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
     console.log('🔍 Final diary entries for Recent:', items.map(item => ({ 
       id: item.id, 
       title: item.title, 
-      media_url: item.media_url 
+      media_url: item.media_url,
+      hasMedia: !!item.media_url
     })));
 
     setDiaryEntries(items);

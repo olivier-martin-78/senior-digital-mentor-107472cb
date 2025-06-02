@@ -22,6 +22,7 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
 }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('/placeholder.svg');
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const loadThumbnail = async () => {
@@ -57,6 +58,7 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
       
       if (!imagePath) {
         console.log('🖼️ No image path available for:', type, id);
+        setThumbnailUrl('/placeholder.svg');
         setIsLoading(false);
         return;
       }
@@ -71,14 +73,25 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
         
         const url = await getThumbnailUrl(imagePath, bucket);
         console.log('🖼️ Generated URL:', url);
-        setThumbnailUrl(url);
+        
+        if (url && url !== '/placeholder.svg') {
+          setThumbnailUrl(url);
+          setHasError(false);
+        } else {
+          console.warn('🖼️ Failed to generate valid URL, using placeholder');
+          setThumbnailUrl('/placeholder.svg');
+          setHasError(true);
+        }
       } catch (error) {
         console.error('🖼️ Error generating URL:', {
           type,
           id,
+          imagePath,
+          bucket,
           error
         });
         setThumbnailUrl('/placeholder.svg');
+        setHasError(true);
       } finally {
         setIsLoading(false);
       }
@@ -104,31 +117,37 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
         </div>
       )}
-      <img
-        src={thumbnailUrl}
-        alt={title}
-        className="w-full h-full object-cover"
-        style={{ display: isLoading ? 'none' : 'block' }}
-        onError={(e) => {
-          console.error('🖼️ ERROR loading image:');
-          console.error('- Type:', type);
-          console.error('- ID:', id);
-          console.error('- Original path:', coverImage || mediaUrl);
-          console.error('- Final URL:', thumbnailUrl);
-          console.error('- Error:', e);
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          setIsLoading(false);
-        }}
-        onLoad={() => {
-          console.log('🖼️ SUCCESS image loaded for:', {
-            type,
-            id,
-            url: thumbnailUrl
-          });
-          setIsLoading(false);
-        }}
-      />
+      {!isLoading && !hasError && (
+        <img
+          src={thumbnailUrl}
+          alt={title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('🖼️ IMAGE LOAD ERROR:');
+            console.error('- Type:', type);
+            console.error('- ID:', id);
+            console.error('- Original path:', coverImage || mediaUrl);
+            console.error('- Final URL:', thumbnailUrl);
+            console.error('- Error:', e);
+            setHasError(true);
+          }}
+          onLoad={() => {
+            console.log('🖼️ SUCCESS image loaded for:', {
+              type,
+              id,
+              url: thumbnailUrl
+            });
+          }}
+        />
+      )}
+      {!isLoading && hasError && (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+          <div className="text-center">
+            <div className="text-2xl mb-1">📷</div>
+            <div className="text-xs">Image non disponible</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
