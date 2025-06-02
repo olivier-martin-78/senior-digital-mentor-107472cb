@@ -134,11 +134,30 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   };
 
   const saveNow = async () => {
-    if (!data || !user || !effectiveUserId) return;
+    if (!data || !user) return;
+    
+    // Déterminer le user_id pour la sauvegarde
+    // Si c'est un admin qui édite l'histoire de quelqu'un d'autre, utiliser le user_id de l'histoire
+    // Sinon, utiliser l'utilisateur connecté
+    const userIdForSave = data.user_id || effectiveUserId;
+    
+    // Vérifier les permissions avant la sauvegarde
+    const isAdmin = hasRole('admin');
+    const isOwnStory = userIdForSave === user.id;
+    
+    if (!isOwnStory && !isAdmin) {
+      console.error('❌ Permissions insuffisantes pour sauvegarder cette histoire');
+      toast({
+        title: 'Erreur de permissions',
+        description: 'Vous n\'avez pas le droit de modifier cette histoire de vie.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       setIsSaving(true);
-      console.log('💾 Sauvegarde de l\'histoire de vie:', data);
+      console.log('💾 Sauvegarde de l\'histoire de vie pour user_id:', userIdForSave);
 
       // Log des URLs audio avant sauvegarde
       const audioUrls = data.chapters.flatMap(ch => 
@@ -163,7 +182,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       console.log('💾 Chapitres préparés pour sauvegarde:', chaptersToSave);
 
       const dataToSave = {
-        user_id: effectiveUserId,
+        user_id: userIdForSave,
         title: data.title,
         chapters: JSON.stringify(chaptersToSave),
         updated_at: new Date().toISOString(),
