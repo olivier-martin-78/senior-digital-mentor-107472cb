@@ -21,7 +21,7 @@ interface DebugLifeStoryResult {
 }
 
 export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps) => {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, session } = useAuth();
   const isReader = hasRole('reader');
   const currentUserId = user?.id || '';
   
@@ -31,6 +31,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     currentUserEmail: user?.email,
     hasExistingStory: !!existingStory,
     isReader,
+    hasSession: !!session,
+    sessionToken: session?.access_token ? 'present' : 'missing',
     timestamp: new Date().toISOString()
   });
   
@@ -69,10 +71,64 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
 
+  // NOUVEAU: Fonction pour vérifier l'état d'authentification
+  const verifyAuthentication = async (): Promise<boolean> => {
+    try {
+      console.log('🔐 Vérification authentification...');
+      
+      // Vérifier la session actuelle
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Erreur lors de la vérification de session:', sessionError);
+        return false;
+      }
+      
+      if (!sessionData.session) {
+        console.error('❌ Aucune session active trouvée');
+        return false;
+      }
+      
+      console.log('✅ Session active confirmée:', {
+        userId: sessionData.session.user.id,
+        email: sessionData.session.user.email,
+        tokenPresent: !!sessionData.session.access_token,
+        expiresAt: sessionData.session.expires_at
+      });
+      
+      // Test simple pour vérifier que l'authentification fonctionne
+      const { data: testData, error: testError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      
+      if (testError) {
+        console.error('❌ Test d\'authentification échoué:', testError);
+        return false;
+      }
+      
+      console.log('✅ Test d\'authentification réussi');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Exception lors de la vérification d\'authentification:', error);
+      return false;
+    }
+  };
+
   // Fonction de debug pour tester l'accès RLS
   const debugLifeStoryAccess = async (targetUser: string): Promise<DebugLifeStoryResult | null> => {
     try {
       console.log('🔍 DEBUG RLS - Test d\'accès pour:', targetUser);
+      
+      // NOUVEAU: Vérifier l'authentification avant l'appel RLS
+      const authOk = await verifyAuthentication();
+      if (!authOk) {
+        console.error('❌ Authentification défaillante, abandon du debug RLS');
+        return null;
+      }
+      
       const { data: debugResult, error } = await supabase.rpc('debug_life_story_access', {
         target_user_id: targetUser
       });
@@ -122,6 +178,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     console.log('🔍 PRIORITÉ 4 - Recherche permissions reader...');
     
     try {
+      // NOUVEAU: Vérifier l'authentification avant les requêtes
+      const authOk = await verifyAuthentication();
+      if (!authOk) {
+        console.error('❌ Authentification défaillante, impossible de déterminer l\'utilisateur effectif');
+        return '';
+      }
+      
       // Chercher permissions directes
       const { data: permissions, error: permError } = await supabase
         .from('life_story_permissions')
@@ -187,7 +250,15 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
       
-      // NOUVEAU: Test de debug RLS avant la requête principale
+      // NOUVEAU: Vérifier l'authentification avant tout
+      const authOk = await verifyAuthentication();
+      if (!authOk) {
+        console.error('❌ Authentification défaillante, abandon du chargement');
+        toast.error('Problème d\'authentification. Veuillez vous reconnecter.');
+        return;
+      }
+      
+      // Test de debug RLS avant la requête principale
       const debugResult = await debugLifeStoryAccess(effectiveUserId);
       if (debugResult) {
         console.log('🔍 DEBUG RLS - Analyse des permissions:', {
@@ -198,10 +269,20 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           currentUser: debugResult.current_user_id,
           targetUser: debugResult.target_user_id
         });
+        
+        if (!debugResult.should_have_access) {
+          console.warn('⚠️ DEBUG RLS indique: accès refusé');
+          toast.error('Vous n\'avez pas l\'autorisation d\'accéder à cette histoire');
+          return;
+        }
       }
       
       // Récupérer l'histoire pour cet utilisateur avec la politique RLS corrigée
       console.log('📚 🔍 REQUÊTE HISTOIRE - Début pour:', effectiveUserId);
+      
+      // NOUVEAU: Attendre un peu pour s'assurer que le token est bien propagé
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data: storyData, error } = await supabase
         .from('life_stories')
         .select('*')
@@ -240,6 +321,8 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         if (error.message?.includes('permission') || error.code === 'PGRST116') {
           console.error('❌ ERREUR DE PERMISSION RLS détectée !');
           toast.error('Erreur de permission pour accéder à cette histoire');
+        } else {
+          toast.error('Erreur technique lors du chargement de l\'histoire');
         }
         return;
       }
@@ -306,9 +389,10 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         
       } else {
         console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, '- Utilisation chapitres par défaut');
-        // NOUVEAU: Si le debug montre qu'on devrait avoir accès mais pas de données trouvées
+        // Si le debug montre qu'on devrait avoir accès mais pas de données trouvées
         if (debugResult && debugResult.should_have_access) {
           console.warn('⚠️ DEBUG RLS indique accès autorisé mais aucune histoire trouvée - Possible problème de données');
+          toast.info('Aucune histoire trouvée pour cet utilisateur');
         }
         
         // Utiliser les chapitres initiaux par défaut avec l'ID utilisateur correct
@@ -334,8 +418,17 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   // Charger l'histoire au montage du composant
   useEffect(() => {
     const initializeLifeStory = async () => {
-      if (!currentUserId) {
-        console.log('⚠️ Pas d\'utilisateur connecté, skip initialisation');
+      // NOUVEAU: Attendre que la session soit établie
+      if (!session || !currentUserId) {
+        console.log('⚠️ Session ou utilisateur manquant, attente...', {
+          hasSession: !!session,
+          currentUserId,
+          sessionDetails: session ? {
+            userId: session.user?.id,
+            expiresAt: session.expires_at,
+            tokenPresent: !!session.access_token
+          } : null
+        });
         return;
       }
 
@@ -358,7 +451,7 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
     };
 
     initializeLifeStory();
-  }, [currentUserId, targetUserId, isReader]);
+  }, [currentUserId, targetUserId, isReader, session]); // NOUVEAU: Ajout de session comme dépendance
 
   // Initialiser l'état des questions fermées par défaut
   useEffect(() => {
@@ -545,6 +638,14 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
 
     if (!hasLoadedRef.current) {
       console.log('💾 Sauvegarde ignorée - données pas encore chargées');
+      return;
+    }
+
+    // NOUVEAU: Vérifier l'authentification avant la sauvegarde
+    const authOk = await verifyAuthentication();
+    if (!authOk) {
+      console.error('❌ Authentification défaillante, sauvegarde impossible');
+      toast.error('Problème d\'authentification. Veuillez vous reconnecter.');
       return;
     }
     
