@@ -26,12 +26,7 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
       // Une seule requête simple qui fait confiance à la politique RLS
       let query = supabase
         .from('diary_entries')
-        .select(`
-          *,
-          profiles!diary_entries_user_id_fkey (
-            id, email, display_name, avatar_url, created_at
-          )
-        `)
+        .select('*')
         .order('entry_date', { ascending: false });
 
       // Appliquer les filtres de date si présents
@@ -42,7 +37,7 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         query = query.lte('entry_date', endDate);
       }
 
-      const { data, error } = await query;
+      const { data: entriesData, error } = await query;
       
       if (error) {
         console.error('🔍 Diary Simple - Erreur lors de la récupération:', error);
@@ -51,17 +46,49 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
       }
 
       console.log('🔍 Diary Simple - Entrées récupérées depuis Supabase:', {
-        count: data?.length || 0,
-        entries: data?.map(e => ({ 
+        count: entriesData?.length || 0,
+        entries: entriesData?.map(e => ({ 
           id: e.id, 
           title: e.title, 
           user_id: e.user_id,
-          entry_date: e.entry_date,
-          author: e.profiles?.display_name || e.profiles?.email 
+          entry_date: e.entry_date
         }))
       });
 
-      let filteredEntries = data || [];
+      if (!entriesData || entriesData.length === 0) {
+        setEntries([]);
+        return;
+      }
+
+      // Récupérer les profils des auteurs
+      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, avatar_url, created_at')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('🔍 Diary Simple - Erreur lors de la récupération des profils:', profilesError);
+        setEntries([]);
+        return;
+      }
+
+      // Combiner les entrées avec leurs profils
+      const entriesWithAuthors: DiaryEntryWithAuthor[] = entriesData.map(entry => {
+        const profile = profiles?.find(p => p.id === entry.user_id);
+        return {
+          ...entry,
+          profiles: profile || {
+            id: entry.user_id,
+            email: 'Utilisateur inconnu',
+            display_name: null,
+            avatar_url: null,
+            created_at: new Date().toISOString()
+          }
+        };
+      });
+
+      let filteredEntries = entriesWithAuthors;
 
       // Filtrage côté client pour le terme de recherche uniquement
       if (searchTerm && searchTerm.trim()) {
@@ -103,7 +130,7 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         });
       }
 
-      setEntries(filteredEntries as DiaryEntryWithAuthor[]);
+      setEntries(filteredEntries);
     } catch (error) {
       console.error('🔍 Diary Simple - Erreur lors du chargement des entrées:', error);
       setEntries([]);
