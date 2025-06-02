@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
-import { UserCheck, Save, Users } from 'lucide-react';
+import { UserCheck, Save, Users, Info } from 'lucide-react';
 
 interface InvitedUser {
   id: string;
@@ -50,15 +51,9 @@ const PermissionsManagement = () => {
   const loadInvitedUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('🔍 ===== CHARGEMENT UTILISATEURS INVITÉS (VERSION CORRIGÉE) =====');
-      console.log('👤 Utilisateur actuel:', {
-        userId: user?.id,
-        userEmail: user?.email,
-        isReader
-      });
+      console.log('🔍 Chargement des utilisateurs invités avec le nouveau système simplifié');
 
       // Étape 1: Chercher les groupes créés par l'utilisateur actuel
-      console.log('📋 Étape 1: Recherche des groupes créés par l\'utilisateur');
       const { data: userGroups, error: groupsError } = await supabase
         .from('invitation_groups')
         .select('id, name, created_at')
@@ -69,8 +64,6 @@ const PermissionsManagement = () => {
         throw groupsError;
       }
 
-      console.log('✅ Groupes trouvés:', userGroups);
-
       if (!userGroups || userGroups.length === 0) {
         console.log('⚠️ Aucun groupe trouvé pour cet utilisateur');
         setInvitedUsers([]);
@@ -78,12 +71,9 @@ const PermissionsManagement = () => {
       }
 
       // Étape 2: Pour chaque groupe, récupérer les membres
-      console.log('📋 Étape 2: Recherche des membres des groupes');
       const allInvitedUsers: InvitedUser[] = [];
 
       for (const group of userGroups) {
-        console.log(`🔍 Traitement du groupe: ${group.name} (${group.id})`);
-
         // Récupérer les membres du groupe
         const { data: groupMembers, error: membersError } = await supabase
           .from('group_members')
@@ -96,12 +86,8 @@ const PermissionsManagement = () => {
           continue;
         }
 
-        console.log(`✅ Membres du groupe ${group.name}:`, groupMembers);
-
         // Pour chaque membre, récupérer ses informations de profil et permissions
         for (const member of groupMembers || []) {
-          console.log(`👤 Traitement du membre: ${member.user_id}`);
-
           // Récupérer le profil
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -114,9 +100,7 @@ const PermissionsManagement = () => {
             continue;
           }
 
-          console.log(`✅ Profil récupéré pour ${member.user_id}:`, profile);
-
-          // Récupérer les permissions d'invitation - VERSION CORRIGÉE avec validation
+          // Récupérer les permissions d'invitation
           const { data: invitations, error: invitationsError } = await supabase
             .from('invitations')
             .select('blog_access, life_story_access, diary_access, wishes_access, used_at')
@@ -131,48 +115,27 @@ const PermissionsManagement = () => {
             continue;
           }
 
-          console.log(`✅ Invitations récupérées pour le groupe ${group.id}:`, invitations);
-
-          // Utiliser les permissions de l'invitation la plus récente avec validation
+          // Utiliser les permissions de l'invitation la plus récente
           const invitation = invitations?.[0];
           if (invitation) {
-            // VALIDATION : S'assurer que les permissions sont cohérentes
-            const validatedPermissions = {
-              blog_access: Boolean(invitation.blog_access),
-              life_story_access: Boolean(invitation.life_story_access),
-              diary_access: Boolean(invitation.diary_access),
-              wishes_access: Boolean(invitation.wishes_access)
-            };
-
-            console.log(`🔐 Permissions validées pour ${profile.display_name || profile.email}:`, {
-              original: {
-                blog_access: invitation.blog_access,
-                life_story_access: invitation.life_story_access,
-                diary_access: invitation.diary_access,
-                wishes_access: invitation.wishes_access
-              },
-              validated: validatedPermissions
-            });
-
             const invitedUser: InvitedUser = {
               id: member.user_id,
               user_id: member.user_id,
               group_id: group.id,
               email: profile.email || '',
               display_name: profile.display_name,
-              ...validatedPermissions
+              blog_access: Boolean(invitation.blog_access),
+              life_story_access: Boolean(invitation.life_story_access),
+              diary_access: Boolean(invitation.diary_access),
+              wishes_access: Boolean(invitation.wishes_access)
             };
 
             allInvitedUsers.push(invitedUser);
-            console.log(`✅ Utilisateur invité ajouté avec permissions validées:`, {
-              user: invitedUser.display_name || invitedUser.email,
-              permissions: validatedPermissions
-            });
           }
         }
       }
 
-      console.log('🎯 Résultat final - Utilisateurs invités (version corrigée):', allInvitedUsers);
+      console.log('🎯 Utilisateurs invités chargés:', allInvitedUsers);
       setInvitedUsers(allInvitedUsers);
 
     } catch (error) {
@@ -180,7 +143,6 @@ const PermissionsManagement = () => {
       toast.error('Erreur lors du chargement des utilisateurs');
     } finally {
       setIsLoading(false);
-      console.log('🏁 Fin du chargement des utilisateurs invités (version corrigée)');
     }
   };
 
@@ -188,16 +150,6 @@ const PermissionsManagement = () => {
     setSelectedUserId(userId);
     const selectedUser = invitedUsers.find(u => u.user_id === userId);
     if (selectedUser) {
-      console.log('🔄 Sélection utilisateur:', {
-        user: selectedUser.display_name || selectedUser.email,
-        permissions: {
-          blog_access: selectedUser.blog_access,
-          life_story_access: selectedUser.life_story_access,
-          diary_access: selectedUser.diary_access,
-          wishes_access: selectedUser.wishes_access
-        }
-      });
-      
       setPermissions({
         blog_access: selectedUser.blog_access,
         life_story_access: selectedUser.life_story_access,
@@ -208,7 +160,6 @@ const PermissionsManagement = () => {
   };
 
   const handlePermissionChange = (permission: keyof typeof permissions, value: boolean) => {
-    console.log(`🔐 Changement permission ${permission}: ${value}`);
     setPermissions(prev => ({
       ...prev,
       [permission]: value,
@@ -223,15 +174,10 @@ const PermissionsManagement = () => {
 
     try {
       setIsSaving(true);
-      console.log('💾 Début de la sauvegarde des permissions');
-
       const selectedUser = invitedUsers.find(u => u.user_id === selectedUserId);
       if (!selectedUser) {
         throw new Error('Utilisateur non trouvé');
       }
-
-      console.log('👤 Utilisateur sélectionné:', selectedUser);
-      console.log('🔐 Nouvelles permissions:', permissions);
 
       // Mettre à jour les permissions dans la table invitations
       const { error } = await supabase
@@ -251,112 +197,15 @@ const PermissionsManagement = () => {
         throw error;
       }
 
-      console.log('✅ Invitations mises à jour avec succès');
-
-      // Synchroniser les permissions avec les tables de permissions
-      await syncUserPermissions(selectedUserId, permissions);
-
       // Recharger les utilisateurs pour refléter les changements
       await loadInvitedUsers();
       
       toast.success('Permissions mises à jour avec succès');
-      console.log('✅ Permissions mises à jour avec succès');
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde des permissions:', error);
       toast.error('Erreur lors de la sauvegarde des permissions');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const syncUserPermissions = async (userId: string, perms: typeof permissions) => {
-    try {
-      console.log('🔄 Synchronisation des permissions pour:', userId, perms);
-
-      // Synchroniser les permissions pour les albums de blog
-      if (perms.blog_access) {
-        const { data: userAlbums } = await supabase
-          .from('blog_albums')
-          .select('id')
-          .eq('author_id', user?.id);
-
-        console.log('📚 Albums de blog trouvés:', userAlbums);
-
-        if (userAlbums) {
-          for (const album of userAlbums) {
-            await supabase
-              .from('album_permissions')
-              .upsert({
-                album_id: album.id,
-                user_id: userId,
-              }, {
-                onConflict: 'album_id,user_id',
-              });
-          }
-        }
-      } else {
-        // Supprimer les permissions d'album si l'accès blog est retiré
-        const { data: userAlbums } = await supabase
-          .from('blog_albums')
-          .select('id')
-          .eq('author_id', user?.id);
-
-        if (userAlbums) {
-          for (const album of userAlbums) {
-            await supabase
-              .from('album_permissions')
-              .delete()
-              .eq('album_id', album.id)
-              .eq('user_id', userId);
-          }
-        }
-      }
-
-      // Synchroniser les permissions pour l'histoire de vie
-      if (perms.life_story_access) {
-        await supabase
-          .from('life_story_permissions')
-          .upsert({
-            story_owner_id: user?.id,
-            permitted_user_id: userId,
-            permission_level: 'read',
-            granted_by: user?.id,
-          }, {
-            onConflict: 'story_owner_id,permitted_user_id',
-          });
-      } else {
-        await supabase
-          .from('life_story_permissions')
-          .delete()
-          .eq('story_owner_id', user?.id)
-          .eq('permitted_user_id', userId);
-      }
-
-      // Synchroniser les permissions pour le journal
-      if (perms.diary_access) {
-        await supabase
-          .from('diary_permissions')
-          .upsert({
-            diary_owner_id: user?.id,
-            permitted_user_id: userId,
-            permission_level: 'read',
-            granted_by: user?.id,
-          }, {
-            onConflict: 'diary_owner_id,permitted_user_id',
-          });
-      } else {
-        await supabase
-          .from('diary_permissions')
-          .delete()
-          .eq('diary_owner_id', user?.id)
-          .eq('permitted_user_id', userId);
-      }
-
-      console.log('✅ Synchronisation des permissions terminée');
-
-    } catch (error) {
-      console.error('❌ Erreur lors de la synchronisation des permissions:', error);
-      throw error;
     }
   };
 
@@ -386,6 +235,23 @@ const PermissionsManagement = () => {
             Modifiez les accès accordés aux personnes que vous avez invitées.
           </p>
         </div>
+
+        {/* Note d'information sur le nouveau système */}
+        <Card className="mb-6 border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-900">
+              <Info className="w-5 h-5 mr-2" />
+              Système simplifié
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-blue-800 text-sm">
+              Avec le nouveau système, les permissions fonctionnent automatiquement : 
+              les utilisateurs invités peuvent voir votre contenu s'ils sont dans votre groupe 
+              et si vous leur avez accordé l'accès correspondant. Plus besoin de synchronisation manuelle !
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Sélection de l'utilisateur */}
@@ -461,8 +327,6 @@ const PermissionsManagement = () => {
                       onCheckedChange={(value) => handlePermissionChange('diary_access', value)}
                     />
                   </div>
-
-                  {/* Masquer l'accès aux souhaits car ils sont publics par défaut */}
 
                   <div className="pt-4">
                     <Button 

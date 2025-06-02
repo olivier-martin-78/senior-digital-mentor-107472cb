@@ -1,19 +1,16 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useImpersonationContext } from '@/contexts/ImpersonationContext';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, hasRole, getEffectiveUserId } = useAuth();
-  const { isImpersonating, originalUser } = useImpersonationContext();
+  const { user, hasRole } = useAuth();
   const { toast } = useToast();
   const isEditing = !!id;
 
@@ -38,7 +35,7 @@ export const useBlogEditor = () => {
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        // Fetch albums - now including the profiles data
+        // Fetch albums - maintenant géré par les nouvelles politiques RLS
         const { data: albumsData, error: albumsError } = await supabase
           .from('blog_albums')
           .select(`*, profiles:author_id(*)`)
@@ -86,38 +83,12 @@ export const useBlogEditor = () => {
           return;
         }
 
-        // CORRECTION PRINCIPALE : Utiliser l'ID utilisateur EFFECTIF (impersonné) pour vérifier les permissions
-        const effectiveUserId = getEffectiveUserId();
-        const realUserId = isImpersonating ? originalUser?.id : user?.id;
+        // Avec les nouvelles politiques RLS, la vérification des permissions est automatique
+        // Si l'utilisateur peut voir le post, il peut le modifier (s'il en est l'auteur)
+        const isAuthor = user?.id === data.author_id;
+        const isAdmin = hasRole('admin');
         
-        console.log('🔍 useBlogEditor - CORRECTION - Vérification permissions édition:', {
-          postId: data.id,
-          postTitle: data.title,
-          postAuthorId: data.author_id,
-          effectiveUserId,
-          realUserId,
-          isImpersonating,
-          userEmail: user?.email
-        });
-
-        // Vérifier si l'utilisateur EFFECTIF (impersonné) est l'auteur OU si l'utilisateur RÉEL est admin
-        const isEffectiveAuthor = effectiveUserId && data.author_id === effectiveUserId;
-        const isRealAdmin = !isImpersonating && hasRole('admin');
-        const canEdit = isEffectiveAuthor || isRealAdmin;
-
-        console.log('🎯 useBlogEditor - CORRECTION - Calcul permissions édition:', {
-          postId: data.id,
-          isEffectiveAuthor,
-          isRealAdmin,
-          canEdit
-        });
-
-        if (!canEdit) {
-          console.log('🚫 useBlogEditor - CORRECTION - Accès refusé à l\'édition:', {
-            postId: data.id,
-            reason: !isEffectiveAuthor ? 'Pas l\'auteur effectif' : 'Pas admin réel'
-          });
-          
+        if (!isAuthor && !isAdmin) {
           toast({
             title: "Accès refusé",
             description: "Vous n'avez pas l'autorisation de modifier cet article.",
@@ -126,11 +97,6 @@ export const useBlogEditor = () => {
           navigate('/blog');
           return;
         }
-
-        console.log('✅ useBlogEditor - CORRECTION - Accès autorisé à l\'édition:', {
-          postId: data.id,
-          postTitle: data.title
-        });
 
         setPost(data as BlogPost);
         setTitle(data.title);
@@ -180,18 +146,15 @@ export const useBlogEditor = () => {
     } else {
       setLoading(false);
     }
-  }, [id, user, hasRole, navigate, toast, isEditing, getEffectiveUserId, isImpersonating, originalUser]);
+  }, [id, user, hasRole, navigate, toast, isEditing]);
 
-  // Fonction pour télécharger la miniature de l'article
   const uploadCoverImage = async (postId: string): Promise<string | null> => {
     if (!coverImageFile) return coverImage;
     
     try {
       setUploadingCoverImage(true);
       
-      // S'assurer que nous ne sauvegardons pas une URL blob
       if (coverImage && coverImage.startsWith('blob:')) {
-        // Utiliser la fonction uploadAlbumThumbnail du utils/thumbnailtUtils.ts mais pour les blogs
         const publicUrl = await uploadAlbumThumbnail(coverImageFile, `cover-${postId}`);
         return publicUrl;
       }
@@ -229,7 +192,6 @@ export const useBlogEditor = () => {
       return;
     }
 
-    // Nouvelle validation pour l'album obligatoire
     if (!albumId) {
       toast({
         title: "Album manquant",
@@ -243,28 +205,15 @@ export const useBlogEditor = () => {
       setSaving(true);
       let finalCoverImage = coverImage;
       
-      // Si un nouveau fichier d'image a été sélectionné, le télécharger d'abord
       if (coverImageFile) {
         if (isEditing && post) {
           finalCoverImage = await uploadCoverImage(post.id);
         }
       }
       
-      // S'assurer que nous ne sauvegardons pas une URL blob
       if (finalCoverImage && finalCoverImage.startsWith('blob:')) {
         finalCoverImage = null;
       }
-
-      // CORRECTION: Utiliser l'ID utilisateur réel pour les opérations de base de données
-      // car les politiques RLS n'ont accès qu'à auth.uid() qui est toujours l'utilisateur réel
-      const dbUserId = user?.id; // Toujours l'utilisateur réel pour les opérations DB
-
-      console.log('💾 useBlogEditor - Sauvegarde avec utilisateur:', {
-        effectiveUserId: getEffectiveUserId(),
-        dbUserId,
-        isImpersonating,
-        selectedCategoriesCount: selectedCategories.length
-      });
 
       if (isEditing && post) {
         // Update existing post
@@ -282,40 +231,23 @@ export const useBlogEditor = () => {
 
         if (error) throw error;
 
-        // CORRECTION: Gérer les catégories uniquement si pas en mode impersonnation
-        // ou si l'utilisateur réel est admin
-        const canManageCategories = !isImpersonating || hasRole('admin');
-        
-        if (canManageCategories) {
-          console.log('📂 useBlogEditor - Gestion des catégories autorisée');
-          
-          // Update categories
-          // First, delete all existing category associations
-          await supabase
+        // Update categories
+        await supabase
+          .from('post_categories')
+          .delete()
+          .eq('post_id', post.id);
+
+        if (selectedCategories.length > 0) {
+          const categoryInserts = selectedCategories.map(category => ({
+            post_id: post.id,
+            category_id: category.id
+          }));
+
+          const { error: insertError } = await supabase
             .from('post_categories')
-            .delete()
-            .eq('post_id', post.id);
+            .insert(categoryInserts);
 
-          // Then, add new category associations
-          if (selectedCategories.length > 0) {
-            const categoryInserts = selectedCategories.map(category => ({
-              post_id: post.id,
-              category_id: category.id
-            }));
-
-            const { error: insertError } = await supabase
-              .from('post_categories')
-              .insert(categoryInserts);
-
-            if (insertError) throw insertError;
-          }
-        } else {
-          console.log('⚠️ useBlogEditor - Gestion des catégories ignorée en mode impersonnation');
-          toast({
-            title: "Note",
-            description: "Les catégories ne peuvent pas être modifiées en mode impersonnation.",
-            variant: "default"
-          });
+          if (insertError) throw insertError;
         }
 
         toast({
@@ -325,23 +257,22 @@ export const useBlogEditor = () => {
             : "Les modifications ont été enregistrées."
         });
       } else {
-        // Create new post - utiliser l'ID utilisateur effectif (impersonné) pour l'auteur
+        // Create new post
         const { data, error } = await supabase
           .from('blog_posts')
           .insert({
             title: title.trim(),
             content: content.trim(),
-            author_id: getEffectiveUserId(), // Utilisateur effectif pour l'auteur
+            author_id: user?.id,
             album_id: albumId,
             published: publish,
-            cover_image: null // On commence sans cover_image
+            cover_image: null
           })
           .select()
           .single();
 
         if (error) throw error;
 
-        // Télécharger la miniature maintenant que nous avons l'ID de l'article
         if (coverImageFile) {
           const uploadedCoverUrl = await uploadCoverImage(data.id);
           
@@ -357,12 +288,7 @@ export const useBlogEditor = () => {
           }
         }
 
-        // CORRECTION: Gérer les catégories uniquement si pas en mode impersonnation
-        const canManageCategories = !isImpersonating || hasRole('admin');
-        
-        if (canManageCategories && selectedCategories.length > 0) {
-          console.log('📂 useBlogEditor - Ajout des catégories pour nouvel article');
-          
+        if (selectedCategories.length > 0) {
           const categoryInserts = selectedCategories.map(category => ({
             post_id: data.id,
             category_id: category.id
@@ -374,10 +300,7 @@ export const useBlogEditor = () => {
 
           if (insertError) {
             console.error('Erreur lors de l\'ajout des catégories:', insertError);
-            // Ne pas faire échouer toute l'opération pour les catégories
           }
-        } else if (selectedCategories.length > 0) {
-          console.log('⚠️ useBlogEditor - Catégories ignorées pour nouvel article en mode impersonnation');
         }
 
         toast({
@@ -387,7 +310,6 @@ export const useBlogEditor = () => {
             : "L'article a été enregistré comme brouillon."
         });
 
-        // Redirect to the newly created post
         navigate(`/blog/${data.id}`);
         return;
       }
@@ -406,11 +328,8 @@ export const useBlogEditor = () => {
   };
 
   const handleFileUpload = useCallback(async (files: File[]) => {
-    console.log('📤 handleFileUpload appelé avec', files.length, 'fichiers');
-    
     if (!files || files.length === 0) return;
     
-    // Vérifier si on a un post (existant ou nouveau)
     if (!id && !post) {
       toast({
         title: "Enregistrez d'abord",
@@ -431,31 +350,22 @@ export const useBlogEditor = () => {
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 
       try {
-        console.log(`🚀 Début upload du fichier: ${file.name} (${Math.round(file.size / (1024 * 1024))} MB)`);
-        
-        // Upload du fichier principal
         const { error: uploadError } = await supabase.storage
           .from('blog-media')
           .upload(filePath, file);
 
         if (uploadError) {
-          console.error(`❌ Erreur upload ${file.name}:`, uploadError);
           newErrors.push(`Erreur lors de l'upload de ${file.name}: ${uploadError.message}`);
           continue;
         }
 
-        console.log(`✅ Upload réussi: ${file.name}`);
-
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('blog-media')
           .getPublicUrl(filePath);
 
-        // Générer une vignette si c'est une vidéo
         let thumbnailUrl: string | null = null;
         if (isVideoFile(file)) {
           try {
-            console.log('🎬 Génération de vignette pour la vidéo:', file.name);
             const thumbnailFile = await generateVideoThumbnail(file);
             const thumbnailExt = thumbnailFile.name.split('.').pop();
             const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
@@ -470,16 +380,12 @@ export const useBlogEditor = () => {
                 .getPublicUrl(thumbnailPath);
               
               thumbnailUrl = thumbnailPublicUrl;
-              console.log('✅ Vignette générée avec succès:', thumbnailUrl);
-            } else {
-              console.error('❌ Erreur lors de l\'upload de la vignette:', thumbnailUploadError);
             }
           } catch (thumbnailError) {
             console.error('❌ Erreur lors de la génération de la vignette:', thumbnailError);
           }
         }
 
-        // Save to database
         const { data: insertedMedia, error: dbError } = await supabase
           .from('blog_media')
           .insert({
@@ -492,30 +398,21 @@ export const useBlogEditor = () => {
           .single();
 
         if (dbError) {
-          console.error(`❌ Erreur DB pour ${file.name}:`, dbError);
           newErrors.push(`Erreur lors de l'enregistrement de ${file.name}: ${dbError.message}`);
           continue;
         }
 
         if (insertedMedia) {
           successfulUploads.push(insertedMedia as BlogMedia);
-          console.log(`✅ Traitement terminé avec succès: ${file.name}`, insertedMedia);
         }
 
       } catch (error: any) {
-        console.error(`❌ Erreur générale pour ${file.name}:`, error);
         newErrors.push(`Erreur lors du traitement de ${file.name}: ${error.message}`);
       }
     }
 
-    // Mettre à jour l'état local avec tous les uploads réussis
     if (successfulUploads.length > 0) {
-      console.log('📝 Mise à jour de l\'état local avec', successfulUploads.length, 'nouveaux médias');
-      setMedia(prev => {
-        const newMedia = [...prev, ...successfulUploads];
-        console.log('📝 Nouvel état des médias:', newMedia);
-        return newMedia;
-      });
+      setMedia(prev => [...prev, ...successfulUploads]);
       
       toast({
         title: "Upload réussi",
@@ -537,16 +434,13 @@ export const useBlogEditor = () => {
 
   const deleteMedia = async (mediaItem: BlogMedia) => {
     try {
-      // Extract filename from URL
       const urlParts = mediaItem.media_url.split('/');
       const filename = urlParts[urlParts.length - 1];
 
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('blog-media')
         .remove([filename]);
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from('blog_media')
         .delete()
@@ -554,7 +448,6 @@ export const useBlogEditor = () => {
 
       if (dbError) throw dbError;
 
-      // Remove from local state
       setMedia(prev => prev.filter(item => item.id !== mediaItem.id));
 
       toast({
