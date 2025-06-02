@@ -193,12 +193,26 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         .limit(1)
         .maybeSingle();
 
-      console.log('📚 Requête histoire terminée:', {
+      console.log('📚 ✅ REQUÊTE HISTOIRE TERMINÉE:', {
         storyData: storyData ? {
           id: storyData.id,
           user_id: storyData.user_id,
           title: storyData.title,
-          hasChapters: !!storyData.chapters
+          hasChapters: !!storyData.chapters,
+          chaptersLength: Array.isArray(storyData.chapters) ? storyData.chapters.length : 0,
+          firstChapterPreview: storyData.chapters?.[0] ? {
+            id: storyData.chapters[0].id,
+            title: storyData.chapters[0].title,
+            questionsCount: storyData.chapters[0].questions?.length || 0,
+            firstQuestionPreview: storyData.chapters[0].questions?.[0] ? {
+              id: storyData.chapters[0].questions[0].id,
+              text: storyData.chapters[0].questions[0].text?.substring(0, 50) + '...',
+              hasAnswer: !!storyData.chapters[0].questions[0].answer,
+              answer: storyData.chapters[0].questions[0].answer,
+              hasAudioUrl: !!storyData.chapters[0].questions[0].audioUrl,
+              audioUrl: storyData.chapters[0].questions[0].audioUrl
+            } : null
+          } : null
         } : null,
         error
       });
@@ -209,19 +223,39 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
 
       if (storyData) {
-        // Fusionner avec les chapitres initiaux
+        // 🔥 CHANGEMENT CRITIQUE: Utiliser directement les données de la base
+        console.log('🔄 FUSION DONNÉES - Début fusion avec initialChapters');
         const existingChapters = (storyData.chapters as unknown as Chapter[]) || [];
         
-        const mergedChapters = initialChapters.map(initialChapter => {
+        // Créer les chapitres finaux en préservant les données existantes
+        const finalChapters = initialChapters.map(initialChapter => {
           const existingChapter = existingChapters.find((ch: Chapter) => ch.id === initialChapter.id);
           
-          if (existingChapter) {
+          if (existingChapter && existingChapter.questions) {
+            console.log(`🔄 FUSION CHAPITRE ${initialChapter.id}:`, {
+              initialQuestionsCount: initialChapter.questions.length,
+              existingQuestionsCount: existingChapter.questions.length,
+              firstExistingQuestion: existingChapter.questions[0] ? {
+                id: existingChapter.questions[0].id,
+                hasAnswer: !!existingChapter.questions[0].answer,
+                answer: existingChapter.questions[0].answer,
+                hasAudioUrl: !!existingChapter.questions[0].audioUrl,
+                audioUrl: existingChapter.questions[0].audioUrl
+              } : null
+            });
+            
             return {
               ...initialChapter,
               questions: initialChapter.questions.map(initialQuestion => {
                 const existingQuestion = existingChapter.questions?.find((q: any) => q.id === initialQuestion.id);
                 
                 if (existingQuestion) {
+                  console.log(`✅ QUESTION TROUVÉE ${existingQuestion.id}:`, {
+                    answer: existingQuestion.answer,
+                    audioUrl: existingQuestion.audioUrl,
+                    audioBlob: existingQuestion.audioBlob
+                  });
+                  
                   return {
                     ...initialQuestion,
                     answer: existingQuestion.answer || initialQuestion.answer,
@@ -242,23 +276,35 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
           id: storyData.id,
           user_id: storyData.user_id,
           title: storyData.title,
-          chapters: mergedChapters,
+          chapters: finalChapters,
           created_at: storyData.created_at,
           updated_at: storyData.updated_at,
           last_edited_chapter: storyData.last_edited_chapter,
           last_edited_question: storyData.last_edited_question,
         };
         
-        console.log('✅ Histoire chargée avec succès:', {
+        console.log('✅ 🎯 HISTOIRE FINALE CONSTRUITE:', {
           storyId: lifeStory.id,
           userId: lifeStory.user_id,
           title: lifeStory.title,
-          chaptersCount: lifeStory.chapters.length
+          chaptersCount: lifeStory.chapters.length,
+          firstChapterFirstQuestion: lifeStory.chapters[0]?.questions[0] ? {
+            id: lifeStory.chapters[0].questions[0].id,
+            text: lifeStory.chapters[0].questions[0].text.substring(0, 50) + '...',
+            answer: lifeStory.chapters[0].questions[0].answer,
+            audioUrl: lifeStory.chapters[0].questions[0].audioUrl,
+            hasAnswer: !!lifeStory.chapters[0].questions[0].answer,
+            hasAudioUrl: !!lifeStory.chapters[0].questions[0].audioUrl
+          } : null
         });
         
+        // 🔥 IMPORTANT: Appliquer les données chargées
+        console.log('📝 SETDATA - Application des données chargées...');
         setData(lifeStory);
-        setActiveTab(storyData.last_edited_chapter || (mergedChapters[0]?.id || ''));
+        setActiveTab(storyData.last_edited_chapter || (finalChapters[0]?.id || ''));
         setActiveQuestion(storyData.last_edited_question);
+        
+        console.log('✅ 🎯 DONNÉES APPLIQUÉES AVEC SUCCÈS');
       } else {
         console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, ', utilisation des chapitres initiaux');
         setData(prev => ({
@@ -269,11 +315,13 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       }
       
       hasLoadedRef.current = true;
+      console.log('✅ 🎯 CHARGEMENT TERMINÉ - hasLoadedRef = true');
     } catch (err) {
       console.error('❌ Erreur lors du chargement de l\'histoire de vie:', err);
     } finally {
       setIsLoading(false);
       loadingRef.current = false;
+      console.log('🏁 CHARGEMENT FINALISÉ');
     }
   };
 
