@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { AuthService } from '@/services/AuthService';
@@ -27,16 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
   
   const { toast } = useToast();
-
-  // Debug: ajouter des logs pour surveiller les changements de session
-  useEffect(() => {
-    console.log('🔍 AuthContext - Session changed:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      accessToken: session?.access_token ? 'présent' : 'absent',
-      isLoading
-    });
-  }, [session, isLoading]);
 
   // Fonction pour obtenir l'état d'impersonnation (optimisée)
   const getImpersonationState = () => {

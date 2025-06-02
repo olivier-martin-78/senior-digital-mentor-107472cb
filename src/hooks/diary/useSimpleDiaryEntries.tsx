@@ -22,30 +22,13 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
     try {
       setLoading(true);
       
-      // Debug: vérifier l'état de la session
-      console.log('🔍 Diary Simple - État de la session:', {
-        sessionExists: !!session,
-        userId: session?.user?.id,
-        accessToken: session?.access_token ? 'présent' : 'absent'
-      });
-
-      // Debug: vérifier l'authentification côté Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('🔍 Diary Simple - Utilisateur Supabase:', {
-        user: user ? user.id : 'null',
-        authError: authError?.message || 'aucune'
-      });
-
-      // Attendre un court délai pour s'assurer que la session est propagée
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       console.log('🔍 Diary Simple - Début fetchEntries:', {
         searchTerm,
         startDate,
         endDate
       });
       
-      // Une seule requête simple qui fait confiance à la politique RLS
+      // Une seule requête simple qui fait confiance à la politique RLS corrigée
       let query = supabase
         .from('diary_entries')
         .select('*')
