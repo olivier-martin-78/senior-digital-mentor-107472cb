@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { DiaryEntryWithAuthor } from '@/types/diary';
+import { detectAuthDesync } from '@/utils/authRecovery';
 
 export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
   const { session } = useAuth();
@@ -29,14 +30,14 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         sessionUserId: session?.user?.id
       });
 
-      // Test d'authentification direct
-      const { data: authTest, error: authError } = await supabase.auth.getUser();
-      console.log('🔍 Diary Simple - Test auth:', {
-        authUser: authTest?.user?.id,
-        authError: authError?.message
-      });
+      // Vérifier la synchronisation de l'authentification avant de faire des requêtes
+      const isDesynced = await detectAuthDesync();
+      if (isDesynced) {
+        console.warn('🔍 Diary Simple - Authentification désynchronisée détectée, arrêt de la requête');
+        setEntries([]);
+        return;
+      }
 
-      // Test simple de récupération des entrées
       console.log('🔍 Diary Simple - Tentative de récupération des entrées...');
       
       let query = supabase
@@ -80,17 +81,6 @@ export const useSimpleDiaryEntries = (searchTerm: string, startDate: string, end
         setEntries([]);
         return;
       }
-
-      // Test supplémentaire : récupérer TOUTES les entrées sans filtre pour voir ce qui existe
-      const { data: allEntries, error: allError } = await supabase
-        .from('diary_entries')
-        .select('id, title, user_id, entry_date');
-      
-      console.log('🔍 Diary Simple - Test toutes entrées (sans RLS):', {
-        count: allEntries?.length || 0,
-        error: allError?.message,
-        entries: allEntries?.slice(0, 3)
-      });
 
       // Récupérer les profils des auteurs
       const userIds = [...new Set(entriesData.map(entry => entry.user_id))];

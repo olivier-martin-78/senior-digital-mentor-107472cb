@@ -8,6 +8,7 @@ import { cleanupAuthState } from '@/utils/authUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole } from '@/types/supabase';
 import { rateLimiter, secureStorage } from '@/utils/securityUtils';
+import { detectAuthDesync, forceAuthReconnection, redirectToAuth } from '@/utils/authRecovery';
 
 // Re-export the cleanup function for use in other components
 export { cleanupAuthState } from '@/utils/authUtils';
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
   
   const { toast } = useToast();
+  const [isRecovering, setIsRecovering] = useState(false);
 
   // Fonction pour obtenir l'état d'impersonnation (optimisée)
   const getImpersonationState = () => {
@@ -75,6 +77,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return user?.id;
   };
+
+  // Détection et récupération automatique des problèmes d'authentification
+  useEffect(() => {
+    const checkAndRecoverAuth = async () => {
+      // Ne vérifier que si on a une session et qu'on ne récupère pas déjà
+      if (!session || isRecovering || isLoading) return;
+      
+      console.log('🔧 Auth Recovery - Vérification de la synchronisation...');
+      
+      const isDesynced = await detectAuthDesync();
+      
+      if (isDesynced) {
+        setIsRecovering(true);
+        
+        toast({
+          title: "Problème d'authentification détecté",
+          description: "Tentative de reconnexion automatique...",
+          variant: "default"
+        });
+        
+        const recoverySuccess = await forceAuthReconnection();
+        
+        if (recoverySuccess) {
+          toast({
+            title: "Reconnexion réussie",
+            description: "Votre session a été restaurée.",
+            variant: "default"
+          });
+          
+          // Recharger la page pour s'assurer que tout fonctionne
+          window.location.reload();
+        } else {
+          toast({
+            title: "Reconnexion nécessaire",
+            description: "Veuillez vous reconnecter manuellement.",
+            variant: "destructive"
+          });
+          
+          // Rediriger vers la page d'auth après un délai
+          setTimeout(redirectToAuth, 2000);
+        }
+        
+        setIsRecovering(false);
+      }
+    };
+    
+    // Vérifier au chargement et périodiquement
+    checkAndRecoverAuth();
+    
+    // Vérifier toutes les 30 secondes si l'utilisateur est connecté
+    const interval = setInterval(() => {
+      if (session && !isRecovering) {
+        checkAndRecoverAuth();
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [session, isRecovering, isLoading, toast]);
 
   // Vérification initiale de session et configuration du listener d'événements d'authentification
   useEffect(() => {
@@ -208,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     profile: getEffectiveUser(),
     roles,
-    isLoading,
+    isLoading: isLoading || isRecovering,
     hasRole,
     signIn,
     signUp,
