@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -91,7 +90,7 @@ const MyInvitationGroups = () => {
 
       setGroups(groupsWithCounts);
 
-      // Charger les invitations en attente
+      // Charger les invitations en attente (non utilisées ET expirées)
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('invitations')
         .select('id, email, first_name, last_name, created_at, blog_access, life_story_access, diary_access, wishes_access')
@@ -102,7 +101,24 @@ const MyInvitationGroups = () => {
 
       if (invitationsError) throw invitationsError;
 
-      setPendingInvitations(invitationsData || []);
+      // Filtrer les invitations dont l'email correspond à un utilisateur déjà inscrit
+      const filteredInvitations = [];
+      if (invitationsData) {
+        for (const invitation of invitationsData) {
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', invitation.email)
+            .single();
+          
+          // Ne garder que les invitations pour lesquelles aucun utilisateur n'existe
+          if (!existingUser) {
+            filteredInvitations.push(invitation);
+          }
+        }
+      }
+
+      setPendingInvitations(filteredInvitations);
 
     } catch (error: any) {
       console.error('❌ Erreur lors du chargement des groupes:', error);
@@ -114,6 +130,8 @@ const MyInvitationGroups = () => {
 
   const loadGroupMembers = async (groupId: string) => {
     try {
+      console.log('🔍 Chargement des membres du groupe:', groupId);
+      
       // Récupérer d'abord les membres du groupe
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
@@ -123,14 +141,24 @@ const MyInvitationGroups = () => {
 
       if (membersError) throw membersError;
 
+      console.log('📋 Membres trouvés:', membersData?.length || 0);
+
       // Récupérer les profils pour chaque membre
       const membersWithProfiles = await Promise.all(
         (membersData || []).map(async (member) => {
+          console.log('👤 Chargement profil pour user_id:', member.user_id);
+          
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('display_name, email')
             .eq('id', member.user_id)
-            .single();
+            .maybeSingle();
+
+          if (profileError) {
+            console.error('❌ Erreur chargement profil pour', member.user_id, ':', profileError);
+          } else {
+            console.log('✅ Profil chargé:', profileData);
+          }
 
           return {
             ...member,
@@ -139,6 +167,7 @@ const MyInvitationGroups = () => {
         })
       );
 
+      console.log('👥 Membres avec profils:', membersWithProfiles);
       setGroupMembers(membersWithProfiles);
     } catch (error: any) {
       console.error('Erreur lors du chargement des membres:', error);
@@ -293,7 +322,14 @@ const MyInvitationGroups = () => {
                           <p className="font-medium">
                             {member.profiles?.display_name || member.profiles?.email || 'Utilisateur inconnu'}
                           </p>
-                          <p className="text-sm text-gray-500">{member.profiles?.email || 'Email non disponible'}</p>
+                          <p className="text-sm text-gray-500">
+                            {member.profiles?.email || 'Email non disponible'}
+                          </p>
+                          {!member.profiles && (
+                            <p className="text-xs text-red-500">
+                              Profil introuvable (ID: {member.user_id})
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
