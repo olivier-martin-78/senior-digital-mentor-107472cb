@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LifeStory, LifeStoryProgress, Chapter } from '@/types/lifeStory';
@@ -59,6 +58,27 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutoSaveRef = useRef<string>('');
   const lastToastRef = useRef<string>('');
+
+  // Fonction de debug pour tester l'accès RLS
+  const debugLifeStoryAccess = async (targetUser: string) => {
+    try {
+      console.log('🔍 DEBUG RLS - Test d\'accès pour:', targetUser);
+      const { data: debugResult, error } = await supabase.rpc('debug_life_story_access', {
+        target_user_id: targetUser
+      });
+      
+      if (error) {
+        console.error('❌ Erreur debug RLS:', error);
+        return null;
+      }
+      
+      console.log('🔍 DEBUG RLS - Résultat:', debugResult);
+      return debugResult;
+    } catch (error) {
+      console.error('❌ Exception debug RLS:', error);
+      return null;
+    }
+  };
 
   // Fonction pour déterminer l'utilisateur effectif
   const getEffectiveUserId = async (): Promise<string> => {
@@ -156,6 +176,19 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
       loadingRef.current = true;
       setIsLoading(true);
       console.log('📚 DÉBUT - Chargement pour utilisateur effectif:', effectiveUserId);
+      
+      // NOUVEAU: Test de debug RLS avant la requête principale
+      const debugResult = await debugLifeStoryAccess(effectiveUserId);
+      if (debugResult) {
+        console.log('🔍 DEBUG RLS - Analyse des permissions:', {
+          shouldHaveAccess: debugResult.should_have_access,
+          isOwner: debugResult.is_owner,
+          hasDirectPermission: debugResult.has_direct_permission,
+          hasGroupAccess: debugResult.has_group_access,
+          currentUser: debugResult.current_user_id,
+          targetUser: debugResult.target_user_id
+        });
+      }
       
       // Récupérer l'histoire pour cet utilisateur avec la politique RLS corrigée
       console.log('📚 🔍 REQUÊTE HISTOIRE - Début pour:', effectiveUserId);
@@ -263,6 +296,11 @@ export const useLifeStory = ({ existingStory, targetUserId }: UseLifeStoryProps)
         
       } else {
         console.log('📚 Aucune histoire trouvée pour:', effectiveUserId, '- Utilisation chapitres par défaut');
+        // NOUVEAU: Si le debug montre qu'on devrait avoir accès mais pas de données trouvées
+        if (debugResult && debugResult.should_have_access) {
+          console.warn('⚠️ DEBUG RLS indique accès autorisé mais aucune histoire trouvée - Possible problème de données');
+        }
+        
         // Utiliser les chapitres initiaux par défaut avec l'ID utilisateur correct
         setData(prev => ({
           ...prev,

@@ -779,6 +779,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      debug_life_story_access: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       delete_user_completely: {
         Args: { user_id_to_delete: string }
         Returns: undefined
