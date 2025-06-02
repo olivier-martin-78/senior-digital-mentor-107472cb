@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -159,20 +158,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   };
 
   const saveNow = async () => {
-    if (!data || !user) return;
-    
-    // Déterminer le user_id pour la sauvegarde
-    // IMPORTANT: Utiliser effectiveUserId pour garantir la cohérence
-    const userIdForSave = effectiveUserId;
-    
-    if (!userIdForSave) {
-      console.error('❌ Pas d\'utilisateur effectif pour la sauvegarde');
+    if (!data || !user || !effectiveUserId) {
+      console.error('❌ Données manquantes pour la sauvegarde:', {
+        hasData: !!data,
+        hasUser: !!user,
+        effectiveUserId
+      });
       return;
     }
     
     // Vérifier les permissions avant la sauvegarde
     const isAdmin = hasRole('admin');
-    const isOwnStory = userIdForSave === user.id;
+    const isOwnStory = effectiveUserId === user.id;
     
     if (!isOwnStory && !isAdmin) {
       console.error('❌ Permissions insuffisantes pour sauvegarder cette histoire');
@@ -184,10 +181,20 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       return;
     }
 
+    // CORRECTION CRITIQUE: S'assurer que data.user_id correspond à effectiveUserId
+    if (data.user_id && data.user_id !== effectiveUserId) {
+      console.warn('⚠️ Correction de l\'user_id incohérent:', {
+        currentDataUserId: data.user_id,
+        expectedUserId: effectiveUserId
+      });
+      
+      // Mettre à jour les données locales pour corriger l'incohérence
+      setData(prev => prev ? { ...prev, user_id: effectiveUserId } : null);
+    }
+
     try {
       setIsSaving(true);
       console.log('💾 Sauvegarde de l\'histoire de vie pour user_id:', {
-        userIdForSave,
         effectiveUserId,
         currentDataUserId: data.user_id
       });
@@ -222,7 +229,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       console.log('💾 Chapitres préparés pour sauvegarde:', chaptersToSave);
 
       const dataToSave = {
-        user_id: userIdForSave,
+        user_id: effectiveUserId, // UTILISER effectiveUserId de manière cohérente
         title: data.title,
         chapters: JSON.stringify(chaptersToSave),
         updated_at: new Date().toISOString(),
@@ -254,15 +261,24 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       console.log('✅ Histoire de vie sauvegardée avec succès:', {
         savedId: savedData?.id,
         savedUserId: savedData?.user_id,
-        expectedUserId: userIdForSave
+        expectedUserId: effectiveUserId
       });
       
-      // Mettre à jour les données locales avec l'ID retourné
+      // VALIDATION POST-SAUVEGARDE: Vérifier la cohérence
+      if (savedData?.user_id !== effectiveUserId) {
+        console.error('❌ ERREUR CRITIQUE: user_id incohérent après sauvegarde:', {
+          saved: savedData?.user_id,
+          expected: effectiveUserId
+        });
+        throw new Error('Incohérence des données après sauvegarde');
+      }
+      
+      // Mettre à jour les données locales avec l'ID retourné et s'assurer de la cohérence
       if (savedData && savedData.id) {
         setData(prevData => ({
           ...prevData!,
           id: savedData.id,
-          user_id: savedData.user_id, // S'assurer que l'user_id est cohérent
+          user_id: effectiveUserId, // S'assurer que l'user_id est cohérent
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
         }));
@@ -304,7 +320,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const updateAnswer = (questionId: string, answer: string) => {
     if (!data) return;
 
-    console.log('📝 Mise à jour réponse:', { questionId, answer });
+    console.log('📝 Mise à jour réponse:', { questionId, answer, dataUserId: data.user_id });
     
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -326,7 +342,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
     if (!data) return;
 
-    console.log('🎤 Audio enregistré:', { questionId, audioUrl, dataUserId: data.user_id });
+    console.log('🎤 Audio enregistré:', { questionId, audioUrl, dataUserId: data.user_id, effectiveUserId });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -350,7 +366,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioDeleted = (questionId: string) => {
     if (!data) return;
 
-    console.log('🗑️ Audio supprimé:', { questionId, dataUserId: data.user_id });
+    console.log('🗑️ Audio supprimé:', { questionId, dataUserId: data.user_id, effectiveUserId });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -374,7 +390,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
     if (!data) return;
 
-    console.log('🔄 Changement URL audio:', { questionId, audioUrl, dataUserId: data.user_id });
+    console.log('🔄 Changement URL audio:', { questionId, audioUrl, dataUserId: data.user_id, effectiveUserId });
 
     // Normaliser l'URL avant de l'enregistrer
     const normalizedAudioUrl = audioUrl && audioUrl.trim() !== '' ? audioUrl : null;
@@ -410,7 +426,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   })() : { totalQuestions: 0, answeredQuestions: 0 };
 
   useEffect(() => {
-    if (effectiveUserId) {
+    if (effectiveUserId && user) {
       console.log('🔄 Rechargement pour utilisateur:', {
         effectiveUserId,
         targetUserId,
@@ -422,7 +438,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       setData(null);
       setIsLoading(false);
     }
-  }, [effectiveUserId, user]);
+  }, [effectiveUserId, user?.id]);
 
   return {
     data,
