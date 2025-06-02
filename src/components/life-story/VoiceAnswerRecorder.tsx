@@ -11,6 +11,7 @@ interface VoiceAnswerRecorderProps {
   onAudioDeleted: (chapterId: string, questionId: string, showToast?: boolean) => void;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
   existingAudioUrl?: string | null;
+  shouldLog?: boolean;
 }
 
 const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
@@ -20,6 +21,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
   existingAudioUrl,
+  shouldLog = false,
 }) => {
   const { hasRole } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -27,48 +29,58 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   // Normaliser l'URL existante - traiter les chaînes vides comme null
   const normalizedExistingUrl = existingAudioUrl && existingAudioUrl.trim() !== '' ? existingAudioUrl : null;
   
-  // DEBUG: Log l'état initial avec plus de détails
-  console.log('🎤 VoiceAnswerRecorder - État initial détaillé:', {
-    chapterId,
-    questionId,
-    existingAudioUrl,
-    normalizedExistingUrl,
-    existingAudioUrlType: typeof existingAudioUrl,
-    existingAudioUrlLength: existingAudioUrl?.length,
-    isUploading,
-    hasExistingAudio: !!normalizedExistingUrl,
-    isValidUrl: normalizedExistingUrl && normalizedExistingUrl.length > 10,
-    isReader: hasRole('reader')
-  });
+  // DEBUG: Log l'état initial avec plus de détails (uniquement si shouldLog)
+  if (shouldLog) {
+    console.log('🎤 VoiceAnswerRecorder - État initial détaillé:', {
+      chapterId,
+      questionId,
+      existingAudioUrl,
+      normalizedExistingUrl,
+      existingAudioUrlType: typeof existingAudioUrl,
+      existingAudioUrlLength: existingAudioUrl?.length,
+      isUploading,
+      hasExistingAudio: !!normalizedExistingUrl,
+      isValidUrl: normalizedExistingUrl && normalizedExistingUrl.length > 10,
+      isReader: hasRole('reader')
+    });
+  }
   
   // Les lecteurs peuvent voir le contenu mais ne peuvent pas enregistrer
   const isReader = hasRole('reader');
   const canRecord = !isReader;
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    console.log('🎤 VoiceAnswerRecorder - handleAudioUrlChange:', { 
-      chapterId, 
-      questionId, 
-      audioUrl, 
-      preventAutoSave,
-      previousUrl: normalizedExistingUrl,
-      urlChanged: audioUrl !== normalizedExistingUrl
-    });
+    if (shouldLog) {
+      console.log('🎤 VoiceAnswerRecorder - handleAudioUrlChange:', { 
+        chapterId, 
+        questionId, 
+        audioUrl, 
+        preventAutoSave,
+        previousUrl: normalizedExistingUrl,
+        urlChanged: audioUrl !== normalizedExistingUrl
+      });
+    }
     
     // Appeler la fonction du parent pour mettre à jour l'état
     // Ne pas bloquer la sauvegarde automatique
     onAudioUrlChange(chapterId, questionId, audioUrl, false);
     
     if (audioUrl && audioUrl.trim() !== '') {
-      console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice');
+      if (shouldLog) {
+        console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, création blob factice');
+      }
       // Créer un blob factice pour compatibilité avec l'interface existante
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       // Arrêter l'état d'upload une fois l'URL reçue
       setIsUploading(false);
-      console.log('🎤 VoiceAnswerRecorder - Upload terminé, isUploading = false');
+      if (shouldLog) {
+        console.log('🎤 VoiceAnswerRecorder - Upload terminé, isUploading = false');
+      }
     } else {
-      console.log('🎤 VoiceAnswerRecorder - Pas d\'URL valide, suppression audio');
+      if (shouldLog) {
+        console.log('🎤 VoiceAnswerRecorder - Pas d\'URL valide, suppression audio');
+      }
       // Ne pas afficher de toast lors des changements automatiques
       onAudioDeleted(chapterId, questionId, false);
       setIsUploading(false);
@@ -76,55 +88,69 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   };
 
   const handleDeleteExistingAudio = () => {
-    console.log('🎤 VoiceAnswerRecorder - Suppression manuelle de l\'audio existant');
+    if (shouldLog) {
+      console.log('🎤 VoiceAnswerRecorder - Suppression manuelle de l\'audio existant');
+    }
     onAudioUrlChange(chapterId, questionId, null, false); // Permettre la sauvegarde
     onAudioDeleted(chapterId, questionId, true); // Afficher le toast pour la suppression manuelle
   };
 
   // Gérer le début de l'upload
   const handleUploadStart = () => {
-    console.log('🎤 VoiceAnswerRecorder - Début upload, isUploading = true');
+    if (shouldLog) {
+      console.log('🎤 VoiceAnswerRecorder - Début upload, isUploading = true');
+    }
     setIsUploading(true);
   };
 
-  // DEBUG: Log de la décision d'affichage avec plus de détails
+  // DEBUG: Log de la décision d'affichage avec plus de détails (uniquement si shouldLog)
   const shouldShowPlayer = normalizedExistingUrl && !isUploading;
-  console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage détaillée:', {
-    shouldShowPlayer,
-    normalizedExistingUrl: !!normalizedExistingUrl,
-    normalizedExistingUrlValue: normalizedExistingUrl,
-    isUploading,
-    isReader,
-    condition: 'normalizedExistingUrl && !isUploading',
-    finalDecision: shouldShowPlayer ? 'LECTEUR' : (canRecord ? 'ENREGISTREUR' : 'RIEN')
-  });
+  if (shouldLog) {
+    console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage détaillée:', {
+      shouldShowPlayer,
+      normalizedExistingUrl: !!normalizedExistingUrl,
+      normalizedExistingUrlValue: normalizedExistingUrl,
+      isUploading,
+      isReader,
+      condition: 'normalizedExistingUrl && !isUploading',
+      finalDecision: shouldShowPlayer ? 'LECTEUR' : (canRecord ? 'ENREGISTREUR' : 'RIEN')
+    });
+  }
 
   // Si un audio existe déjà ET qu'on n'est pas en train d'uploader, afficher le lecteur
   if (shouldShowPlayer) {
-    console.log('🎤 VoiceAnswerRecorder - ✅ Affichage du lecteur avec URL:', normalizedExistingUrl);
+    if (shouldLog) {
+      console.log('🎤 VoiceAnswerRecorder - ✅ Affichage du lecteur avec URL:', normalizedExistingUrl);
+    }
     return (
       <VoiceAnswerPlayer
         audioUrl={normalizedExistingUrl}
         onDelete={handleDeleteExistingAudio}
         readOnly={isReader}
+        shouldLog={shouldLog}
       />
     );
   }
 
   // Si pas d'audio existant et que l'utilisateur est un reader, ne rien afficher
   if (isReader) {
-    console.log('🎤 VoiceAnswerRecorder - ⚠️ Reader sans audio existant, pas d\'affichage');
+    if (shouldLog) {
+      console.log('🎤 VoiceAnswerRecorder - ⚠️ Reader sans audio existant, pas d\'affichage');
+    }
     return null;
   }
 
   // Sinon, afficher l'enregistreur pour les utilisateurs qui peuvent enregistrer
-  console.log('🎤 VoiceAnswerRecorder - ⚠️ Affichage de l\'enregistreur (pas d\'audio existant et peut enregistrer)');
+  if (shouldLog) {
+    console.log('🎤 VoiceAnswerRecorder - ⚠️ Affichage de l\'enregistreur (pas d\'audio existant et peut enregistrer)');
+  }
   return (
     <AudioRecorder
       chapterId={chapterId}
       questionId={questionId}
       onAudioUrlChange={handleAudioUrlChange}
       onUploadStart={handleUploadStart}
+      shouldLog={shouldLog}
     />
   );
 };

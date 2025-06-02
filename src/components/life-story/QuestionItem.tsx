@@ -30,16 +30,21 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   const { hasRole } = useAuth();
   const isReader = hasRole('reader');
 
-  console.log('📝 QuestionItem - Question avec contenu:', { 
-    questionId: question.id, 
-    answer: question.answer,
-    answerLength: question.answer?.length,
-    audioUrl: question.audioUrl,
-    hasAudioUrl: !!question.audioUrl,
-    audioUrlLength: question.audioUrl?.length,
-    audioUrlPreview: question.audioUrl?.substring(0, 100) + '...',
-    isReader
-  });
+  // Log uniquement pour la question 1 du chapitre 1
+  const shouldLog = chapterId === 'chapter-1' && question.id === 'question-1';
+  
+  if (shouldLog) {
+    console.log('📝 QuestionItem - Question avec contenu:', { 
+      questionId: question.id, 
+      answer: question.answer,
+      answerLength: question.answer?.length,
+      audioUrl: question.audioUrl,
+      hasAudioUrl: !!question.audioUrl,
+      audioUrlLength: question.audioUrl?.length,
+      audioUrlPreview: question.audioUrl?.substring(0, 100) + '...',
+      isReader
+    });
+  }
 
   return (
     <div className="space-y-2">
@@ -63,6 +68,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           onAudioRecorded={onAudioRecorded}
           onAudioDeleted={onAudioDeleted}
           onAudioUrlChange={onAudioUrlChange}
+          shouldLog={shouldLog}
         />
       </div>
       

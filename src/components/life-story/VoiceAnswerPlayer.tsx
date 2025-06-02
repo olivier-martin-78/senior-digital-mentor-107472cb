@@ -11,12 +11,14 @@ interface VoiceAnswerPlayerProps {
   audioUrl: string;
   onDelete: () => void;
   readOnly?: boolean;
+  shouldLog?: boolean;
 }
 
 export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   audioUrl,
   onDelete,
-  readOnly = false
+  readOnly = false,
+  shouldLog = false
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,27 +35,33 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const MAX_LOAD_ATTEMPTS = 3;
   const RETRY_DELAY = 2000; // 2 secondes entre les tentatives
   
-  // DEBUG: Log l'état initial
-  console.log('🎵 VoiceAnswerPlayer - Initialisation:', {
-    audioUrl,
-    isValidUrl: validateAudioUrl(audioUrl),
-    isLoading,
-    hasError,
-    urlLength: audioUrl?.length,
-    bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown',
-    readOnly
-  });
+  // DEBUG: Log l'état initial (uniquement si shouldLog)
+  if (shouldLog) {
+    console.log('🎵 VoiceAnswerPlayer - Initialisation:', {
+      audioUrl,
+      isValidUrl: validateAudioUrl(audioUrl),
+      isLoading,
+      hasError,
+      urlLength: audioUrl?.length,
+      bucketInfo: audioUrl?.includes('diary_media') ? 'diary_media' : audioUrl?.includes('life-story-audios') ? 'life-story-audios' : 'unknown',
+      readOnly
+    });
+  }
 
   // Fonction pour régénérer une URL signée
   const refreshAudioUrl = async () => {
     if (!audioUrl) return;
     
     setIsRefreshing(true);
-    console.log('🔄 Régénération URL signée pour:', audioUrl);
+    if (shouldLog) {
+      console.log('🔄 Régénération URL signée pour:', audioUrl);
+    }
     
     try {
       const filePath = extractFilePathFromUrl(audioUrl);
-      console.log('🔍 Chemin extrait pour régénération:', filePath);
+      if (shouldLog) {
+        console.log('🔍 Chemin extrait pour régénération:', filePath);
+      }
       
       if (!filePath) {
         throw new Error('Impossible d\'extraire le chemin du fichier depuis l\'URL');
@@ -61,7 +69,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       
       const newSignedUrl = await getSignedAudioUrl(filePath);
       if (newSignedUrl) {
-        console.log('✅ Nouvelle URL signée générée:', newSignedUrl);
+        if (shouldLog) {
+          console.log('✅ Nouvelle URL signée générée:', newSignedUrl);
+        }
         setActualAudioUrl(newSignedUrl);
         setHasError(false);
         setLoadAttempts(0);
@@ -75,7 +85,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         throw new Error('Impossible de générer une nouvelle URL signée');
       }
     } catch (error) {
-      console.error('❌ Erreur régénération URL:', error);
+      if (shouldLog) {
+        console.error('❌ Erreur régénération URL:', error);
+      }
       toast({
         title: "Erreur de régénération",
         description: `Impossible de régénérer l'URL audio: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
@@ -91,17 +103,21 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   useEffect(() => {
     let mounted = true;
     
-    console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { 
-      audioUrl, 
-      actualAudioUrl, 
-      mounted, 
-      loadAttempts 
-    });
+    if (shouldLog) {
+      console.log('🎵 VoiceAnswerPlayer - useEffect principal déclenché:', { 
+        audioUrl, 
+        actualAudioUrl, 
+        mounted, 
+        loadAttempts 
+      });
+    }
     
     const urlToUse = actualAudioUrl || audioUrl;
     
     if (!validateAudioUrl(urlToUse)) {
-      console.log('🎵 VoiceAnswerPlayer - ❌ URL audio invalide:', urlToUse);
+      if (shouldLog) {
+        console.log('🎵 VoiceAnswerPlayer - ❌ URL audio invalide:', urlToUse);
+      }
       setHasError(true);
       setIsLoading(false);
       return;
@@ -109,11 +125,15 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     
     const startAudioLoad = () => {
       if (!mounted) {
-        console.log('🎵 VoiceAnswerPlayer - startAudioLoad: composant démonté');
+        if (shouldLog) {
+          console.log('🎵 VoiceAnswerPlayer - startAudioLoad: composant démonté');
+        }
         return;
       }
       
-      console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS} pour URL:`, urlToUse);
+      if (shouldLog) {
+        console.log(`🎵 VoiceAnswerPlayer - Tentative chargement ${loadAttempts + 1}/${MAX_LOAD_ATTEMPTS} pour URL:`, urlToUse);
+      }
       
       // Créer un nouvel élément audio
       const audio = new Audio();
@@ -123,7 +143,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       
       const onLoadedMetadata = () => {
         if (mounted) {
-          console.log("🎵 VoiceAnswerPlayer - ✅ Audio chargé avec succès, durée:", audio.duration, "secondes");
+          if (shouldLog) {
+            console.log("🎵 VoiceAnswerPlayer - ✅ Audio chargé avec succès, durée:", audio.duration, "secondes");
+          }
           setDuration(audio.duration);
           setIsLoading(false);
           setHasError(false);
@@ -139,21 +161,27 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       
       const onPlay = () => {
         if (mounted) {
-          console.log('🎵 VoiceAnswerPlayer - ▶️ Lecture démarrée');
+          if (shouldLog) {
+            console.log('🎵 VoiceAnswerPlayer - ▶️ Lecture démarrée');
+          }
           setIsPlaying(true);
         }
       };
       
       const onPause = () => {
         if (mounted) {
-          console.log('🎵 VoiceAnswerPlayer - ⏸️ Lecture en pause');
+          if (shouldLog) {
+            console.log('🎵 VoiceAnswerPlayer - ⏸️ Lecture en pause');
+          }
           setIsPlaying(false);
         }
       };
       
       const onEnded = () => {
         if (mounted) {
-          console.log('🎵 VoiceAnswerPlayer - ⏹️ Lecture terminée');
+          if (shouldLog) {
+            console.log('🎵 VoiceAnswerPlayer - ⏹️ Lecture terminée');
+          }
           setIsPlaying(false);
           setCurrentTime(0);
         }
@@ -166,28 +194,34 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         const errorCode = target?.error?.code;
         const errorMessage = target?.error?.message;
         
-        console.error(`🎵 VoiceAnswerPlayer - ❌ Erreur chargement (tentative ${loadAttempts + 1}):`, {
-          event: e,
-          errorCode,
-          errorMessage,
-          readyState: target?.readyState,
-          networkState: target?.networkState,
-          src: target?.src
-        });
+        if (shouldLog) {
+          console.error(`🎵 VoiceAnswerPlayer - ❌ Erreur chargement (tentative ${loadAttempts + 1}):`, {
+            event: e,
+            errorCode,
+            errorMessage,
+            readyState: target?.readyState,
+            networkState: target?.networkState,
+            src: target?.src
+          });
+        }
         
         // Diagnostiquer le type d'erreur
-        if (errorCode === 1) {
-          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_ABORTED: Chargement abandonné');
-        } else if (errorCode === 2) {
-          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_NETWORK: Erreur réseau');
-        } else if (errorCode === 3) {
-          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_DECODE: Erreur de décodage');
-        } else if (errorCode === 4) {
-          console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_SRC_NOT_SUPPORTED: Format non supporté');
+        if (shouldLog) {
+          if (errorCode === 1) {
+            console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_ABORTED: Chargement abandonné');
+          } else if (errorCode === 2) {
+            console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_NETWORK: Erreur réseau');
+          } else if (errorCode === 3) {
+            console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_DECODE: Erreur de décodage');
+          } else if (errorCode === 4) {
+            console.error('🎵 VoiceAnswerPlayer - MEDIA_ERR_SRC_NOT_SUPPORTED: Format non supporté');
+          }
         }
         
         if (loadAttempts < MAX_LOAD_ATTEMPTS - 1) {
-          console.log('🎵 VoiceAnswerPlayer - 🔄 Tentative de rechargement dans', RETRY_DELAY, 'ms...');
+          if (shouldLog) {
+            console.log('🎵 VoiceAnswerPlayer - 🔄 Tentative de rechargement dans', RETRY_DELAY, 'ms...');
+          }
           setLoadAttempts(prev => prev + 1);
           retryTimeoutRef.current = setTimeout(() => {
             if (mounted) {
@@ -195,7 +229,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
             }
           }, RETRY_DELAY);
         } else {
-          console.error("🎵 VoiceAnswerPlayer - 💥 Échec définitif après", MAX_LOAD_ATTEMPTS, "tentatives");
+          if (shouldLog) {
+            console.error("🎵 VoiceAnswerPlayer - 💥 Échec définitif après", MAX_LOAD_ATTEMPTS, "tentatives");
+          }
           setHasError(true);
           setIsLoading(false);
           
@@ -209,8 +245,6 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         }
       };
       
-      // ... keep existing code (event listeners setup)
-      
       // Ajouter les écouteurs d'événements
       audio.addEventListener('loadedmetadata', onLoadedMetadata);
       audio.addEventListener('timeupdate', onTimeUpdate);
@@ -221,17 +255,23 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       
       // Charger l'audio
       try {
-        console.log('🎵 VoiceAnswerPlayer - 📥 Définition de la source audio:', urlToUse);
+        if (shouldLog) {
+          console.log('🎵 VoiceAnswerPlayer - 📥 Définition de la source audio:', urlToUse);
+        }
         audio.src = urlToUse;
         audio.load();
       } catch (error) {
-        console.error("🎵 VoiceAnswerPlayer - 💥 Exception lors du chargement:", error);
+        if (shouldLog) {
+          console.error("🎵 VoiceAnswerPlayer - 💥 Exception lors du chargement:", error);
+        }
         onError(new Event('error'));
       }
       
       // Nettoyer lors du démontage
       return () => {
-        console.log('🎵 VoiceAnswerPlayer - 🧹 Nettoyage audio');
+        if (shouldLog) {
+          console.log('🎵 VoiceAnswerPlayer - 🧹 Nettoyage audio');
+        }
         audio.removeEventListener('loadedmetadata', onLoadedMetadata);
         audio.removeEventListener('timeupdate', onTimeUpdate);
         audio.removeEventListener('play', onPlay);
@@ -247,7 +287,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     const cleanup = startAudioLoad();
     
     return () => {
-      console.log('🎵 VoiceAnswerPlayer - 🧹 Nettoyage useEffect principal');
+      if (shouldLog) {
+        console.log('🎵 VoiceAnswerPlayer - 🧹 Nettoyage useEffect principal');
+      }
       mounted = false;
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -256,24 +298,32 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         cleanup();
       }
     };
-  }, [audioUrl, actualAudioUrl, loadAttempts]);
+  }, [audioUrl, actualAudioUrl, loadAttempts, shouldLog]);
   
   const handlePlayPause = () => {
     if (!audioRef.current || hasError) {
-      console.log('🎵 VoiceAnswerPlayer - handlePlayPause: pas d\'audio ou erreur');
+      if (shouldLog) {
+        console.log('🎵 VoiceAnswerPlayer - handlePlayPause: pas d\'audio ou erreur');
+      }
       return;
     }
     
     try {
       if (isPlaying) {
-        console.log('🎵 VoiceAnswerPlayer - ⏸️ Pause demandée');
+        if (shouldLog) {
+          console.log('🎵 VoiceAnswerPlayer - ⏸️ Pause demandée');
+        }
         audioRef.current.pause();
       } else {
-        console.log('🎵 VoiceAnswerPlayer - ▶️ Lecture demandée');
+        if (shouldLog) {
+          console.log('🎵 VoiceAnswerPlayer - ▶️ Lecture demandée');
+        }
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           playPromise.catch((error) => {
-            console.error("🎵 VoiceAnswerPlayer - ❌ Erreur lecture:", error);
+            if (shouldLog) {
+              console.error("🎵 VoiceAnswerPlayer - ❌ Erreur lecture:", error);
+            }
             toast({
               title: "Erreur de lecture",
               description: "Impossible de lire l'audio. Veuillez réessayer.",
@@ -283,7 +333,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         }
       }
     } catch (error) {
-      console.error("🎵 VoiceAnswerPlayer - 💥 Exception lecture/pause:", error);
+      if (shouldLog) {
+        console.error("🎵 VoiceAnswerPlayer - 💥 Exception lecture/pause:", error);
+      }
     }
   };
   
@@ -296,7 +348,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     try {
       audioRef.current.currentTime = newTime;
     } catch (error) {
-      console.error("🎵 VoiceAnswerPlayer - ❌ Erreur modification position:", error);
+      if (shouldLog) {
+        console.error("🎵 VoiceAnswerPlayer - ❌ Erreur modification position:", error);
+      }
     }
   };
   
@@ -307,7 +361,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
   
   const handleDelete = () => {
-    console.log('🎵 VoiceAnswerPlayer - 🗑️ Suppression demandée');
+    if (shouldLog) {
+      console.log('🎵 VoiceAnswerPlayer - 🗑️ Suppression demandée');
+    }
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -315,25 +371,31 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
   
   const handleExport = () => {
-    console.log('🎵 VoiceAnswerPlayer - 📤 Export demandé');
+    if (shouldLog) {
+      console.log('🎵 VoiceAnswerPlayer - 📤 Export demandé');
+    }
     const urlToExport = actualAudioUrl || audioUrl;
     handleExportAudio(urlToExport);
   };
   
-  // DEBUG: Log des états de rendu
-  console.log('🎵 VoiceAnswerPlayer - État rendu:', {
-    isLoading,
-    hasError,
-    isValidUrl: validateAudioUrl(audioUrl),
-    duration,
-    isPlaying,
-    loadAttempts,
-    readOnly
-  });
+  // DEBUG: Log des états de rendu (uniquement si shouldLog)
+  if (shouldLog) {
+    console.log('🎵 VoiceAnswerPlayer - État rendu:', {
+      isLoading,
+      hasError,
+      isValidUrl: validateAudioUrl(audioUrl),
+      duration,
+      isPlaying,
+      loadAttempts,
+      readOnly
+    });
+  }
   
   // Si l'URL n'est pas valide, afficher un message d'erreur
   if (!validateAudioUrl(audioUrl)) {
-    console.log('🎵 VoiceAnswerPlayer - Rendu: URL invalide');
+    if (shouldLog) {
+      console.log('🎵 VoiceAnswerPlayer - Rendu: URL invalide');
+    }
     return (
       <div className="p-3 bg-red-50 text-red-800 rounded-md flex items-center mb-2">
         <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -342,7 +404,9 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     );
   }
   
-  console.log('🎵 VoiceAnswerPlayer - Rendu: lecteur principal');
+  if (shouldLog) {
+    console.log('🎵 VoiceAnswerPlayer - Rendu: lecteur principal');
+  }
   
   return (
     <div>
@@ -411,13 +475,19 @@ export const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                 className="w-full"
                 src={actualAudioUrl || audioUrl}
                 onError={(e) => {
-                  console.log("🎵 VoiceAnswerPlayer - ❌ Erreur audio natif:", e);
+                  if (shouldLog) {
+                    console.log("🎵 VoiceAnswerPlayer - ❌ Erreur audio natif:", e);
+                  }
                 }}
                 onLoadedData={() => {
-                  console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif chargé");
+                  if (shouldLog) {
+                    console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif chargé");
+                  }
                 }}
                 onCanPlay={() => {
-                  console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif prêt à jouer");
+                  if (shouldLog) {
+                    console.log("🎵 VoiceAnswerPlayer - ✅ Audio natif prêt à jouer");
+                  }
                 }}
               />
             )}
