@@ -145,6 +145,12 @@ const AdminUsers = () => {
     }
   };
 
+  const handleUserDeleted = async () => {
+    await loadUsers();
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
   // Filtrer les utilisateurs selon le terme de recherche
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -228,15 +234,11 @@ const AdminUsers = () => {
                           : 'Non disponible'}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleDeleteClick(user)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Supprimer
-                        </Button>
+                        <DeleteUserDialog
+                          userId={user.id}
+                          userEmail={user.email}
+                          onUserDeleted={handleUserDeleted}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
@@ -255,19 +257,7 @@ const AdminUsers = () => {
         )}
 
         {/* Dialog d'invitation d'un utilisateur */}
-        <InviteUserDialog 
-          open={inviteDialogOpen} 
-          onOpenChange={setInviteDialogOpen} 
-          onUserInvited={loadUsers} 
-        />
-
-        {/* Dialog de confirmation de suppression */}
-        <DeleteUserDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          userToDelete={userToDelete}
-          onDeleteConfirm={handleDeleteConfirm}
-        />
+        <InviteUserDialog />
       </div>
     </div>
   );
