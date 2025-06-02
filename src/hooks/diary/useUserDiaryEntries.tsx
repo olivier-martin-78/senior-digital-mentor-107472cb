@@ -51,43 +51,95 @@ export const fetchUserDiaryEntries = async (
   const directAuthorizedIds = directPermissions?.map(p => p.diary_owner_id) || [];
   console.log('🔍 Diary - Permissions directes trouvées:', directAuthorizedIds);
 
-  // 3. Récupérer les utilisateurs autorisés via les invitations avec accès journal
-  console.log('🔍 Diary - Vérification des invitations avec accès journal pour:', effectiveUserId);
-  const { data: invitationPermissions, error: invitationError } = await supabase
+  // 3. NOUVELLE APPROCHE : Récupérer les groupes de l'utilisateur en deux étapes
+  console.log('🔍 Diary - ÉTAPE 1: Récupération des groupes de l\'utilisateur');
+  const { data: userGroups, error: groupsError } = await supabase
     .from('group_members')
     .select(`
       group_id,
+      role,
       invitation_groups!inner(
+        id,
         created_by,
-        invitations!inner(
-          invited_by,
-          diary_access,
-          used_at
-        )
+        name
       )
     `)
     .eq('user_id', effectiveUserId)
-    .eq('role', 'guest')
-    .eq('invitation_groups.invitations.diary_access', true)
-    .not('invitation_groups.invitations.used_at', 'is', null);
+    .eq('role', 'guest');
 
-  if (invitationError) {
-    console.error('🔍 Diary - Erreur invitations avec accès journal:', invitationError);
+  if (groupsError) {
+    console.error('🔍 Diary - Erreur lors de la récupération des groupes:', groupsError);
   }
 
-  // Extraire les IDs des créateurs ayant accordé l'accès journal
-  const invitationAuthorizedIds = invitationPermissions?.map(p => p.invitation_groups.created_by) || [];
-  console.log('🔍 Diary - Permissions via invitations trouvées:', invitationAuthorizedIds);
+  console.log('🔍 Diary - Groupes trouvés pour l\'utilisateur:', {
+    count: userGroups?.length || 0,
+    groups: userGroups?.map(g => ({
+      group_id: g.group_id,
+      creator: g.invitation_groups.created_by,
+      name: g.invitation_groups.name
+    }))
+  });
 
-  // 4. Combiner tous les IDs autorisés (sauf l'utilisateur effectif lui-même)
+  let invitationAuthorizedIds: string[] = [];
+
+  if (userGroups && userGroups.length > 0) {
+    // 4. ÉTAPE 2: Pour chaque groupe, récupérer les invitations avec accès journal
+    console.log('🔍 Diary - ÉTAPE 2: Vérification des invitations pour chaque groupe');
+    
+    for (const group of userGroups) {
+      const groupId = group.group_id;
+      const groupCreator = group.invitation_groups.created_by;
+      
+      console.log(`🔍 Diary - Vérification du groupe ${groupId} créé par ${groupCreator}`);
+      
+      const { data: groupInvitations, error: invitationsError } = await supabase
+        .from('invitations')
+        .select('invited_by, diary_access, used_at, email')
+        .eq('group_id', groupId)
+        .eq('diary_access', true)
+        .not('used_at', 'is', null);
+
+      if (invitationsError) {
+        console.error(`🔍 Diary - Erreur invitations pour groupe ${groupId}:`, invitationsError);
+        continue;
+      }
+
+      console.log(`🔍 Diary - Invitations avec accès journal pour groupe ${groupId}:`, {
+        count: groupInvitations?.length || 0,
+        invitations: groupInvitations?.map(inv => ({
+          invited_by: inv.invited_by,
+          email: inv.email,
+          diary_access: inv.diary_access,
+          used_at: inv.used_at
+        }))
+      });
+
+      // Si des invitations avec accès journal existent, ajouter le créateur du groupe
+      if (groupInvitations && groupInvitations.length > 0) {
+        console.log(`🔍 Diary - Ajout du créateur ${groupCreator} aux utilisateurs autorisés`);
+        invitationAuthorizedIds.push(groupCreator);
+      }
+    }
+  }
+
+  // Déduplication des IDs autorisés via invitations
+  invitationAuthorizedIds = [...new Set(invitationAuthorizedIds)];
+  console.log('🔍 Diary - IDs autorisés via invitations (dédupliqués):', invitationAuthorizedIds);
+
+  // 5. Combiner tous les IDs autorisés (sauf l'utilisateur effectif lui-même)
   const allAuthorizedIds = [...new Set([...directAuthorizedIds, ...invitationAuthorizedIds])]
     .filter(id => id !== effectiveUserId);
   
-  console.log('🔍 Diary - Tous les utilisateurs autorisés:', allAuthorizedIds);
+  console.log('🔍 Diary - RÉSULTAT FINAL - Tous les utilisateurs autorisés:', {
+    directPermissions: directAuthorizedIds,
+    invitationPermissions: invitationAuthorizedIds,
+    combined: allAuthorizedIds,
+    effectiveUserId: effectiveUserId
+  });
 
   let otherEntries: any[] = [];
 
-  // 5. Récupérer les entrées des autres utilisateurs autorisés
+  // 6. Récupérer les entrées des autres utilisateurs autorisés
   if (allAuthorizedIds.length > 0) {
     console.log('🔍 Diary - Récupération des entrées des utilisateurs autorisés:', allAuthorizedIds);
     
@@ -113,14 +165,19 @@ export const fetchUserDiaryEntries = async (
       otherEntries = otherEntriesData || [];
       console.log('🔍 Diary - Autres entrées trouvées:', { 
         count: otherEntries.length,
-        fromUsers: [...new Set(otherEntries.map(e => e.user_id))]
+        fromUsers: [...new Set(otherEntries.map(e => e.user_id))],
+        entriesByUser: otherEntries.reduce((acc, entry) => {
+          const userId = entry.user_id;
+          acc[userId] = (acc[userId] || []).concat([{ id: entry.id, title: entry.title }]);
+          return acc;
+        }, {} as Record<string, any[]>)
       });
     }
   } else {
     console.log('🔍 Diary - Aucun autre utilisateur autorisé trouvé');
   }
 
-  // 6. Combiner toutes les entrées
+  // 7. Combiner toutes les entrées
   const allEntries = [...(userEntries || []), ...otherEntries];
   console.log('🔍 Diary - Total entrées combinées:', {
     userEntriesCount: userEntries?.length || 0,
@@ -128,17 +185,17 @@ export const fetchUserDiaryEntries = async (
     totalCount: allEntries.length
   });
   
-  // 7. Trier par date d'entrée (plus récent en premier)
+  // 8. Trier par date d'entrée (plus récent en premier)
   allEntries.sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
 
-  // 8. Récupérer tous les profils nécessaires
+  // 9. Récupérer tous les profils nécessaires
   const allUserIds = [...new Set(allEntries.map(entry => entry.user_id))];
   const { data: allProfiles } = await supabase
     .from('profiles')
     .select('id, email, display_name, avatar_url, created_at')
     .in('id', allUserIds);
 
-  // 9. Filtrage côté client pour le terme de recherche
+  // 10. Filtrage côté client pour le terme de recherche
   const finalEntries = filterEntriesBySearchTerm(allEntries, searchTerm, allProfiles || []);
   
   console.log('🔍 Diary - Entrées finales après filtrage:', {
