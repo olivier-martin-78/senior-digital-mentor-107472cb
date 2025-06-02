@@ -10,20 +10,23 @@ interface AudioRecorderProps {
   questionId: string;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
   onUploadStart?: () => void;
+  shouldLog?: boolean;
 }
 
-export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploadStart }: AudioRecorderProps) => {
+export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploadStart, shouldLog = false }: AudioRecorderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
   
   // DEBUG: Log l'état initial
-  console.log('🎙️ AudioRecorder - Initialisation:', {
-    chapterId,
-    questionId,
-    isUploading,
-    uploadedAudioUrl
-  });
+  if (shouldLog) {
+    console.log('🎙️ AudioRecorder - Initialisation:', {
+      chapterId,
+      questionId,
+      isUploading,
+      uploadedAudioUrl
+    });
+  }
   
   // Utiliser des refs pour éviter les uploads multiples
   const isMounted = useRef(true);
@@ -39,17 +42,21 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
   
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    console.log("🎙️ AudioRecorder - handleAudioChange:", { 
-      hasBlob: !!newAudioBlob, 
-      blobSize: newAudioBlob?.size,
-      questionId,
-      isUploading,
-      currentUpload: currentUploadRef.current
-    });
+    if (shouldLog) {
+      console.log("🎙️ AudioRecorder - handleAudioChange:", { 
+        hasBlob: !!newAudioBlob, 
+        blobSize: newAudioBlob?.size,
+        questionId,
+        isUploading,
+        currentUpload: currentUploadRef.current
+      });
+    }
     
     // Si pas de blob, audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
-      console.log("🎙️ AudioRecorder - Audio supprimé ou vide");
+      if (shouldLog) {
+        console.log("🎙️ AudioRecorder - Audio supprimé ou vide");
+      }
       setUploadedAudioUrl(null);
       setIsUploading(false);
       currentUploadRef.current = null;
@@ -59,7 +66,9 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     
     // Si pas d'utilisateur, ne rien faire
     if (!user?.id) {
-      console.log("🎙️ AudioRecorder - Pas d'utilisateur connecté");
+      if (shouldLog) {
+        console.log("🎙️ AudioRecorder - Pas d'utilisateur connecté");
+      }
       toast({
         title: "Erreur",
         description: "Vous devez être connecté pour enregistrer un audio",
@@ -72,18 +81,24 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     // Vérifier si un upload est déjà en cours pour cette question
     const uploadKey = `${chapterId}-${questionId}`;
     if (isUploading || currentUploadRef.current === uploadKey) {
-      console.log("🎙️ AudioRecorder - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
+      if (shouldLog) {
+        console.log("🎙️ AudioRecorder - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
+      }
       return;
     }
     
     try {
-      console.log(`🎙️ AudioRecorder - Début upload pour ${questionId}, taille: ${newAudioBlob.size} octets`);
+      if (shouldLog) {
+        console.log(`🎙️ AudioRecorder - Début upload pour ${questionId}, taille: ${newAudioBlob.size} octets`);
+      }
       setIsUploading(true);
       currentUploadRef.current = uploadKey;
       
       // Signaler le début de l'upload au parent
       if (onUploadStart) {
-        console.log('🎙️ AudioRecorder - Signal onUploadStart au parent');
+        if (shouldLog) {
+          console.log('🎙️ AudioRecorder - Signal onUploadStart au parent');
+        }
         onUploadStart();
       }
       
@@ -96,27 +111,35 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
         // Callback de succès
         (publicUrl) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            console.log(`🎙️ AudioRecorder - ✅ Upload réussi pour ${questionId}, URL:`, publicUrl);
+            if (shouldLog) {
+              console.log(`🎙️ AudioRecorder - ✅ Upload réussi pour ${questionId}, URL:`, publicUrl);
+            }
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
             currentUploadRef.current = null;
             // Permettre la sauvegarde automatique
             onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
-            console.log('🎙️ AudioRecorder - Toast de succès affiché');
+            if (shouldLog) {
+              console.log('🎙️ AudioRecorder - Toast de succès affiché');
+            }
             toast({
               title: "Enregistrement sauvegardé",
               description: "Votre enregistrement vocal a été sauvegardé avec succès",
               duration: 700
             });
           } else {
-            console.log(`🎙️ AudioRecorder - ⚠️ Upload réussi mais composant démonté ou upload différent`);
+            if (shouldLog) {
+              console.log(`🎙️ AudioRecorder - ⚠️ Upload réussi mais composant démonté ou upload différent`);
+            }
           }
         },
         // Callback d'erreur
         (errorMessage) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            console.error(`🎙️ AudioRecorder - ❌ Erreur upload pour ${questionId}:`, errorMessage);
+            if (shouldLog) {
+              console.error(`🎙️ AudioRecorder - ❌ Erreur upload pour ${questionId}:`, errorMessage);
+            }
             setIsUploading(false);
             currentUploadRef.current = null;
             
@@ -130,12 +153,16 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
         },
         // Callback de début d'upload
         () => {
-          console.log(`🎙️ AudioRecorder - 📤 Début téléchargement pour ${questionId}`);
+          if (shouldLog) {
+            console.log(`🎙️ AudioRecorder - 📤 Début téléchargement pour ${questionId}`);
+          }
         },
         // Callback de fin d'upload
         () => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            console.log(`🎙️ AudioRecorder - 📥 Fin téléchargement pour ${questionId}`);
+            if (shouldLog) {
+              console.log(`🎙️ AudioRecorder - 📥 Fin téléchargement pour ${questionId}`);
+            }
             setIsUploading(false);
             currentUploadRef.current = null;
           }
@@ -143,7 +170,9 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
       );
     } catch (error) {
       if (isMounted.current && currentUploadRef.current === uploadKey) {
-        console.error(`🎙️ AudioRecorder - 💥 Erreur non gérée pour ${questionId}:`, error);
+        if (shouldLog) {
+          console.error(`🎙️ AudioRecorder - 💥 Erreur non gérée pour ${questionId}:`, error);
+        }
         setIsUploading(false);
         currentUploadRef.current = null;
         
@@ -157,7 +186,9 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     }
   };
 
-  console.log('🎙️ AudioRecorder - Rendu avec état:', { isUploading, uploadedAudioUrl });
+  if (shouldLog) {
+    console.log('🎙️ AudioRecorder - Rendu avec état:', { isUploading, uploadedAudioUrl });
+  }
 
   return (
     <div className={`transition-all ${isUploading ? "opacity-60 pointer-events-none" : ""}`}>
