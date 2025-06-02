@@ -172,13 +172,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         updated_at: new Date().toISOString(),
         last_edited_chapter: data.last_edited_chapter || null,
         last_edited_question: data.last_edited_question || null,
-        ...(data.id && { id: data.id }),
+        // Ne pas inclure created_at lors de l'update, seulement pour les nouvelles entrées
         ...(data.created_at && { created_at: data.created_at }),
       };
 
+      // Utiliser upsert avec la contrainte unique sur user_id, mais sans inclure l'id
+      // pour éviter les conflits de clé primaire
       const { error } = await supabase
         .from('life_stories')
-        .upsert(dataToSave, { onConflict: 'user_id' });
+        .upsert(dataToSave, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        });
 
       if (error) {
         console.error('❌ Erreur lors de la sauvegarde de l\'histoire:', error);
