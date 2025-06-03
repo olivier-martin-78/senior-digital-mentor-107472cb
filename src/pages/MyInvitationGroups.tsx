@@ -102,7 +102,7 @@ const MyInvitationGroups = () => {
             if (authData && authData.users) {
               const foundAuthUser = authData.users.find(u => u.email === invitation.email);
               
-              if (foundAuthUser && foundAuthUser.email_confirmed_at) {
+              if (foundAuthUser && foundAuthUser.email_confirmed_at && foundAuthUser.email) {
                 console.log(`✅ Utilisateur trouvé dans auth.users: ${invitation.email}, ID: ${foundAuthUser.id}`);
                 
                 // Créer le profil manquant
@@ -110,7 +110,7 @@ const MyInvitationGroups = () => {
                   .from('profiles')
                   .insert({
                     id: foundAuthUser.id,
-                    email: foundAuthUser.email || invitation.email,
+                    email: foundAuthUser.email,
                     display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
                   });
 
@@ -121,7 +121,7 @@ const MyInvitationGroups = () => {
 
                 registeredUser = {
                   id: foundAuthUser.id,
-                  email: foundAuthUser.email || invitation.email,
+                  email: foundAuthUser.email,
                   display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
                 };
               }
