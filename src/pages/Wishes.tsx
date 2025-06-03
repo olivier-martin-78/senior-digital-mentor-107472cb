@@ -46,9 +46,11 @@ const Wishes = () => {
     try {
       setLoading(true);
       
+      // Récupérer les souhaits avec logique d'accès côté application
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
+        .or(`author_id.eq.${user.id},author_id.in.(${await getAuthorizedUserIds(user.id)})`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -56,12 +58,35 @@ const Wishes = () => {
         throw error;
       }
       
+      console.log('✅ Wishes récupérées côté application:', data?.length || 0);
       setWishes(data || []);
       
     } catch (error) {
       console.error('Erreur dans fetchWishes:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
+  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
+    try {
+      const { data: groupMembers } = await supabase
+        .from('group_members')
+        .select(`
+          user_id,
+          group_members_same_group:group_members!inner(user_id)
+        `)
+        .eq('group_members.user_id', userId);
+
+      const userIds = groupMembers?.flatMap(gm => 
+        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
+      ).filter(id => id !== userId) || [];
+
+      return userIds.join(',') || 'null';
+    } catch (error) {
+      console.error('Erreur récupération groupe membres:', error);
+      return 'null';
     }
   };
 

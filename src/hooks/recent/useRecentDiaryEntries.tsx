@@ -14,12 +14,11 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       return;
     }
 
-    console.log('🔍 ===== DIAGNOSTIC DIARY ENTRIES DÉTAILLÉ =====');
-    console.log('🔍 Utilisateur effectif:', effectiveUserId);
+    console.log('🔍 Récupération diary entries avec logique applicative:', effectiveUserId);
 
     try {
-      // Test 1: Récupérer TOUTES les entrées de journal sans filtre
-      const { data: allEntries, error: allEntriesError } = await supabase
+      // Récupérer les entrées avec logique d'accès côté application
+      const { data: entries, error } = await supabase
         .from('diary_entries')
         .select(`
           id, 
@@ -28,101 +27,33 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           activities, 
           media_url,
           media_type,
-          user_id
+          user_id,
+          profiles!diary_entries_user_id_fkey(id, email, display_name)
         `)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      console.log('🔍 TOUTES les entrées journal (sans filtre RLS):', allEntries?.length || 0);
-      if (allEntriesError) {
-        console.error('❌ Erreur récupération toutes les entrées:', allEntriesError);
-      } else if (allEntries) {
-        // Récupérer les profiles séparément
-        const userIds = [...new Set(allEntries.map(entry => entry.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, display_name')
-          .in('id', userIds);
-        
-        const profilesMap = profiles?.reduce((acc, profile) => {
-          acc[profile.id] = profile;
-          return acc;
-        }, {} as { [key: string]: any }) || {};
-
-        const entriesByAuthor = allEntries.reduce((acc, entry) => {
-          const profile = profilesMap[entry.user_id];
-          const authorEmail = profile?.email || 'Email non disponible';
-          if (!acc[authorEmail]) {
-            acc[authorEmail] = 0;
-          }
-          acc[authorEmail]++;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('🔍 Entrées par auteur (toutes):', entriesByAuthor);
-
-        // Vérifier spécifiquement les entrées de Conception
-        const conceptionEntries = allEntries.filter(entry => {
-          const profile = profilesMap[entry.user_id];
-          return profile?.email?.toLowerCase().includes('conception');
-        });
-        console.log('🔍 Entrées de Conception trouvées (sans filtre):', conceptionEntries.length);
-      }
-
-      // Test 2: Récupérer avec les politiques RLS
-      const { data: entries, error: entriesError } = await supabase
-        .from('diary_entries')
-        .select(`
-          id, 
-          title, 
-          created_at, 
-          activities, 
-          media_url,
-          media_type,
-          user_id
-        `)
+        .or(`user_id.eq.${effectiveUserId},user_id.in.(${await getAuthorizedUserIds(effectiveUserId)})`)
         .order('created_at', { ascending: false })
         .limit(15);
 
-      console.log('🔍 Entrées journal AVEC politiques RLS:', entries?.length || 0);
-      if (entriesError) {
-        console.error('❌ Erreur récupération entries avec RLS:', entriesError);
+      if (error) {
+        console.error('❌ Erreur récupération entries:', error);
         setDiaryEntries([]);
         return;
       }
 
+      console.log('✅ Diary entries récupérées côté application:', entries?.length || 0);
+
       if (entries) {
-        const userIds = [...new Set(entries.map(entry => entry.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, display_name, email')
-          .in('id', userIds);
-        
-        const profilesMap = profiles?.reduce((acc, profile) => {
-          acc[profile.id] = {
-            name: profile.display_name || profile.email || 'Utilisateur',
-            email: profile.email
-          };
-          return acc;
-        }, {} as { [key: string]: { name: string; email: string } }) || {};
+        const items = entries.map(entry => ({
+          id: entry.id,
+          title: entry.title || 'Entrée sans titre',
+          type: 'diary' as const,
+          created_at: entry.created_at,
+          author: entry.user_id === effectiveUserId ? 'Moi' : (entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur'),
+          content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+          media_url: entry.media_url
+        }));
 
-        console.log('🔍 Profiles récupérés pour diary:', profilesMap);
-
-        const items = entries.map(entry => {
-          const profile = profilesMap[entry.user_id];
-          return {
-            id: entry.id,
-            title: entry.title || 'Entrée sans titre',
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: entry.user_id === effectiveUserId ? 'Moi' : (profile?.name || 'Utilisateur'),
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          };
-        });
-
-        console.log('🔍 Items diary finaux:', items.length);
-        console.log('🔍 Auteurs diary items:', items.map(i => i.author));
-
+        console.log('✅ Items diary transformés:', items.length);
         setDiaryEntries(items);
       }
     } catch (error) {
@@ -130,6 +61,28 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       setDiaryEntries([]);
     }
   }, [effectiveUserId]);
+
+  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
+  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
+    try {
+      const { data: groupMembers } = await supabase
+        .from('group_members')
+        .select(`
+          user_id,
+          group_members_same_group:group_members!inner(user_id)
+        `)
+        .eq('group_members.user_id', userId);
+
+      const userIds = groupMembers?.flatMap(gm => 
+        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
+      ).filter(id => id !== userId) || [];
+
+      return userIds.join(',') || 'null';
+    } catch (error) {
+      console.error('Erreur récupération groupe membres:', error);
+      return 'null';
+    }
+  };
 
   useEffect(() => {
     fetchDiaryEntries();

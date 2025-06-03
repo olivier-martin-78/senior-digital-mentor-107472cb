@@ -14,110 +14,10 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
       return;
     }
 
-    console.log('🔍 ===== DIAGNOSTIC BLOG POSTS DÉTAILLÉ =====');
-    console.log('🔍 Utilisateur effectif:', effectiveUserId);
+    console.log('🔍 Récupération blog posts avec logique applicative:', effectiveUserId);
 
     try {
-      // Test 1: Vérifier l'appartenance aux groupes de l'utilisateur actuel
-      const { data: myGroups, error: myGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          role,
-          invitation_groups!inner(name, created_by)
-        `)
-        .eq('user_id', effectiveUserId);
-
-      console.log('🔍 Mes groupes:', myGroups);
-      if (myGroupsError) {
-        console.error('❌ Erreur récupération mes groupes:', myGroupsError);
-      }
-
-      // Test 2: Vérifier tous les groupes disponibles
-      const { data: allGroups, error: allGroupsError } = await supabase
-        .from('invitation_groups')
-        .select('*');
-
-      console.log('🔍 Tous les groupes disponibles:', allGroups);
-      if (allGroupsError) {
-        console.error('❌ Erreur récupération tous les groupes:', allGroupsError);
-      }
-
-      // Test 3: Vérifier les membres de tous les groupes
-      const { data: allGroupMembers, error: allMembersError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          user_id,
-          role,
-          invitation_groups!inner(name, created_by)
-        `);
-
-      console.log('🔍 Tous les membres de groupes:', allGroupMembers);
-      if (allMembersError) {
-        console.error('❌ Erreur récupération tous les membres:', allMembersError);
-      }
-
-      // Récupérer les profiles pour analyser les emails
-      const { data: allProfiles } = await supabase
-        .from('profiles')
-        .select('id, email, display_name');
-
-      const profilesMap = allProfiles?.reduce((acc, profile) => {
-        acc[profile.id] = profile;
-        return acc;
-      }, {} as { [key: string]: any }) || {};
-
-      // Test 4: Récupérer TOUS les posts sans filtre pour voir ce qui existe
-      const { data: allPosts, error: allPostsError } = await supabase
-        .from('blog_posts')
-        .select(`
-          id,
-          title,
-          content,
-          created_at,
-          cover_image,
-          author_id,
-          album_id,
-          published
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      console.log('🔍 TOUS les posts dans la base (sans filtre RLS):', allPosts?.length || 0);
-      if (allPostsError) {
-        console.error('❌ Erreur récupération tous les posts:', allPostsError);
-      } else if (allPosts) {
-        const postsByAuthor = allPosts.reduce((acc, post) => {
-          const profile = profilesMap[post.author_id];
-          const authorEmail = profile?.email || 'Email non disponible';
-          if (!acc[authorEmail]) {
-            acc[authorEmail] = 0;
-          }
-          acc[authorEmail]++;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('🔍 Posts par auteur (tous):', postsByAuthor);
-
-        // Vérifier spécifiquement les posts de Conception
-        const conceptionPosts = allPosts.filter(post => {
-          const profile = profilesMap[post.author_id];
-          return profile?.email?.toLowerCase().includes('conception');
-        });
-        console.log('🔍 Posts de Conception trouvés (sans filtre):', conceptionPosts.length);
-        if (conceptionPosts.length > 0) {
-          console.log('🔍 Détails posts Conception:', conceptionPosts.map(p => ({
-            id: p.id,
-            title: p.title,
-            author_id: p.author_id,
-            email: profilesMap[p.author_id]?.email
-          })));
-        } else {
-          console.log('❌ AUCUN post de Conception trouvé');
-        }
-      }
-
-      // Test 5: Essayer la requête avec la politique RLS (celle qui est censée fonctionner)
+      // Récupérer les posts avec logique d'accès côté application
       const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -128,37 +28,22 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           cover_image,
           author_id,
           album_id,
-          published
+          published,
+          profiles!blog_posts_author_id_fkey(id, email, display_name)
         `)
+        .or(`author_id.eq.${effectiveUserId},author_id.in.(${await getAuthorizedUserIds(effectiveUserId)})`)
         .order('created_at', { ascending: false })
         .limit(15);
 
       if (error) {
-        console.error('❌ Erreur récupération posts avec RLS:', error);
+        console.error('❌ Erreur récupération posts:', error);
         setBlogPosts([]);
         return;
       }
 
-      console.log('🔍 Posts récupérés AVEC politiques RLS:', posts?.length || 0);
+      console.log('✅ Posts récupérés côté application:', posts?.length || 0);
+
       if (posts) {
-        const postsByAuthorRLS = posts.reduce((acc, post) => {
-          const profile = profilesMap[post.author_id];
-          const authorEmail = profile?.email || 'Email non disponible';
-          if (!acc[authorEmail]) {
-            acc[authorEmail] = 0;
-          }
-          acc[authorEmail]++;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('🔍 Posts par auteur (avec RLS):', postsByAuthorRLS);
-
-        // Vérifier spécifiquement les posts de Conception avec RLS
-        const conceptionPostsRLS = posts.filter(post => {
-          const profile = profilesMap[post.author_id];
-          return profile?.email?.toLowerCase().includes('conception');
-        });
-        console.log('🔍 Posts de Conception avec RLS:', conceptionPostsRLS.length);
-
         // Récupérer les informations des albums si nécessaire
         const albumIds = posts.filter(p => p.album_id).map(p => p.album_id);
         let albumsMap = {};
@@ -175,21 +60,20 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         }
 
         const items = posts.map(post => {
-          const profile = profilesMap[post.author_id];
           const album = albumsMap[post.album_id];
           return {
             id: post.id,
             title: post.title,
             type: 'blog' as const,
             created_at: post.created_at,
-            author: post.author_id === effectiveUserId ? 'Moi' : (profile?.display_name || profile?.email || 'Utilisateur'),
+            author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || post.profiles?.email || 'Utilisateur'),
             content_preview: post.content?.substring(0, 150) + '...',
             cover_image: post.cover_image,
             album_name: album?.name || undefined
           };
         });
 
-        console.log('🔍 Items finaux pour Recent:', items.length);
+        console.log('✅ Items blog transformés:', items.length);
         setBlogPosts(items);
       }
     } catch (error) {
@@ -197,6 +81,28 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
       setBlogPosts([]);
     }
   }, [effectiveUserId]);
+
+  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
+  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
+    try {
+      const { data: groupMembers } = await supabase
+        .from('group_members')
+        .select(`
+          user_id,
+          group_members_same_group:group_members!inner(user_id)
+        `)
+        .eq('group_members.user_id', userId);
+
+      const userIds = groupMembers?.flatMap(gm => 
+        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
+      ).filter(id => id !== userId) || [];
+
+      return userIds.join(',') || 'null';
+    } catch (error) {
+      console.error('Erreur récupération groupe membres:', error);
+      return 'null';
+    }
+  };
 
   useEffect(() => {
     fetchBlogPosts();
