@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,8 +47,13 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-serif text-tranches-charcoal hover:text-tranches-sage transition-colors">
-            Tranches de Vie
+          <Link to="/" className="flex items-center space-x-3 text-2xl font-serif text-tranches-charcoal hover:text-tranches-sage transition-colors">
+            <img 
+              src="/Digitar.png" 
+              alt="Senior Digital Mentor" 
+              className="h-10 w-auto"
+            />
+            <span>Senior Digital Mentor</span>
           </Link>
 
           {user ? (
