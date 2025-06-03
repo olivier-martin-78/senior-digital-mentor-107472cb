@@ -45,7 +45,14 @@ const GroupInvitationManagement: React.FC<GroupInvitationManagementProps> = ({
       if (error) throw error;
 
       console.log('📋 Invitations trouvées:', invitationsData?.length || 0);
-      setInvitations(invitationsData || []);
+      
+      // Convertir le status string en union type attendu
+      const typedInvitations = (invitationsData || []).map(invitation => ({
+        ...invitation,
+        status: invitation.status as 'pending' | 'confirmed'
+      }));
+      
+      setInvitations(typedInvitations);
 
     } catch (error: any) {
       console.error('❌ Erreur chargement invitations:', error);

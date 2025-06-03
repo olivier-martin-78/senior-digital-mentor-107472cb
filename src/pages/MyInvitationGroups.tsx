@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -173,7 +172,14 @@ const MyInvitationGroups = () => {
       if (error) throw error;
 
       console.log('📋 Invitations trouvées:', invitationsData?.length || 0);
-      setGroupInvitations(invitationsData || []);
+      
+      // Convertir le status string en union type attendu
+      const typedInvitations = (invitationsData || []).map(invitation => ({
+        ...invitation,
+        status: invitation.status as 'pending' | 'confirmed'
+      }));
+      
+      setGroupInvitations(typedInvitations);
     } catch (error: any) {
       console.error('Erreur lors du chargement des invitations:', error);
       toast.error('Erreur lors du chargement des invitations');
