@@ -250,27 +250,39 @@ const MyInvitationGroups = () => {
     try {
       console.log('🔍 Chargement des membres du groupe:', groupId);
       
+      // First get the group members
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
-        .select(`
-          id, 
-          user_id, 
-          role, 
-          added_at,
-          profiles!group_members_user_id_fkey (
-            display_name,
-            email
-          )
-        `)
+        .select('id, user_id, role, added_at')
         .eq('group_id', groupId)
         .order('added_at', { ascending: false });
 
       if (membersError) throw membersError;
 
-      console.log('📋 Membres trouvés:', membersData?.length || 0);
-      console.log('👥 Détails des membres:', membersData);
+      // Then get the profiles for each member manually
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member) => {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', member.user_id)
+            .maybeSingle();
+
+          if (profileError) {
+            console.error('❌ Erreur chargement profil:', profileError);
+          }
+
+          return {
+            ...member,
+            profiles: profile
+          };
+        })
+      );
+
+      console.log('📋 Membres trouvés:', membersWithProfiles.length);
+      console.log('👥 Détails des membres:', membersWithProfiles);
       
-      setGroupMembers(membersData || []);
+      setGroupMembers(membersWithProfiles);
     } catch (error: any) {
       console.error('Erreur lors du chargement des membres:', error);
       toast.error('Erreur lors du chargement des membres du groupe');
