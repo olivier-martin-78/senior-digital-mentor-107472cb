@@ -29,8 +29,8 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       const effectiveUserId = getEffectiveUserId();
       console.log('👤 useDiaryEntries - Utilisateur courant:', effectiveUserId);
 
-      // 1. Récupérer TOUS les groupes où l'utilisateur est membre (correction de la requête)
-      const { data: userGroups, error: userGroupsError } = await supabase
+      // 1. Récupérer TOUS les groupes où l'utilisateur est membre avec les détails des groupes
+      const { data: userGroupsData, error: userGroupsError } = await supabase
         .from('group_members')
         .select(`
           group_id, 
@@ -51,8 +51,8 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       }
 
       console.log('👥 useDiaryEntries - Groupes de l\'utilisateur (DÉTAILLÉ):', {
-        count: userGroups?.length || 0,
-        groups: userGroups?.map(g => ({
+        count: userGroupsData?.length || 0,
+        groups: userGroupsData?.map(g => ({
           group_id: g.group_id,
           role: g.role,
           group_name: g.invitation_groups?.name,
@@ -60,7 +60,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }))
       });
 
-      const userGroupIds = userGroups?.map(g => g.group_id) || [];
+      const userGroupIds = userGroupsData?.map(g => g.group_id) || [];
       console.log('🎯 useDiaryEntries - IDs des groupes:', userGroupIds);
 
       // 2. Construire la liste des utilisateurs autorisés - TOUJOURS commencer par l'utilisateur courant
@@ -69,36 +69,41 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
       if (userGroupIds.length > 0) {
         // Récupérer TOUS les membres de TOUS les groupes où l'utilisateur est présent
-        const { data: groupMembers, error: groupMembersError } = await supabase
+        const { data: groupMembersData, error: groupMembersError } = await supabase
           .from('group_members')
           .select(`
             user_id, 
             group_id, 
-            role,
-            profiles!inner(
-              id,
-              email,
-              display_name
-            )
+            role
           `)
           .in('group_id', userGroupIds);
 
         if (groupMembersError) {
           console.error('❌ useDiaryEntries - Erreur récupération membres groupes:', groupMembersError);
         } else {
+          // Récupérer les profils des membres séparément
+          const memberUserIds = groupMembersData?.map(gm => gm.user_id) || [];
+          const { data: memberProfiles } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .in('id', memberUserIds);
+
           console.log('👥 useDiaryEntries - TOUS les membres des groupes (DÉTAILLÉ):', {
-            count: groupMembers?.length || 0,
-            members: groupMembers?.map(gm => ({
-              user_id: gm.user_id,
-              group_id: gm.group_id,
-              role: gm.role,
-              email: gm.profiles?.email,
-              display_name: gm.profiles?.display_name
-            }))
+            count: groupMembersData?.length || 0,
+            members: groupMembersData?.map(gm => {
+              const profile = memberProfiles?.find(p => p.id === gm.user_id);
+              return {
+                user_id: gm.user_id,
+                group_id: gm.group_id,
+                role: gm.role,
+                email: profile?.email,
+                display_name: profile?.display_name
+              };
+            })
           });
           
           // Ajouter TOUS les membres trouvés (y compris le current user)
-          const allMemberIds = groupMembers?.map(gm => gm.user_id) || [];
+          const allMemberIds = groupMembersData?.map(gm => gm.user_id) || [];
           
           // Fusionner avec l'utilisateur courant et supprimer les doublons
           authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
