@@ -80,46 +80,60 @@ const MyInvitationGroups = () => {
       for (const invitation of invitationsData || []) {
         console.log(`🔍 Vérification forcée pour: ${invitation.email}`);
         
-        // Chercher l'utilisateur inscrit dans auth.users via RPC ou la table profiles
-        const { data: authUser, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.warn('⚠️ Impossible de vérifier auth.users, essai via profiles:', authError);
+        // Chercher l'utilisateur inscrit dans la table profiles d'abord
+        const { data: profileUser, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .eq('email', invitation.email)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.warn('⚠️ Erreur lors de la vérification du profil:', profileError);
           continue;
         }
 
-        const registeredUser = authUser.users.find(u => u.email === invitation.email);
-        
-        if (registeredUser && registeredUser.email_confirmed_at) {
-          console.log(`✅ Utilisateur trouvé et confirmé: ${invitation.email}, ID: ${registeredUser.id}`);
-          
-          // Vérifier si le profil existe, sinon le créer
-          const { data: existingProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, email, display_name')
-            .eq('id', registeredUser.id)
-            .maybeSingle();
+        let registeredUser = profileUser;
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('❌ Erreur vérification profil:', profileError);
+        // Si pas trouvé dans profiles, chercher dans auth.users via l'admin API
+        if (!registeredUser) {
+          try {
+            const { data: authData } = await supabase.auth.admin.listUsers();
+            
+            if (authData && authData.users) {
+              const foundAuthUser = authData.users.find(u => u.email === invitation.email);
+              
+              if (foundAuthUser && foundAuthUser.email_confirmed_at) {
+                console.log(`✅ Utilisateur trouvé dans auth.users: ${invitation.email}, ID: ${foundAuthUser.id}`);
+                
+                // Créer le profil manquant
+                const { error: createProfileError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: foundAuthUser.id,
+                    email: foundAuthUser.email || invitation.email,
+                    display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
+                  });
+
+                if (createProfileError) {
+                  console.error('❌ Erreur création profil:', createProfileError);
+                  continue;
+                }
+
+                registeredUser = {
+                  id: foundAuthUser.id,
+                  email: foundAuthUser.email || invitation.email,
+                  display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
+                };
+              }
+            }
+          } catch (authError) {
+            console.warn('⚠️ Impossible de vérifier auth.users:', authError);
             continue;
           }
-
-          if (!existingProfile) {
-            console.log(`📝 Création du profil manquant pour: ${invitation.email}`);
-            const { error: createProfileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: registeredUser.id,
-                email: invitation.email,
-                display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
-              });
-
-            if (createProfileError) {
-              console.error('❌ Erreur création profil:', createProfileError);
-              continue;
-            }
-          }
+        }
+        
+        if (registeredUser) {
+          console.log(`✅ Utilisateur confirmé: ${registeredUser.email}, ID: ${registeredUser.id}`);
           
           // Vérifier si l'utilisateur est déjà dans le groupe
           const { data: existingMember, error: memberError } = await supabase
@@ -298,7 +312,7 @@ const MyInvitationGroups = () => {
                     id: member.user_id,
                     email: authData.user.email || 'Email non disponible',
                     display_name: authData.user.user_metadata?.display_name || 
-                                  authData.user.raw_user_meta_data?.display_name ||
+                                  authData.user.user_metadata?.full_name ||
                                   null
                   });
 
