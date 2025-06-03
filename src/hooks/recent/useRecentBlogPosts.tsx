@@ -50,14 +50,23 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           group_id,
           user_id,
           role,
-          invitation_groups!inner(name, created_by),
-          profiles!inner(email, display_name)
+          invitation_groups!inner(name, created_by)
         `);
 
       console.log('🔍 Tous les membres de groupes:', allGroupMembers);
       if (allMembersError) {
         console.error('❌ Erreur récupération tous les membres:', allMembersError);
       }
+
+      // Récupérer les profiles pour analyser les emails
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, email, display_name');
+
+      const profilesMap = allProfiles?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as { [key: string]: any }) || {};
 
       // Test 4: Récupérer TOUS les posts sans filtre pour voir ce qui existe
       const { data: allPosts, error: allPostsError } = await supabase
@@ -70,9 +79,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           cover_image,
           author_id,
           album_id,
-          published,
-          profiles(display_name, email),
-          blog_albums(name)
+          published
         `)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -82,7 +89,8 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         console.error('❌ Erreur récupération tous les posts:', allPostsError);
       } else if (allPosts) {
         const postsByAuthor = allPosts.reduce((acc, post) => {
-          const authorEmail = post.profiles?.email || 'Email non disponible';
+          const profile = profilesMap[post.author_id];
+          const authorEmail = profile?.email || 'Email non disponible';
           if (!acc[authorEmail]) {
             acc[authorEmail] = 0;
           }
@@ -92,17 +100,20 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         console.log('🔍 Posts par auteur (tous):', postsByAuthor);
 
         // Vérifier spécifiquement les posts de Conception
-        const conceptionPosts = allPosts.filter(post => 
-          post.profiles?.email?.toLowerCase().includes('conception')
-        );
+        const conceptionPosts = allPosts.filter(post => {
+          const profile = profilesMap[post.author_id];
+          return profile?.email?.toLowerCase().includes('conception');
+        });
         console.log('🔍 Posts de Conception trouvés (sans filtre):', conceptionPosts.length);
         if (conceptionPosts.length > 0) {
           console.log('🔍 Détails posts Conception:', conceptionPosts.map(p => ({
             id: p.id,
             title: p.title,
             author_id: p.author_id,
-            email: p.profiles?.email
+            email: profilesMap[p.author_id]?.email
           })));
+        } else {
+          console.log('❌ AUCUN post de Conception trouvé');
         }
       }
 
@@ -117,9 +128,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           cover_image,
           author_id,
           album_id,
-          published,
-          profiles(display_name, email),
-          blog_albums(name)
+          published
         `)
         .order('created_at', { ascending: false })
         .limit(15);
@@ -133,7 +142,8 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
       console.log('🔍 Posts récupérés AVEC politiques RLS:', posts?.length || 0);
       if (posts) {
         const postsByAuthorRLS = posts.reduce((acc, post) => {
-          const authorEmail = post.profiles?.email || 'Email non disponible';
+          const profile = profilesMap[post.author_id];
+          const authorEmail = profile?.email || 'Email non disponible';
           if (!acc[authorEmail]) {
             acc[authorEmail] = 0;
           }
@@ -143,25 +153,45 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         console.log('🔍 Posts par auteur (avec RLS):', postsByAuthorRLS);
 
         // Vérifier spécifiquement les posts de Conception avec RLS
-        const conceptionPostsRLS = posts.filter(post => 
-          post.profiles?.email?.toLowerCase().includes('conception')
-        );
+        const conceptionPostsRLS = posts.filter(post => {
+          const profile = profilesMap[post.author_id];
+          return profile?.email?.toLowerCase().includes('conception');
+        });
         console.log('🔍 Posts de Conception avec RLS:', conceptionPostsRLS.length);
+
+        // Récupérer les informations des albums si nécessaire
+        const albumIds = posts.filter(p => p.album_id).map(p => p.album_id);
+        let albumsMap = {};
+        if (albumIds.length > 0) {
+          const { data: albums } = await supabase
+            .from('blog_albums')
+            .select('id, name')
+            .in('id', albumIds);
+          
+          albumsMap = albums?.reduce((acc, album) => {
+            acc[album.id] = album;
+            return acc;
+          }, {} as { [key: string]: any }) || {};
+        }
+
+        const items = posts.map(post => {
+          const profile = profilesMap[post.author_id];
+          const album = albumsMap[post.album_id];
+          return {
+            id: post.id,
+            title: post.title,
+            type: 'blog' as const,
+            created_at: post.created_at,
+            author: post.author_id === effectiveUserId ? 'Moi' : (profile?.display_name || profile?.email || 'Utilisateur'),
+            content_preview: post.content?.substring(0, 150) + '...',
+            cover_image: post.cover_image,
+            album_name: album?.name || undefined
+          };
+        });
+
+        console.log('🔍 Items finaux pour Recent:', items.length);
+        setBlogPosts(items);
       }
-
-      const items = (posts || []).map(post => ({
-        id: post.id,
-        title: post.title,
-        type: 'blog' as const,
-        created_at: post.created_at,
-        author: post.author_id === effectiveUserId ? 'Moi' : (post.profiles?.display_name || post.profiles?.email || 'Utilisateur'),
-        content_preview: post.content?.substring(0, 150) + '...',
-        cover_image: post.cover_image,
-        album_name: post.blog_albums?.name || undefined
-      }));
-
-      console.log('🔍 Items finaux pour Recent:', items.length);
-      setBlogPosts(items);
     } catch (error) {
       console.error('💥 Erreur critique useRecentBlogPosts:', error);
       setBlogPosts([]);

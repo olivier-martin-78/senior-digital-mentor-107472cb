@@ -28,8 +28,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           activities, 
           media_url,
           media_type,
-          user_id,
-          profiles(email, display_name)
+          user_id
         `)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -38,8 +37,21 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       if (allEntriesError) {
         console.error('❌ Erreur récupération toutes les entrées:', allEntriesError);
       } else if (allEntries) {
+        // Récupérer les profiles séparément
+        const userIds = [...new Set(allEntries.map(entry => entry.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .in('id', userIds);
+        
+        const profilesMap = profiles?.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as { [key: string]: any }) || {};
+
         const entriesByAuthor = allEntries.reduce((acc, entry) => {
-          const authorEmail = entry.profiles?.email || 'Email non disponible';
+          const profile = profilesMap[entry.user_id];
+          const authorEmail = profile?.email || 'Email non disponible';
           if (!acc[authorEmail]) {
             acc[authorEmail] = 0;
           }
@@ -49,9 +61,10 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         console.log('🔍 Entrées par auteur (toutes):', entriesByAuthor);
 
         // Vérifier spécifiquement les entrées de Conception
-        const conceptionEntries = allEntries.filter(entry => 
-          entry.profiles?.email?.toLowerCase().includes('conception')
-        );
+        const conceptionEntries = allEntries.filter(entry => {
+          const profile = profilesMap[entry.user_id];
+          return profile?.email?.toLowerCase().includes('conception');
+        });
         console.log('🔍 Entrées de Conception trouvées (sans filtre):', conceptionEntries.length);
       }
 
