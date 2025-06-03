@@ -217,9 +217,9 @@ const WishPost = () => {
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
-  // CORRECTION: Seul l'auteur du souhait peut le gérer et l'éditer
-  const canManagePublication = user?.id === wish.author_id;
-  const canEdit = user?.id === wish.author_id;
+  // CORRECTION: Affichage des boutons selon les permissions
+  const canManagePublication = user?.id === wish.author_id || hasRole('admin');
+  const canEdit = user?.id === wish.author_id || hasRole('admin');
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
