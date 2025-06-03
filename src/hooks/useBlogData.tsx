@@ -17,6 +17,8 @@ interface BlogPost {
     id: string;
     email: string;
     display_name: string | null;
+    avatar_url: string | null;
+    created_at: string;
   };
 }
 
@@ -25,12 +27,14 @@ interface BlogAlbum {
   name: string;
   author_id: string;
   thumbnail_url?: string;
-  description?: string;
+  description: string;
   created_at: string;
   profiles?: {
     id: string;
     email: string;
     display_name: string | null;
+    avatar_url: string | null;
+    created_at: string;
   };
 }
 
@@ -122,7 +126,7 @@ export const useBlogData = (
           const userIds = [...new Set(postsData.map(post => post.author_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, email, display_name')
+            .select('id, email, display_name, avatar_url, created_at')
             .in('id', userIds);
 
           const profilesMap = profiles?.reduce((acc, profile) => {
@@ -160,7 +164,7 @@ export const useBlogData = (
           const userIds = [...new Set(albumsData.map(album => album.author_id))];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, email, display_name')
+            .select('id, email, display_name, avatar_url, created_at')
             .in('id', userIds);
 
           const profilesMap = profiles?.reduce((acc, profile) => {
