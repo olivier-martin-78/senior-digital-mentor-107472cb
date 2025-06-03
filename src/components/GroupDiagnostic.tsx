@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, AlertCircle, CheckCircle, RefreshCw, Info } from 'lucide-react';
+import { Users, AlertCircle, CheckCircle, RefreshCw, Info, UserCheck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface GroupMembership {
@@ -34,6 +33,19 @@ interface ContentAccess {
   wish_posts: number;
 }
 
+interface SpecificUserCheck {
+  email: string;
+  id: string;
+  display_name: string | null;
+  groups: Array<{
+    group_id: string;
+    group_name: string;
+    created_by: string;
+    is_creator: boolean;
+  }>;
+  sharedGroups: string[];
+}
+
 const GroupDiagnostic: React.FC = () => {
   const { user } = useAuth();
   const [myGroups, setMyGroups] = useState<GroupMembership[]>([]);
@@ -44,7 +56,105 @@ const GroupDiagnostic: React.FC = () => {
     life_stories: 0,
     wish_posts: 0
   });
+  const [conceptionCheck, setConceptionCheck] = useState<SpecificUserCheck | null>(null);
+  const [olivier78Check, setOlivier78Check] = useState<SpecificUserCheck | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const loadSpecificUsersCheck = async () => {
+    if (!user) return;
+
+    try {
+      console.log('🔍 DIAGNOSTIC SPÉCIFIQUE - Vérification Conception et Olivier78');
+
+      // Récupérer les infos de Conception
+      const { data: conceptionProfile } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .ilike('email', '%conception%')
+        .single();
+
+      // Récupérer les infos d'Olivier78
+      const { data: olivier78Profile } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .ilike('email', '%olivier78%')
+        .single();
+
+      if (conceptionProfile) {
+        // Analyser les groupes de Conception
+        const { data: conceptionGroups } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            role,
+            invitation_groups!inner(name, created_by)
+          `)
+          .eq('user_id', conceptionProfile.id);
+
+        const conceptionGroupsInfo = (conceptionGroups || []).map(g => ({
+          group_id: g.group_id,
+          group_name: g.invitation_groups?.name || 'Groupe sans nom',
+          created_by: g.invitation_groups?.created_by || '',
+          is_creator: g.invitation_groups?.created_by === conceptionProfile.id
+        }));
+
+        setConceptionCheck({
+          ...conceptionProfile,
+          groups: conceptionGroupsInfo,
+          sharedGroups: []
+        });
+
+        console.log('👤 Conception - Groupes trouvés:', conceptionGroupsInfo.length);
+        conceptionGroupsInfo.forEach(g => {
+          console.log(`  - ${g.group_name} (${g.group_id}) - Créateur: ${g.is_creator ? 'OUI' : 'NON'}`);
+        });
+      }
+
+      if (olivier78Profile) {
+        // Analyser les groupes d'Olivier78
+        const { data: olivier78Groups } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            role,
+            invitation_groups!inner(name, created_by)
+          `)
+          .eq('user_id', olivier78Profile.id);
+
+        const olivier78GroupsInfo = (olivier78Groups || []).map(g => ({
+          group_id: g.group_id,
+          group_name: g.invitation_groups?.name || 'Groupe sans nom',
+          created_by: g.invitation_groups?.created_by || '',
+          is_creator: g.invitation_groups?.created_by === olivier78Profile.id
+        }));
+
+        // Trouver les groupes partagés entre Conception et Olivier78
+        const sharedGroups = olivier78GroupsInfo
+          .filter(og => conceptionCheck?.groups.some(cg => cg.group_id === og.group_id))
+          .map(g => g.group_id);
+
+        setOlivier78Check({
+          ...olivier78Profile,
+          groups: olivier78GroupsInfo,
+          sharedGroups
+        });
+
+        console.log('👤 Olivier78 - Groupes trouvés:', olivier78GroupsInfo.length);
+        olivier78GroupsInfo.forEach(g => {
+          console.log(`  - ${g.group_name} (${g.group_id}) - Créateur: ${g.is_creator ? 'OUI' : 'NON'}`);
+        });
+        console.log('🤝 Groupes partagés avec Conception:', sharedGroups.length);
+      }
+
+    } catch (error: any) {
+      console.error('❌ DIAGNOSTIC SPÉCIFIQUE - Erreur:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le diagnostic spécifique",
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadDiagnostic = async () => {
     if (!user) return;
@@ -110,6 +220,9 @@ const GroupDiagnostic: React.FC = () => {
         life_stories: contentTests[2].data?.length || 0,
         wish_posts: contentTests[3].data?.length || 0
       });
+
+      // Charger la vérification spécifique
+      await loadSpecificUsersCheck();
 
       console.log('✅ DIAGNOSTIC - Analyse terminée');
     } catch (error: any) {
@@ -282,6 +395,122 @@ const GroupDiagnostic: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Vérification spécifique Conception & Olivier78 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <UserCheck className="w-5 h-5 mr-2" />
+            Vérification spécifique : Conception & Olivier78
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Conception */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-lg">👤 Conception</h4>
+              {conceptionCheck ? (
+                <div className="space-y-2">
+                  <p className="text-sm"><strong>Email:</strong> {conceptionCheck.email}</p>
+                  <p className="text-sm"><strong>Nom affiché:</strong> {conceptionCheck.display_name || 'Non défini'}</p>
+                  <div>
+                    <p className="text-sm font-medium">Groupes ({conceptionCheck.groups.length}):</p>
+                    {conceptionCheck.groups.length === 0 ? (
+                      <p className="text-sm text-red-500">⚠️ Aucun groupe trouvé</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {conceptionCheck.groups.map((group, index) => (
+                          <div key={index} className="text-xs p-2 border rounded">
+                            <p><strong>{group.group_name}</strong></p>
+                            <p>ID: {group.group_id}</p>
+                            <p className={group.is_creator ? "text-green-600" : "text-blue-600"}>
+                              {group.is_creator ? "🔑 Créateur du groupe" : "👥 Membre invité"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Utilisateur non trouvé</p>
+              )}
+            </div>
+
+            {/* Olivier78 */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-lg">👤 Olivier78</h4>
+              {olivier78Check ? (
+                <div className="space-y-2">
+                  <p className="text-sm"><strong>Email:</strong> {olivier78Check.email}</p>
+                  <p className="text-sm"><strong>Nom affiché:</strong> {olivier78Check.display_name || 'Non défini'}</p>
+                  <div>
+                    <p className="text-sm font-medium">Groupes ({olivier78Check.groups.length}):</p>
+                    {olivier78Check.groups.length === 0 ? (
+                      <p className="text-sm text-red-500">⚠️ Aucun groupe trouvé</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {olivier78Check.groups.map((group, index) => (
+                          <div key={index} className="text-xs p-2 border rounded">
+                            <p><strong>{group.group_name}</strong></p>
+                            <p>ID: {group.group_id}</p>
+                            <p className={group.is_creator ? "text-green-600" : "text-blue-600"}>
+                              {group.is_creator ? "🔑 Créateur du groupe" : "👥 Membre invité"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Groupes partagés */}
+                  <div className="mt-3 p-3 bg-blue-50 rounded">
+                    <p className="text-sm font-medium">🤝 Groupes partagés avec Conception:</p>
+                    {olivier78Check.sharedGroups.length === 0 ? (
+                      <p className="text-sm text-red-600">❌ Aucun groupe partagé trouvé!</p>
+                    ) : (
+                      <p className="text-sm text-green-600">✅ {olivier78Check.sharedGroups.length} groupe(s) partagé(s)</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Utilisateur non trouvé</p>
+              )}
+            </div>
+          </div>
+
+          {/* Diagnostic */}
+          <div className="mt-6 p-4 bg-gray-50 rounded">
+            <h5 className="font-medium mb-2">🔍 Diagnostic</h5>
+            {conceptionCheck && olivier78Check ? (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  {conceptionCheck.groups.some(g => g.is_creator) ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
+                  )}
+                  <span className="text-sm">
+                    Conception {conceptionCheck.groups.some(g => g.is_creator) ? 'EST' : 'N\'EST PAS'} créateur/membre de son propre groupe
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  {olivier78Check.sharedGroups.length > 0 ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
+                  )}
+                  <span className="text-sm">
+                    Olivier78 {olivier78Check.sharedGroups.length > 0 ? 'PARTAGE' : 'NE PARTAGE PAS'} de groupe avec Conception
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Données insuffisantes pour le diagnostic</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
