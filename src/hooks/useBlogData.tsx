@@ -9,7 +9,7 @@ interface BlogPost {
   content: string;
   author_id: string;
   album_id: string | null;
-  cover_image?: string;
+  cover_image: string | null;
   created_at: string;
   updated_at: string;
   published: boolean;
