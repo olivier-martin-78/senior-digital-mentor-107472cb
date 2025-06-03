@@ -8,6 +8,7 @@ import BlogFilters from '@/components/blog/BlogFilters';
 import { useBlogData } from '@/hooks/useBlogData';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { useAuth } from '@/contexts/AuthContext';
+import GroupDiagnostic from '@/components/GroupDiagnostic';
 
 const Blog = () => {
   const { user, hasRole, getEffectiveUserId, profile } = useAuth();
@@ -16,6 +17,7 @@ const Blog = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   
   const { 
     posts, 
@@ -68,6 +70,19 @@ const Blog = () => {
           albums={albums}
           hasCreatePermission={hasCreatePermission}
         />
+
+        {hasRole('admin') && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowDiagnostic(!showDiagnostic)}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              {showDiagnostic ? 'Masquer' : 'Afficher'} diagnostic groupes
+            </button>
+          </div>
+        )}
+
+        {showDiagnostic && <GroupDiagnostic />}
         
         <BlogFilters 
           searchQuery={searchTerm}

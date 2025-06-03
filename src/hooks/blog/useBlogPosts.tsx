@@ -33,6 +33,67 @@ export const useBlogPosts = (
           isAdmin
         });
 
+        // DIAGNOSTIC: Vérifier l'appartenance aux groupes
+        const { data: groupMemberships, error: groupError } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            role,
+            invitation_groups!inner(name, created_by),
+            profiles!group_members_user_id_fkey(email, display_name)
+          `)
+          .eq('user_id', user.id);
+
+        if (groupError) {
+          console.error('❌ Erreur diagnostic groupes:', groupError);
+        } else {
+          console.log('🔍 DIAGNOSTIC - Groupes de l\'utilisateur actuel:', {
+            userEmail: user.email,
+            groupes: groupMemberships?.map(gm => ({
+              groupId: gm.group_id,
+              groupName: gm.invitation_groups?.name,
+              createdBy: gm.invitation_groups?.created_by,
+              role: gm.role
+            })) || []
+          });
+        }
+
+        // DIAGNOSTIC: Vérifier tous les auteurs avec leurs groupes
+        const { data: allAuthors, error: authorsError } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            email,
+            display_name
+          `);
+
+        if (authorsError) {
+          console.error('❌ Erreur diagnostic auteurs:', authorsError);
+        } else {
+          console.log('🔍 DIAGNOSTIC - Tous les auteurs disponibles:', allAuthors);
+          
+          // Pour chaque auteur, vérifier leurs groupes
+          for (const author of allAuthors || []) {
+            const { data: authorGroups } = await supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                invitation_groups!inner(name, created_by)
+              `)
+              .eq('user_id', author.id);
+
+            console.log(`🔍 DIAGNOSTIC - Groupes de ${author.email}:`, {
+              authorId: author.id,
+              authorEmail: author.email,
+              groupes: authorGroups?.map(ag => ({
+                groupId: ag.group_id,
+                groupName: ag.invitation_groups?.name,
+                createdBy: ag.invitation_groups?.created_by
+              })) || []
+            });
+          }
+        }
+
         // Avec la nouvelle logique, une seule requête simple suffit
         // Les politiques RLS gèrent automatiquement l'accès basé sur l'appartenance aux groupes
         let query = supabase
