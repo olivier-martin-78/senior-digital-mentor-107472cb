@@ -67,40 +67,27 @@ export const useBlogData = (
       const effectiveUserId = getEffectiveUserId();
       console.log('👤 useBlogData - Utilisateur courant:', effectiveUserId);
       
-      // 1. Récupérer TOUS les groupes où l'utilisateur est membre avec les détails des groupes
-      const { data: userGroupsData, error: userGroupsError } = await supabase
+      // 1. Récupérer DIRECTEMENT les appartenances aux groupes de l'utilisateur
+      const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
+        .select('group_id, role')
         .eq('user_id', effectiveUserId);
 
       if (userGroupsError) {
-        console.error('❌ useBlogData - Erreur récupération groupes utilisateur:', userGroupsError);
+        console.error('❌ useBlogData - Erreur récupération appartenances groupes:', userGroupsError);
         setPosts([]);
         setAlbums([]);
         setLoading(false);
         return;
       }
 
-      console.log('👥 useBlogData - Groupes de l\'utilisateur (DÉTAILLÉ):', {
-        count: userGroupsData?.length || 0,
-        groups: userGroupsData?.map(g => ({
-          group_id: g.group_id,
-          role: g.role,
-          group_name: g.invitation_groups?.name,
-          created_by: g.invitation_groups?.created_by
-        }))
+      console.log('👥 useBlogData - Appartenances directes aux groupes:', {
+        count: userGroupMemberships?.length || 0,
+        memberships: userGroupMemberships
       });
 
-      const userGroupIds = userGroupsData?.map(g => g.group_id) || [];
-      console.log('🎯 useBlogData - IDs des groupes:', userGroupIds);
+      const userGroupIds = userGroupMemberships?.map(g => g.group_id) || [];
+      console.log('🎯 useBlogData - IDs des groupes de l\'utilisateur:', userGroupIds);
 
       // 2. Construire la liste des utilisateurs autorisés - TOUJOURS commencer par l'utilisateur courant
       let authorizedUserIds = [effectiveUserId];
@@ -108,41 +95,21 @@ export const useBlogData = (
 
       if (userGroupIds.length > 0) {
         // Récupérer TOUS les membres de TOUS les groupes où l'utilisateur est présent
-        const { data: groupMembersData, error: groupMembersError } = await supabase
+        const { data: allGroupMembers, error: groupMembersError } = await supabase
           .from('group_members')
-          .select(`
-            user_id, 
-            group_id, 
-            role
-          `)
+          .select('user_id, group_id, role')
           .in('group_id', userGroupIds);
 
         if (groupMembersError) {
           console.error('❌ useBlogData - Erreur récupération membres groupes:', groupMembersError);
         } else {
-          // Récupérer les profils des membres séparément
-          const memberUserIds = groupMembersData?.map(gm => gm.user_id) || [];
-          const { data: memberProfiles } = await supabase
-            .from('profiles')
-            .select('id, email, display_name')
-            .in('id', memberUserIds);
-
-          console.log('👥 useBlogData - TOUS les membres des groupes (DÉTAILLÉ):', {
-            count: groupMembersData?.length || 0,
-            members: groupMembersData?.map(gm => {
-              const profile = memberProfiles?.find(p => p.id === gm.user_id);
-              return {
-                user_id: gm.user_id,
-                group_id: gm.group_id,
-                role: gm.role,
-                email: profile?.email,
-                display_name: profile?.display_name
-              };
-            })
+          console.log('👥 useBlogData - TOUS les membres des groupes partagés:', {
+            count: allGroupMembers?.length || 0,
+            members: allGroupMembers
           });
           
-          // Ajouter TOUS les membres trouvés (y compris le current user)
-          const allMemberIds = groupMembersData?.map(gm => gm.user_id) || [];
+          // Ajouter TOUS les membres trouvés
+          const allMemberIds = allGroupMembers?.map(gm => gm.user_id) || [];
           
           // Fusionner avec l'utilisateur courant et supprimer les doublons
           authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
@@ -151,6 +118,22 @@ export const useBlogData = (
             authorizedUserIds,
             ajoutés: allMemberIds.filter(id => id !== effectiveUserId)
           });
+
+          // Récupérer les détails des utilisateurs autorisés pour debug
+          if (authorizedUserIds.length > 1) {
+            const { data: authorizedProfiles } = await supabase
+              .from('profiles')
+              .select('id, email, display_name')
+              .in('id', authorizedUserIds);
+
+            console.log('👤 useBlogData - Profils des utilisateurs autorisés:', {
+              profiles: authorizedProfiles?.map(p => ({
+                id: p.id,
+                email: p.email,
+                display_name: p.display_name
+              }))
+            });
+          }
         }
       } else {
         console.log('⚠️ useBlogData - Aucun groupe trouvé pour l\'utilisateur');
