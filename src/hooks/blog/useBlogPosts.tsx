@@ -26,14 +26,15 @@ export const useBlogPosts = (
       try {
         setLoading(true);
         
-        console.log('🚀 useBlogPosts - Récupération posts avec logique applicative stricte');
+        console.log('🔍 useBlogPosts - Récupération avec logique applicative stricte');
 
         const effectiveUserId = getEffectiveUserId();
+        console.log('👤 useBlogPosts - Utilisateur courant:', effectiveUserId);
 
-        // 1. Récupérer les groupes de l'utilisateur courant
+        // 1. Récupérer UNIQUEMENT les groupes où l'utilisateur est membre
         const { data: userGroups, error: userGroupsError } = await supabase
           .from('group_members')
-          .select('group_id')
+          .select('group_id, role')
           .eq('user_id', effectiveUserId);
 
         if (userGroupsError) {
@@ -44,30 +45,40 @@ export const useBlogPosts = (
         }
 
         const userGroupIds = userGroups?.map(g => g.group_id) || [];
+        console.log('👥 useBlogPosts - Groupes de l\'utilisateur:', {
+          count: userGroupIds.length,
+          groups: userGroups
+        });
 
-        // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
-        let authorizedUserIds = [effectiveUserId]; // L'utilisateur peut toujours voir ses propres contenus
+        // 2. Si l'utilisateur n'a pas de groupes, il ne voit QUE ses propres contenus
+        let authorizedUserIds = [effectiveUserId];
 
         if (userGroupIds.length > 0) {
           const { data: groupMembers, error: groupMembersError } = await supabase
             .from('group_members')
-            .select('user_id')
+            .select('user_id, group_id, role')
             .in('group_id', userGroupIds);
 
           if (groupMembersError) {
             console.error('❌ useBlogPosts - Erreur récupération membres groupes:', groupMembersError);
           } else {
+            console.log('👥 useBlogPosts - Tous les membres des groupes:', groupMembers);
+            
             const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== effectiveUserId) || [];
             authorizedUserIds = [...authorizedUserIds, ...additionalUserIds];
+            
+            // Supprimer les doublons
+            authorizedUserIds = [...new Set(authorizedUserIds)];
           }
         }
 
-        console.log('✅ useBlogPosts - Utilisateurs autorisés:', {
+        console.log('✅ useBlogPosts - Utilisateurs autorisés FINAL:', {
           count: authorizedUserIds.length,
-          userIds: authorizedUserIds
+          userIds: authorizedUserIds,
+          currentUser: effectiveUserId
         });
 
-        // 3. Récupérer les posts avec la logique d'accès côté application
+        // 3. Récupérer les posts UNIQUEMENT des utilisateurs autorisés
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -103,17 +114,22 @@ export const useBlogPosts = (
 
         const allPosts = data || [];
         
-        console.log('✅ useBlogPosts - Posts récupérés avec logique applicative stricte:', {
+        console.log('📝 useBlogPosts - Posts récupérés:', {
           count: allPosts.length,
-          postsParAuteur: allPosts.reduce((acc, post) => {
-            const authorEmail = post.profiles?.email || 'Email non disponible';
-            if (!acc[authorEmail]) {
-              acc[authorEmail] = 0;
-            }
-            acc[authorEmail]++;
-            return acc;
-          }, {} as Record<string, number>)
+          posts: allPosts.map(p => ({
+            id: p.id,
+            title: p.title,
+            author_id: p.author_id,
+            author_email: p.profiles?.email,
+            author_display: p.profiles?.display_name
+          }))
         });
+
+        // Vérifier que tous les posts appartiennent bien aux utilisateurs autorisés
+        const unauthorizedPosts = allPosts.filter(post => !authorizedUserIds.includes(post.author_id));
+        if (unauthorizedPosts.length > 0) {
+          console.error('🚨 useBlogPosts - PROBLÈME: Posts non autorisés détectés:', unauthorizedPosts);
+        }
 
         setPosts(allPosts);
       } catch (error) {

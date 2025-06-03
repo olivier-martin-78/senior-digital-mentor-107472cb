@@ -53,26 +53,28 @@ export const useBlogData = (
 
   const fetchData = useCallback(async () => {
     if (!user) {
+      console.log('🚫 useBlogData - Pas d\'utilisateur connecté');
       setPosts([]);
       setAlbums([]);
       setLoading(false);
       return;
     }
 
-    console.log('🔍 Récupération blog data avec logique applicative stricte');
+    console.log('🔍 useBlogData - Récupération avec logique applicative stricte');
     setLoading(true);
 
     try {
       const effectiveUserId = getEffectiveUserId();
+      console.log('👤 useBlogData - Utilisateur courant:', effectiveUserId);
       
-      // 1. Récupérer les groupes de l'utilisateur courant
+      // 1. Récupérer UNIQUEMENT les groupes où l'utilisateur est membre
       const { data: userGroups, error: userGroupsError } = await supabase
         .from('group_members')
-        .select('group_id')
+        .select('group_id, role')
         .eq('user_id', effectiveUserId);
 
       if (userGroupsError) {
-        console.error('❌ Erreur récupération groupes utilisateur:', userGroupsError);
+        console.error('❌ useBlogData - Erreur récupération groupes utilisateur:', userGroupsError);
         setPosts([]);
         setAlbums([]);
         setLoading(false);
@@ -80,31 +82,42 @@ export const useBlogData = (
       }
 
       const userGroupIds = userGroups?.map(g => g.group_id) || [];
-      console.log('👥 Groupes utilisateur:', userGroupIds.length);
+      console.log('👥 useBlogData - Groupes de l\'utilisateur:', {
+        count: userGroupIds.length,
+        groups: userGroups
+      });
 
-      // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
-      let authorizedUserIds = [effectiveUserId]; // L'utilisateur peut toujours voir ses propres contenus
+      // 2. Si l'utilisateur n'a pas de groupes, il ne voit QUE ses propres contenus
+      let authorizedUserIds = [effectiveUserId];
 
       if (userGroupIds.length > 0) {
+        // Récupérer TOUS les membres des groupes où l'utilisateur est présent
         const { data: groupMembers, error: groupMembersError } = await supabase
           .from('group_members')
-          .select('user_id')
+          .select('user_id, group_id, role')
           .in('group_id', userGroupIds);
 
         if (groupMembersError) {
-          console.error('❌ Erreur récupération membres groupes:', groupMembersError);
+          console.error('❌ useBlogData - Erreur récupération membres groupes:', groupMembersError);
         } else {
+          console.log('👥 useBlogData - Tous les membres des groupes:', groupMembers);
+          
+          // Ajouter tous les membres des groupes partagés
           const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== effectiveUserId) || [];
           authorizedUserIds = [...authorizedUserIds, ...additionalUserIds];
+          
+          // Supprimer les doublons
+          authorizedUserIds = [...new Set(authorizedUserIds)];
         }
       }
 
-      console.log('✅ Utilisateurs autorisés:', {
+      console.log('✅ useBlogData - Utilisateurs autorisés FINAL:', {
         count: authorizedUserIds.length,
-        userIds: authorizedUserIds
+        userIds: authorizedUserIds,
+        currentUser: effectiveUserId
       });
 
-      // 3. Récupérer les posts avec la logique d'accès côté application
+      // 3. Récupérer les posts UNIQUEMENT des utilisateurs autorisés
       let postsQuery = supabase
         .from('blog_posts')
         .select(`
@@ -131,20 +144,25 @@ export const useBlogData = (
       const { data: postsData, error: postsError } = await postsQuery;
 
       if (postsError) {
-        console.error('❌ Erreur récupération posts:', postsError);
+        console.error('❌ useBlogData - Erreur récupération posts:', postsError);
         setPosts([]);
       } else {
-        console.log('✅ Posts récupérés avec logique applicative:', {
+        console.log('📝 useBlogData - Posts récupérés:', {
           count: postsData?.length || 0,
-          postsParAuteur: postsData?.reduce((acc, post) => {
-            const authorEmail = post.profiles?.email || 'Email non disponible';
-            if (!acc[authorEmail]) {
-              acc[authorEmail] = 0;
-            }
-            acc[authorEmail]++;
-            return acc;
-          }, {} as Record<string, number>)
+          posts: postsData?.map(p => ({
+            id: p.id,
+            title: p.title,
+            author_id: p.author_id,
+            author_email: p.profiles?.email,
+            author_display: p.profiles?.display_name
+          }))
         });
+        
+        // Vérifier que tous les posts appartiennent bien aux utilisateurs autorisés
+        const unauthorizedPosts = postsData?.filter(post => !authorizedUserIds.includes(post.author_id)) || [];
+        if (unauthorizedPosts.length > 0) {
+          console.error('🚨 useBlogData - PROBLÈME: Posts non autorisés détectés:', unauthorizedPosts);
+        }
         
         const postsWithProfiles = (postsData || []).map(post => ({
           ...post,
@@ -161,7 +179,7 @@ export const useBlogData = (
         setPosts(postsWithProfiles);
       }
 
-      // 4. Récupérer les albums avec la même logique d'accès côté application
+      // 4. Récupérer les albums UNIQUEMENT des utilisateurs autorisés
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
         .select(`
@@ -172,19 +190,17 @@ export const useBlogData = (
         .order('created_at', { ascending: false });
 
       if (albumsError) {
-        console.error('❌ Erreur récupération albums:', albumsError);
+        console.error('❌ useBlogData - Erreur récupération albums:', albumsError);
         setAlbums([]);
       } else {
-        console.log('✅ Albums récupérés avec logique applicative:', {
+        console.log('📁 useBlogData - Albums récupérés:', {
           count: albumsData?.length || 0,
-          albumsParAuteur: albumsData?.reduce((acc, album) => {
-            const authorEmail = album.profiles?.email || 'Email non disponible';
-            if (!acc[authorEmail]) {
-              acc[authorEmail] = 0;
-            }
-            acc[authorEmail]++;
-            return acc;
-          }, {} as Record<string, number>)
+          albums: albumsData?.map(a => ({
+            id: a.id,
+            name: a.name,
+            author_id: a.author_id,
+            author_email: a.profiles?.email
+          }))
         });
         
         const albumsWithProfiles = (albumsData || []).map(album => ({
@@ -203,11 +219,11 @@ export const useBlogData = (
         setAlbums(albumsWithProfiles);
       }
 
-      // 5. Déterminer les permissions de création - seuls admin et editor peuvent créer
+      // 5. Déterminer les permissions de création
       setHasCreatePermission(hasRole('admin') || hasRole('editor'));
 
     } catch (error) {
-      console.error('💥 Erreur critique useBlogData:', error);
+      console.error('💥 useBlogData - Erreur critique:', error);
       setPosts([]);
       setAlbums([]);
     } finally {
