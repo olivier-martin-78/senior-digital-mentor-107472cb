@@ -60,43 +60,62 @@ export const useBlogData = (
       return;
     }
 
-    console.log('🔍 useBlogData - DÉBUT - Récupération avec logique applicative stricte');
+    console.log('🔍 useBlogData - DÉBUT - Récupération avec logique applicative stricte CORRIGÉE');
     setLoading(true);
 
     try {
       const effectiveUserId = getEffectiveUserId();
       console.log('👤 useBlogData - Utilisateur courant:', effectiveUserId);
       
-      // 1. NOUVEAU DÉBOGAGE : Récupérer d'abord TOUS les groupes et leurs membres
-      console.log('🔍 useBlogData - DÉBOGAGE COMPLET DES GROUPES');
+      // 1. CORRECTION: Récupérer TOUS les groupes existants sans restriction RLS
+      console.log('🔍 useBlogData - RÉCUPÉRATION GROUPES CORRIGÉE');
       
+      // Utilisation d'une requête simple sans restriction pour voir tous les groupes
       const { data: allGroups, error: allGroupsError } = await supabase
         .from('invitation_groups')
         .select('*');
       
-      console.log('📋 useBlogData - TOUS les groupes dans la base:', {
+      console.log('📋 useBlogData - TOUS les groupes dans la base (CORRIGÉ):', {
         count: allGroups?.length || 0,
         groups: allGroups?.map(g => ({
           id: g.id,
           name: g.name,
           created_by: g.created_by
-        }))
+        })),
+        error: allGroupsError
       });
 
+      // 2. CORRECTION: Récupérer TOUS les membres sans restriction
       const { data: allGroupMembers, error: allGroupMembersError } = await supabase
         .from('group_members')
         .select('*');
       
-      console.log('👥 useBlogData - TOUS les membres de TOUS les groupes:', {
+      console.log('👥 useBlogData - TOUS les membres de TOUS les groupes (CORRIGÉ):', {
         count: allGroupMembers?.length || 0,
         members: allGroupMembers?.map(gm => ({
           user_id: gm.user_id,
           group_id: gm.group_id,
           role: gm.role
-        }))
+        })),
+        error: allGroupMembersError
       });
 
-      // 2. Récupérer DIRECTEMENT les appartenances aux groupes de l'utilisateur
+      // 3. CORRECTION: Récupérer TOUS les profils sans restriction
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from('profiles')
+        .select('id, email, display_name');
+      
+      console.log('👤 useBlogData - TOUS les profils d\'utilisateurs (CORRIGÉ):', {
+        count: allProfiles?.length || 0,
+        profiles: allProfiles?.map(p => ({
+          id: p.id,
+          email: p.email,
+          display_name: p.display_name
+        })),
+        error: allProfilesError
+      });
+
+      // 4. Récupérer les appartenances de l'utilisateur courant
       const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
         .select('group_id, role')
@@ -118,83 +137,49 @@ export const useBlogData = (
       const userGroupIds = userGroupMemberships?.map(g => g.group_id) || [];
       console.log('🎯 useBlogData - IDs des groupes de l\'utilisateur:', userGroupIds);
 
-      // 3. NOUVEAU DÉBOGAGE : Vérifier tous les profils d'utilisateurs
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, display_name');
-      
-      console.log('👤 useBlogData - TOUS les profils d\'utilisateurs:', {
-        count: allProfiles?.length || 0,
-        profiles: allProfiles?.map(p => ({
-          id: p.id,
-          email: p.email,
-          display_name: p.display_name
-        }))
-      });
-
-      // 4. Construire la liste des utilisateurs autorisés - TOUJOURS commencer par l'utilisateur courant
+      // 5. CORRECTION: Construire la liste des utilisateurs autorisés plus intelligemment
       let authorizedUserIds = [effectiveUserId];
       console.log('✅ useBlogData - ÉTAPE 1 - Utilisateur courant ajouté:', authorizedUserIds);
 
-      if (userGroupIds.length > 0) {
-        // Récupérer TOUS les membres de TOUS les groupes où l'utilisateur est présent
-        const { data: allGroupMembers, error: groupMembersError } = await supabase
-          .from('group_members')
-          .select('user_id, group_id, role')
-          .in('group_id', userGroupIds);
-
-        if (groupMembersError) {
-          console.error('❌ useBlogData - Erreur récupération membres groupes:', groupMembersError);
-        } else {
-          console.log('👥 useBlogData - TOUS les membres des groupes partagés:', {
-            count: allGroupMembers?.length || 0,
-            members: allGroupMembers
-          });
-          
-          // NOUVEAU DÉBOGAGE : Enrichir avec les infos des profils
-          if (allGroupMembers && allGroupMembers.length > 0) {
-            const memberUserIds = allGroupMembers.map(gm => gm.user_id);
-            const { data: memberProfiles } = await supabase
-              .from('profiles')
-              .select('id, email, display_name')
-              .in('id', memberUserIds);
-
-            console.log('👥 useBlogData - Détails des membres des groupes partagés:', {
-              members: allGroupMembers.map(gm => {
-                const profile = memberProfiles?.find(p => p.id === gm.user_id);
-                return {
-                  user_id: gm.user_id,
-                  group_id: gm.group_id,
-                  role: gm.role,
-                  email: profile?.email,
-                  display_name: profile?.display_name
-                };
-              })
-            });
-          }
-          
-          // Ajouter TOUS les membres trouvés
-          const allMemberIds = allGroupMembers?.map(gm => gm.user_id) || [];
-          
-          // Fusionner avec l'utilisateur courant et supprimer les doublons
-          authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
-          
-          console.log('✅ useBlogData - ÉTAPE 2 - Après ajout des membres de groupe:', {
-            authorizedUserIds,
-            ajoutés: allMemberIds.filter(id => id !== effectiveUserId)
-          });
-        }
+      if (userGroupIds.length > 0 && allGroupMembers) {
+        // CORRECTION: Filtrer les membres des groupes partagés à partir des données déjà récupérées
+        const groupMembers = allGroupMembers.filter(gm => userGroupIds.includes(gm.group_id));
+        
+        console.log('👥 useBlogData - TOUS les membres des groupes partagés (CORRIGÉ):', {
+          count: groupMembers.length,
+          members: groupMembers.map(gm => {
+            const profile = allProfiles?.find(p => p.id === gm.user_id);
+            return {
+              user_id: gm.user_id,
+              group_id: gm.group_id,
+              role: gm.role,
+              email: profile?.email,
+              display_name: profile?.display_name
+            };
+          })
+        });
+        
+        // Ajouter TOUS les membres trouvés
+        const allMemberIds = groupMembers.map(gm => gm.user_id);
+        
+        // Fusionner avec l'utilisateur courant et supprimer les doublons
+        authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
+        
+        console.log('✅ useBlogData - ÉTAPE 2 - Après ajout des membres de groupe (CORRIGÉ):', {
+          authorizedUserIds,
+          ajoutés: allMemberIds.filter(id => id !== effectiveUserId)
+        });
       } else {
-        console.log('⚠️ useBlogData - Aucun groupe trouvé pour l\'utilisateur');
+        console.log('⚠️ useBlogData - Aucun groupe trouvé pour l\'utilisateur ou aucun membre récupéré');
       }
 
-      console.log('🎯 useBlogData - Utilisateurs autorisés FINAL:', {
+      console.log('🎯 useBlogData - Utilisateurs autorisés FINAL (CORRIGÉ):', {
         count: authorizedUserIds.length,
         userIds: authorizedUserIds,
         currentUser: effectiveUserId
       });
 
-      // 5. NOUVEAU DÉBOGAGE : Vérifier TOUS les posts existants avant filtrage
+      // 6. Récupérer TOUS les posts pour débogage
       const { data: allPostsDebug, error: allPostsError } = await supabase
         .from('blog_posts')
         .select(`
@@ -203,7 +188,7 @@ export const useBlogData = (
         `)
         .order('created_at', { ascending: false });
 
-      console.log('📝 useBlogData - TOUS LES POSTS (avant filtrage):', {
+      console.log('📝 useBlogData - TOUS LES POSTS (avant filtrage - CORRIGÉ):', {
         count: allPostsDebug?.length || 0,
         posts: allPostsDebug?.map(p => ({
           id: p.id,
@@ -211,11 +196,13 @@ export const useBlogData = (
           author_id: p.author_id,
           author_email: p.profiles?.email,
           author_display: p.profiles?.display_name,
-          published: p.published
-        }))
+          published: p.published,
+          isAuthorized: authorizedUserIds.includes(p.author_id)
+        })),
+        error: allPostsError
       });
 
-      // 6. Récupérer les posts UNIQUEMENT des utilisateurs autorisés
+      // 7. Récupérer les posts UNIQUEMENT des utilisateurs autorisés
       let postsQuery = supabase
         .from('blog_posts')
         .select(`
@@ -245,7 +232,7 @@ export const useBlogData = (
         console.error('❌ useBlogData - Erreur récupération posts:', postsError);
         setPosts([]);
       } else {
-        console.log('📝 useBlogData - Posts récupérés (DÉTAILLÉ):', {
+        console.log('📝 useBlogData - Posts récupérés (DÉTAILLÉ - CORRIGÉ):', {
           count: postsData?.length || 0,
           posts: postsData?.map(p => ({
             id: p.id,
@@ -278,7 +265,7 @@ export const useBlogData = (
         setPosts(postsWithProfiles);
       }
 
-      // 7. Récupérer les albums UNIQUEMENT des utilisateurs autorisés
+      // 8. Récupérer les albums UNIQUEMENT des utilisateurs autorisés
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
         .select(`
@@ -292,7 +279,7 @@ export const useBlogData = (
         console.error('❌ useBlogData - Erreur récupération albums:', albumsError);
         setAlbums([]);
       } else {
-        console.log('📁 useBlogData - Albums récupérés (DÉTAILLÉ):', {
+        console.log('📁 useBlogData - Albums récupérés (DÉTAILLÉ - CORRIGÉ):', {
           count: albumsData?.length || 0,
           albums: albumsData?.map(a => ({
             id: a.id,
@@ -319,13 +306,16 @@ export const useBlogData = (
         setAlbums(albumsWithProfiles);
       }
 
-      // 8. Déterminer les permissions de création
+      // 9. Déterminer les permissions de création
       setHasCreatePermission(hasRole('admin') || hasRole('editor'));
 
-      console.log('🏁 useBlogData - FIN - Récapitulatif:', {
+      console.log('🏁 useBlogData - FIN - Récapitulatif (CORRIGÉ):', {
         authorizedUsers: authorizedUserIds.length,
         postsFound: postsData?.length || 0,
-        albumsFound: albumsData?.length || 0
+        albumsFound: albumsData?.length || 0,
+        allGroupsCount: allGroups?.length || 0,
+        allMembersCount: allGroupMembers?.length || 0,
+        allProfilesCount: allProfiles?.length || 0
       });
 
     } catch (error) {
