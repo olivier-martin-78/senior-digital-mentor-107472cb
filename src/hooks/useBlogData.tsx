@@ -8,7 +8,7 @@ interface BlogPost {
   title: string;
   content: string;
   author_id: string;
-  album_id?: string;
+  album_id: string | null;
   cover_image?: string;
   created_at: string;
   updated_at: string;
