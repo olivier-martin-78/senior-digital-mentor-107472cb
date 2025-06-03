@@ -24,15 +24,23 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
     try {
       setLoading(true);
       
-      console.log('🔍 useDiaryEntries - Récupération avec logique applicative stricte');
+      console.log('🔍 useDiaryEntries - DÉBUT - Récupération avec logique applicative stricte');
       
       const effectiveUserId = getEffectiveUserId();
       console.log('👤 useDiaryEntries - Utilisateur courant:', effectiveUserId);
 
-      // 1. Récupérer UNIQUEMENT les groupes où l'utilisateur est membre
+      // 1. Récupérer TOUS les groupes où l'utilisateur est membre (correction de la requête)
       const { data: userGroups, error: userGroupsError } = await supabase
         .from('group_members')
-        .select('group_id, role')
+        .select(`
+          group_id, 
+          role,
+          invitation_groups!inner(
+            id,
+            name,
+            created_by
+          )
+        `)
         .eq('user_id', effectiveUserId);
 
       if (userGroupsError) {
@@ -42,35 +50,69 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         return;
       }
 
-      const userGroupIds = userGroups?.map(g => g.group_id) || [];
-      console.log('👥 useDiaryEntries - Groupes de l\'utilisateur:', {
-        count: userGroupIds.length,
-        groups: userGroups
+      console.log('👥 useDiaryEntries - Groupes de l\'utilisateur (DÉTAILLÉ):', {
+        count: userGroups?.length || 0,
+        groups: userGroups?.map(g => ({
+          group_id: g.group_id,
+          role: g.role,
+          group_name: g.invitation_groups?.name,
+          created_by: g.invitation_groups?.created_by
+        }))
       });
 
-      // 2. Si l'utilisateur n'a pas de groupes, il ne voit QUE ses propres contenus
+      const userGroupIds = userGroups?.map(g => g.group_id) || [];
+      console.log('🎯 useDiaryEntries - IDs des groupes:', userGroupIds);
+
+      // 2. Construire la liste des utilisateurs autorisés - TOUJOURS commencer par l'utilisateur courant
       let authorizedUserIds = [effectiveUserId];
+      console.log('✅ useDiaryEntries - ÉTAPE 1 - Utilisateur courant ajouté:', authorizedUserIds);
 
       if (userGroupIds.length > 0) {
+        // Récupérer TOUS les membres de TOUS les groupes où l'utilisateur est présent
         const { data: groupMembers, error: groupMembersError } = await supabase
           .from('group_members')
-          .select('user_id, group_id, role')
+          .select(`
+            user_id, 
+            group_id, 
+            role,
+            profiles!inner(
+              id,
+              email,
+              display_name
+            )
+          `)
           .in('group_id', userGroupIds);
 
         if (groupMembersError) {
           console.error('❌ useDiaryEntries - Erreur récupération membres groupes:', groupMembersError);
         } else {
-          console.log('👥 useDiaryEntries - Tous les membres des groupes:', groupMembers);
+          console.log('👥 useDiaryEntries - TOUS les membres des groupes (DÉTAILLÉ):', {
+            count: groupMembers?.length || 0,
+            members: groupMembers?.map(gm => ({
+              user_id: gm.user_id,
+              group_id: gm.group_id,
+              role: gm.role,
+              email: gm.profiles?.email,
+              display_name: gm.profiles?.display_name
+            }))
+          });
           
-          const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== effectiveUserId) || [];
-          authorizedUserIds = [...authorizedUserIds, ...additionalUserIds];
+          // Ajouter TOUS les membres trouvés (y compris le current user)
+          const allMemberIds = groupMembers?.map(gm => gm.user_id) || [];
           
-          // Supprimer les doublons
-          authorizedUserIds = [...new Set(authorizedUserIds)];
+          // Fusionner avec l'utilisateur courant et supprimer les doublons
+          authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
+          
+          console.log('✅ useDiaryEntries - ÉTAPE 2 - Après ajout des membres de groupe:', {
+            authorizedUserIds,
+            ajoutés: allMemberIds.filter(id => id !== effectiveUserId)
+          });
         }
+      } else {
+        console.log('⚠️ useDiaryEntries - Aucun groupe trouvé pour l\'utilisateur');
       }
 
-      console.log('✅ useDiaryEntries - Utilisateurs autorisés FINAL:', {
+      console.log('🎯 useDiaryEntries - Utilisateurs autorisés FINAL:', {
         count: authorizedUserIds.length,
         userIds: authorizedUserIds,
         currentUser: effectiveUserId
@@ -95,19 +137,20 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (error) throw error;
       
       if (diaryData && diaryData.length > 0) {
-        console.log('📓 useDiaryEntries - Entrées récupérées:', {
+        console.log('📓 useDiaryEntries - Entrées récupérées (DÉTAILLÉ):', {
           count: diaryData.length,
           entries: diaryData.map(e => ({
             id: e.id,
             title: e.title,
-            user_id: e.user_id
+            user_id: e.user_id,
+            entry_date: e.entry_date
           }))
         });
 
         // Vérifier que toutes les entrées appartiennent bien aux utilisateurs autorisés
         const unauthorizedEntries = diaryData.filter(entry => !authorizedUserIds.includes(entry.user_id));
         if (unauthorizedEntries.length > 0) {
-          console.error('🚨 useDiaryEntries - PROBLÈME: Entrées non autorisées détectées:', unauthorizedEntries);
+          console.error('🚨 useDiaryEntries - PROBLÈME SÉCURITÉ: Entrées non autorisées détectées:', unauthorizedEntries);
         }
 
         // Récupérer les profils des auteurs
@@ -140,6 +183,12 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             );
           });
         }
+
+        console.log('🏁 useDiaryEntries - FIN - Récapitulatif:', {
+          authorizedUsers: authorizedUserIds.length,
+          entriesFound: diaryData.length,
+          filteredEntries: filteredEntries.length
+        });
 
         setEntries(filteredEntries);
       } else {
