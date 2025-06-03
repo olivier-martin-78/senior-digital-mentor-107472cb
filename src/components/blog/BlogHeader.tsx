@@ -4,13 +4,15 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { BlogAlbum } from '@/types/supabase';
 import { Plus } from 'lucide-react';
+import AlbumCreator from './AlbumCreator';
 
 interface BlogHeaderProps {
   albums: BlogAlbum[];
   hasCreatePermission: boolean;
+  onAlbumCreated?: () => void;
 }
 
-const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission }) => {
+const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, onAlbumCreated }) => {
   console.log('🎯 BlogHeader - Rendu avec albums:', {
     albumsCount: albums.length,
     albumNames: albums.map(a => a.name),
@@ -32,12 +34,7 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission }) 
               Nouvel article
             </Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link to="/admin/albums">
-              <Plus className="w-4 h-4 mr-2" />
-              Créer un album
-            </Link>
-          </Button>
+          <AlbumCreator onAlbumCreated={onAlbumCreated} />
         </div>
       )}
     </div>

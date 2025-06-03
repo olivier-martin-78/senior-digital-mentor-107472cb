@@ -18,7 +18,8 @@ const Blog = () => {
     posts, 
     albums, 
     loading, 
-    hasCreatePermission 
+    hasCreatePermission,
+    refetch 
   } = useBlogData(searchTerm, selectedAlbum || '', startDate, endDate, null);
 
   console.log('🎯 Blog.tsx - RENDU PAGE BLOG:', {
@@ -45,6 +46,11 @@ const Blog = () => {
     );
   };
 
+  const handleAlbumCreated = () => {
+    // Refetch les données pour inclure le nouvel album
+    refetch();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -52,6 +58,7 @@ const Blog = () => {
         <BlogHeader 
           albums={albums}
           hasCreatePermission={hasCreatePermission}
+          onAlbumCreated={handleAlbumCreated}
         />
         
         <BlogFilters 
