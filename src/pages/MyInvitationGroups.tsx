@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,9 +7,10 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, Mail, Calendar } from 'lucide-react';
+import { Users, UserPlus, Mail, Calendar, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import InviteUserDialog from '@/components/InviteUserDialog';
+import InvitedUserManagement from '@/components/InvitedUserManagement';
 
 interface InvitationGroup {
   id: string;
@@ -59,6 +61,111 @@ const MyInvitationGroups = () => {
     loadMyGroups();
   }, [session, isReader, navigate, user]);
 
+  const syncPendingInvitations = async () => {
+    console.log('🔄 Synchronisation forcée des invitations en attente');
+    
+    try {
+      // Récupérer toutes les invitations non utilisées de l'utilisateur
+      const { data: invitationsData, error: invitationsError } = await supabase
+        .from('invitations')
+        .select('id, email, invited_by, group_id')
+        .eq('invited_by', user?.id)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString());
+
+      if (invitationsError) throw invitationsError;
+
+      let updatedCount = 0;
+
+      for (const invitation of invitationsData || []) {
+        console.log(`🔍 Vérification forcée pour: ${invitation.email}`);
+        
+        // Chercher l'utilisateur inscrit
+        const { data: registeredUser, error: userError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', invitation.email)
+          .maybeSingle();
+
+        if (userError) {
+          console.error('❌ Erreur recherche utilisateur:', userError);
+          continue;
+        }
+
+        if (registeredUser) {
+          console.log(`✅ Utilisateur trouvé: ${invitation.email}, ID: ${registeredUser.id}`);
+          
+          // Vérifier si l'email est confirmé
+          const { data: isConfirmed, error: confirmError } = await supabase
+            .rpc('is_email_confirmed', { user_id: registeredUser.id });
+          
+          if (confirmError) {
+            console.error('❌ Erreur vérification confirmation:', confirmError);
+            continue;
+          }
+
+          if (isConfirmed) {
+            console.log(`📧 Email confirmé pour ${invitation.email}`);
+            
+            // Vérifier si l'utilisateur est déjà dans le groupe
+            const { data: existingMember, error: memberError } = await supabase
+              .from('group_members')
+              .select('id')
+              .eq('group_id', invitation.group_id)
+              .eq('user_id', registeredUser.id)
+              .maybeSingle();
+
+            if (memberError) {
+              console.error('❌ Erreur vérification membre:', memberError);
+              continue;
+            }
+
+            if (!existingMember && invitation.group_id) {
+              // Ajouter au groupe
+              console.log(`➕ Ajout au groupe: ${invitation.group_id}`);
+              const { error: addError } = await supabase
+                .from('group_members')
+                .insert({
+                  group_id: invitation.group_id,
+                  user_id: registeredUser.id,
+                  role: 'guest'
+                });
+
+              if (addError) {
+                console.error('❌ Erreur ajout groupe:', addError);
+                continue;
+              }
+            }
+
+            // Marquer l'invitation comme utilisée
+            const { error: updateError } = await supabase
+              .from('invitations')
+              .update({ used_at: new Date().toISOString() })
+              .eq('id', invitation.id);
+
+            if (updateError) {
+              console.error('❌ Erreur mise à jour invitation:', updateError);
+            } else {
+              updatedCount++;
+              console.log(`✅ Invitation marquée comme utilisée: ${invitation.email}`);
+            }
+          }
+        }
+      }
+
+      if (updatedCount > 0) {
+        toast.success(`${updatedCount} invitation(s) synchronisée(s)`);
+        loadMyGroups(); // Recharger les données
+      } else {
+        toast.info('Aucune invitation à synchroniser');
+      }
+
+    } catch (error: any) {
+      console.error('❌ Erreur synchronisation:', error);
+      toast.error('Erreur lors de la synchronisation');
+    }
+  };
+
   const loadMyGroups = async () => {
     try {
       setIsLoading(true);
@@ -90,7 +197,7 @@ const MyInvitationGroups = () => {
 
       setGroups(groupsWithCounts);
 
-      // Charger les invitations en attente avec une logique corrigée
+      // Charger uniquement les vraies invitations en attente
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('invitations')
         .select('id, email, first_name, last_name, created_at, blog_access, life_story_access, diary_access, wishes_access')
@@ -101,68 +208,36 @@ const MyInvitationGroups = () => {
 
       if (invitationsError) throw invitationsError;
 
-      // Filtrer les invitations pour lesquelles l'utilisateur ne s'est pas encore inscrit OU confirmé
-      const filteredInvitations = [];
+      // Filtrer pour ne garder que les vraies invitations en attente
+      const reallyPendingInvitations = [];
       if (invitationsData) {
         for (const invitation of invitationsData) {
-          console.log(`🔍 Vérification invitation pour: ${invitation.email}`);
-          
-          // Vérifier si un utilisateur avec cet email existe - CORRIGÉ avec maybeSingle()
-          const { data: existingUser, error: profileError } = await supabase
+          // Vérifier si l'utilisateur s'est inscrit
+          const { data: existingUser } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', invitation.email)
             .maybeSingle();
-          
-          if (profileError) {
-            console.error('❌ Erreur lors de la vérification du profil:', profileError);
-            // En cas d'erreur, on garde l'invitation comme en attente par sécurité
-            filteredInvitations.push(invitation);
-            continue;
-          }
 
-          if (existingUser) {
-            console.log(`✅ Utilisateur trouvé pour ${invitation.email}, ID: ${existingUser.id}`);
-            
-            // L'utilisateur existe, vérifier s'il a confirmé son email
-            const { data: isConfirmed, error: confirmError } = await supabase
+          if (!existingUser) {
+            // Pas encore inscrit, vraiment en attente
+            reallyPendingInvitations.push(invitation);
+          } else {
+            // Inscrit, vérifier si email confirmé
+            const { data: isConfirmed } = await supabase
               .rpc('is_email_confirmed', { user_id: existingUser.id });
             
-            if (confirmError) {
-              console.error('❌ Erreur lors de la vérification de confirmation email:', confirmError);
-              // En cas d'erreur, on garde l'invitation comme en attente par sécurité
-              filteredInvitations.push(invitation);
-              continue;
-            }
-
-            console.log(`📧 Email confirmé pour ${invitation.email}: ${isConfirmed}`);
-            
-            // Si l'email n'est pas confirmé, garder l'invitation comme en attente
             if (!isConfirmed) {
-              console.log(`⏳ Email non confirmé, invitation gardée en attente pour: ${invitation.email}`);
-              filteredInvitations.push(invitation);
-            } else {
-              // L'utilisateur existe et est confirmé, marquer l'invitation comme utilisée
-              console.log('🔄 Mise à jour invitation utilisée pour:', invitation.email);
-              const { error: updateError } = await supabase
-                .from('invitations')
-                .update({ used_at: new Date().toISOString() })
-                .eq('id', invitation.id);
-              
-              if (updateError) {
-                console.error('❌ Erreur lors de la mise à jour de l\'invitation:', updateError);
-              }
+              // Email pas confirmé, garder en attente
+              reallyPendingInvitations.push(invitation);
             }
-          } else {
-            // Aucun utilisateur trouvé, garder l'invitation comme en attente
-            console.log(`👤 Aucun utilisateur trouvé pour: ${invitation.email}, invitation gardée en attente`);
-            filteredInvitations.push(invitation);
+            // Si confirmé, ne pas garder (sera traité par la synchronisation)
           }
         }
       }
 
-      console.log(`📊 Invitations en attente après filtrage: ${filteredInvitations.length}`);
-      setPendingInvitations(filteredInvitations);
+      console.log(`📊 Vraies invitations en attente: ${reallyPendingInvitations.length}`);
+      setPendingInvitations(reallyPendingInvitations);
 
     } catch (error: any) {
       console.error('❌ Erreur lors du chargement des groupes:', error);
@@ -176,43 +251,27 @@ const MyInvitationGroups = () => {
     try {
       console.log('🔍 Chargement des membres du groupe:', groupId);
       
-      // Récupérer d'abord les membres du groupe
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
-        .select('id, user_id, role, added_at')
+        .select(`
+          id, 
+          user_id, 
+          role, 
+          added_at,
+          profiles:user_id (
+            display_name,
+            email
+          )
+        `)
         .eq('group_id', groupId)
         .order('added_at', { ascending: false });
 
       if (membersError) throw membersError;
 
       console.log('📋 Membres trouvés:', membersData?.length || 0);
-
-      // Récupérer les profils pour chaque membre
-      const membersWithProfiles = await Promise.all(
-        (membersData || []).map(async (member) => {
-          console.log('👤 Chargement profil pour user_id:', member.user_id);
-          
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('display_name, email')
-            .eq('id', member.user_id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('❌ Erreur chargement profil pour', member.user_id, ':', profileError);
-          } else {
-            console.log('✅ Profil chargé:', profileData);
-          }
-
-          return {
-            ...member,
-            profiles: profileError ? null : profileData
-          };
-        })
-      );
-
-      console.log('👥 Membres avec profils:', membersWithProfiles);
-      setGroupMembers(membersWithProfiles);
+      console.log('👥 Détails des membres:', membersData);
+      
+      setGroupMembers(membersData || []);
     } catch (error: any) {
       console.error('Erreur lors du chargement des membres:', error);
       toast.error('Erreur lors du chargement des membres du groupe');
@@ -259,7 +318,17 @@ const MyInvitationGroups = () => {
                 Gérez les personnes que vous avez invitées et leurs accès à votre contenu.
               </p>
             </div>
-            <InviteUserDialog />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={syncPendingInvitations}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Synchroniser
+              </Button>
+              <InviteUserDialog />
+            </div>
           </div>
         </div>
 
@@ -345,50 +414,17 @@ const MyInvitationGroups = () => {
             </Card>
           )}
 
-          {/* Détails du groupe sélectionné */}
+          {/* Gestion des membres du groupe sélectionné */}
           {selectedGroup && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Membres du groupe : {selectedGroup.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {groupMembers.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">
-                    Aucun membre actif dans ce groupe. Les membres apparaîtront ici après avoir accepté leur invitation.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {groupMembers.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">
-                            {member.profiles?.display_name || member.profiles?.email || 'Utilisateur inconnu'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {member.profiles?.email || 'Email non disponible'}
-                          </p>
-                          {!member.profiles && (
-                            <p className="text-xs text-red-500">
-                              Profil introuvable (ID: {member.user_id})
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                            {member.role === 'admin' ? 'Administrateur' : 'Invité'}
-                          </Badge>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Ajouté le {new Date(member.added_at).toLocaleDateString('fr-FR')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <InvitedUserManagement 
+              groupId={selectedGroup.id}
+              groupName={selectedGroup.name}
+              members={groupMembers}
+              onMembersUpdate={() => {
+                loadGroupMembers(selectedGroup.id);
+                loadMyGroups(); // Recharger aussi les compteurs de groupes
+              }}
+            />
           )}
         </div>
       </div>
