@@ -28,7 +28,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Corps de la requête reçu:', JSON.stringify(requestBody, null, 2));
     
-    const { firstName, lastName, email, inviterName, inviterEmail, accessTypes } = requestBody;
+    const { firstName, lastName, email, inviterName, inviterEmail } = requestBody;
 
     console.log('Validation des paramètres...');
     if (!firstName || !lastName || !email || !inviterName || !inviterEmail) {
@@ -37,16 +37,7 @@ serve(async (req) => {
     }
     console.log('Paramètres validés avec succès');
 
-    // Construire la liste des accès accordés
-    console.log('Construction de la liste des accès...');
-    const accessList = [];
-    const accessText = accessList.length > 0 
-      ? `Vous avez accès aux sections suivantes : ${accessList.join(', ')}`
-      : 'Aucun accès spécifique accordé pour le moment.';
-    
-    console.log('Accès configurés:', accessText);
-
-    // Email HTML
+    // Email HTML avec nouvelle logique d'accès automatique
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #2c3e50;">Invitation à rejoindre Senior Digital Mentor</h2>
@@ -55,7 +46,17 @@ serve(async (req) => {
         
         <p><strong>${inviterName}</strong> (${inviterEmail}) vous invite à rejoindre l'application Senior Digital Mentor.</p>
         
-        <p>${accessText}</p>
+        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
+          <p><strong>🎉 Accès complet automatique :</strong></p>
+          <p>Une fois votre compte créé, vous aurez automatiquement accès en <strong>lecture</strong> à tout le contenu de ${inviterName} :</p>
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>📝 Articles de blog</li>
+            <li>📔 Entrées de journal</li>
+            <li>📖 Histoire de vie</li>
+            <li>⭐ Souhaits</li>
+          </ul>
+          <p><em>Vous pourrez également créer et gérer votre propre contenu.</em></p>
+        </div>
         
         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p><strong>Pour créer votre compte :</strong></p>

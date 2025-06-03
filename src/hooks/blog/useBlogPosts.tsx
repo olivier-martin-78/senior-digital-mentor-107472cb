@@ -33,7 +33,8 @@ export const useBlogPosts = (
           isAdmin
         });
 
-        // Maintenant que les politiques RLS sont corrigées, une seule requête simple suffit
+        // Avec la nouvelle logique, une seule requête simple suffit
+        // Les politiques RLS gèrent automatiquement l'accès basé sur l'appartenance aux groupes
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -68,7 +69,7 @@ export const useBlogPosts = (
 
         const allPosts = data || [];
         
-        console.log('✅ useBlogPosts - Posts récupérés:', {
+        console.log('✅ useBlogPosts - Posts récupérés avec nouvelle logique simplifiée:', {
           count: allPosts.length,
           postsParAuteur: allPosts.reduce((acc, post) => {
             const authorEmail = post.profiles?.email || 'Email non disponible';

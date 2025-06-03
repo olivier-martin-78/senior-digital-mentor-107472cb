@@ -14,12 +14,9 @@ export const useRecentPermissions = () => {
       return;
     }
 
-    // Avec les nouvelles politiques RLS simplifiées, l'accès est géré automatiquement
-    // On n'a plus besoin de calculer manuellement les permissions
-    // Les politiques RLS filtrent automatiquement selon les règles :
-    // - Contenu propre de l'utilisateur
-    // - Contenu des membres du même groupe
-    // - Contenu publié pour tous
+    // Avec la nouvelle logique simplifiée, l'accès aux contenus se fait automatiquement
+    // via l'appartenance aux groupes d'invitation. Les politiques RLS gèrent tout.
+    // On retourne juste l'ID de l'utilisateur actuel pour les contenus qu'il possède.
     setAuthorizedUserIds([user.id]);
     setLoading(false);
   }, [user]);

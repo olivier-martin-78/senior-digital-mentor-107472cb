@@ -109,10 +109,10 @@ const InviteUserDialog = () => {
       if (groupInvitationError) throw groupInvitationError;
       console.log('✅ Entrée group_invitation créée');
 
-      // Générer un token unique pour l'invitation classique
+      // Générer un token unique pour l'invitation classique (pour compatibilité)
       const token = crypto.randomUUID();
 
-      // Créer l'invitation classique (pour l'email)
+      // Créer l'invitation classique (pour l'email) - SANS ACCÈS SPÉCIFIQUES
       const { error: invitationError } = await supabase
         .from('invitations')
         .insert({
@@ -121,11 +121,8 @@ const InviteUserDialog = () => {
           email: formData.email,
           invited_by: user.id,
           token,
-          group_id: groupId,
-          blog_access: false,
-          wishes_access: false,
-          diary_access: false,
-          life_story_access: false
+          group_id: groupId
+          // Plus de champs *_access car l'accès est automatique via le groupe
         });
 
       if (invitationError) throw invitationError;
@@ -137,13 +134,8 @@ const InviteUserDialog = () => {
         lastName: formData.lastName,
         email: formData.email,
         inviterName: profile.display_name || profile.email,
-        inviterEmail: profile.email,
-        accessTypes: {
-          blogAccess: false,
-          wishesAccess: false,
-          diaryAccess: false,
-          lifeStoryAccess: false
-        }
+        inviterEmail: profile.email
+        // Plus d'accessTypes car l'accès est automatique
       };
 
       console.log('📧 Envoi de l\'email d\'invitation...');
@@ -166,7 +158,7 @@ const InviteUserDialog = () => {
         console.log('✅ Email envoyé avec succès');
         toast({
           title: "Invitation envoyée",
-          description: `Une invitation a été envoyée à ${formData.email}`
+          description: `Une invitation a été envoyée à ${formData.email}. Cette personne aura accès en lecture à tout votre contenu une fois inscrite.`
         });
       }
 
@@ -233,6 +225,13 @@ const InviteUserDialog = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               required
             />
+          </div>
+
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Accès automatique :</strong> Cette personne aura accès en lecture à tout votre contenu 
+              (blog, journal, histoire de vie, souhaits) une fois son compte créé.
+            </p>
           </div>
 
           <div className="flex justify-end gap-2">
