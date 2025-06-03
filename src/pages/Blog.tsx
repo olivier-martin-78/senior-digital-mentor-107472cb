@@ -17,7 +17,7 @@ const Blog = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(hasRole('admin')); // Afficher par défaut pour les admins
   
   const { 
     posts, 
@@ -92,7 +92,7 @@ const Blog = () => {
           selectedCategories={selectedCategories}
           toggleCategorySelection={toggleCategorySelection}
           albums={albums}
-          categories={[]} // Pour l'instant, on garde les catégories vides car elles ne sont pas encore implémentées dans useBlogData
+          categories={[]}
         />
         
         <DateRangeFilter

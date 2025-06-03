@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Users, AlertCircle, CheckCircle, RefreshCw, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface GroupMembership {
@@ -27,10 +27,23 @@ interface AuthorInfo {
   }>;
 }
 
+interface ContentAccess {
+  blog_posts: number;
+  diary_entries: number;
+  life_stories: number;
+  wish_posts: number;
+}
+
 const GroupDiagnostic: React.FC = () => {
   const { user } = useAuth();
   const [myGroups, setMyGroups] = useState<GroupMembership[]>([]);
   const [authors, setAuthors] = useState<AuthorInfo[]>([]);
+  const [contentAccess, setContentAccess] = useState<ContentAccess>({
+    blog_posts: 0,
+    diary_entries: 0,
+    life_stories: 0,
+    wish_posts: 0
+  });
   const [loading, setLoading] = useState(false);
 
   const loadDiagnostic = async () => {
@@ -40,7 +53,7 @@ const GroupDiagnostic: React.FC = () => {
       setLoading(true);
       console.log('🔍 DIAGNOSTIC - Début analyse pour:', user.email);
 
-      // Charger mes groupes avec jointure manuelle
+      // Charger mes groupes
       const { data: myGroupsData, error: myGroupsError } = await supabase
         .from('group_members')
         .select(`
@@ -51,7 +64,6 @@ const GroupDiagnostic: React.FC = () => {
         .eq('user_id', user.id);
 
       if (myGroupsError) throw myGroupsError;
-
       setMyGroups(myGroupsData || []);
 
       // Charger tous les auteurs et leurs groupes
@@ -84,6 +96,21 @@ const GroupDiagnostic: React.FC = () => {
 
       setAuthors(authorsWithGroups);
 
+      // Tester l'accès aux contenus
+      const contentTests = await Promise.all([
+        supabase.from('blog_posts').select('id'),
+        supabase.from('diary_entries').select('id'),
+        supabase.from('life_stories').select('id'),
+        supabase.from('wish_posts').select('id')
+      ]);
+
+      setContentAccess({
+        blog_posts: contentTests[0].data?.length || 0,
+        diary_entries: contentTests[1].data?.length || 0,
+        life_stories: contentTests[2].data?.length || 0,
+        wish_posts: contentTests[3].data?.length || 0
+      });
+
       console.log('✅ DIAGNOSTIC - Analyse terminée');
     } catch (error: any) {
       console.error('❌ DIAGNOSTIC - Erreur:', error);
@@ -103,7 +130,6 @@ const GroupDiagnostic: React.FC = () => {
     try {
       console.log('🔧 DIAGNOSTIC - Correction appartenance groupe pour:', targetUserEmail);
 
-      // Trouver l'utilisateur cible
       const targetAuthor = authors.find(a => a.email === targetUserEmail);
       if (!targetAuthor) {
         toast({
@@ -163,7 +189,6 @@ const GroupDiagnostic: React.FC = () => {
         description: `Ajouté au groupe de ${targetUserEmail}`,
       });
 
-      // Recharger le diagnostic
       loadDiagnostic();
 
     } catch (error: any) {
@@ -171,6 +196,70 @@ const GroupDiagnostic: React.FC = () => {
       toast({
         title: "Erreur",
         description: "Impossible de corriger l'appartenance au groupe",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createCrossGroupAccess = async () => {
+    if (!user) return;
+
+    try {
+      console.log('🔧 DIAGNOSTIC - Création accès croisé entre tous les utilisateurs');
+
+      // Récupérer tous les utilisateurs
+      const { data: allUsers, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, email');
+
+      if (usersError || !allUsers) throw usersError;
+
+      // Pour chaque utilisateur, s'assurer qu'il a accès aux groupes des autres
+      for (const otherUser of allUsers) {
+        if (otherUser.id === user.id) continue;
+
+        // Trouver le groupe créé par cet utilisateur
+        const { data: userGroups } = await supabase
+          .from('invitation_groups')
+          .select('id')
+          .eq('created_by', otherUser.id);
+
+        if (userGroups && userGroups.length > 0) {
+          const groupId = userGroups[0].id;
+
+          // Vérifier si je suis déjà membre
+          const { data: existingMembership } = await supabase
+            .from('group_members')
+            .select('id')
+            .eq('group_id', groupId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!existingMembership) {
+            // M'ajouter au groupe
+            await supabase
+              .from('group_members')
+              .insert({
+                group_id: groupId,
+                user_id: user.id,
+                role: 'guest'
+              });
+          }
+        }
+      }
+
+      toast({
+        title: "Succès",
+        description: "Accès croisé créé entre tous les utilisateurs",
+      });
+
+      loadDiagnostic();
+
+    } catch (error: any) {
+      console.error('❌ DIAGNOSTIC - Erreur création accès croisé:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'accès croisé",
         variant: "destructive"
       });
     }
@@ -198,7 +287,7 @@ const GroupDiagnostic: React.FC = () => {
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
-              Diagnostic des Groupes
+              Diagnostic des Groupes et Accès aux Contenus
             </span>
             <Button
               variant="outline"
@@ -212,7 +301,34 @@ const GroupDiagnostic: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Accès aux contenus */}
+            <div>
+              <h3 className="font-medium mb-2 flex items-center">
+                <Info className="w-4 h-4 mr-2" />
+                Contenus accessibles
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 border rounded">
+                  <div className="text-sm text-gray-500">Blog Posts</div>
+                  <div className="text-2xl font-bold">{contentAccess.blog_posts}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-sm text-gray-500">Diary Entries</div>
+                  <div className="text-2xl font-bold">{contentAccess.diary_entries}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-sm text-gray-500">Life Stories</div>
+                  <div className="text-2xl font-bold">{contentAccess.life_stories}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-sm text-gray-500">Wish Posts</div>
+                  <div className="text-2xl font-bold">{contentAccess.wish_posts}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mes groupes */}
             <div>
               <h3 className="font-medium mb-2">Mes groupes ({myGroups.length})</h3>
               {myGroups.length === 0 ? (
@@ -231,6 +347,24 @@ const GroupDiagnostic: React.FC = () => {
               )}
             </div>
 
+            {/* Actions de correction */}
+            <div>
+              <h3 className="font-medium mb-2">Actions de correction</h3>
+              <div className="space-y-2">
+                <Button
+                  onClick={createCrossGroupAccess}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  Créer un accès croisé entre tous les utilisateurs
+                </Button>
+                <p className="text-sm text-gray-500">
+                  Cette action va s'assurer que tous les utilisateurs peuvent voir les contenus des autres
+                </p>
+              </div>
+            </div>
+
+            {/* Accès aux auteurs */}
             <div>
               <h3 className="font-medium mb-2">Accès aux auteurs</h3>
               <div className="space-y-2">
