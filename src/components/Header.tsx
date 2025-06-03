@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, User, Shield, Users, Calendar, Pen, Heart, BookOpen, Clock } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Settings, LogOut, User, Shield, Users, Calendar, Pen, Heart, BookOpen, Clock, Menu } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const Header = () => {
@@ -43,6 +44,14 @@ const Header = () => {
     return email.slice(0, 2).toUpperCase();
   };
 
+  const navigationItems = [
+    { path: '/recent', label: 'Récent', icon: Clock },
+    { path: '/blog', label: 'Blog', icon: Pen },
+    { path: '/diary', label: 'Journal', icon: BookOpen },
+    { path: '/life-story', label: 'Histoire', icon: Calendar },
+    { path: '/wishes', label: 'Souhaits', icon: Heart },
+  ];
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
       <div className="container mx-auto px-4 py-3">
@@ -57,54 +66,97 @@ const Header = () => {
 
           {user ? (
             <div className="flex items-center space-x-4">
+              {/* Navigation desktop - masquée sur mobile */}
               <nav className="hidden md:flex items-center space-x-6">
-                <Link 
-                  to="/recent" 
-                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
-                    isActive('/recent') ? 'text-tranches-sage' : 'text-gray-600'
-                  }`}
-                >
-                  <Clock className="w-4 h-4 mr-1" />
-                  Récent
-                </Link>
-                <Link 
-                  to="/blog" 
-                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
-                    isActive('/blog') ? 'text-tranches-sage' : 'text-gray-600'
-                  }`}
-                >
-                  <Pen className="w-4 h-4 mr-1" />
-                  Blog
-                </Link>
-                <Link 
-                  to="/diary" 
-                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
-                    isActive('/diary') ? 'text-tranches-sage' : 'text-gray-600'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4 mr-1" />
-                  Journal
-                </Link>
-                <Link 
-                  to="/life-story" 
-                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
-                    isActive('/life-story') ? 'text-tranches-sage' : 'text-gray-600'
-                  }`}
-                >
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Histoire
-                </Link>
-                <Link 
-                  to="/wishes" 
-                  className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
-                    isActive('/wishes') ? 'text-tranches-sage' : 'text-gray-600'
-                  }`}
-                >
-                  <Heart className="w-4 h-4 mr-1" />
-                  Souhaits
-                </Link>
+                {navigationItems.map(({ path, label, icon: Icon }) => (
+                  <Link 
+                    key={path}
+                    to={path} 
+                    className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage ${
+                      isActive(path) ? 'text-tranches-sage' : 'text-gray-600'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 mr-1" />
+                    {label}
+                  </Link>
+                ))}
               </nav>
 
+              {/* Menu mobile hamburger - visible uniquement sur mobile */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Ouvrir le menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-64">
+                  <div className="flex flex-col space-y-4 mt-6">
+                    <h2 className="text-lg font-semibold text-tranches-charcoal">Navigation</h2>
+                    {navigationItems.map(({ path, label, icon: Icon }) => (
+                      <SheetClose key={path} asChild>
+                        <Link 
+                          to={path} 
+                          className={`flex items-center text-sm font-medium transition-colors hover:text-tranches-sage p-2 rounded-md ${
+                            isActive(path) ? 'text-tranches-sage bg-tranches-sage/10' : 'text-gray-600'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 mr-3" />
+                          {label}
+                        </Link>
+                      </SheetClose>
+                    ))}
+                    
+                    <div className="border-t pt-4 mt-4">
+                      <h3 className="text-sm font-semibold text-gray-500 mb-2">Compte</h3>
+                      <SheetClose asChild>
+                        <Link 
+                          to="/profile" 
+                          className="flex items-center text-sm font-medium transition-colors hover:text-tranches-sage p-2 rounded-md text-gray-600"
+                        >
+                          <User className="w-4 h-4 mr-3" />
+                          Profil
+                        </Link>
+                      </SheetClose>
+                      
+                      {(hasRole('admin') || hasRole('editor')) && (
+                        <SheetClose asChild>
+                          <Link 
+                            to="/my-groups" 
+                            className="flex items-center text-sm font-medium transition-colors hover:text-tranches-sage p-2 rounded-md text-gray-600"
+                          >
+                            <Users className="w-4 h-4 mr-3" />
+                            Mes groupes
+                          </Link>
+                        </SheetClose>
+                      )}
+                      
+                      {hasRole('admin') && (
+                        <SheetClose asChild>
+                          <Link 
+                            to="/admin/users" 
+                            className="flex items-center text-sm font-medium transition-colors hover:text-tranches-sage p-2 rounded-md text-gray-600"
+                          >
+                            <Settings className="w-4 h-4 mr-3" />
+                            Administration
+                          </Link>
+                        </SheetClose>
+                      )}
+                      
+                      <button
+                        onClick={handleSignOut}
+                        disabled={isLoading}
+                        className="flex items-center text-sm font-medium transition-colors hover:text-red-600 p-2 rounded-md text-gray-600 w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        {isLoading ? 'Déconnexion...' : 'Se déconnecter'}
+                      </button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              {/* Avatar dropdown - visible sur toutes les tailles */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -126,14 +178,14 @@ const Header = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="md:hidden">
                     <Link to="/profile" className="w-full cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profil
                     </Link>
                   </DropdownMenuItem>
                   {(hasRole('admin') || hasRole('editor')) && (
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem asChild className="md:hidden">
                       <Link to="/my-groups" className="w-full cursor-pointer">
                         <Users className="mr-2 h-4 w-4" />
                         Mes groupes
@@ -142,8 +194,8 @@ const Header = () => {
                   )}
                   {hasRole('admin') && (
                     <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
+                      <DropdownMenuSeparator className="md:hidden" />
+                      <DropdownMenuItem asChild className="md:hidden">
                         <Link to="/admin/users" className="w-full cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
                           Administration
@@ -151,11 +203,47 @@ const Header = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="md:hidden" />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
                     disabled={isLoading}
-                    className="cursor-pointer"
+                    className="cursor-pointer md:hidden"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {isLoading ? 'Déconnexion...' : 'Se déconnecter'}
+                  </DropdownMenuItem>
+                  
+                  {/* Items desktop uniquement */}
+                  <DropdownMenuItem asChild className="hidden md:flex">
+                    <Link to="/profile" className="w-full cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profil
+                    </Link>
+                  </DropdownMenuItem>
+                  {(hasRole('admin') || hasRole('editor')) && (
+                    <DropdownMenuItem asChild className="hidden md:flex">
+                      <Link to="/my-groups" className="w-full cursor-pointer">
+                        <Users className="mr-2 h-4 w-4" />
+                        Mes groupes
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {hasRole('admin') && (
+                    <>
+                      <DropdownMenuSeparator className="hidden md:block" />
+                      <DropdownMenuItem asChild className="hidden md:flex">
+                        <Link to="/admin/users" className="w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Administration
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator className="hidden md:block" />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    disabled={isLoading}
+                    className="cursor-pointer hidden md:flex"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     {isLoading ? 'Déconnexion...' : 'Se déconnecter'}
