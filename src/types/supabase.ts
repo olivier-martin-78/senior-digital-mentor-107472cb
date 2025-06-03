@@ -1,4 +1,3 @@
-
 export type AppRole = 'admin' | 'editor' | 'reader';
 
 export interface Profile {
@@ -30,6 +29,19 @@ export interface GroupMember {
   user_id: string;
   role: 'admin' | 'guest';
   added_at: string;
+}
+
+export interface GroupInvitation {
+  id: string;
+  inviter_id: string;
+  invited_user_id: string | null;
+  email: string;
+  group_id: string;
+  status: 'pending' | 'confirmed';
+  invitation_date: string;
+  confirmation_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Invitation {

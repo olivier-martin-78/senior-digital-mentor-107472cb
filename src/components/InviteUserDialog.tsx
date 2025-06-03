@@ -40,16 +40,79 @@ const InviteUserDialog = () => {
     setLoading(true);
     console.log('=== DEBUT ENVOI INVITATION ===');
     console.log('Données du formulaire:', formData);
-    console.log('Utilisateur:', user);
-    console.log('Profil:', profile);
 
     try {
-      // Générer un token unique
-      const token = crypto.randomUUID();
-      console.log('Token généré:', token);
+      // Récupérer ou créer le groupe d'invitation
+      let { data: existingGroup, error: groupError } = await supabase
+        .from('invitation_groups')
+        .select('id')
+        .eq('created_by', user.id)
+        .maybeSingle();
 
-      // Créer l'invitation en base (le trigger créera automatiquement le groupe)
-      console.log('Création de l\'invitation en base...');
+      if (groupError && groupError.code !== 'PGRST116') {
+        throw groupError;
+      }
+
+      let groupId: string;
+
+      if (!existingGroup) {
+        // Créer un nouveau groupe
+        const groupName = `Invités de ${profile.display_name || profile.email}`;
+        const { data: newGroup, error: createGroupError } = await supabase
+          .from('invitation_groups')
+          .insert({
+            name: groupName,
+            created_by: user.id
+          })
+          .select('id')
+          .single();
+
+        if (createGroupError) throw createGroupError;
+        groupId = newGroup.id;
+        console.log('✅ Nouveau groupe créé:', groupId);
+      } else {
+        groupId = existingGroup.id;
+        console.log('✅ Groupe existant utilisé:', groupId);
+      }
+
+      // Vérifier si l'invitation existe déjà
+      const { data: existingInvitation, error: checkError } = await supabase
+        .from('group_invitation')
+        .select('id, status')
+        .eq('email', formData.email)
+        .eq('group_id', groupId)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingInvitation) {
+        toast({
+          title: "Invitation existante",
+          description: `Une invitation existe déjà pour ${formData.email} avec le statut: ${existingInvitation.status}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Créer l'entrée dans group_invitation
+      const { error: groupInvitationError } = await supabase
+        .from('group_invitation')
+        .insert({
+          inviter_id: user.id,
+          email: formData.email,
+          group_id: groupId,
+          status: 'pending'
+        });
+
+      if (groupInvitationError) throw groupInvitationError;
+      console.log('✅ Entrée group_invitation créée');
+
+      // Générer un token unique pour l'invitation classique
+      const token = crypto.randomUUID();
+
+      // Créer l'invitation classique (pour l'email)
       const { error: invitationError } = await supabase
         .from('invitations')
         .insert({
@@ -58,17 +121,15 @@ const InviteUserDialog = () => {
           email: formData.email,
           invited_by: user.id,
           token,
+          group_id: groupId,
           blog_access: false,
           wishes_access: false,
           diary_access: false,
           life_story_access: false
         });
 
-      if (invitationError) {
-        console.error('Erreur création invitation:', invitationError);
-        throw invitationError;
-      }
-      console.log('Invitation créée avec succès en base');
+      if (invitationError) throw invitationError;
+      console.log('✅ Invitation classique créée');
 
       // Préparer les données pour l'email
       const emailData = {
@@ -85,28 +146,27 @@ const InviteUserDialog = () => {
         }
       };
 
-      console.log('Données pour l\'email:', emailData);
-      console.log('Appel de la fonction edge send-invitation-email...');
+      console.log('📧 Envoi de l\'email d\'invitation...');
 
       // Envoyer l'email d'invitation
       const { data: emailResponse, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: emailData
       });
 
-      console.log('Réponse de la fonction edge:', { data: emailResponse, error: emailError });
+      console.log('Réponse email:', { data: emailResponse, error: emailError });
 
       if (emailError) {
-        console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+        console.error('⚠️ Erreur email:', emailError);
         toast({
           title: "Invitation créée",
-          description: `L'invitation a été créée pour ${formData.email}, mais l'email n'a pas pu être envoyé. Erreur: ${emailError.message}`,
+          description: `L'invitation a été créée pour ${formData.email}, mais l'email n'a pas pu être envoyé.`,
           variant: "destructive"
         });
       } else {
-        console.log('Email envoyé avec succès');
+        console.log('✅ Email envoyé avec succès');
         toast({
           title: "Invitation envoyée",
-          description: `Une invitation a été envoyée à ${formData.email} avec copie à contact@senior-digital-mentor.com`
+          description: `Une invitation a été envoyée à ${formData.email}`
         });
       }
 
@@ -119,7 +179,7 @@ const InviteUserDialog = () => {
       setIsOpen(false);
 
     } catch (error: any) {
-      console.error('Erreur lors de l\'envoi de l\'invitation:', error);
+      console.error('❌ Erreur lors de l\'envoi de l\'invitation:', error);
       toast({
         title: "Erreur",
         description: error.message || "Une erreur est survenue lors de l'envoi de l'invitation",

@@ -271,6 +271,53 @@ export type Database = {
         }
         Relationships: []
       }
+      group_invitation: {
+        Row: {
+          confirmation_date: string | null
+          created_at: string
+          email: string
+          group_id: string
+          id: string
+          invitation_date: string
+          invited_user_id: string | null
+          inviter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confirmation_date?: string | null
+          created_at?: string
+          email: string
+          group_id: string
+          id?: string
+          invitation_date?: string
+          invited_user_id?: string | null
+          inviter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confirmation_date?: string | null
+          created_at?: string
+          email?: string
+          group_id?: string
+          id?: string
+          invitation_date?: string
+          invited_user_id?: string | null
+          inviter_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invitation_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "invitation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           added_at: string
