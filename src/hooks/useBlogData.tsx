@@ -13,7 +13,7 @@ interface BlogPost {
   created_at: string;
   updated_at: string;
   published?: boolean;
-  profiles?: {
+  profiles: {
     id: string;
     email: string;
     display_name: string | null;
@@ -29,7 +29,7 @@ interface BlogAlbum {
   thumbnail_url?: string;
   description: string;
   created_at: string;
-  profiles?: {
+  profiles: {
     id: string;
     email: string;
     display_name: string | null;
@@ -94,9 +94,7 @@ export const useBlogData = (
       // Récupérer les posts avec logique d'accès côté application
       let postsQuery = supabase
         .from('blog_posts')
-        .select(`
-          *
-        `)
+        .select('*')
         .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
 
@@ -136,7 +134,13 @@ export const useBlogData = (
 
           const postsWithProfiles = postsData.map(post => ({
             ...post,
-            profiles: profilesMap[post.author_id]
+            profiles: profilesMap[post.author_id] || {
+              id: post.author_id,
+              email: 'unknown@example.com',
+              display_name: 'Utilisateur inconnu',
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
           }));
 
           setPosts(postsWithProfiles);
@@ -148,9 +152,7 @@ export const useBlogData = (
       // Récupérer les albums avec logique d'accès côté application
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
-        .select(`
-          *
-        `)
+        .select('*')
         .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
 
@@ -175,7 +177,13 @@ export const useBlogData = (
           const albumsWithProfiles = albumsData.map(album => ({
             ...album,
             description: album.description || '',
-            profiles: profilesMap[album.author_id]
+            profiles: profilesMap[album.author_id] || {
+              id: album.author_id,
+              email: 'unknown@example.com',
+              display_name: 'Utilisateur inconnu',
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
           }));
 
           setAlbums(albumsWithProfiles);
@@ -184,7 +192,7 @@ export const useBlogData = (
         }
       }
 
-      // Déterminer les permissions de création
+      // Déterminer les permissions de création - maintenant seuls admin et editor peuvent créer
       setHasCreatePermission(hasRole('admin') || hasRole('editor'));
 
     } catch (error) {
