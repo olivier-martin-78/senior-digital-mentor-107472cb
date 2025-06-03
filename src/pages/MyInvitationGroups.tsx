@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -258,7 +257,7 @@ const MyInvitationGroups = () => {
           user_id, 
           role, 
           added_at,
-          profiles (
+          profiles!group_members_user_id_fkey (
             display_name,
             email
           )
