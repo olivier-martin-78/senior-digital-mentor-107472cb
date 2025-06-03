@@ -90,7 +90,7 @@ const MyInvitationGroups = () => {
 
       setGroups(groupsWithCounts);
 
-      // Charger les invitations en attente (non utilisées ET expirées)
+      // Charger les invitations en attente avec une logique améliorée
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('invitations')
         .select('id, email, first_name, last_name, created_at, blog_access, life_story_access, diary_access, wishes_access')
@@ -101,18 +101,35 @@ const MyInvitationGroups = () => {
 
       if (invitationsError) throw invitationsError;
 
-      // Filtrer les invitations dont l'email correspond à un utilisateur déjà inscrit
+      // Filtrer les invitations pour lesquelles l'utilisateur ne s'est pas encore inscrit OU confirmé
       const filteredInvitations = [];
       if (invitationsData) {
         for (const invitation of invitationsData) {
+          // Vérifier si un utilisateur avec cet email existe ET a confirmé son email
           const { data: existingUser } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', invitation.email)
             .single();
           
-          // Ne garder que les invitations pour lesquelles aucun utilisateur n'existe
-          if (!existingUser) {
+          if (existingUser) {
+            // L'utilisateur existe, vérifier s'il a confirmé son email
+            const { data: authUser } = await supabase
+              .rpc('is_email_confirmed', { user_id: existingUser.id });
+            
+            // Si l'email n'est pas confirmé, garder l'invitation comme en attente
+            if (!authUser) {
+              filteredInvitations.push(invitation);
+            } else {
+              // L'utilisateur existe et est confirmé, marquer l'invitation comme utilisée
+              console.log('🔄 Mise à jour invitation utilisée pour:', invitation.email);
+              await supabase
+                .from('invitations')
+                .update({ used_at: new Date().toISOString() })
+                .eq('id', invitation.id);
+            }
+          } else {
+            // Aucun utilisateur trouvé, garder l'invitation comme en attente
             filteredInvitations.push(invitation);
           }
         }
