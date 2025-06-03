@@ -10,12 +10,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface ConfirmationEmailRequest {
-  email: string;
-  confirmationUrl: string;
-  displayName?: string;
-}
-
 const handler = async (req: Request): Promise<Response> => {
   console.log("=== DEBUT FONCTION send-confirmation-email ===");
 
@@ -35,11 +29,14 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Clé API Resend trouvée");
 
     console.log("Lecture du corps de la requête...");
-    const { email, confirmationUrl, displayName }: ConfirmationEmailRequest = await req.json();
-    console.log("Corps de la requête reçu:", { email, confirmationUrl, displayName });
+    const requestBody = await req.json();
+    console.log("Corps de la requête reçu:", JSON.stringify(requestBody, null, 2));
+    
+    const { email, confirmationUrl, displayName } = requestBody;
 
     console.log("Validation des paramètres...");
     if (!email || !confirmationUrl) {
+      console.error("Paramètres manquants:", { email: !!email, confirmationUrl: !!confirmationUrl });
       throw new Error("Email et URL de confirmation requis");
     }
     console.log("Paramètres validés avec succès");
@@ -98,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("URL API Resend: https://api.resend.com/emails");
+    console.log("Envoi de l'email de confirmation...");
 
     const emailResponse = await resend.emails.send({
       from: "Senior Digital Mentor <contact@senior-digital-mentor.com>",
@@ -107,8 +104,6 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     });
 
-    console.log("Réponse Resend reçue - Status: 200");
-    console.log("Headers de réponse:", emailResponse);
     console.log("SUCCESS - Email de confirmation envoyé avec succès:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
