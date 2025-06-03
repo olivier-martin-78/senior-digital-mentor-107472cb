@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -67,7 +68,7 @@ const MyInvitationGroups = () => {
       // Récupérer toutes les invitations non utilisées de l'utilisateur
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('invitations')
-        .select('id, email, invited_by, group_id')
+        .select('id, email, invited_by, group_id, first_name, last_name')
         .eq('invited_by', user?.id)
         .is('used_at', null)
         .gt('expires_at', new Date().toISOString());
@@ -79,75 +80,88 @@ const MyInvitationGroups = () => {
       for (const invitation of invitationsData || []) {
         console.log(`🔍 Vérification forcée pour: ${invitation.email}`);
         
-        // Chercher l'utilisateur inscrit
-        const { data: registeredUser, error: userError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', invitation.email)
-          .maybeSingle();
-
-        if (userError) {
-          console.error('❌ Erreur recherche utilisateur:', userError);
+        // Chercher l'utilisateur inscrit dans auth.users via RPC ou la table profiles
+        const { data: authUser, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.warn('⚠️ Impossible de vérifier auth.users, essai via profiles:', authError);
           continue;
         }
 
-        if (registeredUser) {
-          console.log(`✅ Utilisateur trouvé: ${invitation.email}, ID: ${registeredUser.id}`);
+        const registeredUser = authUser.users.find(u => u.email === invitation.email);
+        
+        if (registeredUser && registeredUser.email_confirmed_at) {
+          console.log(`✅ Utilisateur trouvé et confirmé: ${invitation.email}, ID: ${registeredUser.id}`);
           
-          // Vérifier si l'email est confirmé
-          const { data: isConfirmed, error: confirmError } = await supabase
-            .rpc('is_email_confirmed', { user_id: registeredUser.id });
-          
-          if (confirmError) {
-            console.error('❌ Erreur vérification confirmation:', confirmError);
+          // Vérifier si le profil existe, sinon le créer
+          const { data: existingProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .eq('id', registeredUser.id)
+            .maybeSingle();
+
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('❌ Erreur vérification profil:', profileError);
             continue;
           }
 
-          if (isConfirmed) {
-            console.log(`📧 Email confirmé pour ${invitation.email}`);
-            
-            // Vérifier si l'utilisateur est déjà dans le groupe
-            const { data: existingMember, error: memberError } = await supabase
-              .from('group_members')
-              .select('id')
-              .eq('group_id', invitation.group_id)
-              .eq('user_id', registeredUser.id)
-              .maybeSingle();
+          if (!existingProfile) {
+            console.log(`📝 Création du profil manquant pour: ${invitation.email}`);
+            const { error: createProfileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: registeredUser.id,
+                email: invitation.email,
+                display_name: `${invitation.first_name} ${invitation.last_name}`.trim() || null
+              });
 
-            if (memberError) {
-              console.error('❌ Erreur vérification membre:', memberError);
+            if (createProfileError) {
+              console.error('❌ Erreur création profil:', createProfileError);
               continue;
             }
+          }
+          
+          // Vérifier si l'utilisateur est déjà dans le groupe
+          const { data: existingMember, error: memberError } = await supabase
+            .from('group_members')
+            .select('id')
+            .eq('group_id', invitation.group_id)
+            .eq('user_id', registeredUser.id)
+            .maybeSingle();
 
-            if (!existingMember && invitation.group_id) {
-              // Ajouter au groupe
-              console.log(`➕ Ajout au groupe: ${invitation.group_id}`);
-              const { error: addError } = await supabase
-                .from('group_members')
-                .insert({
-                  group_id: invitation.group_id,
-                  user_id: registeredUser.id,
-                  role: 'guest'
-                });
+          if (memberError && memberError.code !== 'PGRST116') {
+            console.error('❌ Erreur vérification membre:', memberError);
+            continue;
+          }
 
-              if (addError) {
-                console.error('❌ Erreur ajout groupe:', addError);
-                continue;
-              }
+          if (!existingMember && invitation.group_id) {
+            // Ajouter au groupe
+            console.log(`➕ Ajout au groupe: ${invitation.group_id}`);
+            const { error: addError } = await supabase
+              .from('group_members')
+              .insert({
+                group_id: invitation.group_id,
+                user_id: registeredUser.id,
+                role: 'guest'
+              });
+
+            if (addError) {
+              console.error('❌ Erreur ajout groupe:', addError);
+              continue;
             }
+          }
 
-            // Marquer l'invitation comme utilisée
-            const { error: updateError } = await supabase
-              .from('invitations')
-              .update({ used_at: new Date().toISOString() })
-              .eq('id', invitation.id);
+          // Marquer l'invitation comme utilisée
+          const { error: updateError } = await supabase
+            .from('invitations')
+            .update({ used_at: new Date().toISOString() })
+            .eq('id', invitation.id);
 
-            if (updateError) {
-              console.error('❌ Erreur mise à jour invitation:', updateError);
-            } else {
-              updatedCount++;
-              console.log(`✅ Invitation marquée comme utilisée: ${invitation.email}`);
-            }
+          if (updateError) {
+            console.error('❌ Erreur mise à jour invitation:', updateError);
+          } else {
+            updatedCount++;
+            console.log(`✅ Invitation marquée comme utilisée: ${invitation.email}`);
           }
         }
       }
@@ -262,13 +276,47 @@ const MyInvitationGroups = () => {
       // Then get the profiles for each member manually
       const membersWithProfiles = await Promise.all(
         (membersData || []).map(async (member) => {
-          const { data: profile, error: profileError } = await supabase
+          // D'abord essayer de récupérer le profil existant
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('display_name, email')
             .eq('id', member.user_id)
             .maybeSingle();
 
-          if (profileError) {
+          // Si le profil n'existe pas, essayer de le récréer depuis auth.users
+          if (!profile && profileError?.code === 'PGRST116') {
+            console.log(`📝 Tentative de récréation du profil pour: ${member.user_id}`);
+            
+            try {
+              // Récupérer les infos depuis auth.users
+              const { data: authData } = await supabase.auth.admin.getUserById(member.user_id);
+              
+              if (authData.user) {
+                const { error: createError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: member.user_id,
+                    email: authData.user.email || 'Email non disponible',
+                    display_name: authData.user.user_metadata?.display_name || 
+                                  authData.user.raw_user_meta_data?.display_name ||
+                                  null
+                  });
+
+                if (!createError) {
+                  // Récupérer le profil nouvellement créé
+                  const { data: newProfile } = await supabase
+                    .from('profiles')
+                    .select('display_name, email')
+                    .eq('id', member.user_id)
+                    .maybeSingle();
+                  
+                  profile = newProfile;
+                }
+              }
+            } catch (authError) {
+              console.error('❌ Erreur récupération auth.users:', authError);
+            }
+          } else if (profileError && profileError.code !== 'PGRST116') {
             console.error('❌ Erreur chargement profil:', profileError);
           }
 
