@@ -43,19 +43,17 @@ const WishEditForm = () => {
           return;
         }
         
-        // MODIFIÉ: Seul l'auteur ou les administrateurs peuvent modifier
-        if (!user || (user.id !== data.author_id && !hasRole('admin'))) {
+        // CORRECTION: Seul l'auteur du souhait peut le modifier (même les admins ne peuvent pas modifier les souhaits d'autres personnes)
+        if (!user || user.id !== data.author_id) {
           console.log('WishEditForm - Accès refusé:', {
             userId: user?.id,
             authorId: data.author_id,
-            isAdmin: hasRole('admin'),
-            isEditor: hasRole('editor'),
-            isReader: hasRole('reader')
+            userRole: hasRole('admin') ? 'admin' : hasRole('editor') ? 'editor' : 'reader'
           });
           
           toast({
             title: "Accès refusé",
-            description: "Vous n'avez pas les droits pour éditer ce souhait. Seul l'auteur ou un administrateur peut le modifier.",
+            description: "Vous ne pouvez modifier que vos propres souhaits.",
             variant: "destructive"
           });
           navigate('/wishes');
