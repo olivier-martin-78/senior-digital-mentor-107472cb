@@ -99,10 +99,10 @@ const MyInvitationGroups = () => {
             const { data: authData } = await supabase.auth.admin.listUsers();
             
             if (authData && authData.users) {
-              const foundAuthUser = authData.users.find(u => u.email === invitation.email);
+              const foundAuthUser = authData.users.find((u: any) => u.email === invitation.email);
               
               if (foundAuthUser && foundAuthUser.email_confirmed_at && foundAuthUser.email) {
-                console.log(`✅ Utilisateur trouvé dans auth.users: ${invitation.email}, ID: ${foundAuthUser.id}`);
+                console.log(`✅ Utilisateur trouvé dans auth.users: ${foundAuthUser.email}, ID: ${foundAuthUser.id}`);
                 
                 // Créer le profil manquant
                 const { error: createProfileError } = await supabase
