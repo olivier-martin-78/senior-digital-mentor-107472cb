@@ -43,8 +43,8 @@ const WishEditForm = () => {
           return;
         }
         
-        // MODIFIÉ: Vérification stricte des permissions - seul l'auteur ou les admins/editors peuvent modifier
-        if (!user || (user.id !== data.author_id && !hasRole('admin') && !hasRole('editor'))) {
+        // MODIFIÉ: Seul l'auteur ou les administrateurs peuvent modifier
+        if (!user || (user.id !== data.author_id && !hasRole('admin'))) {
           console.log('WishEditForm - Accès refusé:', {
             userId: user?.id,
             authorId: data.author_id,

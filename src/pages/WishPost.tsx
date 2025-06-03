@@ -217,7 +217,9 @@ const WishPost = () => {
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
-  const canManagePublication = user?.id === wish.author_id || hasRole('admin') || hasRole('editor');
+  // MODIFIÉ: Seul l'auteur ou les administrateurs peuvent gérer la publication et éditer
+  const canManagePublication = user?.id === wish.author_id || hasRole('admin');
+  const canEdit = user?.id === wish.author_id || hasRole('admin');
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -269,7 +271,7 @@ const WishPost = () => {
                     {publishLoading ? "En cours..." : wish.published ? "Mettre en brouillon" : "Publier"}
                   </Button>
                 )}
-                {(user?.id === wish.author_id || hasRole('admin') || hasRole('editor')) && (
+                {canEdit && (
                   <Button asChild variant="outline">
                     <Link to={`/wishes/edit/${wish.id}`}>
                       <Edit className="mr-2 h-4 w-4" />
