@@ -14,10 +14,6 @@ interface GroupMembership {
     name: string;
     created_by: string;
   };
-  profiles: {
-    email: string;
-    display_name: string | null;
-  };
 }
 
 interface AuthorInfo {
@@ -44,14 +40,13 @@ const GroupDiagnostic: React.FC = () => {
       setLoading(true);
       console.log('🔍 DIAGNOSTIC - Début analyse pour:', user.email);
 
-      // Charger mes groupes
+      // Charger mes groupes avec jointure manuelle
       const { data: myGroupsData, error: myGroupsError } = await supabase
         .from('group_members')
         .select(`
           group_id,
           role,
-          invitation_groups!inner(name, created_by),
-          profiles!group_members_user_id_fkey(email, display_name)
+          invitation_groups!inner(name, created_by)
         `)
         .eq('user_id', user.id);
 
