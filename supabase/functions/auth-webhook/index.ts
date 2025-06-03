@@ -86,20 +86,19 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("URL de confirmation personnalisée:", confirmationUrl.toString());
 
-      // Appeler notre fonction d'envoi d'email personnalisé avec les bons paramètres
-      console.log("Appel de la fonction send-confirmation-email...");
-      console.log("Paramètres envoyés:", {
+      // Préparer les paramètres pour l'email
+      const emailParams = {
         email: user.email,
         confirmationUrl: confirmationUrl.toString(),
         displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name || user.email.split('@')[0]
-      });
+      };
+
+      // Appeler notre fonction d'envoi d'email personnalisé avec les bons paramètres
+      console.log("Appel de la fonction send-confirmation-email...");
+      console.log("Paramètres envoyés:", emailParams);
 
       const { data: emailData, error } = await supabase.functions.invoke('send-confirmation-email', {
-        body: {
-          email: user.email,
-          confirmationUrl: confirmationUrl.toString(),
-          displayName: user.raw_user_meta_data?.display_name || user.raw_user_meta_data?.full_name || user.email.split('@')[0]
-        }
+        body: emailParams
       });
 
       if (error) {
