@@ -40,11 +40,6 @@ serve(async (req) => {
     // Construire la liste des accès accordés
     console.log('Construction de la liste des accès...');
     const accessList = [];
-    if (accessTypes?.blogAccess) accessList.push('Albums (Blog)');
-    if (accessTypes?.wishesAccess) accessList.push('Souhaits');
-    if (accessTypes?.diaryAccess) accessList.push('Journal intime');
-    if (accessTypes?.lifeStoryAccess) accessList.push('Histoire de vie');
-
     const accessText = accessList.length > 0 
       ? `Vous avez accès aux sections suivantes : ${accessList.join(', ')}`
       : 'Aucun accès spécifique accordé pour le moment.';
@@ -54,31 +49,31 @@ serve(async (req) => {
     // Email HTML
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #2c3e50;">Invitation à rejoindre Tranches de Vie</h2>
+        <h2 style="color: #2c3e50;">Invitation à rejoindre Senior Digital Mentor</h2>
         
         <p>Bonjour ${firstName} ${lastName},</p>
         
-        <p><strong>${inviterName}</strong> (${inviterEmail}) vous invite à rejoindre l'application Tranches de Vie.</p>
+        <p><strong>${inviterName}</strong> (${inviterEmail}) vous invite à rejoindre l'application Senior Digital Mentor.</p>
         
         <p>${accessText}</p>
         
         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p><strong>Pour créer votre compte :</strong></p>
           <ol>
-            <li>Rendez-vous sur <a href="https://tranches-de-vie.lovable.app/auth">https://tranches-de-vie.lovable.app/auth</a></li>
-            <li>Cliquez sur "Créer un compte"</li>
+            <li>Rendez-vous sur <a href="https://senior-digital-mentor.com/auth">https://senior-digital-mentor.com/auth</a></li>
+            <li><strong>Cliquez sur "Créer un compte"</strong></li>
             <li>Utilisez cette adresse email : <strong>${email}</strong></li>
             <li>Choisissez un mot de passe sécurisé</li>
           </ol>
         </div>
         
-        <p>Une fois votre compte créé, vous pourrez accéder aux sections pour lesquelles vous avez été invité(e).</p>
+        <p>Une fois votre compte créé, vous devrez confirmer votre inscription à réception d'un autre mail spécifique</p>
         
         <p>Si vous avez des questions, n'hésitez pas à contacter ${inviterName} à l'adresse ${inviterEmail}.</p>
         
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
         <p style="color: #666; font-size: 12px;">
-          Cet email a été envoyé automatiquement par l'application Tranches de Vie.
+          Cet email a été envoyé automatiquement par l'application Senior Digital Mentor.
         </p>
       </div>
     `;
@@ -94,10 +89,10 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Tranches de Vie <noreply@senior-digital-mentor.com>',
+        from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
         to: [email],
         cc: ['contact@senior-digital-mentor.com'],
-        subject: `Invitation à rejoindre Tranches de Vie de la part de ${inviterName}`,
+        subject: `Invitation à rejoindre Senior Digital Mentor de la part de ${inviterName}`,
         html: emailHtml,
       }),
     });
