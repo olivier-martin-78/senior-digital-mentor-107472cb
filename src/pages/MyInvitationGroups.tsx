@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,10 +7,9 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, Mail, Calendar, Clock, UserCheck } from 'lucide-react';
+import { Users, UserPlus, Mail, Calendar } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import InviteUserDialog from '@/components/InviteUserDialog';
-import InvitedUserManagement from '@/components/InvitedUserManagement';
 import GroupInvitationManagement from '@/components/GroupInvitationManagement';
 import { GroupInvitation } from '@/types/supabase';
 
@@ -211,10 +211,6 @@ const MyInvitationGroups = () => {
     );
   }
 
-  // Compter les invitations en attente
-  const pendingInvitationsCount = groupInvitations.filter(inv => inv.status === 'pending').length;
-  const confirmedInvitationsCount = groupInvitations.filter(inv => inv.status === 'confirmed').length;
-
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -237,36 +233,6 @@ const MyInvitationGroups = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Résumé des invitations pour le groupe sélectionné */}
-          {selectedGroup && groupInvitations.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Mail className="w-5 h-5 mr-2" />
-                  Résumé des invitations : {selectedGroup.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center p-3 border rounded-lg bg-amber-50">
-                    <Clock className="w-5 h-5 text-amber-600 mr-2" />
-                    <div>
-                      <p className="font-medium">{pendingInvitationsCount}</p>
-                      <p className="text-sm text-gray-600">En attente</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-3 border rounded-lg bg-green-50">
-                    <UserCheck className="w-5 h-5 text-green-600 mr-2" />
-                    <div>
-                      <p className="font-medium">{confirmedInvitationsCount}</p>
-                      <p className="text-sm text-gray-600">Confirmées</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Mes groupes */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {groups.map((group) => (
@@ -311,20 +277,13 @@ const MyInvitationGroups = () => {
             </Card>
           )}
 
-          {/* Gestion des invitations et membres du groupe sélectionné */}
+          {/* Gestion des invitations du groupe sélectionné */}
           {selectedGroup && (
             <div className="space-y-6">
               <GroupInvitationManagement 
                 groupId={selectedGroup.id}
                 groupName={selectedGroup.name}
                 onUpdate={handleUpdate}
-              />
-              
-              <InvitedUserManagement 
-                groupId={selectedGroup.id}
-                groupName={selectedGroup.name}
-                members={groupMembers}
-                onMembersUpdate={handleUpdate}
               />
             </div>
           )}

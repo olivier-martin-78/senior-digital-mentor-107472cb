@@ -5,7 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Mail, UserCheck, Clock, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Users, Mail, UserCheck, Clock, RefreshCw, UserPlus } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { GroupInvitation } from '@/types/supabase';
 
@@ -23,6 +26,8 @@ const GroupInvitationManagement: React.FC<GroupInvitationManagementProps> = ({
   const { user } = useAuth();
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
 
   useEffect(() => {
     loadGroupInvitations();
@@ -59,6 +64,100 @@ const GroupInvitationManagement: React.FC<GroupInvitationManagementProps> = ({
       toast({
         title: "Erreur",
         description: "Impossible de charger les invitations",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddExistingUser = async () => {
+    if (!newMemberEmail.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir un email",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('🔍 Recherche utilisateur avec email:', newMemberEmail);
+
+    try {
+      // Rechercher l'utilisateur par email
+      const { data: existingUser, error: userError } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .eq('email', newMemberEmail.trim())
+        .maybeSingle();
+
+      if (userError) {
+        console.error('❌ Erreur recherche utilisateur:', userError);
+        throw userError;
+      }
+
+      if (!existingUser) {
+        toast({
+          title: "Utilisateur non trouvé",
+          description: "Aucun utilisateur trouvé avec cet email. Assurez-vous qu'il s'est bien inscrit.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Utilisateur trouvé:', existingUser);
+
+      // Vérifier si l'utilisateur est déjà membre du groupe
+      const { data: existingMember, error: memberCheckError } = await supabase
+        .from('group_members')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('user_id', existingUser.id)
+        .maybeSingle();
+
+      if (memberCheckError) {
+        console.error('❌ Erreur vérification membre:', memberCheckError);
+        throw memberCheckError;
+      }
+
+      if (existingMember) {
+        toast({
+          title: "Déjà membre",
+          description: "Cet utilisateur est déjà membre du groupe",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Ajouter l'utilisateur au groupe
+      const { error: addError } = await supabase
+        .from('group_members')
+        .insert({
+          group_id: groupId,
+          user_id: existingUser.id,
+          role: 'guest'
+        });
+
+      if (addError) {
+        console.error('❌ Erreur ajout membre:', addError);
+        throw addError;
+      }
+
+      toast({
+        title: "Membre ajouté",
+        description: `${existingUser.display_name || existingUser.email} a été ajouté au groupe`
+      });
+
+      setNewMemberEmail('');
+      setIsAddDialogOpen(false);
+      onUpdate();
+
+    } catch (error: any) {
+      console.error('❌ Erreur ajout utilisateur:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de l'ajout de l'utilisateur",
         variant: "destructive"
       });
     } finally {
@@ -210,15 +309,57 @@ const GroupInvitationManagement: React.FC<GroupInvitationManagementProps> = ({
             <Mail className="w-5 h-5 mr-2" />
             Invitations pour : {groupName}
           </span>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={syncPendingInvitations}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Synchroniser
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Ajouter un membre
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un membre existant</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="memberEmail">Email de l'utilisateur</Label>
+                    <Input
+                      id="memberEmail"
+                      type="email"
+                      value={newMemberEmail}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      placeholder="email@exemple.com"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      L'utilisateur doit déjà être inscrit sur la plateforme
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAddDialogOpen(false)}
+                      disabled={isLoading}
+                    >
+                      Annuler
+                    </Button>
+                    <Button onClick={handleAddExistingUser} disabled={isLoading}>
+                      {isLoading ? 'Ajout...' : 'Ajouter'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={syncPendingInvitations}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Synchroniser
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
