@@ -11,6 +11,7 @@ interface BlogPost {
   album_id?: string;
   cover_image?: string;
   created_at: string;
+  updated_at: string;
   published?: boolean;
   profiles?: {
     id: string;
@@ -59,31 +60,38 @@ export const useBlogData = (
 
     try {
       // Récupérer d'abord les groupes de l'utilisateur
-      const { data: userGroups } = await supabase
+      const { data: userGroups, error: groupsError } = await supabase
         .from('group_members')
         .select('group_id')
         .eq('user_id', user.id);
+
+      if (groupsError) {
+        console.error('❌ Erreur récupération groupes:', groupsError);
+        setLoading(false);
+        return;
+      }
 
       const groupIds = userGroups?.map(g => g.group_id) || [];
       
       // Récupérer les membres des mêmes groupes
       let authorizedUsers = [user.id];
       if (groupIds.length > 0) {
-        const { data: groupMembers } = await supabase
+        const { data: groupMembers, error: membersError } = await supabase
           .from('group_members')
           .select('user_id')
           .in('group_id', groupIds);
         
-        const additionalUsers = groupMembers?.map(gm => gm.user_id).filter(id => id !== user.id) || [];
-        authorizedUsers = [...authorizedUsers, ...additionalUsers];
+        if (!membersError && groupMembers) {
+          const additionalUsers = groupMembers.map(gm => gm.user_id).filter(id => id !== user.id);
+          authorizedUsers = [...authorizedUsers, ...additionalUsers];
+        }
       }
 
       // Récupérer les posts avec logique d'accès côté application
       let postsQuery = supabase
         .from('blog_posts')
         .select(`
-          *,
-          profiles!blog_posts_author_id_fkey(id, email, display_name)
+          *
         `)
         .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
@@ -108,15 +116,36 @@ export const useBlogData = (
         console.error('❌ Erreur récupération posts:', postsError);
       } else {
         console.log('✅ Posts récupérés:', postsData?.length || 0);
-        setPosts(postsData || []);
+        
+        if (postsData && postsData.length > 0) {
+          // Récupérer les profils des auteurs
+          const userIds = [...new Set(postsData.map(post => post.author_id))];
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .in('id', userIds);
+
+          const profilesMap = profiles?.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {} as Record<string, any>) || {};
+
+          const postsWithProfiles = postsData.map(post => ({
+            ...post,
+            profiles: profilesMap[post.author_id]
+          }));
+
+          setPosts(postsWithProfiles);
+        } else {
+          setPosts([]);
+        }
       }
 
       // Récupérer les albums avec logique d'accès côté application
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
         .select(`
-          *,
-          profiles!blog_albums_author_id_fkey(id, email, display_name)
+          *
         `)
         .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
@@ -125,7 +154,30 @@ export const useBlogData = (
         console.error('❌ Erreur récupération albums:', albumsError);
       } else {
         console.log('✅ Albums récupérés:', albumsData?.length || 0);
-        setAlbums(albumsData || []);
+        
+        if (albumsData && albumsData.length > 0) {
+          // Récupérer les profils des auteurs
+          const userIds = [...new Set(albumsData.map(album => album.author_id))];
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .in('id', userIds);
+
+          const profilesMap = profiles?.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {} as Record<string, any>) || {};
+
+          const albumsWithProfiles = albumsData.map(album => ({
+            ...album,
+            description: album.description || '',
+            profiles: profilesMap[album.author_id]
+          }));
+
+          setAlbums(albumsWithProfiles);
+        } else {
+          setAlbums([]);
+        }
       }
 
       // Déterminer les permissions de création
