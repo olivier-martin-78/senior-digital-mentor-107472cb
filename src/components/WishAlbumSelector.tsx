@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +28,8 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
   const [newAlbumDescription, setNewAlbumDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  const canCreateAlbum = hasRole('admin') || hasRole('editor');
+  // MODIFIÉ: Permettre aux readers de créer des albums
+  const canCreateAlbum = hasRole('admin') || hasRole('editor') || hasRole('reader');
 
   const handleCreateAlbum = async () => {
     if (!user || !newAlbumName.trim()) return;

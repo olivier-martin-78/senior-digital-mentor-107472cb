@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -82,10 +81,10 @@ function App() {
                 <Route path="/blog/:id" element={<ProtectedRoute />}>
                   <Route index element={<BlogPost />} />
                 </Route>
-                <Route path="/blog/new" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
+                <Route path="/blog/new" element={<ProtectedRoute />}>
                   <Route index element={<BlogEditor />} />
                 </Route>
-                <Route path="/blog/edit/:id" element={<ProtectedRoute requiredRoles={['admin', 'editor']} />}>
+                <Route path="/blog/edit/:id" element={<ProtectedRoute />}>
                   <Route index element={<BlogEditor />} />
                 </Route>
                 <Route path="/diary" element={<ProtectedRoute />}>
@@ -120,17 +119,17 @@ function App() {
                 </Route>
                 <Route path="/wish-form" element={<WishForm />} />
 
-                {/* Admin routes */}
+                {/* Admin routes - MODIFIÉ pour permettre aux readers d'accéder aux albums */}
                 <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminUsers />} />
                 </Route>
                 <Route path="/admin/posts" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminPosts />} />
                 </Route>
-                <Route path="/admin/albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                <Route path="/admin/albums" element={<ProtectedRoute />}>
                   <Route index element={<AdminAlbums />} />
                 </Route>
-                <Route path="/admin/wish-albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                <Route path="/admin/wish-albums" element={<ProtectedRoute />}>
                   <Route index element={<AdminWishAlbums />} />
                 </Route>
                 <Route path="/admin/diary" element={<ProtectedRoute requiredRoles={['admin']} />}>

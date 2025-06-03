@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -307,7 +306,7 @@ export const useBlogData = (
       }
 
       // 9. Déterminer les permissions de création
-      setHasCreatePermission(hasRole('admin') || hasRole('editor'));
+      setHasCreatePermission(hasRole('admin') || hasRole('editor') || hasRole('reader'));
 
       console.log('🏁 useBlogData - FIN - Récapitulatif (CORRIGÉ):', {
         authorizedUsers: authorizedUserIds.length,
