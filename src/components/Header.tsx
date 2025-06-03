@@ -51,7 +51,7 @@ const Header = () => {
             <img 
               src="/SeniorDigital.png" 
               alt="Senior Digital Mentor" 
-              width ="200px"
+              width ="150%"
             />
             <span>Senior Digital Mentor</span>
           </Link>
