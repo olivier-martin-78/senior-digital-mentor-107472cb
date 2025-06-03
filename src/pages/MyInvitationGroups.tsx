@@ -90,7 +90,7 @@ const MyInvitationGroups = () => {
 
       setGroups(groupsWithCounts);
 
-      // Charger les invitations en attente avec une logique améliorée
+      // Charger les invitations en attente avec une logique corrigée
       const { data: invitationsData, error: invitationsError } = await supabase
         .from('invitations')
         .select('id, email, first_name, last_name, created_at, blog_access, life_story_access, diary_access, wishes_access')
@@ -105,36 +105,63 @@ const MyInvitationGroups = () => {
       const filteredInvitations = [];
       if (invitationsData) {
         for (const invitation of invitationsData) {
-          // Vérifier si un utilisateur avec cet email existe ET a confirmé son email
-          const { data: existingUser } = await supabase
+          console.log(`🔍 Vérification invitation pour: ${invitation.email}`);
+          
+          // Vérifier si un utilisateur avec cet email existe - CORRIGÉ avec maybeSingle()
+          const { data: existingUser, error: profileError } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', invitation.email)
-            .single();
+            .maybeSingle();
           
+          if (profileError) {
+            console.error('❌ Erreur lors de la vérification du profil:', profileError);
+            // En cas d'erreur, on garde l'invitation comme en attente par sécurité
+            filteredInvitations.push(invitation);
+            continue;
+          }
+
           if (existingUser) {
+            console.log(`✅ Utilisateur trouvé pour ${invitation.email}, ID: ${existingUser.id}`);
+            
             // L'utilisateur existe, vérifier s'il a confirmé son email
-            const { data: authUser } = await supabase
+            const { data: isConfirmed, error: confirmError } = await supabase
               .rpc('is_email_confirmed', { user_id: existingUser.id });
             
+            if (confirmError) {
+              console.error('❌ Erreur lors de la vérification de confirmation email:', confirmError);
+              // En cas d'erreur, on garde l'invitation comme en attente par sécurité
+              filteredInvitations.push(invitation);
+              continue;
+            }
+
+            console.log(`📧 Email confirmé pour ${invitation.email}: ${isConfirmed}`);
+            
             // Si l'email n'est pas confirmé, garder l'invitation comme en attente
-            if (!authUser) {
+            if (!isConfirmed) {
+              console.log(`⏳ Email non confirmé, invitation gardée en attente pour: ${invitation.email}`);
               filteredInvitations.push(invitation);
             } else {
               // L'utilisateur existe et est confirmé, marquer l'invitation comme utilisée
               console.log('🔄 Mise à jour invitation utilisée pour:', invitation.email);
-              await supabase
+              const { error: updateError } = await supabase
                 .from('invitations')
                 .update({ used_at: new Date().toISOString() })
                 .eq('id', invitation.id);
+              
+              if (updateError) {
+                console.error('❌ Erreur lors de la mise à jour de l\'invitation:', updateError);
+              }
             }
           } else {
             // Aucun utilisateur trouvé, garder l'invitation comme en attente
+            console.log(`👤 Aucun utilisateur trouvé pour: ${invitation.email}, invitation gardée en attente`);
             filteredInvitations.push(invitation);
           }
         }
       }
 
+      console.log(`📊 Invitations en attente après filtrage: ${filteredInvitations.length}`);
       setPendingInvitations(filteredInvitations);
 
     } catch (error: any) {
