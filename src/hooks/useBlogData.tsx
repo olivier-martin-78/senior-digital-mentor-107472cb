@@ -12,7 +12,7 @@ interface BlogPost {
   cover_image?: string;
   created_at: string;
   updated_at: string;
-  published?: boolean;
+  published: boolean;
   profiles: {
     id: string;
     email: string;
@@ -26,7 +26,7 @@ interface BlogAlbum {
   id: string;
   name: string;
   author_id: string;
-  thumbnail_url?: string;
+  thumbnail_url: string | null;
   description: string;
   created_at: string;
   profiles: {
@@ -134,6 +134,7 @@ export const useBlogData = (
 
           const postsWithProfiles = postsData.map(post => ({
             ...post,
+            published: post.published ?? false,
             profiles: profilesMap[post.author_id] || {
               id: post.author_id,
               email: 'unknown@example.com',
@@ -177,6 +178,7 @@ export const useBlogData = (
           const albumsWithProfiles = albumsData.map(album => ({
             ...album,
             description: album.description || '',
+            thumbnail_url: album.thumbnail_url,
             profiles: profilesMap[album.author_id] || {
               id: album.author_id,
               email: 'unknown@example.com',
