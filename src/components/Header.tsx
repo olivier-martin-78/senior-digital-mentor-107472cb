@@ -49,7 +49,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3 text-2xl font-serif text-tranches-charcoal hover:text-tranches-sage transition-colors">
             <img 
-              src="/Digitar.png" 
+              src="/SeniorDigital.png" 
               alt="Senior Digital Mentor" 
               className="h-10 w-auto"
             />
