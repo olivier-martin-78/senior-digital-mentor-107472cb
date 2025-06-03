@@ -3,21 +3,16 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
-import BlogSearch from '@/components/blog/BlogSearch';
 import BlogFilters from '@/components/blog/BlogFilters';
 import { useBlogData } from '@/hooks/useBlogData';
 import DateRangeFilter from '@/components/DateRangeFilter';
-import { useAuth } from '@/contexts/AuthContext';
-import GroupDiagnostic from '@/components/GroupDiagnostic';
 
 const Blog = () => {
-  const { user, hasRole, getEffectiveUserId, profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showDiagnostic, setShowDiagnostic] = useState(hasRole('admin')); // Afficher par défaut pour les admins
   
   const { 
     posts, 
@@ -26,21 +21,13 @@ const Blog = () => {
     hasCreatePermission 
   } = useBlogData(searchTerm, selectedAlbum || '', startDate, endDate, null);
 
-  console.log('🎯 Blog.tsx - RENDU PAGE BLOG avec données complètes:', {
-    user: user?.email,
-    effectiveUserId: getEffectiveUserId(),
-    effectiveProfile: profile?.email,
+  console.log('🎯 Blog.tsx - RENDU PAGE BLOG:', {
     albumsCount: albums.length,
-    albumNames: albums.map(a => a.name),
     postsCount: posts.length,
-    postTitles: posts.map(p => p.title),
     hasCreatePermission,
-    isAdmin: hasRole('admin'),
-    isEditor: hasRole('editor'),
     loading,
     searchTerm,
-    selectedAlbum,
-    albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
+    selectedAlbum
   });
 
   const handleClearFilters = () => {
@@ -48,10 +35,6 @@ const Blog = () => {
     setEndDate('');
     setSelectedAlbum(null);
     setSelectedCategories([]);
-  };
-
-  const handleSearch = (newSearchTerm: string) => {
-    setSearchTerm(newSearchTerm);
   };
 
   const toggleCategorySelection = (categoryId: string) => {
@@ -70,19 +53,6 @@ const Blog = () => {
           albums={albums}
           hasCreatePermission={hasCreatePermission}
         />
-
-        {hasRole('admin') && (
-          <div className="mb-4">
-            <button
-              onClick={() => setShowDiagnostic(!showDiagnostic)}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              {showDiagnostic ? 'Masquer' : 'Afficher'} diagnostic groupes
-            </button>
-          </div>
-        )}
-
-        {showDiagnostic && <GroupDiagnostic />}
         
         <BlogFilters 
           searchQuery={searchTerm}

@@ -59,43 +59,17 @@ export const useBlogData = (
       return;
     }
 
-    console.log('🔍 Récupération blog data avec logique applicative');
+    console.log('🔍 Récupération blog data');
     setLoading(true);
 
     try {
-      // Récupérer d'abord les groupes de l'utilisateur
-      const { data: userGroups, error: groupsError } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', user.id);
-
-      if (groupsError) {
-        console.error('❌ Erreur récupération groupes:', groupsError);
-        setLoading(false);
-        return;
-      }
-
-      const groupIds = userGroups?.map(g => g.group_id) || [];
-      
-      // Récupérer les membres des mêmes groupes
-      let authorizedUsers = [user.id];
-      if (groupIds.length > 0) {
-        const { data: groupMembers, error: membersError } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-        
-        if (!membersError && groupMembers) {
-          const additionalUsers = groupMembers.map(gm => gm.user_id).filter(id => id !== user.id);
-          authorizedUsers = [...authorizedUsers, ...additionalUsers];
-        }
-      }
-
-      // Récupérer les posts avec logique d'accès côté application
+      // Récupérer les posts avec RLS automatique
       let postsQuery = supabase
         .from('blog_posts')
-        .select('*')
-        .in('author_id', authorizedUsers)
+        .select(`
+          *,
+          profiles(id, email, display_name, avatar_url, created_at)
+        `)
         .order('created_at', { ascending: false });
 
       // Appliquer les filtres
@@ -116,85 +90,57 @@ export const useBlogData = (
 
       if (postsError) {
         console.error('❌ Erreur récupération posts:', postsError);
+        setPosts([]);
       } else {
         console.log('✅ Posts récupérés:', postsData?.length || 0);
         
-        if (postsData && postsData.length > 0) {
-          // Récupérer les profils des auteurs
-          const userIds = [...new Set(postsData.map(post => post.author_id))];
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, email, display_name, avatar_url, created_at')
-            .in('id', userIds);
+        const postsWithProfiles = (postsData || []).map(post => ({
+          ...post,
+          published: post.published ?? false,
+          profiles: post.profiles || {
+            id: post.author_id,
+            email: 'unknown@example.com',
+            display_name: 'Utilisateur inconnu',
+            avatar_url: null,
+            created_at: new Date().toISOString()
+          }
+        }));
 
-          const profilesMap = profiles?.reduce((acc, profile) => {
-            acc[profile.id] = profile;
-            return acc;
-          }, {} as Record<string, any>) || {};
-
-          const postsWithProfiles = postsData.map(post => ({
-            ...post,
-            published: post.published ?? false,
-            profiles: profilesMap[post.author_id] || {
-              id: post.author_id,
-              email: 'unknown@example.com',
-              display_name: 'Utilisateur inconnu',
-              avatar_url: null,
-              created_at: new Date().toISOString()
-            }
-          }));
-
-          setPosts(postsWithProfiles);
-        } else {
-          setPosts([]);
-        }
+        setPosts(postsWithProfiles);
       }
 
-      // Récupérer les albums avec logique d'accès côté application
+      // Récupérer les albums avec RLS automatique
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
-        .select('*')
-        .in('author_id', authorizedUsers)
+        .select(`
+          *,
+          profiles(id, email, display_name, avatar_url, created_at)
+        `)
         .order('created_at', { ascending: false });
 
       if (albumsError) {
         console.error('❌ Erreur récupération albums:', albumsError);
+        setAlbums([]);
       } else {
         console.log('✅ Albums récupérés:', albumsData?.length || 0);
         
-        if (albumsData && albumsData.length > 0) {
-          // Récupérer les profils des auteurs
-          const userIds = [...new Set(albumsData.map(album => album.author_id))];
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, email, display_name, avatar_url, created_at')
-            .in('id', userIds);
+        const albumsWithProfiles = (albumsData || []).map(album => ({
+          ...album,
+          description: album.description || '',
+          thumbnail_url: album.thumbnail_url,
+          profiles: album.profiles || {
+            id: album.author_id,
+            email: 'unknown@example.com',
+            display_name: 'Utilisateur inconnu',
+            avatar_url: null,
+            created_at: new Date().toISOString()
+          }
+        }));
 
-          const profilesMap = profiles?.reduce((acc, profile) => {
-            acc[profile.id] = profile;
-            return acc;
-          }, {} as Record<string, any>) || {};
-
-          const albumsWithProfiles = albumsData.map(album => ({
-            ...album,
-            description: album.description || '',
-            thumbnail_url: album.thumbnail_url,
-            profiles: profilesMap[album.author_id] || {
-              id: album.author_id,
-              email: 'unknown@example.com',
-              display_name: 'Utilisateur inconnu',
-              avatar_url: null,
-              created_at: new Date().toISOString()
-            }
-          }));
-
-          setAlbums(albumsWithProfiles);
-        } else {
-          setAlbums([]);
-        }
+        setAlbums(albumsWithProfiles);
       }
 
-      // Déterminer les permissions de création - maintenant seuls admin et editor peuvent créer
+      // Déterminer les permissions de création - seuls admin et editor peuvent créer
       setHasCreatePermission(hasRole('admin') || hasRole('editor'));
 
     } catch (error) {
