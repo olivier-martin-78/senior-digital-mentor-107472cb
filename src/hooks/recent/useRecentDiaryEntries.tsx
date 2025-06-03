@@ -17,6 +17,26 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
     console.log('🔍 Récupération diary entries avec logique applicative:', effectiveUserId);
 
     try {
+      // Récupérer d'abord les groupes de l'utilisateur
+      const { data: userGroups } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', effectiveUserId);
+
+      const groupIds = userGroups?.map(g => g.group_id) || [];
+      
+      // Récupérer les membres des mêmes groupes
+      let authorizedUsers = [effectiveUserId];
+      if (groupIds.length > 0) {
+        const { data: groupMembers } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', groupIds);
+        
+        const additionalUsers = groupMembers?.map(gm => gm.user_id).filter(id => id !== effectiveUserId) || [];
+        authorizedUsers = [...authorizedUsers, ...additionalUsers];
+      }
+
       // Récupérer les entrées avec logique d'accès côté application
       const { data: entries, error } = await supabase
         .from('diary_entries')
@@ -30,7 +50,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           user_id,
           profiles!diary_entries_user_id_fkey(id, email, display_name)
         `)
-        .or(`user_id.eq.${effectiveUserId},user_id.in.(${await getAuthorizedUserIds(effectiveUserId)})`)
+        .in('user_id', authorizedUsers)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -61,28 +81,6 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       setDiaryEntries([]);
     }
   }, [effectiveUserId]);
-
-  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
-  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
-    try {
-      const { data: groupMembers } = await supabase
-        .from('group_members')
-        .select(`
-          user_id,
-          group_members_same_group:group_members!inner(user_id)
-        `)
-        .eq('group_members.user_id', userId);
-
-      const userIds = groupMembers?.flatMap(gm => 
-        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
-      ).filter(id => id !== userId) || [];
-
-      return userIds.join(',') || 'null';
-    } catch (error) {
-      console.error('Erreur récupération groupe membres:', error);
-      return 'null';
-    }
-  };
 
   useEffect(() => {
     fetchDiaryEntries();

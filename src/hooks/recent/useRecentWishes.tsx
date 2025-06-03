@@ -17,6 +17,26 @@ export const useRecentWishes = () => {
     console.log('🔍 Récupération wishes avec logique applicative:', user.id);
 
     try {
+      // Récupérer d'abord les groupes de l'utilisateur
+      const { data: userGroups } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = userGroups?.map(g => g.group_id) || [];
+      
+      // Récupérer les membres des mêmes groupes
+      let authorizedUsers = [user.id];
+      if (groupIds.length > 0) {
+        const { data: groupMembers } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', groupIds);
+        
+        const additionalUsers = groupMembers?.map(gm => gm.user_id).filter(id => id !== user.id) || [];
+        authorizedUsers = [...authorizedUsers, ...additionalUsers];
+      }
+
       // Récupérer les souhaits avec logique d'accès côté application
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
@@ -31,7 +51,7 @@ export const useRecentWishes = () => {
           author_id,
           profiles!wish_posts_author_id_fkey(id, email, display_name)
         `)
-        .or(`author_id.eq.${user.id},author_id.in.(${await getAuthorizedUserIds(user.id)})`)
+        .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -63,28 +83,6 @@ export const useRecentWishes = () => {
       setWishes([]);
     }
   }, [user]);
-
-  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
-  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
-    try {
-      const { data: groupMembers } = await supabase
-        .from('group_members')
-        .select(`
-          user_id,
-          group_members_same_group:group_members!inner(user_id)
-        `)
-        .eq('group_members.user_id', userId);
-
-      const userIds = groupMembers?.flatMap(gm => 
-        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
-      ).filter(id => id !== userId) || [];
-
-      return userIds.join(',') || 'null';
-    } catch (error) {
-      console.error('Erreur récupération groupe membres:', error);
-      return 'null';
-    }
-  };
 
   useEffect(() => {
     fetchWishes();

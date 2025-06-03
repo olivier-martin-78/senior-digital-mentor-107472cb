@@ -12,6 +12,11 @@ interface BlogPost {
   cover_image?: string;
   created_at: string;
   published?: boolean;
+  profiles?: {
+    id: string;
+    email: string;
+    display_name: string | null;
+  };
 }
 
 interface BlogAlbum {
@@ -21,6 +26,11 @@ interface BlogAlbum {
   thumbnail_url?: string;
   description?: string;
   created_at: string;
+  profiles?: {
+    id: string;
+    email: string;
+    display_name: string | null;
+  };
 }
 
 export const useBlogData = (
@@ -48,11 +58,34 @@ export const useBlogData = (
     setLoading(true);
 
     try {
+      // Récupérer d'abord les groupes de l'utilisateur
+      const { data: userGroups } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = userGroups?.map(g => g.group_id) || [];
+      
+      // Récupérer les membres des mêmes groupes
+      let authorizedUsers = [user.id];
+      if (groupIds.length > 0) {
+        const { data: groupMembers } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', groupIds);
+        
+        const additionalUsers = groupMembers?.map(gm => gm.user_id).filter(id => id !== user.id) || [];
+        authorizedUsers = [...authorizedUsers, ...additionalUsers];
+      }
+
       // Récupérer les posts avec logique d'accès côté application
       let postsQuery = supabase
         .from('blog_posts')
-        .select('*')
-        .or(`author_id.eq.${user.id},author_id.in.(${await getAuthorizedUserIds(user.id)})`)
+        .select(`
+          *,
+          profiles!blog_posts_author_id_fkey(id, email, display_name)
+        `)
+        .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
 
       // Appliquer les filtres
@@ -81,8 +114,11 @@ export const useBlogData = (
       // Récupérer les albums avec logique d'accès côté application
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
-        .select('*')
-        .or(`author_id.eq.${user.id},author_id.in.(${await getAuthorizedUserIds(user.id)})`)
+        .select(`
+          *,
+          profiles!blog_albums_author_id_fkey(id, email, display_name)
+        `)
+        .in('author_id', authorizedUsers)
         .order('created_at', { ascending: false });
 
       if (albumsError) {
@@ -101,28 +137,6 @@ export const useBlogData = (
       setLoading(false);
     }
   }, [user, searchTerm, selectedAlbum, startDate, endDate, hasRole]);
-
-  // Fonction pour récupérer les IDs des utilisateurs autorisés via les groupes
-  const getAuthorizedUserIds = async (userId: string): Promise<string> => {
-    try {
-      const { data: groupMembers } = await supabase
-        .from('group_members')
-        .select(`
-          user_id,
-          group_members_same_group:group_members!inner(user_id)
-        `)
-        .eq('group_members.user_id', userId);
-
-      const userIds = groupMembers?.flatMap(gm => 
-        gm.group_members_same_group?.map(sgm => sgm.user_id) || []
-      ).filter(id => id !== userId) || [];
-
-      return userIds.join(',') || 'null';
-    } catch (error) {
-      console.error('Erreur récupération groupe membres:', error);
-      return 'null';
-    }
-  };
 
   useEffect(() => {
     fetchData();
