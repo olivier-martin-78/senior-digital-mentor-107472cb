@@ -14,14 +14,48 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       return;
     }
 
-    console.log('🔍 ===== RÉCUPÉRATION ENTRÉES JOURNAL =====');
+    console.log('🔍 ===== DIAGNOSTIC DIARY ENTRIES DÉTAILLÉ =====');
     console.log('🔍 Utilisateur effectif:', effectiveUserId);
-    console.log('🔍 authorizedUserIds pour journal:', authorizedUserIds);
-    console.log('🔍 hasRole admin:', hasRole('admin'));
 
-    const items: RecentItem[] = [];
+    try {
+      // Test 1: Récupérer TOUTES les entrées de journal sans filtre
+      const { data: allEntries, error: allEntriesError } = await supabase
+        .from('diary_entries')
+        .select(`
+          id, 
+          title, 
+          created_at, 
+          activities, 
+          media_url,
+          media_type,
+          user_id,
+          profiles(email, display_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    if (hasRole('admin')) {
+      console.log('🔍 TOUTES les entrées journal (sans filtre RLS):', allEntries?.length || 0);
+      if (allEntriesError) {
+        console.error('❌ Erreur récupération toutes les entrées:', allEntriesError);
+      } else if (allEntries) {
+        const entriesByAuthor = allEntries.reduce((acc, entry) => {
+          const authorEmail = entry.profiles?.email || 'Email non disponible';
+          if (!acc[authorEmail]) {
+            acc[authorEmail] = 0;
+          }
+          acc[authorEmail]++;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('🔍 Entrées par auteur (toutes):', entriesByAuthor);
+
+        // Vérifier spécifiquement les entrées de Conception
+        const conceptionEntries = allEntries.filter(entry => 
+          entry.profiles?.email?.toLowerCase().includes('conception')
+        );
+        console.log('🔍 Entrées de Conception trouvées (sans filtre):', conceptionEntries.length);
+      }
+
+      // Test 2: Récupérer avec les politiques RLS
       const { data: entries, error: entriesError } = await supabase
         .from('diary_entries')
         .select(`
@@ -36,94 +70,53 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         .order('created_at', { ascending: false })
         .limit(15);
 
-      console.log('🔍 Admin diary entries query result:', { entries, error: entriesError });
+      console.log('🔍 Entrées journal AVEC politiques RLS:', entries?.length || 0);
+      if (entriesError) {
+        console.error('❌ Erreur récupération entries avec RLS:', entriesError);
+        setDiaryEntries([]);
+        return;
+      }
 
       if (entries) {
         const userIds = [...new Set(entries.map(entry => entry.user_id))];
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, display_name')
+          .select('id, display_name, email')
           .in('id', userIds);
         
         const profilesMap = profiles?.reduce((acc, profile) => {
-          acc[profile.id] = profile.display_name || 'Utilisateur';
+          acc[profile.id] = {
+            name: profile.display_name || profile.email || 'Utilisateur',
+            email: profile.email
+          };
           return acc;
-        }, {} as { [key: string]: string }) || {};
+        }, {} as { [key: string]: { name: string; email: string } }) || {};
 
-        items.push(...entries.map(entry => {
-          console.log('🔍 Processing admin diary entry:', {
-            id: entry.id,
-            title: entry.title,
-            media_url: entry.media_url,
-            media_type: entry.media_type
-          });
-          
+        console.log('🔍 Profiles récupérés pour diary:', profilesMap);
+
+        const items = entries.map(entry => {
+          const profile = profilesMap[entry.user_id];
           return {
             id: entry.id,
             title: entry.title || 'Entrée sans titre',
             type: 'diary' as const,
             created_at: entry.created_at,
-            author: entry.user_id === effectiveUserId ? 'Moi' : (profilesMap[entry.user_id] || 'Utilisateur'),
+            author: entry.user_id === effectiveUserId ? 'Moi' : (profile?.name || 'Utilisateur'),
             content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
             media_url: entry.media_url
           };
-        }));
-      }
-    } else {
-      console.log('🔍 UTILISATEUR NON-ADMIN - récupération entrées journal de l\'utilisateur effectif uniquement');
-      
-      const { data: entries, error: diaryError } = await supabase
-        .from('diary_entries')
-        .select(`
-          id, 
-          title, 
-          created_at, 
-          activities, 
-          media_url,
-          media_type,
-          user_id
-        `)
-        .eq('user_id', effectiveUserId)
-        .order('created_at', { ascending: false })
-        .limit(15);
+        });
 
-      console.log('🔍 Requête entrées journal utilisateur effectif:', {
-        data: entries,
-        error: diaryError,
-        count: entries?.length || 0
-      });
+        console.log('🔍 Items diary finaux:', items.length);
+        console.log('🔍 Auteurs diary items:', items.map(i => i.author));
 
-      if (entries) {
-        items.push(...entries.map(entry => {
-          console.log('🔍 Processing user diary entry:', {
-            id: entry.id,
-            title: entry.title,
-            media_url: entry.media_url,
-            media_type: entry.media_type
-          });
-          
-          return {
-            id: entry.id,
-            title: entry.title || 'Entrée sans titre',
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: 'Moi',
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          };
-        }));
+        setDiaryEntries(items);
       }
+    } catch (error) {
+      console.error('💥 Erreur critique useRecentDiaryEntries:', error);
+      setDiaryEntries([]);
     }
-
-    console.log('🔍 Final diary entries for Recent:', items.map(item => ({ 
-      id: item.id, 
-      title: item.title, 
-      media_url: item.media_url,
-      hasMedia: !!item.media_url
-    })));
-
-    setDiaryEntries(items);
-  }, [effectiveUserId, hasRole]);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     fetchDiaryEntries();

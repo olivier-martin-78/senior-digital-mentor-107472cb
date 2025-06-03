@@ -14,11 +14,49 @@ export const useRecentWishes = () => {
       return;
     }
 
+    console.log('🔍 ===== DIAGNOSTIC WISHES DÉTAILLÉ =====');
+    console.log('🔍 Utilisateur connecté:', user.email, user.id);
+
     try {
-      console.log('useRecentWishes - Utilisation de la nouvelle logique simplifiée');
-      
-      // Avec la nouvelle logique, les politiques RLS gèrent automatiquement l'accès
-      // basé sur l'appartenance aux groupes d'invitation
+      // Test 1: Récupérer TOUS les souhaits sans filtre
+      const { data: allWishes, error: allWishesError } = await supabase
+        .from('wish_posts')
+        .select(`
+          id,
+          title,
+          content,
+          created_at,
+          first_name,
+          cover_image,
+          published,
+          author_id,
+          profiles(display_name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      console.log('🔍 TOUS les souhaits (sans filtre RLS):', allWishes?.length || 0);
+      if (allWishesError) {
+        console.error('❌ Erreur récupération tous les souhaits:', allWishesError);
+      } else if (allWishes) {
+        const wishesByAuthor = allWishes.reduce((acc, wish) => {
+          const authorEmail = wish.profiles?.email || 'Email non disponible';
+          if (!acc[authorEmail]) {
+            acc[authorEmail] = 0;
+          }
+          acc[authorEmail]++;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('🔍 Souhaits par auteur (tous):', wishesByAuthor);
+
+        // Vérifier spécifiquement les souhaits de Conception
+        const conceptionWishes = allWishes.filter(wish => 
+          wish.profiles?.email?.toLowerCase().includes('conception')
+        );
+        console.log('🔍 Souhaits de Conception trouvés (sans filtre):', conceptionWishes.length);
+      }
+
+      // Test 2: Récupérer avec les politiques RLS
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
         .select(`
@@ -30,32 +68,46 @@ export const useRecentWishes = () => {
           cover_image,
           published,
           author_id,
-          profiles(display_name)
+          profiles(display_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(15);
 
       if (error) {
-        console.error('useRecentWishes - Erreur:', error);
+        console.error('❌ Erreur récupération souhaits avec RLS:', error);
+        setWishes([]);
         return;
       }
 
+      console.log('🔍 Souhaits AVEC politiques RLS:', wishesData?.length || 0);
       if (wishesData) {
-        console.log('✅ useRecentWishes - Souhaits récents récupérés avec nouvelle logique:', wishesData.length);
+        const wishesByAuthorRLS = wishesData.reduce((acc, wish) => {
+          const authorEmail = wish.profiles?.email || 'Email non disponible';
+          if (!acc[authorEmail]) {
+            acc[authorEmail] = 0;
+          }
+          acc[authorEmail]++;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('🔍 Souhaits par auteur (avec RLS):', wishesByAuthorRLS);
+
         const items = wishesData.map(wish => ({
           id: wish.id,
           title: wish.title,
           type: 'wish' as const,
           created_at: wish.created_at,
-          author: wish.first_name || wish.profiles?.display_name || 'Anonyme',
+          author: wish.first_name || wish.profiles?.display_name || wish.profiles?.email || 'Anonyme',
           content_preview: wish.content?.substring(0, 150) + '...',
           cover_image: wish.cover_image,
           first_name: wish.first_name
         }));
+
+        console.log('🔍 Items wishes finaux:', items.length);
+        console.log('🔍 Auteurs wishes:', items.map(i => i.author));
         setWishes(items);
       }
     } catch (error) {
-      console.error('useRecentWishes - Erreur:', error);
+      console.error('❌ Erreur useRecentWishes:', error);
       setWishes([]);
     }
   }, [user]);
