@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail, Calendar } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, MapPin, Clock, Edit, ExternalLink, User, Mail, Calendar, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { WishPost as WishPostType } from '@/types/supabase';
 import { sanitizeInput, isValidUrl } from '@/utils/securityUtils';
@@ -23,6 +23,7 @@ const WishPost = () => {
   const [wish, setWish] = useState<WishPostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(16/9);
 
   useEffect(() => {
@@ -113,6 +114,39 @@ const WishPost = () => {
       });
     } finally {
       setPublishLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!wish || !window.confirm('Êtes-vous sûr de vouloir supprimer ce souhait ? Cette action est irréversible.')) {
+      return;
+    }
+    
+    try {
+      setDeleteLoading(true);
+      
+      const { error } = await supabase
+        .from('wish_posts')
+        .delete()
+        .eq('id', wish.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Souhait supprimé",
+        description: "Le souhait a été supprimé avec succès.",
+      });
+      
+      navigate('/wishes');
+    } catch (error) {
+      console.error('Error deleting wish:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de supprimer le souhait.",
+      });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -220,6 +254,7 @@ const WishPost = () => {
   // CORRECTION: Affichage des boutons selon les permissions
   const canManagePublication = user?.id === wish.author_id || hasRole('admin');
   const canEdit = user?.id === wish.author_id || hasRole('admin');
+  const canDelete = hasRole('admin');
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -277,6 +312,16 @@ const WishPost = () => {
                       <Edit className="mr-2 h-4 w-4" />
                       Éditer
                     </Link>
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={deleteLoading}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deleteLoading ? "Suppression..." : "Supprimer"}
                   </Button>
                 )}
               </div>
