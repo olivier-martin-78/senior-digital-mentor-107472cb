@@ -258,7 +258,7 @@ const MyInvitationGroups = () => {
           user_id, 
           role, 
           added_at,
-          profiles:user_id (
+          profiles (
             display_name,
             email
           )
