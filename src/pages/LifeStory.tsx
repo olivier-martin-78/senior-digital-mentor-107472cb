@@ -100,11 +100,12 @@ const LifeStory = () => {
     }
   };
 
-  // CORRECTION: Permettre l'édition de sa propre histoire même avec le rôle "reader"
-  // - Si c'est sa propre histoire (selectedUserId est null), l'utilisateur peut toujours éditer
-  // - Si c'est l'histoire de quelqu'un d'autre, appliquer les restrictions de rôle
+  // CORRECTION FINALE: Les permissions se basent uniquement sur qui possède l'histoire
+  // - Si c'est sa propre histoire (selectedUserId est null OU selectedUserId === user?.id), TOUJOURS autoriser l'édition
+  // - Si c'est l'histoire de quelqu'un d'autre, interdire l'édition (mode lecture seule)
+  // Le rôle "reader" ne s'applique que pour les histoires des autres, jamais pour sa propre histoire
   const isViewingOwnStory = selectedUserId === null || selectedUserId === user?.id;
-  const canSave = isViewingOwnStory || !hasRole('reader');
+  const canSave = isViewingOwnStory; // Toujours permettre l'édition de sa propre histoire
   const isViewingOthersStory = selectedUserId !== null && selectedUserId !== user?.id;
 
   console.log('🏠 Permissions calculées:', {
@@ -117,7 +118,7 @@ const LifeStory = () => {
     userIdMatch: selectedUserId === user?.id,
     isSelectedUserIdNull: selectedUserId === null,
     isReader,
-    finalDecision: `canSave: ${canSave}, because isViewingOwnStory: ${isViewingOwnStory} OR !hasRole('reader'): ${!hasRole('reader')}`
+    finalDecision: `canSave: ${canSave}, car isViewingOwnStory: ${isViewingOwnStory} (le rôle ne compte pas pour sa propre histoire)`
   });
 
   if (lifeStoryData.isLoading) {
