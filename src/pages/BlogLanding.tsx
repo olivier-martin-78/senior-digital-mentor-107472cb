@@ -180,19 +180,19 @@ const BlogLanding = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Se former au digital et à l'IA</span>
+              <span className="text-tranches-charcoal">Se former au digital & à l'IA</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Utilisation des outils de communication</span>
+              <span className="text-tranches-charcoal">Utiliser des outils de communication</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Interaction avec son cercle amical et social</span>
+              <span className="text-tranches-charcoal">Intéragir avec son cercle amical et social</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Production de contenu digitaux</span>
+              <span className="text-tranches-charcoal">Créer des contenus digitaux à partager</span>
             </div>
           </div>
 
