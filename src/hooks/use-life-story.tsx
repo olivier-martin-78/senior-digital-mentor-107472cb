@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -327,11 +328,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    setTimeout(() => {
-      if (!isSaving) {
-        saveNow();
-      }
-    }, 1000);
+    // SUPPRESSION DE LA SAUVEGARDE AUTOMATIQUE
+    // La sauvegarde ne se fera que lors du clic sur le bouton "Enregistrer"
   };
 
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
@@ -350,6 +348,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
+    // RÉDUCTION DE LA SAUVEGARDE AUTOMATIQUE pour l'audio
+    // On garde une sauvegarde pour l'audio car c'est important de ne pas perdre l'enregistrement
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
@@ -373,6 +373,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
+    // RÉDUCTION DE LA SAUVEGARDE AUTOMATIQUE pour la suppression audio
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
