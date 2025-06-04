@@ -31,9 +31,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     ? existingAudioUrl.trim() 
     : null;
   
-  // DEBUG: Log l'état initial avec plus de détails (uniquement si shouldLog)
-  if (shouldLog) {
-    console.log('🎤 VoiceAnswerRecorder - État initial corrigé:', {
+  // DEBUG: Log l'état initial avec plus de détails (uniquement pour question 1 chapitre 1)
+  if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+    console.log('🎤 RECORDER - Question 1 Chapitre 1 - État initial:', {
       chapterId,
       questionId,
       existingAudioUrl,
@@ -41,7 +41,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       normalizedExistingUrl,
       hasValidAudio: !!normalizedExistingUrl,
       isUploading,
-      isReader: hasRole('reader')
+      isReader: hasRole('reader'),
+      timestamp: new Date().toISOString()
     });
   }
   
@@ -49,13 +50,16 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   const canRecord = !isReader;
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
-    if (shouldLog) {
-      console.log('🎤 VoiceAnswerRecorder - handleAudioUrlChange:', { 
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - handleAudioUrlChange:', { 
         chapterId, 
         questionId, 
         audioUrl, 
+        audioUrlType: typeof audioUrl,
         preventAutoSave: !!preventAutoSave,
-        previousUrl: normalizedExistingUrl
+        previousUrl: normalizedExistingUrl,
+        timestamp: new Date().toISOString()
       });
     }
     
@@ -63,16 +67,21 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     onAudioUrlChange(chapterId, questionId, audioUrl, false);
     
     if (audioUrl && audioUrl.trim() !== '') {
-      if (shouldLog) {
-        console.log('🎤 VoiceAnswerRecorder - Audio URL reçue, enregistrement réussi');
+      // LOG DÉTAILLÉ pour question 1 chapitre 1
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Audio URL reçue, enregistrement réussi:', {
+          audioUrl,
+          audioUrlLength: audioUrl.length
+        });
       }
       // Créer un blob factice pour compatibilité
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       setIsUploading(false);
     } else {
-      if (shouldLog) {
-        console.log('🎤 VoiceAnswerRecorder - Suppression audio');
+      // LOG DÉTAILLÉ pour question 1 chapitre 1
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Suppression audio');
       }
       onAudioDeleted(chapterId, questionId, false);
       setIsUploading(false);
@@ -80,8 +89,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   };
 
   const handleDeleteExistingAudio = () => {
-    if (shouldLog) {
-      console.log('🎤 VoiceAnswerRecorder - Suppression manuelle de l\'audio existant');
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - Suppression manuelle de l\'audio existant');
     }
     // CORRECTION: Forcer la sauvegarde lors de la suppression
     onAudioUrlChange(chapterId, questionId, null, false);
@@ -89,8 +99,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   };
 
   const handleUploadStart = () => {
-    if (shouldLog) {
-      console.log('🎤 VoiceAnswerRecorder - Début upload');
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - Début upload');
     }
     setIsUploading(true);
   };
@@ -98,8 +109,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   // CORRECTION: Logique simplifiée pour l'affichage
   const shouldShowPlayer = normalizedExistingUrl && !isUploading;
   
-  if (shouldLog) {
-    console.log('🎤 VoiceAnswerRecorder - Décision d\'affichage:', {
+  // LOG DÉTAILLÉ pour question 1 chapitre 1
+  if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+    console.log('🎤 RECORDER - Question 1 Chapitre 1 - Décision d\'affichage:', {
       shouldShowPlayer,
       hasNormalizedUrl: !!normalizedExistingUrl,
       normalizedExistingUrl,
@@ -111,30 +123,33 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
 
   // Si un audio valide existe ET qu'on n'est pas en train d'uploader, afficher le lecteur
   if (shouldShowPlayer) {
-    if (shouldLog) {
-      console.log('🎤 VoiceAnswerRecorder - ✅ Affichage du lecteur avec URL:', normalizedExistingUrl);
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - ✅ Affichage du lecteur avec URL:', normalizedExistingUrl);
     }
     return (
       <VoiceAnswerPlayer
         audioUrl={normalizedExistingUrl}
         onDelete={handleDeleteExistingAudio}
         readOnly={isReader}
-        shouldLog={shouldLog}
+        shouldLog={shouldLog && chapterId === 'chapter-1' && questionId === 'question-1'}
       />
     );
   }
 
   // Si pas d'audio existant et que l'utilisateur est un reader, ne rien afficher
   if (isReader) {
-    if (shouldLog) {
-      console.log('🎤 VoiceAnswerRecorder - Reader sans audio, pas d\'affichage');
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - Reader sans audio, pas d\'affichage');
     }
     return null;
   }
 
   // Sinon, afficher l'enregistreur
-  if (shouldLog) {
-    console.log('🎤 VoiceAnswerRecorder - Affichage de l\'enregistreur');
+  // LOG DÉTAILLÉ pour question 1 chapitre 1
+  if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+    console.log('🎤 RECORDER - Question 1 Chapitre 1 - Affichage de l\'enregistreur');
   }
   return (
     <AudioRecorder
@@ -142,7 +157,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       questionId={questionId}
       onAudioUrlChange={handleAudioUrlChange}
       onUploadStart={handleUploadStart}
-      shouldLog={shouldLog}
+      shouldLog={shouldLog && chapterId === 'chapter-1' && questionId === 'question-1'}
     />
   );
 };

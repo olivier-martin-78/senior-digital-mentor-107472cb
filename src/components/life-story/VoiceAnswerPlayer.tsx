@@ -26,6 +26,17 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
 
+  // LOG DÉTAILLÉ pour question 1 chapitre 1
+  if (shouldLog) {
+    console.log('🎵 PLAYER - Question 1 Chapitre 1 - État initial:', {
+      audioUrl,
+      accessibleUrl,
+      isLoadingUrl,
+      urlError,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // Générer l'URL accessible à partir du chemin
   useEffect(() => {
     const generateAccessibleUrl = async () => {
@@ -39,7 +50,11 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
       try {
         if (shouldLog) {
-          console.log('🎵 VoiceAnswerPlayer - Génération URL pour chemin:', audioUrl);
+          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Génération URL pour chemin:', {
+            audioUrl,
+            audioUrlType: typeof audioUrl,
+            audioUrlLength: audioUrl.length
+          });
         }
 
         const url = await getAccessibleAudioUrl(audioUrl);
@@ -47,13 +62,17 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         if (url) {
           setAccessibleUrl(url);
           if (shouldLog) {
-            console.log('✅ VoiceAnswerPlayer - URL générée:', url);
+            console.log('✅ PLAYER - Question 1 Chapitre 1 - URL générée:', {
+              originalPath: audioUrl,
+              generatedUrl: url,
+              urlLength: url.length
+            });
           }
         } else {
           throw new Error('Impossible de générer l\'URL d\'accès');
         }
       } catch (error) {
-        console.error('❌ VoiceAnswerPlayer - Erreur génération URL:', error);
+        console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur génération URL:', error);
         setUrlError('Impossible de charger l\'audio');
         setAccessibleUrl(null);
       } finally {
@@ -67,13 +86,27 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   // Créer l'élément audio quand l'URL accessible est disponible
   useEffect(() => {
     if (accessibleUrl) {
+      if (shouldLog) {
+        console.log('🎵 PLAYER - Question 1 Chapitre 1 - Création élément audio avec URL:', accessibleUrl);
+      }
+      
       const audio = new Audio(accessibleUrl);
       
       const updateTime = () => setCurrentTime(audio.currentTime);
-      const updateDuration = () => setDuration(audio.duration);
-      const handleEnded = () => setIsPlaying(false);
+      const updateDuration = () => {
+        setDuration(audio.duration);
+        if (shouldLog) {
+          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Durée audio chargée:', audio.duration);
+        }
+      };
+      const handleEnded = () => {
+        setIsPlaying(false);
+        if (shouldLog) {
+          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Lecture terminée');
+        }
+      };
       const handleError = (e: any) => {
-        console.error('❌ Erreur audio:', e);
+        console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur audio:', e);
         setUrlError('Erreur de lecture audio');
         setIsPlaying(false);
       };
@@ -92,16 +125,19 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audio.removeEventListener('error', handleError);
         audio.pause();
         setAudioElement(null);
+        if (shouldLog) {
+          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Nettoyage élément audio');
+        }
       };
     } else {
       setAudioElement(null);
     }
-  }, [accessibleUrl]);
+  }, [accessibleUrl, shouldLog]);
 
   const togglePlayPause = async () => {
     if (!audioElement) {
       if (shouldLog) {
-        console.log('❌ VoiceAnswerPlayer - Pas d\'élément audio disponible');
+        console.log('❌ PLAYER - Question 1 Chapitre 1 - Pas d\'élément audio disponible');
       }
       return;
     }
@@ -111,17 +147,17 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audioElement.pause();
         setIsPlaying(false);
         if (shouldLog) {
-          console.log('⏸️ VoiceAnswerPlayer - Audio mis en pause');
+          console.log('⏸️ PLAYER - Question 1 Chapitre 1 - Audio mis en pause');
         }
       } else {
         await audioElement.play();
         setIsPlaying(true);
         if (shouldLog) {
-          console.log('▶️ VoiceAnswerPlayer - Audio en lecture');
+          console.log('▶️ PLAYER - Question 1 Chapitre 1 - Audio en lecture');
         }
       }
     } catch (error) {
-      console.error('❌ Erreur de lecture audio:', error);
+      console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur de lecture audio:', error);
       setUrlError('Impossible de lire l\'audio');
       toast({
         title: "Erreur de lecture",
@@ -178,6 +214,10 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
 
   const handleDelete = () => {
+    if (shouldLog) {
+      console.log('🗑️ PLAYER - Question 1 Chapitre 1 - Suppression audio demandée');
+    }
+    
     if (audioElement) {
       audioElement.pause();
       setIsPlaying(false);
@@ -186,6 +226,9 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
 
   const handleRefreshUrl = () => {
+    if (shouldLog) {
+      console.log('🔄 PLAYER - Question 1 Chapitre 1 - Rafraîchissement URL demandé');
+    }
     // Forcer la régénération de l'URL
     setAccessibleUrl(null);
     setUrlError(null);
@@ -198,14 +241,15 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
 
   if (shouldLog) {
-    console.log('🎵 VoiceAnswerPlayer - État du rendu:', {
+    console.log('🎵 PLAYER - Question 1 Chapitre 1 - État du rendu:', {
       audioUrl,
       accessibleUrl: !!accessibleUrl,
       isLoadingUrl,
       urlError,
       hasAudioElement: !!audioElement,
       isPlaying,
-      readOnly
+      readOnly,
+      timestamp: new Date().toISOString()
     });
   }
 

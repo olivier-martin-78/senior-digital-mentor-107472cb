@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -99,9 +100,32 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
                     typeof existingQuestion.audioUrl === 'string' && 
                     existingQuestion.audioUrl.trim() !== '') {
                   validAudioUrl = existingQuestion.audioUrl.trim();
-                  console.log(`🎵 Audio trouvé pour ${initialQuestion.id}:`, validAudioUrl);
+                  
+                  // LOG DÉTAILLÉ pour question 1 chapitre 1
+                  if (initialChapter.id === 'chapter-1' && initialQuestion.id === 'question-1') {
+                    console.log('🎵 LOAD - Question 1 Chapitre 1 - Audio trouvé:', {
+                      questionId: initialQuestion.id,
+                      rawAudioUrl: existingQuestion.audioUrl,
+                      validAudioUrl,
+                      audioUrlType: typeof existingQuestion.audioUrl,
+                      audioUrlLength: existingQuestion.audioUrl?.length,
+                      isString: typeof existingQuestion.audioUrl === 'string',
+                      isTrimmed: existingQuestion.audioUrl?.trim() !== '',
+                      finalValidUrl: validAudioUrl
+                    });
+                  }
                 } else {
-                  console.log(`🎵 Pas d'audio valide pour ${initialQuestion.id}:`, existingQuestion.audioUrl);
+                  // LOG DÉTAILLÉ pour question 1 chapitre 1
+                  if (initialChapter.id === 'chapter-1' && initialQuestion.id === 'question-1') {
+                    console.log('🎵 LOAD - Question 1 Chapitre 1 - Pas d\'audio valide:', {
+                      questionId: initialQuestion.id,
+                      rawAudioUrl: existingQuestion.audioUrl,
+                      audioUrlType: typeof existingQuestion.audioUrl,
+                      hasAudioUrl: !!existingQuestion.audioUrl,
+                      isString: typeof existingQuestion.audioUrl === 'string',
+                      isTrimmed: existingQuestion.audioUrl && existingQuestion.audioUrl.trim() !== ''
+                    });
+                  }
                 }
                 
                 return {
@@ -124,15 +148,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           return initialChapter;
         });
 
-        console.log('🎵 Résumé des audios chargés:', 
-          mergedChapters.flatMap(ch => 
-            ch.questions.filter(q => q.audioUrl).map(q => ({
-              questionId: q.id,
-              audioPath: q.audioUrl,
-              isValid: !!(q.audioUrl && q.audioUrl.trim())
-            }))
-          )
-        );
+        // LOG DÉTAILLÉ pour question 1 chapitre 1 après merge
+        const chapter1 = mergedChapters.find(ch => ch.id === 'chapter-1');
+        const question1 = chapter1?.questions.find(q => q.id === 'question-1');
+        if (question1) {
+          console.log('🎵 LOAD - Question 1 Chapitre 1 - État final après merge:', {
+            questionId: question1.id,
+            audioUrl: question1.audioUrl,
+            hasAudioUrl: !!question1.audioUrl,
+            audioUrlType: typeof question1.audioUrl,
+            answer: question1.answer
+          });
+        }
 
         setData({
           ...storyData,
@@ -205,14 +232,19 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         currentDataUserId: data.user_id
       });
 
-      // Log des chemins audio avant sauvegarde
-      const audioPaths = data.chapters.flatMap(ch => 
-        ch.questions.filter(q => q.audioUrl).map(q => ({
-          questionId: q.id,
-          audioPath: q.audioUrl
-        }))
-      );
-      console.log('🎵 Chemins audio à sauvegarder:', audioPaths);
+      // LOG DÉTAILLÉ pour question 1 chapitre 1 avant sauvegarde
+      const chapter1 = data.chapters.find(ch => ch.id === 'chapter-1');
+      const question1 = chapter1?.questions.find(q => q.id === 'question-1');
+      if (question1) {
+        console.log('🎵 SAVE - Question 1 Chapitre 1 - État avant sauvegarde:', {
+          questionId: question1.id,
+          audioUrl: question1.audioUrl,
+          hasAudioUrl: !!question1.audioUrl,
+          audioUrlType: typeof question1.audioUrl,
+          audioUrlLength: question1.audioUrl?.length,
+          answer: question1.answer
+        });
+      }
 
       // Préparer les données pour la sauvegarde - PRÉSERVER les chemins audio existants
       const chaptersToSave = data.chapters.map(chapter => ({
@@ -223,6 +255,16 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
             ? question.audioUrl 
             : null;
           
+          // LOG DÉTAILLÉ pour question 1 chapitre 1
+          if (chapter.id === 'chapter-1' && question.id === 'question-1') {
+            console.log('🎵 SAVE - Question 1 Chapitre 1 - Normalisation audio:', {
+              questionId: question.id,
+              originalAudioUrl: question.audioUrl,
+              normalizedAudioPath,
+              willSaveAudio: !!normalizedAudioPath
+            });
+          }
+          
           return {
             id: question.id,
             text: question.text,
@@ -232,7 +274,17 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         })
       }));
 
-      console.log('💾 Chapitres préparés pour sauvegarde:', chaptersToSave);
+      // LOG DÉTAILLÉ pour question 1 chapitre 1 dans les données finales
+      const chapter1ToSave = chaptersToSave.find(ch => ch.id === 'chapter-1');
+      const question1ToSave = chapter1ToSave?.questions.find(q => q.id === 'question-1');
+      if (question1ToSave) {
+        console.log('🎵 SAVE - Question 1 Chapitre 1 - Données finales à sauvegarder:', {
+          questionId: question1ToSave.id,
+          audioUrl: question1ToSave.audioUrl,
+          hasAudioUrl: !!question1ToSave.audioUrl,
+          answer: question1ToSave.answer
+        });
+      }
 
       const dataToSave = {
         user_id: effectiveUserId, // UTILISER effectiveUserId de manière cohérente
@@ -246,7 +298,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       console.log('💾 Données à sauvegarder:', {
         user_id: dataToSave.user_id,
         chaptersCount: chaptersToSave.length,
-        audioCount: audioPaths.length
+        chaptersJson: dataToSave.chapters.substring(0, 200) + '...'
       });
 
       const { data: savedData, error } = await supabase
@@ -343,7 +395,17 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioPath: string) => {
     if (!data) return;
 
-    console.log('🎤 Audio enregistré:', { questionId, audioPath, dataUserId: data.user_id, effectiveUserId });
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (questionId === 'question-1') {
+      console.log('🎤 RECORD - Question 1 Chapitre 1 - Audio enregistré:', {
+        questionId,
+        audioPath,
+        audioBlobSize: audioBlob.size,
+        dataUserId: data.user_id,
+        effectiveUserId,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -355,6 +417,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // LOG DÉTAILLÉ pour question 1 chapitre 1 après mise à jour
+    if (questionId === 'question-1') {
+      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
+      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
+      console.log('🎤 RECORD - Question 1 Chapitre 1 - État après mise à jour:', {
+        questionId: updatedQuestion1?.id,
+        audioUrl: updatedQuestion1?.audioUrl,
+        hasAudioUrl: !!updatedQuestion1?.audioUrl,
+        audioBlobSize: updatedQuestion1?.audioBlob?.size
+      });
+    }
     
     // CORRECTION: Sauvegarde automatique systématique pour l'audio
     console.log('💾 Déclenchement sauvegarde automatique pour audio');
@@ -368,7 +442,15 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioDeleted = (questionId: string) => {
     if (!data) return;
 
-    console.log('🗑️ Audio supprimé:', { questionId, dataUserId: data.user_id, effectiveUserId });
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (questionId === 'question-1') {
+      console.log('🗑️ DELETE - Question 1 Chapitre 1 - Audio supprimé:', {
+        questionId,
+        dataUserId: data.user_id,
+        effectiveUserId,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -380,6 +462,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // LOG DÉTAILLÉ pour question 1 chapitre 1 après suppression
+    if (questionId === 'question-1') {
+      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
+      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
+      console.log('🗑️ DELETE - Question 1 Chapitre 1 - État après suppression:', {
+        questionId: updatedQuestion1?.id,
+        audioUrl: updatedQuestion1?.audioUrl,
+        hasAudioUrl: !!updatedQuestion1?.audioUrl,
+        audioBlob: updatedQuestion1?.audioBlob
+      });
+    }
     
     // CORRECTION: Sauvegarde automatique pour la suppression
     console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
@@ -393,12 +487,32 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const handleAudioUrlChange = (questionId: string, audioPath: string | null) => {
     if (!data) return;
 
-    console.log('🔄 Changement chemin audio:', { questionId, audioPath, dataUserId: data.user_id, effectiveUserId });
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (questionId === 'question-1') {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Changement chemin audio:', {
+        questionId,
+        audioPath,
+        audioPathType: typeof audioPath,
+        dataUserId: data.user_id,
+        effectiveUserId,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     // CORRECTION: Validation stricte du chemin audio
     const validAudioPath = (audioPath && typeof audioPath === 'string' && audioPath.trim() !== '') 
       ? audioPath.trim() 
       : null;
+
+    // LOG DÉTAILLÉ pour question 1 chapitre 1 après validation
+    if (questionId === 'question-1') {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Validation chemin audio:', {
+        questionId,
+        originalAudioPath: audioPath,
+        validAudioPath,
+        isValid: !!validAudioPath
+      });
+    }
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
@@ -410,6 +524,17 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }));
 
     setData({ ...data, chapters: updatedChapters });
+    
+    // LOG DÉTAILLÉ pour question 1 chapitre 1 après mise à jour
+    if (questionId === 'question-1') {
+      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
+      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - État après mise à jour:', {
+        questionId: updatedQuestion1?.id,
+        audioUrl: updatedQuestion1?.audioUrl,
+        hasAudioUrl: !!updatedQuestion1?.audioUrl
+      });
+    }
     
     // CORRECTION: Toujours sauvegarder les changements d'URL audio
     console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio');

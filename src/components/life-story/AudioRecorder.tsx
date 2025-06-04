@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import VoiceRecorder from '@/components/VoiceRecorder';
@@ -18,13 +19,14 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
   
-  // DEBUG: Log l'état initial
-  if (shouldLog) {
-    console.log('🎙️ AudioRecorder - Initialisation:', {
+  // DEBUG: Log l'état initial (uniquement pour question 1 chapitre 1)
+  if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+    console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Initialisation:', {
       chapterId,
       questionId,
       isUploading,
-      uploadedAudioUrl
+      uploadedAudioUrl,
+      timestamp: new Date().toISOString()
     });
   }
   
@@ -36,26 +38,30 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
   useEffect(() => {
     return () => {
       isMounted.current = false;
-      console.log('🎙️ AudioRecorder - Démontage du composant');
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Démontage du composant');
+      }
     };
   }, []);
   
   // Gestion de l'enregistrement audio
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    if (shouldLog) {
-      console.log("🎙️ AudioRecorder - handleAudioChange:", { 
+    // LOG DÉTAILLÉ pour question 1 chapitre 1
+    if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log("🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - handleAudioChange:", { 
         hasBlob: !!newAudioBlob, 
         blobSize: newAudioBlob?.size,
         questionId,
         isUploading,
-        currentUpload: currentUploadRef.current
+        currentUpload: currentUploadRef.current,
+        timestamp: new Date().toISOString()
       });
     }
     
     // Si pas de blob, audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
-      if (shouldLog) {
-        console.log("🎙️ AudioRecorder - Audio supprimé ou vide");
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log("🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Audio supprimé ou vide");
       }
       setUploadedAudioUrl(null);
       setIsUploading(false);
@@ -66,8 +72,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     
     // Si pas d'utilisateur, ne rien faire
     if (!user?.id) {
-      if (shouldLog) {
-        console.log("🎙️ AudioRecorder - Pas d'utilisateur connecté");
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log("🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Pas d'utilisateur connecté");
       }
       toast({
         title: "Erreur",
@@ -81,23 +87,23 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     // Vérifier si un upload est déjà en cours pour cette question
     const uploadKey = `${chapterId}-${questionId}`;
     if (isUploading || currentUploadRef.current === uploadKey) {
-      if (shouldLog) {
-        console.log("🎙️ AudioRecorder - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log("🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
       }
       return;
     }
     
     try {
-      if (shouldLog) {
-        console.log(`🎙️ AudioRecorder - Début upload pour ${questionId}, taille: ${newAudioBlob.size} octets`);
+      if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+        console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Début upload, taille: ${newAudioBlob.size} octets`);
       }
       setIsUploading(true);
       currentUploadRef.current = uploadKey;
       
       // Signaler le début de l'upload au parent
       if (onUploadStart) {
-        if (shouldLog) {
-          console.log('🎙️ AudioRecorder - Signal onUploadStart au parent');
+        if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+          console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Signal onUploadStart au parent');
         }
         onUploadStart();
       }
@@ -111,8 +117,12 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
         // Callback de succès
         (publicUrl) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            if (shouldLog) {
-              console.log(`🎙️ AudioRecorder - ✅ Upload réussi pour ${questionId}, URL:`, publicUrl);
+            if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+              console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - ✅ Upload réussi, URL:`, {
+                publicUrl,
+                urlType: typeof publicUrl,
+                urlLength: publicUrl?.length
+              });
             }
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
@@ -120,8 +130,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             // Permettre la sauvegarde automatique
             onAudioUrlChange(chapterId, questionId, publicUrl, false);
             
-            if (shouldLog) {
-              console.log('🎙️ AudioRecorder - Toast de succès affiché');
+            if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+              console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Toast de succès affiché');
             }
             toast({
               title: "Enregistrement sauvegardé",
@@ -129,16 +139,16 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
               duration: 700
             });
           } else {
-            if (shouldLog) {
-              console.log(`🎙️ AudioRecorder - ⚠️ Upload réussi mais composant démonté ou upload différent`);
+            if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+              console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - ⚠️ Upload réussi mais composant démonté ou upload différent`);
             }
           }
         },
         // Callback d'erreur
         (errorMessage) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            if (shouldLog) {
-              console.error(`🎙️ AudioRecorder - ❌ Erreur upload pour ${questionId}:`, errorMessage);
+            if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+              console.error(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - ❌ Erreur upload:`, errorMessage);
             }
             setIsUploading(false);
             currentUploadRef.current = null;
@@ -153,15 +163,15 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
         },
         // Callback de début d'upload
         () => {
-          if (shouldLog) {
-            console.log(`🎙️ AudioRecorder - 📤 Début téléchargement pour ${questionId}`);
+          if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+            console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - 📤 Début téléchargement`);
           }
         },
         // Callback de fin d'upload
         () => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
-            if (shouldLog) {
-              console.log(`🎙️ AudioRecorder - 📥 Fin téléchargement pour ${questionId}`);
+            if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+              console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - 📥 Fin téléchargement`);
             }
             setIsUploading(false);
             currentUploadRef.current = null;
@@ -170,8 +180,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
       );
     } catch (error) {
       if (isMounted.current && currentUploadRef.current === uploadKey) {
-        if (shouldLog) {
-          console.error(`🎙️ AudioRecorder - 💥 Erreur non gérée pour ${questionId}:`, error);
+        if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+          console.error(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - 💥 Erreur non gérée:`, error);
         }
         setIsUploading(false);
         currentUploadRef.current = null;
@@ -186,8 +196,13 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     }
   };
 
-  if (shouldLog) {
-    console.log('🎙️ AudioRecorder - Rendu avec état:', { isUploading, uploadedAudioUrl });
+  // LOG DÉTAILLÉ pour question 1 chapitre 1
+  if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+    console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Rendu avec état:', { 
+      isUploading, 
+      uploadedAudioUrl,
+      timestamp: new Date().toISOString()
+    });
   }
 
   return (
