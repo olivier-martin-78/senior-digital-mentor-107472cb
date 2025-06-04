@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,6 +93,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
               const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
               
               if (existingQuestion) {
+                // CORRECTION CRITIQUE: Stocker le chemin relatif au lieu de l'URL complète
                 const normalizedAudioUrl = existingQuestion.audioUrl && existingQuestion.audioUrl.trim() !== '' 
                   ? existingQuestion.audioUrl 
                   : null;
@@ -101,7 +101,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
                 return {
                   ...initialQuestion,
                   answer: existingQuestion.answer || initialQuestion.answer,
-                  audioUrl: normalizedAudioUrl,
+                  audioUrl: normalizedAudioUrl, // Maintenant c'est un chemin relatif
                   audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
                 };
               }
@@ -118,11 +118,11 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           return initialChapter;
         });
 
-        console.log('🎵 Audio URLs récupérées lors du chargement:', 
+        console.log('🎵 Chemins audio récupérés lors du chargement:', 
           mergedChapters.flatMap(ch => 
             ch.questions.filter(q => q.audioUrl).map(q => ({
               questionId: q.id,
-              audioUrl: q.audioUrl
+              audioPath: q.audioUrl
             }))
           )
         );
@@ -198,20 +198,21 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         currentDataUserId: data.user_id
       });
 
-      // Log des URLs audio avant sauvegarde
-      const audioUrls = data.chapters.flatMap(ch => 
+      // Log des chemins audio avant sauvegarde
+      const audioPaths = data.chapters.flatMap(ch => 
         ch.questions.filter(q => q.audioUrl).map(q => ({
           questionId: q.id,
-          audioUrl: q.audioUrl
+          audioPath: q.audioUrl
         }))
       );
-      console.log('🎵 URLs audio à sauvegarder:', audioUrls);
+      console.log('🎵 Chemins audio à sauvegarder:', audioPaths);
 
-      // Préparer les données pour la sauvegarde - PRÉSERVER les URLs audio existantes
+      // Préparer les données pour la sauvegarde - PRÉSERVER les chemins audio existants
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions.map(question => {
-          const normalizedAudioUrl = question.audioUrl && question.audioUrl.trim() !== '' 
+          // CORRECTION: Sauvegarder le chemin relatif au lieu de l'URL complète
+          const normalizedAudioPath = question.audioUrl && question.audioUrl.trim() !== '' 
             ? question.audioUrl 
             : null;
           
@@ -219,7 +220,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
             id: question.id,
             text: question.text,
             answer: question.answer || '',
-            audioUrl: normalizedAudioUrl,
+            audioUrl: normalizedAudioPath, // Maintenant c'est un chemin relatif
           };
         })
       }));
@@ -238,7 +239,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       console.log('💾 Données à sauvegarder:', {
         user_id: dataToSave.user_id,
         chaptersCount: chaptersToSave.length,
-        audioCount: audioUrls.length
+        audioCount: audioPaths.length
       });
 
       const { data: savedData, error } = await supabase
@@ -332,16 +333,16 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     // La sauvegarde ne se fera que lors du clic sur le bouton "Enregistrer"
   };
 
-  const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioUrl: string) => {
+  const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioPath: string) => {
     if (!data) return;
 
-    console.log('🎤 Audio enregistré:', { questionId, audioUrl, dataUserId: data.user_id, effectiveUserId });
+    console.log('🎤 Audio enregistré:', { questionId, audioPath, dataUserId: data.user_id, effectiveUserId });
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
         question.id === questionId 
-          ? { ...question, audioBlob, audioUrl } 
+          ? { ...question, audioBlob, audioUrl: audioPath } // audioUrl contient maintenant le chemin relatif
           : question
       )
     }));
@@ -381,27 +382,27 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }, 500);
   };
 
-  const handleAudioUrlChange = (questionId: string, audioUrl: string | null) => {
+  const handleAudioUrlChange = (questionId: string, audioPath: string | null) => {
     if (!data) return;
 
-    console.log('🔄 Changement URL audio:', { questionId, audioUrl, dataUserId: data.user_id, effectiveUserId });
+    console.log('🔄 Changement chemin audio:', { questionId, audioPath, dataUserId: data.user_id, effectiveUserId });
 
-    const normalizedAudioUrl = audioUrl && audioUrl.trim() !== '' ? audioUrl : null;
+    const normalizedAudioPath = audioPath && audioPath.trim() !== '' ? audioPath : null;
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
         question.id === questionId 
-          ? { ...question, audioUrl: normalizedAudioUrl } 
+          ? { ...question, audioUrl: normalizedAudioPath } 
           : question
       )
     }));
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION CRITIQUE: Toujours sauvegarder quand il y a une URL audio
+    // CORRECTION CRITIQUE: Toujours sauvegarder quand il y a un chemin audio
     // car cela signifie qu'un upload vient de se terminer
-    if (normalizedAudioUrl) {
+    if (normalizedAudioPath) {
       setTimeout(() => {
         if (!isSaving) {
           saveNow();

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Nom du bucket Supabase pour stocker les fichiers audio
@@ -165,19 +166,12 @@ export const uploadAudio = async (
     
     console.log('✅ Téléchargement réussi, génération de l\'URL publique...');
     
-    // Générer l'URL publique au lieu d'une URL signée pour l'usage initial
-    const { data: publicUrlData } = supabase.storage
-      .from(AUDIO_BUCKET_NAME)
-      .getPublicUrl(fileName);
+    // CORRECTION CRITIQUE: Stocker le chemin relatif au lieu de l'URL publique
+    // Cela permettra de régénérer l'URL à chaque fois pour éviter les problèmes d'expiration
+    const relativePath = fileName;
+    console.log('📁 Chemin relatif sauvegardé:', relativePath);
     
-    if (!publicUrlData?.publicUrl) {
-      throw new Error("Impossible de générer l'URL publique du fichier");
-    }
-    
-    console.log('🔗 URL publique obtenue:', publicUrlData.publicUrl);
-    console.log('🪣 Bucket utilisé pour l\'URL:', AUDIO_BUCKET_NAME);
-    
-    safeCallback(onSuccess, publicUrlData.publicUrl);
+    safeCallback(onSuccess, relativePath);
   } catch (error: any) {
     console.error('💥 Erreur lors du téléchargement audio:', error);
     
@@ -194,28 +188,67 @@ export const uploadAudio = async (
 };
 
 /**
+ * NOUVELLE FONCTION: Génère une URL accessible pour un chemin stocké
+ * @param audioPath Chemin du fichier stocké en base
+ * @returns URL publique ou signée selon les permissions
+ */
+export const getAccessibleAudioUrl = async (audioPath: string): Promise<string | null> => {
+  if (!audioPath || audioPath.trim() === '') {
+    return null;
+  }
+  
+  try {
+    console.log('🎵 Génération d\'URL accessible pour:', audioPath);
+    
+    // D'abord essayer l'URL publique
+    const { data: publicUrlData } = supabase.storage
+      .from(AUDIO_BUCKET_NAME)
+      .getPublicUrl(audioPath);
+    
+    if (publicUrlData?.publicUrl) {
+      console.log('✅ URL publique générée:', publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
+    }
+    
+    // Si pas d'URL publique, essayer une URL signée
+    const signedUrl = await getSignedAudioUrl(audioPath);
+    if (signedUrl) {
+      console.log('✅ URL signée générée:', signedUrl);
+      return signedUrl;
+    }
+    
+    console.error('❌ Impossible de générer une URL pour:', audioPath);
+    return null;
+  } catch (error) {
+    console.error('💥 Erreur lors de la génération d\'URL:', error);
+    return null;
+  }
+};
+
+/**
  * Supprime un fichier audio de Supabase Storage
  */
 export const deleteAudio = async (
-  audioUrl: string,
+  audioPath: string,
   onSuccess: () => void,
   onError: (message: string) => void
 ): Promise<void> => {
-  if (!audioUrl) {
-    console.log('❌ URL audio vide pour suppression');
-    safeCallback(onError, "URL audio non valide");
+  if (!audioPath) {
+    console.log('❌ Chemin audio vide pour suppression');
+    safeCallback(onError, "Chemin audio non valide");
     return;
   }
   
   try {
-    console.log('🗑️ Tentative de suppression du fichier audio:', audioUrl);
+    console.log('🗑️ Tentative de suppression du fichier audio:', audioPath);
     
-    // Extraction du chemin du fichier à partir de l'URL
-    const filePath = extractFilePathFromUrl(audioUrl);
-    
-    if (!filePath) {
-      console.error('❌ Impossible d\'extraire le chemin depuis l\'URL:', audioUrl);
-      throw new Error('Format d\'URL non reconnu');
+    // Si c'est une URL complète, extraire le chemin
+    let filePath = audioPath;
+    if (audioPath.includes('/storage/v1/object/')) {
+      filePath = extractFilePathFromUrl(audioPath);
+      if (!filePath) {
+        throw new Error('Format d\'URL non reconnu');
+      }
     }
     
     console.log(`🗂️ Suppression du fichier ${filePath} du bucket ${AUDIO_BUCKET_NAME}...`);

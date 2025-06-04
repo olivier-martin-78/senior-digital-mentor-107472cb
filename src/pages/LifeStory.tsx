@@ -6,7 +6,6 @@ import { useLifeStory } from '@/hooks/use-life-story';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
-import LifeStoryUserSelector from '@/components/life-story/LifeStoryUserSelector';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import { Button } from '@/components/ui/button';
 import { Save, Eye } from 'lucide-react';
@@ -15,7 +14,6 @@ import { toast } from '@/components/ui/sonner';
 const LifeStory = () => {
   const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [storyOwnerInfo, setStoryOwnerInfo] = useState<{ display_name: string | null; email: string } | null>(null);
   
   const isReader = hasRole('reader');
@@ -23,7 +21,6 @@ const LifeStory = () => {
   console.log('🏠 LifeStory - État de la page:', {
     userId: user?.id,
     userEmail: user?.email,
-    selectedUserId,
     isReader,
     hasSession: !!session
   });
@@ -35,36 +32,16 @@ const LifeStory = () => {
     }
   }, [session, navigate, user]);
 
-  // Pour les non-readers, charger la dernière sélection depuis localStorage
-  useEffect(() => {
-    if (!isReader) {
-      const savedSelection = localStorage.getItem('lifeStory_selectedUserId');
-      if (savedSelection && savedSelection !== 'null') {
-        console.log('📂 Chargement sélection sauvegardée:', savedSelection);
-        setSelectedUserId(savedSelection);
-      }
-    }
-    // Pour les readers, on laisse selectedUserId à null pour utiliser leur propre histoire
-  }, [isReader]);
-
-  // Sauvegarder la sélection dans localStorage (seulement pour les non-readers)
-  useEffect(() => {
-    if (!isReader) {
-      localStorage.setItem('lifeStory_selectedUserId', selectedUserId || 'null');
-    }
-  }, [selectedUserId, isReader]);
-
-  // Déterminer l'utilisateur cible selon le contexte
-  const targetUserId = isReader ? user?.id : selectedUserId;
+  // SUPPRESSION: Plus de sélection d'utilisateur, toujours utiliser l'utilisateur connecté
+  const targetUserId = user?.id;
 
   console.log('🎯 Utilisateur cible déterminé:', {
     targetUserId,
     isReader,
-    selectedUserId,
     currentUserId: user?.id
   });
 
-  // Le hook se charge de charger les données pour l'utilisateur cible
+  // Le hook se charge de charger les données pour l'utilisateur connecté uniquement
   const lifeStoryData = useLifeStory({
     targetUserId: targetUserId || undefined
   });
@@ -119,14 +96,9 @@ const LifeStory = () => {
     }
   };
 
-  const handleUserChange = (userId: string | null) => {
-    console.log('👤 Changement d\'utilisateur sélectionné:', userId);
-    setSelectedUserId(userId);
-  };
-
-  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire ou il est admin)
-  const canSave = !hasRole('reader') && (!targetUserId || targetUserId === user?.id || hasRole('admin'));
-  const isViewingOthersStory = targetUserId && targetUserId !== user?.id;
+  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
+  const canSave = !hasRole('reader') && targetUserId === user?.id;
+  const isViewingOthersStory = false; // Plus possible maintenant
 
   console.log('🏠 Permissions calculées:', {
     canSave,
@@ -153,27 +125,14 @@ const LifeStory = () => {
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <p className="text-gray-600 mb-4">Aucune histoire de vie trouvée.</p>
-            {!isReader && (
-              <p className="text-sm text-gray-500">
-                Sélectionnez un utilisateur ci-dessus pour voir son histoire.
-              </p>
-            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // Déterminer le titre à afficher
+  // Déterminer le titre à afficher - toujours "Mon Histoire de Vie" maintenant
   const getPageTitle = () => {
-    if (isViewingOthersStory && storyOwnerInfo) {
-      const ownerName = storyOwnerInfo.display_name || storyOwnerInfo.email;
-      return `Histoire de ${ownerName}`;
-    }
-    if (isReader && storyOwnerInfo) {
-      const ownerName = storyOwnerInfo.display_name || storyOwnerInfo.email;
-      return `Mon Histoire de Vie`;
-    }
     return 'Mon Histoire de Vie';
   };
 
@@ -196,20 +155,12 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* Sélecteur d'utilisateur pour les non-lecteurs */}
-        {!isReader && (
-          <div className="mb-6">
-            <LifeStoryUserSelector
-              selectedUserId={selectedUserId}
-              onUserChange={handleUserChange}
-            />
-          </div>
-        )}
+        {/* SUPPRESSION: Plus de sélecteur d'utilisateur */}
 
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
-            {(isReader || isViewingOthersStory) && (
+            {isReader && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
                 <span>Mode lecture seule</span>
@@ -236,7 +187,7 @@ const LifeStory = () => {
                 )}
               </Button>
             )}
-            {!isReader && !isViewingOthersStory && <InviteUserDialog />}
+            {!isReader && <InviteUserDialog />}
           </div>
         </div>
         
