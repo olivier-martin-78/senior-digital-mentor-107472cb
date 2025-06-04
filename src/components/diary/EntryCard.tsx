@@ -22,6 +22,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   // Vérifier si l'utilisateur peut modifier cette entrée
   const canEdit = user && (entry.user_id === user.id || hasRole('admin'));
 
+  // Vérifier si l'entrée est verrouillée et si l'utilisateur n'est pas l'auteur
+  const isLockedForViewer = entry.is_private_notes_locked && user && entry.user_id !== user.id;
+
   // Obtenir le nom d'affichage de l'auteur
   const authorDisplayName = entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur inconnu';
 
@@ -31,7 +34,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
         isDraft ? 'bg-orange-50 border-orange-200 border-2' : ''
       }`}>
         {/* Image de couverture en pleine largeur */}
-        {entry.media_url && (
+        {entry.media_url && !isLockedForViewer && (
           <div className="relative">
             <AspectRatio ratio={16 / 9}>
               <RecentItemImage
@@ -68,43 +71,56 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
               {!canEdit && user && entry.user_id !== user.id && (
                 <p className="text-xs text-gray-400 mt-1">👀 Lecture seule</p>
               )}
+              {/* Afficher un indicateur si l'entrée est verrouillée pour ce viewer */}
+              {isLockedForViewer && (
+                <p className="text-xs text-gray-400 mt-1">🔒 Entrée verrouillée</p>
+              )}
             </div>
-            <EntryMood rating={entry.mood_rating} />
+            {/* Afficher l'humeur seulement si l'entrée n'est pas verrouillée pour ce viewer */}
+            {!isLockedForViewer && <EntryMood rating={entry.mood_rating} />}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {entry.activities && (
-              <p className="text-sm text-gray-600 line-clamp-2">
-                <span className="font-medium">Activités:</span> {entry.activities}
-              </p>
-            )}
-            {entry.reflections && (
-              <p className="text-sm text-gray-600 line-clamp-2">
-                <span className="font-medium">Réflexions:</span> {entry.reflections}
-              </p>
-            )}
-            {entry.tags && entry.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {entry.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className="text-xs bg-tranches-sage/20 text-tranches-sage px-2 py-1 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                {entry.tags.length > 3 && (
-                  <span className="text-xs text-gray-500">+{entry.tags.length - 3}</span>
-                )}
-              </div>
-            )}
-            {isDraft && !entry.media_url && (
-              <div className="mt-2">
-                <span className="text-xs text-orange-600 font-medium">📝 Brouillon</span>
-              </div>
-            )}
-          </div>
+          {/* Afficher le contenu seulement si l'entrée n'est pas verrouillée pour ce viewer */}
+          {!isLockedForViewer ? (
+            <div className="space-y-2">
+              {entry.activities && (
+                <p className="text-sm text-gray-600 line-clamp-2">
+                  <span className="font-medium">Activités:</span> {entry.activities}
+                </p>
+              )}
+              {entry.reflections && (
+                <p className="text-sm text-gray-600 line-clamp-2">
+                  <span className="font-medium">Réflexions:</span> {entry.reflections}
+                </p>
+              )}
+              {entry.tags && entry.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {entry.tags.slice(0, 3).map((tag, index) => (
+                    <span
+                      key={index}
+                      className="text-xs bg-tranches-sage/20 text-tranches-sage px-2 py-1 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {entry.tags.length > 3 && (
+                    <span className="text-xs text-gray-500">+{entry.tags.length - 3}</span>
+                  )}
+                </div>
+              )}
+              {isDraft && !entry.media_url && (
+                <div className="mt-2">
+                  <span className="text-xs text-orange-600 font-medium">📝 Brouillon</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <div className="text-2xl mb-2">🔒</div>
+              <p className="text-sm text-gray-500">Contenu verrouillé</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </Link>
