@@ -16,8 +16,8 @@ const HowItWorksSection = () => {
     },
     {
       icon: <Video className="w-12 h-12 text-tranches-charcoal" />,
-      title: "Suivi",
-      description: "Ensemble avec le demandeur et la personne accompagnée, nous faisons régulièrement le point sur les progrès réalisés. Cela nous permet d’adapter l’accompagnement au plus près de ses besoins et de son évolution vers plus d’autonomie."
+      title: "Le suivi",
+      description: "Ensemble avec le demandeur et la personne accompagnée, nous faisons régulièrement le point sur les progrès réalisés. Cela nous permet d’adapter l’accompagnement au plus près de ses besoins et de ses progrès."
     }
   ];
 
