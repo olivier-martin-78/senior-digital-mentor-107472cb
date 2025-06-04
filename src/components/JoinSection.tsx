@@ -22,7 +22,7 @@ const JoinSection = () => {
         <div className="max-w-2xl mx-auto text-center animate-on-scroll">
           <p className="text-lg text-tranches-charcoal/90 mb-6">
             Vous voulez offrir un moment de bonheur simple à quelqu'un qui a tant donné ?
-            Rejoignez les Passeurs de Vie, une communauté bienveillante de volontaires qui accompagnent nos aînés à revivre ce qui les rend vivants.
+            Vous souhaitez devenir Mentors digitaux ? Nous mettons à otre disposition application .
           </p>
         </div>
       </div>
