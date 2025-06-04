@@ -12,7 +12,7 @@ const JoinSection = () => {
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-on-scroll">
           <Button size="lg" className="bg-tranches-dustyblue text-white hover:bg-tranches-dustyblue/80">
-            Senior ou un proche aidant ? Contactez-nous !
+            Seniors & proches, contactez-nous !
           </Button>
           <Button size="lg" variant="outline" className="border-tranches-dustyblue text-tranches-charcoal hover:bg-tranches-dustyblue/10">
             Je veux devenir Mentor Digital
@@ -21,7 +21,7 @@ const JoinSection = () => {
         
         <div className="max-w-2xl mx-auto text-center animate-on-scroll">
           <p className="text-lg text-tranches-charcoal/90 mb-6">
-            Vous voulez offrir un moment de bonheur simple à quelqu'un qui a tant donné ?
+            Vous voulez offrir à votre parent une façon douce de se sentir moins seul au quotidien ?
             Vous souhaitez devenir Mentors digitaux ? Nous mettons à votre disposition CaprIA notre application pour créer du contenu digital à partager dans son cercle familial.
           </p>
         </div>
