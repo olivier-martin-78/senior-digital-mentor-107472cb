@@ -10,6 +10,17 @@ interface EntryContentProps {
 }
 
 const EntryContent: React.FC<EntryContentProps> = ({ entry }) => {
+  // Si l'entrée est verrouillée, afficher seulement un message
+  if (entry.is_private_notes_locked) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-4xl mb-4">🔒</div>
+        <p className="text-gray-600">Cette entrée est verrouillée par son auteur.</p>
+        <p className="text-sm text-gray-500 mt-2">Seuls le titre et la date sont visibles.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <EntryMedia mediaUrl={entry.media_url} mediaType={entry.media_type} />

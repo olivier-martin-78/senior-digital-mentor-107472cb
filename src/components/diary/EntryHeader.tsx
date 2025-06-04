@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Calendar } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import EntryMood from './EntryMood';
@@ -9,18 +8,26 @@ interface EntryHeaderProps {
   title: string;
   date: string;
   moodRating: number | null;
+  isLocked?: boolean;
 }
 
-const EntryHeader: React.FC<EntryHeaderProps> = ({ title, date, moodRating }) => {
+const EntryHeader: React.FC<EntryHeaderProps> = ({ 
+  title, 
+  date, 
+  moodRating,
+  isLocked = false 
+}) => {
+  const formattedDate = format(parseISO(date), 'EEEE d MMMM yyyy', { locale: fr });
+
   return (
-    <header className="mb-6 border-b border-gray-200 pb-6">
-      <div className="flex items-center text-sm text-gray-500 mb-3">
-        <Calendar className="h-4 w-4 mr-2" />
-        {date && format(parseISO(date), "EEEE d MMMM yyyy", { locale: fr })}
-      </div>
-      <h1 className="text-3xl font-serif text-tranches-charcoal">{title}</h1>
+    <header className="mb-8">
+      <h1 className="text-3xl font-serif text-tranches-charcoal mb-2">{title}</h1>
+      <time className="text-tranches-sage text-lg font-medium capitalize">
+        {formattedDate}
+      </time>
       
-      <EntryMood rating={moodRating} />
+      {/* Afficher l'humeur seulement si l'entrée n'est pas verrouillée */}
+      {!isLocked && <EntryMood rating={moodRating} />}
     </header>
   );
 };

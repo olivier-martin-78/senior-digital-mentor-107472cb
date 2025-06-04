@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,7 +173,8 @@ const DiaryEntryPage = () => {
             <EntryHeader 
               title={entry.title} 
               date={entry.entry_date} 
-              moodRating={entry.mood_rating} 
+              moodRating={entry.mood_rating}
+              isLocked={entry.is_private_notes_locked}
             />
             
             <EntryContent entry={entry} />
