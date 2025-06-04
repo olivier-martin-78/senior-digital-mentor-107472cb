@@ -324,12 +324,12 @@ const BlogLanding = () => {
             <Card className="border-none shadow-md">
               <CardContent className="p-6">
                 <PenTool className="h-8 w-8 text-tranches-sage mb-4" />
-                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Journal Intime</h4>
+                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Journal</h4>
                 <p className="text-sm text-tranches-warmgray mb-3">
                   Notez vos ressentis du jour, vos pensées positives ou négatives, vos activités et votre humeur.
                 </p>
                 <p className="text-xs text-tranches-sage italic">
-                  👉 Une manière bienveillante de prendre soin de soi… et de garder une trace de l'ordinaire.
+                  👉 Une manière bienveillante de prendre soin de soi, de tisser du lien… et de garder une trace de l'ordinaire.
                 </p>
               </CardContent>
             </Card>
@@ -339,7 +339,7 @@ const BlogLanding = () => {
                 <Star className="h-8 w-8 text-tranches-sage mb-4" />
                 <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Carnet de Souhaits</h4>
                 <p className="text-sm text-tranches-warmgray mb-3">
-                  Exprimez une envie, un besoin ou un rêve — et laissez la communauté vous aider à le réaliser.
+                  Exprimez une envie, un besoin ou un rêve — et laissez votre cercle familial vous proposer de le réaliser.
                 </p>
                 <p className="text-xs text-tranches-sage italic">
                   👉 "J'aimerais revoir un film de mon enfance", "Reprendre contact avec un ami perdu de vue"…
