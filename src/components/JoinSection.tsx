@@ -12,10 +12,10 @@ const JoinSection = () => {
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-on-scroll">
           <Button size="lg" className="bg-tranches-dustyblue text-white hover:bg-tranches-dustyblue/80">
-            Je suis senior ou aidant — Je fais une demande
+            Senior ou un proche aidant ? Contactez-nous !
           </Button>
           <Button size="lg" variant="outline" className="border-tranches-dustyblue text-tranches-charcoal hover:bg-tranches-dustyblue/10">
-            Je suis bénévole — Je deviens passeur de vie
+            Je veux devenir Mentor Digital
           </Button>
         </div>
         
