@@ -41,10 +41,11 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
       console.log('🔍 LifeStoryUserSelector - Chargement des utilisateurs pour:', user.id);
 
       if (hasRole('admin')) {
-        // Les admins voient tous les utilisateurs
+        // Les admins voient tous les utilisateurs SAUF eux-mêmes
         const { data: allUsers, error } = await supabase
           .from('profiles')
           .select('id, display_name, email')
+          .neq('id', user.id) // Exclure l'utilisateur connecté
           .order('display_name');
 
         if (!error && allUsers) {
@@ -65,7 +66,8 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
               .eq('id', member.group_id)
               .single();
 
-            if (!groupDetailError && group) {
+            if (!groupDetailError && group && group.created_by !== user.id) {
+              // Ne pas inclure si c'est l'utilisateur connecté
               const { data: creatorProfile, error: creatorError } = await supabase
                 .from('profiles')
                 .select('id, display_name, email')
@@ -97,7 +99,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
         }
       }
 
-      console.log('✅ LifeStoryUserSelector - Utilisateurs disponibles:', users);
+      console.log('✅ LifeStoryUserSelector - Utilisateurs disponibles (excluant soi-même):', users);
       setAvailableUsers(users);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des utilisateurs:', error);
@@ -122,7 +124,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
   };
 
   // Ne pas afficher le sélecteur s'il n'y a pas d'autres utilisateurs disponibles
-  if (!hasRole('admin') && availableUsers.length === 0) {
+  if (loading || availableUsers.length === 0) {
     return null;
   }
 
