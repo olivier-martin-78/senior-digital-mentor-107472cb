@@ -58,7 +58,18 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
         })));
       }
     } else {
-      console.log('🔍 UTILISATEUR NON-ADMIN - récupération commentaires avec RLS automatique');
+      console.log('🔍 UTILISATEUR NON-ADMIN - récupération commentaires avec filtrage strict');
+      
+      // CORRECTION: Ne récupérer QUE les commentaires des utilisateurs autorisés
+      // Si authorizedUserIds est vide ou ne contient que l'utilisateur courant, 
+      // cela signifie qu'il n'a accès qu'à ses propres contenus
+      if (authorizedUserIds.length === 0) {
+        console.log('🔍 Aucun utilisateur autorisé - pas de commentaires à afficher');
+        setComments([]);
+        return;
+      }
+
+      console.log('🔍 Filtrage par utilisateurs autorisés:', authorizedUserIds);
       
       const { data: commentsData, error } = await supabase
         .from('blog_comments')
@@ -72,9 +83,11 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             id, 
             title,
             album_id,
+            author_id,
             blog_albums(name)
           )
         `)
+        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -83,7 +96,15 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
       console.log('🔍 Erreur commentaires RLS:', error);
 
       if (commentsData) {
-        items.push(...commentsData.map(comment => ({
+        // CORRECTION: Filtrer aussi par les posts autorisés
+        const filteredComments = commentsData.filter(comment => {
+          // Le commentaire doit être de quelqu'un d'autorisé ET le post aussi
+          return comment.post && authorizedUserIds.includes(comment.post.author_id);
+        });
+
+        console.log('🔍 Commentaires après filtrage posts:', filteredComments.length);
+
+        items.push(...filteredComments.map(comment => ({
           id: comment.id,
           title: `Commentaire sur "${comment.post?.title || 'Article supprimé'}"`,
           type: 'comment' as const,
@@ -101,7 +122,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
     console.log('🔍 ===== FIN RÉCUPÉRATION COMMENTAIRES =====');
     console.log('🔍 Total items commentaires à afficher:', items.length);
     setComments(items);
-  }, [effectiveUserId, hasRole]);
+  }, [effectiveUserId, hasRole, authorizedUserIds]);
 
   useEffect(() => {
     fetchComments();

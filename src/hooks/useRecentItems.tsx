@@ -23,18 +23,21 @@ export interface RecentItem {
 }
 
 export const useRecentItems = () => {
-  const { user } = useAuth();
+  const { user, getEffectiveUserId } = useAuth();
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Mémoriser l'utilisateur effectif pour éviter les re-renders
   const effectiveUserId = useMemo(() => user?.id || '', [user?.id]);
   
-  // Mémoriser les IDs autorisés pour éviter les re-renders
-  const authorizedUserIds = useMemo(() => 
-    effectiveUserId ? [effectiveUserId] : [], 
-    [effectiveUserId]
-  );
+  // CORRECTION: Calculer les utilisateurs autorisés de manière plus stricte
+  const authorizedUserIds = useMemo(() => {
+    if (!effectiveUserId) return [];
+    
+    // Pour l'instant, on ne retourne que l'utilisateur courant
+    // Les hooks individuels vont récupérer la liste complète en fonction des groupes
+    return [effectiveUserId];
+  }, [effectiveUserId]);
 
   const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
@@ -70,21 +73,17 @@ export const useRecentItems = () => {
 
     console.log('🔍 Analyse des auteurs dans Recent Items:', authorAnalysis);
 
-    // Vérifier spécifiquement si on trouve du contenu de Conception
-    const conceptionItems = allItems.filter(item => 
-      item.author.toLowerCase().includes('conception') || 
-      item.author === 'Conception'
-    );
-    
-    console.log('🔍 Contenus de Conception trouvés:', conceptionItems.length);
-    if (conceptionItems.length > 0) {
-      console.log('🔍 Détails contenus Conception:', conceptionItems.map(item => ({
-        type: item.type,
-        title: item.title,
-        author: item.author
-      })));
-    } else {
-      console.log('❌ AUCUN contenu de Conception trouvé dans Recent Items');
+    // CORRECTION: Vérifier qu'aucun contenu non autorisé ne passe
+    const currentUserId = getEffectiveUserId();
+    const unauthorizedItems = allItems.filter(item => {
+      // Pour l'instant, seuls les contenus de l'utilisateur courant devraient passer
+      // sauf s'il est dans des groupes
+      return item.author !== 'Moi' && item.author !== user.email && item.author !== user.id;
+    });
+
+    if (unauthorizedItems.length > 0) {
+      console.error('❌ CONTENUS NON AUTORISÉS DÉTECTÉS:', unauthorizedItems);
+      console.error('❌ Ces contenus ne devraient pas être visibles pour cet utilisateur');
     }
 
     const combined = [
@@ -109,7 +108,7 @@ export const useRecentItems = () => {
 
     setRecentItems(sorted);
     setLoading(false);
-  }, [user, blogPosts, comments, diaryEntries, wishes]);
+  }, [user, blogPosts, comments, diaryEntries, wishes, getEffectiveUserId]);
 
   return { recentItems, loading };
 };

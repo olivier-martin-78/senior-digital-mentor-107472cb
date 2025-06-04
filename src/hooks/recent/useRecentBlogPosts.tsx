@@ -33,10 +33,13 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
 
       const userGroupIds = userGroups?.map(g => g.group_id) || [];
 
-      // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
+      // CORRECTION: Si l'utilisateur n'est dans aucun groupe, il ne voit que ses propres posts
       let actualAuthorizedUserIds = [currentUserId]; // L'utilisateur peut toujours voir ses propres contenus
 
       if (userGroupIds.length > 0) {
+        console.log('🔍 useRecentBlogPosts - Utilisateur dans des groupes:', userGroupIds);
+        
+        // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
         const { data: groupMembers, error: groupMembersError } = await supabase
           .from('group_members')
           .select('user_id')
@@ -48,6 +51,8 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== currentUserId) || [];
           actualAuthorizedUserIds = [...actualAuthorizedUserIds, ...additionalUserIds];
         }
+      } else {
+        console.log('🔍 useRecentBlogPosts - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
       }
 
       console.log('✅ useRecentBlogPosts - Utilisateurs autorisés:', {
