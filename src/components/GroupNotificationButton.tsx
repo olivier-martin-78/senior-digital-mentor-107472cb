@@ -79,9 +79,9 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
 
       console.log('🔍 GroupNotification - Appel fonction avec:', requestBody);
 
-      // Appeler l'edge function
+      // Appeler l'edge function avec le body JSON
       const { data, error } = await supabase.functions.invoke('send-group-notification', {
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',

@@ -54,7 +54,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Utilisateur authentifié:', user.id);
 
-    const { contentType, contentId, title, authorId }: NotificationRequest = await req.json();
+    // Parser le body JSON de manière sécurisée
+    let requestData: NotificationRequest;
+    try {
+      const text = await req.text();
+      console.log('🔍 send-group-notification - Body brut:', text);
+      
+      if (!text || text.trim() === '') {
+        throw new Error('Empty request body');
+      }
+      
+      requestData = JSON.parse(text);
+      console.log('🔍 send-group-notification - Données parsées:', requestData);
+    } catch (parseError) {
+      console.error('🔍 send-group-notification - Erreur parsing JSON:', parseError);
+      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+    }
+
+    const { contentType, contentId, title, authorId } = requestData;
 
     console.log('🔍 send-group-notification - Données reçues:', { contentType, contentId, title, authorId });
 
