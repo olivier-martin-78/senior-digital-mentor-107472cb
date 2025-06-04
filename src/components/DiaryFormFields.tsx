@@ -53,9 +53,44 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
     form.setValue('tags', currentTags.filter((_: string, i: number) => i !== index));
   };
 
+  // Vérifier si les champs sont verrouillés
+  const isLocked = form.watch('is_private_notes_locked');
+
   return (
     <div className="space-y-6">
-      {/* Date */}
+      {/* Verrouillage - Placé en premier pour plus de visibilité */}
+      <FormField
+        control={form.control}
+        name="is_private_notes_locked"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-amber-50">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base font-medium">
+                Verrouiller l'entrée
+              </FormLabel>
+              <div className="text-sm text-muted-foreground">
+                Empêche la modification de tous les champs sauf le titre et la date
+              </div>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      {isLocked && (
+        <div className="p-3 bg-amber-100 border border-amber-300 rounded-lg">
+          <p className="text-sm text-amber-800">
+            🔒 Cette entrée est verrouillée. Seuls le titre et la date peuvent être modifiés.
+          </p>
+        </div>
+      )}
+
+      {/* Date - toujours modifiable */}
       <FormField
         control={form.control}
         name="entry_date"
@@ -98,7 +133,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Titre */}
+      {/* Titre - toujours modifiable */}
       <FormField
         control={form.control}
         name="title"
@@ -113,7 +148,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Activités */}
+      {/* Activités - verrouillable */}
       <FormField
         control={form.control}
         name="activities"
@@ -126,6 +161,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 className="min-h-[100px]"
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -133,14 +169,18 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Humeur */}
+      {/* Humeur - verrouillable */}
       <FormField
         control={form.control}
         name="mood_rating"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Humeur générale (1-5)</FormLabel>
-            <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+            <Select 
+              onValueChange={(value) => field.onChange(parseInt(value))} 
+              value={field.value?.toString()}
+              disabled={isLocked}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionnez votre humeur" />
@@ -159,7 +199,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Choses positives */}
+      {/* Choses positives - verrouillable */}
       <FormField
         control={form.control}
         name="positive_things"
@@ -171,6 +211,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 placeholder="Qu'est-ce qui s'est bien passé aujourd'hui ?"
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -178,7 +219,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Choses négatives */}
+      {/* Choses négatives - verrouillable */}
       <FormField
         control={form.control}
         name="negative_things"
@@ -190,6 +231,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 placeholder="Y a-t-il eu des difficultés aujourd'hui ?"
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -197,14 +239,18 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* État physique */}
+      {/* État physique - verrouillable */}
       <FormField
         control={form.control}
         name="physical_state"
         render={({ field }) => (
           <FormItem>
             <FormLabel>État physique</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || ''}>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value || ''}
+              disabled={isLocked}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Comment vous sentiez-vous physiquement ?" />
@@ -221,14 +267,18 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* État mental */}
+      {/* État mental - verrouillable */}
       <FormField
         control={form.control}
         name="mental_state"
         render={({ field }) => (
           <FormItem>
             <FormLabel>État mental</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || ''}>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value || ''}
+              disabled={isLocked}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Comment vous sentiez-vous mentalement ?" />
@@ -245,7 +295,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Personnes contactées - LIBELLÉ MODIFIÉ */}
+      {/* Personnes contactées - verrouillable */}
       <FormField
         control={form.control}
         name="contacted_people"
@@ -259,8 +309,14 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                   value={newPerson}
                   onChange={(e) => setNewPerson(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPerson())}
+                  disabled={isLocked}
                 />
-                <Button type="button" onClick={addPerson} size="sm">
+                <Button 
+                  type="button" 
+                  onClick={addPerson} 
+                  size="sm"
+                  disabled={isLocked}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -268,10 +324,12 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 {(field.value || []).map((person: string, index: number) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {person}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removePerson(index)}
-                    />
+                    {!isLocked && (
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => removePerson(index)}
+                      />
+                    )}
                   </Badge>
                 ))}
               </div>
@@ -281,7 +339,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Réflexions */}
+      {/* Réflexions - verrouillable */}
       <FormField
         control={form.control}
         name="reflections"
@@ -293,6 +351,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 placeholder="Vos réflexions sur la journée..."
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -300,7 +359,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Désir du jour */}
+      {/* Désir du jour - verrouillable */}
       <FormField
         control={form.control}
         name="desire_of_day"
@@ -312,6 +371,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 placeholder="Qu'avez-vous envie de faire demain ?"
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -319,7 +379,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Objectifs */}
+      {/* Objectifs - verrouillable */}
       <FormField
         control={form.control}
         name="objectives"
@@ -331,6 +391,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 placeholder="Quels sont vos objectifs pour demain ?"
                 {...field}
                 value={field.value || ''}
+                disabled={isLocked}
               />
             </FormControl>
             <FormMessage />
@@ -338,7 +399,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Tags */}
+      {/* Tags - verrouillable */}
       <FormField
         control={form.control}
         name="tags"
@@ -352,8 +413,14 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  disabled={isLocked}
                 />
-                <Button type="button" onClick={addTag} size="sm">
+                <Button 
+                  type="button" 
+                  onClick={addTag} 
+                  size="sm"
+                  disabled={isLocked}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -361,10 +428,12 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                 {(field.value || []).map((tag: string, index: number) => (
                   <Badge key={index} variant="outline" className="flex items-center gap-1">
                     #{tag}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeTag(index)}
-                    />
+                    {!isLocked && (
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => removeTag(index)}
+                      />
+                    )}
                   </Badge>
                 ))}
               </div>
@@ -374,50 +443,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Notes privées */}
-      <FormField
-        control={form.control}
-        name="private_notes"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Notes privées</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Notes personnelles (visibles seulement par vous)..."
-                {...field}
-                value={field.value || ''}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Verrouillage des notes privées */}
-      <FormField
-        control={form.control}
-        name="is_private_notes_locked"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base">
-                Verrouiller les notes privées
-              </FormLabel>
-              <div className="text-sm text-muted-foreground">
-                Empêche la modification accidentelle de vos notes privées
-              </div>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      {/* Média */}
+      {/* Média - verrouillable */}
       {onMediaChange && (
         <FormField
           control={form.control}
@@ -434,6 +460,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
                     field.onChange(file);
                     onMediaChange(file);
                   }}
+                  disabled={isLocked}
                 />
               </FormControl>
               <FormMessage />

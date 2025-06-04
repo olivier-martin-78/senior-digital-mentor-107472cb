@@ -11,7 +11,8 @@ interface PrivateNotesSectionProps {
 const PrivateNotesSection: React.FC<PrivateNotesSectionProps> = ({ notes, isLocked }) => {
   const [showPrivateNotes, setShowPrivateNotes] = useState(false);
   
-  if (!notes) return null;
+  // Ne pas afficher la section si pas de notes
+  if (!notes || notes.trim() === '') return null;
   
   return (
     <section>
