@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChapterNavigation from './ChapterNavigation';
 import ChapterContent from './ChapterContent';
 import { Chapter } from '@/types/lifeStory';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LifeStoryLayoutProps {
   chapters: Chapter[];

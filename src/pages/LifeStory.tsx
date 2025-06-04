@@ -6,6 +6,7 @@ import { useLifeStory } from '@/hooks/use-life-story';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import LifeStoryLayout from '@/components/life-story/LifeStoryLayout';
+import LifeStoryUserSelector from '@/components/life-story/LifeStoryUserSelector';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import { Button } from '@/components/ui/button';
 import { Save, Eye } from 'lucide-react';
@@ -14,6 +15,7 @@ import { toast } from '@/components/ui/sonner';
 const LifeStory = () => {
   const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [storyOwnerInfo, setStoryOwnerInfo] = useState<{ display_name: string | null; email: string } | null>(null);
   
   const isReader = hasRole('reader');
@@ -22,7 +24,8 @@ const LifeStory = () => {
     userId: user?.id,
     userEmail: user?.email,
     isReader,
-    hasSession: !!session
+    hasSession: !!session,
+    selectedUserId
   });
 
   useEffect(() => {
@@ -32,16 +35,18 @@ const LifeStory = () => {
     }
   }, [session, navigate, user]);
 
-  // SUPPRESSION: Plus de sélection d'utilisateur, toujours utiliser l'utilisateur connecté
-  const targetUserId = user?.id;
+  // Déterminer l'utilisateur cible : selectedUserId ou l'utilisateur connecté
+  const targetUserId = selectedUserId || user?.id;
 
   console.log('🎯 Utilisateur cible déterminé:', {
     targetUserId,
+    selectedUserId,
     isReader,
-    currentUserId: user?.id
+    currentUserId: user?.id,
+    isViewingOwnStory: targetUserId === user?.id
   });
 
-  // Le hook se charge de charger les données pour l'utilisateur connecté uniquement
+  // Le hook se charge de charger les données pour l'utilisateur cible
   const lifeStoryData = useLifeStory({
     targetUserId: targetUserId || undefined
   });
@@ -98,7 +103,7 @@ const LifeStory = () => {
 
   // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
   const canSave = !hasRole('reader') && targetUserId === user?.id;
-  const isViewingOthersStory = false; // Plus possible maintenant
+  const isViewingOthersStory = targetUserId !== user?.id;
 
   console.log('🏠 Permissions calculées:', {
     canSave,
@@ -131,16 +136,17 @@ const LifeStory = () => {
     );
   }
 
-  // Déterminer le titre à afficher - toujours "Mon Histoire de Vie" maintenant
+  // Déterminer le titre à afficher
   const getPageTitle = () => {
+    if (isViewingOthersStory && storyOwnerInfo) {
+      return `Histoire de ${storyOwnerInfo.display_name || storyOwnerInfo.email}`;
+    }
     return 'Mon Histoire de Vie';
   };
 
   // Wrapper function to match expected audio recording signature
   const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
-    // CORRECTION: Ne pas passer de chemin vide, laisser le système gérer l'URL
     console.log('🎤 LifeStory - handleAudioRecorded appelé pour:', { chapterId, questionId, blobSize: blob.size });
-    // Ne rien faire ici, l'URL sera gérée par handleAudioUrlChange
   };
 
   // Wrapper function for audio URL change
@@ -158,12 +164,17 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* SUPPRESSION: Plus de sélecteur d'utilisateur */}
+        {/* Sélecteur d'utilisateur - restauré */}
+        <LifeStoryUserSelector
+          selectedUserId={selectedUserId}
+          onUserChange={setSelectedUserId}
+          className="mb-6"
+        />
 
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
-            {isReader && (
+            {(isReader || isViewingOthersStory) && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
                 <span>Mode lecture seule</span>
@@ -210,7 +221,10 @@ const LifeStory = () => {
             lifeStoryData.handleQuestionFocus(questionId);
           }}
           updateAnswer={(chapterId: string, questionId: string, answer: string) => {
-            lifeStoryData.updateAnswer(questionId, answer);
+            // Empêcher la modification si on regarde l'histoire de quelqu'un d'autre
+            if (!isViewingOthersStory) {
+              lifeStoryData.updateAnswer(questionId, answer);
+            }
           }}
           onAudioRecorded={handleAudioRecorded}
           onAudioDeleted={handleAudioDeleted}
