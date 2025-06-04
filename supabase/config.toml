@@ -1,44 +1,15 @@
 
 project_id = "cvcebcisijjmmmwuedcv"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage", "graphql_public"]
-
-[db]
-port = 54322
-
-[studio]
-port = 54323
-
-[inbucket]
-port = 54324
-
-[storage]
-enabled = true
-
 [auth]
 enabled = true
-site_url = "https://senior-digital-mentor.com"
+site_url = "https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com"
+additional_redirect_urls = ["https://localhost:5173"]
 
-[analytics]
-enabled = false
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
 
-[realtime]
-enabled = true
-
-[functions.send-contact-email]
-verify_jwt = false
-
-[functions.send-invitation-email]
-verify_jwt = false
-
-[functions.send-confirmation-email]
-verify_jwt = false
-
-[functions.auth-webhook]
-verify_jwt = false
-
-[functions.send-password-reset]
-verify_jwt = false
+[functions.send-group-notification]
+verify_jwt = true
