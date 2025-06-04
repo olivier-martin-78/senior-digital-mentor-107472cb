@@ -25,6 +25,11 @@ interface UserAdmin {
   display_name: string | null;
 }
 
+interface AuthUser {
+  id: string;
+  last_sign_in_at: string | null;
+}
+
 const AdminUsers = () => {
   const { user: authUser, hasRole } = useAuth();
   const navigate = useNavigate();
@@ -85,7 +90,7 @@ const AdminUsers = () => {
 
         // Create a map for auth data lookup
         const authMap: { [key: string]: { last_sign_in_at: string | null } } = {};
-        authData.users.forEach(authUser => {
+        (authData.users as AuthUser[]).forEach(authUser => {
           authMap[authUser.id] = {
             last_sign_in_at: authUser.last_sign_in_at
           };
