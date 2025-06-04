@@ -13,7 +13,7 @@ const ExamplesSection = () => {
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
     },
     {
-      text: "Raymonde a pu retrouver les saveurs du couscous qui lui préparait sa mère, avec l'aide d'une aide à domicile.",
+      text: "Raymonde a partagé l’histoire de sa vie avec ses proches. En retour, elle a reçu de nombreux messages remplis de gratitude, et parfois des questions curieuses pour en savoir un peu plus sur certains moments marquants de son parcours.",
       image: "/lovable-uploads/90b817e7-b9e1-44e7-98f9-32e2cee2d305.png"
     }
   ];
