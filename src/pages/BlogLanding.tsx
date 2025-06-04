@@ -220,7 +220,7 @@ const BlogLanding = () => {
           </h2>
           <p className="text-lg text-tranches-warmgray mb-8 max-w-3xl mx-auto">
             Chez Senior Digital Mentor, nous croyons que chaque personne âgée mérite de vieillir entourée, stimulée et valorisée.
-            Nos activités sont pensées pour apaiser l'esprit, bouger en douceur, créer du lien et transmettre ce qui compte.
+            Nos activités sont pensées pour apaiser l'esprit, bouger en douceur, donner du sens, créer du lien et transmettre ce qui compte.
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-tranches-charcoal">
             <span className="flex items-center space-x-2">
@@ -251,7 +251,7 @@ const BlogLanding = () => {
           </h2>
           <p className="text-lg text-tranches-warmgray mb-12 text-center max-w-4xl mx-auto">
             Une formation au digital douce, progressive et humaine — à son rythme, pour reprendre le pouvoir sur sa mémoire, ses liens, et ses récits.
-            Nous mettons gratuitement à votre disposition l'application Capria développée spécialement pour vous
+            Nous mettons gratuitement à votre disposition l'application CaprIA développée spécialement pour les seniors
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
@@ -286,10 +286,10 @@ const BlogLanding = () => {
             <div>
               <h3 className="text-2xl font-serif text-tranches-charcoal mb-6 flex items-center">
                 <Heart className="h-6 w-6 mr-3 text-tranches-sage" />
-                Transmettre un héritage numérique unique et intime
+                Transmettre un héritage numérique unique et intime (vos souvenirs, vos centres d'intérêt et compétences)
               </h3>
               <p className="text-tranches-warmgray mb-6">
-                L'application devient un véritable coffre à souvenirs interactif, enrichi au fil du temps :
+                L'application CaprIA devient un véritable coffre à souvenirs interactif, enrichi au fil du temps :
               </p>
             </div>
           </div>
