@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import MoodSelector from '@/components/MoodSelector';
+import ImageUploadField from '@/components/diary/ImageUploadField';
 
 interface DiaryFormFieldsProps {
   form: UseFormReturn<any>;
@@ -416,29 +418,12 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Média - verrouillable */}
+      {/* Média - verrouillable avec support HEIC */}
       {onMediaChange && (
-        <FormField
-          control={form.control}
-          name="media"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Média (photo/vidéo)</FormLabel>
-              <FormControl>
-                <Input
-                  type="file"
-                  accept="image/*,video/*,audio/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    field.onChange(file);
-                    onMediaChange(file);
-                  }}
-                  disabled={isLocked}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <ImageUploadField 
+          form={form} 
+          onMediaChange={onMediaChange}
+          disabled={isLocked}
         />
       )}
     </div>
