@@ -174,7 +174,7 @@ const BlogLanding = () => {
             🌿 Vivre mieux, plus sereinement à partir de 70 ans
           </h1>
           <p className="text-xl md:text-2xl text-tranches-warmgray mb-8 max-w-4xl mx-auto">
-            Des activités sur-mesure pour le bien-être global des seniors et le soulagement des aidants.
+            Des activités sur-mesure pour le bien-être global des seniors et le soulagement des proches aidants.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
