@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -354,7 +353,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
-      {/* Objectifs - verrouillable */}
+      {/* Objectifs - CORRECTION DU PROBLÈME DE TRONCATURE */}
       <FormField
         control={form.control}
         name="objectives"

@@ -19,14 +19,15 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
     // heic2any peut retourner un Blob ou un array de Blobs
     const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
     
-    // Créer un nouveau fichier avec le blob converti
+    // Créer un nouveau fichier avec le blob converti et s'assurer de l'extension .jpg
+    const originalName = file.name.replace(/\.(heic|heif)$/i, '');
     const convertedFile = new File(
       [blob], 
-      file.name.replace(/\.(heic|heif)$/i, '.jpg'), 
+      `${originalName}.jpg`, 
       { type: 'image/jpeg' }
     );
     
-    console.log('HEIC file converted successfully:', convertedFile.name);
+    console.log('HEIC file converted successfully:', convertedFile.name, 'Type:', convertedFile.type);
     return convertedFile;
   } catch (error) {
     console.error('Error converting HEIC file:', error);
