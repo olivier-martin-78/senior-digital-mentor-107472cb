@@ -30,7 +30,33 @@ export const checkBucketAccess = async (): Promise<boolean> => {
 };
 
 /**
- * Génère une URL signée pour accéder au fichier audio
+ * Génère une URL publique pour accéder au fichier audio
+ * @param filePath Chemin du fichier dans le bucket
+ * @returns URL publique ou null en cas d'erreur
+ */
+export const getPublicAudioUrl = (filePath: string): string | null => {
+  try {
+    console.log('🔗 Génération URL publique pour:', filePath);
+    
+    const { data } = supabase.storage
+      .from(AUDIO_BUCKET_NAME)
+      .getPublicUrl(filePath);
+    
+    if (data?.publicUrl) {
+      console.log('✅ URL publique générée:', data.publicUrl);
+      return data.publicUrl;
+    }
+    
+    console.error('❌ Impossible de générer l\'URL publique pour:', filePath);
+    return null;
+  } catch (error) {
+    console.error('💥 Exception lors de la génération d\'URL publique:', error);
+    return null;
+  }
+};
+
+/**
+ * Génère une URL signée pour accéder au fichier audio (fallback si URL publique ne fonctionne pas)
  * @param filePath Chemin du fichier dans le bucket
  * @returns URL signée ou null en cas d'erreur
  */
@@ -166,8 +192,7 @@ export const uploadAudio = async (
     
     console.log('✅ Téléchargement réussi, génération de l\'URL publique...');
     
-    // CORRECTION CRITIQUE: Stocker le chemin relatif au lieu de l'URL publique
-    // Cela permettra de régénérer l'URL à chaque fois pour éviter les problèmes d'expiration
+    // Stocker le chemin relatif - l'URL sera générée à la demande
     const relativePath = fileName;
     console.log('📁 Chemin relatif sauvegardé:', relativePath);
     
@@ -188,7 +213,7 @@ export const uploadAudio = async (
 };
 
 /**
- * NOUVELLE FONCTION: Génère une URL accessible pour un chemin stocké
+ * Génère une URL accessible pour un chemin stocké (maintenant public)
  * @param audioPath Chemin du fichier stocké en base
  * @returns URL publique ou signée selon les permissions
  */
@@ -200,20 +225,17 @@ export const getAccessibleAudioUrl = async (audioPath: string): Promise<string |
   try {
     console.log('🎵 Génération d\'URL accessible pour:', audioPath);
     
-    // D'abord essayer l'URL publique
-    const { data: publicUrlData } = supabase.storage
-      .from(AUDIO_BUCKET_NAME)
-      .getPublicUrl(audioPath);
-    
-    if (publicUrlData?.publicUrl) {
-      console.log('✅ URL publique générée:', publicUrlData.publicUrl);
-      return publicUrlData.publicUrl;
+    // Utiliser l'URL publique maintenant que le bucket est public
+    const publicUrl = getPublicAudioUrl(audioPath);
+    if (publicUrl) {
+      console.log('✅ URL publique générée:', publicUrl);
+      return publicUrl;
     }
     
-    // Si pas d'URL publique, essayer une URL signée
+    // Fallback vers URL signée si nécessaire
     const signedUrl = await getSignedAudioUrl(audioPath);
     if (signedUrl) {
-      console.log('✅ URL signée générée:', signedUrl);
+      console.log('✅ URL signée générée en fallback:', signedUrl);
       return signedUrl;
     }
     
