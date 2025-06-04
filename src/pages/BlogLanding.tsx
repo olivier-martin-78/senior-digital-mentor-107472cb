@@ -298,7 +298,7 @@ const BlogLanding = () => {
             <Card className="border-none shadow-md">
               <CardContent className="p-6">
                 <BookOpen className="h-8 w-8 text-tranches-sage mb-4" />
-                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Blog Mémoire</h4>
+                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Blog (Photos & Vidéos)'</h4>
                 <p className="text-sm text-tranches-warmgray mb-3">
                   Créez des publications autour de vos albums photo anciens, en les accompagnant de récits, de vidéos ou de messages vocaux.
                 </p>
