@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import MoodSelector from '@/components/MoodSelector';
 
 interface DiaryFormFieldsProps {
   form: UseFormReturn<any>;
@@ -170,34 +170,7 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
       />
 
       {/* Humeur - verrouillable */}
-      <FormField
-        control={form.control}
-        name="mood_rating"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Humeur générale (1-5)</FormLabel>
-            <Select 
-              onValueChange={(value) => field.onChange(parseInt(value))} 
-              value={field.value?.toString()}
-              disabled={isLocked}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez votre humeur" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="1">1 - Très difficile</SelectItem>
-                <SelectItem value="2">2 - Difficile</SelectItem>
-                <SelectItem value="3">3 - Neutre</SelectItem>
-                <SelectItem value="4">4 - Bonne</SelectItem>
-                <SelectItem value="5">5 - Excellente</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <MoodSelector form={form} disabled={isLocked} />
 
       {/* Choses positives - verrouillable */}
       <FormField
