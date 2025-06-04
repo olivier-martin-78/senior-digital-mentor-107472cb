@@ -9,7 +9,8 @@ const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 interface NotificationRequest {
@@ -20,7 +21,14 @@ interface NotificationRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('🔍 send-group-notification - Début requête:', {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   if (req.method === 'OPTIONS') {
+    console.log('🔍 send-group-notification - Traitement OPTIONS');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -29,6 +37,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Vérifier l'authentification
     const authHeader = req.headers.get('Authorization');
+    console.log('🔍 send-group-notification - Auth header:', authHeader ? 'présent' : 'absent');
+    
     if (!authHeader) {
       throw new Error('Missing authorization header');
     }
@@ -38,12 +48,15 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     if (authError || !user) {
+      console.error('🔍 send-group-notification - Erreur auth:', authError);
       throw new Error('Invalid authentication');
     }
 
+    console.log('🔍 send-group-notification - Utilisateur authentifié:', user.id);
+
     const { contentType, contentId, title, authorId }: NotificationRequest = await req.json();
 
-    console.log('Processing notification request:', { contentType, contentId, title, authorId });
+    console.log('🔍 send-group-notification - Données reçues:', { contentType, contentId, title, authorId });
 
     // Récupérer les informations de l'auteur
     const { data: authorProfile, error: authorError } = await supabase
@@ -53,11 +66,11 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (authorError || !authorProfile) {
-      console.error('Author profile error:', authorError);
+      console.error('🔍 send-group-notification - Erreur profil auteur:', authorError);
       throw new Error('Author profile not found');
     }
 
-    console.log('Author profile found:', authorProfile.display_name);
+    console.log('🔍 send-group-notification - Profil auteur trouvé:', authorProfile.display_name);
 
     // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
@@ -76,14 +89,14 @@ const handler = async (req: Request): Promise<Response> => {
       .neq('user_id', authorId);
 
     if (membersError) {
-      console.error('Group members error:', membersError);
+      console.error('🔍 send-group-notification - Erreur membres groupe:', membersError);
       throw new Error('Failed to fetch group members');
     }
 
-    console.log('Group members found:', groupMembers?.length || 0);
+    console.log('🔍 send-group-notification - Membres groupe trouvés:', groupMembers?.length || 0);
 
     if (!groupMembers || groupMembers.length === 0) {
-      console.log('No group members found for notifications');
+      console.log('🔍 send-group-notification - Aucun membre à notifier');
       return new Response(
         JSON.stringify({ message: 'No group members to notify' }),
         {
@@ -93,13 +106,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Construire l'URL du contenu - utiliser l'URL de base du projet
+    // Construire l'URL du contenu
     const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     const contentUrl = contentType === 'blog' ? `${baseUrl}/blog/${contentId}` :
                       contentType === 'diary' ? `${baseUrl}/diary/${contentId}` :
                       `${baseUrl}/wishes/${contentId}`;
 
-    console.log('Content URL:', contentUrl);
+    console.log('🔍 send-group-notification - URL contenu:', contentUrl);
 
     // Préparer et envoyer les emails
     const emailPromises = groupMembers.map(async (member: any) => {
@@ -110,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
                               contentType === 'diary' ? 'entrée de journal' : 'souhait';
 
       try {
-        console.log(`Sending email to ${memberProfile.email}`);
+        console.log(`🔍 send-group-notification - Envoi email à ${memberProfile.email}`);
         
         await resend.emails.send({
           from: 'Tranches de Vie <onboarding@resend.dev>',
@@ -146,15 +159,15 @@ const handler = async (req: Request): Promise<Response> => {
           `,
         });
         
-        console.log(`Email sent successfully to ${memberProfile.email}`);
+        console.log(`✅ send-group-notification - Email envoyé avec succès à ${memberProfile.email}`);
       } catch (emailError) {
-        console.error(`Failed to send email to ${memberProfile.email}:`, emailError);
+        console.error(`❌ send-group-notification - Échec envoi email à ${memberProfile.email}:`, emailError);
       }
     });
 
     await Promise.allSettled(emailPromises);
 
-    console.log('All emails processed');
+    console.log('✅ send-group-notification - Tous les emails traités');
 
     return new Response(
       JSON.stringify({ message: 'Group notifications sent successfully' }),
@@ -165,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error('Error in send-group-notification:', error);
+    console.error('❌ send-group-notification - Erreur:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
