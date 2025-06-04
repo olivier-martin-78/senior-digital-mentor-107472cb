@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LifeStory } from '@/types/lifeStory';
 import { useLifeStory } from '@/hooks/use-life-story';
@@ -8,9 +9,13 @@ import { initialChapters } from './initialChapters';
 
 interface LifeStoryFormProps {
   existingStory?: LifeStory;
+  isReadOnly?: boolean;
 }
 
-export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) => {
+export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ 
+  existingStory,
+  isReadOnly = false 
+}) => {
   // Déterminer l'utilisateur cible depuis l'histoire existante
   const targetUserId = existingStory?.user_id;
 
@@ -109,6 +114,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
           activeTab={activeTabString}
           openQuestions={openQuestionsObject}
           activeQuestion={lifeStoryHook.activeQuestion}
+          isReadOnly={isReadOnly}
           setActiveTab={handleSetActiveTab}
           toggleQuestions={lifeStoryHook.toggleQuestions}
           handleQuestionFocus={lifeStoryHook.handleQuestionFocus}
