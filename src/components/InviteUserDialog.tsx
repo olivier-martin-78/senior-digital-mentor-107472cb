@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,7 +68,7 @@ const InviteUserDialog = () => {
       if (emailExists) {
         toast({
           title: "Email déjà utilisé",
-          description: `Un compte existe déjà avec l'adresse email ${formData.email}. Cette personne peut se connecter directement.`,
+          description: `Un compte existe déjà avec l'adresse email ${formData.email}. Cette adresse email peut se connecter directement et est déjà membre d'un autre cercle familial ou amical. Elle ne peut appartenir à plus d'un cercle à la fois.`,
           variant: "destructive"
         });
         return;
