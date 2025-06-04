@@ -43,6 +43,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { contentType, contentId, title, authorId }: NotificationRequest = await req.json();
 
+    console.log('Processing notification request:', { contentType, contentId, title, authorId });
+
     // Récupérer les informations de l'auteur
     const { data: authorProfile, error: authorError } = await supabase
       .from('profiles')
@@ -51,8 +53,11 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (authorError || !authorProfile) {
+      console.error('Author profile error:', authorError);
       throw new Error('Author profile not found');
     }
+
+    console.log('Author profile found:', authorProfile.display_name);
 
     // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
@@ -71,8 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
       .neq('user_id', authorId);
 
     if (membersError) {
+      console.error('Group members error:', membersError);
       throw new Error('Failed to fetch group members');
     }
+
+    console.log('Group members found:', groupMembers?.length || 0);
 
     if (!groupMembers || groupMembers.length === 0) {
       console.log('No group members found for notifications');
@@ -85,11 +93,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Construire l'URL du contenu
-    const baseUrl = supabaseUrl.replace('.supabase.co', '.vercel.app');
+    // Construire l'URL du contenu - utiliser l'URL de base du projet
+    const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     const contentUrl = contentType === 'blog' ? `${baseUrl}/blog/${contentId}` :
                       contentType === 'diary' ? `${baseUrl}/diary/${contentId}` :
                       `${baseUrl}/wishes/${contentId}`;
+
+    console.log('Content URL:', contentUrl);
 
     // Préparer et envoyer les emails
     const emailPromises = groupMembers.map(async (member: any) => {
@@ -100,6 +110,8 @@ const handler = async (req: Request): Promise<Response> => {
                               contentType === 'diary' ? 'entrée de journal' : 'souhait';
 
       try {
+        console.log(`Sending email to ${memberProfile.email}`);
+        
         await resend.emails.send({
           from: 'Tranches de Vie <onboarding@resend.dev>',
           to: [memberProfile.email],
@@ -133,12 +145,16 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
           `,
         });
+        
+        console.log(`Email sent successfully to ${memberProfile.email}`);
       } catch (emailError) {
         console.error(`Failed to send email to ${memberProfile.email}:`, emailError);
       }
     });
 
     await Promise.allSettled(emailPromises);
+
+    console.log('All emails processed');
 
     return new Response(
       JSON.stringify({ message: 'Group notifications sent successfully' }),
