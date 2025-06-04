@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -251,10 +252,27 @@ const WishPost = () => {
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
-  // Nouvelles règles de permissions
-  const canManagePublication = user?.id === wish.author_id || hasRole('admin');
-  const canEdit = user?.id === wish.author_id || hasRole('admin');
+  // Règles de permissions avec logs de débogage
+  const isAuthor = user?.id === wish.author_id;
+  const isAdmin = hasRole('admin');
+  
+  console.log('WishPost - Debug permissions:', {
+    userId: user?.id,
+    wishAuthorId: wish.author_id,
+    isAuthor,
+    isAdmin,
+    userRoles: user ? [hasRole('admin') ? 'admin' : '', hasRole('editor') ? 'editor' : '', hasRole('reader') ? 'reader' : ''].filter(Boolean) : []
+  });
+  
+  const canManagePublication = isAuthor || isAdmin;
+  const canEdit = isAuthor || isAdmin;
   const canDelete = hasRole('admin');
+
+  console.log('WishPost - Final permissions:', {
+    canManagePublication,
+    canEdit,
+    canDelete
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
