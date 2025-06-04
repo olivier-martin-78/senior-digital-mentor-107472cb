@@ -101,15 +101,20 @@ const LifeStory = () => {
     }
   };
 
-  // Vérifier si l'utilisateur peut enregistrer (pas un lecteur et c'est sa propre histoire)
-  const canSave = !hasRole('reader') && targetUserId === user?.id;
-  const isViewingOthersStory = targetUserId !== user?.id;
+  // CORRECTION: Vérifier si l'utilisateur peut enregistrer
+  // - Pas un lecteur ET
+  // - (selectedUserId est null OU selectedUserId === user?.id) pour s'assurer qu'on est sur sa propre histoire
+  const canSave = !hasRole('reader') && (selectedUserId === null || selectedUserId === user?.id);
+  const isViewingOthersStory = selectedUserId !== null && selectedUserId !== user?.id;
 
   console.log('🏠 Permissions calculées:', {
     canSave,
     isViewingOthersStory,
     storyOwnerInfo,
-    effectiveStoryOwner: lifeStoryData.data?.user_id
+    effectiveStoryOwner: lifeStoryData.data?.user_id,
+    selectedUserId,
+    userIdMatch: selectedUserId === user?.id,
+    isSelectedUserIdNull: selectedUserId === null
   });
 
   if (lifeStoryData.isLoading) {
@@ -164,7 +169,7 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* Sélecteur d'utilisateur - restauré */}
+        {/* Sélecteur d'utilisateur */}
         <LifeStoryUserSelector
           selectedUserId={selectedUserId}
           onUserChange={setSelectedUserId}
