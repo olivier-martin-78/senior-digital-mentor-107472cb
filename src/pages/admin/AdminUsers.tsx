@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,10 +7,9 @@ import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Pencil, Trash2, ChevronLeft, Search, UserPlus } from 'lucide-react';
+import { Loader2, ChevronLeft, Search, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import { AppRole } from '@/types/supabase';
@@ -20,14 +20,8 @@ interface UserAdmin {
   id: string;
   email: string;
   created_at: string;
-  last_sign_in_at: string | null;
   role: AppRole;
   display_name: string | null;
-}
-
-interface AuthUser {
-  id: string;
-  last_sign_in_at: string | null;
 }
 
 const AdminUsers = () => {
@@ -53,7 +47,7 @@ const AdminUsers = () => {
     try {
       setLoading(true);
 
-      // First get profiles data
+      // Récupérer les données des profils
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, created_at, display_name');
@@ -63,7 +57,7 @@ const AdminUsers = () => {
         throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
       }
 
-      // Then get user roles
+      // Récupérer les rôles des utilisateurs
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -73,35 +67,18 @@ const AdminUsers = () => {
         throw new Error(`Erreur Supabase: ${rolesError.message} (code: ${rolesError.code})`);
       }
 
-      // Get auth data for last sign in information
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) {
-        console.error('Erreur Supabase (auth):', authError);
-        throw new Error(`Erreur Supabase: ${authError.message}`);
-      }
-
-      if (profilesData && rolesData && authData) {
-        // Create a map for easy role lookup
+      if (profilesData && rolesData) {
+        // Créer une map pour la recherche facile des rôles
         const rolesMap: { [key: string]: AppRole } = {};
         rolesData.forEach(roleEntry => {
           rolesMap[roleEntry.user_id] = roleEntry.role;
         });
 
-        // Create a map for auth data lookup
-        const authMap: { [key: string]: { last_sign_in_at: string | null } } = {};
-        (authData.users as AuthUser[]).forEach(authUser => {
-          authMap[authUser.id] = {
-            last_sign_in_at: authUser.last_sign_in_at
-          };
-        });
-
-        // Combine profile, role and auth data
+        // Combiner les données de profil et de rôle
         const combinedUsers: UserAdmin[] = profilesData.map(profile => ({
           id: profile.id,
           email: profile.email,
           created_at: profile.created_at,
-          last_sign_in_at: authMap[profile.id]?.last_sign_in_at || null,
           role: rolesMap[profile.id] || 'reader',
           display_name: profile.display_name
         }));
@@ -133,36 +110,6 @@ const AdminUsers = () => {
   const handleDeleteClick = (user: UserAdmin) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
-
-    try {
-      // Supprimer l'utilisateur via Supabase Auth
-      const { error } = await supabase.auth.admin.deleteUser(userToDelete.id);
-
-      if (error) {
-        console.error('Erreur lors de la suppression de l\'utilisateur:', error);
-        throw error;
-      }
-
-      // Mettre à jour l'état local après la suppression réussie
-      setUsers(prev => prev.filter(user => user.id !== userToDelete.id));
-
-      toast({
-        title: 'Utilisateur supprimé',
-        description: `L'utilisateur "${userToDelete.email}" a été supprimé avec succès`,
-      });
-
-      setDeleteDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de supprimer l'utilisateur : ${error.message}`,
-        variant: 'destructive',
-      });
-    }
   };
 
   const handleUserDeleted = async () => {
@@ -232,7 +179,6 @@ const AdminUsers = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Date de création</TableHead>
-                  <TableHead>Dernière connexion</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -248,11 +194,6 @@ const AdminUsers = () => {
                       <TableCell>
                         {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </TableCell>
-                      <TableCell>
-                        {user.last_sign_in_at
-                          ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-                          : 'Jamais connecté'}
-                      </TableCell>
                       <TableCell className="text-right space-x-2">
                         <DeleteUserDialog
                           userId={user.id}
@@ -264,7 +205,7 @@ const AdminUsers = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                       {searchTerm
                         ? 'Aucun utilisateur ne correspond à votre recherche'
                         : 'Aucun utilisateur n\'a été trouvé'}
