@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,6 @@ const WishPost = () => {
   const [publishLoading, setPublishLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(16/9);
-  const [isAuthorInvitee, setIsAuthorInvitee] = useState(false);
 
   useEffect(() => {
     const fetchWishPost = async () => {
@@ -62,25 +60,6 @@ const WishPost = () => {
           });
           navigate('/wishes');
           return;
-        }
-
-        // Check if the author is an invitee of the current user
-        if (user && data.author_id !== user.id) {
-          const { data: groupData } = await supabase
-            .from('group_members')
-            .select(`
-              group_id,
-              invitation_groups!inner(created_by)
-            `)
-            .eq('user_id', data.author_id)
-            .eq('role', 'guest');
-
-          if (groupData && groupData.length > 0) {
-            const isInvitee = groupData.some(
-              (group: any) => group.invitation_groups.created_by === user.id
-            );
-            setIsAuthorInvitee(isInvitee);
-          }
         }
         
         setWish(data as WishPostType);
@@ -272,9 +251,9 @@ const WishPost = () => {
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
-  // CORRECTION: Permissions mises à jour - un inviteur ne peut pas modifier/publier les souhaits de ses invités
-  const canManagePublication = user?.id === wish.author_id || (hasRole('admin') && !isAuthorInvitee);
-  const canEdit = user?.id === wish.author_id || (hasRole('admin') && !isAuthorInvitee);
+  // Nouvelles règles de permissions
+  const canManagePublication = user?.id === wish.author_id || hasRole('admin');
+  const canEdit = user?.id === wish.author_id || hasRole('admin');
   const canDelete = hasRole('admin');
 
   return (
