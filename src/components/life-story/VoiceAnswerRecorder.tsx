@@ -1,5 +1,5 @@
+
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import AudioRecorder from '@/components/life-story/AudioRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
@@ -10,6 +10,7 @@ interface VoiceAnswerRecorderProps {
   onAudioDeleted: (chapterId: string, questionId: string, showToast?: boolean) => void;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
   existingAudioUrl?: string | null;
+  isReadOnly: boolean; // Nouvelle prop pour remplacer hasRole('reader')
   shouldLog?: boolean;
 }
 
@@ -20,9 +21,9 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
   existingAudioUrl,
+  isReadOnly, // Utiliser cette prop au lieu de hasRole('reader')
   shouldLog = false,
 }) => {
-  const { hasRole } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   
   // CORRECTION: Normaliser l'URL existante de manière plus stricte
@@ -40,13 +41,13 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       normalizedExistingUrl,
       hasValidAudio: !!normalizedExistingUrl,
       isUploading,
-      isReader: hasRole('reader'),
+      isReadOnly, // Log de la nouvelle prop
+      canRecord: !isReadOnly, // Calculé à partir de isReadOnly
       timestamp: new Date().toISOString()
     });
   }
   
-  const isReader = hasRole('reader');
-  const canRecord = !isReader;
+  const canRecord = !isReadOnly; // CORRECTION: Utiliser isReadOnly au lieu de hasRole('reader')
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     // LOG DÉTAILLÉ pour question 1 chapitre 1
@@ -115,7 +116,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       hasNormalizedUrl: !!normalizedExistingUrl,
       normalizedExistingUrl,
       isUploading,
-      isReader,
+      isReadOnly,
       canRecord
     });
   }
@@ -130,17 +131,17 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       <VoiceAnswerPlayer
         audioUrl={normalizedExistingUrl}
         onDelete={handleDeleteExistingAudio}
-        readOnly={isReader}
+        readOnly={isReadOnly} // Utiliser isReadOnly
         shouldLog={shouldLog && chapterId === 'chapter-1' && questionId === 'question-1'}
       />
     );
   }
 
-  // Si pas d'audio existant et que l'utilisateur est un reader, ne rien afficher
-  if (isReader) {
+  // Si pas d'audio existant et que l'utilisateur est en lecture seule, ne rien afficher
+  if (isReadOnly) {
     // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-      console.log('🎤 RECORDER - Question 1 Chapitre 1 - Reader sans audio, pas d\'affichage');
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - Mode lecture seule sans audio, pas d\'affichage');
     }
     return null;
   }

@@ -74,6 +74,7 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
           onAudioRecorded={onAudioRecorded}
           onAudioDeleted={onAudioDeleted}
           onAudioUrlChange={onAudioUrlChange}
+          isReadOnly={isReadOnly} // CORRECTION: Passer la prop isReadOnly
           shouldLog={shouldLog}
         />
       </div>
