@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,6 +108,9 @@ const LifeStory = () => {
   const isViewingOwnStory = selectedUserId === null || selectedUserId === user?.id;
   const canSave = isViewingOwnStory; // Toujours permettre l'édition de sa propre histoire
   const isViewingOthersStory = selectedUserId !== null && selectedUserId !== user?.id;
+  
+  // NOUVELLE LOGIQUE: Calculer isReadOnly pour les composants enfants
+  const isReadOnly = isViewingOthersStory; // Mode lecture seule SEULEMENT pour les histoires des autres
 
   console.log('🏠 Permissions calculées:', {
     canSave,
@@ -118,7 +122,22 @@ const LifeStory = () => {
     userIdMatch: selectedUserId === user?.id,
     isSelectedUserIdNull: selectedUserId === null,
     isReader,
-    finalDecision: `canSave: ${canSave}, car isViewingOwnStory: ${isViewingOwnStory} (le rôle ne compte pas pour sa propre histoire)`
+    isReadOnly,
+    finalDecision: `canSave: ${canSave}, isReadOnly: ${isReadOnly}, car isViewingOwnStory: ${isViewingOwnStory} (le rôle ne compte pas pour sa propre histoire)`
+  });
+
+  console.log('🔍 DEBUG PERMISSIONS DÉTAILLÉ pour Olivier78:', {
+    userEmail: user?.email,
+    userId: user?.id,
+    selectedUserId,
+    isOlivier78: user?.email === 'olivier.devulder@gmail.com',
+    isViewingMyStory: selectedUserId === null,
+    isSelectedUserIdMyId: selectedUserId === user?.id,
+    calculatedIsViewingOwnStory: isViewingOwnStory,
+    calculatedIsReadOnly: isReadOnly,
+    calculatedCanSave: canSave,
+    userRole: isReader ? 'reader' : 'not-reader',
+    shouldBeAbleToEdit: selectedUserId === null || selectedUserId === user?.id
   });
 
   if (lifeStoryData.isLoading) {
@@ -219,6 +238,7 @@ const LifeStory = () => {
           activeTab={lifeStoryData.data.chapters[lifeStoryData.activeTab]?.id || lifeStoryData.data.chapters[0]?.id || ''}
           openQuestions={Object.fromEntries(Array.from(lifeStoryData.openQuestions).map(key => [key, true]))}
           activeQuestion={lifeStoryData.activeQuestion}
+          isReadOnly={isReadOnly}
           setActiveTab={(tabId: string) => {
             const tabIndex = lifeStoryData.data.chapters.findIndex(ch => ch.id === tabId);
             if (tabIndex !== -1) {

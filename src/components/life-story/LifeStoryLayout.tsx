@@ -4,13 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChapterNavigation from './ChapterNavigation';
 import ChapterContent from './ChapterContent';
 import { Chapter } from '@/types/lifeStory';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface LifeStoryLayoutProps {
   chapters: Chapter[];
   activeTab: string;
   openQuestions: { [key: string]: boolean };
   activeQuestion: string | null;
+  isReadOnly: boolean;
   setActiveTab: (tab: string) => void;
   toggleQuestions: (chapterId: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
@@ -25,6 +25,7 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
   activeTab,
   openQuestions,
   activeQuestion,
+  isReadOnly,
   setActiveTab,
   toggleQuestions,
   handleQuestionFocus,
@@ -33,6 +34,12 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
+  console.log('📋 LifeStoryLayout - Props reçues:', {
+    isReadOnly,
+    chaptersCount: chapters.length,
+    activeTab
+  });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Navigation des chapitres */}
@@ -64,6 +71,7 @@ const LifeStoryLayout: React.FC<LifeStoryLayoutProps> = ({
               <ChapterContent
                 chapter={chapter}
                 activeQuestion={activeQuestion}
+                isReadOnly={isReadOnly}
                 handleQuestionFocus={handleQuestionFocus}
                 updateAnswer={updateAnswer}
                 onAudioRecorded={onAudioRecorded}

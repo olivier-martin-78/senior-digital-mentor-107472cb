@@ -3,13 +3,13 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import QuestionItem from './QuestionItem';
 import { Chapter } from '@/types/lifeStory';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ChapterContentProps {
   chapter: Chapter;
   updateAnswer: (chapterId: string, questionId: string, answer: string) => void;
   handleQuestionFocus: (chapterId: string, questionId: string) => void;
   activeQuestion: string | null;
+  isReadOnly: boolean;
   onAudioRecorded: (chapterId: string, questionId: string, blob: Blob) => void;
   onAudioDeleted: (chapterId: string, questionId: string) => void;
   onAudioUrlChange?: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
@@ -20,12 +20,17 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
   updateAnswer,
   handleQuestionFocus,
   activeQuestion,
+  isReadOnly,
   onAudioRecorded,
   onAudioDeleted,
   onAudioUrlChange,
 }) => {
-  const { hasRole } = useAuth();
-  const isReader = hasRole('reader');
+  console.log('📄 ChapterContent - Rendu pour chapitre:', {
+    chapterId: chapter.id,
+    chapterTitle: chapter.title,
+    isReadOnly,
+    questionsCount: chapter.questions?.length || 0
+  });
 
   return (
     <Card>
@@ -33,7 +38,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
         <CardTitle>{chapter.title}</CardTitle>
         <CardDescription>
           {chapter.description}
-          {isReader && (
+          {isReadOnly && (
             <div className="mt-2 text-sm text-blue-600">
               <span className="font-medium">[Mode lecture seule]</span>
             </div>
@@ -50,6 +55,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
               onAnswerChange={updateAnswer}
               onQuestionFocus={handleQuestionFocus}
               activeQuestion={activeQuestion}
+              isReadOnly={isReadOnly}
               onAudioRecorded={onAudioRecorded}
               onAudioDeleted={onAudioDeleted}
               onAudioUrlChange={onAudioUrlChange}
