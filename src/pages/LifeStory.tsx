@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,20 +100,24 @@ const LifeStory = () => {
     }
   };
 
-  // CORRECTION: Vérifier si l'utilisateur peut enregistrer
-  // - Pas un lecteur ET
-  // - (selectedUserId est null OU selectedUserId === user?.id) pour s'assurer qu'on est sur sa propre histoire
-  const canSave = !hasRole('reader') && (selectedUserId === null || selectedUserId === user?.id);
+  // CORRECTION: Permettre l'édition de sa propre histoire même avec le rôle "reader"
+  // - Si c'est sa propre histoire (selectedUserId est null), l'utilisateur peut toujours éditer
+  // - Si c'est l'histoire de quelqu'un d'autre, appliquer les restrictions de rôle
+  const isViewingOwnStory = selectedUserId === null || selectedUserId === user?.id;
+  const canSave = isViewingOwnStory || !hasRole('reader');
   const isViewingOthersStory = selectedUserId !== null && selectedUserId !== user?.id;
 
   console.log('🏠 Permissions calculées:', {
     canSave,
     isViewingOthersStory,
+    isViewingOwnStory,
     storyOwnerInfo,
     effectiveStoryOwner: lifeStoryData.data?.user_id,
     selectedUserId,
     userIdMatch: selectedUserId === user?.id,
-    isSelectedUserIdNull: selectedUserId === null
+    isSelectedUserIdNull: selectedUserId === null,
+    isReader,
+    finalDecision: `canSave: ${canSave}, because isViewingOwnStory: ${isViewingOwnStory} OR !hasRole('reader'): ${!hasRole('reader')}`
   });
 
   if (lifeStoryData.isLoading) {
@@ -179,7 +182,7 @@ const LifeStory = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
-            {(isReader || isViewingOthersStory) && (
+            {isViewingOthersStory && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
                 <span>Mode lecture seule</span>
