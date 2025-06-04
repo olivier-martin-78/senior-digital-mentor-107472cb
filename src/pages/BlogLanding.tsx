@@ -184,15 +184,15 @@ const BlogLanding = () => {
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Activité physique douce</span>
+              <span className="text-tranches-charcoal">Utilisation des outils de communication</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Lien social et familial</span>
+              <span className="text-tranches-charcoal">Interaction avec son cercle amical et social</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Check className="h-5 w-5 text-tranches-sage" />
-              <span className="text-tranches-charcoal">Santé mentale & émotions</span>
+              <span className="text-tranches-charcoal">Production de contenu digitaux</span>
             </div>
           </div>
 
