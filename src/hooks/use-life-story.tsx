@@ -84,7 +84,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           parsedChapters = initialChapters;
         }
 
-        // Fusionner avec les chapitres initiaux pour s'assurer que toutes les questions sont présentes
+        // CORRECTION: Meilleure gestion des chemins audio lors du chargement
         const mergedChapters = initialChapters.map(initialChapter => {
           const existingChapter = parsedChapters.find(ch => ch.id === initialChapter.id);
           
@@ -93,15 +93,21 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
               const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
               
               if (existingQuestion) {
-                // CORRECTION CRITIQUE: Stocker le chemin relatif au lieu de l'URL complète
-                const normalizedAudioUrl = existingQuestion.audioUrl && existingQuestion.audioUrl.trim() !== '' 
-                  ? existingQuestion.audioUrl 
-                  : null;
+                // CORRECTION: Validation stricte des chemins audio
+                let validAudioUrl = null;
+                if (existingQuestion.audioUrl && 
+                    typeof existingQuestion.audioUrl === 'string' && 
+                    existingQuestion.audioUrl.trim() !== '') {
+                  validAudioUrl = existingQuestion.audioUrl.trim();
+                  console.log(`🎵 Audio trouvé pour ${initialQuestion.id}:`, validAudioUrl);
+                } else {
+                  console.log(`🎵 Pas d'audio valide pour ${initialQuestion.id}:`, existingQuestion.audioUrl);
+                }
                 
                 return {
                   ...initialQuestion,
                   answer: existingQuestion.answer || initialQuestion.answer,
-                  audioUrl: normalizedAudioUrl, // Maintenant c'est un chemin relatif
+                  audioUrl: validAudioUrl,
                   audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
                 };
               }
@@ -118,24 +124,25 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           return initialChapter;
         });
 
-        console.log('🎵 Chemins audio récupérés lors du chargement:', 
+        console.log('🎵 Résumé des audios chargés:', 
           mergedChapters.flatMap(ch => 
             ch.questions.filter(q => q.audioUrl).map(q => ({
               questionId: q.id,
-              audioPath: q.audioUrl
+              audioPath: q.audioUrl,
+              isValid: !!(q.audioUrl && q.audioUrl.trim())
             }))
           )
         );
 
         setData({
           ...storyData,
-          user_id: userId, // S'ASSURER que l'user_id est cohérent
+          user_id: userId,
           chapters: mergedChapters
         });
       } else {
         console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux pour utilisateur:', userId);
         const newStory: LifeStory = {
-          user_id: userId, // IMPORTANT: Utiliser le userId demandé
+          user_id: userId,
           title: 'Mon Histoire de Vie',
           chapters: initialChapters,
           created_at: new Date().toISOString(),
@@ -349,13 +356,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // RÉDUCTION DE LA SAUVEGARDE AUTOMATIQUE pour l'audio
-    // On garde une sauvegarde pour l'audio car c'est important de ne pas perdre l'enregistrement
+    // CORRECTION: Sauvegarde automatique systématique pour l'audio
+    console.log('💾 Déclenchement sauvegarde automatique pour audio');
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
       }
-    }, 500);
+    }, 100);
   };
 
   const handleAudioDeleted = (questionId: string) => {
@@ -374,12 +381,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // RÉDUCTION DE LA SAUVEGARDE AUTOMATIQUE pour la suppression audio
+    // CORRECTION: Sauvegarde automatique pour la suppression
+    console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
     setTimeout(() => {
       if (!isSaving) {
         saveNow();
       }
-    }, 500);
+    }, 100);
   };
 
   const handleAudioUrlChange = (questionId: string, audioPath: string | null) => {
@@ -387,28 +395,29 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     console.log('🔄 Changement chemin audio:', { questionId, audioPath, dataUserId: data.user_id, effectiveUserId });
 
-    const normalizedAudioPath = audioPath && audioPath.trim() !== '' ? audioPath : null;
+    // CORRECTION: Validation stricte du chemin audio
+    const validAudioPath = (audioPath && typeof audioPath === 'string' && audioPath.trim() !== '') 
+      ? audioPath.trim() 
+      : null;
 
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
         question.id === questionId 
-          ? { ...question, audioUrl: normalizedAudioPath } 
+          ? { ...question, audioUrl: validAudioPath } 
           : question
       )
     }));
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION CRITIQUE: Toujours sauvegarder quand il y a un chemin audio
-    // car cela signifie qu'un upload vient de se terminer
-    if (normalizedAudioPath) {
-      setTimeout(() => {
-        if (!isSaving) {
-          saveNow();
-        }
-      }, 500);
-    }
+    // CORRECTION: Toujours sauvegarder les changements d'URL audio
+    console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio');
+    setTimeout(() => {
+      if (!isSaving) {
+        saveNow();
+      }
+    }, 100);
   };
 
   // Calculer le progrès
