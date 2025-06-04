@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +10,7 @@ import EntryHeader from '@/components/diary/EntryHeader';
 import EntryContent from '@/components/diary/EntryContent';
 import DiaryEntryNotification from '@/components/diary/DiaryEntryNotification';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
+import GroupNotificationButton from '@/components/GroupNotificationButton';
 
 const DiaryEntryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -105,6 +105,16 @@ const DiaryEntryPage = () => {
     }
   };
 
+  const handleGroupNotificationSent = () => {
+    if (entry) {
+      setEntry({
+        ...entry,
+        email_notification_sent: true,
+        email_notification_requested: true
+      });
+    }
+  };
+
   // Vérifier les permissions de modification
   const canEdit = entry && user && (
     entry.user_id === user.id || // L'auteur peut toujours modifier
@@ -113,6 +123,9 @@ const DiaryEntryPage = () => {
 
   // Afficher le bouton de notification seulement si l'utilisateur est l'auteur
   const canNotify = entry && user && entry.user_id === user.id && (hasRole('admin') || hasRole('editor'));
+
+  // Afficher le bouton de notification de groupe seulement si l'utilisateur est l'auteur
+  const canNotifyGroup = entry && user && entry.user_id === user.id;
 
   if (loading) {
     return (
@@ -170,6 +183,29 @@ const DiaryEntryPage = () => {
               entry={entry}
               onNotificationSent={handleNotificationSent}
             />
+          )}
+
+          {/* Notification de groupe pour les auteurs */}
+          {canNotifyGroup && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Notifier votre groupe de cette entrée
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Envoyez un email aux membres de votre groupe
+                  </p>
+                </div>
+                <GroupNotificationButton
+                  contentType="diary"
+                  contentId={entry.id}
+                  title={entry.title}
+                  isNotificationSent={entry.email_notification_sent}
+                  onNotificationSent={handleGroupNotificationSent}
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>

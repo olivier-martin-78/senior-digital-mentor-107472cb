@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import GroupNotificationButton from '@/components/GroupNotificationButton';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +35,7 @@ const BlogPost = () => {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasAlbumAccess, setHasAlbumAccess] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
   
   const {
     post,
@@ -173,6 +174,10 @@ const BlogPost = () => {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleNotificationSent = () => {
+    setNotificationSent(true);
   };
 
   const effectiveUserId = getEffectiveUserId();
@@ -359,6 +364,29 @@ const BlogPost = () => {
             onDelete={deleteComment}
           />
         </section>
+
+        {/* Notification pour les auteurs */}
+        {isAuthor && post.published && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Notifier votre groupe de cet article
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Envoyez un email aux membres de votre groupe
+                </p>
+              </div>
+              <GroupNotificationButton
+                contentType="blog"
+                contentId={post.id}
+                title={post.title}
+                isNotificationSent={notificationSent || post.email_notification_sent}
+                onNotificationSent={handleNotificationSent}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

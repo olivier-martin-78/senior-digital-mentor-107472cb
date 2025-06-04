@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WishPost as WishPostType } from '@/types/supabase';
 import { sanitizeInput, isValidUrl } from '@/utils/securityUtils';
 import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
+import GroupNotificationButton from '@/components/GroupNotificationButton';
 
 const WishPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -192,6 +193,16 @@ const WishPost = () => {
       });
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleNotificationSent = () => {
+    if (wish) {
+      setWish({
+        ...wish,
+        email_notification_sent: true,
+        email_notification_requested: true
+      });
     }
   };
 
@@ -505,6 +516,29 @@ const WishPost = () => {
             </p>
           </div>
         </div>
+
+        {/* Notification pour les auteurs */}
+        {isAuthor && wish.published && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Notifier votre groupe de ce souhait
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Envoyez un email aux membres de votre groupe
+                </p>
+              </div>
+              <GroupNotificationButton
+                contentType="wish"
+                contentId={wish.id}
+                title={wish.title}
+                isNotificationSent={wish.email_notification_sent}
+                onNotificationSent={handleNotificationSent}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
