@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,19 +68,35 @@ const AdminUsers = () => {
         throw new Error(`Erreur Supabase: ${rolesError.message} (code: ${rolesError.code})`);
       }
 
-      if (profilesData && rolesData) {
+      // Get auth data for last sign in information
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+
+      if (authError) {
+        console.error('Erreur Supabase (auth):', authError);
+        throw new Error(`Erreur Supabase: ${authError.message}`);
+      }
+
+      if (profilesData && rolesData && authData) {
         // Create a map for easy role lookup
         const rolesMap: { [key: string]: AppRole } = {};
         rolesData.forEach(roleEntry => {
           rolesMap[roleEntry.user_id] = roleEntry.role;
         });
 
-        // Combine profile and role data
+        // Create a map for auth data lookup
+        const authMap: { [key: string]: { last_sign_in_at: string | null } } = {};
+        authData.users.forEach(authUser => {
+          authMap[authUser.id] = {
+            last_sign_in_at: authUser.last_sign_in_at
+          };
+        });
+
+        // Combine profile, role and auth data
         const combinedUsers: UserAdmin[] = profilesData.map(profile => ({
           id: profile.id,
           email: profile.email,
           created_at: profile.created_at,
-          last_sign_in_at: null, // We'll set this as null since it's not available in profiles
+          last_sign_in_at: authMap[profile.id]?.last_sign_in_at || null,
           role: rolesMap[profile.id] || 'reader',
           display_name: profile.display_name
         }));
@@ -231,7 +246,7 @@ const AdminUsers = () => {
                       <TableCell>
                         {user.last_sign_in_at
                           ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-                          : 'Non disponible'}
+                          : 'Jamais connecté'}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <DeleteUserDialog
