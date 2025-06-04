@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -397,7 +396,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (questionId === 'question-1') {
-      console.log('🎤 RECORD - Question 1 Chapitre 1 - Audio enregistré:', {
+      console.log('🎤 RECORD - Question 1 Chapitre 1 - Audio enregistré (HOOK):', {
         questionId,
         audioPath,
         audioBlobSize: audioBlob.size,
@@ -407,11 +406,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       });
     }
 
+    // CORRECTION: Ne pas mettre à jour l'audioUrl ici car elle sera gérée par handleAudioUrlChange
+    // Juste garder une trace du blob pour compatibilité
     const updatedChapters = data.chapters.map(chapter => ({
       ...chapter,
       questions: chapter.questions.map(question =>
         question.id === questionId 
-          ? { ...question, audioBlob, audioUrl: audioPath } // audioUrl contient maintenant le chemin relatif
+          ? { ...question, audioBlob } // Garder seulement le blob
           : question
       )
     }));
@@ -422,7 +423,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     if (questionId === 'question-1') {
       const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
       const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
-      console.log('🎤 RECORD - Question 1 Chapitre 1 - État après mise à jour:', {
+      console.log('🎤 RECORD - Question 1 Chapitre 1 - État après mise à jour (HOOK):', {
         questionId: updatedQuestion1?.id,
         audioUrl: updatedQuestion1?.audioUrl,
         hasAudioUrl: !!updatedQuestion1?.audioUrl,
@@ -430,13 +431,8 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       });
     }
     
-    // CORRECTION: Sauvegarde automatique systématique pour l'audio
-    console.log('💾 Déclenchement sauvegarde automatique pour audio');
-    setTimeout(() => {
-      if (!isSaving) {
-        saveNow();
-      }
-    }, 100);
+    // SUPPRESSION: Ne plus déclencher de sauvegarde automatique ici
+    // car l'URL sera mise à jour via handleAudioUrlChange
   };
 
   const handleAudioDeleted = (questionId: string) => {
@@ -489,7 +485,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (questionId === 'question-1') {
-      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Changement chemin audio:', {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Changement chemin audio (HOOK):', {
         questionId,
         audioPath,
         audioPathType: typeof audioPath,
@@ -506,7 +502,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1 après validation
     if (questionId === 'question-1') {
-      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Validation chemin audio:', {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Validation chemin audio (HOOK):', {
         questionId,
         originalAudioPath: audioPath,
         validAudioPath,
@@ -529,7 +525,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     if (questionId === 'question-1') {
       const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
       const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
-      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - État après mise à jour:', {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - État après mise à jour (HOOK):', {
         questionId: updatedQuestion1?.id,
         audioUrl: updatedQuestion1?.audioUrl,
         hasAudioUrl: !!updatedQuestion1?.audioUrl
@@ -537,7 +533,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }
     
     // CORRECTION: Toujours sauvegarder les changements d'URL audio
-    console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio');
+    console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio (HOOK)');
     setTimeout(() => {
       if (!isSaving) {
         saveNow();

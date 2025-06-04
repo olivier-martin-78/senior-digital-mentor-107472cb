@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LifeStory } from '@/types/lifeStory';
 import { useLifeStory } from '@/hooks/use-life-story';
@@ -86,7 +85,9 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ existingStory }) =
   
   // Wrapper function to match expected audio recording signature
   const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
-    lifeStoryHook.handleAudioRecorded(questionId, blob, '');
+    // CORRECTION: Ne pas interférer avec la gestion d'URL, juste logger
+    console.log('🎤 LifeStoryForm - handleAudioRecorded appelé pour:', { chapterId, questionId, blobSize: blob.size });
+    // L'URL sera gérée par onAudioUrlChange
   };
   
   return (

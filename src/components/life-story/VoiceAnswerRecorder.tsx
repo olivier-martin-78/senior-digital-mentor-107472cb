@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AudioRecorder from '@/components/life-story/AudioRecorder';
@@ -52,7 +51,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-      console.log('🎤 RECORDER - Question 1 Chapitre 1 - handleAudioUrlChange:', { 
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - handleAudioUrlChange (RECORDER):', { 
         chapterId, 
         questionId, 
         audioUrl, 
@@ -63,25 +62,25 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       });
     }
     
-    // CORRECTION: Forcer la sauvegarde automatique pour les nouveaux audios
+    // CORRECTION: Toujours permettre la sauvegarde automatique
     onAudioUrlChange(chapterId, questionId, audioUrl, false);
     
     if (audioUrl && audioUrl.trim() !== '') {
       // LOG DÉTAILLÉ pour question 1 chapitre 1
       if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Audio URL reçue, enregistrement réussi:', {
+        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Audio URL reçue, enregistrement réussi (RECORDER):', {
           audioUrl,
           audioUrlLength: audioUrl.length
         });
       }
-      // Créer un blob factice pour compatibilité
+      // CORRECTION: Appeler onAudioRecorded APRÈS la mise à jour de l'URL
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       setIsUploading(false);
     } else {
       // LOG DÉTAILLÉ pour question 1 chapitre 1
       if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Suppression audio');
+        console.log('🎤 RECORDER - Question 1 Chapitre 1 - Suppression audio (RECORDER)');
       }
       onAudioDeleted(chapterId, questionId, false);
       setIsUploading(false);

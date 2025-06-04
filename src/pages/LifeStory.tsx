@@ -138,11 +138,14 @@ const LifeStory = () => {
 
   // Wrapper function to match expected audio recording signature
   const handleAudioRecorded = (chapterId: string, questionId: string, blob: Blob) => {
-    lifeStoryData.handleAudioRecorded(questionId, blob, '');
+    // CORRECTION: Ne pas passer de chemin vide, laisser le système gérer l'URL
+    console.log('🎤 LifeStory - handleAudioRecorded appelé pour:', { chapterId, questionId, blobSize: blob.size });
+    // Ne rien faire ici, l'URL sera gérée par handleAudioUrlChange
   };
 
   // Wrapper function for audio URL change
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null) => {
+    console.log('🔄 LifeStory - handleAudioUrlChange appelé pour:', { chapterId, questionId, audioUrl });
     lifeStoryData.handleAudioUrlChange(questionId, audioUrl);
   };
 
