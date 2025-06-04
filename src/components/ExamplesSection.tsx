@@ -8,7 +8,7 @@ const ExamplesSection = () => {
       image: "/lovable-uploads/8ac879f0-eb39-4064-9a78-17e88d05dcb2.png"
     },
     {
-      text: "Suzanne a invité sa petite-fille a consulter l'histoire de sa vie en cours de rédaction.",
+      text: "Suzanne a invité sa petite-fille à découvrir son journal digital. Depuis, elle est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
     },
     {
