@@ -41,10 +41,7 @@ const ExamplesSection = () => {
             </Card>
           ))}
         </div>
-        
-        <p className="text-center mt-8 text-tranches-warmgray italic">
-          (des témoignages photo/audio seront ajoutés prochainement)
-        </p>
+
       </div>
     </section>
   );
