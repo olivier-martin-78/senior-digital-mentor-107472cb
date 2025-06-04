@@ -298,7 +298,7 @@ const BlogLanding = () => {
             <Card className="border-none shadow-md">
               <CardContent className="p-6">
                 <BookOpen className="h-8 w-8 text-tranches-sage mb-4" />
-                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Blog (Photos & Vidéos)'</h4>
+                <h4 className="font-serif text-lg text-tranches-charcoal mb-3">Blog (Photos & Vidéos)</h4>
                 <p className="text-sm text-tranches-warmgray mb-3">
                   Créez des publications autour de vos albums photo anciens, en les accompagnant de récits, de vidéos ou de messages vocaux.
                 </p>
@@ -525,7 +525,7 @@ const BlogLanding = () => {
             <div>
               <img src="/SeniorDigital.png" alt="Senior Digital Mentor" width="110" className="mb-4"/>
               <p className="text-gray-300 text-sm">
-                Se former au digital à mon rythme
+                Offrez-leur le digital, ils vous offriront leurs plus belles histoires
               </p>
             </div>
             
@@ -550,10 +550,10 @@ const BlogLanding = () => {
             <div>
               <h4 className="font-serif text-lg mb-4">Contact</h4>
               <div className="space-y-2 text-sm text-gray-300">
-                <p className="flex items-center">
+           {/* <p className="flex items-center">
                   <Phone className="h-4 w-4 mr-2" />
                   01 23 45 67 89
-                </p>
+                </p> */}
                 <p className="flex items-center">
                   <Mail className="h-4 w-4 mr-2" />
                   contact@senior-digital-mentor.com
