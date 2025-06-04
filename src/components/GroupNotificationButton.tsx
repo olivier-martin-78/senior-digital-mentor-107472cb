@@ -48,43 +48,65 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
     try {
       setIsLoading(true);
       
-      console.log('Calling send-group-notification function with:', {
+      console.log('🔍 GroupNotification - Début envoi notification:', {
+        contentType,
+        contentId,
+        title,
+        authorId: user.id,
+        userEmail: user.email
+      });
+
+      // Vérifier la session d'abord
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log('🔍 GroupNotification - Session:', {
+        hasSession: !!session,
+        sessionError: sessionError,
+        accessToken: session?.access_token ? 'present' : 'missing'
+      });
+      
+      if (sessionError || !session) {
+        throw new Error('Session non disponible - ' + (sessionError?.message || 'Session manquante'));
+      }
+
+      // Préparer les données
+      const requestBody = {
         contentType,
         contentId,
         title,
         authorId: user.id
-      });
+      };
 
-      // Récupérer le token d'authentification
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Session non disponible');
-      }
+      console.log('🔍 GroupNotification - Appel fonction avec:', requestBody);
 
-      // Appeler l'edge function pour envoyer les notifications
+      // Appeler l'edge function
       const { data, error } = await supabase.functions.invoke('send-group-notification', {
-        body: {
-          contentType,
-          contentId,
-          title,
-          authorId: user.id
-        },
+        body: requestBody,
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
       });
 
-      console.log('Function response:', { data, error });
+      console.log('🔍 GroupNotification - Réponse fonction:', { 
+        data, 
+        error: error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : null 
+      });
 
       if (error) {
-        console.error('Function error:', error);
-        throw error;
+        console.error('🔍 GroupNotification - Erreur fonction:', error);
+        throw new Error(`Erreur fonction: ${error.message}`);
       }
 
       // Marquer la notification comme envoyée dans la base de données
       const tableName = contentType === 'blog' ? 'blog_posts' : 
                        contentType === 'diary' ? 'diary_entries' : 'wish_posts';
+      
+      console.log('🔍 GroupNotification - Mise à jour table:', tableName);
       
       const { error: updateError } = await supabase
         .from(tableName)
@@ -95,9 +117,11 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
         .eq('id', contentId);
 
       if (updateError) {
-        console.error('Database update error:', updateError);
-        throw updateError;
+        console.error('🔍 GroupNotification - Erreur mise à jour BDD:', updateError);
+        throw new Error(`Erreur base de données: ${updateError.message}`);
       }
+
+      console.log('🔍 GroupNotification - Succès complet');
 
       toast({
         title: 'Notifications envoyées',
@@ -105,21 +129,29 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
       });
 
       onNotificationSent?.();
+      
     } catch (error: any) {
-      console.error('Erreur lors de l\'envoi des notifications:', error);
+      console.error('🔍 GroupNotification - Erreur complète:', {
+        error,
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      });
       
       let errorMessage = 'Impossible d\'envoyer les notifications. Veuillez réessayer.';
       
       if (error.message?.includes('Failed to fetch')) {
-        errorMessage = 'Problème de connexion. Vérifiez votre connexion internet.';
+        errorMessage = 'Problème de connexion. Vérifiez votre connexion internet et réessayez.';
       } else if (error.message?.includes('Session')) {
-        errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+        errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+      } else if (error.message?.includes('fonction')) {
+        errorMessage = `Erreur du serveur: ${error.message}`;
       } else if (error.message) {
-        errorMessage = error.message;
+        errorMessage = `Erreur: ${error.message}`;
       }
       
       toast({
-        title: 'Erreur',
+        title: 'Erreur d\'envoi',
         description: errorMessage,
         variant: 'destructive',
       });

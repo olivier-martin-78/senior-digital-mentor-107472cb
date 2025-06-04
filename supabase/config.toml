@@ -13,3 +13,30 @@ enable_confirmations = true
 
 [functions.send-group-notification]
 verify_jwt = true
+
+[functions.send-content-notification]
+verify_jwt = true
+
+[functions.send-contact-email]
+verify_jwt = false
+
+[functions.send-invitation-email]
+verify_jwt = false
+
+[functions.send-confirmation-email]
+verify_jwt = false
+
+[functions.auth-webhook]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.process-invitation]
+verify_jwt = true
+
+[functions.sync-invitation-permissions]
+verify_jwt = true
+
+[functions.transcribe-audio]
+verify_jwt = true
