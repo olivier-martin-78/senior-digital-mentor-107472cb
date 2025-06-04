@@ -25,6 +25,27 @@ const InviteUserDialog = () => {
     return null;
   }
 
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      // Vérifier dans la table profiles (qui reflète auth.users)
+      const { data: existingProfile, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email.trim())
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Erreur lors de la vérification de l\'email:', error);
+        throw error;
+      }
+
+      return !!existingProfile;
+    } catch (error: any) {
+      console.error('Erreur lors de la vérification de l\'email:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -42,6 +63,18 @@ const InviteUserDialog = () => {
     console.log('Données du formulaire:', formData);
 
     try {
+      // Vérifier si l'email existe déjà
+      const emailExists = await checkEmailExists(formData.email);
+      
+      if (emailExists) {
+        toast({
+          title: "Email déjà utilisé",
+          description: `Un compte existe déjà avec l'adresse email ${formData.email}. Cette personne peut se connecter directement.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Récupérer ou créer le groupe d'invitation
       let { data: existingGroup, error: groupError } = await supabase
         .from('invitation_groups')
@@ -239,7 +272,7 @@ const InviteUserDialog = () => {
               Annuler
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Envoi...' : 'Envoyer l\'invitation'}
+              {loading ? 'Vérification...' : 'Envoyer l\'invitation'}
             </Button>
           </div>
         </form>
