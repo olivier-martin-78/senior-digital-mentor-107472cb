@@ -29,7 +29,7 @@ const HeroSection = () => {
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray" asChild>
               <Link to="/ai-landing">
-                Découvrez le potentiel d'amélioration<br/>de votre quotidien grâce à l'IA
+                Découvrez les bénéfices de l'IA<br/>dans votre quotidien
               </Link>
             </Button>
           </div>
