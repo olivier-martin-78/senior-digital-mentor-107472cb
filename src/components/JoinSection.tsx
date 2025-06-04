@@ -22,7 +22,7 @@ const JoinSection = () => {
         <div className="max-w-2xl mx-auto text-center animate-on-scroll">
           <p className="text-lg text-tranches-charcoal/90 mb-6">
             <li>Vous voulez offrir à votre parent une façon douce de se sentir moins seul au quotidien ?</li>
-            <li>Nous mettons à la disposition de nos Mentors digitaux notre application CaprIA pour produire du contenu digital à partager au sein de son cercle familial.</li>
+            <li>Nous mettons à la disposition de nos mentors digital nomade l'application CaprIA qui permet à nos aînés de produire du contenu digital et de lepartager au sein de son cercle familial.</li>
           </p>
         </div>
       </div>
