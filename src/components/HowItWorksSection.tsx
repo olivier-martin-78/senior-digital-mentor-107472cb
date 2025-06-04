@@ -7,17 +7,17 @@ const HowItWorksSection = () => {
     {
       icon: <Mail className="w-12 h-12 text-tranches-charcoal" />,
       title: "La demande",
-      description: "Une personne âgée ou un proche exprime un souhait : \"J'aimerais me former au digital\", \"Revenir là où j'ai grandi\", \"Laisser un message à mon petit-fils\"."
+      description: "Une personne âgée ou l’un de ses proches formule une demande : \"J’aimerais aider mon père à gagner en autonomie avec les outils numériques, car son isolement ne fait que s’accentuer au fil des années."
     },
     {
       icon: <MapPin className="w-12 h-12 text-tranches-charcoal" />,
-      title: "La mission",
-      description: "Nous organisons une micro-expérience personnalisée, douce et humaine, grâce à notre accompagnement."
+      title: "Notre mission",
+      description: "Nous proposons des mini-séances de formation directement à domicile, avec un apprentissage adapté à son rythme. Nos sessions couvrent les applications numériques les plus utilisées, afin de faciliter la communication avec ses proches en toute simplicité."
     },
     {
       icon: <Video className="w-12 h-12 text-tranches-charcoal" />,
-      title: "Le souvenir",
-      description: "Nous captons (parfois) l'instant en photo, audio ou vidéo, et l'offrons comme trace vivante de l'expérience."
+      title: "Suivi",
+      description: "Ensemble avec le demandeur et la personne accompagnée, nous faisons régulièrement le point sur les progrès réalisés. Cela nous permet d’adapter l’accompagnement au plus près de ses besoins et de son évolution vers plus d’autonomie."
     }
   ];
 
