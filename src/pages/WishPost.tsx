@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -252,9 +251,9 @@ const WishPost = () => {
         'other': 'Autre type de demande'
       }[wish.request_type as string] || wish.request_type;
   
-  // Règles de permissions avec logs de débogage
+  // CORRECTION: Seuls l'auteur et les admins peuvent voir les boutons de gestion
   const isAuthor = user?.id === wish.author_id;
-  const isAdmin = hasRole('admin');
+  const isAdmin = hasRole('admin'); // Seulement 'admin', pas 'editor'
   
   console.log('WishPost - Debug permissions:', {
     userId: user?.id,
@@ -351,6 +350,12 @@ const WishPost = () => {
                 {format(new Date(wish.created_at), 'EEEE d MMMM yyyy', { locale: fr })}
               </div>
               
+              {/* Affichage du nom de l'auteur */}
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                Auteur : {wish.profiles?.display_name || 'Utilisateur anonyme'}
+              </div>
+              
               {wish.album && (
                 <Badge variant="outline">{sanitizeInput(wish.album.name)}</Badge>
               )}
@@ -374,17 +379,9 @@ const WishPost = () => {
                   <p className="text-gray-900">{sanitizeInput(wish.first_name || 'Non renseigné')}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Âge</label>
-                  <p className="text-gray-900">{sanitizeInput(wish.age || 'Non renseigné')}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-gray-900">{sanitizeInput(wish.email || 'Non renseigné')}</p>
-                </div>
-                <div>
                   <label className="text-sm font-medium text-gray-600 flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
-                    Localisation
+                    Lieu où doit se dérouler le souhait
                   </label>
                   {renderLocation()}
                 </div>
@@ -451,21 +448,16 @@ const WishPost = () => {
             </div>
           </div>
           
-          {/* Contact */}
+          {/* Contact - utilisé seulement le prénom, plus d'email */}
           <div className="mt-8 pt-6 border-t">
             <h2 className="text-xl font-medium mb-4 flex items-center">
               <Mail className="h-5 w-5 mr-2" />
               Contact
             </h2>
-            {wish.email ? (
-              <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-                <a href={`mailto:${sanitizeInput(wish.email)}`}>
-                  Contacter l'auteur du souhait
-                </a>
-              </Button>
-            ) : (
-              <p className="text-gray-500 italic">Aucun email de contact fourni</p>
-            )}
+            <p className="text-gray-700">
+              Pour contacter {sanitizeInput(wish.first_name || 'l\'auteur')}, 
+              veuillez utiliser les canaux de communication habituels de la plateforme.
+            </p>
           </div>
         </div>
       </div>

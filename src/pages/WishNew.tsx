@@ -18,12 +18,14 @@ const wishFormSchema = z.object({
   title: z.string().min(1, 'Le titre est requis'),
   content: z.string().min(1, 'Le contenu est requis'),
   first_name: z.string().optional(),
-  age: z.string().optional(),
   location: z.string().optional(),
   request_type: z.string().optional(),
+  custom_request_type: z.string().optional(),
+  date: z.string().optional(),
   importance: z.string().optional(),
   needs: z.string().optional(),
   offering: z.string().optional(),
+  attachment_url: z.string().optional(),
 });
 
 type WishFormValues = z.infer<typeof wishFormSchema>;
@@ -40,14 +42,18 @@ const WishNew = () => {
       title: '',
       content: '',
       first_name: '',
-      age: '',
       location: '',
       request_type: '',
+      custom_request_type: '',
+      date: '',
       importance: '',
       needs: '',
       offering: '',
+      attachment_url: '',
     },
   });
+
+  const watchRequestType = form.watch('request_type');
 
   const onSubmit = async (data: WishFormValues) => {
     if (!user) {
@@ -69,12 +75,14 @@ const WishNew = () => {
           title: data.title,
           content: data.content,
           first_name: data.first_name || null,
-          age: data.age || null,
           location: data.location || null,
           request_type: data.request_type || null,
+          custom_request_type: data.custom_request_type || null,
+          date: data.date ? new Date(data.date).toISOString() : null,
           importance: data.importance || null,
           needs: data.needs || null,
           offering: data.offering || null,
+          attachment_url: data.attachment_url || null,
           published: false, // Brouillon par défaut
         });
 
@@ -115,7 +123,7 @@ const WishNew = () => {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Titre du souhait</FormLabel>
+                      <FormLabel>Titre du souhait *</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="Entrez le titre de votre souhait" />
                       </FormControl>
@@ -128,46 +136,144 @@ const WishNew = () => {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Description du souhait *</FormLabel>
                       <FormControl>
-                        <Textarea {...field} placeholder="Décrivez votre souhait" rows={4} />
+                        <Textarea {...field} placeholder="Décrivez votre souhait en détail" rows={4} />
                       </FormControl>
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prénom (optionnel)</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Votre prénom" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="request_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type de demande</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="first_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prénom</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez le type" />
-                          </SelectTrigger>
+                          <Input {...field} placeholder="Votre prénom" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="aide">Aide</SelectItem>
-                          <SelectItem value="service">Service</SelectItem>
-                          <SelectItem value="materiel">Matériel</SelectItem>
-                          <SelectItem value="autre">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lieu où doit se dérouler le souhait</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Ex: Paris, 75001" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="request_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Type de demande</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez le type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="aide">Aide</SelectItem>
+                            <SelectItem value="service">Service</SelectItem>
+                            <SelectItem value="materiel">Matériel</SelectItem>
+                            <SelectItem value="experience">Expérience</SelectItem>
+                            <SelectItem value="other">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date souhaitée</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="date" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {watchRequestType === 'other' && (
+                  <FormField
+                    control={form.control}
+                    name="custom_request_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Précisez le type de demande</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Décrivez votre type de demande" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="importance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pourquoi c'est important pour vous</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Expliquez pourquoi ce souhait est important" rows={3} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="needs"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Besoins concrets</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Détaillez vos besoins concrets" rows={3} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="offering"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ce que vous pouvez offrir en retour</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Que pouvez-vous offrir en échange ?" rows={3} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="attachment_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Documents ou liens</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="URL vers un document ou un lien utile" />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
