@@ -51,8 +51,53 @@ const WishPost = () => {
           return;
         }
         
-        // Check if user has access to non-published wish
-        if (!data.published && (!user || (user.id !== data.author_id && !hasRole('admin') && !hasRole('editor')))) {
+        // Vérification de l'accès pour les souhaits non publiés
+        if (!data.published && user) {
+          const isAuthor = user.id === data.author_id;
+          const isAdmin = hasRole('admin');
+          
+          // Si ce n'est ni l'auteur ni un admin, vérifier l'appartenance au même groupe
+          if (!isAuthor && !isAdmin) {
+            // Vérifier si l'utilisateur et l'auteur sont dans le même groupe
+            const { data: sameGroupCheck } = await supabase
+              .from('group_members')
+              .select(`
+                group_id,
+                group:group_id!inner(
+                  members:group_members!inner(user_id)
+                )
+              `)
+              .eq('user_id', user.id);
+            
+            const userGroups = sameGroupCheck?.map(gm => gm.group_id) || [];
+            
+            if (userGroups.length > 0) {
+              const { data: authorInSameGroup } = await supabase
+                .from('group_members')
+                .select('group_id')
+                .eq('user_id', data.author_id)
+                .in('group_id', userGroups);
+              
+              if (!authorInSameGroup || authorInSameGroup.length === 0) {
+                toast({
+                  title: "Accès refusé",
+                  description: "Vous n'avez pas accès à ce souhait.",
+                  variant: "destructive"
+                });
+                navigate('/wishes');
+                return;
+              }
+            } else {
+              toast({
+                title: "Accès refusé",
+                description: "Vous n'avez pas accès à ce souhait.",
+                variant: "destructive"
+              });
+              navigate('/wishes');
+              return;
+            }
+          }
+        } else if (!data.published && !user) {
           toast({
             title: "Accès refusé",
             description: "Vous n'avez pas accès à ce souhait.",
