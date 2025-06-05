@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { Resend } from "npm:resend@2.0.0";
@@ -212,8 +211,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Profils membres trouvés:', memberProfiles?.length || 0);
 
-    // Construire l'URL du contenu
-    const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
+    // Construire l'URL du contenu avec le domaine de production
+    const baseUrl = 'https://senior-digital-mentor.com';
     const contentUrl = contentType === 'blog' ? `${baseUrl}/blog/${contentId}` :
                       contentType === 'diary' ? `${baseUrl}/diary/${contentId}` :
                       `${baseUrl}/wishes/${contentId}`;
