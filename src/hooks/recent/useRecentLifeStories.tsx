@@ -85,8 +85,7 @@ export const useRecentLifeStories = () => {
           title,
           created_at,
           updated_at,
-          user_id,
-          profiles!life_stories_user_id_fkey(id, email, display_name)
+          user_id
         `)
         .in('user_id', authorizedUsers)
         .order('updated_at', { ascending: false })
@@ -98,10 +97,17 @@ export const useRecentLifeStories = () => {
         return;
       }
 
+      // 4. Récupérer les profils séparément
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .in('id', authorizedUsers);
+
       console.log('✅ useRecentLifeStories - Histoires récupérées côté application:', {
         count: storiesData?.length || 0,
         histoiresParAuteur: storiesData?.reduce((acc, story) => {
-          const authorEmail = story.profiles?.email || 'Email non disponible';
+          const profile = profilesData?.find(p => p.id === story.user_id);
+          const authorEmail = profile?.email || 'Email non disponible';
           if (!acc[authorEmail]) {
             acc[authorEmail] = 0;
           }
@@ -111,14 +117,17 @@ export const useRecentLifeStories = () => {
       });
 
       if (storiesData) {
-        const items = storiesData.map(story => ({
-          id: story.id,
-          title: story.title,
-          type: 'life-story' as const,
-          created_at: story.updated_at || story.created_at,
-          author: story.user_id === effectiveUserId ? 'Moi' : (story.profiles?.display_name || story.profiles?.email || 'Anonyme'),
-          content_preview: `Histoire de vie - ${story.title}`
-        }));
+        const items = storiesData.map(story => {
+          const profile = profilesData?.find(p => p.id === story.user_id);
+          return {
+            id: story.id,
+            title: story.title,
+            type: 'life-story' as const,
+            created_at: story.updated_at || story.created_at,
+            author: story.user_id === effectiveUserId ? 'Moi' : (profile?.display_name || profile?.email || 'Anonyme'),
+            content_preview: `Histoire de vie - ${story.title}`
+          };
+        });
 
         console.log('✅ useRecentLifeStories - Items histoires transformés:', items.length);
         setLifeStories(items);

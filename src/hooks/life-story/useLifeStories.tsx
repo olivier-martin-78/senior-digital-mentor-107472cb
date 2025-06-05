@@ -99,8 +99,14 @@ export const useLifeStories = () => {
         const { data: storiesData, error } = await supabase
           .from('life_stories')
           .select(`
-            *,
-            profiles(id, email, display_name, avatar_url)
+            id,
+            title,
+            user_id,
+            chapters,
+            created_at,
+            updated_at,
+            last_edited_chapter,
+            last_edited_question
           `)
           .in('user_id', authorizedUserIds)
           .order('updated_at', { ascending: false });
@@ -110,16 +116,28 @@ export const useLifeStories = () => {
           throw error;
         }
 
+        // 4. Récupérer les profils séparément
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email, display_name, avatar_url')
+          .in('id', authorizedUserIds);
+
+        // 5. Joindre les données
+        const storiesWithProfiles = storiesData?.map(story => ({
+          ...story,
+          profiles: profilesData?.find(profile => profile.id === story.user_id)
+        })) || [];
+
         console.log('📚 useLifeStories - Histoires récupérées:', {
-          count: storiesData?.length || 0,
-          stories: storiesData?.map(s => ({
+          count: storiesWithProfiles.length,
+          stories: storiesWithProfiles.map(s => ({
             id: s.id,
             title: s.title,
             user_id: s.user_id
           }))
         });
 
-        setStories(storiesData || []);
+        setStories(storiesWithProfiles);
       } catch (error) {
         console.error('💥 useLifeStories - Erreur lors du chargement des histoires:', error);
         setStories([]);

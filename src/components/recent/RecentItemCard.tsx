@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { RecentItem } from '@/hooks/useRecentItems';
-import { Calendar, MessageCircle, Heart, BookOpen, Camera } from 'lucide-react';
+import { Calendar, MessageCircle, Heart, BookOpen, Camera, User } from 'lucide-react';
 import RecentItemImage from '@/components/RecentItemImage';
 
 interface RecentItemCardProps {
@@ -20,6 +20,8 @@ const RecentItemCard = ({ item }: RecentItemCardProps) => {
         return <BookOpen className="w-5 h-5" />;
       case 'comment':
         return <MessageCircle className="w-5 h-5" />;
+      case 'life-story':
+        return <User className="w-5 h-5" />;
       default:
         return <Calendar className="w-5 h-5" />;
     }
@@ -36,6 +38,8 @@ const RecentItemCard = ({ item }: RecentItemCardProps) => {
       case 'comment':
         // Pour les commentaires, utiliser post_id s'il existe, sinon fallback sur item.id
         return `/blog/${item.post_id || item.id}`;
+      case 'life-story':
+        return `/life-story`;
       default:
         return '#';
     }
@@ -61,6 +65,8 @@ const RecentItemCard = ({ item }: RecentItemCardProps) => {
         return 'Entrée de journal';
       case 'comment':
         return 'Commentaire';
+      case 'life-story':
+        return 'Histoire de vie';
       default:
         return '';
     }
