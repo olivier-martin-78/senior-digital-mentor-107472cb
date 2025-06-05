@@ -123,14 +123,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Extraire les IDs des groupes
     const groupIds = authorGroups.map(g => g.group_id);
 
-    // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
+    // CORRECTION: Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
       .from('group_members')
-      .select(`
-        user_id,
-        group_id,
-        profiles!group_members_user_id_fkey(email, display_name)
-      `)
+      .select('user_id, group_id')
       .in('group_id', groupIds)
       .neq('user_id', authorId);
 
@@ -152,6 +148,20 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Récupérer les profils des membres
+    const memberIds = groupMembers.map(m => m.user_id);
+    const { data: memberProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, email, display_name')
+      .in('id', memberIds);
+
+    if (profilesError) {
+      console.error('🔍 send-group-notification - Erreur profils membres:', profilesError);
+      throw new Error('Failed to fetch member profiles');
+    }
+
+    console.log('🔍 send-group-notification - Profils membres trouvés:', memberProfiles?.length || 0);
+
     // Construire l'URL du contenu
     const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     const contentUrl = contentType === 'blog' ? `${baseUrl}/blog/${contentId}` :
@@ -161,8 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('🔍 send-group-notification - URL contenu:', contentUrl);
 
     // Préparer et envoyer les emails
-    const emailPromises = groupMembers.map(async (member: any) => {
-      const memberProfile = member.profiles;
+    const emailPromises = memberProfiles?.map(async (memberProfile: any) => {
       if (!memberProfile?.email) return;
 
       const contentTypeLabel = contentType === 'blog' ? 'article de blog' :
@@ -209,7 +218,7 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (emailError) {
         console.error(`❌ send-group-notification - Échec envoi email à ${memberProfile.email}:`, emailError);
       }
-    });
+    }) || [];
 
     await Promise.allSettled(emailPromises);
 
