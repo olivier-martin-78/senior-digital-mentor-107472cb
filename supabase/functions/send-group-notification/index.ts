@@ -87,20 +87,49 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Profil auteur trouvé:', authorProfile.display_name);
 
-    // Récupérer les groupes de l'auteur
-    const { data: authorGroups, error: authorGroupsError } = await supabase
+    // CORRECTION: Récupérer les groupes où l'auteur est membre
+    const { data: authorGroupMemberships, error: authorGroupsError } = await supabase
       .from('group_members')
       .select('group_id')
       .eq('user_id', authorId);
 
     if (authorGroupsError) {
-      console.error('🔍 send-group-notification - Erreur groupes auteur:', authorGroupsError);
-      throw new Error('Failed to fetch author groups');
+      console.error('🔍 send-group-notification - Erreur groupes comme membre:', authorGroupsError);
     }
 
-    console.log('🔍 send-group-notification - Groupes auteur trouvés:', authorGroups?.length || 0);
+    console.log('🔍 send-group-notification - Groupes comme membre trouvés:', authorGroupMemberships?.length || 0);
 
-    if (!authorGroups || authorGroups.length === 0) {
+    // NOUVEAU: Récupérer AUSSI les groupes créés par l'auteur
+    const { data: authorCreatedGroups, error: createdGroupsError } = await supabase
+      .from('invitation_groups')
+      .select('id')
+      .eq('created_by', authorId);
+
+    if (createdGroupsError) {
+      console.error('🔍 send-group-notification - Erreur groupes créés:', createdGroupsError);
+    }
+
+    console.log('🔍 send-group-notification - Groupes créés trouvés:', authorCreatedGroups?.length || 0);
+
+    // Combiner tous les groupes (membre + créateur)
+    let allGroupIds: string[] = [];
+    
+    if (authorGroupMemberships && authorGroupMemberships.length > 0) {
+      const memberGroupIds = authorGroupMemberships.map(gm => gm.group_id);
+      allGroupIds.push(...memberGroupIds);
+    }
+    
+    if (authorCreatedGroups && authorCreatedGroups.length > 0) {
+      const createdGroupIds = authorCreatedGroups.map(g => g.id);
+      allGroupIds.push(...createdGroupIds);
+    }
+
+    // Supprimer les doublons
+    allGroupIds = [...new Set(allGroupIds)];
+
+    console.log('🔍 send-group-notification - TOTAL groupes de l\'auteur:', allGroupIds.length, allGroupIds);
+
+    if (allGroupIds.length === 0) {
       console.log('🔍 send-group-notification - Aucun groupe pour l\'auteur');
       return new Response(
         JSON.stringify({ message: 'Author is not in any group' }),
@@ -111,14 +140,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Extraire les IDs des groupes
-    const groupIds = authorGroups.map(g => g.group_id);
-
-    // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
+    // Récupérer les membres de TOUS ces groupes (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
       .from('group_members')
       .select('user_id, group_id')
-      .in('group_id', groupIds)
+      .in('group_id', allGroupIds)
       .neq('user_id', authorId);
 
     if (membersError) {
@@ -128,32 +154,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Membres groupe trouvés:', groupMembers?.length || 0);
 
-    // AMÉLIORATION: Récupérer aussi les créateurs des groupes (s'ils ne sont pas l'auteur)
-    const { data: groupCreators, error: creatorsError } = await supabase
-      .from('invitation_groups')
-      .select('created_by')
-      .in('id', groupIds)
-      .neq('created_by', authorId);
-
-    if (creatorsError) {
-      console.error('🔍 send-group-notification - Erreur créateurs groupes:', creatorsError);
-    } else {
-      console.log('🔍 send-group-notification - Créateurs groupes trouvés:', groupCreators?.length || 0);
-    }
-
-    // Combiner les IDs des membres et des créateurs
+    // Pour les groupes créés par l'auteur, ajouter aussi les créateurs des autres groupes où l'auteur est membre
     let allUserIds: string[] = [];
     
     if (groupMembers) {
       allUserIds.push(...groupMembers.map(m => m.user_id));
     }
-    
-    if (groupCreators) {
-      groupCreators.forEach(creator => {
-        if (!allUserIds.includes(creator.created_by)) {
-          allUserIds.push(creator.created_by);
-        }
-      });
+
+    // Ajouter les créateurs des groupes où l'auteur est membre (pas les groupes qu'il a créés)
+    if (authorGroupMemberships && authorGroupMemberships.length > 0) {
+      const memberGroupIds = authorGroupMemberships.map(gm => gm.group_id);
+      
+      const { data: groupCreators, error: creatorsError } = await supabase
+        .from('invitation_groups')
+        .select('created_by')
+        .in('id', memberGroupIds)
+        .neq('created_by', authorId);
+
+      if (creatorsError) {
+        console.error('🔍 send-group-notification - Erreur créateurs groupes:', creatorsError);
+      } else if (groupCreators) {
+        groupCreators.forEach(creator => {
+          if (!allUserIds.includes(creator.created_by)) {
+            allUserIds.push(creator.created_by);
+          }
+        });
+        console.log('🔍 send-group-notification - Créateurs ajoutés:', groupCreators.length);
+      }
     }
 
     // Supprimer les doublons
