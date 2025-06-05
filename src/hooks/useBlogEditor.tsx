@@ -6,6 +6,7 @@ import { BlogPost, BlogMedia, BlogAlbum, BlogCategory } from '@/types/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
+import { useBlogAlbums } from '@/hooks/blog/useBlogAlbums';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +21,6 @@ export const useBlogEditor = () => {
   const [albumId, setAlbumId] = useState<string | null>(null);
   const [allCategories, setAllCategories] = useState<BlogCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<BlogCategory[]>([]);
-  const [allAlbums, setAllAlbums] = useState<BlogAlbum[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -31,20 +31,21 @@ export const useBlogEditor = () => {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
 
-  // Fetch existing resources (albums, categories)
+  // Utiliser le même hook que la page blog pour les albums
+  const { albums: allAlbums, loading: albumsLoading } = useBlogAlbums();
+  const [localAllAlbums, setLocalAllAlbums] = useState<BlogAlbum[]>([]);
+
+  // Synchroniser les albums du hook avec l'état local
+  useEffect(() => {
+    if (!albumsLoading) {
+      setLocalAllAlbums(allAlbums);
+    }
+  }, [allAlbums, albumsLoading]);
+
+  // Fetch existing resources (categories only now, albums are managed by useBlogAlbums)
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        // Fetch albums - maintenant géré par les nouvelles politiques RLS
-        const { data: albumsData, error: albumsError } = await supabase
-          .from('blog_albums')
-          .select(`*, profiles:author_id(*)`)
-          .order('name', { ascending: true });
-
-        if (!albumsError && albumsData) {
-          setAllAlbums(albumsData as BlogAlbum[]);
-        }
-
         // Fetch categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('blog_categories')
@@ -466,7 +467,7 @@ export const useBlogEditor = () => {
 
   return {
     isEditing,
-    loading,
+    loading: loading || albumsLoading,
     post,
     title,
     setTitle,
@@ -478,8 +479,8 @@ export const useBlogEditor = () => {
     setAllCategories,
     selectedCategories,
     setSelectedCategories,
-    allAlbums,
-    setAllAlbums,
+    allAlbums: localAllAlbums,
+    setAllAlbums: setLocalAllAlbums,
     isPublished,
     saving,
     handleSave,
