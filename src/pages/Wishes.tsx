@@ -68,7 +68,7 @@ const Wishes = () => {
         return;
       }
 
-      // CORRIGÉ: Ajouter la récupération des profils comme dans le blog
+      // Utiliser la jointure directe maintenant que les FK sont correctes
       const { data, error } = await supabase
         .from('wish_posts')
         .select(`

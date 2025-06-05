@@ -29,7 +29,7 @@ export const useRecentWishes = () => {
 
       console.log('✅ useRecentWishes - Utilisateurs autorisés:', authorizedUserIds);
 
-      // Récupérer les souhaits des utilisateurs autorisés
+      // Utiliser la jointure directe maintenant que les FK sont correctes
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
         .select(`
@@ -40,7 +40,8 @@ export const useRecentWishes = () => {
           first_name,
           cover_image,
           published,
-          author_id
+          author_id,
+          profiles!inner(id, email, display_name)
         `)
         .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
@@ -55,31 +56,16 @@ export const useRecentWishes = () => {
       console.log('✅ useRecentWishes - Wishes récupérées:', wishesData?.length || 0);
 
       if (wishesData && wishesData.length > 0) {
-        // Récupérer les profils séparément
-        const userIds = [...new Set(wishesData.map(wish => wish.author_id))];
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, email, display_name')
-          .in('id', userIds);
-
-        const profilesMap = profilesData?.reduce((acc, profile) => {
-          acc[profile.id] = profile;
-          return acc;
-        }, {} as Record<string, any>) || {};
-
-        const items = wishesData.map(wish => {
-          const profile = profilesMap[wish.author_id];
-          return {
-            id: wish.id,
-            title: wish.title,
-            type: 'wish' as const,
-            created_at: wish.created_at,
-            author: wish.author_id === effectiveUserId ? 'Moi' : (wish.first_name || profile?.display_name || profile?.email || 'Anonyme'),
-            content_preview: wish.content?.substring(0, 150) + '...',
-            cover_image: wish.cover_image,
-            first_name: wish.first_name
-          };
-        });
+        const items = wishesData.map(wish => ({
+          id: wish.id,
+          title: wish.title,
+          type: 'wish' as const,
+          created_at: wish.created_at,
+          author: wish.author_id === effectiveUserId ? 'Moi' : (wish.first_name || wish.profiles?.display_name || wish.profiles?.email || 'Anonyme'),
+          content_preview: wish.content?.substring(0, 150) + '...',
+          cover_image: wish.cover_image,
+          first_name: wish.first_name
+        }));
 
         console.log('✅ useRecentWishes - Items wishes transformés:', items.length);
         setWishes(items);

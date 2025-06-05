@@ -29,7 +29,7 @@ export const useRecentDiaryEntries = () => {
 
       console.log('✅ useRecentDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
 
-      // Récupérer les entrées de journal
+      // Utiliser la jointure directe maintenant que les FK sont correctes
       const { data: entries, error } = await supabase
         .from('diary_entries')
         .select(`
@@ -39,7 +39,8 @@ export const useRecentDiaryEntries = () => {
           activities, 
           media_url,
           media_type,
-          user_id
+          user_id,
+          profiles!inner(id, email, display_name)
         `)
         .in('user_id', authorizedUserIds)
         .order('created_at', { ascending: false })
@@ -54,30 +55,15 @@ export const useRecentDiaryEntries = () => {
       console.log('✅ useRecentDiaryEntries - Diary entries récupérées:', entries?.length || 0);
 
       if (entries && entries.length > 0) {
-        // Récupérer les profils des auteurs séparément
-        const userIds = [...new Set(entries.map(entry => entry.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, display_name')
-          .in('id', userIds);
-
-        const profilesMap = profiles?.reduce((acc, profile) => {
-          acc[profile.id] = profile;
-          return acc;
-        }, {} as Record<string, any>) || {};
-
-        const items = entries.map(entry => {
-          const profile = profilesMap[entry.user_id];
-          return {
-            id: entry.id,
-            title: entry.title || 'Entrée sans titre',
-            type: 'diary' as const,
-            created_at: entry.created_at,
-            author: entry.user_id === currentUserId ? 'Moi' : (profile?.display_name || profile?.email || 'Utilisateur'),
-            content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
-            media_url: entry.media_url
-          };
-        });
+        const items = entries.map(entry => ({
+          id: entry.id,
+          title: entry.title || 'Entrée sans titre',
+          type: 'diary' as const,
+          created_at: entry.created_at,
+          author: entry.user_id === currentUserId ? 'Moi' : (entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur'),
+          content_preview: entry.activities?.substring(0, 150) + '...' || 'Entrée de journal',
+          media_url: entry.media_url
+        }));
 
         console.log('✅ useRecentDiaryEntries - Items diary transformés:', items.length);
         setDiaryEntries(items);
