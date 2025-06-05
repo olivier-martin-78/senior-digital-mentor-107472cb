@@ -3,81 +3,28 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
+import { useGroupPermissions } from '../useGroupPermissions';
 
 export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds: string[]) => {
   const { getEffectiveUserId } = useAuth();
   const [diaryEntries, setDiaryEntries] = useState<RecentItem[]>([]);
+  const { authorizedUserIds: groupAuthorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchDiaryEntries = useCallback(async () => {
-    if (!effectiveUserId) {
+    if (!effectiveUserId || permissionsLoading) {
       setDiaryEntries([]);
       return;
     }
 
-    console.log('🔍 useRecentDiaryEntries - Récupération avec logique de groupe CORRIGÉE');
+    console.log('🔍 useRecentDiaryEntries - Récupération avec permissions de groupe centralisées');
 
     try {
       const currentUserId = getEffectiveUserId();
+      const usersToQuery = groupAuthorizedUserIds.length > 0 ? groupAuthorizedUserIds : [currentUserId];
 
-      // 1. Récupérer les groupes où l'utilisateur est membre
-      const { data: userGroupMemberships, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
-        .eq('user_id', currentUserId);
+      console.log('✅ useRecentDiaryEntries - Utilisateurs autorisés:', usersToQuery);
 
-      if (userGroupsError) {
-        console.error('❌ useRecentDiaryEntries - Erreur récupération groupes:', userGroupsError);
-        setDiaryEntries([]);
-        return;
-      }
-
-      // 2. Construire la liste des utilisateurs autorisés
-      let actualAuthorizedUsers = [currentUserId]; // Toujours inclure l'utilisateur courant
-
-      if (userGroupMemberships && userGroupMemberships.length > 0) {
-        console.log('🔍 useRecentDiaryEntries - Utilisateur dans des groupes:', userGroupMemberships.length);
-        
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !actualAuthorizedUsers.includes(groupCreator)) {
-            actualAuthorizedUsers.push(groupCreator);
-            console.log('✅ useRecentDiaryEntries - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-
-        if (allGroupMembers) {
-          for (const member of allGroupMembers) {
-            if (!actualAuthorizedUsers.includes(member.user_id)) {
-              actualAuthorizedUsers.push(member.user_id);
-            }
-          }
-        }
-      } else {
-        console.log('🔍 useRecentDiaryEntries - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
-      }
-
-      console.log('✅ useRecentDiaryEntries - Utilisateurs autorisés:', {
-        count: actualAuthorizedUsers.length,
-        userIds: actualAuthorizedUsers
-      });
-
-      // 3. Récupérer les entrées de journal
+      // Récupérer les entrées de journal
       const { data: entries, error } = await supabase
         .from('diary_entries')
         .select(`
@@ -89,7 +36,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           media_type,
           user_id
         `)
-        .in('user_id', actualAuthorizedUsers)
+        .in('user_id', usersToQuery)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -99,16 +46,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
         return;
       }
 
-      console.log('✅ useRecentDiaryEntries - Diary entries récupérées côté application:', {
-        count: entries?.length || 0,
-        entriesParAuteur: entries?.reduce((acc, entry) => {
-          if (!acc[entry.user_id]) {
-            acc[entry.user_id] = 0;
-          }
-          acc[entry.user_id]++;
-          return acc;
-        }, {} as Record<string, number>)
-      });
+      console.log('✅ useRecentDiaryEntries - Diary entries récupérées:', entries?.length || 0);
 
       if (entries && entries.length > 0) {
         // Récupérer les profils des auteurs séparément
@@ -145,7 +83,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       console.error('💥 useRecentDiaryEntries - Erreur critique:', error);
       setDiaryEntries([]);
     }
-  }, [effectiveUserId, getEffectiveUserId]);
+  }, [effectiveUserId, groupAuthorizedUserIds, permissionsLoading, getEffectiveUserId]);
 
   useEffect(() => {
     fetchDiaryEntries();

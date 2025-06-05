@@ -3,81 +3,28 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
+import { useGroupPermissions } from '../useGroupPermissions';
 
 export const useRecentWishes = () => {
   const { user, getEffectiveUserId } = useAuth();
   const [wishes, setWishes] = useState<RecentItem[]>([]);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchWishes = useCallback(async () => {
-    if (!user) {
+    if (!user || permissionsLoading) {
       setWishes([]);
       return;
     }
 
-    console.log('🔍 useRecentWishes - Récupération avec logique de groupe CORRIGÉE');
+    console.log('🔍 useRecentWishes - Récupération avec permissions de groupe centralisées');
 
     try {
       const effectiveUserId = getEffectiveUserId();
+      const usersToQuery = authorizedUserIds.length > 0 ? authorizedUserIds : [effectiveUserId];
 
-      // 1. Récupérer les groupes où l'utilisateur est membre
-      const { data: userGroupMemberships, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
-        .eq('user_id', effectiveUserId);
+      console.log('✅ useRecentWishes - Utilisateurs autorisés:', usersToQuery);
 
-      if (userGroupsError) {
-        console.error('❌ useRecentWishes - Erreur récupération groupes:', userGroupsError);
-        setWishes([]);
-        return;
-      }
-
-      // 2. Construire la liste des utilisateurs autorisés
-      let authorizedUsers = [effectiveUserId]; // Toujours inclure l'utilisateur courant
-
-      if (userGroupMemberships && userGroupMemberships.length > 0) {
-        console.log('🔍 useRecentWishes - Utilisateur dans des groupes:', userGroupMemberships.length);
-        
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
-            authorizedUsers.push(groupCreator);
-            console.log('✅ useRecentWishes - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-
-        if (allGroupMembers) {
-          for (const member of allGroupMembers) {
-            if (!authorizedUsers.includes(member.user_id)) {
-              authorizedUsers.push(member.user_id);
-            }
-          }
-        }
-      } else {
-        console.log('🔍 useRecentWishes - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
-      }
-
-      console.log('✅ useRecentWishes - Utilisateurs autorisés:', {
-        count: authorizedUsers.length,
-        userIds: authorizedUsers
-      });
-
-      // 3. Récupérer les souhaits avec logique d'accès côté application
+      // Récupérer les souhaits avec logique d'accès côté application
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
         .select(`
@@ -88,10 +35,9 @@ export const useRecentWishes = () => {
           first_name,
           cover_image,
           published,
-          author_id,
-          profiles!wish_posts_author_id_fkey(id, email, display_name)
+          author_id
         `)
-        .in('author_id', authorizedUsers)
+        .in('author_id', usersToQuery)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -101,29 +47,34 @@ export const useRecentWishes = () => {
         return;
       }
 
-      console.log('✅ useRecentWishes - Wishes récupérées côté application:', {
-        count: wishesData?.length || 0,
-        wishesParAuteur: wishesData?.reduce((acc, wish) => {
-          const authorEmail = wish.profiles?.email || 'Email non disponible';
-          if (!acc[authorEmail]) {
-            acc[authorEmail] = 0;
-          }
-          acc[authorEmail]++;
-          return acc;
-        }, {} as Record<string, number>)
-      });
+      console.log('✅ useRecentWishes - Wishes récupérées:', wishesData?.length || 0);
 
       if (wishesData) {
-        const items = wishesData.map(wish => ({
-          id: wish.id,
-          title: wish.title,
-          type: 'wish' as const,
-          created_at: wish.created_at,
-          author: wish.author_id === effectiveUserId ? 'Moi' : (wish.first_name || wish.profiles?.display_name || wish.profiles?.email || 'Anonyme'),
-          content_preview: wish.content?.substring(0, 150) + '...',
-          cover_image: wish.cover_image,
-          first_name: wish.first_name
-        }));
+        // Récupérer les profils séparément
+        const userIds = [...new Set(wishesData.map(wish => wish.author_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .in('id', userIds);
+
+        const profilesMap = profilesData?.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>) || {};
+
+        const items = wishesData.map(wish => {
+          const profile = profilesMap[wish.author_id];
+          return {
+            id: wish.id,
+            title: wish.title,
+            type: 'wish' as const,
+            created_at: wish.created_at,
+            author: wish.author_id === effectiveUserId ? 'Moi' : (wish.first_name || profile?.display_name || profile?.email || 'Anonyme'),
+            content_preview: wish.content?.substring(0, 150) + '...',
+            cover_image: wish.cover_image,
+            first_name: wish.first_name
+          };
+        });
 
         console.log('✅ useRecentWishes - Items wishes transformés:', items.length);
         setWishes(items);
@@ -132,7 +83,7 @@ export const useRecentWishes = () => {
       console.error('💥 useRecentWishes - Erreur critique:', error);
       setWishes([]);
     }
-  }, [user, getEffectiveUserId]);
+  }, [user, authorizedUserIds, permissionsLoading, getEffectiveUserId]);
 
   useEffect(() => {
     fetchWishes();

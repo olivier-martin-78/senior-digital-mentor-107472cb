@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGroupPermissions } from '../useGroupPermissions';
 
 export interface LifeStoryWithAuthor {
   id: string;
@@ -21,133 +22,70 @@ export interface LifeStoryWithAuthor {
 }
 
 export const useLifeStories = () => {
-  const { user, getEffectiveUserId } = useAuth();
+  const { user } = useAuth();
   const [stories, setStories] = useState<LifeStoryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
-    const fetchStories = async () => {
-      if (!user) {
-        setStories([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        
-        console.log('🔍 useLifeStories - Récupération avec logique de groupe CORRIGÉE');
-        
-        const effectiveUserId = getEffectiveUserId();
-        console.log('👤 useLifeStories - Utilisateur courant:', effectiveUserId);
-
-        // 1. Récupérer les groupes où l'utilisateur est membre
-        const { data: userGroupMemberships, error: userGroupsError } = await supabase
-          .from('group_members')
-          .select(`
-            group_id, 
-            role,
-            invitation_groups!inner(
-              id,
-              name,
-              created_by
-            )
-          `)
-          .eq('user_id', effectiveUserId);
-
-        if (userGroupsError) {
-          console.error('❌ useLifeStories - Erreur récupération groupes utilisateur:', userGroupsError);
-          setStories([]);
-          setLoading(false);
-          return;
-        }
-
-        console.log('👥 useLifeStories - Groupes de l\'utilisateur:', userGroupMemberships);
-
-        // 2. Construire la liste des utilisateurs autorisés
-        let authorizedUserIds = [effectiveUserId]; // Toujours inclure l'utilisateur courant
-
-        if (userGroupMemberships && userGroupMemberships.length > 0) {
-          // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-          for (const membership of userGroupMemberships) {
-            const groupCreator = membership.invitation_groups?.created_by;
-            if (groupCreator && !authorizedUserIds.includes(groupCreator)) {
-              authorizedUserIds.push(groupCreator);
-              console.log('✅ useLifeStories - Ajout du créateur du groupe:', groupCreator);
-            }
-          }
-
-          // Récupérer tous les membres des groupes où l'utilisateur est présent
-          const groupIds = userGroupMemberships.map(g => g.group_id);
-          const { data: allGroupMembers } = await supabase
-            .from('group_members')
-            .select('user_id')
-            .in('group_id', groupIds);
-
-          if (allGroupMembers) {
-            for (const member of allGroupMembers) {
-              if (!authorizedUserIds.includes(member.user_id)) {
-                authorizedUserIds.push(member.user_id);
-              }
-            }
-          }
-        }
-
-        console.log('🎯 useLifeStories - Utilisateurs autorisés:', authorizedUserIds);
-
-        // 3. Récupérer les histoires de vie des utilisateurs autorisés
-        const { data: storiesData, error } = await supabase
-          .from('life_stories')
-          .select(`
-            id,
-            title,
-            user_id,
-            chapters,
-            created_at,
-            updated_at,
-            last_edited_chapter,
-            last_edited_question
-          `)
-          .in('user_id', authorizedUserIds)
-          .order('updated_at', { ascending: false });
-
-        if (error) {
-          console.error('❌ useLifeStories - Erreur récupération histoires:', error);
-          throw error;
-        }
-
-        // 4. Récupérer les profils séparément
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, email, display_name, avatar_url')
-          .in('id', authorizedUserIds);
-
-        // 5. Joindre les données
-        const storiesWithProfiles = storiesData?.map(story => ({
-          ...story,
-          profiles: profilesData?.find(profile => profile.id === story.user_id)
-        })) || [];
-
-        console.log('📚 useLifeStories - Histoires récupérées:', {
-          count: storiesWithProfiles.length,
-          stories: storiesWithProfiles.map(s => ({
-            id: s.id,
-            title: s.title,
-            user_id: s.user_id
-          }))
-        });
-
-        setStories(storiesWithProfiles);
-      } catch (error) {
-        console.error('💥 useLifeStories - Erreur lors du chargement des histoires:', error);
-        setStories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!user || permissionsLoading) {
+      setStories([]);
+      setLoading(permissionsLoading);
+      return;
+    }
 
     fetchStories();
-  }, [user, getEffectiveUserId]);
+  }, [user, authorizedUserIds, permissionsLoading]);
+
+  const fetchStories = async () => {
+    try {
+      setLoading(true);
+      
+      console.log('🔍 useLifeStories - Récupération avec permissions de groupe');
+      console.log('🎯 useLifeStories - Utilisateurs autorisés:', authorizedUserIds);
+
+      // Récupérer les histoires de vie des utilisateurs autorisés
+      const { data: storiesData, error } = await supabase
+        .from('life_stories')
+        .select(`
+          id,
+          title,
+          user_id,
+          chapters,
+          created_at,
+          updated_at,
+          last_edited_chapter,
+          last_edited_question
+        `)
+        .in('user_id', authorizedUserIds)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ useLifeStories - Erreur récupération histoires:', error);
+        throw error;
+      }
+
+      // Récupérer les profils séparément
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, avatar_url')
+        .in('id', authorizedUserIds);
+
+      // Joindre les données
+      const storiesWithProfiles = storiesData?.map(story => ({
+        ...story,
+        profiles: profilesData?.find(profile => profile.id === story.user_id)
+      })) || [];
+
+      console.log('📚 useLifeStories - Histoires récupérées:', storiesWithProfiles.length);
+      setStories(storiesWithProfiles);
+    } catch (error) {
+      console.error('💥 useLifeStories - Erreur lors du chargement des histoires:', error);
+      setStories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return { stories, loading };
 };

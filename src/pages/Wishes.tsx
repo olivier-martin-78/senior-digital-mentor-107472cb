@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import WishCard from '@/components/WishCard';
 import InviteUserDialog from '@/components/InviteUserDialog';
+import { useGroupPermissions } from '@/hooks/useGroupPermissions';
 
 interface WishPost {
   id: string;
@@ -24,10 +25,11 @@ interface WishPost {
 }
 
 const Wishes = () => {
-  const { user, session, getEffectiveUserId } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
     if (!session) {
@@ -35,101 +37,27 @@ const Wishes = () => {
       return;
     }
     
-    fetchWishes();
-  }, [session, navigate]);
+    if (!permissionsLoading) {
+      fetchWishes();
+    }
+  }, [session, navigate, authorizedUserIds, permissionsLoading]);
 
   const fetchWishes = async () => {
-    if (!user) {
+    if (!user || permissionsLoading) {
       return;
     }
     
     try {
       setLoading(true);
       
-      console.log('🔍 Wishes - Récupération avec logique de groupe CORRIGÉE');
-      
-      const effectiveUserId = getEffectiveUserId();
-      console.log('👤 Wishes - Utilisateur courant:', effectiveUserId);
+      console.log('🔍 Wishes - Récupération avec permissions de groupe centralisées');
+      console.log('🎯 Wishes - Utilisateurs autorisés:', authorizedUserIds);
 
-      // 1. Récupérer les groupes où l'utilisateur est membre
-      const { data: userGroupMemberships, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
-        .eq('user_id', effectiveUserId);
-
-      if (userGroupsError) {
-        console.error('❌ Wishes - Erreur récupération groupes utilisateur:', userGroupsError);
-        setWishes([]);
-        setLoading(false);
-        return;
-      }
-
-      console.log('👥 Wishes - Groupes de l\'utilisateur (DÉTAILLÉ):', {
-        count: userGroupMemberships?.length || 0,
-        groups: userGroupMemberships?.map(g => ({
-          group_id: g.group_id,
-          role: g.role,
-          group_name: g.invitation_groups?.name,
-          created_by: g.invitation_groups?.created_by
-        }))
-      });
-
-      // 2. Construire la liste des utilisateurs autorisés
-      let authorizedUsers = [effectiveUserId]; // Toujours inclure l'utilisateur courant
-      console.log('✅ Wishes - ÉTAPE 1 - Utilisateur courant ajouté:', authorizedUsers);
-
-      if (userGroupMemberships && userGroupMemberships.length > 0) {
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
-            authorizedUsers.push(groupCreator);
-            console.log('✅ Wishes - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-
-        if (allGroupMembers) {
-          for (const member of allGroupMembers) {
-            if (!authorizedUsers.includes(member.user_id)) {
-              authorizedUsers.push(member.user_id);
-            }
-          }
-        }
-        
-        console.log('✅ Wishes - ÉTAPE 2 - Après ajout des membres de groupe:', {
-          authorizedUsers,
-          ajoutés: authorizedUsers.filter(id => id !== effectiveUserId)
-        });
-      } else {
-        console.log('⚠️ Wishes - Aucun groupe trouvé pour l\'utilisateur');
-      }
-
-      console.log('🎯 Wishes - Utilisateurs autorisés FINAL:', {
-        count: authorizedUsers.length,
-        userIds: authorizedUsers,
-        currentUser: effectiveUserId
-      });
-
-      // 3. Récupérer les souhaits avec logique d'accès côté application
+      // Récupérer les souhaits avec logique d'accès côté application
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
-        .in('author_id', authorizedUsers)
+        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -137,21 +65,7 @@ const Wishes = () => {
         throw error;
       }
       
-      console.log('✅ Wishes - Souhaits récupérés côté application (DÉTAILLÉ):', {
-        count: data?.length || 0,
-        wishes: data?.map(w => ({
-          id: w.id,
-          title: w.title,
-          author_id: w.author_id,
-          first_name: w.first_name
-        }))
-      });
-
-      console.log('🏁 Wishes - FIN - Récapitulatif:', {
-        authorizedUsers: authorizedUsers.length,
-        wishesFound: data?.length || 0
-      });
-
+      console.log('✅ Wishes - Souhaits récupérés:', data?.length || 0);
       setWishes(data || []);
       
     } catch (error) {
@@ -161,7 +75,7 @@ const Wishes = () => {
     }
   };
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <Header />
