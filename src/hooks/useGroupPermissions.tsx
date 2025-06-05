@@ -19,12 +19,12 @@ export const useGroupPermissions = () => {
       setLoading(true);
       const effectiveUserId = getEffectiveUserId();
       
-      console.log('🔍 useGroupPermissions - Récupération des utilisateurs autorisés pour:', effectiveUserId);
+      console.log('🔍 useGroupPermissions - CORRECTION BIDIRECTIONNELLE - Récupération pour:', effectiveUserId);
 
       // Initialiser avec l'utilisateur courant
       let authorizedUsers = [effectiveUserId];
 
-      // 1. Récupérer les groupes où l'utilisateur est membre
+      // 1. Récupérer TOUS les groupes où l'utilisateur est membre OU créateur
       const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
         .select(`
@@ -39,22 +39,45 @@ export const useGroupPermissions = () => {
         .eq('user_id', effectiveUserId);
 
       if (userGroupsError) {
-        console.error('❌ useGroupPermissions - Erreur récupération groupes:', userGroupsError);
-        setAuthorizedUserIds([effectiveUserId]);
-        setLoading(false);
-        return;
+        console.error('❌ useGroupPermissions - Erreur récupération groupes comme membre:', userGroupsError);
       }
 
+      // 2. Récupérer AUSSI les groupes créés par l'utilisateur
+      const { data: createdGroups, error: createdGroupsError } = await supabase
+        .from('invitation_groups')
+        .select('id, name, created_by')
+        .eq('created_by', effectiveUserId);
+
+      if (createdGroupsError) {
+        console.error('❌ useGroupPermissions - Erreur récupération groupes créés:', createdGroupsError);
+      }
+
+      // Combiner tous les groupes (membre + créateur)
+      let allGroupIds: string[] = [];
+      
       if (userGroupMemberships && userGroupMemberships.length > 0) {
-        console.log('✅ useGroupPermissions - Groupes trouvés:', userGroupMemberships.length);
+        const memberGroupIds = userGroupMemberships.map(gm => gm.group_id);
+        allGroupIds.push(...memberGroupIds);
+        console.log('✅ useGroupPermissions - Groupes comme membre:', memberGroupIds.length);
+      }
+
+      if (createdGroups && createdGroups.length > 0) {
+        const createdGroupIds = createdGroups.map(g => g.id);
+        allGroupIds.push(...createdGroupIds);
+        console.log('✅ useGroupPermissions - Groupes créés:', createdGroupIds.length);
+      }
+
+      // Supprimer les doublons
+      allGroupIds = [...new Set(allGroupIds)];
+
+      if (allGroupIds.length > 0) {
+        console.log('🎯 useGroupPermissions - TOUS les groupes liés à l\'utilisateur:', allGroupIds);
         
-        // Récupérer tous les membres de tous les groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(gm => gm.group_id);
-        
+        // 3. Récupérer TOUS les membres de TOUS ces groupes
         const { data: allGroupMembers, error: membersError } = await supabase
           .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
+          .select('user_id, group_id')
+          .in('group_id', allGroupIds);
 
         if (membersError) {
           console.error('❌ useGroupPermissions - Erreur récupération membres:', membersError);
@@ -65,22 +88,46 @@ export const useGroupPermissions = () => {
               authorizedUsers.push(member.user_id);
             }
           }
+          console.log('👥 useGroupPermissions - Membres ajoutés:', allGroupMembers.length);
         }
 
-        // Ajouter aussi les créateurs des groupes
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
-            authorizedUsers.push(groupCreator);
+        // 4. Ajouter aussi TOUS les créateurs des groupes où l'utilisateur est membre
+        if (userGroupMemberships) {
+          for (const membership of userGroupMemberships) {
+            const groupCreator = membership.invitation_groups?.created_by;
+            if (groupCreator && !authorizedUsers.includes(groupCreator)) {
+              authorizedUsers.push(groupCreator);
+              console.log('👑 useGroupPermissions - Créateur de groupe ajouté:', groupCreator);
+            }
+          }
+        }
+
+        // 5. Ajouter TOUS les membres des groupes créés par l'utilisateur
+        if (createdGroups) {
+          for (const group of createdGroups) {
+            const { data: groupMembers } = await supabase
+              .from('group_members')
+              .select('user_id')
+              .eq('group_id', group.id);
+
+            if (groupMembers) {
+              for (const member of groupMembers) {
+                if (!authorizedUsers.includes(member.user_id)) {
+                  authorizedUsers.push(member.user_id);
+                  console.log('👤 useGroupPermissions - Membre du groupe créé ajouté:', member.user_id);
+                }
+              }
+            }
           }
         }
       } else {
         console.log('🔍 useGroupPermissions - Aucun groupe trouvé pour cet utilisateur');
       }
 
-      console.log('🎯 useGroupPermissions - Utilisateurs autorisés FINAL:', {
+      console.log('🎯 useGroupPermissions - FINAL (BIDIRECTIONNEL):', {
         count: authorizedUsers.length,
-        userIds: authorizedUsers
+        userIds: authorizedUsers,
+        currentUser: effectiveUserId
       });
 
       setAuthorizedUserIds(authorizedUsers);
