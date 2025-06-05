@@ -215,12 +215,12 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`🔍 send-group-notification - Envoi email à ${memberProfile.email}`);
         
         const emailResponse = await resend.emails.send({
-          from: 'Tranches de Vie <onboarding@resend.dev>',
+          from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
           to: [memberProfile.email],
           subject: `Nouvelle publication de ${authorProfile.display_name || authorProfile.email}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #2D5A27;">Nouvelle publication sur Tranches de Vie</h2>
+              <h2 style="color: #2D5A27;">Nouvelle publication sur Senior Digital Mentor</h2>
               
               <p>Bonjour ${memberProfile.display_name || memberProfile.email},</p>
               
@@ -242,7 +242,7 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="font-size: 12px; color: #666;">
                 Vous recevez cet email car vous faites partie du groupe de ${authorProfile.display_name || authorProfile.email}.
                 <br>
-                Tranches de Vie - Partagez vos moments précieux
+                Senior Digital Mentor - Accompagnement numérique pour les seniors
               </p>
             </div>
           `,
