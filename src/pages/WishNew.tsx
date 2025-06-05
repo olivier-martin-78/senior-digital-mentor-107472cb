@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
+import { v4 as uuidv4 } from 'uuid';
 
 const wishFormSchema = z.object({
   title: z.string().min(1, 'Le titre est requis'),
@@ -26,6 +27,7 @@ const wishFormSchema = z.object({
   needs: z.string().optional(),
   offering: z.string().optional(),
   attachment_url: z.string().optional(),
+  cover_image: z.any().optional(),
 });
 
 type WishFormValues = z.infer<typeof wishFormSchema>;
@@ -35,6 +37,7 @@ const WishNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
   const form = useForm<WishFormValues>({
     resolver: zodResolver(wishFormSchema),
@@ -68,6 +71,41 @@ const WishNew = () => {
     try {
       setIsSubmitting(true);
 
+      let cover_image = null;
+
+      // Upload cover image if exists
+      if (coverImageFile) {
+        try {
+          console.log("Téléchargement de l'image de couverture...");
+          const wishId = uuidv4();
+          const fileExt = coverImageFile.name.split('.').pop();
+          const fileName = `wish-${wishId}.${fileExt}`;
+          
+          // Upload directly to album-thumbnails bucket and store the filename
+          const { error: uploadError } = await supabase.storage
+            .from('album-thumbnails')
+            .upload(fileName, coverImageFile);
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          // Store just the filename, not the full URL
+          cover_image = fileName;
+          console.log("Image téléchargée avec succès:", cover_image);
+        } catch (error) {
+          console.error("Erreur lors du téléchargement de l'image:", error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de télécharger l\'image de couverture',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
+      console.log("Création du souhait avec cover_image:", cover_image);
+
       const { error } = await supabase
         .from('wish_posts')
         .insert({
@@ -83,6 +121,7 @@ const WishNew = () => {
           needs: data.needs || null,
           offering: data.offering || null,
           attachment_url: data.attachment_url || null,
+          cover_image,
           published: false, // Brouillon par défaut
         });
 
@@ -106,6 +145,12 @@ const WishNew = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setCoverImageFile(file);
+    console.log("Image de couverture sélectionnée:", file?.name);
   };
 
   return (
@@ -139,6 +184,23 @@ const WishNew = () => {
                       <FormLabel>Description du souhait *</FormLabel>
                       <FormControl>
                         <Textarea {...field} placeholder="Décrivez votre souhait en détail" rows={4} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="cover_image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image de couverture</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverImageChange}
+                        />
                       </FormControl>
                     </FormItem>
                   )}

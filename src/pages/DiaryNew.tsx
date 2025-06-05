@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,6 +84,7 @@ const DiaryNew = () => {
         const fileExt = mediaFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
 
+        console.log("Téléchargement du média:", filePath);
         const { error: uploadError } = await supabase.storage
           .from('diary_media')
           .upload(filePath, mediaFile);
@@ -91,13 +93,10 @@ const DiaryNew = () => {
           throw uploadError;
         }
 
-        // Get public URL
-        const { data: fileData } = supabase.storage
-          .from('diary_media')
-          .getPublicUrl(filePath);
-          
-        media_url = fileData.publicUrl;
+        // Store the relative path, not the full URL
+        media_url = filePath;
         media_type = mediaFile.type;
+        console.log("Média téléchargé avec succès:", media_url);
       }
 
       // Format the entry data
@@ -121,6 +120,8 @@ const DiaryNew = () => {
         is_private_notes_locked: data.is_private_notes_locked,
         objectives: data.objectives || null,
       };
+
+      console.log("Création de l'entrée avec les données:", entryData);
 
       // Insert entry into Supabase
       const { error } = await supabase
