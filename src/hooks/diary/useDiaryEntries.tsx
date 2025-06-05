@@ -12,13 +12,18 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
-    if (!user || permissionsLoading) {
+    if (!user) {
       setEntries([]);
-      setLoading(permissionsLoading);
+      setLoading(false);
       return;
     }
-    
-    fetchEntries();
+
+    if (!permissionsLoading && authorizedUserIds.length > 0) {
+      fetchEntries();
+    } else if (!permissionsLoading && authorizedUserIds.length === 0) {
+      setEntries([]);
+      setLoading(false);
+    }
   }, [user, searchTerm, startDate, endDate, authorizedUserIds, permissionsLoading]);
 
   const fetchEntries = async () => {
@@ -28,13 +33,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
       console.log('🎯 useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
 
-      if (authorizedUserIds.length === 0) {
-        console.log('⚠️ useDiaryEntries - Aucun utilisateur autorisé');
-        setEntries([]);
-        return;
-      }
-
-      // Récupérer les entrées des utilisateurs autorisés
+      // Récupérer les entrées des utilisateurs autorisés - MÊME LOGIQUE QUE LE BLOG ET HISTOIRES
       let query = supabase
         .from('diary_entries')
         .select('*')
