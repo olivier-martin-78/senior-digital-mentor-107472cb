@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGroupPermissions } from './useGroupPermissions';
 
 interface BlogPost {
   id: string;
@@ -45,102 +46,42 @@ export const useBlogData = (
   endDate: string,
   selectedCategories: string[] | null
 ) => {
-  const { user, hasRole, getEffectiveUserId } = useAuth();
+  const { user, hasRole } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [albums, setAlbums] = useState<BlogAlbum[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasCreatePermission, setHasCreatePermission] = useState(false);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchData = useCallback(async () => {
-    if (!user) {
-      console.log('🚫 useBlogData - Pas d\'utilisateur connecté');
+    if (!user || permissionsLoading) {
+      console.log('🚫 useBlogData - Pas d\'utilisateur connecté ou permissions en cours de chargement');
       setPosts([]);
       setAlbums([]);
       setLoading(false);
       return;
     }
 
-    console.log('🔍 useBlogData - DÉBUT - Récupération avec logique de groupe CORRIGÉE');
+    console.log('🔍 useBlogData - DÉBUT - Récupération avec permissions de groupe centralisées');
     setLoading(true);
 
     try {
-      const effectiveUserId = getEffectiveUserId();
-      console.log('👤 useBlogData - Utilisateur courant:', effectiveUserId);
-      
-      // 1. Récupérer les groupes où l'utilisateur est membre
-      const { data: userGroupMemberships, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
-        .eq('user_id', effectiveUserId);
-
-      if (userGroupsError) {
-        console.error('❌ useBlogData - Erreur récupération groupes utilisateur:', userGroupsError);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useBlogData - Aucun utilisateur autorisé');
         setPosts([]);
         setAlbums([]);
-        setLoading(false);
         return;
       }
 
-      console.log('👥 useBlogData - Groupes de l\'utilisateur (DÉTAILLÉ):', {
-        count: userGroupMemberships?.length || 0,
-        memberships: userGroupMemberships?.map(g => ({
-          group_id: g.group_id,
-          role: g.role,
-          group_name: g.invitation_groups?.name,
-          created_by: g.invitation_groups?.created_by
-        }))
-      });
-
-      // 2. Construire la liste des utilisateurs autorisés
-      let authorizedUserIds = [effectiveUserId]; // Toujours inclure l'utilisateur courant
-      
-      if (userGroupMemberships && userGroupMemberships.length > 0) {
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !authorizedUserIds.includes(groupCreator)) {
-            authorizedUserIds.push(groupCreator);
-            console.log('✅ useBlogData - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-
-        if (allGroupMembers) {
-          for (const member of allGroupMembers) {
-            if (!authorizedUserIds.includes(member.user_id)) {
-              authorizedUserIds.push(member.user_id);
-            }
-          }
-        }
-      }
-
-      console.log('🎯 useBlogData - Utilisateurs autorisés FINAL (CORRIGÉ):', {
+      console.log('🎯 useBlogData - Utilisateurs autorisés (CENTRALISÉ):', {
         count: authorizedUserIds.length,
-        userIds: authorizedUserIds,
-        currentUser: effectiveUserId
+        userIds: authorizedUserIds
       });
 
       // 3. Récupérer les posts des utilisateurs autorisés
       let postsQuery = supabase
         .from('blog_posts')
-        .select(`
-          *,
-          profiles!inner(id, email, display_name, avatar_url, created_at)
-        `)
+        .select('*')
         .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
 
@@ -164,40 +105,46 @@ export const useBlogData = (
         console.error('❌ useBlogData - Erreur récupération posts:', postsError);
         setPosts([]);
       } else {
-        console.log('📝 useBlogData - Posts récupérés (DÉTAILLÉ - CORRIGÉ):', {
-          count: postsData?.length || 0,
-          posts: postsData?.map(p => ({
-            id: p.id,
-            title: p.title,
-            author_id: p.author_id,
-            author_email: p.profiles?.email,
-            author_display: p.profiles?.display_name,
-            published: p.published
-          }))
+        console.log('📝 useBlogData - Posts récupérés (CENTRALISÉ):', {
+          count: postsData?.length || 0
         });
-        
-        const postsWithProfiles = (postsData || []).map(post => ({
-          ...post,
-          published: post.published ?? false,
-          profiles: post.profiles || {
-            id: post.author_id,
-            email: 'unknown@example.com',
-            display_name: 'Utilisateur inconnu',
-            avatar_url: null,
-            created_at: new Date().toISOString()
-          }
-        }));
 
-        setPosts(postsWithProfiles);
+        if (postsData && postsData.length > 0) {
+          // Récupérer les profils des auteurs
+          const userIds = [...new Set(postsData.map(post => post.author_id))];
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+
+          if (profilesError) {
+            console.error('❌ useBlogData - Erreur récupération profils:', profilesError);
+            setPosts([]);
+            return;
+          }
+
+          const postsWithProfiles = postsData.map(post => ({
+            ...post,
+            published: post.published ?? false,
+            profiles: profilesData?.find(p => p.id === post.author_id) || {
+              id: post.author_id,
+              email: 'unknown@example.com',
+              display_name: 'Utilisateur inconnu',
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
+          }));
+
+          setPosts(postsWithProfiles);
+        } else {
+          setPosts([]);
+        }
       }
 
       // 4. Récupérer les albums des utilisateurs autorisés
       const { data: albumsData, error: albumsError } = await supabase
         .from('blog_albums')
-        .select(`
-          *,
-          profiles!inner(id, email, display_name, avatar_url, created_at)
-        `)
+        .select('*')
         .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
 
@@ -205,37 +152,47 @@ export const useBlogData = (
         console.error('❌ useBlogData - Erreur récupération albums:', albumsError);
         setAlbums([]);
       } else {
-        console.log('📁 useBlogData - Albums récupérés (DÉTAILLÉ - CORRIGÉ):', {
-          count: albumsData?.length || 0,
-          albums: albumsData?.map(a => ({
-            id: a.id,
-            name: a.name,
-            author_id: a.author_id,
-            author_email: a.profiles?.email,
-            author_display: a.profiles?.display_name
-          }))
+        console.log('📁 useBlogData - Albums récupérés (CENTRALISÉ):', {
+          count: albumsData?.length || 0
         });
-        
-        const albumsWithProfiles = (albumsData || []).map(album => ({
-          ...album,
-          description: album.description || '',
-          thumbnail_url: album.thumbnail_url,
-          profiles: album.profiles || {
-            id: album.author_id,
-            email: 'unknown@example.com',
-            display_name: 'Utilisateur inconnu',
-            avatar_url: null,
-            created_at: new Date().toISOString()
-          }
-        }));
 
-        setAlbums(albumsWithProfiles);
+        if (albumsData && albumsData.length > 0) {
+          // Récupérer les profils des auteurs d'albums
+          const albumUserIds = [...new Set(albumsData.map(album => album.author_id))];
+          const { data: albumProfilesData, error: albumProfilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', albumUserIds);
+
+          if (albumProfilesError) {
+            console.error('❌ useBlogData - Erreur récupération profils albums:', albumProfilesError);
+            setAlbums([]);
+            return;
+          }
+
+          const albumsWithProfiles = albumsData.map(album => ({
+            ...album,
+            description: album.description || '',
+            thumbnail_url: album.thumbnail_url,
+            profiles: albumProfilesData?.find(p => p.id === album.author_id) || {
+              id: album.author_id,
+              email: 'unknown@example.com',
+              display_name: 'Utilisateur inconnu',
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
+          }));
+
+          setAlbums(albumsWithProfiles);
+        } else {
+          setAlbums([]);
+        }
       }
 
       // 5. Déterminer les permissions de création
       setHasCreatePermission(hasRole('admin') || hasRole('editor') || hasRole('reader'));
 
-      console.log('🏁 useBlogData - FIN - Récapitulatif (CORRIGÉ):', {
+      console.log('🏁 useBlogData - FIN - Récapitulatif (CENTRALISÉ):', {
         authorizedUsers: authorizedUserIds.length,
         postsFound: postsData?.length || 0,
         albumsFound: albumsData?.length || 0
@@ -248,7 +205,7 @@ export const useBlogData = (
     } finally {
       setLoading(false);
     }
-  }, [user, searchTerm, selectedAlbum, startDate, endDate, hasRole, getEffectiveUserId]);
+  }, [user, searchTerm, selectedAlbum, startDate, endDate, hasRole, authorizedUserIds, permissionsLoading]);
 
   useEffect(() => {
     fetchData();
