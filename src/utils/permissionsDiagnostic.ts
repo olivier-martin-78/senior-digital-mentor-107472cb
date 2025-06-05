@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const diagnosePer missions = async (userEmail: string) => {
+export const diagnosePermissions = async (userEmail: string) => {
   console.log('🔍 DIAGNOSTIC PERMISSIONS pour:', userEmail);
   
   try {

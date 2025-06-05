@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { diagnosePer missions, syncUserPermissions } from '@/utils/permissionsDiagnostic';
+import { diagnosePermissions, syncUserPermissions } from '@/utils/permissionsDiagnostic';
 
 export const PermissionsDiagnosticTool: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +24,7 @@ export const PermissionsDiagnosticTool: React.FC = () => {
 
     setLoading(true);
     try {
-      const result = await diagnosePer missions(email);
+      const result = await diagnosePermissions(email);
       setDiagnosticResult(result);
       
       toast({
