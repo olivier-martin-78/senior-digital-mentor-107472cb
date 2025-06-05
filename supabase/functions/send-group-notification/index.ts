@@ -193,9 +193,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - URL contenu:', contentUrl);
 
+    // Vérifier la configuration Resend
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    console.log('🔍 send-group-notification - Clé API Resend:', resendApiKey ? 'configurée' : 'manquante');
+    
+    if (!resendApiKey) {
+      throw new Error('RESEND_API_KEY not configured');
+    }
+
     // Préparer et envoyer les emails
     const emailPromises = memberProfiles?.map(async (memberProfile: any) => {
-      if (!memberProfile?.email) return;
+      if (!memberProfile?.email) {
+        console.log(`⚠️ send-group-notification - Email manquant pour ${memberProfile?.display_name || 'utilisateur inconnu'}`);
+        return;
+      }
 
       const contentTypeLabel = contentType === 'blog' ? 'article de blog' :
                               contentType === 'diary' ? 'entrée de journal' : 'souhait';
@@ -203,7 +214,7 @@ const handler = async (req: Request): Promise<Response> => {
       try {
         console.log(`🔍 send-group-notification - Envoi email à ${memberProfile.email}`);
         
-        await resend.emails.send({
+        const emailResponse = await resend.emails.send({
           from: 'Tranches de Vie <onboarding@resend.dev>',
           to: [memberProfile.email],
           subject: `Nouvelle publication de ${authorProfile.display_name || authorProfile.email}`,
@@ -237,9 +248,24 @@ const handler = async (req: Request): Promise<Response> => {
           `,
         });
         
-        console.log(`✅ send-group-notification - Email envoyé avec succès à ${memberProfile.email}`);
+        console.log(`📧 send-group-notification - Réponse Resend pour ${memberProfile.email}:`, {
+          id: emailResponse.data?.id,
+          error: emailResponse.error
+        });
+        
+        if (emailResponse.error) {
+          console.error(`❌ send-group-notification - Erreur Resend pour ${memberProfile.email}:`, emailResponse.error);
+          throw emailResponse.error;
+        }
+        
+        console.log(`✅ send-group-notification - Email envoyé avec succès à ${memberProfile.email}, ID: ${emailResponse.data?.id}`);
       } catch (emailError) {
-        console.error(`❌ send-group-notification - Échec envoi email à ${memberProfile.email}:`, emailError);
+        console.error(`❌ send-group-notification - Échec envoi email à ${memberProfile.email}:`, {
+          error: emailError,
+          message: emailError?.message,
+          stack: emailError?.stack
+        });
+        // Ne pas faire échouer toute la fonction pour un email
       }
     }) || [];
 
