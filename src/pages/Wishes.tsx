@@ -24,7 +24,7 @@ interface WishPost {
 }
 
 const Wishes = () => {
-  const { user, session } = useAuth();
+  const { user, session, getEffectiveUserId } = useAuth();
   const navigate = useNavigate();
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,27 +46,86 @@ const Wishes = () => {
     try {
       setLoading(true);
       
-      // Récupérer d'abord les groupes de l'utilisateur
-      const { data: userGroups } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', user.id);
-
-      const groupIds = userGroups?.map(g => g.group_id) || [];
+      console.log('🔍 Wishes - Récupération avec logique de groupe CORRIGÉE');
       
-      // Récupérer les membres des mêmes groupes
-      let authorizedUsers = [user.id];
-      if (groupIds.length > 0) {
-        const { data: groupMembers } = await supabase
+      const effectiveUserId = getEffectiveUserId();
+      console.log('👤 Wishes - Utilisateur courant:', effectiveUserId);
+
+      // 1. Récupérer les groupes où l'utilisateur est membre
+      const { data: userGroupMemberships, error: userGroupsError } = await supabase
+        .from('group_members')
+        .select(`
+          group_id, 
+          role,
+          invitation_groups!inner(
+            id,
+            name,
+            created_by
+          )
+        `)
+        .eq('user_id', effectiveUserId);
+
+      if (userGroupsError) {
+        console.error('❌ Wishes - Erreur récupération groupes utilisateur:', userGroupsError);
+        setWishes([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('👥 Wishes - Groupes de l\'utilisateur (DÉTAILLÉ):', {
+        count: userGroupMemberships?.length || 0,
+        groups: userGroupMemberships?.map(g => ({
+          group_id: g.group_id,
+          role: g.role,
+          group_name: g.invitation_groups?.name,
+          created_by: g.invitation_groups?.created_by
+        }))
+      });
+
+      // 2. Construire la liste des utilisateurs autorisés
+      let authorizedUsers = [effectiveUserId]; // Toujours inclure l'utilisateur courant
+      console.log('✅ Wishes - ÉTAPE 1 - Utilisateur courant ajouté:', authorizedUsers);
+
+      if (userGroupMemberships && userGroupMemberships.length > 0) {
+        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
+        for (const membership of userGroupMemberships) {
+          const groupCreator = membership.invitation_groups?.created_by;
+          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
+            authorizedUsers.push(groupCreator);
+            console.log('✅ Wishes - Ajout du créateur du groupe:', groupCreator);
+          }
+        }
+
+        // Récupérer tous les membres des groupes où l'utilisateur est présent
+        const groupIds = userGroupMemberships.map(g => g.group_id);
+        const { data: allGroupMembers } = await supabase
           .from('group_members')
           .select('user_id')
           .in('group_id', groupIds);
+
+        if (allGroupMembers) {
+          for (const member of allGroupMembers) {
+            if (!authorizedUsers.includes(member.user_id)) {
+              authorizedUsers.push(member.user_id);
+            }
+          }
+        }
         
-        const additionalUsers = groupMembers?.map(gm => gm.user_id).filter(id => id !== user.id) || [];
-        authorizedUsers = [...authorizedUsers, ...additionalUsers];
+        console.log('✅ Wishes - ÉTAPE 2 - Après ajout des membres de groupe:', {
+          authorizedUsers,
+          ajoutés: authorizedUsers.filter(id => id !== effectiveUserId)
+        });
+      } else {
+        console.log('⚠️ Wishes - Aucun groupe trouvé pour l\'utilisateur');
       }
 
-      // Récupérer les souhaits avec logique d'accès côté application
+      console.log('🎯 Wishes - Utilisateurs autorisés FINAL:', {
+        count: authorizedUsers.length,
+        userIds: authorizedUsers,
+        currentUser: effectiveUserId
+      });
+
+      // 3. Récupérer les souhaits avec logique d'accès côté application
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
@@ -74,15 +133,29 @@ const Wishes = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erreur lors de la récupération des souhaits:', error);
+        console.error('❌ Wishes - Erreur lors de la récupération des souhaits:', error);
         throw error;
       }
       
-      console.log('✅ Wishes récupérées côté application:', data?.length || 0);
+      console.log('✅ Wishes - Souhaits récupérés côté application (DÉTAILLÉ):', {
+        count: data?.length || 0,
+        wishes: data?.map(w => ({
+          id: w.id,
+          title: w.title,
+          author_id: w.author_id,
+          first_name: w.first_name
+        }))
+      });
+
+      console.log('🏁 Wishes - FIN - Récapitulatif:', {
+        authorizedUsers: authorizedUsers.length,
+        wishesFound: data?.length || 0
+      });
+
       setWishes(data || []);
       
     } catch (error) {
-      console.error('Erreur dans fetchWishes:', error);
+      console.error('💥 Wishes - Erreur dans fetchWishes:', error);
     } finally {
       setLoading(false);
     }
