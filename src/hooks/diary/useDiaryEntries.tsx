@@ -24,13 +24,13 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
     try {
       setLoading(true);
       
-      console.log('🔍 useDiaryEntries - DÉBUT - Récupération avec logique applicative stricte');
+      console.log('🔍 useDiaryEntries - DÉBUT - Récupération avec logique de groupe CORRIGÉE');
       
       const effectiveUserId = getEffectiveUserId();
       console.log('👤 useDiaryEntries - Utilisateur courant:', effectiveUserId);
 
-      // 1. Récupérer TOUS les groupes où l'utilisateur est membre avec les détails des groupes
-      const { data: userGroupsData, error: userGroupsError } = await supabase
+      // 1. Récupérer les groupes où l'utilisateur est membre
+      const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
         .select(`
           group_id, 
@@ -51,8 +51,8 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       }
 
       console.log('👥 useDiaryEntries - Groupes de l\'utilisateur (DÉTAILLÉ):', {
-        count: userGroupsData?.length || 0,
-        groups: userGroupsData?.map(g => ({
+        count: userGroupMemberships?.length || 0,
+        groups: userGroupMemberships?.map(g => ({
           group_id: g.group_id,
           role: g.role,
           group_name: g.invitation_groups?.name,
@@ -60,59 +60,39 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         }))
       });
 
-      const userGroupIds = userGroupsData?.map(g => g.group_id) || [];
-      console.log('🎯 useDiaryEntries - IDs des groupes:', userGroupIds);
-
-      // 2. Construire la liste des utilisateurs autorisés - TOUJOURS commencer par l'utilisateur courant
-      let authorizedUserIds = [effectiveUserId];
+      // 2. Construire la liste des utilisateurs autorisés
+      let authorizedUserIds = [effectiveUserId]; // Toujours inclure l'utilisateur courant
       console.log('✅ useDiaryEntries - ÉTAPE 1 - Utilisateur courant ajouté:', authorizedUserIds);
 
-      if (userGroupIds.length > 0) {
-        // Récupérer TOUS les membres de TOUS les groupes où l'utilisateur est présent
-        const { data: groupMembersData, error: groupMembersError } = await supabase
-          .from('group_members')
-          .select(`
-            user_id, 
-            group_id, 
-            role
-          `)
-          .in('group_id', userGroupIds);
-
-        if (groupMembersError) {
-          console.error('❌ useDiaryEntries - Erreur récupération membres groupes:', groupMembersError);
-        } else {
-          // Récupérer les profils des membres séparément
-          const memberUserIds = groupMembersData?.map(gm => gm.user_id) || [];
-          const { data: memberProfiles } = await supabase
-            .from('profiles')
-            .select('id, email, display_name')
-            .in('id', memberUserIds);
-
-          console.log('👥 useDiaryEntries - TOUS les membres des groupes (DÉTAILLÉ):', {
-            count: groupMembersData?.length || 0,
-            members: groupMembersData?.map(gm => {
-              const profile = memberProfiles?.find(p => p.id === gm.user_id);
-              return {
-                user_id: gm.user_id,
-                group_id: gm.group_id,
-                role: gm.role,
-                email: profile?.email,
-                display_name: profile?.display_name
-              };
-            })
-          });
-          
-          // Ajouter TOUS les membres trouvés (y compris le current user)
-          const allMemberIds = groupMembersData?.map(gm => gm.user_id) || [];
-          
-          // Fusionner avec l'utilisateur courant et supprimer les doublons
-          authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
-          
-          console.log('✅ useDiaryEntries - ÉTAPE 2 - Après ajout des membres de groupe:', {
-            authorizedUserIds,
-            ajoutés: allMemberIds.filter(id => id !== effectiveUserId)
-          });
+      if (userGroupMemberships && userGroupMemberships.length > 0) {
+        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
+        for (const membership of userGroupMemberships) {
+          const groupCreator = membership.invitation_groups?.created_by;
+          if (groupCreator && !authorizedUserIds.includes(groupCreator)) {
+            authorizedUserIds.push(groupCreator);
+            console.log('✅ useDiaryEntries - Ajout du créateur du groupe:', groupCreator);
+          }
         }
+
+        // Récupérer tous les membres des groupes où l'utilisateur est présent
+        const groupIds = userGroupMemberships.map(g => g.group_id);
+        const { data: allGroupMembers } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', groupIds);
+
+        if (allGroupMembers) {
+          for (const member of allGroupMembers) {
+            if (!authorizedUserIds.includes(member.user_id)) {
+              authorizedUserIds.push(member.user_id);
+            }
+          }
+        }
+        
+        console.log('✅ useDiaryEntries - ÉTAPE 2 - Après ajout des membres de groupe:', {
+          authorizedUserIds,
+          ajoutés: authorizedUserIds.filter(id => id !== effectiveUserId)
+        });
       } else {
         console.log('⚠️ useDiaryEntries - Aucun groupe trouvé pour l\'utilisateur');
       }
@@ -151,12 +131,6 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
             entry_date: e.entry_date
           }))
         });
-
-        // Vérifier que toutes les entrées appartiennent bien aux utilisateurs autorisés
-        const unauthorizedEntries = diaryData.filter(entry => !authorizedUserIds.includes(entry.user_id));
-        if (unauthorizedEntries.length > 0) {
-          console.error('🚨 useDiaryEntries - PROBLÈME SÉCURITÉ: Entrées non autorisées détectées:', unauthorizedEntries);
-        }
 
         // Récupérer les profils des auteurs
         const userIds = [...new Set(diaryData.map(entry => entry.user_id))];

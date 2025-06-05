@@ -21,59 +21,63 @@ export const useBlogAlbums = () => {
         setLoading(true);
         const effectiveUserId = getEffectiveUserId();
         
-        console.log('🔍 useBlogAlbums - Récupération des albums avec logique de permissions de groupe');
+        console.log('🔍 useBlogAlbums - Récupération avec logique de groupe CORRIGÉE');
         
-        // 1. Récupérer les groupes créés PAR l'utilisateur courant (il est inviteur)
-        const { data: ownGroups, error: ownGroupsError } = await supabase
-          .from('invitation_groups')
-          .select('id')
-          .eq('created_by', effectiveUserId);
+        // 1. Récupérer les groupes où l'utilisateur est membre
+        const { data: userGroupMemberships, error: userGroupsError } = await supabase
+          .from('group_members')
+          .select(`
+            group_id, 
+            role,
+            invitation_groups!inner(
+              id,
+              name,
+              created_by
+            )
+          `)
+          .eq('user_id', effectiveUserId);
 
-        if (ownGroupsError) {
-          console.error('❌ useBlogAlbums - Erreur récupération groupes créés:', ownGroupsError);
+        if (userGroupsError) {
+          console.error('❌ useBlogAlbums - Erreur récupération groupes:', userGroupsError);
           setAlbums([]);
           setLoading(false);
           return;
         }
 
-        console.log('👤 useBlogAlbums - Groupes créés par l\'utilisateur:', ownGroups);
+        console.log('👥 useBlogAlbums - Groupes de l\'utilisateur:', userGroupMemberships);
 
         // 2. Construire la liste des utilisateurs autorisés
-        // Commencer avec l'utilisateur courant (ses propres albums)
-        let authorizedUserIds = [effectiveUserId];
+        let authorizedUserIds = [effectiveUserId]; // Toujours inclure l'utilisateur courant
 
-        // Si l'utilisateur a créé des groupes, ajouter tous les membres de ces groupes
-        if (ownGroups && ownGroups.length > 0) {
-          const ownGroupIds = ownGroups.map(g => g.id);
-          
-          // Récupérer tous les membres des groupes créés par l'utilisateur
-          const { data: groupMembers, error: groupMembersError } = await supabase
+        if (userGroupMemberships && userGroupMemberships.length > 0) {
+          // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
+          for (const membership of userGroupMemberships) {
+            const groupCreator = membership.invitation_groups?.created_by;
+            if (groupCreator && !authorizedUserIds.includes(groupCreator)) {
+              authorizedUserIds.push(groupCreator);
+              console.log('✅ useBlogAlbums - Ajout du créateur du groupe:', groupCreator);
+            }
+          }
+
+          // Récupérer tous les membres des groupes où l'utilisateur est présent
+          const groupIds = userGroupMemberships.map(g => g.group_id);
+          const { data: allGroupMembers } = await supabase
             .from('group_members')
             .select('user_id')
-            .in('group_id', ownGroupIds)
-            .neq('user_id', effectiveUserId); // Exclure l'utilisateur courant pour éviter les doublons
+            .in('group_id', groupIds);
 
-          if (!groupMembersError && groupMembers && groupMembers.length > 0) {
-            const memberIds = groupMembers.map(gm => gm.user_id);
-            authorizedUserIds = [effectiveUserId, ...memberIds];
+          if (allGroupMembers) {
+            for (const member of allGroupMembers) {
+              if (!authorizedUserIds.includes(member.user_id)) {
+                authorizedUserIds.push(member.user_id);
+              }
+            }
           }
-        }
-
-        // 3. Récupérer aussi les groupes DONT l'utilisateur est membre (il est invité)
-        const { data: memberGroups, error: memberGroupsError } = await supabase
-          .from('group_members')
-          .select('group_id, invitation_groups!inner(created_by)')
-          .eq('user_id', effectiveUserId);
-
-        if (!memberGroupsError && memberGroups && memberGroups.length > 0) {
-          // Ajouter les créateurs des groupes dont on est membre
-          const groupCreators = memberGroups.map(gm => gm.invitation_groups.created_by);
-          authorizedUserIds = [...new Set([...authorizedUserIds, ...groupCreators])];
         }
 
         console.log('🎯 useBlogAlbums - Utilisateurs autorisés:', authorizedUserIds);
 
-        // 4. Récupérer les albums créés par tous les utilisateurs autorisés
+        // 3. Récupérer les albums créés par tous les utilisateurs autorisés
         const { data, error } = await supabase
           .from('blog_albums')
           .select(`

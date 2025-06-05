@@ -14,42 +14,59 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
       return;
     }
 
-    console.log('🔍 useRecentBlogPosts - Récupération avec logique applicative stricte:', effectiveUserId);
+    console.log('🔍 useRecentBlogPosts - Récupération avec logique de groupe CORRIGÉE');
 
     try {
       const currentUserId = getEffectiveUserId();
 
-      // 1. Récupérer les groupes de l'utilisateur courant
-      const { data: userGroups, error: userGroupsError } = await supabase
+      // 1. Récupérer les groupes où l'utilisateur est membre
+      const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
-        .select('group_id')
+        .select(`
+          group_id, 
+          role,
+          invitation_groups!inner(
+            id,
+            name,
+            created_by
+          )
+        `)
         .eq('user_id', currentUserId);
 
       if (userGroupsError) {
-        console.error('❌ useRecentBlogPosts - Erreur récupération groupes utilisateur:', userGroupsError);
+        console.error('❌ useRecentBlogPosts - Erreur récupération groupes:', userGroupsError);
         setBlogPosts([]);
         return;
       }
 
-      const userGroupIds = userGroups?.map(g => g.group_id) || [];
+      // 2. Construire la liste des utilisateurs autorisés
+      let actualAuthorizedUserIds = [currentUserId]; // Toujours inclure l'utilisateur courant
 
-      // CORRECTION: Si l'utilisateur n'est dans aucun groupe, il ne voit que ses propres posts
-      let actualAuthorizedUserIds = [currentUserId]; // L'utilisateur peut toujours voir ses propres contenus
-
-      if (userGroupIds.length > 0) {
-        console.log('🔍 useRecentBlogPosts - Utilisateur dans des groupes:', userGroupIds);
+      if (userGroupMemberships && userGroupMemberships.length > 0) {
+        console.log('🔍 useRecentBlogPosts - Utilisateur dans des groupes:', userGroupMemberships.length);
         
-        // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
-        const { data: groupMembers, error: groupMembersError } = await supabase
+        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
+        for (const membership of userGroupMemberships) {
+          const groupCreator = membership.invitation_groups?.created_by;
+          if (groupCreator && !actualAuthorizedUserIds.includes(groupCreator)) {
+            actualAuthorizedUserIds.push(groupCreator);
+            console.log('✅ useRecentBlogPosts - Ajout du créateur du groupe:', groupCreator);
+          }
+        }
+
+        // Récupérer tous les membres des groupes où l'utilisateur est présent
+        const groupIds = userGroupMemberships.map(g => g.group_id);
+        const { data: allGroupMembers } = await supabase
           .from('group_members')
           .select('user_id')
-          .in('group_id', userGroupIds);
+          .in('group_id', groupIds);
 
-        if (groupMembersError) {
-          console.error('❌ useRecentBlogPosts - Erreur récupération membres groupes:', groupMembersError);
-        } else {
-          const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== currentUserId) || [];
-          actualAuthorizedUserIds = [...actualAuthorizedUserIds, ...additionalUserIds];
+        if (allGroupMembers) {
+          for (const member of allGroupMembers) {
+            if (!actualAuthorizedUserIds.includes(member.user_id)) {
+              actualAuthorizedUserIds.push(member.user_id);
+            }
+          }
         }
       } else {
         console.log('🔍 useRecentBlogPosts - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
