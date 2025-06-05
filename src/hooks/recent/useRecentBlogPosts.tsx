@@ -3,81 +3,33 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
+import { useGroupPermissions } from '../useGroupPermissions';
 
-export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: string[]) => {
-  const { getEffectiveUserId } = useAuth();
+export const useRecentBlogPosts = () => {
+  const { user, getEffectiveUserId } = useAuth();
   const [blogPosts, setBlogPosts] = useState<RecentItem[]>([]);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchBlogPosts = useCallback(async () => {
-    if (!effectiveUserId) {
+    if (!user || permissionsLoading) {
       setBlogPosts([]);
       return;
     }
 
-    console.log('🔍 useRecentBlogPosts - Récupération avec logique de groupe CORRIGÉE');
+    console.log('🔍 useRecentBlogPosts - Récupération avec permissions de groupe centralisées');
 
     try {
       const currentUserId = getEffectiveUserId();
 
-      // 1. Récupérer les groupes où l'utilisateur est membre
-      const { data: userGroupMemberships, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select(`
-          group_id, 
-          role,
-          invitation_groups!inner(
-            id,
-            name,
-            created_by
-          )
-        `)
-        .eq('user_id', currentUserId);
-
-      if (userGroupsError) {
-        console.error('❌ useRecentBlogPosts - Erreur récupération groupes:', userGroupsError);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useRecentBlogPosts - Aucun utilisateur autorisé');
         setBlogPosts([]);
         return;
       }
 
-      // 2. Construire la liste des utilisateurs autorisés
-      let actualAuthorizedUserIds = [currentUserId]; // Toujours inclure l'utilisateur courant
+      console.log('✅ useRecentBlogPosts - Utilisateurs autorisés:', authorizedUserIds);
 
-      if (userGroupMemberships && userGroupMemberships.length > 0) {
-        console.log('🔍 useRecentBlogPosts - Utilisateur dans des groupes:', userGroupMemberships.length);
-        
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !actualAuthorizedUserIds.includes(groupCreator)) {
-            actualAuthorizedUserIds.push(groupCreator);
-            console.log('✅ useRecentBlogPosts - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', groupIds);
-
-        if (allGroupMembers) {
-          for (const member of allGroupMembers) {
-            if (!actualAuthorizedUserIds.includes(member.user_id)) {
-              actualAuthorizedUserIds.push(member.user_id);
-            }
-          }
-        }
-      } else {
-        console.log('🔍 useRecentBlogPosts - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
-      }
-
-      console.log('✅ useRecentBlogPosts - Utilisateurs autorisés:', {
-        count: actualAuthorizedUserIds.length,
-        userIds: actualAuthorizedUserIds
-      });
-
-      // 3. Récupérer les posts avec logique d'accès côté application
+      // Récupérer les posts avec logique d'accès côté application
       const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -91,7 +43,7 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
           published,
           profiles!blog_posts_author_id_fkey(id, email, display_name)
         `)
-        .in('author_id', actualAuthorizedUserIds)
+        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -101,19 +53,9 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
         return;
       }
 
-      console.log('✅ useRecentBlogPosts - Posts récupérés côté application:', {
-        count: posts?.length || 0,
-        postsParAuteur: posts?.reduce((acc, post) => {
-          const authorEmail = post.profiles?.email || 'Email non disponible';
-          if (!acc[authorEmail]) {
-            acc[authorEmail] = 0;
-          }
-          acc[authorEmail]++;
-          return acc;
-        }, {} as Record<string, number>)
-      });
+      console.log('✅ useRecentBlogPosts - Posts récupérés:', posts?.length || 0);
 
-      if (posts) {
+      if (posts && posts.length > 0) {
         // Récupérer les informations des albums si nécessaire
         const albumIds = posts.filter(p => p.album_id).map(p => p.album_id);
         let albumsMap = {};
@@ -145,12 +87,14 @@ export const useRecentBlogPosts = (effectiveUserId: string, authorizedUserIds: s
 
         console.log('✅ useRecentBlogPosts - Items blog transformés:', items.length);
         setBlogPosts(items);
+      } else {
+        setBlogPosts([]);
       }
     } catch (error) {
       console.error('💥 useRecentBlogPosts - Erreur critique:', error);
       setBlogPosts([]);
     }
-  }, [effectiveUserId, getEffectiveUserId]);
+  }, [user, authorizedUserIds, permissionsLoading, getEffectiveUserId]);
 
   useEffect(() => {
     fetchBlogPosts();

@@ -3,64 +3,33 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
+import { useGroupPermissions } from '../useGroupPermissions';
 
-export const useRecentComments = (effectiveUserId: string, authorizedUserIds: string[]) => {
-  const { getEffectiveUserId } = useAuth();
+export const useRecentComments = () => {
+  const { user, getEffectiveUserId } = useAuth();
   const [comments, setComments] = useState<RecentItem[]>([]);
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchComments = useCallback(async () => {
-    if (!effectiveUserId) {
+    if (!user || permissionsLoading) {
       setComments([]);
       return;
     }
 
-    console.log('🔍 useRecentComments - Récupération avec logique applicative stricte:', effectiveUserId);
+    console.log('🔍 useRecentComments - Récupération avec permissions de groupe centralisées');
 
     try {
       const currentUserId = getEffectiveUserId();
 
-      // 1. Récupérer les groupes de l'utilisateur courant (même pour les admins)
-      const { data: userGroups, error: userGroupsError } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', currentUserId);
-
-      if (userGroupsError) {
-        console.error('❌ useRecentComments - Erreur récupération groupes utilisateur:', userGroupsError);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useRecentComments - Aucun utilisateur autorisé');
         setComments([]);
         return;
       }
 
-      const userGroupIds = userGroups?.map(g => g.group_id) || [];
+      console.log('✅ useRecentComments - Utilisateurs autorisés:', authorizedUserIds);
 
-      // CORRECTION: Même logique pour tous les utilisateurs (y compris admins)
-      let actualAuthorizedUserIds = [currentUserId]; // L'utilisateur peut toujours voir ses propres contenus
-
-      if (userGroupIds.length > 0) {
-        console.log('🔍 useRecentComments - Utilisateur dans des groupes:', userGroupIds);
-        
-        // 2. Récupérer tous les membres des mêmes groupes (utilisateurs autorisés)
-        const { data: groupMembers, error: groupMembersError } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .in('group_id', userGroupIds);
-
-        if (groupMembersError) {
-          console.error('❌ useRecentComments - Erreur récupération membres groupes:', groupMembersError);
-        } else {
-          const additionalUserIds = groupMembers?.map(gm => gm.user_id).filter(id => id !== currentUserId) || [];
-          actualAuthorizedUserIds = [...actualAuthorizedUserIds, ...additionalUserIds];
-        }
-      } else {
-        console.log('🔍 useRecentComments - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
-      }
-
-      console.log('✅ useRecentComments - Utilisateurs autorisés:', {
-        count: actualAuthorizedUserIds.length,
-        userIds: actualAuthorizedUserIds
-      });
-
-      // 3. Récupérer les commentaires avec logique d'accès côté application
+      // Récupérer les commentaires avec logique d'accès côté application
       const { data: commentsData, error } = await supabase
         .from('blog_comments')
         .select(`
@@ -77,7 +46,7 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
             blog_albums(name)
           )
         `)
-        .in('author_id', actualAuthorizedUserIds)
+        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -87,23 +56,13 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
         return;
       }
 
-      console.log('✅ useRecentComments - Commentaires récupérés côté application:', {
-        count: commentsData?.length || 0,
-        commentairesParAuteur: commentsData?.reduce((acc, comment) => {
-          const authorId = comment.author_id;
-          if (!acc[authorId]) {
-            acc[authorId] = 0;
-          }
-          acc[authorId]++;
-          return acc;
-        }, {} as Record<string, number>)
-      });
+      console.log('✅ useRecentComments - Commentaires récupérés:', commentsData?.length || 0);
 
-      if (commentsData) {
-        // CORRECTION: Filtrer aussi par les posts autorisés
+      if (commentsData && commentsData.length > 0) {
+        // Filtrer aussi par les posts autorisés
         const filteredComments = commentsData.filter(comment => {
           // Le commentaire doit être de quelqu'un d'autorisé ET le post aussi
-          return comment.post && actualAuthorizedUserIds.includes(comment.post.author_id);
+          return comment.post && authorizedUserIds.includes(comment.post.author_id);
         });
 
         console.log('✅ useRecentComments - Commentaires après filtrage posts:', filteredComments.length);
@@ -123,12 +82,14 @@ export const useRecentComments = (effectiveUserId: string, authorizedUserIds: st
 
         console.log('✅ useRecentComments - Items commentaires transformés:', items.length);
         setComments(items);
+      } else {
+        setComments([]);
       }
     } catch (error) {
       console.error('💥 useRecentComments - Erreur critique:', error);
       setComments([]);
     }
-  }, [effectiveUserId, getEffectiveUserId]);
+  }, [user, authorizedUserIds, permissionsLoading, getEffectiveUserId]);
 
   useEffect(() => {
     fetchComments();
