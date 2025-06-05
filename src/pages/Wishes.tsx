@@ -22,6 +22,13 @@ interface WishPost {
   published?: boolean;
   created_at: string;
   author_id: string;
+  profiles?: {
+    id: string;
+    email: string;
+    display_name?: string;
+    avatar_url?: string;
+    created_at: string;
+  };
 }
 
 const Wishes = () => {
@@ -61,10 +68,13 @@ const Wishes = () => {
         return;
       }
 
-      // Récupérer les souhaits des utilisateurs autorisés - MÊME LOGIQUE QUE LE BLOG ET HISTOIRES
+      // CORRIGÉ: Ajouter la récupération des profils comme dans le blog
       const { data, error } = await supabase
         .from('wish_posts')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(id, email, display_name, avatar_url, created_at)
+        `)
         .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
 
@@ -80,7 +90,8 @@ const Wishes = () => {
           id: w.id,
           title: w.title,
           author_id: w.author_id,
-          published: w.published
+          published: w.published,
+          author_name: w.profiles?.display_name || w.profiles?.email
         })));
       }
       
