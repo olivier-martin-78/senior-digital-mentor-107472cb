@@ -54,21 +54,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Utilisateur authentifié:', user.id);
 
-    // Parser le body JSON de manière plus robuste
+    // Parser le body JSON
     let requestData: NotificationRequest;
     try {
-      // Récupérer le body brut
-      const requestBody = await req.json();
-      console.log('🔍 send-group-notification - Body parsé directement:', requestBody);
-      
-      if (!requestBody) {
-        throw new Error('Request body is null or undefined');
-      }
-      
-      requestData = requestBody as NotificationRequest;
+      requestData = await req.json();
       console.log('🔍 send-group-notification - Données reçues:', requestData);
       
-      // Vérifier que les champs requis sont présents
       if (!requestData.contentType || !requestData.contentId || !requestData.title || !requestData.authorId) {
         throw new Error('Missing required fields in request body');
       }
@@ -96,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Profil auteur trouvé:', authorProfile.display_name);
 
-    // CORRECTION: Récupérer d'abord les groupes de l'auteur
+    // Récupérer les groupes de l'auteur
     const { data: authorGroups, error: authorGroupsError } = await supabase
       .from('group_members')
       .select('group_id')
@@ -123,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Extraire les IDs des groupes
     const groupIds = authorGroups.map(g => g.group_id);
 
-    // CORRECTION: Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
+    // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
       .from('group_members')
       .select('user_id, group_id')
@@ -137,7 +128,40 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Membres groupe trouvés:', groupMembers?.length || 0);
 
-    if (!groupMembers || groupMembers.length === 0) {
+    // AMÉLIORATION: Récupérer aussi les créateurs des groupes (s'ils ne sont pas l'auteur)
+    const { data: groupCreators, error: creatorsError } = await supabase
+      .from('invitation_groups')
+      .select('created_by')
+      .in('id', groupIds)
+      .neq('created_by', authorId);
+
+    if (creatorsError) {
+      console.error('🔍 send-group-notification - Erreur créateurs groupes:', creatorsError);
+    } else {
+      console.log('🔍 send-group-notification - Créateurs groupes trouvés:', groupCreators?.length || 0);
+    }
+
+    // Combiner les IDs des membres et des créateurs
+    let allUserIds: string[] = [];
+    
+    if (groupMembers) {
+      allUserIds.push(...groupMembers.map(m => m.user_id));
+    }
+    
+    if (groupCreators) {
+      groupCreators.forEach(creator => {
+        if (!allUserIds.includes(creator.created_by)) {
+          allUserIds.push(creator.created_by);
+        }
+      });
+    }
+
+    // Supprimer les doublons
+    allUserIds = [...new Set(allUserIds)];
+
+    console.log('🔍 send-group-notification - Total utilisateurs à notifier:', allUserIds.length);
+
+    if (allUserIds.length === 0) {
       console.log('🔍 send-group-notification - Aucun membre à notifier');
       return new Response(
         JSON.stringify({ message: 'No group members to notify' }),
@@ -148,12 +172,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Récupérer les profils des membres
-    const memberIds = groupMembers.map(m => m.user_id);
+    // Récupérer les profils des utilisateurs à notifier
     const { data: memberProfiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, email, display_name')
-      .in('id', memberIds);
+      .in('id', allUserIds);
 
     if (profilesError) {
       console.error('🔍 send-group-notification - Erreur profils membres:', profilesError);
