@@ -25,6 +25,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [hasTriedToPlay, setHasTriedToPlay] = useState(false);
 
   // LOG DÉTAILLÉ pour question 1 chapitre 1
   if (shouldLog) {
@@ -47,6 +48,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
       setIsLoadingUrl(true);
       setUrlError(null);
+      setHasTriedToPlay(false);
 
       try {
         if (shouldLog) {
@@ -107,14 +109,25 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       };
       const handleError = (e: any) => {
         console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur audio:', e);
-        setUrlError('Erreur de lecture audio');
-        setIsPlaying(false);
+        // CORRECTION: Ne définir l'erreur que si on a vraiment essayé de jouer
+        if (hasTriedToPlay) {
+          setUrlError('Erreur de lecture audio');
+          setIsPlaying(false);
+        }
+      };
+      const handleCanPlay = () => {
+        // CORRECTION: Effacer l'erreur quand l'audio peut être lu
+        setUrlError(null);
+        if (shouldLog) {
+          console.log('✅ PLAYER - Question 1 Chapitre 1 - Audio prêt à être lu');
+        }
       };
 
       audio.addEventListener('timeupdate', updateTime);
       audio.addEventListener('loadedmetadata', updateDuration);
       audio.addEventListener('ended', handleEnded);
       audio.addEventListener('error', handleError);
+      audio.addEventListener('canplay', handleCanPlay);
 
       setAudioElement(audio);
 
@@ -123,6 +136,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audio.removeEventListener('loadedmetadata', updateDuration);
         audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('error', handleError);
+        audio.removeEventListener('canplay', handleCanPlay);
         audio.pause();
         setAudioElement(null);
         if (shouldLog) {
@@ -132,7 +146,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     } else {
       setAudioElement(null);
     }
-  }, [accessibleUrl, shouldLog]);
+  }, [accessibleUrl, shouldLog, hasTriedToPlay]);
 
   const togglePlayPause = async () => {
     if (!audioElement) {
@@ -143,6 +157,8 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     }
 
     try {
+      setHasTriedToPlay(true); // CORRECTION: Marquer qu'on a essayé de jouer
+      
       if (isPlaying) {
         audioElement.pause();
         setIsPlaying(false);
@@ -152,6 +168,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       } else {
         await audioElement.play();
         setIsPlaying(true);
+        setUrlError(null); // CORRECTION: Effacer l'erreur lors d'une lecture réussie
         if (shouldLog) {
           console.log('▶️ PLAYER - Question 1 Chapitre 1 - Audio en lecture');
         }
@@ -232,6 +249,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     // Forcer la régénération de l'URL
     setAccessibleUrl(null);
     setUrlError(null);
+    setHasTriedToPlay(false);
   };
 
   const formatTime = (time: number) => {
@@ -249,6 +267,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       hasAudioElement: !!audioElement,
       isPlaying,
       readOnly,
+      hasTriedToPlay,
       timestamp: new Date().toISOString()
     });
   }
