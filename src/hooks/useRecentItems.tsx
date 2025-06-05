@@ -5,11 +5,12 @@ import { useRecentBlogPosts } from './recent/useRecentBlogPosts';
 import { useRecentComments } from './recent/useRecentComments';
 import { useRecentDiaryEntries } from './recent/useRecentDiaryEntries';
 import { useRecentWishes } from './recent/useRecentWishes';
+import { useRecentLifeStories } from './recent/useRecentLifeStories';
 
 export interface RecentItem {
   id: string;
   title: string;
-  type: 'blog' | 'comment' | 'diary' | 'wish';
+  type: 'blog' | 'comment' | 'diary' | 'wish' | 'life-story';
   created_at: string;
   author: string;
   content_preview?: string;
@@ -43,6 +44,7 @@ export const useRecentItems = () => {
   const comments = useRecentComments(effectiveUserId, authorizedUserIds);
   const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
   const wishes = useRecentWishes();
+  const lifeStories = useRecentLifeStories();
 
   useEffect(() => {
     if (!user) {
@@ -57,9 +59,10 @@ export const useRecentItems = () => {
     console.log('🔍 Comments récupérés:', comments.length);
     console.log('🔍 Diary entries récupérés:', diaryEntries.length);
     console.log('🔍 Wishes récupérés:', wishes.length);
+    console.log('🔍 Life stories récupérés:', lifeStories.length);
 
     // Analyser les auteurs des contenus récupérés
-    const allItems = [...blogPosts, ...comments, ...diaryEntries, ...wishes];
+    const allItems = [...blogPosts, ...comments, ...diaryEntries, ...wishes, ...lifeStories];
     const authorAnalysis = allItems.reduce((acc, item) => {
       if (!acc[item.author]) {
         acc[item.author] = { count: 0, types: [] };
@@ -90,7 +93,8 @@ export const useRecentItems = () => {
       ...blogPosts,
       ...comments,
       ...diaryEntries,
-      ...wishes
+      ...wishes,
+      ...lifeStories
     ];
 
     // Trier par date de création (plus récent en premier)
@@ -108,7 +112,7 @@ export const useRecentItems = () => {
 
     setRecentItems(sorted);
     setLoading(false);
-  }, [user, blogPosts, comments, diaryEntries, wishes, getEffectiveUserId]);
+  }, [user, blogPosts, comments, diaryEntries, wishes, lifeStories, getEffectiveUserId]);
 
   return { recentItems, loading };
 };
