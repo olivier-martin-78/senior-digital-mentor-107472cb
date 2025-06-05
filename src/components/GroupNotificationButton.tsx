@@ -56,36 +56,19 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
         userEmail: user.email
       });
 
-      // Vérifier la session d'abord
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      console.log('🔍 GroupNotification - Session:', {
-        hasSession: !!session,
-        sessionError: sessionError,
-        accessToken: session?.access_token ? 'present' : 'missing'
-      });
-      
-      if (sessionError || !session) {
-        throw new Error('Session non disponible - ' + (sessionError?.message || 'Session manquante'));
-      }
-
       // Préparer les données
-      const requestBody = {
+      const requestData = {
         contentType,
         contentId,
         title,
         authorId: user.id
       };
 
-      console.log('🔍 GroupNotification - Appel fonction avec:', requestBody);
+      console.log('🔍 GroupNotification - Appel fonction avec:', requestData);
 
-      // Appeler l'edge function avec le body JSON
+      // Appeler l'edge function avec le body dans l'objet body, pas stringifié
       const { data, error } = await supabase.functions.invoke('send-group-notification', {
-        body: JSON.stringify(requestBody),
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        body: requestData
       });
 
       console.log('🔍 GroupNotification - Réponse fonction:', { 

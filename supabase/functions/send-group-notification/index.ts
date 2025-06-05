@@ -54,26 +54,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Utilisateur authentifié:', user.id);
 
-    // Parser le body JSON de manière sécurisée
+    // Parser le body JSON de manière plus robuste
     let requestData: NotificationRequest;
     try {
-      const text = await req.text();
-      console.log('🔍 send-group-notification - Body brut:', text);
+      // Récupérer le body brut
+      const requestBody = await req.json();
+      console.log('🔍 send-group-notification - Body parsé directement:', requestBody);
       
-      if (!text || text.trim() === '') {
-        throw new Error('Empty request body');
+      if (!requestBody) {
+        throw new Error('Request body is null or undefined');
       }
       
-      requestData = JSON.parse(text);
-      console.log('🔍 send-group-notification - Données parsées:', requestData);
+      requestData = requestBody as NotificationRequest;
+      console.log('🔍 send-group-notification - Données reçues:', requestData);
+      
+      // Vérifier que les champs requis sont présents
+      if (!requestData.contentType || !requestData.contentId || !requestData.title || !requestData.authorId) {
+        throw new Error('Missing required fields in request body');
+      }
+      
     } catch (parseError) {
-      console.error('🔍 send-group-notification - Erreur parsing JSON:', parseError);
-      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+      console.error('🔍 send-group-notification - Erreur parsing:', parseError);
+      throw new Error(`Invalid request body: ${parseError.message}`);
     }
 
     const { contentType, contentId, title, authorId } = requestData;
 
-    console.log('🔍 send-group-notification - Données reçues:', { contentType, contentId, title, authorId });
+    console.log('🔍 send-group-notification - Données validées:', { contentType, contentId, title, authorId });
 
     // Récupérer les informations de l'auteur
     const { data: authorProfile, error: authorError } = await supabase
