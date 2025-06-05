@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { getThumbnailUrl, DIARY_MEDIA_BUCKET, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 import CommentBubbleIcon from './CommentBubbleIcon';
 
 interface RecentItemImageProps {
-  type: 'blog' | 'wish' | 'diary' | 'comment';
+  type: 'blog' | 'wish' | 'diary' | 'comment' | 'life-story';
   id: string;
   title: string;
   coverImage?: string;
@@ -103,6 +102,20 @@ const RecentItemImage: React.FC<RecentItemImageProps> = ({
   // Pour les commentaires, afficher l'icône de bulle
   if (type === 'comment') {
     return <CommentBubbleIcon className={className} />;
+  }
+
+  // Pour les histoires de vie, afficher l'icône appropriée
+  if (type === 'life-story') {
+    return (
+      <div className={className}>
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tranches-sage/20 to-tranches-sage/10">
+          <div className="text-center">
+            <div className="text-3xl mb-1">📖</div>
+            <div className="text-xs text-tranches-sage font-medium">Histoire</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Si pas d'image disponible, ne pas afficher le conteneur
