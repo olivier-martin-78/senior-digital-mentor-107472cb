@@ -12,13 +12,18 @@ export const useWishAlbums = () => {
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
-    if (!user || permissionsLoading) {
+    if (!user) {
       setAlbums([]);
-      setLoading(permissionsLoading);
+      setLoading(false);
       return;
     }
 
-    fetchAlbums();
+    if (!permissionsLoading && authorizedUserIds.length > 0) {
+      fetchAlbums();
+    } else if (!permissionsLoading && authorizedUserIds.length === 0) {
+      setAlbums([]);
+      setLoading(false);
+    }
   }, [user, authorizedUserIds, permissionsLoading]);
 
   const fetchAlbums = async () => {

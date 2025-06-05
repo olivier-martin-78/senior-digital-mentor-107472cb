@@ -36,14 +36,19 @@ const Wishes = () => {
       navigate('/auth');
       return;
     }
-    
-    if (!permissionsLoading) {
+  }, [session, navigate]);
+
+  useEffect(() => {
+    if (!permissionsLoading && authorizedUserIds.length > 0) {
       fetchWishes();
+    } else if (!permissionsLoading && authorizedUserIds.length === 0) {
+      setWishes([]);
+      setLoading(false);
     }
-  }, [session, navigate, authorizedUserIds, permissionsLoading]);
+  }, [authorizedUserIds, permissionsLoading]);
 
   const fetchWishes = async () => {
-    if (!user || permissionsLoading) {
+    if (!user) {
       return;
     }
     
@@ -53,13 +58,7 @@ const Wishes = () => {
       console.log('🔍 Wishes - Récupération avec permissions de groupe centralisées');
       console.log('🎯 Wishes - Utilisateurs autorisés:', authorizedUserIds);
 
-      if (authorizedUserIds.length === 0) {
-        console.log('⚠️ Wishes - Aucun utilisateur autorisé');
-        setWishes([]);
-        return;
-      }
-
-      // Récupérer les souhaits des utilisateurs autorisés
+      // Récupérer les souhaits des utilisateurs autorisés - MÊME LOGIQUE QUE LE BLOG
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')
@@ -72,10 +71,21 @@ const Wishes = () => {
       }
       
       console.log('✅ Wishes - Souhaits récupérés:', data?.length || 0);
+      
+      if (data && data.length > 0) {
+        console.log('📝 Wishes - Détail des souhaits:', data.map(w => ({
+          id: w.id,
+          title: w.title,
+          author_id: w.author_id,
+          published: w.published
+        })));
+      }
+      
       setWishes(data || []);
       
     } catch (error) {
       console.error('💥 Wishes - Erreur dans fetchWishes:', error);
+      setWishes([]);
     } finally {
       setLoading(false);
     }

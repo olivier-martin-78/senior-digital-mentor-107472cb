@@ -25,6 +25,7 @@ const Diary = () => {
     handleClearFilters
   } = useDiaryFilters();
 
+  // Utiliser le hook exactement comme dans les autres sections
   const { entries, loading } = useDiaryEntries(searchTerm, startDate, endDate);
 
   if (!session) {
