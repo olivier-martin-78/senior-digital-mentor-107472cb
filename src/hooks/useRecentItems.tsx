@@ -28,21 +28,10 @@ export const useRecentItems = () => {
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mémoriser l'utilisateur effectif pour éviter les re-renders
-  const effectiveUserId = useMemo(() => user?.id || '', [user?.id]);
-  
-  // CORRECTION: Calculer les utilisateurs autorisés de manière plus stricte
-  const authorizedUserIds = useMemo(() => {
-    if (!effectiveUserId) return [];
-    
-    // Pour l'instant, on ne retourne que l'utilisateur courant
-    // Les hooks individuels vont récupérer la liste complète en fonction des groupes
-    return [effectiveUserId];
-  }, [effectiveUserId]);
-
-  const blogPosts = useRecentBlogPosts(effectiveUserId, authorizedUserIds);
-  const comments = useRecentComments(effectiveUserId, authorizedUserIds);
-  const diaryEntries = useRecentDiaryEntries(effectiveUserId, authorizedUserIds);
+  // Utiliser les hooks sans arguments comme les autres
+  const blogPosts = useRecentBlogPosts();
+  const comments = useRecentComments();
+  const diaryEntries = useRecentDiaryEntries();
   const wishes = useRecentWishes();
   const lifeStories = useRecentLifeStories();
 
@@ -75,19 +64,6 @@ export const useRecentItems = () => {
     }, {} as Record<string, { count: number; types: string[] }>);
 
     console.log('🔍 Analyse des auteurs dans Recent Items:', authorAnalysis);
-
-    // CORRECTION: Vérifier qu'aucun contenu non autorisé ne passe
-    const currentUserId = getEffectiveUserId();
-    const unauthorizedItems = allItems.filter(item => {
-      // Pour l'instant, seuls les contenus de l'utilisateur courant devraient passer
-      // sauf s'il est dans des groupes
-      return item.author !== 'Moi' && item.author !== user.email && item.author !== user.id;
-    });
-
-    if (unauthorizedItems.length > 0) {
-      console.error('❌ CONTENUS NON AUTORISÉS DÉTECTÉS:', unauthorizedItems);
-      console.error('❌ Ces contenus ne devraient pas être visibles pour cet utilisateur');
-    }
 
     const combined = [
       ...blogPosts,
