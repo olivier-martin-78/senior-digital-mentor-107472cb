@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { DiaryEntryWithAuthor } from '@/types/diary';
+import { DiaryEntryWithAuthor, DiaryEntry } from '@/types/diary';
+import { Profile } from '@/types/supabase';
 import { supabase } from '@/integrations/supabase/client';
 import { useGroupPermissions } from '../useGroupPermissions';
 
@@ -36,13 +37,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         return;
       }
 
-      // CORRIGÉ: Utiliser la jointure directe comme dans le blog puisque les FK existent
+      // Récupérer les entrées des utilisateurs autorisés
       let query = supabase
         .from('diary_entries')
-        .select(`
-          *,
-          profiles!inner(id, email, display_name, avatar_url, created_at)
-        `)
+        .select('*')
         .in('user_id', authorizedUserIds)
         .order('entry_date', { ascending: false });
 
@@ -63,8 +61,32 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (diaryData && diaryData.length > 0) {
         console.log('📓 useDiaryEntries - Entrées récupérées:', diaryData.length);
 
-        // Les données incluent déjà les profils via le join
-        const entriesWithAuthors = diaryData;
+        // Récupérer les profils des auteurs séparément
+        const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, display_name, avatar_url, created_at')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('❌ useDiaryEntries - Erreur récupération profiles:', profilesError);
+          throw profilesError;
+        }
+
+        // Combiner les données avec typage correct
+        const entriesWithAuthors: DiaryEntryWithAuthor[] = diaryData.map((entry: DiaryEntry) => {
+          const profile = profilesData?.find((p: Profile) => p.id === entry.user_id);
+          return {
+            ...entry,
+            profiles: profile || {
+              id: entry.user_id,
+              email: 'Utilisateur inconnu',
+              display_name: null,
+              avatar_url: null,
+              created_at: new Date().toISOString()
+            }
+          };
+        });
 
         // Filtrage côté client pour le terme de recherche
         let filteredEntries = entriesWithAuthors;
