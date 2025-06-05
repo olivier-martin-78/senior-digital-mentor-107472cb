@@ -25,7 +25,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
-  const [hasTriedToPlay, setHasTriedToPlay] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   // LOG DÉTAILLÉ pour question 1 chapitre 1
   if (shouldLog) {
@@ -48,7 +48,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
       setIsLoadingUrl(true);
       setUrlError(null);
-      setHasTriedToPlay(false);
+      setPlaybackError(null);
 
       try {
         if (shouldLog) {
@@ -109,15 +109,14 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       };
       const handleError = (e: any) => {
         console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur audio:', e);
-        // CORRECTION: Ne définir l'erreur que si on a vraiment essayé de jouer
-        if (hasTriedToPlay) {
-          setUrlError('Erreur de lecture audio');
-          setIsPlaying(false);
+        // CORRECTION: Ne pas afficher d'erreur automatiquement, seulement en cas de vraie erreur de lecture
+        if (shouldLog) {
+          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Erreur audio détectée mais ignorée (souvent faux positif sur iOS)');
         }
       };
       const handleCanPlay = () => {
-        // CORRECTION: Effacer l'erreur quand l'audio peut être lu
-        setUrlError(null);
+        // CORRECTION: Effacer toute erreur quand l'audio peut être lu
+        setPlaybackError(null);
         if (shouldLog) {
           console.log('✅ PLAYER - Question 1 Chapitre 1 - Audio prêt à être lu');
         }
@@ -146,7 +145,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     } else {
       setAudioElement(null);
     }
-  }, [accessibleUrl, shouldLog, hasTriedToPlay]);
+  }, [accessibleUrl, shouldLog]);
 
   const togglePlayPause = async () => {
     if (!audioElement) {
@@ -157,8 +156,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     }
 
     try {
-      setHasTriedToPlay(true); // CORRECTION: Marquer qu'on a essayé de jouer
-      
       if (isPlaying) {
         audioElement.pause();
         setIsPlaying(false);
@@ -168,18 +165,19 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       } else {
         await audioElement.play();
         setIsPlaying(true);
-        setUrlError(null); // CORRECTION: Effacer l'erreur lors d'une lecture réussie
+        setPlaybackError(null); // CORRECTION: Effacer l'erreur lors d'une lecture réussie
         if (shouldLog) {
           console.log('▶️ PLAYER - Question 1 Chapitre 1 - Audio en lecture');
         }
       }
     } catch (error) {
       console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur de lecture audio:', error);
-      setUrlError('Impossible de lire l\'audio');
+      setPlaybackError('Impossible de lire l\'audio');
       toast({
         title: "Erreur de lecture",
         description: "Impossible de lire l'enregistrement audio",
         variant: "destructive",
+        duration: 500,
       });
     }
   };
@@ -198,6 +196,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         title: "Erreur de téléchargement",
         description: "URL audio non disponible",
         variant: "destructive",
+        duration: 500,
       });
       return;
     }
@@ -219,6 +218,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       toast({
         title: "Téléchargement réussi",
         description: "L'enregistrement audio a été téléchargé",
+        duration: 500,
       });
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
@@ -226,6 +226,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         title: "Erreur de téléchargement",
         description: "Impossible de télécharger l'enregistrement audio",
         variant: "destructive",
+        duration: 500,
       });
     }
   };
@@ -249,7 +250,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     // Forcer la régénération de l'URL
     setAccessibleUrl(null);
     setUrlError(null);
-    setHasTriedToPlay(false);
+    setPlaybackError(null);
   };
 
   const formatTime = (time: number) => {
@@ -264,13 +265,16 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       accessibleUrl: !!accessibleUrl,
       isLoadingUrl,
       urlError,
+      playbackError,
       hasAudioElement: !!audioElement,
       isPlaying,
       readOnly,
-      hasTriedToPlay,
       timestamp: new Date().toISOString()
     });
   }
+
+  // Utiliser urlError pour les erreurs de chargement et playbackError pour les erreurs de lecture
+  const displayError = urlError || playbackError;
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
@@ -281,9 +285,9 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           <div className="animate-spin h-6 w-6 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
           <span className="ml-2 text-sm text-gray-600">Chargement de l'audio...</span>
         </div>
-      ) : urlError ? (
+      ) : displayError ? (
         <div className="text-center py-4">
-          <p className="text-red-600 text-sm mb-2">{urlError}</p>
+          <p className="text-red-600 text-sm mb-2">{displayError}</p>
           <Button 
             variant="outline" 
             size="sm" 
