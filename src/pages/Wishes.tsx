@@ -39,11 +39,8 @@ const Wishes = () => {
   }, [session, navigate]);
 
   useEffect(() => {
-    if (!permissionsLoading && authorizedUserIds.length > 0) {
+    if (!permissionsLoading) {
       fetchWishes();
-    } else if (!permissionsLoading && authorizedUserIds.length === 0) {
-      setWishes([]);
-      setLoading(false);
     }
   }, [authorizedUserIds, permissionsLoading]);
 
@@ -57,6 +54,12 @@ const Wishes = () => {
       
       console.log('🔍 Wishes - Récupération avec permissions de groupe centralisées');
       console.log('🎯 Wishes - Utilisateurs autorisés:', authorizedUserIds);
+
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ Wishes - Aucun utilisateur autorisé');
+        setWishes([]);
+        return;
+      }
 
       // Récupérer les souhaits des utilisateurs autorisés - MÊME LOGIQUE QUE LE BLOG ET HISTOIRES
       const { data, error } = await supabase

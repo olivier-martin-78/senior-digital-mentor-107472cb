@@ -18,11 +18,8 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       return;
     }
 
-    if (!permissionsLoading && authorizedUserIds.length > 0) {
+    if (!permissionsLoading) {
       fetchEntries();
-    } else if (!permissionsLoading && authorizedUserIds.length === 0) {
-      setEntries([]);
-      setLoading(false);
     }
   }, [user, searchTerm, startDate, endDate, authorizedUserIds, permissionsLoading]);
 
@@ -32,6 +29,12 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       
       console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
       console.log('🎯 useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
+
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useDiaryEntries - Aucun utilisateur autorisé');
+        setEntries([]);
+        return;
+      }
 
       // Récupérer les entrées des utilisateurs autorisés - MÊME LOGIQUE QUE LE BLOG ET HISTOIRES
       let query = supabase
