@@ -39,21 +39,25 @@ export const useBlogAlbums = () => {
         console.log('👥 useBlogAlbums - Appartenances aux groupes:', userGroupMemberships);
 
         // 2. Construire la liste des utilisateurs autorisés
+        // Commencer UNIQUEMENT avec l'utilisateur courant
         let authorizedUserIds = [effectiveUserId];
 
+        // Seulement si l'utilisateur appartient à des groupes, ajouter les autres membres
         if (userGroupMemberships && userGroupMemberships.length > 0) {
           const userGroupIds = userGroupMemberships.map(g => g.group_id);
           
-          // Récupérer tous les membres des groupes partagés
+          // Récupérer tous les membres des groupes partagés (SAUF l'utilisateur courant)
           const { data: groupMembers, error: groupMembersError } = await supabase
             .from('group_members')
             .select('user_id')
-            .in('group_id', userGroupIds);
+            .in('group_id', userGroupIds)
+            .neq('user_id', effectiveUserId); // Exclure l'utilisateur courant pour éviter les doublons
 
-          if (!groupMembersError && groupMembers) {
-            const allMemberIds = groupMembers.map(gm => gm.user_id);
-            authorizedUserIds = [...new Set([effectiveUserId, ...allMemberIds])];
+          if (!groupMembersError && groupMembers && groupMembers.length > 0) {
+            const otherMemberIds = groupMembers.map(gm => gm.user_id);
+            authorizedUserIds = [effectiveUserId, ...otherMemberIds];
           }
+          // Si pas d'autres membres, authorizedUserIds reste [effectiveUserId]
         }
 
         console.log('🎯 useBlogAlbums - Utilisateurs autorisés:', authorizedUserIds);
