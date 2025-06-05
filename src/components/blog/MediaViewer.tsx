@@ -67,7 +67,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-full max-h-full w-screen h-screen p-0 bg-black/95">
+      <DialogContent className="max-w-none max-h-none w-screen h-screen p-0 bg-black/95 border-none">
         <VisuallyHidden>
           <DialogTitle>Visualisation des médias</DialogTitle>
         </VisuallyHidden>
@@ -112,7 +112,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
 
         {/* Contenu média */}
         <div 
-          className="flex items-center justify-center w-full h-full p-4"
+          className="flex items-center justify-center w-full h-full p-8"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -121,14 +121,16 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             <img
               src={currentMedia.media_url}
               alt="Media en plein écran"
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full w-auto h-auto object-contain"
+              style={{ maxWidth: 'calc(100vw - 4rem)', maxHeight: 'calc(100vh - 4rem)' }}
             />
           ) : currentMedia.media_type.startsWith('video/') ? (
             <video
               src={currentMedia.media_url}
               controls
               autoPlay
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full w-auto h-auto object-contain"
+              style={{ maxWidth: 'calc(100vw - 4rem)', maxHeight: 'calc(100vh - 4rem)' }}
             />
           ) : (
             <div className="flex items-center justify-center text-white">
