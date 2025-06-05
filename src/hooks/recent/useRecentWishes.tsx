@@ -20,11 +20,16 @@ export const useRecentWishes = () => {
 
     try {
       const effectiveUserId = getEffectiveUserId();
-      const usersToQuery = authorizedUserIds.length > 0 ? authorizedUserIds : [effectiveUserId];
 
-      console.log('✅ useRecentWishes - Utilisateurs autorisés:', usersToQuery);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useRecentWishes - Aucun utilisateur autorisé');
+        setWishes([]);
+        return;
+      }
 
-      // Récupérer les souhaits avec logique d'accès côté application
+      console.log('✅ useRecentWishes - Utilisateurs autorisés:', authorizedUserIds);
+
+      // Récupérer les souhaits des utilisateurs autorisés
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
         .select(`
@@ -37,7 +42,7 @@ export const useRecentWishes = () => {
           published,
           author_id
         `)
-        .in('author_id', usersToQuery)
+        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -49,7 +54,7 @@ export const useRecentWishes = () => {
 
       console.log('✅ useRecentWishes - Wishes récupérées:', wishesData?.length || 0);
 
-      if (wishesData) {
+      if (wishesData && wishesData.length > 0) {
         // Récupérer les profils séparément
         const userIds = [...new Set(wishesData.map(wish => wish.author_id))];
         const { data: profilesData } = await supabase
@@ -78,6 +83,8 @@ export const useRecentWishes = () => {
 
         console.log('✅ useRecentWishes - Items wishes transformés:', items.length);
         setWishes(items);
+      } else {
+        setWishes([]);
       }
     } catch (error) {
       console.error('💥 useRecentWishes - Erreur critique:', error);

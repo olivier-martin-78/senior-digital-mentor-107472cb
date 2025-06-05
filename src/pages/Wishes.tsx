@@ -53,7 +53,13 @@ const Wishes = () => {
       console.log('🔍 Wishes - Récupération avec permissions de groupe centralisées');
       console.log('🎯 Wishes - Utilisateurs autorisés:', authorizedUserIds);
 
-      // Récupérer les souhaits avec logique d'accès côté application
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ Wishes - Aucun utilisateur autorisé');
+        setWishes([]);
+        return;
+      }
+
+      // Récupérer les souhaits des utilisateurs autorisés
       const { data, error } = await supabase
         .from('wish_posts')
         .select('*')

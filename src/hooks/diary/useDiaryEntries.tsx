@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGroupPermissions } from '../useGroupPermissions';
 
 export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
-  const { user, getEffectiveUserId } = useAuth();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
@@ -28,7 +28,13 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
       console.log('🎯 useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
 
-      // Récupérer les entrées UNIQUEMENT des utilisateurs autorisés
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useDiaryEntries - Aucun utilisateur autorisé');
+        setEntries([]);
+        return;
+      }
+
+      // Récupérer les entrées des utilisateurs autorisés
       let query = supabase
         .from('diary_entries')
         .select('*')
@@ -44,7 +50,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
 
       const { data: diaryData, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ useDiaryEntries - Erreur récupération entries:', error);
+        throw error;
+      }
       
       if (diaryData && diaryData.length > 0) {
         console.log('📓 useDiaryEntries - Entrées récupérées:', diaryData.length);

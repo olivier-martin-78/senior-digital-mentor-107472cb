@@ -5,13 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
 import { useGroupPermissions } from '../useGroupPermissions';
 
-export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds: string[]) => {
-  const { getEffectiveUserId } = useAuth();
+export const useRecentDiaryEntries = () => {
+  const { user, getEffectiveUserId } = useAuth();
   const [diaryEntries, setDiaryEntries] = useState<RecentItem[]>([]);
-  const { authorizedUserIds: groupAuthorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
+  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchDiaryEntries = useCallback(async () => {
-    if (!effectiveUserId || permissionsLoading) {
+    if (!user || permissionsLoading) {
       setDiaryEntries([]);
       return;
     }
@@ -20,9 +20,14 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
 
     try {
       const currentUserId = getEffectiveUserId();
-      const usersToQuery = groupAuthorizedUserIds.length > 0 ? groupAuthorizedUserIds : [currentUserId];
 
-      console.log('✅ useRecentDiaryEntries - Utilisateurs autorisés:', usersToQuery);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useRecentDiaryEntries - Aucun utilisateur autorisé');
+        setDiaryEntries([]);
+        return;
+      }
+
+      console.log('✅ useRecentDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
 
       // Récupérer les entrées de journal
       const { data: entries, error } = await supabase
@@ -36,7 +41,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
           media_type,
           user_id
         `)
-        .in('user_id', usersToQuery)
+        .in('user_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -83,7 +88,7 @@ export const useRecentDiaryEntries = (effectiveUserId: string, authorizedUserIds
       console.error('💥 useRecentDiaryEntries - Erreur critique:', error);
       setDiaryEntries([]);
     }
-  }, [effectiveUserId, groupAuthorizedUserIds, permissionsLoading, getEffectiveUserId]);
+  }, [user, authorizedUserIds, permissionsLoading, getEffectiveUserId]);
 
   useEffect(() => {
     fetchDiaryEntries();

@@ -44,6 +44,12 @@ export const useLifeStories = () => {
       console.log('🔍 useLifeStories - Récupération avec permissions de groupe');
       console.log('🎯 useLifeStories - Utilisateurs autorisés:', authorizedUserIds);
 
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useLifeStories - Aucun utilisateur autorisé');
+        setStories([]);
+        return;
+      }
+
       // Récupérer les histoires de vie des utilisateurs autorisés
       const { data: storiesData, error } = await supabase
         .from('life_stories')
@@ -65,20 +71,27 @@ export const useLifeStories = () => {
         throw error;
       }
 
-      // Récupérer les profils séparément
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, avatar_url')
-        .in('id', authorizedUserIds);
+      if (storiesData && storiesData.length > 0) {
+        console.log('📚 useLifeStories - Histoires récupérées:', storiesData.length);
 
-      // Joindre les données
-      const storiesWithProfiles = storiesData?.map(story => ({
-        ...story,
-        profiles: profilesData?.find(profile => profile.id === story.user_id)
-      })) || [];
+        // Récupérer les profils séparément
+        const userIds = [...new Set(storiesData.map(story => story.user_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email, display_name, avatar_url')
+          .in('id', userIds);
 
-      console.log('📚 useLifeStories - Histoires récupérées:', storiesWithProfiles.length);
-      setStories(storiesWithProfiles);
+        // Joindre les données
+        const storiesWithProfiles = storiesData.map(story => ({
+          ...story,
+          profiles: profilesData?.find(profile => profile.id === story.user_id)
+        }));
+
+        setStories(storiesWithProfiles);
+      } else {
+        console.log('📚 useLifeStories - Aucune histoire trouvée');
+        setStories([]);
+      }
     } catch (error) {
       console.error('💥 useLifeStories - Erreur lors du chargement des histoires:', error);
       setStories([]);

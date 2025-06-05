@@ -20,9 +20,14 @@ export const useRecentLifeStories = () => {
 
     try {
       const effectiveUserId = getEffectiveUserId();
-      const usersToQuery = authorizedUserIds.length > 0 ? authorizedUserIds : [effectiveUserId];
 
-      console.log('✅ useRecentLifeStories - Utilisateurs autorisés:', usersToQuery);
+      if (authorizedUserIds.length === 0) {
+        console.log('⚠️ useRecentLifeStories - Aucun utilisateur autorisé');
+        setLifeStories([]);
+        return;
+      }
+
+      console.log('✅ useRecentLifeStories - Utilisateurs autorisés:', authorizedUserIds);
 
       // Récupérer les histoires de vie
       const { data: storiesData, error } = await supabase
@@ -34,7 +39,7 @@ export const useRecentLifeStories = () => {
           updated_at,
           user_id
         `)
-        .in('user_id', usersToQuery)
+        .in('user_id', authorizedUserIds)
         .order('updated_at', { ascending: false })
         .limit(15);
 
@@ -46,7 +51,7 @@ export const useRecentLifeStories = () => {
 
       console.log('✅ useRecentLifeStories - Histoires récupérées:', storiesData?.length || 0);
 
-      if (storiesData) {
+      if (storiesData && storiesData.length > 0) {
         // Récupérer les profils séparément
         const userIds = [...new Set(storiesData.map(story => story.user_id))];
         const { data: profilesData } = await supabase
@@ -73,6 +78,8 @@ export const useRecentLifeStories = () => {
 
         console.log('✅ useRecentLifeStories - Items histoires transformés:', items.length);
         setLifeStories(items);
+      } else {
+        setLifeStories([]);
       }
     } catch (error) {
       console.error('💥 useRecentLifeStories - Erreur critique:', error);

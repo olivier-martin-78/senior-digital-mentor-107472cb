@@ -19,7 +19,10 @@ export const useGroupPermissions = () => {
       setLoading(true);
       const effectiveUserId = getEffectiveUserId();
       
-      console.log('🔍 useGroupPermissions - Récupération des utilisateurs autorisés');
+      console.log('🔍 useGroupPermissions - Récupération des utilisateurs autorisés pour:', effectiveUserId);
+
+      // Initialiser avec l'utilisateur courant
+      let authorizedUsers = [effectiveUserId];
 
       // 1. Récupérer les groupes où l'utilisateur est membre
       const { data: userGroupMemberships, error: userGroupsError } = await supabase
@@ -42,37 +45,37 @@ export const useGroupPermissions = () => {
         return;
       }
 
-      // 2. Construire la liste des utilisateurs autorisés
-      let authorizedUsers = [effectiveUserId]; // Toujours inclure l'utilisateur courant
-
       if (userGroupMemberships && userGroupMemberships.length > 0) {
-        console.log('✅ useGroupPermissions - Utilisateur dans des groupes:', userGroupMemberships.length);
+        console.log('✅ useGroupPermissions - Groupes trouvés:', userGroupMemberships.length);
         
-        // Pour chaque groupe, ajouter le créateur du groupe ET tous les membres
-        for (const membership of userGroupMemberships) {
-          const groupCreator = membership.invitation_groups?.created_by;
-          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
-            authorizedUsers.push(groupCreator);
-            console.log('✅ useGroupPermissions - Ajout du créateur du groupe:', groupCreator);
-          }
-        }
-
-        // Récupérer tous les membres des groupes où l'utilisateur est présent
-        const groupIds = userGroupMemberships.map(g => g.group_id);
-        const { data: allGroupMembers } = await supabase
+        // Récupérer tous les membres de tous les groupes où l'utilisateur est présent
+        const groupIds = userGroupMemberships.map(gm => gm.group_id);
+        
+        const { data: allGroupMembers, error: membersError } = await supabase
           .from('group_members')
           .select('user_id')
           .in('group_id', groupIds);
 
-        if (allGroupMembers) {
+        if (membersError) {
+          console.error('❌ useGroupPermissions - Erreur récupération membres:', membersError);
+        } else if (allGroupMembers) {
+          // Ajouter tous les membres des groupes
           for (const member of allGroupMembers) {
             if (!authorizedUsers.includes(member.user_id)) {
               authorizedUsers.push(member.user_id);
             }
           }
         }
+
+        // Ajouter aussi les créateurs des groupes
+        for (const membership of userGroupMemberships) {
+          const groupCreator = membership.invitation_groups?.created_by;
+          if (groupCreator && !authorizedUsers.includes(groupCreator)) {
+            authorizedUsers.push(groupCreator);
+          }
+        }
       } else {
-        console.log('🔍 useGroupPermissions - Utilisateur dans AUCUN groupe - accès limité à ses propres contenus');
+        console.log('🔍 useGroupPermissions - Aucun groupe trouvé pour cet utilisateur');
       }
 
       console.log('🎯 useGroupPermissions - Utilisateurs autorisés FINAL:', {
