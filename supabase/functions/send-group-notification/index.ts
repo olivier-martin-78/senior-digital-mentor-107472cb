@@ -96,6 +96,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('🔍 send-group-notification - Profil auteur trouvé:', authorProfile.display_name);
 
+    // CORRECTION: Récupérer d'abord les groupes de l'auteur
+    const { data: authorGroups, error: authorGroupsError } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', authorId);
+
+    if (authorGroupsError) {
+      console.error('🔍 send-group-notification - Erreur groupes auteur:', authorGroupsError);
+      throw new Error('Failed to fetch author groups');
+    }
+
+    console.log('🔍 send-group-notification - Groupes auteur trouvés:', authorGroups?.length || 0);
+
+    if (!authorGroups || authorGroups.length === 0) {
+      console.log('🔍 send-group-notification - Aucun groupe pour l\'auteur');
+      return new Response(
+        JSON.stringify({ message: 'Author is not in any group' }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    // Extraire les IDs des groupes
+    const groupIds = authorGroups.map(g => g.group_id);
+
     // Récupérer les membres du groupe de l'auteur (excluant l'auteur lui-même)
     const { data: groupMembers, error: membersError } = await supabase
       .from('group_members')
@@ -104,12 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
         group_id,
         profiles!group_members_user_id_fkey(email, display_name)
       `)
-      .in('group_id', 
-        supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', authorId)
-      )
+      .in('group_id', groupIds)
       .neq('user_id', authorId);
 
     if (membersError) {
