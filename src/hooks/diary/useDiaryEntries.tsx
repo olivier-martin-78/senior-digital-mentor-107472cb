@@ -36,10 +36,13 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         return;
       }
 
-      // Récupérer les entrées des utilisateurs autorisés
+      // CORRIGÉ: Utiliser la jointure directe comme dans le blog puisque les FK existent
       let query = supabase
         .from('diary_entries')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(id, email, display_name, avatar_url, created_at)
+        `)
         .in('user_id', authorizedUserIds)
         .order('entry_date', { ascending: false });
 
@@ -60,24 +63,8 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (diaryData && diaryData.length > 0) {
         console.log('📓 useDiaryEntries - Entrées récupérées:', diaryData.length);
 
-        // Récupérer les profils des auteurs séparément
-        const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, email, display_name, avatar_url, created_at')
-          .in('id', userIds);
-
-        // Combiner les données
-        const entriesWithAuthors = diaryData.map(entry => ({
-          ...entry,
-          profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
-            id: entry.user_id,
-            email: 'Utilisateur inconnu',
-            display_name: null,
-            avatar_url: null,
-            created_at: new Date().toISOString()
-          }
-        }));
+        // Les données incluent déjà les profils via le join
+        const entriesWithAuthors = diaryData;
 
         // Filtrage côté client pour le terme de recherche
         let filteredEntries = entriesWithAuthors;
