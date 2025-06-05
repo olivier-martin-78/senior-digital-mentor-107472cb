@@ -321,7 +321,7 @@ const WishPost = () => {
   
   const canManagePublication = isAuthor || isAdmin;
   const canEdit = isAuthor || isAdmin;
-  const canDelete = hasRole('admin');
+  const canDelete = isAuthor || isAdmin; // CORRECTION: L'auteur peut maintenant supprimer son souhait
 
   console.log('WishPost - Final permissions:', {
     canManagePublication,
