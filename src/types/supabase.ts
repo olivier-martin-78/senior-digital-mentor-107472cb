@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -357,27 +358,33 @@ export type Database = {
           bio: string | null
           created_at: string
           display_name: string | null
+          email: string
           id: string
           updated_at: string
           user_id: string
+          receive_contacts: boolean
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          email: string
           id?: string
           updated_at?: string
           user_id: string
+          receive_contacts?: boolean
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string
           id?: string
           updated_at?: string
           user_id?: string
+          receive_contacts?: boolean
         }
         Relationships: [
           {
@@ -546,7 +553,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "reader"
+      app_role: "admin" | "moderator" | "user" | "reader" | "professionnel" | "editor"
       invitation_status: "pending" | "accepted" | "declined"
     }
     CompositeTypes: {
@@ -636,14 +643,117 @@ export type Enums<
     : never
 
 // Types personnalisés pour l'application
-export type AppRole = 'admin' | 'moderator' | 'user' | 'reader' | 'professionnel';
+export type AppRole = 'admin' | 'moderator' | 'user' | 'reader' | 'professionnel' | 'editor';
 
 export interface Profile {
   id: string;
   user_id: string;
+  email: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   created_at: string;
   updated_at: string;
+  receive_contacts: boolean;
+}
+
+// Types pour les blogs
+export interface BlogAlbum {
+  id: string;
+  name: string;
+  description: string | null;
+  author_id: string;
+  created_at: string;
+  thumbnail_url: string | null;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  album_id: string | null;
+  cover_image: string | null;
+  published: boolean | null;
+  created_at: string;
+  updated_at: string;
+  email_notification_sent: boolean | null;
+  email_notification_requested: boolean | null;
+}
+
+export interface BlogCategory {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface BlogMedia {
+  id: string;
+  post_id: string;
+  media_type: string;
+  media_url: string;
+  thumbnail_url: string | null;
+  created_at: string;
+}
+
+export interface PostWithAuthor extends BlogPost {
+  profiles: Profile;
+  blog_albums?: BlogAlbum;
+}
+
+export interface CommentWithAuthor {
+  id: string;
+  content: string;
+  author_id: string;
+  post_id: string;
+  created_at: string;
+  profiles: Profile;
+}
+
+// Types pour les souhaits
+export interface WishAlbum {
+  id: string;
+  name: string;
+  description: string | null;
+  author_id: string;
+  created_at: string;
+  thumbnail_url: string | null;
+}
+
+export interface WishPost {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  album_id: string | null;
+  cover_image: string | null;
+  published: boolean | null;
+  created_at: string;
+  updated_at: string;
+  email_notification_sent: boolean | null;
+  email_notification_requested: boolean | null;
+  first_name: string | null;
+  email: string | null;
+  age: string | null;
+  location: string | null;
+  request_type: string | null;
+  custom_request_type: string | null;
+  importance: string | null;
+  needs: string | null;
+  offering: string | null;
+  date: string | null;
+  attachment_url: string | null;
+  user_id: string | null;
+}
+
+// Types pour les invitations de groupe
+export interface GroupInvitation {
+  id: string;
+  inviter_id: string;
+  email: string;
+  group_id: string;
+  status: 'pending' | 'confirmed';
+  invitation_date: string;
+  confirmation_date: string | null;
+  invited_user_id: string | null;
 }
