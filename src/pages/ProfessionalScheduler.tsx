@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +62,10 @@ const ProfessionalScheduler = () => {
           last_name,
           address,
           phone,
-          email
+          email,
+          created_at,
+          updated_at,
+          created_by
         )
       `)
       .eq('professional_id', user.id)
