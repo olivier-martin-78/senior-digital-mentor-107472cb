@@ -125,12 +125,12 @@ export const useBlogPosts = (
           currentUser: effectiveUserId
         });
 
-        // 3. Récupérer les posts UNIQUEMENT des utilisateurs autorisés
+        // 3. Récupérer les posts UNIQUEMENT des utilisateurs autorisés avec les profils complets
         let query = supabase
           .from('blog_posts')
           .select(`
             *,
-            profiles!inner(id, display_name, email, avatar_url, created_at)
+            profiles!inner(id, display_name, email, avatar_url, created_at, user_id, bio, updated_at, receive_contacts)
           `)
           .in('author_id', authorizedUserIds)
           .order('created_at', { ascending: false });
@@ -184,7 +184,7 @@ export const useBlogPosts = (
           postsFound: allPosts.length
         });
 
-        setPosts(allPosts);
+        setPosts(allPosts as PostWithAuthor[]);
       } catch (error) {
         console.error('💥 useBlogPosts - Erreur critique:', error);
         setPosts([]);

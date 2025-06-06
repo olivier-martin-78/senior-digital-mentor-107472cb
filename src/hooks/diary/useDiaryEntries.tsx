@@ -60,11 +60,11 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
       if (diaryData && diaryData.length > 0) {
         console.log('📓 useDiaryEntries - Entrées récupérées:', diaryData.length);
 
-        // Récupérer les profils des auteurs
+        // Récupérer les profils des auteurs avec tous les champs requis
         const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, display_name, avatar_url, created_at, user_id, bio, updated_at, receive_contacts')
           .in('id', userIds);
 
         if (profilesError) {
@@ -77,10 +77,14 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           ...entry,
           profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
             id: entry.user_id,
+            user_id: entry.user_id,
             email: 'Utilisateur inconnu',
             display_name: null,
             avatar_url: null,
-            created_at: new Date().toISOString()
+            bio: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            receive_contacts: false
           }
         }));
 

@@ -667,6 +667,10 @@ export interface BlogAlbum {
   thumbnail_url: string | null;
 }
 
+export interface AlbumWithAuthor extends BlogAlbum {
+  profiles: Profile;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -744,6 +748,8 @@ export interface WishPost {
   date: string | null;
   attachment_url: string | null;
   user_id: string | null;
+  profiles?: Profile;
+  album?: WishAlbum;
 }
 
 // Types pour les invitations de groupe
