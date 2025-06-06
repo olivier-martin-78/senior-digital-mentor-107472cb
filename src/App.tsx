@@ -123,7 +123,7 @@ function App() {
                 <Route path="/wish-form" element={<WishForm />} />
                 
                 {/* Route pour le compte-rendu d'intervention */}
-                <Route path="/intervention-report" element={<ProtectedRoute requiredRoles={['professionnel', 'admin']} />}>
+                <Route path="/intervention-report" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<InterventionReport />} />
                 </Route>
 
@@ -156,7 +156,7 @@ function App() {
                   <Route index element={<AdminPermissionsDiagnostic />} />
                 </Route>
                 
-                <Route path="/scheduler" element={<ProtectedRoute requiredRoles={['professionnel']} />}>
+                <Route path="/scheduler" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<ProfessionalScheduler />} />
                 </Route>
                 

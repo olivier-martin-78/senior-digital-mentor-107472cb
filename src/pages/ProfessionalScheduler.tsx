@@ -23,7 +23,7 @@ const ProfessionalScheduler = () => {
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients'>('calendar');
 
   useEffect(() => {
-    if (!hasRole('professionnel')) {
+    if (!hasRole('admin')) {
       navigate('/unauthorized');
       return;
     }

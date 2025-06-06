@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,8 +81,8 @@ const Header = () => {
                   </Link>
                 ))}
                 
-                {/* Ajouter le lien vers le planificateur pour les professionnels */}
-                {hasRole('professionnel') && (
+                {/* Ajouter le lien vers le planificateur pour les admins */}
+                {hasRole('admin') && (
                   <Link 
                     to="/scheduler" 
                     className="text-gray-700 hover:text-tranches-sage font-medium transition-colors"
