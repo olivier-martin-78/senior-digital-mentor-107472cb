@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -647,13 +646,10 @@ export type AppRole = 'admin' | 'moderator' | 'user' | 'reader' | 'professionnel
 
 export interface Profile {
   id: string;
-  user_id: string;
   email: string;
   display_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
   created_at: string;
-  updated_at: string;
   receive_contacts: boolean;
 }
 

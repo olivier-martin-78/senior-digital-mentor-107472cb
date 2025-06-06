@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiaryEntryWithAuthor } from '@/types/diary';
@@ -64,7 +63,7 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
         const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, email, display_name, avatar_url, created_at, user_id, bio, updated_at, receive_contacts')
+          .select('id, email, display_name, avatar_url, created_at, receive_contacts')
           .in('id', userIds);
 
         if (profilesError) {
@@ -77,13 +76,10 @@ export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: 
           ...entry,
           profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
             id: entry.user_id,
-            user_id: entry.user_id,
             email: 'Utilisateur inconnu',
             display_name: null,
             avatar_url: null,
-            bio: null,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
             receive_contacts: false
           }
         }));

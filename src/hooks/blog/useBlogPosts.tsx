@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -130,7 +129,7 @@ export const useBlogPosts = (
           .from('blog_posts')
           .select(`
             *,
-            profiles!inner(id, display_name, email, avatar_url, created_at, user_id, bio, updated_at, receive_contacts)
+            profiles!inner(id, display_name, email, avatar_url, created_at, receive_contacts)
           `)
           .in('author_id', authorizedUserIds)
           .order('created_at', { ascending: false });
