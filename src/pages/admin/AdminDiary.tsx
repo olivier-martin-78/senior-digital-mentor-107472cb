@@ -77,7 +77,7 @@ const AdminDiary = () => {
         
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, display_name, email, avatar_url, created_at')
+          .select('id, display_name, email, avatar_url, created_at, receive_contacts')
           .in('id', userIds);
 
         if (profilesError) {
@@ -93,7 +93,8 @@ const AdminDiary = () => {
             email: 'Utilisateur inconnu',
             display_name: null,
             avatar_url: null,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            receive_contacts: false
           }
         }));
 
