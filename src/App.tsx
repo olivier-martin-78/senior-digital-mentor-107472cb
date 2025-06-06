@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +29,7 @@ import WishEdit from "./pages/WishEdit";
 import WishEditForm from "./pages/WishEditForm";
 import WishForm from "./pages/WishForm";
 import WishPost from "./pages/WishPost";
+import InterventionReport from "./pages/InterventionReport";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import AILanding from "./pages/AILanding";
@@ -118,6 +120,11 @@ function App() {
                   <Route index element={<WishPost />} />
                 </Route>
                 <Route path="/wish-form" element={<WishForm />} />
+                
+                {/* Route pour le compte-rendu d'intervention */}
+                <Route path="/intervention-report" element={<ProtectedRoute requiredRoles={['professionnel', 'admin']} />}>
+                  <Route index element={<InterventionReport />} />
+                </Route>
 
                 {/* Admin routes - MODIFIÉ pour permettre aux readers d'accéder aux albums */}
                 <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
