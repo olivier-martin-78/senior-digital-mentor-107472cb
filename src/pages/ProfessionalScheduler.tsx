@@ -74,7 +74,15 @@ const ProfessionalScheduler = () => {
       throw error;
     }
 
-    setAppointments(data || []);
+    // Transformer les données pour correspondre au type Appointment
+    const transformedData = (data || []).map(item => ({
+      ...item,
+      status: item.status as 'scheduled' | 'completed' | 'cancelled',
+      client: item.clients,
+      caregivers: []
+    }));
+
+    setAppointments(transformedData);
   };
 
   const loadClients = async () => {

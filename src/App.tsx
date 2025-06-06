@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -155,11 +156,9 @@ function App() {
                   <Route index element={<AdminPermissionsDiagnostic />} />
                 </Route>
                 
-                <Route path="/scheduler" element={
-                  <ProtectedRoute>
-                    <ProfessionalScheduler />
-                  </ProtectedRoute>
-                } />
+                <Route path="/scheduler" element={<ProtectedRoute requiredRoles={['professionnel']} />}>
+                  <Route index element={<ProfessionalScheduler />} />
+                </Route>
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

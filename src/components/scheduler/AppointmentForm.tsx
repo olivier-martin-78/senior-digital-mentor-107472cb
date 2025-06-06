@@ -31,7 +31,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     start_time: '',
     end_time: '',
     notes: '',
-    status: 'scheduled' as const,
+    status: 'scheduled' as 'scheduled' | 'completed' | 'cancelled',
   });
   const [loading, setLoading] = useState(false);
 
