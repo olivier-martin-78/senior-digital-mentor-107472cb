@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -46,6 +45,7 @@ import AdminInvitationGroups from "./pages/admin/AdminInvitationGroups";
 import AdminPermissionsDiagnostic from "./pages/admin/AdminPermissionsDiagnostic";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProfessionalScheduler from './pages/ProfessionalScheduler';
 
 const queryClient = new QueryClient();
 
@@ -56,7 +56,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <Router>
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -155,10 +155,16 @@ function App() {
                   <Route index element={<AdminPermissionsDiagnostic />} />
                 </Route>
                 
+                <Route path="/scheduler" element={
+                  <ProtectedRoute>
+                    <ProfessionalScheduler />
+                  </ProtectedRoute>
+                } />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>
-          </BrowserRouter>
+          </Router>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

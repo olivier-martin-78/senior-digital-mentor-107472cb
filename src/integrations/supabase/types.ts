@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          client_id: string
+          created_at: string
+          email_sent: boolean | null
+          end_time: string
+          id: string
+          notes: string | null
+          professional_id: string
+          start_time: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email_sent?: boolean | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          professional_id: string
+          start_time: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email_sent?: boolean | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          professional_id?: string
+          start_time?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_albums: {
         Row: {
           author_id: string
@@ -192,6 +239,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      caregivers: {
+        Row: {
+          address: string | null
+          client_id: string
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          relationship_type: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          client_id: string
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          relationship_type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          relationship_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregivers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string
+          created_at: string
+          created_by: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          created_by: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       diary_entries: {
         Row: {
@@ -778,6 +908,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      send_appointment_reminder_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       sync_invitation_permissions: {
         Args: { invitation_id_param: string }
         Returns: undefined
@@ -792,7 +926,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "editor" | "reader"
+      app_role: "admin" | "editor" | "reader" | "professionnel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -908,7 +1042,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "editor", "reader"],
+      app_role: ["admin", "editor", "reader", "professionnel"],
     },
   },
 } as const
