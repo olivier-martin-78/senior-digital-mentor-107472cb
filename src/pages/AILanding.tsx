@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -404,20 +403,20 @@ const AILanding = () => {
             </p>
             <p className="text-gray-300 flex items-center justify-center">
               <Mail className="h-4 w-4 mr-2" />
-              contact@senior-digital-mentor.fr
+              contact@senior-digital-mentor.com
             </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-tranches-charcoal text-white py-12">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <img src={SeniorDigitalLogo} alt="Senior Digital Mentor" width="110" className="mb-4 brightness-0 invert"/>
+              <img src={SeniorDigitalLogo} alt="Senior Digital Mentor" width="110" className="mb-4"/>
               <p className="text-gray-300 text-sm">
-                Accompagner les seniors dans leur découverte du numérique et de l'IA
+                Offrez-leur le digital, ils vous offriront leurs plus belles histoires
               </p>
             </div>
             
@@ -442,23 +441,15 @@ const AILanding = () => {
               <h4 className="font-serif text-lg mb-4">Contact</h4>
               <div className="space-y-2 text-sm text-gray-300">
                 <p className="flex items-center">
-                  <Phone className="h-4 w-4 mr-2" />
-                  0 800 000 000
-                </p>
-                <p className="flex items-center">
                   <Mail className="h-4 w-4 mr-2" />
-                  contact@senior-digital-mentor.fr
-                </p>
-                <p className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Paris, France
+                  contact@senior-digital-mentor.com
                 </p>
               </div>
             </div>
           </div>
           
           <div className="border-t border-gray-600 mt-8 pt-8 text-center text-sm text-gray-300">
-            <p>&copy; 2024 Senior Digital Mentor. Tous droits réservés.</p>
+            <p>&copy; 2025 Senior Digital Mentor. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
