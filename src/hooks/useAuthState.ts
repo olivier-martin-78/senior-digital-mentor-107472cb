@@ -65,17 +65,27 @@ export const useAuthState = () => {
 
   // Helper function to fetch user data (profile and roles)
   const fetchUserData = async (userId: string) => {
-    const userProfile = await AuthService.fetchUserProfile(userId);
-    if (userProfile) {
-      setProfile(userProfile);
-    }
+    console.log('🔍 Fetching user data for:', userId);
     
-    const userRoles = await AuthService.fetchUserRoles(userId);
-    setRoles(userRoles);
+    try {
+      const userProfile = await AuthService.fetchUserProfile(userId);
+      console.log('📝 User profile fetched:', userProfile);
+      if (userProfile) {
+        setProfile(userProfile);
+      }
+      
+      const userRoles = await AuthService.fetchUserRoles(userId);
+      console.log('🔐 User roles fetched:', userRoles);
+      setRoles(userRoles);
+    } catch (error) {
+      console.error('❌ Error fetching user data:', error);
+    }
   };
 
   const hasRole = (role: AppRole): boolean => {
-    return roles.includes(role);
+    const hasRoleResult = roles.includes(role);
+    console.log('🔍 Checking role:', role, 'Current roles:', roles, 'Has role:', hasRoleResult);
+    return hasRoleResult;
   };
 
   return {
