@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { FileText } from 'lucide-react';
 import { addHours, format } from 'date-fns';
 
 interface AppointmentFormProps {
@@ -144,12 +145,35 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
+  const handleViewIntervention = () => {
+    if (appointment?.intervention_report_id) {
+      toast({
+        title: 'Rapport d\'intervention',
+        description: 'Fonctionnalité de consultation du rapport à venir',
+      });
+    }
+  };
+
   return (
     <Dialog open onOpenChange={onCancel}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+          <DialogTitle className="flex items-center justify-between">
+            <span>
+              {appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+            </span>
+            {appointment?.intervention_report_id && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleViewIntervention}
+                className="ml-2 bg-green-50 hover:bg-green-100"
+              >
+                <FileText className="h-4 w-4 text-green-600" />
+                <span className="ml-1 text-green-600">Voir l'intervention</span>
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 

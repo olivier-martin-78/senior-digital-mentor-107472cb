@@ -53,7 +53,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     return (
       <div className="p-1">
         <div className="text-xs font-medium flex items-center gap-1">
-          {hasReport && <FileText className="h-3 w-3 text-green-600" />}
+          {hasReport && (
+            <div className="bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center">
+              <FileText className="h-2.5 w-2.5" />
+            </div>
+          )}
           {event.title}
         </div>
         <div className="text-xs opacity-75">
@@ -127,7 +131,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         borderRadius: '5px',
         opacity: 0.8,
         color: 'white',
-        border: '0px',
+        border: appointment?.intervention_report_id ? '2px solid #065f46' : '0px',
         display: 'block'
       }
     };
