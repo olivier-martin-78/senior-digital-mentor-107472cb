@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Client, Appointment } from '@/types/appointments';
@@ -27,6 +28,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onCancel 
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     client_id: '',
     start_time: '',
@@ -145,12 +147,43 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
-  const handleViewIntervention = () => {
+  const handleViewIntervention = async () => {
     if (appointment?.intervention_report_id) {
-      toast({
-        title: 'Rapport d\'intervention',
-        description: 'Fonctionnalité de consultation du rapport à venir',
-      });
+      try {
+        // Récupérer les détails du rapport d'intervention
+        const { data: report, error } = await supabase
+          .from('intervention_reports')
+          .select('*')
+          .eq('id', appointment.intervention_report_id)
+          .single();
+
+        if (error) {
+          console.error('Erreur lors de la récupération du rapport:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de récupérer le rapport d\'intervention',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Fermer la modale actuelle et naviguer vers la page d'intervention
+        onCancel();
+        navigate('/intervention-report', { 
+          state: { 
+            reportData: report,
+            appointmentId: appointment.id,
+            isViewMode: true 
+          } 
+        });
+      } catch (error) {
+        console.error('Erreur:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Une erreur est survenue',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
