@@ -1,146 +1,142 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { InterventionReport, AppointmentForIntervention } from '@/types/intervention';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, Send } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { CalendarDays, Clock, User, FileText, Save, ArrowLeft } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import MediaUploader from './MediaUploader';
-import { AppointmentForIntervention } from '@/types/intervention';
-import { format, parseISO } from 'date-fns';
-
-interface FormData {
-  appointmentId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  auxiliaryName: string;
-  patientName: string;
-  physicalState: string[];
-  physicalStateOther: string;
-  painLocation: string;
-  mentalState: string[];
-  mentalStateChange: string;
-  appetite: string;
-  hydration: string;
-  appetiteComments: string;
-  hygiene: string[];
-  hygieneComments: string;
-  activities: string[];
-  activitiesOther: string;
-  observations: string;
-  followUp: string[];
-  followUpOther: string;
-}
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
-  const [formData, setFormData] = useState<FormData>({
-    appointmentId: '',
-    date: new Date().toISOString().split('T')[0],
-    startTime: '',
-    endTime: '',
-    auxiliaryName: '',
-    patientName: '',
-    physicalState: [],
-    physicalStateOther: '',
-    painLocation: '',
-    mentalState: [],
-    mentalStateChange: '',
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Récupérer les données depuis location.state si elles existent
+  const reportData = location.state?.reportData as InterventionReport | undefined;
+  const appointmentId = location.state?.appointmentId as string | undefined;
+  const isViewMode = location.state?.isViewMode as boolean | false;
+
+  const [formData, setFormData] = useState<Partial<InterventionReport>>({
+    professional_id: user?.id || '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    start_time: '09:00',
+    end_time: '11:00',
+    auxiliary_name: '',
+    patient_name: '',
+    physical_state: [],
+    physical_state_other: '',
+    pain_location: '',
+    mental_state: [],
+    mental_state_change: '',
     appetite: '',
     hydration: '',
-    appetiteComments: '',
+    appetite_comments: '',
     hygiene: [],
-    hygieneComments: '',
+    hygiene_comments: '',
     activities: [],
-    activitiesOther: '',
+    activities_other: '',
     observations: '',
-    followUp: [],
-    followUpOther: ''
+    follow_up: [],
+    follow_up_other: '',
+    audio_url: '',
+    media_files: []
   });
 
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [mediaFiles, setMediaFiles] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Charger les données du rapport si elles sont fournies
   useEffect(() => {
-    if (user) {
-      loadAppointments();
+    if (reportData) {
+      setFormData({
+        ...reportData,
+        // S'assurer que les tableaux sont bien des tableaux
+        physical_state: Array.isArray(reportData.physical_state) ? reportData.physical_state : [],
+        mental_state: Array.isArray(reportData.mental_state) ? reportData.mental_state : [],
+        hygiene: Array.isArray(reportData.hygiene) ? reportData.hygiene : [],
+        activities: Array.isArray(reportData.activities) ? reportData.activities : [],
+        follow_up: Array.isArray(reportData.follow_up) ? reportData.follow_up : [],
+        media_files: Array.isArray(reportData.media_files) ? reportData.media_files : []
+      });
     }
-  }, [user, formData.date]);
+  }, [reportData]);
 
-  const loadAppointments = async () => {
+  // Charger les rendez-vous du jour pour le professionnel
+  useEffect(() => {
+    if (user && !reportData) {
+      loadTodayAppointments();
+    }
+  }, [user, reportData]);
+
+  const loadTodayAppointments = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .select(`
-        id,
-        start_time,
-        end_time,
-        status,
-        clients:client_id (
-          first_name,
-          last_name
-        )
-      `)
-      .eq('professional_id', user.id)
-      .eq('status', 'scheduled')
-      .gte('start_time', `${formData.date}T00:00:00`)
-      .lt('start_time', `${formData.date}T23:59:59`)
-      .order('start_time', { ascending: true });
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          status,
+          clients:client_id (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('professional_id', user.id)
+        .eq('status', 'scheduled')
+        .gte('start_time', `${today}T00:00:00`)
+        .lt('start_time', `${today}T23:59:59`)
+        .order('start_time', { ascending: true });
 
-    if (error) {
-      console.error('Erreur lors du chargement des rendez-vous:', error);
-      return;
-    }
+      if (error) throw error;
 
-    const transformedAppointments = (data || []).map(appointment => ({
-      id: appointment.id,
-      start_time: appointment.start_time,
-      end_time: appointment.end_time,
-      status: appointment.status,
-      client: appointment.clients
-    }));
-
-    setAppointments(transformedAppointments);
-  };
-
-  const handleAppointmentSelect = (appointmentId: string) => {
-    const selectedAppointment = appointments.find(apt => apt.id === appointmentId);
-    if (selectedAppointment) {
-      const startTime = parseISO(selectedAppointment.start_time);
-      const endTime = parseISO(selectedAppointment.end_time);
-      
-      setFormData(prev => ({
-        ...prev,
-        appointmentId,
-        startTime: format(startTime, 'HH:mm'),
-        endTime: format(endTime, 'HH:mm'),
-        patientName: `${selectedAppointment.client.first_name} ${selectedAppointment.client.last_name}`
+      const transformedAppointments = (data || []).map(appointment => ({
+        id: appointment.id,
+        start_time: appointment.start_time,
+        end_time: appointment.end_time,
+        status: appointment.status,
+        client: appointment.clients
       }));
+
+      setAppointments(transformedAppointments);
+    } catch (error) {
+      console.error('Erreur lors du chargement des rendez-vous:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les rendez-vous du jour',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handleCheckboxChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => {
-      const currentArray = prev[field] as string[];
-      const newArray = currentArray.includes(value) 
-        ? currentArray.filter(item => item !== value)
-        : [...currentArray, value];
-      return { ...prev, [field]: newArray };
-    });
+  const handleInputChange = (field: keyof InterventionReport, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleCheckboxChange = (field: keyof InterventionReport, value: string, checked: boolean) => {
+    setFormData(prev => {
+      const currentArray = (prev[field] as string[]) || [];
+      if (checked) {
+        return { ...prev, [field]: [...currentArray, value] };
+      } else {
+        return { ...prev, [field]: currentArray.filter(item => item !== value) };
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,461 +145,530 @@ const InterventionReportForm = () => {
 
     setLoading(true);
     try {
-      const reportData = {
-        appointment_id: formData.appointmentId || null,
+      const dataToSubmit = {
+        ...formData,
         professional_id: user.id,
-        date: formData.date,
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        auxiliary_name: formData.auxiliaryName,
-        patient_name: formData.patientName,
-        physical_state: formData.physicalState,
-        physical_state_other: formData.physicalStateOther,
-        pain_location: formData.painLocation,
-        mental_state: formData.mentalState,
-        mental_state_change: formData.mentalStateChange,
-        appetite: formData.appetite,
-        hydration: formData.hydration,
-        appetite_comments: formData.appetiteComments,
-        hygiene: formData.hygiene,
-        hygiene_comments: formData.hygieneComments,
-        activities: formData.activities,
-        activities_other: formData.activitiesOther,
-        observations: formData.observations,
-        follow_up: formData.followUp,
-        follow_up_other: formData.followUpOther,
-        media_files: mediaFiles
+        appointment_id: appointmentId || formData.appointment_id
       };
 
-      const { data: report, error } = await supabase
-        .from('intervention_reports')
-        .insert([reportData])
-        .select()
-        .single();
+      if (reportData?.id) {
+        // Mise à jour d'un rapport existant
+        const { error } = await supabase
+          .from('intervention_reports')
+          .update(dataToSubmit)
+          .eq('id', reportData.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Mettre à jour le rendez-vous avec l'ID du rapport
-      if (formData.appointmentId && report) {
-        await supabase
-          .from('appointments')
-          .update({ intervention_report_id: report.id })
-          .eq('id', formData.appointmentId);
+        toast({
+          title: 'Succès',
+          description: 'Rapport d\'intervention mis à jour avec succès',
+        });
+      } else {
+        // Création d'un nouveau rapport
+        const { data: newReport, error } = await supabase
+          .from('intervention_reports')
+          .insert([dataToSubmit])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Mettre à jour le rendez-vous avec l'ID du rapport
+        if (appointmentId || formData.appointment_id) {
+          await supabase
+            .from('appointments')
+            .update({ intervention_report_id: newReport.id })
+            .eq('id', appointmentId || formData.appointment_id);
+        }
+
+        toast({
+          title: 'Succès',
+          description: 'Rapport d\'intervention créé avec succès',
+        });
       }
 
-      toast({
-        title: "Compte-rendu sauvegardé",
-        description: "Le compte-rendu d'intervention a été enregistré avec succès",
-      });
-
-      // Réinitialiser le formulaire
-      setFormData({
-        appointmentId: '',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '',
-        endTime: '',
-        auxiliaryName: '',
-        patientName: '',
-        physicalState: [],
-        physicalStateOther: '',
-        painLocation: '',
-        mentalState: [],
-        mentalStateChange: '',
-        appetite: '',
-        hydration: '',
-        appetiteComments: '',
-        hygiene: [],
-        hygieneComments: '',
-        activities: [],
-        activitiesOther: '',
-        observations: '',
-        followUp: [],
-        followUpOther: ''
-      });
-      setMediaFiles([]);
-      setAudioBlob(null);
-
+      if (isViewMode) {
+        navigate('/scheduler');
+      }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder le compte-rendu",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder le rapport',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAudioRecorded = (audioUrl: string) => {
+    setFormData(prev => ({ ...prev, audio_url: audioUrl }));
+  };
+
+  const handleMediaUploaded = (mediaFiles: any[]) => {
+    setFormData(prev => ({ ...prev, media_files: mediaFiles }));
+  };
+
+  const physicalStateOptions = [
+    'Autonome', 'Besoin d\'aide partielle', 'Dépendant', 'Alité', 'Mobilité réduite', 'Chutes'
+  ];
+
+  const mentalStateOptions = [
+    'Calme', 'Anxieux', 'Confus', 'Agité', 'Triste', 'Joyeux', 'Apathique'
+  ];
+
+  const hygieneOptions = [
+    'Toilette complète', 'Toilette partielle', 'Aide pour l\'habillage', 'Soins des pieds', 'Soins des cheveux'
+  ];
+
+  const activitiesOptions = [
+    'Repas', 'Promenade', 'Lecture', 'Télévision', 'Jeux', 'Exercices', 'Sorties'
+  ];
+
+  const followUpOptions = [
+    'Rien à signaler', 'Contacter médecin', 'Surveillance accrue', 'Ajuster traitement', 'Prévenir famille'
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-serif text-tranches-charcoal">
-            📝 Compte-rendu d'intervention – Auxiliaire de vie
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Informations générales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-6">
+      {isViewMode && (
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/scheduler')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au planificateur
+          </Button>
+          <h2 className="text-xl font-semibold">Consultation du rapport d'intervention</h2>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Informations générales */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Informations générales
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="date">Date de l'intervention</Label>
+                <Label htmlFor="date">Date d'intervention</Label>
                 <Input
                   id="date"
                   type="date"
-                  value={formData.date}
+                  value={formData.date || ''}
                   onChange={(e) => handleInputChange('date', e.target.value)}
+                  disabled={isViewMode}
                   required
                 />
               </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="appointmentId">Rendez-vous associé (optionnel)</Label>
-                <Select value={formData.appointmentId} onValueChange={handleAppointmentSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rendez-vous planifié" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appointments.map(appointment => (
-                      <SelectItem key={appointment.id} value={appointment.id}>
-                        {format(parseISO(appointment.start_time), 'HH:mm')} - {appointment.client.first_name} {appointment.client.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div>
-                <Label htmlFor="startTime">Heure de début</Label>
+                <Label htmlFor="start_time">Heure de début</Label>
                 <Input
-                  id="startTime"
+                  id="start_time"
                   type="time"
-                  value={formData.startTime}
-                  onChange={(e) => handleInputChange('startTime', e.target.value)}
+                  value={formData.start_time || ''}
+                  onChange={(e) => handleInputChange('start_time', e.target.value)}
+                  disabled={isViewMode}
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="endTime">Heure de fin</Label>
+                <Label htmlFor="end_time">Heure de fin</Label>
                 <Input
-                  id="endTime"
+                  id="end_time"
                   type="time"
-                  value={formData.endTime}
-                  onChange={(e) => handleInputChange('endTime', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="auxiliaryName">Nom de l'auxiliaire de vie</Label>
-                <Input
-                  id="auxiliaryName"
-                  value={formData.auxiliaryName}
-                  onChange={(e) => handleInputChange('auxiliaryName', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="patientName">Nom de la personne accompagnée</Label>
-                <Input
-                  id="patientName"
-                  value={formData.patientName}
-                  onChange={(e) => handleInputChange('patientName', e.target.value)}
+                  value={formData.end_time || ''}
+                  onChange={(e) => handleInputChange('end_time', e.target.value)}
+                  disabled={isViewMode}
                   required
                 />
               </div>
             </div>
 
-            {/* État général observé */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">👵 État général observé</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* État physique */}
-                <div>
-                  <Label className="text-base font-medium">État physique</Label>
-                  <div className="mt-2 space-y-2">
-                    {[
-                      'En forme, aucun signe particulier',
-                      'Fatigué(e) mais mobile',
-                      'Faiblesses inhabituelles / Démarche instable',
-                      'Douleurs exprimées'
-                    ].map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`physical-${option}`}
-                          checked={formData.physicalState.includes(option)}
-                          onChange={() => handleCheckboxChange('physicalState', option)}
-                          className="rounded border-gray-300"
-                        />
-                        <label htmlFor={`physical-${option}`} className="text-sm">
-                          {option}
-                        </label>
-                      </div>
-                    ))}
-                    {formData.physicalState.includes('Douleurs exprimées') && (
-                      <Input
-                        placeholder="Localisation des douleurs"
-                        value={formData.painLocation}
-                        onChange={(e) => handleInputChange('painLocation', e.target.value)}
-                        className="mt-2"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="auxiliary_name">Nom de l'auxiliaire</Label>
+                <Input
+                  id="auxiliary_name"
+                  value={formData.auxiliary_name || ''}
+                  onChange={(e) => handleInputChange('auxiliary_name', e.target.value)}
+                  disabled={isViewMode}
+                  placeholder="Nom et prénom de l'auxiliaire"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="patient_name">Nom du patient</Label>
+                <Input
+                  id="patient_name"
+                  value={formData.patient_name || ''}
+                  onChange={(e) => handleInputChange('patient_name', e.target.value)}
+                  disabled={isViewMode}
+                  placeholder="Nom et prénom du patient"
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* État physique */}
+        <Card>
+          <CardHeader>
+            <CardTitle>État physique</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>État général</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {physicalStateOptions.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`physical-${option}`}
+                      checked={(formData.physical_state || []).includes(option)}
+                      onCheckedChange={(checked) => 
+                        handleCheckboxChange('physical_state', option, checked as boolean)
+                      }
+                      disabled={isViewMode}
+                    />
+                    <Label htmlFor={`physical-${option}`} className="text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="physical_other">Autre (préciser)</Label>
+              <Input
+                id="physical_other"
+                value={formData.physical_state_other || ''}
+                onChange={(e) => handleInputChange('physical_state_other', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Autres observations sur l'état physique"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="pain_location">Localisation de la douleur</Label>
+              <Input
+                id="pain_location"
+                value={formData.pain_location || ''}
+                onChange={(e) => handleInputChange('pain_location', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Indiquer la localisation si douleur"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* État mental */}
+        <Card>
+          <CardHeader>
+            <CardTitle>État mental et comportement</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>État mental</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {mentalStateOptions.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`mental-${option}`}
+                      checked={(formData.mental_state || []).includes(option)}
+                      onCheckedChange={(checked) => 
+                        handleCheckboxChange('mental_state', option, checked as boolean)
+                      }
+                      disabled={isViewMode}
+                    />
+                    <Label htmlFor={`mental-${option}`} className="text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="mental_change">Changements comportementaux</Label>
+              <Textarea
+                id="mental_change"
+                value={formData.mental_state_change || ''}
+                onChange={(e) => handleInputChange('mental_state_change', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Décrire les changements observés"
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Alimentation et hydratation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Alimentation et hydratation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Appétit</Label>
+                <RadioGroup
+                  value={formData.appetite || ''}
+                  onValueChange={(value) => handleInputChange('appetite', value)}
+                  disabled={isViewMode}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="bon" id="appetite-bon" />
+                    <Label htmlFor="appetite-bon">Bon</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="moyen" id="appetite-moyen" />
+                    <Label htmlFor="appetite-moyen">Moyen</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="faible" id="appetite-faible" />
+                    <Label htmlFor="appetite-faible">Faible</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label>Hydratation</Label>
+                <RadioGroup
+                  value={formData.hydration || ''}
+                  onValueChange={(value) => handleInputChange('hydration', value)}
+                  disabled={isViewMode}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="suffisante" id="hydration-suffisante" />
+                    <Label htmlFor="hydration-suffisante">Suffisante</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="insuffisante" id="hydration-insuffisante" />
+                    <Label htmlFor="hydration-insuffisante">Insuffisante</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="appetite_comments">Commentaires sur l'alimentation</Label>
+              <Textarea
+                id="appetite_comments"
+                value={formData.appetite_comments || ''}
+                onChange={(e) => handleInputChange('appetite_comments', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Détails sur les repas, difficultés..."
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Hygiène */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Hygiène et soins</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Soins prodigués</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {hygieneOptions.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`hygiene-${option}`}
+                      checked={(formData.hygiene || []).includes(option)}
+                      onCheckedChange={(checked) => 
+                        handleCheckboxChange('hygiene', option, checked as boolean)
+                      }
+                      disabled={isViewMode}
+                    />
+                    <Label htmlFor={`hygiene-${option}`} className="text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="hygiene_comments">Commentaires sur l'hygiène</Label>
+              <Textarea
+                id="hygiene_comments"
+                value={formData.hygiene_comments || ''}
+                onChange={(e) => handleInputChange('hygiene_comments', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Précisions sur les soins effectués"
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activités */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Activités et stimulation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Activités réalisées</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {activitiesOptions.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`activity-${option}`}
+                      checked={(formData.activities || []).includes(option)}
+                      onCheckedChange={(checked) => 
+                        handleCheckboxChange('activities', option, checked as boolean)
+                      }
+                      disabled={isViewMode}
+                    />
+                    <Label htmlFor={`activity-${option}`} className="text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="activities_other">Autres activités</Label>
+              <Input
+                id="activities_other"
+                value={formData.activities_other || ''}
+                onChange={(e) => handleInputChange('activities_other', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Autres activités non listées"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Observations générales */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Observations générales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={formData.observations || ''}
+              onChange={(e) => handleInputChange('observations', e.target.value)}
+              disabled={isViewMode}
+              placeholder="Observations, incidents, particularités..."
+              rows={4}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Suivi à prévoir */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Suivi et recommandations</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Actions à prévoir</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {followUpOptions.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`followup-${option}`}
+                      checked={(formData.follow_up || []).includes(option)}
+                      onCheckedChange={(checked) => 
+                        handleCheckboxChange('follow_up', option, checked as boolean)
+                      }
+                      disabled={isViewMode}
+                    />
+                    <Label htmlFor={`followup-${option}`} className="text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="follow_up_other">Autres recommandations</Label>
+              <Textarea
+                id="follow_up_other"
+                value={formData.follow_up_other || ''}
+                onChange={(e) => handleInputChange('follow_up_other', e.target.value)}
+                disabled={isViewMode}
+                placeholder="Précisions sur le suivi nécessaire"
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Enregistrement audio et médias */}
+        {!isViewMode && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Enregistrement audio et médias</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Enregistrement vocal</Label>
+                <VoiceRecorder onAudioRecorded={handleAudioRecorded} />
+              </div>
+
+              <div>
+                <Label>Photos et documents</Label>
+                <MediaUploader onMediaUploaded={handleMediaUploaded} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Affichage des médias en mode consultation */}
+        {isViewMode && formData.media_files && formData.media_files.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Médias attachés</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {formData.media_files.map((media: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-2">
+                    {media.type === 'image' && media.preview && (
+                      <img 
+                        src={media.preview} 
+                        alt={`Média ${index + 1}`}
+                        className="w-full h-32 object-cover rounded"
                       />
                     )}
-                    <Input
-                      placeholder="Autre (précisez)"
-                      value={formData.physicalStateOther}
-                      onChange={(e) => handleInputChange('physicalStateOther', e.target.value)}
-                    />
+                    <p className="text-sm text-gray-600 mt-2">
+                      Type: {media.type}
+                    </p>
                   </div>
-                </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {/* État mental */}
-                <div>
-                  <Label className="text-base font-medium">État mental / émotionnel</Label>
-                  <div className="mt-2 space-y-2">
-                    {[
-                      'Humeur stable et positive',
-                      'Anxieux(se) ou agité(e)',
-                      'Tristesse / Apathie / Isolement',
-                      'Confusion / Perte de repères'
-                    ].map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`mental-${option}`}
-                          checked={formData.mentalState.includes(option)}
-                          onChange={() => handleCheckboxChange('mentalState', option)}
-                          className="rounded border-gray-300"
-                        />
-                        <label htmlFor={`mental-${option}`} className="text-sm">
-                          {option}
-                        </label>
-                      </div>
-                    ))}
-                    <Input
-                      placeholder="Changement inhabituel d'attitude"
-                      value={formData.mentalStateChange}
-                      onChange={(e) => handleInputChange('mentalStateChange', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Appétit et hydratation */}
-                <div>
-                  <Label className="text-base font-medium">Appétit et hydratation</Label>
-                  <div className="mt-2 space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium">Appétit</Label>
-                      <div className="space-y-1">
-                        {['Bon appétit, alimentation normale', 'Faible appétit', 'Refus de s\'alimenter'].map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id={`appetite-${option}`}
-                              name="appetite"
-                              value={option}
-                              checked={formData.appetite === option}
-                              onChange={() => handleInputChange('appetite', option)}
-                              className="rounded border-gray-300"
-                            />
-                            <label htmlFor={`appetite-${option}`} className="text-sm">
-                              {option}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Hydratation</Label>
-                      <div className="space-y-1">
-                        {['A bien bu', 'A peu bu', 'Refus d\'hydratation'].map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id={`hydration-${option}`}
-                              name="hydration"
-                              value={option}
-                              checked={formData.hydration === option}
-                              onChange={() => handleInputChange('hydration', option)}
-                              className="rounded border-gray-300"
-                            />
-                            <label htmlFor={`hydration-${option}`} className="text-sm">
-                              {option}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="appetiteComments">Commentaires</Label>
-                      <Textarea
-                        id="appetiteComments"
-                        value={formData.appetiteComments}
-                        onChange={(e) => handleInputChange('appetiteComments', e.target.value)}
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hygiène et autonomie */}
-                <div>
-                  <Label className="text-base font-medium">Hygiène et autonomie</Label>
-                  <div className="mt-2 space-y-2">
-                    {[
-                      'A réalisé sa toilette seul(e)',
-                      'Assistance partielle nécessaire',
-                      'Assistance complète requise',
-                      'A refusé les soins d\'hygiène'
-                    ].map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`hygiene-${option}`}
-                          checked={formData.hygiene.includes(option)}
-                          onChange={() => handleCheckboxChange('hygiene', option)}
-                          className="rounded border-gray-300"
-                        />
-                        <label htmlFor={`hygiene-${option}`} className="text-sm">
-                          {option}
-                        </label>
-                      </div>
-                    ))}
-                    <div>
-                      <Label htmlFor="hygieneComments">Commentaires</Label>
-                      <Textarea
-                        id="hygieneComments"
-                        value={formData.hygieneComments}
-                        onChange={(e) => handleInputChange('hygieneComments', e.target.value)}
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Activités réalisées */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🏠 Activités réalisées durant l'intervention</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {[
-                    'Aide au lever / coucher',
-                    'Toilette / Soins d\'hygiène',
-                    'Préparation et/ou prise des repas',
-                    'Aide à la mobilité / promenade',
-                    'Prise de médicaments (sous contrôle)',
-                    'Entretien léger du domicile',
-                    'Discussion / écoute / stimulation cognitive'
-                  ].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`activity-${option}`}
-                        checked={formData.activities.includes(option)}
-                        onChange={() => handleCheckboxChange('activities', option)}
-                        className="rounded border-gray-300"
-                      />
-                      <label htmlFor={`activity-${option}`} className="text-sm">
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                  <Input
-                    placeholder="Autre (précisez)"
-                    value={formData.activitiesOther}
-                    onChange={(e) => handleInputChange('activitiesOther', e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Observations particulières */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🔍 Observations particulières ou points d'alerte</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Changements observés, comportements inhabituels, éléments à surveiller..."
-                  value={formData.observations}
-                  onChange={(e) => handleInputChange('observations', e.target.value)}
-                  rows={4}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Enregistrement vocal */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🎤 Enregistrement vocal (optionnel)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <VoiceRecorder onAudioChange={setAudioBlob} />
-              </CardContent>
-            </Card>
-
-            {/* Upload de médias */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">📷 Photos et documents (optionnel)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MediaUploader onMediaChange={setMediaFiles} />
-              </CardContent>
-            </Card>
-
-            {/* Suivi / Recommandations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">✅ Suivi / Recommandations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {[
-                    'Rien à signaler',
-                    'Contacter le médecin traitant',
-                    'Recommander une visite / appel du proche aidant'
-                  ].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`followup-${option}`}
-                        checked={formData.followUp.includes(option)}
-                        onChange={() => handleCheckboxChange('followUp', option)}
-                        className="rounded border-gray-300"
-                      />
-                      <label htmlFor={`followup-${option}`} className="text-sm">
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                  <Input
-                    placeholder="Autre (précisez)"
-                    value={formData.followUpOther}
-                    onChange={(e) => handleInputChange('followUpOther', e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Boutons d'action */}
-            <div className="flex gap-4 pt-6">
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className="bg-tranches-sage hover:bg-tranches-sage/90"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? 'Enregistrement...' : 'Enregistrer le compte-rendu'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Boutons d'action */}
+        <div className="flex justify-end gap-4">
+          {!isViewMode && (
+            <Button type="submit" disabled={loading} className="flex items-center gap-2">
+              <Save className="h-4 w-4" />
+              {loading ? 'Sauvegarde...' : (reportData?.id ? 'Mettre à jour' : 'Sauvegarder')}
+            </Button>
+          )}
+        </div>
+      </form>
     </div>
   );
 };
