@@ -1,16 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, Send } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import MediaUploader from './MediaUploader';
+import { AppointmentForIntervention } from '@/types/intervention';
+import { format, parseISO } from 'date-fns';
 
 interface FormData {
+  appointmentId: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -34,7 +40,10 @@ interface FormData {
 }
 
 const InterventionReportForm = () => {
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
   const [formData, setFormData] = useState<FormData>({
+    appointmentId: '',
     date: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: '',
@@ -59,6 +68,66 @@ const InterventionReportForm = () => {
 
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [mediaFiles, setMediaFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      loadAppointments();
+    }
+  }, [user, formData.date]);
+
+  const loadAppointments = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .select(`
+        id,
+        start_time,
+        end_time,
+        status,
+        clients:client_id (
+          first_name,
+          last_name
+        )
+      `)
+      .eq('professional_id', user.id)
+      .eq('status', 'scheduled')
+      .gte('start_time', `${formData.date}T00:00:00`)
+      .lt('start_time', `${formData.date}T23:59:59`)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.error('Erreur lors du chargement des rendez-vous:', error);
+      return;
+    }
+
+    const transformedAppointments = (data || []).map(appointment => ({
+      id: appointment.id,
+      start_time: appointment.start_time,
+      end_time: appointment.end_time,
+      status: appointment.status,
+      client: appointment.clients
+    }));
+
+    setAppointments(transformedAppointments);
+  };
+
+  const handleAppointmentSelect = (appointmentId: string) => {
+    const selectedAppointment = appointments.find(apt => apt.id === appointmentId);
+    if (selectedAppointment) {
+      const startTime = parseISO(selectedAppointment.start_time);
+      const endTime = parseISO(selectedAppointment.end_time);
+      
+      setFormData(prev => ({
+        ...prev,
+        appointmentId,
+        startTime: format(startTime, 'HH:mm'),
+        endTime: format(endTime, 'HH:mm'),
+        patientName: `${selectedAppointment.client.first_name} ${selectedAppointment.client.last_name}`
+      }));
+    }
+  };
 
   const handleCheckboxChange = (field: keyof FormData, value: string) => {
     setFormData(prev => {
@@ -74,16 +143,96 @@ const InterventionReportForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Données du formulaire:', formData);
-    console.log('Enregistrement audio:', audioBlob);
-    console.log('Fichiers médias:', mediaFiles);
-    
-    toast({
-      title: "Compte-rendu sauvegardé",
-      description: "Le compte-rendu d'intervention a été enregistré avec succès",
-    });
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const reportData = {
+        appointment_id: formData.appointmentId || null,
+        professional_id: user.id,
+        date: formData.date,
+        start_time: formData.startTime,
+        end_time: formData.endTime,
+        auxiliary_name: formData.auxiliaryName,
+        patient_name: formData.patientName,
+        physical_state: formData.physicalState,
+        physical_state_other: formData.physicalStateOther,
+        pain_location: formData.painLocation,
+        mental_state: formData.mentalState,
+        mental_state_change: formData.mentalStateChange,
+        appetite: formData.appetite,
+        hydration: formData.hydration,
+        appetite_comments: formData.appetiteComments,
+        hygiene: formData.hygiene,
+        hygiene_comments: formData.hygieneComments,
+        activities: formData.activities,
+        activities_other: formData.activitiesOther,
+        observations: formData.observations,
+        follow_up: formData.followUp,
+        follow_up_other: formData.followUpOther,
+        media_files: mediaFiles
+      };
+
+      const { data: report, error } = await supabase
+        .from('intervention_reports')
+        .insert([reportData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Mettre à jour le rendez-vous avec l'ID du rapport
+      if (formData.appointmentId && report) {
+        await supabase
+          .from('appointments')
+          .update({ intervention_report_id: report.id })
+          .eq('id', formData.appointmentId);
+      }
+
+      toast({
+        title: "Compte-rendu sauvegardé",
+        description: "Le compte-rendu d'intervention a été enregistré avec succès",
+      });
+
+      // Réinitialiser le formulaire
+      setFormData({
+        appointmentId: '',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '',
+        endTime: '',
+        auxiliaryName: '',
+        patientName: '',
+        physicalState: [],
+        physicalStateOther: '',
+        painLocation: '',
+        mentalState: [],
+        mentalStateChange: '',
+        appetite: '',
+        hydration: '',
+        appetiteComments: '',
+        hygiene: [],
+        hygieneComments: '',
+        activities: [],
+        activitiesOther: '',
+        observations: '',
+        followUp: [],
+        followUpOther: ''
+      });
+      setMediaFiles([]);
+      setAudioBlob(null);
+
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder le compte-rendu",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,6 +256,21 @@ const InterventionReportForm = () => {
                   onChange={(e) => handleInputChange('date', e.target.value)}
                   required
                 />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="appointmentId">Rendez-vous associé (optionnel)</Label>
+                <Select value={formData.appointmentId} onValueChange={handleAppointmentSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un rendez-vous planifié" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {appointments.map(appointment => (
+                      <SelectItem key={appointment.id} value={appointment.id}>
+                        {format(parseISO(appointment.start_time), 'HH:mm')} - {appointment.client.first_name} {appointment.client.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="startTime">Heure de début</Label>
@@ -430,24 +594,11 @@ const InterventionReportForm = () => {
             <div className="flex gap-4 pt-6">
               <Button 
                 type="submit" 
+                disabled={loading}
                 className="bg-tranches-sage hover:bg-tranches-sage/90"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Enregistrer le compte-rendu
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => {
-                  // Logique d'envoi par email ou autre
-                  toast({
-                    title: "Compte-rendu envoyé",
-                    description: "Le compte-rendu a été transmis avec succès",
-                  });
-                }}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Envoyer
+                {loading ? 'Enregistrement...' : 'Enregistrer le compte-rendu'}
               </Button>
             </div>
           </form>

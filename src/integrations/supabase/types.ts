@@ -16,6 +16,7 @@ export type Database = {
           email_sent: boolean | null
           end_time: string
           id: string
+          intervention_report_id: string | null
           notes: string | null
           professional_id: string
           start_time: string
@@ -28,6 +29,7 @@ export type Database = {
           email_sent?: boolean | null
           end_time: string
           id?: string
+          intervention_report_id?: string | null
           notes?: string | null
           professional_id: string
           start_time: string
@@ -40,6 +42,7 @@ export type Database = {
           email_sent?: boolean | null
           end_time?: string
           id?: string
+          intervention_report_id?: string | null
           notes?: string | null
           professional_id?: string
           start_time?: string
@@ -52,6 +55,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_intervention_report_id_fkey"
+            columns: ["intervention_report_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -476,6 +486,104 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "invitation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intervention_reports: {
+        Row: {
+          activities: string[] | null
+          activities_other: string | null
+          appetite: string | null
+          appetite_comments: string | null
+          appointment_id: string | null
+          audio_url: string | null
+          auxiliary_name: string
+          created_at: string
+          date: string
+          end_time: string
+          follow_up: string[] | null
+          follow_up_other: string | null
+          hydration: string | null
+          hygiene: string[] | null
+          hygiene_comments: string | null
+          id: string
+          media_files: Json | null
+          mental_state: string[] | null
+          mental_state_change: string | null
+          observations: string | null
+          pain_location: string | null
+          patient_name: string
+          physical_state: string[] | null
+          physical_state_other: string | null
+          professional_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          activities?: string[] | null
+          activities_other?: string | null
+          appetite?: string | null
+          appetite_comments?: string | null
+          appointment_id?: string | null
+          audio_url?: string | null
+          auxiliary_name: string
+          created_at?: string
+          date: string
+          end_time: string
+          follow_up?: string[] | null
+          follow_up_other?: string | null
+          hydration?: string | null
+          hygiene?: string[] | null
+          hygiene_comments?: string | null
+          id?: string
+          media_files?: Json | null
+          mental_state?: string[] | null
+          mental_state_change?: string | null
+          observations?: string | null
+          pain_location?: string | null
+          patient_name: string
+          physical_state?: string[] | null
+          physical_state_other?: string | null
+          professional_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          activities?: string[] | null
+          activities_other?: string | null
+          appetite?: string | null
+          appetite_comments?: string | null
+          appointment_id?: string | null
+          audio_url?: string | null
+          auxiliary_name?: string
+          created_at?: string
+          date?: string
+          end_time?: string
+          follow_up?: string[] | null
+          follow_up_other?: string | null
+          hydration?: string | null
+          hygiene?: string[] | null
+          hygiene_comments?: string | null
+          id?: string
+          media_files?: Json | null
+          mental_state?: string[] | null
+          mental_state_change?: string | null
+          observations?: string | null
+          pain_location?: string | null
+          patient_name?: string
+          physical_state?: string[] | null
+          physical_state_other?: string | null
+          professional_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_reports_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
             referencedColumns: ["id"]
           },
         ]
