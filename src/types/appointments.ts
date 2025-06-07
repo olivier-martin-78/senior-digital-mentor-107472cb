@@ -33,6 +33,7 @@ export interface Appointment {
   notes?: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   email_sent: boolean;
+  intervention_report_id?: string;
   created_at: string;
   updated_at: string;
   client?: Client;
