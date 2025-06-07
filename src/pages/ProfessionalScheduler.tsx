@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Users, Plus } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, FileText } from 'lucide-react';
 import { Client, Appointment, CalendarEvent } from '@/types/appointments';
 import AppointmentCalendar from '@/components/scheduler/AppointmentCalendar';
 import ClientManager from '@/components/scheduler/ClientManager';
@@ -157,13 +157,23 @@ const ProfessionalScheduler = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Planificateur Professionnel</h1>
-          <Button 
-            onClick={() => setShowAppointmentForm(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Nouveau rendez-vous
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => navigate('/intervention-report')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Nouvelle intervention
+            </Button>
+            <Button 
+              onClick={() => setShowAppointmentForm(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau rendez-vous
+            </Button>
+          </div>
         </div>
 
         <div className="flex gap-4 mb-6">
