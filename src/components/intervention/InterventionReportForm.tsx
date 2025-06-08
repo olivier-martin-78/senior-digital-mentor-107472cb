@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -209,12 +210,14 @@ const InterventionReportForm = () => {
     }
   };
 
-  const handleAudioRecorded = (audioUrl: string) => {
-    setFormData(prev => ({ ...prev, audio_url: audioUrl }));
+  const handleAudioChange = (audioBlob: Blob | null) => {
+    console.log('Audio changed:', audioBlob);
+    // Handle audio blob if needed
   };
 
-  const handleMediaUploaded = (mediaFiles: any[]) => {
-    setFormData(prev => ({ ...prev, media_files: mediaFiles }));
+  const handleMediaUpload = (files: File[]) => {
+    console.log('Files uploaded:', files);
+    // Handle uploaded files
   };
 
   const physicalStateOptions = [
@@ -627,12 +630,12 @@ const InterventionReportForm = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label>Enregistrement vocal</Label>
-                <VoiceRecorder onRecordingComplete={handleAudioRecorded} />
+                <VoiceRecorder onAudioChange={handleAudioChange} />
               </div>
 
               <div>
                 <Label>Photos et documents</Label>
-                <MediaUploader onFilesUploaded={handleMediaUploaded} />
+                <MediaUploader onUpload={handleMediaUpload} />
               </div>
             </CardContent>
           </Card>

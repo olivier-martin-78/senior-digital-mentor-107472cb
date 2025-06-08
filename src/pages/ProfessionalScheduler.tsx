@@ -25,7 +25,7 @@ const ProfessionalScheduler = () => {
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients'>('calendar');
 
   useEffect(() => {
-    if (!hasRole('admin') && !hasRole('professional')) {
+    if (!hasRole('admin') && !hasRole('professionnel')) {
       navigate('/unauthorized');
       return;
     }
@@ -82,6 +82,7 @@ const ProfessionalScheduler = () => {
     const transformedData = (data || []).map(item => ({
       ...item,
       status: item.status as 'scheduled' | 'completed' | 'cancelled',
+      recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
       client: item.clients,
       caregivers: []
     }));
