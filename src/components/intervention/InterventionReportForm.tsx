@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -68,6 +69,10 @@ const InterventionReportForm = () => {
   const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Variables pour déterminer si on peut éditer
+  const canEdit = !isViewMode || isEditMode;
+  const showVoiceRecorder = canEdit; // Simplifier la condition
 
   // Charger les données du rapport si elles sont fournies
   useEffect(() => {
@@ -353,7 +358,7 @@ const InterventionReportForm = () => {
                   type="date"
                   value={formData.date || ''}
                   onChange={(e) => handleInputChange('date', e.target.value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                   required
                 />
               </div>
@@ -364,7 +369,7 @@ const InterventionReportForm = () => {
                   type="time"
                   value={formData.start_time || ''}
                   onChange={(e) => handleInputChange('start_time', e.target.value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                   required
                 />
               </div>
@@ -375,7 +380,7 @@ const InterventionReportForm = () => {
                   type="time"
                   value={formData.end_time || ''}
                   onChange={(e) => handleInputChange('end_time', e.target.value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                   required
                 />
               </div>
@@ -388,7 +393,7 @@ const InterventionReportForm = () => {
                   id="auxiliary_name"
                   value={formData.auxiliary_name || ''}
                   onChange={(e) => handleInputChange('auxiliary_name', e.target.value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                   placeholder="Nom et prénom de l'auxiliaire"
                   required
                 />
@@ -399,7 +404,7 @@ const InterventionReportForm = () => {
                   id="patient_name"
                   value={formData.patient_name || ''}
                   onChange={(e) => handleInputChange('patient_name', e.target.value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                   placeholder="Nom et prénom du patient"
                   required
                 />
@@ -425,7 +430,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('physical_state', option, checked as boolean)
                       }
-                      disabled={isViewMode && !isEditMode}
+                      disabled={!canEdit}
                     />
                     <Label htmlFor={`physical-${option}`} className="text-sm">
                       {option}
@@ -441,7 +446,7 @@ const InterventionReportForm = () => {
                 id="physical_other"
                 value={formData.physical_state_other || ''}
                 onChange={(e) => handleInputChange('physical_state_other', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Autres observations sur l'état physique"
               />
             </div>
@@ -452,7 +457,7 @@ const InterventionReportForm = () => {
                 id="pain_location"
                 value={formData.pain_location || ''}
                 onChange={(e) => handleInputChange('pain_location', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Indiquer la localisation si douleur"
               />
             </div>
@@ -476,7 +481,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('mental_state', option, checked as boolean)
                       }
-                      disabled={isViewMode && !isEditMode}
+                      disabled={!canEdit}
                     />
                     <Label htmlFor={`mental-${option}`} className="text-sm">
                       {option}
@@ -492,7 +497,7 @@ const InterventionReportForm = () => {
                 id="mental_change"
                 value={formData.mental_state_change || ''}
                 onChange={(e) => handleInputChange('mental_state_change', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Décrire les changements observés"
                 rows={3}
               />
@@ -512,7 +517,7 @@ const InterventionReportForm = () => {
                 <RadioGroup
                   value={formData.appetite || ''}
                   onValueChange={(value) => handleInputChange('appetite', value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="bon" id="appetite-bon" />
@@ -534,7 +539,7 @@ const InterventionReportForm = () => {
                 <RadioGroup
                   value={formData.hydration || ''}
                   onValueChange={(value) => handleInputChange('hydration', value)}
-                  disabled={isViewMode && !isEditMode}
+                  disabled={!canEdit}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="suffisante" id="hydration-suffisante" />
@@ -554,7 +559,7 @@ const InterventionReportForm = () => {
                 id="appetite_comments"
                 value={formData.appetite_comments || ''}
                 onChange={(e) => handleInputChange('appetite_comments', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Détails sur les repas, difficultés..."
                 rows={3}
               />
@@ -579,7 +584,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('hygiene', option, checked as boolean)
                       }
-                      disabled={isViewMode && !isEditMode}
+                      disabled={!canEdit}
                     />
                     <Label htmlFor={`hygiene-${option}`} className="text-sm">
                       {option}
@@ -595,7 +600,7 @@ const InterventionReportForm = () => {
                 id="hygiene_comments"
                 value={formData.hygiene_comments || ''}
                 onChange={(e) => handleInputChange('hygiene_comments', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Précisions sur les soins effectués"
                 rows={3}
               />
@@ -620,7 +625,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('activities', option, checked as boolean)
                       }
-                      disabled={isViewMode && !isEditMode}
+                      disabled={!canEdit}
                     />
                     <Label htmlFor={`activity-${option}`} className="text-sm">
                       {option}
@@ -636,7 +641,7 @@ const InterventionReportForm = () => {
                 id="activities_other"
                 value={formData.activities_other || ''}
                 onChange={(e) => handleInputChange('activities_other', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Autres activités non listées"
               />
             </div>
@@ -652,7 +657,7 @@ const InterventionReportForm = () => {
             <Textarea
               value={formData.observations || ''}
               onChange={(e) => handleInputChange('observations', e.target.value)}
-              disabled={isViewMode && !isEditMode}
+              disabled={!canEdit}
               placeholder="Observations, incidents, particularités..."
               rows={4}
             />
@@ -676,7 +681,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('follow_up', option, checked as boolean)
                       }
-                      disabled={isViewMode && !isEditMode}
+                      disabled={!canEdit}
                     />
                     <Label htmlFor={`followup-${option}`} className="text-sm">
                       {option}
@@ -692,7 +697,7 @@ const InterventionReportForm = () => {
                 id="follow_up_other"
                 value={formData.follow_up_other || ''}
                 onChange={(e) => handleInputChange('follow_up_other', e.target.value)}
-                disabled={isViewMode && !isEditMode}
+                disabled={!canEdit}
                 placeholder="Précisions sur le suivi nécessaire"
                 rows={3}
               />
@@ -701,7 +706,7 @@ const InterventionReportForm = () => {
         </Card>
 
         {/* Enregistrement audio et médias */}
-        {(!isViewMode || isEditMode) && (
+        {showVoiceRecorder && (
           <Card>
             <CardHeader>
               <CardTitle>Enregistrement audio et médias</CardTitle>
@@ -721,7 +726,7 @@ const InterventionReportForm = () => {
         )}
 
         {/* Affichage des médias en mode consultation */}
-        {isViewMode && formData.media_files && formData.media_files.length > 0 && (
+        {isViewMode && !isEditMode && formData.media_files && formData.media_files.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Médias attachés</CardTitle>
@@ -749,7 +754,7 @@ const InterventionReportForm = () => {
 
         {/* Boutons d'action */}
         <div className="flex justify-end gap-4">
-          {(!isViewMode || isEditMode) && (
+          {canEdit && (
             <>
               {isEditMode && (
                 <Button 
