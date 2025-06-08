@@ -68,7 +68,7 @@ const Header = () => {
             <img 
               src="/SeniorDigital.png" 
               alt="SeniorDigital" 
-              width={150}
+              width={120}
               className="h-auto"
             />
           </Link>
