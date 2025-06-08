@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -215,9 +214,8 @@ const InterventionReportForm = () => {
     // Handle audio blob if needed
   };
 
-  const handleMediaUpload = (files: File[]) => {
-    console.log('Files uploaded:', files);
-    // Handle uploaded files
+  const handleMediaChange = (mediaFiles: any[]) => {
+    setFormData(prev => ({ ...prev, media_files: mediaFiles }));
   };
 
   const physicalStateOptions = [
@@ -635,7 +633,7 @@ const InterventionReportForm = () => {
 
               <div>
                 <Label>Photos et documents</Label>
-                <MediaUploader onUpload={handleMediaUpload} />
+                <MediaUploader onMediaChange={handleMediaChange} />
               </div>
             </CardContent>
           </Card>
