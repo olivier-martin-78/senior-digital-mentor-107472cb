@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { Client, Appointment, CalendarEvent } from '@/types/appointments';
 import AppointmentCalendar from '@/components/scheduler/AppointmentCalendar';
 import ClientManager from '@/components/scheduler/ClientManager';
 import AppointmentForm from '@/components/scheduler/AppointmentForm';
+import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
 
 const ProfessionalScheduler = () => {
   const { user, hasRole } = useAuth();
@@ -23,7 +25,7 @@ const ProfessionalScheduler = () => {
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients'>('calendar');
 
   useEffect(() => {
-    if (!hasRole('admin')) {
+    if (!hasRole('admin') && !hasRole('professional')) {
       navigate('/unauthorized');
       return;
     }
@@ -158,6 +160,7 @@ const ProfessionalScheduler = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Planificateur Professionnel</h1>
           <div className="flex gap-3">
+            <AppointmentExporter professionalId={user?.id || ''} />
             <Button 
               onClick={() => navigate('/intervention-report')}
               variant="outline"

@@ -148,7 +148,13 @@ const InterventionReportForm = () => {
       const dataToSubmit = {
         ...formData,
         professional_id: user.id,
-        appointment_id: appointmentId || formData.appointment_id
+        appointment_id: appointmentId || formData.appointment_id,
+        // S'assurer que les champs requis sont présents
+        auxiliary_name: formData.auxiliary_name || '',
+        patient_name: formData.patient_name || '',
+        date: formData.date || format(new Date(), 'yyyy-MM-dd'),
+        start_time: formData.start_time || '09:00',
+        end_time: formData.end_time || '11:00'
       };
 
       if (reportData?.id) {
@@ -168,7 +174,7 @@ const InterventionReportForm = () => {
         // Création d'un nouveau rapport
         const { data: newReport, error } = await supabase
           .from('intervention_reports')
-          .insert([dataToSubmit])
+          .insert(dataToSubmit)
           .select()
           .single();
 
@@ -621,12 +627,12 @@ const InterventionReportForm = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label>Enregistrement vocal</Label>
-                <VoiceRecorder onAudioRecorded={handleAudioRecorded} />
+                <VoiceRecorder onRecordingComplete={handleAudioRecorded} />
               </div>
 
               <div>
                 <Label>Photos et documents</Label>
-                <MediaUploader onMediaUploaded={handleMediaUploaded} />
+                <MediaUploader onFilesUploaded={handleMediaUploaded} />
               </div>
             </CardContent>
           </Card>

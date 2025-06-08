@@ -17,8 +17,12 @@ export type Database = {
           end_time: string
           id: string
           intervention_report_id: string | null
+          is_recurring: boolean | null
           notes: string | null
+          parent_appointment_id: string | null
           professional_id: string
+          recurrence_end_date: string | null
+          recurrence_type: string | null
           start_time: string
           status: string | null
           updated_at: string
@@ -30,8 +34,12 @@ export type Database = {
           end_time: string
           id?: string
           intervention_report_id?: string | null
+          is_recurring?: boolean | null
           notes?: string | null
+          parent_appointment_id?: string | null
           professional_id: string
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           start_time: string
           status?: string | null
           updated_at?: string
@@ -43,8 +51,12 @@ export type Database = {
           end_time?: string
           id?: string
           intervention_report_id?: string | null
+          is_recurring?: boolean | null
           notes?: string | null
+          parent_appointment_id?: string | null
           professional_id?: string
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           start_time?: string
           status?: string | null
           updated_at?: string
@@ -62,6 +74,13 @@ export type Database = {
             columns: ["intervention_report_id"]
             isOneToOne: false
             referencedRelation: "intervention_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_parent_appointment_id_fkey"
+            columns: ["parent_appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
             referencedColumns: ["id"]
           },
         ]

@@ -36,6 +36,10 @@ export interface Appointment {
   intervention_report_id?: string;
   created_at: string;
   updated_at: string;
+  is_recurring: boolean;
+  recurrence_type?: 'weekly' | 'monthly';
+  recurrence_end_date?: string;
+  parent_appointment_id?: string;
   client?: Client;
   caregivers?: Caregiver[];
 }

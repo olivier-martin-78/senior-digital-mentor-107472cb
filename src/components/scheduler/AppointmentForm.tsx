@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Client, Appointment } from '@/types/appointments';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText } from 'lucide-react';
-import { addHours, format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Client, Appointment } from '@/types/appointments';
+import { format, addDays, addWeeks } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import RecurringAppointmentForm from './RecurringAppointmentForm';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
@@ -21,122 +21,147 @@ interface AppointmentFormProps {
   onCancel: () => void;
 }
 
-const AppointmentForm: React.FC<AppointmentFormProps> = ({ 
-  appointment, 
-  clients, 
-  onSave, 
-  onCancel 
+const AppointmentForm: React.FC<AppointmentFormProps> = ({
+  appointment,
+  clients,
+  onSave,
+  onCancel
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     client_id: '',
     start_time: '',
     end_time: '',
     notes: '',
     status: 'scheduled' as 'scheduled' | 'completed' | 'cancelled',
+    is_recurring: false,
+    recurrence_end_date: ''
   });
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (appointment) {
-      const startTime = new Date(appointment.start_time);
-      const endTime = new Date(appointment.end_time);
-      
       setFormData({
         client_id: appointment.client_id,
-        start_time: format(startTime, "yyyy-MM-dd'T'HH:mm"),
-        end_time: format(endTime, "yyyy-MM-dd'T'HH:mm"),
+        start_time: format(new Date(appointment.start_time), "yyyy-MM-dd'T'HH:mm"),
+        end_time: format(new Date(appointment.end_time), "yyyy-MM-dd'T'HH:mm"),
         notes: appointment.notes || '',
         status: appointment.status,
+        is_recurring: appointment.is_recurring || false,
+        recurrence_end_date: appointment.recurrence_end_date || ''
       });
     } else {
       // Valeurs par défaut pour un nouveau rendez-vous
       const now = new Date();
-      const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0);
-      const twoHoursLater = addHours(nextHour, 2);
+      const startTime = format(now, "yyyy-MM-dd'T'09:00");
+      const endTime = format(now, "yyyy-MM-dd'T'11:00");
       
       setFormData({
         client_id: '',
-        start_time: format(nextHour, "yyyy-MM-dd'T'HH:mm"),
-        end_time: format(twoHoursLater, "yyyy-MM-dd'T'HH:mm"),
+        start_time: startTime,
+        end_time: endTime,
         notes: '',
         status: 'scheduled',
+        is_recurring: false,
+        recurrence_end_date: ''
       });
     }
   }, [appointment]);
 
-  const handleStartTimeChange = (value: string) => {
-    setFormData(prev => {
-      const startTime = new Date(value);
-      const endTime = addHours(startTime, 2);
-      return {
-        ...prev,
-        start_time: value,
-        end_time: format(endTime, "yyyy-MM-dd'T'HH:mm"),
-      };
-    });
-  };
-
-  const validateTimes = () => {
-    const startTime = new Date(formData.start_time);
-    const endTime = new Date(formData.end_time);
-    const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+  const createRecurringAppointments = async (baseAppointment: any, endDate: string) => {
+    const appointments = [];
+    const startDate = new Date(formData.start_time);
+    const finalDate = new Date(endDate);
     
-    if (duration < 2) {
-      toast({
-        title: 'Erreur',
-        description: 'La durée minimale d\'un rendez-vous est de 2 heures',
-        variant: 'destructive',
+    let currentDate = addWeeks(startDate, 1); // Commencer la semaine suivante
+    
+    while (currentDate <= finalDate) {
+      const duration = new Date(formData.end_time).getTime() - new Date(formData.start_time).getTime();
+      const endTime = new Date(currentDate.getTime() + duration);
+      
+      appointments.push({
+        ...baseAppointment,
+        start_time: currentDate.toISOString(),
+        end_time: endTime.toISOString(),
+        parent_appointment_id: baseAppointment.id
       });
-      return false;
+      
+      currentDate = addWeeks(currentDate, 1);
     }
     
-    return true;
+    if (appointments.length > 0) {
+      const { error } = await supabase
+        .from('appointments')
+        .insert(appointments);
+        
+      if (error) throw error;
+    }
+    
+    return appointments.length;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !validateTimes()) return;
+    if (!user) return;
 
     setLoading(true);
     try {
-      const data = {
-        ...formData,
+      const appointmentData = {
+        client_id: formData.client_id,
         professional_id: user.id,
         start_time: new Date(formData.start_time).toISOString(),
         end_time: new Date(formData.end_time).toISOString(),
-        notes: formData.notes || null,
+        notes: formData.notes,
+        status: formData.status,
+        is_recurring: formData.is_recurring,
+        recurrence_type: formData.is_recurring ? 'weekly' as const : null,
+        recurrence_end_date: formData.is_recurring ? formData.recurrence_end_date : null
       };
 
-      if (appointment) {
+      if (appointment?.id) {
+        // Mise à jour d'un rendez-vous existant
         const { error } = await supabase
           .from('appointments')
-          .update(data)
+          .update(appointmentData)
           .eq('id', appointment.id);
 
         if (error) throw error;
 
         toast({
           title: 'Succès',
-          description: 'Rendez-vous modifié avec succès',
+          description: 'Rendez-vous mis à jour avec succès',
         });
       } else {
-        const { error } = await supabase
+        // Création d'un nouveau rendez-vous
+        const { data: newAppointment, error } = await supabase
           .from('appointments')
-          .insert([data]);
+          .insert([appointmentData])
+          .select()
+          .single();
 
         if (error) throw error;
 
-        toast({
-          title: 'Succès',
-          description: 'Rendez-vous créé avec succès',
-        });
+        // Si c'est récurrent, créer les autres rendez-vous
+        if (formData.is_recurring && formData.recurrence_end_date) {
+          const recurringCount = await createRecurringAppointments(newAppointment, formData.recurrence_end_date);
+          
+          toast({
+            title: 'Succès',
+            description: `Rendez-vous créé avec succès${recurringCount > 0 ? ` (${recurringCount + 1} rendez-vous au total)` : ''}`,
+          });
+        } else {
+          toast({
+            title: 'Succès',
+            description: 'Rendez-vous créé avec succès',
+          });
+        }
       }
 
       onSave();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du rendez-vous:', error);
+      console.error('Erreur lors de la sauvegarde:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de sauvegarder le rendez-vous',
@@ -148,146 +173,148 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   const handleViewIntervention = async () => {
-    if (appointment?.intervention_report_id) {
-      try {
-        // Récupérer les détails du rapport d'intervention
-        const { data: report, error } = await supabase
-          .from('intervention_reports')
-          .select('*')
-          .eq('id', appointment.intervention_report_id)
-          .single();
+    if (!appointment?.intervention_report_id) return;
 
-        if (error) {
-          console.error('Erreur lors de la récupération du rapport:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible de récupérer le rapport d\'intervention',
-            variant: 'destructive',
-          });
-          return;
+    try {
+      const { data: reportData, error } = await supabase
+        .from('intervention_reports')
+        .select('*')
+        .eq('id', appointment.intervention_report_id)
+        .single();
+
+      if (error) throw error;
+
+      navigate('/intervention-report', {
+        state: {
+          reportData,
+          appointmentId: appointment.id,
+          isViewMode: true
         }
-
-        // Fermer la modale actuelle et naviguer vers la page d'intervention
-        onCancel();
-        navigate('/intervention-report', { 
-          state: { 
-            reportData: report,
-            appointmentId: appointment.id,
-            isViewMode: true 
-          } 
-        });
-      } catch (error) {
-        console.error('Erreur:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue',
-          variant: 'destructive',
-        });
-      }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération du rapport:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger le rapport d\'intervention',
+        variant: 'destructive',
+      });
     }
   };
 
   return (
-    <Dialog open onOpenChange={onCancel}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={true} onOpenChange={onCancel}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>
-              {appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
-            </span>
-            {appointment?.intervention_report_id && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleViewIntervention}
-                className="ml-2 bg-green-50 hover:bg-green-100"
-              >
-                <FileText className="h-4 w-4 text-green-600" />
-                <span className="ml-1 text-green-600">Voir l'intervention</span>
-              </Button>
-            )}
+          <DialogTitle>
+            {appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="client_id">Client *</Label>
-            <Select
-              value={formData.client_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map(client => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.first_name} {client.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Client</Label>
+              <Select
+                value={formData.client_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.first_name} {client.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Statut</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scheduled">Programmé</SelectItem>
+                  <SelectItem value="completed">Terminé</SelectItem>
+                  <SelectItem value="cancelled">Annulé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="start_time">Heure de début *</Label>
-            <Input
-              id="start_time"
-              type="datetime-local"
-              value={formData.start_time}
-              onChange={(e) => handleStartTimeChange(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_time">Début</Label>
+              <Input
+                id="start_time"
+                type="datetime-local"
+                value={formData.start_time}
+                onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_time">Fin</Label>
+              <Input
+                id="end_time"
+                type="datetime-local"
+                value={formData.end_time}
+                onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="end_time">Heure de fin *</Label>
-            <Input
-              id="end_time"
-              type="datetime-local"
-              value={formData.end_time}
-              onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="status">Statut</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value: 'scheduled' | 'completed' | 'cancelled') => 
-                setFormData(prev => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="scheduled">Programmé</SelectItem>
-                <SelectItem value="completed">Terminé</SelectItem>
-                <SelectItem value="cancelled">Annulé</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Notes sur le rendez-vous..."
+              placeholder="Notes supplémentaires..."
+              rows={3}
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Sauvegarde...' : 'Sauvegarder'}
-            </Button>
+          {!appointment && (
+            <RecurringAppointmentForm
+              isRecurring={formData.is_recurring}
+              onRecurringChange={(isRecurring) => setFormData(prev => ({ ...prev, is_recurring: isRecurring }))}
+              endDate={formData.recurrence_end_date}
+              onEndDateChange={(endDate) => setFormData(prev => ({ ...prev, recurrence_end_date: endDate }))}
+            />
+          )}
+
+          <div className="flex justify-between gap-4">
+            <div className="flex gap-2">
+              {appointment?.intervention_report_id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleViewIntervention}
+                >
+                  Voir l'intervention
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Sauvegarde...' : (appointment ? 'Mettre à jour' : 'Créer')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
