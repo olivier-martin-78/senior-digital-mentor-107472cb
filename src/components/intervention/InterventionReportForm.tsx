@@ -12,11 +12,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Clock, User, FileText, Save, ArrowLeft } from 'lucide-react';
+import { CalendarDays, Clock, User, FileText, Save, ArrowLeft, Edit3, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import MediaUploader from './MediaUploader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
@@ -56,6 +67,7 @@ const InterventionReportForm = () => {
 
   const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Charger les données du rapport si elles sont fournies
   useEffect(() => {
@@ -170,6 +182,8 @@ const InterventionReportForm = () => {
           title: 'Succès',
           description: 'Rapport d\'intervention mis à jour avec succès',
         });
+
+        setIsEditMode(false);
       } else {
         // Création d'un nouveau rapport
         const { data: newReport, error } = await supabase
@@ -194,7 +208,7 @@ const InterventionReportForm = () => {
         });
       }
 
-      if (isViewMode) {
+      if (isViewMode && !isEditMode) {
         navigate('/scheduler');
       }
     } catch (error) {
@@ -202,6 +216,36 @@ const InterventionReportForm = () => {
       toast({
         title: 'Erreur',
         description: 'Impossible de sauvegarder le rapport',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!reportData?.id) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('intervention_reports')
+        .delete()
+        .eq('id', reportData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Rapport d\'intervention supprimé avec succès',
+      });
+
+      navigate('/scheduler');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer le rapport',
         variant: 'destructive',
       });
     } finally {
@@ -241,16 +285,53 @@ const InterventionReportForm = () => {
   return (
     <div className="space-y-6">
       {isViewMode && (
-        <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/scheduler')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour au planificateur
-          </Button>
-          <h2 className="text-xl font-semibold">Consultation du rapport d'intervention</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/scheduler')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour au planificateur
+            </Button>
+            <h2 className="text-xl font-semibold">
+              {isEditMode ? 'Modification du rapport d\'intervention' : 'Consultation du rapport d\'intervention'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <Button 
+                onClick={() => setIsEditMode(true)}
+                className="flex items-center gap-2"
+              >
+                <Edit3 className="h-4 w-4" />
+                Modifier
+              </Button>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={loading}>
+                    {loading ? 'Suppression...' : 'Supprimer'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       )}
 
@@ -272,7 +353,7 @@ const InterventionReportForm = () => {
                   type="date"
                   value={formData.date || ''}
                   onChange={(e) => handleInputChange('date', e.target.value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                   required
                 />
               </div>
@@ -283,7 +364,7 @@ const InterventionReportForm = () => {
                   type="time"
                   value={formData.start_time || ''}
                   onChange={(e) => handleInputChange('start_time', e.target.value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                   required
                 />
               </div>
@@ -294,7 +375,7 @@ const InterventionReportForm = () => {
                   type="time"
                   value={formData.end_time || ''}
                   onChange={(e) => handleInputChange('end_time', e.target.value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                   required
                 />
               </div>
@@ -307,7 +388,7 @@ const InterventionReportForm = () => {
                   id="auxiliary_name"
                   value={formData.auxiliary_name || ''}
                   onChange={(e) => handleInputChange('auxiliary_name', e.target.value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                   placeholder="Nom et prénom de l'auxiliaire"
                   required
                 />
@@ -318,7 +399,7 @@ const InterventionReportForm = () => {
                   id="patient_name"
                   value={formData.patient_name || ''}
                   onChange={(e) => handleInputChange('patient_name', e.target.value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                   placeholder="Nom et prénom du patient"
                   required
                 />
@@ -344,7 +425,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('physical_state', option, checked as boolean)
                       }
-                      disabled={isViewMode}
+                      disabled={isViewMode && !isEditMode}
                     />
                     <Label htmlFor={`physical-${option}`} className="text-sm">
                       {option}
@@ -360,7 +441,7 @@ const InterventionReportForm = () => {
                 id="physical_other"
                 value={formData.physical_state_other || ''}
                 onChange={(e) => handleInputChange('physical_state_other', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Autres observations sur l'état physique"
               />
             </div>
@@ -371,7 +452,7 @@ const InterventionReportForm = () => {
                 id="pain_location"
                 value={formData.pain_location || ''}
                 onChange={(e) => handleInputChange('pain_location', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Indiquer la localisation si douleur"
               />
             </div>
@@ -395,7 +476,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('mental_state', option, checked as boolean)
                       }
-                      disabled={isViewMode}
+                      disabled={isViewMode && !isEditMode}
                     />
                     <Label htmlFor={`mental-${option}`} className="text-sm">
                       {option}
@@ -411,7 +492,7 @@ const InterventionReportForm = () => {
                 id="mental_change"
                 value={formData.mental_state_change || ''}
                 onChange={(e) => handleInputChange('mental_state_change', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Décrire les changements observés"
                 rows={3}
               />
@@ -431,7 +512,7 @@ const InterventionReportForm = () => {
                 <RadioGroup
                   value={formData.appetite || ''}
                   onValueChange={(value) => handleInputChange('appetite', value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="bon" id="appetite-bon" />
@@ -453,7 +534,7 @@ const InterventionReportForm = () => {
                 <RadioGroup
                   value={formData.hydration || ''}
                   onValueChange={(value) => handleInputChange('hydration', value)}
-                  disabled={isViewMode}
+                  disabled={isViewMode && !isEditMode}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="suffisante" id="hydration-suffisante" />
@@ -473,7 +554,7 @@ const InterventionReportForm = () => {
                 id="appetite_comments"
                 value={formData.appetite_comments || ''}
                 onChange={(e) => handleInputChange('appetite_comments', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Détails sur les repas, difficultés..."
                 rows={3}
               />
@@ -498,7 +579,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('hygiene', option, checked as boolean)
                       }
-                      disabled={isViewMode}
+                      disabled={isViewMode && !isEditMode}
                     />
                     <Label htmlFor={`hygiene-${option}`} className="text-sm">
                       {option}
@@ -514,7 +595,7 @@ const InterventionReportForm = () => {
                 id="hygiene_comments"
                 value={formData.hygiene_comments || ''}
                 onChange={(e) => handleInputChange('hygiene_comments', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Précisions sur les soins effectués"
                 rows={3}
               />
@@ -539,7 +620,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('activities', option, checked as boolean)
                       }
-                      disabled={isViewMode}
+                      disabled={isViewMode && !isEditMode}
                     />
                     <Label htmlFor={`activity-${option}`} className="text-sm">
                       {option}
@@ -555,7 +636,7 @@ const InterventionReportForm = () => {
                 id="activities_other"
                 value={formData.activities_other || ''}
                 onChange={(e) => handleInputChange('activities_other', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Autres activités non listées"
               />
             </div>
@@ -571,7 +652,7 @@ const InterventionReportForm = () => {
             <Textarea
               value={formData.observations || ''}
               onChange={(e) => handleInputChange('observations', e.target.value)}
-              disabled={isViewMode}
+              disabled={isViewMode && !isEditMode}
               placeholder="Observations, incidents, particularités..."
               rows={4}
             />
@@ -595,7 +676,7 @@ const InterventionReportForm = () => {
                       onCheckedChange={(checked) => 
                         handleCheckboxChange('follow_up', option, checked as boolean)
                       }
-                      disabled={isViewMode}
+                      disabled={isViewMode && !isEditMode}
                     />
                     <Label htmlFor={`followup-${option}`} className="text-sm">
                       {option}
@@ -611,7 +692,7 @@ const InterventionReportForm = () => {
                 id="follow_up_other"
                 value={formData.follow_up_other || ''}
                 onChange={(e) => handleInputChange('follow_up_other', e.target.value)}
-                disabled={isViewMode}
+                disabled={isViewMode && !isEditMode}
                 placeholder="Précisions sur le suivi nécessaire"
                 rows={3}
               />
@@ -620,7 +701,7 @@ const InterventionReportForm = () => {
         </Card>
 
         {/* Enregistrement audio et médias */}
-        {!isViewMode && (
+        {(!isViewMode || isEditMode) && (
           <Card>
             <CardHeader>
               <CardTitle>Enregistrement audio et médias</CardTitle>
@@ -668,11 +749,22 @@ const InterventionReportForm = () => {
 
         {/* Boutons d'action */}
         <div className="flex justify-end gap-4">
-          {!isViewMode && (
-            <Button type="submit" disabled={loading} className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              {loading ? 'Sauvegarde...' : (reportData?.id ? 'Mettre à jour' : 'Sauvegarder')}
-            </Button>
+          {(!isViewMode || isEditMode) && (
+            <>
+              {isEditMode && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditMode(false)}
+                >
+                  Annuler
+                </Button>
+              )}
+              <Button type="submit" disabled={loading} className="flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                {loading ? 'Sauvegarde...' : (reportData?.id ? 'Mettre à jour' : 'Sauvegarder')}
+              </Button>
+            </>
           )}
         </div>
       </form>
