@@ -129,6 +129,11 @@ function App() {
                   <Route index element={<ActivityPage />} />
                 </Route>
                 
+                {/* Route pour la gestion des activités - accessible à tous les utilisateurs authentifiés */}
+                <Route path="/admin/activities/:type" element={<ProtectedRoute />}>
+                  <Route index element={<AdminActivities />} />
+                </Route>
+                
                 {/* Route pour le compte-rendu d'intervention */}
                 <Route path="/intervention-report" element={<ProtectedRoute requiredRoles={['admin', 'professionnel']} />}>
                   <Route index element={<InterventionReport />} />
@@ -161,9 +166,6 @@ function App() {
                 </Route>
                 <Route path="/admin/permissions-diagnostic" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminPermissionsDiagnostic />} />
-                </Route>
-                <Route path="/admin/activities/:type" element={<ProtectedRoute requiredRoles={['admin']} />}>
-                  <Route index element={<AdminActivities />} />
                 </Route>
                 
                 <Route path="/scheduler" element={<ProtectedRoute requiredRoles={['admin', 'professionnel']} />}>
