@@ -32,15 +32,23 @@ const AdminActivities = () => {
     activity_type: type || '',
     title: '',
     link: '',
+    thumbnail_url: '',
+    activity_date: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      const dataToInsert = {
+        ...formData,
+        activity_date: formData.activity_date || null,
+        thumbnail_url: formData.thumbnail_url || null,
+      };
+
       const { error } = await supabase
         .from('activities')
-        .insert([formData]);
+        .insert([dataToInsert]);
 
       if (error) throw error;
 
@@ -49,7 +57,13 @@ const AdminActivities = () => {
         description: 'Activité ajoutée avec succès',
       });
 
-      setFormData({ activity_type: type || '', title: '', link: '' });
+      setFormData({ 
+        activity_type: type || '', 
+        title: '', 
+        link: '', 
+        thumbnail_url: '', 
+        activity_date: '' 
+      });
       setShowForm(false);
       refetch();
     } catch (error) {
@@ -157,6 +171,27 @@ const AdminActivities = () => {
                     />
                   </div>
 
+                  <div>
+                    <Label htmlFor="thumbnail_url">URL de la vignette (optionnel)</Label>
+                    <Input
+                      id="thumbnail_url"
+                      value={formData.thumbnail_url}
+                      onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      type="url"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="activity_date">Date de l'activité (optionnel)</Label>
+                    <Input
+                      id="activity_date"
+                      value={formData.activity_date}
+                      onChange={(e) => setFormData({ ...formData, activity_date: e.target.value })}
+                      type="date"
+                    />
+                  </div>
+
                   <div className="flex gap-2">
                     <Button type="submit">Ajouter</Button>
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -185,9 +220,21 @@ const AdminActivities = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 break-all">{activity.link}</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {new Date(activity.created_at).toLocaleDateString()}
+                  {activity.thumbnail_url && (
+                    <img 
+                      src={activity.thumbnail_url} 
+                      alt={activity.title}
+                      className="w-full h-32 object-cover rounded-md mb-2"
+                    />
+                  )}
+                  <p className="text-sm text-gray-600 break-all mb-2">{activity.link}</p>
+                  {activity.activity_date && (
+                    <p className="text-xs text-blue-600 mb-2">
+                      Date: {new Date(activity.activity_date).toLocaleDateString()}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    Créé le: {new Date(activity.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>

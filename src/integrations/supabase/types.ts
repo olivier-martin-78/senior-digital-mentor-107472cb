@@ -11,24 +11,30 @@ export type Database = {
     Tables: {
       activities: {
         Row: {
+          activity_date: string | null
           activity_type: string
           created_at: string
           id: string
           link: string
+          thumbnail_url: string | null
           title: string
         }
         Insert: {
+          activity_date?: string | null
           activity_type: string
           created_at?: string
           id?: string
           link: string
+          thumbnail_url?: string | null
           title: string
         }
         Update: {
+          activity_date?: string | null
           activity_type?: string
           created_at?: string
           id?: string
           link?: string
+          thumbnail_url?: string | null
           title?: string
         }
         Relationships: []

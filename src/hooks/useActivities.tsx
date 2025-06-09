@@ -8,6 +8,8 @@ export interface Activity {
   activity_type: string;
   title: string;
   link: string;
+  thumbnail_url?: string;
+  activity_date?: string;
   created_at: string;
 }
 

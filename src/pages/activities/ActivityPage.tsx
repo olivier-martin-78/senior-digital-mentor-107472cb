@@ -7,7 +7,7 @@ import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 
 const activityTitles: Record<string, string> = {
   meditation: 'Méditation',
@@ -59,14 +59,22 @@ const ActivityPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">
               {activityTitles[type || ''] || 'Activités'}
             </h1>
-            {hasRole('admin') && (
-              <Button asChild>
+            <div className="flex gap-2">
+              {hasRole('admin') && (
+                <Button asChild>
+                  <Link to={`/admin/activities/${type}`} className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Gérer les activités
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline">
                 <Link to={`/admin/activities/${type}`} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Gérer les activités
+                  Ajouter une activité
                 </Link>
               </Button>
-            )}
+            </div>
           </div>
 
           {activities.length === 0 ? (
@@ -74,13 +82,11 @@ const ActivityPage = () => {
               <p className="text-gray-500 mb-4">
                 Aucune activité disponible pour le moment.
               </p>
-              {hasRole('admin') && (
-                <Button asChild>
-                  <Link to={`/admin/activities/${type}`}>
-                    Ajouter la première activité
-                  </Link>
-                </Button>
-              )}
+              <Button asChild>
+                <Link to={`/admin/activities/${type}`}>
+                  Ajouter la première activité
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,6 +101,8 @@ const ActivityPage = () => {
                     link={activity.link}
                     isYouTube={isYouTube}
                     videoId={videoId || undefined}
+                    thumbnailUrl={activity.thumbnail_url}
+                    activityDate={activity.activity_date}
                   />
                 );
               })}
