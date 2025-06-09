@@ -3,8 +3,16 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock } from 'lucide-react';
+import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock, Brain, Gamepad2, Smile, Users, Dumbbell, HeartHandshake, BookMarked, PenTool } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
 
 const Header = () => {
   const { user, signOut, hasRole } = useAuth();
@@ -58,6 +66,17 @@ const Header = () => {
     }
   ];
 
+  const activitiesItems = [
+    { label: 'Méditation', href: '/activities/meditation', icon: Brain },
+    { label: 'Jeux', href: '/activities/games', icon: Gamepad2 },
+    { label: 'Gratitude', href: '/activities/gratitude', icon: Smile },
+    { label: 'Connexion', href: '/activities/connection', icon: Users },
+    { label: 'Exercices', href: '/activities/exercises', icon: Dumbbell },
+    { label: 'Compassion', href: '/activities/compassion', icon: HeartHandshake },
+    { label: 'Lecture', href: '/activities/reading', icon: BookMarked },
+    { label: 'Ecriture', href: '/activities/writing', icon: PenTool },
+  ];
+
   const visibleItems = navigationItems.filter(item => item.show);
 
   return (
@@ -88,6 +107,34 @@ const Header = () => {
                   </Link>
                 );
               })}
+              
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="text-gray-600 hover:text-tranches-sage">
+                      Activités
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="grid gap-3 p-6 w-[400px] grid-cols-2">
+                        {activitiesItems.map((activity) => {
+                          const Icon = activity.icon;
+                          return (
+                            <NavigationMenuLink key={activity.href} asChild>
+                              <Link
+                                to={activity.href}
+                                className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 transition-colors"
+                              >
+                                <Icon className="h-5 w-5 text-tranches-sage" />
+                                <span className="text-sm font-medium">{activity.label}</span>
+                              </Link>
+                            </NavigationMenuLink>
+                          );
+                        })}
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
             </nav>
           )}
 
@@ -133,6 +180,24 @@ const Header = () => {
                           </Link>
                         );
                       })}
+                      
+                      <div className="border-t pt-4">
+                        <p className="text-sm font-medium text-gray-900 mb-2">Activités</p>
+                        {activitiesItems.map((activity) => {
+                          const Icon = activity.icon;
+                          return (
+                            <Link
+                              key={activity.href}
+                              to={activity.href}
+                              className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50 ml-2"
+                            >
+                              <Icon className="h-4 w-4" />
+                              {activity.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      
                       <hr className="my-4" />
                       <Link
                         to="/profile"

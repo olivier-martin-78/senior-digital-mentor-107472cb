@@ -33,6 +33,7 @@ import InterventionReport from "./pages/InterventionReport";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import AILanding from "./pages/AILanding";
+import ActivityPage from "./pages/activities/ActivityPage";
 
 // Admin pages
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -44,6 +45,7 @@ import AdminLifeStories from "./pages/admin/AdminLifeStories";
 import AdminLifeStoryEdit from "./pages/admin/AdminLifeStoryEdit";
 import AdminInvitationGroups from "./pages/admin/AdminInvitationGroups";
 import AdminPermissionsDiagnostic from "./pages/admin/AdminPermissionsDiagnostic";
+import AdminActivities from "./pages/admin/AdminActivities";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfessionalScheduler from './pages/ProfessionalScheduler';
@@ -122,12 +124,17 @@ function App() {
                 </Route>
                 <Route path="/wish-form" element={<WishForm />} />
                 
+                {/* Routes pour les activités */}
+                <Route path="/activities/:type" element={<ProtectedRoute />}>
+                  <Route index element={<ActivityPage />} />
+                </Route>
+                
                 {/* Route pour le compte-rendu d'intervention */}
                 <Route path="/intervention-report" element={<ProtectedRoute requiredRoles={['admin', 'professionnel']} />}>
                   <Route index element={<InterventionReport />} />
                 </Route>
 
-                {/* Admin routes - MODIFIÉ pour permettre aux readers d'accéder aux albums */}
+                {/* Admin routes */}
                 <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminUsers />} />
                 </Route>
@@ -154,6 +161,9 @@ function App() {
                 </Route>
                 <Route path="/admin/permissions-diagnostic" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminPermissionsDiagnostic />} />
+                </Route>
+                <Route path="/admin/activities/:type" element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route index element={<AdminActivities />} />
                 </Route>
                 
                 <Route path="/scheduler" element={<ProtectedRoute requiredRoles={['admin', 'professionnel']} />}>
