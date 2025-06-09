@@ -11,6 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Plus } from 'lucide-react';
+import { Activity } from '@/hooks/useActivities';
+import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
+import ActivityEditForm from '@/components/activities/ActivityEditForm';
+import ActivityCard from '@/components/activities/ActivityCard';
 
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
@@ -28,6 +32,7 @@ const AdminActivities = () => {
   const { activities, refetch } = useActivities(type || '');
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
     title: '',
@@ -105,6 +110,30 @@ const AdminActivities = () => {
     }
   };
 
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivity(activity);
+    setShowForm(false);
+  };
+
+  const handleSaveEdit = () => {
+    setEditingActivity(null);
+    refetch();
+  };
+
+  const handleCancelEdit = () => {
+    setEditingActivity(null);
+  };
+
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
+  const isYouTubeUrl = (url: string): boolean => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
   const currentActivityType = activityTypes.find(at => at.value === type);
 
   return (
@@ -122,7 +151,17 @@ const AdminActivities = () => {
             </Button>
           </div>
 
-          {showForm && (
+          {editingActivity && (
+            <div className="mb-8">
+              <ActivityEditForm
+                activity={editingActivity}
+                onSave={handleSaveEdit}
+                onCancel={handleCancelEdit}
+              />
+            </div>
+          )}
+
+          {showForm && !editingActivity && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Nouvelle activité</CardTitle>
@@ -171,16 +210,10 @@ const AdminActivities = () => {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="thumbnail_url">URL de la vignette (optionnel)</Label>
-                    <Input
-                      id="thumbnail_url"
-                      value={formData.thumbnail_url}
-                      onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
-                      type="url"
-                    />
-                  </div>
+                  <ActivityThumbnailUploader
+                    currentThumbnail={formData.thumbnail_url}
+                    onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
+                  />
 
                   <div>
                     <Label htmlFor="activity_date">Date de l'activité (optionnel)</Label>
@@ -204,41 +237,33 @@ const AdminActivities = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map((activity) => (
-              <Card key={activity.id}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    {activity.title}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(activity.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {activity.thumbnail_url && (
-                    <img 
-                      src={activity.thumbnail_url} 
-                      alt={activity.title}
-                      className="w-full h-32 object-cover rounded-md mb-2"
-                    />
-                  )}
-                  <p className="text-sm text-gray-600 break-all mb-2">{activity.link}</p>
-                  {activity.activity_date && (
-                    <p className="text-xs text-blue-600 mb-2">
-                      Date: {new Date(activity.activity_date).toLocaleDateString()}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-400">
-                    Créé le: {new Date(activity.created_at).toLocaleDateString()}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {activities.map((activity) => {
+              const isYouTube = isYouTubeUrl(activity.link);
+              const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
+
+              return (
+                <div key={activity.id} className="relative">
+                  <ActivityCard
+                    title={activity.title}
+                    link={activity.link}
+                    isYouTube={isYouTube}
+                    videoId={videoId || undefined}
+                    thumbnailUrl={activity.thumbnail_url}
+                    activityDate={activity.activity_date}
+                    showEditButton={true}
+                    onEdit={() => handleEditActivity(activity)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(activity.id)}
+                    className="absolute top-2 left-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
           </div>
 
           {activities.length === 0 && (
