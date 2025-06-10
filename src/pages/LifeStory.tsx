@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -191,14 +190,12 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* Sélecteur d'utilisateur - masqué pour les readers */}
-        {!isReader && (
-          <LifeStoryUserSelector
-            selectedUserId={selectedUserId}
-            onUserChange={setSelectedUserId}
-            className="mb-6"
-          />
-        )}
+        {/* Sélecteur d'utilisateur - maintenant affiché pour tous les utilisateurs */}
+        <LifeStoryUserSelector
+          selectedUserId={selectedUserId}
+          onUserChange={setSelectedUserId}
+          className="mb-6"
+        />
 
         <div className="flex justify-between items-center mb-6">
           <div>

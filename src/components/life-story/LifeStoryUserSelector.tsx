@@ -26,6 +26,8 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
   const { user, hasRole } = useAuth();
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const isReader = hasRole('reader');
 
   useEffect(() => {
     loadAvailableUsers();
@@ -38,7 +40,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
       setLoading(true);
       const users: UserProfile[] = [];
 
-      console.log('🔍 LifeStoryUserSelector - Chargement des utilisateurs pour:', user.id);
+      console.log('🔍 LifeStoryUserSelector - Chargement des utilisateurs pour:', user.id, 'Role:', isReader ? 'reader' : 'other');
 
       if (hasRole('admin')) {
         // Les admins voient tous les utilisateurs SAUF eux-mêmes
@@ -52,7 +54,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
           users.push(...allUsers);
         }
       } else {
-        // Pour les autres utilisateurs, récupérer via les groupes d'invitation
+        // Pour les readers ET les autres utilisateurs, récupérer via les groupes d'invitation
         const { data: groupMembers, error: groupError } = await supabase
           .from('group_members')
           .select('group_id')
@@ -99,7 +101,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
         }
       }
 
-      console.log('✅ LifeStoryUserSelector - Utilisateurs disponibles (excluant soi-même):', users);
+      console.log('✅ LifeStoryUserSelector - Utilisateurs disponibles pour', isReader ? 'reader' : 'non-reader', ':', users);
       setAvailableUsers(users);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des utilisateurs:', error);
@@ -123,7 +125,9 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
     return 'Utilisateur sélectionné';
   };
 
-  // Ne pas afficher le sélecteur s'il n'y a pas d'autres utilisateurs disponibles
+  // Afficher le sélecteur si :
+  // - L'utilisateur n'est PAS un reader ET qu'il y a des utilisateurs disponibles
+  // - OU l'utilisateur EST un reader ET qu'il y a des utilisateurs disponibles (pour pouvoir consulter les histoires des inviteurs)
   if (loading || availableUsers.length === 0) {
     return null;
   }
@@ -142,7 +146,7 @@ const LifeStoryUserSelector: React.FC<LifeStoryUserSelectorProps> = ({
             <SelectValue placeholder={loading ? "Chargement..." : getCurrentUserDisplay()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="my-story">Mon histoire</SelectItem>
+            {!isReader && <SelectItem value="my-story">Mon histoire</SelectItem>}
             {availableUsers.map(userProfile => (
               <SelectItem key={userProfile.id} value={userProfile.id}>
                 {userProfile.display_name || userProfile.email}
