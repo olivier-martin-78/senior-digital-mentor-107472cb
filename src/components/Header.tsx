@@ -47,7 +47,7 @@ const Header = () => {
       show: !!user
     },
     {
-      label: 'Histoire de vie',
+      label: 'Histoire',
       href: '/life-story',
       icon: User,
       show: !!user
