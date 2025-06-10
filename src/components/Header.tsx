@@ -83,6 +83,17 @@ const Header = () => {
     { label: 'Ecriture', href: '/activities/writing', icon: PenTool },
   ];
 
+  const adminMenuItems = [
+    { label: 'Mes groupes', href: '/my-groups' },
+    { label: 'Gestion des utilisateurs', href: '/admin/users' },
+    { label: 'Gestion des posts', href: '/admin/posts' },
+    { label: 'Gestion des albums', href: '/admin/albums' },
+    { label: 'Albums de souhaits', href: '/admin/wish-albums' },
+    { label: 'Gestion du journal', href: '/admin/diary' },
+    { label: 'Histoires de vie', href: '/admin/life-stories' },
+    { label: 'Groupes d\'invitation', href: '/admin/invitation-groups' },
+  ];
+
   const visibleItems = navigationItems.filter(item => item.show);
 
   const getAvatarFallback = () => {
@@ -169,7 +180,7 @@ const Header = () => {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="flex items-center gap-2 w-full cursor-pointer">
                         <User className="h-4 w-4" />
@@ -179,12 +190,14 @@ const Header = () => {
                     {hasRole('admin') && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link to="/admin/users" className="flex items-center gap-2 w-full cursor-pointer">
-                            <Settings className="h-4 w-4" />
-                            Administration
-                          </Link>
-                        </DropdownMenuItem>
+                        {adminMenuItems.map((item) => (
+                          <DropdownMenuItem key={item.href} asChild>
+                            <Link to={item.href} className="flex items-center gap-2 w-full cursor-pointer">
+                              <Settings className="h-4 w-4" />
+                              {item.label}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
                       </>
                     )}
                     <DropdownMenuSeparator />
@@ -262,13 +275,20 @@ const Header = () => {
                           Profil
                         </Link>
                         {hasRole('admin') && (
-                          <Link
-                            to="/admin/users"
-                            className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
-                          >
-                            <Settings className="h-5 w-5" />
-                            Administration
-                          </Link>
+                          <>
+                            <div className="border-t my-2"></div>
+                            <p className="text-sm font-medium text-gray-900 px-2">Administration</p>
+                            {adminMenuItems.map((item) => (
+                              <Link
+                                key={item.href}
+                                to={item.href}
+                                className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
+                              >
+                                <Settings className="h-5 w-5" />
+                                {item.label}
+                              </Link>
+                            ))}
+                          </>
                         )}
                         <button
                           onClick={handleSignOut}

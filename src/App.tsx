@@ -146,10 +146,10 @@ function App() {
                 <Route path="/admin/posts" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminPosts />} />
                 </Route>
-                <Route path="/admin/albums" element={<ProtectedRoute />}>
+                <Route path="/admin/albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminAlbums />} />
                 </Route>
-                <Route path="/admin/wish-albums" element={<ProtectedRoute />}>
+                <Route path="/admin/wish-albums" element={<ProtectedRoute requiredRoles={['admin']} />}>
                   <Route index element={<AdminWishAlbums />} />
                 </Route>
                 <Route path="/admin/diary" element={<ProtectedRoute requiredRoles={['admin']} />}>
