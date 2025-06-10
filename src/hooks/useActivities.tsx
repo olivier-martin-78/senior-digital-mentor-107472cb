@@ -24,7 +24,7 @@ export const useActivities = (activityType: string) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
 
   const fetchActivities = async () => {
     if (!user) {
@@ -34,7 +34,7 @@ export const useActivities = (activityType: string) => {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('activities')
         .select(`
           *,
@@ -44,8 +44,14 @@ export const useActivities = (activityType: string) => {
           )
         `)
         .eq('activity_type', activityType)
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
+
+      // Si l'utilisateur n'est pas admin, ne montrer que ses propres activités
+      if (!hasRole('admin')) {
+        query = query.eq('created_by', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setActivities(data || []);
@@ -65,5 +71,9 @@ export const useActivities = (activityType: string) => {
     fetchActivities();
   }, [activityType, user]);
 
-  return { activities, loading, refetch: fetchActivities };
+  const canEditActivity = (activity: Activity) => {
+    return user && (hasRole('admin') || activity.created_by === user.id);
+  };
+
+  return { activities, loading, refetch: fetchActivities, canEditActivity };
 };

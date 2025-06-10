@@ -15,6 +15,8 @@ import { Link } from 'react-router-dom';
 import { Plus, Settings } from 'lucide-react';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import ActivityEditForm from '@/components/activities/ActivityEditForm';
+import { Activity } from '@/hooks/useActivities';
 
 const activityTitles: Record<string, string> = {
   meditation: 'Méditation',
@@ -37,9 +39,10 @@ const activityTypes = [
 const ActivityPage = () => {
   const { type } = useParams<{ type: string }>();
   const { hasRole, user } = useAuth();
-  const { activities, loading, refetch } = useActivities(type || '');
+  const { activities, loading, refetch, canEditActivity } = useActivities(type || '');
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
     title: '',
@@ -111,6 +114,20 @@ const ActivityPage = () => {
     }
   };
 
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivity(activity);
+    setShowForm(false);
+  };
+
+  const handleSaveEdit = () => {
+    setEditingActivity(null);
+    refetch();
+  };
+
+  const handleCancelEdit = () => {
+    setEditingActivity(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -151,7 +168,17 @@ const ActivityPage = () => {
             </div>
           </div>
 
-          {showForm && (
+          {editingActivity && (
+            <div className="mb-8">
+              <ActivityEditForm
+                activity={editingActivity}
+                onSave={handleSaveEdit}
+                onCancel={handleCancelEdit}
+              />
+            </div>
+          )}
+
+          {showForm && !editingActivity && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Nouvelle activité</CardTitle>
@@ -256,6 +283,8 @@ const ActivityPage = () => {
                     thumbnailUrl={activity.thumbnail_url}
                     activityDate={activity.activity_date}
                     subActivityName={activity.activity_sub_tags?.name}
+                    showEditButton={canEditActivity(activity)}
+                    onEdit={() => handleEditActivity(activity)}
                   />
                 );
               })}
