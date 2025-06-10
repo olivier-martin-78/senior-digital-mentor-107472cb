@@ -24,12 +24,12 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     
-    console.log('📁 Nouveau fichier sélectionné:', file ? {
+    console.log('📁 Nouveau fichier sélectionné:', file ? JSON.stringify({
       name: file.name,
       type: file.type,
-      size: `${Math.round(file.size / 1024)}KB`,
+      size: Math.round(file.size / 1024) + 'KB',
       lastModified: new Date(file.lastModified).toISOString()
-    } : 'null');
+    }) : 'null');
     
     if (!file) {
       form.setValue('media', null);
@@ -62,19 +62,18 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       if (isHeicFile(file)) {
         toast({
           title: 'Conversion réussie',
-          description: `Le fichier a été converti en JPEG (${Math.round(processedFile.size / 1024)}KB).`,
+          description: `Le fichier a été converti avec succès (${Math.round(processedFile.size / 1024)}KB).`,
         });
       }
       
     } catch (error: any) {
-      console.error('💥 Erreur lors du traitement du fichier:', {
-        error,
+      console.error('💥 Erreur lors du traitement du fichier:', JSON.stringify({
+        errorName: error?.name || 'Unknown',
+        errorMessage: error?.message || 'Unknown error',
         fileName: file?.name,
         fileType: file?.type,
-        fileSize: file?.size,
-        errorMessage: error?.message,
-        errorStack: error?.stack
-      });
+        fileSize: file?.size
+      }));
       
       // Toast d'erreur avec message détaillé
       toast({
@@ -113,10 +112,13 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           </FormControl>
           <div className="text-xs text-gray-500 space-y-1">
             <div>Formats supportés : JPEG, PNG, GIF, WebP, HEIC, MP4, MOV, MP3, WAV</div>
+            <div className="text-orange-600 font-medium">
+              📱 iPhone : Pour éviter les problèmes HEIC, activez "Plus compatible" dans Réglages > Appareil photo > Formats
+            </div>
             {isProcessing && (
               <div className="flex items-center gap-2 text-blue-600 font-medium">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                {isHeicFile ? 'Conversion HEIC en cours...' : 'Traitement en cours...'}
+                Conversion HEIC en cours...
               </div>
             )}
           </div>
