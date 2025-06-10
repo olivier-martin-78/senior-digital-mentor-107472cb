@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -16,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarDays, Clock, User, FileText, Save, ArrowLeft, Edit3, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import VoiceRecorder from '@/components/VoiceRecorder';
+import InterventionAudioRecorder from './InterventionAudioRecorder';
 import MediaUploader from './MediaUploader';
 import {
   AlertDialog,
@@ -72,7 +71,7 @@ const InterventionReportForm = () => {
 
   // Variables pour déterminer si on peut éditer
   const canEdit = !isViewMode || isEditMode;
-  const showVoiceRecorder = canEdit; // Simplifier la condition
+  const showAudioRecorder = canEdit; // Simplifier la condition
 
   // Charger les données du rapport si elles sont fournies
   useEffect(() => {
@@ -258,9 +257,10 @@ const InterventionReportForm = () => {
     }
   };
 
-  const handleAudioChange = (audioBlob: Blob | null) => {
-    console.log('Audio changed:', audioBlob);
-    // Handle audio blob if needed
+  const handleAudioRecorded = (audioBlob: Blob) => {
+    console.log('🎤 INTERVENTION - Audio enregistré:', audioBlob?.size);
+    // Ici on pourrait traiter le blob si nécessaire
+    // L'URL est déjà gérée par le composant InterventionAudioRecorder
   };
 
   const handleMediaChange = (mediaFiles: any[]) => {
@@ -705,8 +705,8 @@ const InterventionReportForm = () => {
           </CardContent>
         </Card>
 
-        {/* Enregistrement audio et médias */}
-        {showVoiceRecorder && (
+        {/* Enregistrement audio et médias - NOUVEAU COMPOSANT */}
+        {showAudioRecorder && (
           <Card>
             <CardHeader>
               <CardTitle>Enregistrement audio et médias</CardTitle>
@@ -714,7 +714,11 @@ const InterventionReportForm = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label>Enregistrement vocal</Label>
-                <VoiceRecorder onAudioChange={handleAudioChange} />
+                <InterventionAudioRecorder
+                  onAudioRecorded={handleAudioRecorded}
+                  existingAudioUrl={formData.audio_url}
+                  isReadOnly={!canEdit}
+                />
               </div>
 
               <div>
@@ -748,6 +752,22 @@ const InterventionReportForm = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Affichage de l'audio en mode consultation */}
+        {isViewMode && !isEditMode && formData.audio_url && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Enregistrement audio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InterventionAudioRecorder
+                onAudioRecorded={handleAudioRecorded}
+                existingAudioUrl={formData.audio_url}
+                isReadOnly={true}
+              />
             </CardContent>
           </Card>
         )}
