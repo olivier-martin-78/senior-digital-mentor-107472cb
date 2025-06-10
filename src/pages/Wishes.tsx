@@ -40,6 +40,11 @@ const Wishes = () => {
   
   const isReader = hasRole('reader');
 
+  console.log('📖 Wishes - Vérification rôle reader:', {
+    isReader,
+    hasReaderRole: hasRole('reader')
+  });
+
   useEffect(() => {
     if (!session) {
       navigate('/auth');

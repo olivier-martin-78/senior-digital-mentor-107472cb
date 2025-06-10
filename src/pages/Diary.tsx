@@ -30,6 +30,12 @@ const Diary = () => {
   
   const isReader = hasRole('reader');
 
+  console.log('📖 Diary - Vérification rôle reader:', {
+    isReader,
+    userRoles: JSON.stringify(Array.from(arguments)),
+    hasReaderRole: hasRole('reader')
+  });
+
   if (!session) {
     navigate('/auth');
     return null;

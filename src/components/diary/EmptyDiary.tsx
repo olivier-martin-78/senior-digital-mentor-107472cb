@@ -9,6 +9,11 @@ const EmptyDiary: React.FC = () => {
   const { hasRole } = useAuth();
   const isReader = hasRole('reader');
 
+  console.log('📖 EmptyDiary - Vérification rôle reader:', {
+    isReader,
+    hasReaderRole: hasRole('reader')
+  });
+
   return (
     <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100">
       <Book className="mx-auto h-12 w-12 text-gray-400 mb-4" />
