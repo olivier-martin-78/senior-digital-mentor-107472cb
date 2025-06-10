@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -187,6 +186,20 @@ const Header = () => {
                         Profil
                       </Link>
                     </DropdownMenuItem>
+                    
+                    {/* Menu "Mes invités" pour les éditeurs et professionnels */}
+                    {(hasRole('editor') || hasRole('professionnel')) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/my-groups" className="flex items-center gap-2 w-full cursor-pointer">
+                            <Users className="h-4 w-4" />
+                            Mes invités
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    
                     {hasRole('admin') && (
                       <>
                         <DropdownMenuSeparator />
@@ -274,6 +287,18 @@ const Header = () => {
                           <User className="h-5 w-5" />
                           Profil
                         </Link>
+                        
+                        {/* Menu "Mes invités" pour mobile */}
+                        {(hasRole('editor') || hasRole('professionnel')) && (
+                          <Link
+                            to="/my-groups"
+                            className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
+                          >
+                            <Users className="h-5 w-5" />
+                            Mes invités
+                          </Link>
+                        )}
+                        
                         {hasRole('admin') && (
                           <>
                             <div className="border-t my-2"></div>
