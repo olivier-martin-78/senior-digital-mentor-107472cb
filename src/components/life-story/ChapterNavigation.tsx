@@ -97,7 +97,7 @@ const ChapterNavigation: React.FC<ChapterNavigationProps> = ({
                           setActiveTab(chapter.id);
                           handleQuestionFocus(chapter.id, question.id);
                         }}
-                        className={`w-full justify-start text-left text-xs p-2 h-auto min-h-[32px] ${
+                        className={`w-full justify-start text-left text-xs p-2 h-auto min-h-[32px] whitespace-normal ${
                           isActiveQuestion ? 'bg-gray-100' : ''
                         } ${
                           hasResponse ? 'text-green-600 font-medium' : 'text-gray-600'
@@ -107,7 +107,7 @@ const ChapterNavigation: React.FC<ChapterNavigationProps> = ({
                           {hasResponse && (
                             <CheckCircle className="h-3 w-3 mt-0.5 flex-shrink-0 text-green-500" />
                           )}
-                          <span className="flex-1 leading-tight">
+                          <span className="flex-1 leading-tight break-words">
                             {index + 1}. {question.text}
                           </span>
                         </div>
