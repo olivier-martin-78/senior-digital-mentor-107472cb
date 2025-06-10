@@ -43,7 +43,12 @@ const MyInvitationGroups = () => {
   const isReader = hasRole('reader');
 
   useEffect(() => {
-    if (!session || isReader) {
+    if (!session) {
+      navigate('/');
+      return;
+    }
+    // Maintenant, les readers sont redirigés mais tous les autres utilisateurs peuvent accéder
+    if (isReader) {
       navigate('/');
       return;
     }
@@ -227,7 +232,8 @@ const MyInvitationGroups = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <InviteUserDialog />
+              {/* Afficher le bouton d'invitation seulement s'il n'y a pas encore de groupe */}
+              {groups.length === 0 && <InviteUserDialog />}
             </div>
           </div>
         </div>
@@ -273,6 +279,19 @@ const MyInvitationGroups = () => {
                   Commencez par inviter des personnes à voir votre contenu.
                 </p>
                 <InviteUserDialog />
+              </CardContent>
+            </Card>
+          )}
+
+          {groups.length > 0 && (
+            <Card>
+              <CardContent className="text-center py-6">
+                <p className="text-gray-600 mb-2">
+                  <strong>Limite atteinte :</strong> Vous ne pouvez créer qu'un seul groupe d'invitation.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Utilisez votre groupe existant pour gérer toutes vos invitations.
+                </p>
               </CardContent>
             </Card>
           )}

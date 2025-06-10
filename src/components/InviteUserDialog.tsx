@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,16 +14,43 @@ const InviteUserDialog = () => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasExistingGroup, setHasExistingGroup] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: ''
   });
 
-  // Vérifier si l'utilisateur a les droits
-  if (!hasRole('editor') && !hasRole('admin')) {
+  // Vérifier si l'utilisateur a les droits (non-reader)
+  if (hasRole('reader')) {
     return null;
   }
+
+  // Vérifier si l'utilisateur a déjà un groupe d'invitation
+  useEffect(() => {
+    const checkExistingGroup = async () => {
+      if (!user) return;
+
+      try {
+        const { data: existingGroup, error } = await supabase
+          .from('invitation_groups')
+          .select('id')
+          .eq('created_by', user.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Erreur vérification groupe existant:', error);
+          return;
+        }
+
+        setHasExistingGroup(!!existingGroup);
+      } catch (error) {
+        console.error('Erreur lors de la vérification du groupe existant:', error);
+      }
+    };
+
+    checkExistingGroup();
+  }, [user]);
 
   const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
@@ -74,7 +102,7 @@ const InviteUserDialog = () => {
         return;
       }
 
-      // Récupérer ou créer le groupe d'invitation
+      // Récupérer ou créer le groupe d'invitation (limité à un seul)
       let { data: existingGroup, error: groupError } = await supabase
         .from('invitation_groups')
         .select('id')
@@ -88,7 +116,7 @@ const InviteUserDialog = () => {
       let groupId: string;
 
       if (!existingGroup) {
-        // Créer un nouveau groupe
+        // Créer un nouveau groupe (seulement si aucun n'existe)
         const groupName = `Invités de ${profile.display_name || profile.email}`;
         const { data: newGroup, error: createGroupError } = await supabase
           .from('invitation_groups')
@@ -102,6 +130,7 @@ const InviteUserDialog = () => {
         if (createGroupError) throw createGroupError;
         groupId = newGroup.id;
         console.log('✅ Nouveau groupe créé:', groupId);
+        setHasExistingGroup(true);
       } else {
         groupId = existingGroup.id;
         console.log('✅ Groupe existant utilisé:', groupId);
@@ -227,6 +256,15 @@ const InviteUserDialog = () => {
         <DialogHeader>
           <DialogTitle>Inviter un nouvel utilisateur</DialogTitle>
         </DialogHeader>
+        
+        {hasExistingGroup && (
+          <div className="bg-blue-50 p-3 rounded-lg mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>Note :</strong> Cette invitation sera ajoutée à votre groupe d'invitation existant.
+            </p>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
