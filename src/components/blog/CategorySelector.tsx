@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react';
 import { BlogCategory } from '@/types/supabase';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CategorySelectorProps {
   allCategories: BlogCategory[];
@@ -23,6 +24,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   setSelectedCategories
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const toggleCategory = (category: BlogCategory) => {
@@ -37,13 +39,14 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   };
 
   const createNewCategory = async () => {
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim() || !user) return;
 
     try {
       const { data, error } = await supabase
         .from('blog_categories')
         .insert({
-          name: newCategoryName.trim()
+          name: newCategoryName.trim(),
+          created_by: user.id
         })
         .select()
         .single();

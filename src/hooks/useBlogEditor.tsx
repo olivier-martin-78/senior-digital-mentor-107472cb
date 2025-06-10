@@ -42,14 +42,17 @@ export const useBlogEditor = () => {
     }
   }, [allAlbums, albumsLoading]);
 
-  // Fetch existing resources (categories only now, albums are managed by useBlogAlbums)
+  // Fetch existing resources (categories filtrées par utilisateur)
   useEffect(() => {
     const fetchResources = async () => {
+      if (!user) return;
+      
       try {
-        // Fetch categories
+        // Fetch categories créées par l'utilisateur connecté uniquement
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('blog_categories')
           .select('*')
+          .eq('created_by', user.id)
           .order('name', { ascending: true });
 
         if (!categoriesError && categoriesData) {
@@ -61,7 +64,7 @@ export const useBlogEditor = () => {
     };
 
     fetchResources();
-  }, []);
+  }, [user]);
 
   // Fetch existing post if in edit mode
   useEffect(() => {

@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -685,6 +686,7 @@ export interface BlogCategory {
   id: string;
   name: string;
   created_at: string;
+  created_by: string;
 }
 
 export interface BlogMedia {
