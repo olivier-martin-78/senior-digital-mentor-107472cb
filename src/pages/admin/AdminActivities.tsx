@@ -202,6 +202,11 @@ const AdminActivities = () => {
                     </Select>
                   </div>
 
+                  <SubActivitySelector
+                    selectedSubTagId={formData.sub_activity_tag_id}
+                    onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
+                  />
+
                   <div>
                     <Label htmlFor="title">Titre</Label>
                     <Input
@@ -228,11 +233,6 @@ const AdminActivities = () => {
                   <ActivityThumbnailUploader
                     currentThumbnail={formData.thumbnail_url}
                     onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
-                  />
-
-                  <SubActivitySelector
-                    selectedSubTagId={formData.sub_activity_tag_id}
-                    onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
                   />
 
                   <div>
@@ -299,3 +299,5 @@ const AdminActivities = () => {
 };
 
 export default AdminActivities;
+
+}
