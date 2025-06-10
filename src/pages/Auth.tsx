@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 
 const Auth = () => {
@@ -14,6 +16,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [isAuxiliary, setIsAuxiliary] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +29,8 @@ const Auth = () => {
           password,
           options: {
             data: {
-              display_name: displayName
+              display_name: displayName,
+              is_auxiliary: isAuxiliary
             }
           }
         });
@@ -89,6 +93,18 @@ const Auth = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {isSignUp && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_auxiliary"
+                  checked={isAuxiliary}
+                  onCheckedChange={setIsAuxiliary}
+                />
+                <Label htmlFor="is_auxiliary">
+                  Je suis auxiliaire de vie
+                </Label>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Chargement...' : (isSignUp ? 'S\'inscrire' : 'Se connecter')}
             </Button>
