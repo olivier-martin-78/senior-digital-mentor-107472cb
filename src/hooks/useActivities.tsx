@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Activity {
   id: string;
@@ -11,6 +12,7 @@ export interface Activity {
   thumbnail_url?: string;
   activity_date?: string;
   created_at: string;
+  created_by: string;
   sub_activity_tag_id?: string;
   activity_sub_tags?: {
     id: string;
@@ -22,8 +24,15 @@ export const useActivities = (activityType: string) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchActivities = async () => {
+    if (!user) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('activities')
@@ -35,6 +44,7 @@ export const useActivities = (activityType: string) => {
           )
         `)
         .eq('activity_type', activityType)
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -53,7 +63,7 @@ export const useActivities = (activityType: string) => {
 
   useEffect(() => {
     fetchActivities();
-  }, [activityType]);
+  }, [activityType, user]);
 
   return { activities, loading, refetch: fetchActivities };
 };

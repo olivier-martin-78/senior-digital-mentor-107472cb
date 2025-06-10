@@ -14,6 +14,7 @@ export type Database = {
           activity_date: string | null
           activity_type: string
           created_at: string
+          created_by: string
           id: string
           link: string
           sub_activity_tag_id: string | null
@@ -24,6 +25,7 @@ export type Database = {
           activity_date?: string | null
           activity_type: string
           created_at?: string
+          created_by: string
           id?: string
           link: string
           sub_activity_tag_id?: string | null
@@ -34,6 +36,7 @@ export type Database = {
           activity_date?: string | null
           activity_type?: string
           created_at?: string
+          created_by?: string
           id?: string
           link?: string
           sub_activity_tag_id?: string | null

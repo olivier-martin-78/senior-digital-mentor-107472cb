@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -16,6 +15,7 @@ import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnail
 import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import ActivityCard from '@/components/activities/ActivityCard';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
@@ -32,6 +32,7 @@ const AdminActivities = () => {
   const { type } = useParams<{ type: string }>();
   const { activities, refetch } = useActivities(type || '');
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
@@ -46,9 +47,19 @@ const AdminActivities = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      toast({
+        title: 'Erreur',
+        description: 'Vous devez être connecté pour créer une activité',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       const dataToInsert = {
         ...formData,
+        created_by: user.id,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
