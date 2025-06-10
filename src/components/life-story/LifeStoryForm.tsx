@@ -56,6 +56,17 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
 
     console.log('Mode lecture seule - Histoire avec chapitres:', storyWithChapters);
 
+    // Créer un état local pour la navigation en mode lecture seule
+    const [activeTab, setActiveTab] = React.useState('chapter-1');
+    const [openQuestions, setOpenQuestions] = React.useState<{ [key: string]: boolean }>({});
+
+    const toggleQuestions = (chapterId: string) => {
+      setOpenQuestions(prev => ({
+        ...prev,
+        [chapterId]: !prev[chapterId]
+      }));
+    };
+
     return (
       <div className="space-y-6">
         <StoryHeader 
@@ -69,12 +80,12 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
         {storyWithChapters.chapters.length > 0 ? (
           <LifeStoryLayout
             chapters={storyWithChapters.chapters}
-            activeTab="chapter-1"
-            openQuestions={{}}
+            activeTab={activeTab}
+            openQuestions={openQuestions}
             activeQuestion={null}
             isReadOnly={true}
-            setActiveTab={() => {}}
-            toggleQuestions={() => {}}
+            setActiveTab={setActiveTab}
+            toggleQuestions={toggleQuestions}
             handleQuestionFocus={() => {}}
             updateAnswer={() => {}}
             onAudioRecorded={() => {}}
