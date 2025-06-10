@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           id: string
           link: string
+          sub_activity_tag_id: string | null
           thumbnail_url: string | null
           title: string
         }
@@ -25,6 +26,7 @@ export type Database = {
           created_at?: string
           id?: string
           link: string
+          sub_activity_tag_id?: string | null
           thumbnail_url?: string | null
           title: string
         }
@@ -34,8 +36,38 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string
+          sub_activity_tag_id?: string | null
           thumbnail_url?: string | null
           title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_sub_activity_tag_id_fkey"
+            columns: ["sub_activity_tag_id"]
+            isOneToOne: false
+            referencedRelation: "activity_sub_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_sub_tags: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }

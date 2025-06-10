@@ -2,114 +2,100 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Play, Calendar, Edit } from 'lucide-react';
+import { Calendar, Edit, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface ActivityCardProps {
   title: string;
   link: string;
-  isYouTube?: boolean;
+  isYouTube: boolean;
   videoId?: string;
   thumbnailUrl?: string;
   activityDate?: string;
   showEditButton?: boolean;
   onEdit?: () => void;
+  subActivityName?: string;
 }
 
-const ActivityCard: React.FC<ActivityCardProps> = ({ 
-  title, 
-  link, 
-  isYouTube, 
-  videoId, 
+const ActivityCard: React.FC<ActivityCardProps> = ({
+  title,
+  link,
+  isYouTube,
+  videoId,
   thumbnailUrl,
   activityDate,
   showEditButton = false,
-  onEdit
+  onEdit,
+  subActivityName
 }) => {
-  const handleCardClick = () => {
-    if (isYouTube) {
-      // Pour YouTube, ouvrir directement la vidéo
-      window.open(link, '_blank', 'noopener,noreferrer');
-    } else {
-      // Pour les autres liens, ouvrir dans un nouvel onglet
-      window.open(link, '_blank', 'noopener,noreferrer');
+  const getDisplayImage = () => {
+    if (thumbnailUrl) {
+      return thumbnailUrl;
     }
-  };
-
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Empêcher la propagation vers le clic de la carte
-    onEdit?.();
-  };
-
-  const getThumbnailUrl = () => {
-    if (thumbnailUrl) return thumbnailUrl;
     if (isYouTube && videoId) {
-      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
     }
-    return null;
+    return '/placeholder.svg';
   };
 
-  const thumbnailSrc = getThumbnailUrl();
+  const handleClick = () => {
+    window.open(link, '_blank', 'noopener,noreferrer');
+  };
 
   return (
-    <Card className="cursor-pointer hover:shadow-lg transition-shadow group relative">
-      {showEditButton && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleEditClick}
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-      )}
-      
-      <div onClick={handleCardClick}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center justify-between cursor-pointer">
-            {title}
-            {isYouTube ? (
-              <Play className="h-5 w-5 text-red-500" />
-            ) : (
-              <ExternalLink className="h-5 w-5 text-tranches-sage" />
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="cursor-pointer" onClick={handleCardClick}>
-            {thumbnailSrc ? (
-              <div className="aspect-video mb-3 relative overflow-hidden rounded-md group">
-                <img
-                  src={thumbnailSrc}
-                  alt={title}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
-                {isYouTube && (
-                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="h-12 w-12 text-white" />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center mb-3 group-hover:bg-gray-200 transition-colors">
-                {isYouTube ? (
-                  <Play className="h-12 w-12 text-red-400" />
-                ) : (
-                  <ExternalLink className="h-12 w-12 text-gray-400" />
-                )}
-              </div>
-            )}
+    <Card className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
+      <div className="relative">
+        <img
+          src={getDisplayImage()}
+          alt={title}
+          className="w-full h-48 object-cover rounded-t-lg"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.svg';
+          }}
+        />
+        {isYouTube && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-t-lg">
+            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+              <div className="w-0 h-0 border-l-8 border-l-white border-t-4 border-t-transparent border-b-4 border-b-transparent ml-1"></div>
+            </div>
           </div>
-          
+        )}
+        {showEditButton && onEdit && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      
+      <CardHeader>
+        <CardTitle className="text-lg line-clamp-2">{title}</CardTitle>
+        {subActivityName && (
+          <Badge variant="secondary" className="w-fit">
+            {subActivityName}
+          </Badge>
+        )}
+      </CardHeader>
+      
+      <CardContent>
+        <div className="flex items-center justify-between">
           {activityDate && (
-            <div className="flex items-center gap-1 text-sm text-blue-600 mb-2">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="h-4 w-4" />
-              {new Date(activityDate).toLocaleDateString()}
+              {new Date(activityDate).toLocaleDateString('fr-FR')}
             </div>
           )}
-          
-          <p className="text-sm text-gray-600 truncate">{link}</p>
-        </CardContent>
-      </div>
+          <ExternalLink className="h-4 w-4 text-gray-400" />
+        </div>
+      </CardContent>
     </Card>
   );
 };

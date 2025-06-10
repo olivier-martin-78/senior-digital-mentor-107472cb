@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from './ActivityThumbnailUploader';
+import SubActivitySelector from './SubActivitySelector';
 
 interface ActivityEditFormProps {
   activity: Activity;
@@ -35,6 +36,7 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
     link: activity.link,
     thumbnail_url: activity.thumbnail_url || '',
     activity_date: activity.activity_date || '',
+    sub_activity_tag_id: activity.sub_activity_tag_id || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +47,7 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
         ...formData,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
+        sub_activity_tag_id: formData.sub_activity_tag_id || null,
       };
 
       const { error } = await supabase
@@ -122,6 +125,11 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
           <ActivityThumbnailUploader
             currentThumbnail={formData.thumbnail_url}
             onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
+          />
+
+          <SubActivitySelector
+            selectedSubTagId={formData.sub_activity_tag_id}
+            onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
           />
 
           <div>

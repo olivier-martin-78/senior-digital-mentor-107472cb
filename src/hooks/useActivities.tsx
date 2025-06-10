@@ -11,6 +11,11 @@ export interface Activity {
   thumbnail_url?: string;
   activity_date?: string;
   created_at: string;
+  sub_activity_tag_id?: string;
+  activity_sub_tags?: {
+    id: string;
+    name: string;
+  };
 }
 
 export const useActivities = (activityType: string) => {
@@ -22,7 +27,13 @@ export const useActivities = (activityType: string) => {
     try {
       const { data, error } = await supabase
         .from('activities')
-        .select('*')
+        .select(`
+          *,
+          activity_sub_tags (
+            id,
+            name
+          )
+        `)
         .eq('activity_type', activityType)
         .order('created_at', { ascending: false });
 

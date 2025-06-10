@@ -15,6 +15,7 @@ import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import ActivityCard from '@/components/activities/ActivityCard';
+import SubActivitySelector from '@/components/activities/SubActivitySelector';
 
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
@@ -39,6 +40,7 @@ const AdminActivities = () => {
     link: '',
     thumbnail_url: '',
     activity_date: '',
+    sub_activity_tag_id: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +51,7 @@ const AdminActivities = () => {
         ...formData,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
+        sub_activity_tag_id: formData.sub_activity_tag_id || null,
       };
 
       const { error } = await supabase
@@ -67,7 +70,8 @@ const AdminActivities = () => {
         title: '', 
         link: '', 
         thumbnail_url: '', 
-        activity_date: '' 
+        activity_date: '',
+        sub_activity_tag_id: '',
       });
       setShowForm(false);
       refetch();
@@ -215,6 +219,11 @@ const AdminActivities = () => {
                     onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
                   />
 
+                  <SubActivitySelector
+                    selectedSubTagId={formData.sub_activity_tag_id}
+                    onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
+                  />
+
                   <div>
                     <Label htmlFor="activity_date">Date de l'activité (optionnel)</Label>
                     <Input
@@ -252,6 +261,7 @@ const AdminActivities = () => {
                     activityDate={activity.activity_date}
                     showEditButton={true}
                     onEdit={() => handleEditActivity(activity)}
+                    subActivityName={activity.activity_sub_tags?.name}
                   />
                   <Button
                     variant="ghost"
