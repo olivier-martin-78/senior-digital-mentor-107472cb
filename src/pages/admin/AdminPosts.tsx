@@ -315,11 +315,17 @@ const AdminPosts = () => {
           description: "La catégorie a été mise à jour avec succès."
         });
       } else {
-        // Create new category
+        // Create new category - Ajout du created_by requis
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) {
+          throw new Error("Utilisateur non authentifié");
+        }
+
         const { data, error } = await supabase
           .from('blog_categories')
           .insert({
-            name: newCategoryName.trim()
+            name: newCategoryName.trim(),
+            created_by: userId
           })
           .select()
           .single();
