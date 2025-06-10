@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock, Brain, Gamepad2, Smile, Users, Dumbbell, HeartHandshake, BookMarked, PenTool } from 'lucide-react';
+import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock, Brain, Gamepad2, Users, Dumbbell, BookMarked, PenTool } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   NavigationMenu,
@@ -69,10 +69,8 @@ const Header = () => {
   const activitiesItems = [
     { label: 'Méditation', href: '/activities/meditation', icon: Brain },
     { label: 'Jeux', href: '/activities/games', icon: Gamepad2 },
-    { label: 'Gratitude', href: '/activities/gratitude', icon: Smile },
     { label: 'Connexion', href: '/activities/connection', icon: Users },
     { label: 'Exercices', href: '/activities/exercises', icon: Dumbbell },
-    { label: 'Compassion', href: '/activities/compassion', icon: HeartHandshake },
     { label: 'Lecture', href: '/activities/reading', icon: BookMarked },
     { label: 'Ecriture', href: '/activities/writing', icon: PenTool },
   ];
