@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
+import UserRoleSelector from '@/components/admin/UserRoleSelector';
 import { AppRole } from '@/types/supabase';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -118,6 +119,10 @@ const AdminUsers = () => {
     setUserToDelete(null);
   };
 
+  const handleRoleChanged = async () => {
+    await loadUsers();
+  };
+
   // Filtrer les utilisateurs selon le terme de recherche
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,7 +194,11 @@ const AdminUsers = () => {
                       <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{user.role}</Badge>
+                        <UserRoleSelector
+                          userId={user.id}
+                          currentRole={user.role}
+                          onRoleChanged={handleRoleChanged}
+                        />
                       </TableCell>
                       <TableCell>
                         {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}

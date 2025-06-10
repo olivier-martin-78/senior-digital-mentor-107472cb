@@ -93,7 +93,8 @@ const AdminLifeStories = () => {
         
         // Traitement des données pour calculer les statistiques de chaque histoire
         const formattedStories = storiesData.map((story: any) => {
-          const chapters = story.chapters || [];
+          // Vérification et initialisation sécurisée de chapters
+          const chapters = Array.isArray(story.chapters) ? story.chapters : [];
           const userProfile = profilesMap[story.user_id];
           
           let totalQuestions = 0;
@@ -101,10 +102,10 @@ const AdminLifeStories = () => {
           
           // Compter le nombre total de questions et de réponses
           chapters.forEach((chapter: any) => {
-            if (chapter.questions && Array.isArray(chapter.questions)) {
+            if (chapter && chapter.questions && Array.isArray(chapter.questions)) {
               totalQuestions += chapter.questions.length;
               answeredQuestions += chapter.questions.filter((q: any) => 
-                q.answer && q.answer.trim() !== ''
+                q && q.answer && q.answer.trim() !== ''
               ).length;
             }
           });
@@ -268,7 +269,7 @@ const AdminLifeStories = () => {
                             size="sm"
                             asChild
                           >
-                            <Link to={`/admin/life-stories/${story.id}`}>
+                            <Link to={`/admin/life-stories/edit/${story.id}`}>
                               <Pencil className="h-4 w-4 mr-1" />
                               Éditer
                             </Link>
@@ -324,37 +325,7 @@ const AdminLifeStories = () => {
                   </Button>
                   <Button
                     variant="destructive"
-                    onClick={async () => {
-                      if (!storyToDelete) return;
-                      
-                      try {
-                        setIsDeleting(true);
-                        
-                        const { error } = await supabase
-                          .from('life_stories')
-                          .delete()
-                          .eq('id', storyToDelete.id);
-                        
-                        if (error) throw error;
-                        
-                        setStories(prev => prev.filter(story => story.id !== storyToDelete.id));
-                        
-                        toast({
-                          title: 'Histoire supprimée',
-                          description: `L'histoire "${storyToDelete.title}" a été supprimée avec succès`,
-                        });
-                        
-                        setDeleteDialogOpen(false);
-                      } catch (error: any) {
-                        toast({
-                          title: 'Erreur',
-                          description: `Impossible de supprimer l'histoire : ${error.message}`,
-                          variant: 'destructive',
-                        });
-                      } finally {
-                        setIsDeleting(false);
-                      }
-                    }}
+                    onClick={handleDeleteConfirm}
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
