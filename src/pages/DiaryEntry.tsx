@@ -9,7 +9,6 @@ import Header from '@/components/Header';
 import DiaryHeader from '@/components/diary/DiaryHeader';
 import EntryHeader from '@/components/diary/EntryHeader';
 import EntryContent from '@/components/diary/EntryContent';
-import DiaryEntryNotification from '@/components/diary/DiaryEntryNotification';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
 
@@ -96,16 +95,6 @@ const DiaryEntryPage = () => {
     }
   };
 
-  const handleNotificationSent = () => {
-    if (entry) {
-      setEntry({
-        ...entry,
-        email_notification_sent: true,
-        email_notification_requested: true
-      });
-    }
-  };
-
   const handleGroupNotificationSent = () => {
     if (entry) {
       setEntry({
@@ -121,9 +110,6 @@ const DiaryEntryPage = () => {
     entry.user_id === user.id || // L'auteur peut toujours modifier
     hasRole('admin') // Les admins peuvent modifier
   );
-
-  // Afficher le bouton de notification seulement si l'utilisateur est l'auteur
-  const canNotify = entry && user && entry.user_id === user.id && (hasRole('admin') || hasRole('editor'));
 
   // Afficher le bouton de notification de groupe seulement si l'utilisateur est l'auteur
   const canNotifyGroup = entry && user && entry.user_id === user.id;
@@ -179,13 +165,6 @@ const DiaryEntryPage = () => {
             
             <EntryContent entry={entry} />
           </article>
-
-          {canNotify && (
-            <DiaryEntryNotification 
-              entry={entry}
-              onNotificationSent={handleNotificationSent}
-            />
-          )}
 
           {/* Notification de groupe pour les auteurs */}
           {canNotifyGroup && (
