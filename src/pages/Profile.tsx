@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 
 const Profile = () => {
-  const { user, profile, isLoading, hasRole } = useAuth();
+  const { user, profile, isLoading, hasRole, roles } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -152,6 +151,36 @@ const Profile = () => {
       .substring(0, 2);
   };
 
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+      case 'editor':
+        return 'Éditeur';
+      case 'professionnel':
+        return 'Professionnel';
+      case 'reader':
+        return 'Lecteur';
+      default:
+        return role;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-800';
+      case 'editor':
+        return 'bg-blue-100 text-blue-800';
+      case 'professionnel':
+        return 'bg-green-100 text-green-800';
+      case 'reader':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -226,11 +255,21 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>Rôle</Label>
-                      <div>
-                        {hasRole('admin') && <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Administrateur</span>}
-                        {hasRole('editor') && <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Éditeur</span>}
-                        {hasRole('reader') && <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Lecteur</span>}
+                      <Label>Rôle{roles.length > 1 ? 's' : ''}</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {roles.map((role) => (
+                          <span 
+                            key={role}
+                            className={`px-3 py-1 rounded-full text-sm ${getRoleColor(role)}`}
+                          >
+                            {getRoleDisplayName(role)}
+                          </span>
+                        ))}
+                        {roles.length === 0 && (
+                          <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+                            Aucun rôle assigné
+                          </span>
+                        )}
                       </div>
                     </div>
                     
