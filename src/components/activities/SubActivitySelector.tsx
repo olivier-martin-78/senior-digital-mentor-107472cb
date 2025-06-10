@@ -47,15 +47,15 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
       {!showCreateForm ? (
         <div className="flex gap-2">
           <Select
-            value={selectedSubTagId || ''}
-            onValueChange={(value) => onSubTagChange(value || null)}
+            value={selectedSubTagId || 'none'}
+            onValueChange={(value) => onSubTagChange(value === 'none' ? null : value)}
             disabled={loading}
           >
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Sélectionnez une sous-activité" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Aucune sous-activité</SelectItem>
+              <SelectItem value="none">Aucune sous-activité</SelectItem>
               {subTags.map((tag) => (
                 <SelectItem key={tag.id} value={tag.id}>
                   {tag.name}
