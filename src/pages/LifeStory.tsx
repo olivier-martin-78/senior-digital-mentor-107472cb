@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,6 +101,15 @@ const LifeStory = () => {
     }
   };
 
+  // Les readers ne peuvent accéder qu'à l'histoire des autres via le sélecteur
+  // Si un reader tente d'accéder à sa propre histoire (selectedUserId est null), on force la sélection
+  useEffect(() => {
+    if (isReader && selectedUserId === null) {
+      // Pour un reader, ne pas charger sa propre histoire mais plutôt l'inviter à sélectionner quelqu'un
+      // On ne fait rien ici, le composant affichera un message approprié
+    }
+  }, [isReader, selectedUserId]);
+
   // CORRECTION FINALE: Les permissions se basent uniquement sur qui possède l'histoire
   // - Si c'est sa propre histoire (selectedUserId est null OU selectedUserId === user?.id), TOUJOURS autoriser l'édition (sauf pour les readers)
   // - Si c'est l'histoire de quelqu'un d'autre, interdire l'édition (mode lecture seule)
@@ -144,6 +154,39 @@ const LifeStory = () => {
         <Header />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pour les readers, s'ils n'ont pas sélectionné d'utilisateur, afficher un message d'invitation
+  if (isReader && selectedUserId === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <LifeStoryUserSelector
+            selectedUserId={selectedUserId}
+            onUserChange={setSelectedUserId}
+            className="mb-6"
+          />
+          
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-serif text-tranches-charcoal">Histoire de Vie</h1>
+            <div className="flex items-center gap-4">
+              <InviteUserDialog />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <Eye className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Sélectionnez une histoire à consulter
+            </h3>
+            <p className="text-gray-500">
+              Utilisez le sélecteur ci-dessus pour choisir l'histoire de vie que vous souhaitez consulter.
+            </p>
+          </div>
         </div>
       </div>
     );
