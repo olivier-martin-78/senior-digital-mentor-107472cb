@@ -2,8 +2,18 @@
 import heic2any from 'heic2any';
 
 export const isHeicFile = (file: File): boolean => {
-  return file.type === 'image/heic' || file.type === 'image/heif' || 
-         file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+  const hasHeicType = file.type === 'image/heic' || file.type === 'image/heif';
+  const hasHeicExtension = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+  
+  console.log('🔍 Détection HEIC:', {
+    fileName: file.name,
+    fileType: file.type,
+    hasHeicType,
+    hasHeicExtension,
+    isHeic: hasHeicType || hasHeicExtension
+  });
+  
+  return hasHeicType || hasHeicExtension;
 };
 
 export const convertHeicToJpeg = async (file: File): Promise<File> => {
@@ -15,79 +25,93 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
       lastModified: file.lastModified
     });
     
-    // Vérifier si le fichier est valide
+    // Vérifications préliminaires
     if (!file || file.size === 0) {
       throw new Error('Le fichier est vide ou invalide');
     }
 
-    // Vérifier la taille du fichier (limite à 50MB)
     if (file.size > 50 * 1024 * 1024) {
       throw new Error('Le fichier est trop volumineux (max 50MB)');
     }
-    
-    console.log('📱 Conversion HEIC en cours...');
+
+    // Tenter la conversion avec des paramètres optimisés
+    console.log('📱 Lancement de la conversion HEIC...');
     
     const convertedBlob = await heic2any({
       blob: file,
       toType: 'image/jpeg',
-      quality: 0.8
+      quality: 0.9, // Augmentation de la qualité
     });
     
-    console.log('✅ Conversion HEIC terminée:', typeof convertedBlob, Array.isArray(convertedBlob));
+    console.log('✅ Conversion HEIC réussie:', {
+      resultType: typeof convertedBlob,
+      isArray: Array.isArray(convertedBlob),
+      blobSize: Array.isArray(convertedBlob) ? convertedBlob[0]?.size : convertedBlob?.size
+    });
     
-    // heic2any peut retourner un Blob ou un array de Blobs
+    // Gestion du résultat de la conversion
     const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
     
     if (!blob || !(blob instanceof Blob)) {
+      console.error('❌ Blob invalide après conversion:', blob);
       throw new Error('La conversion a échoué - résultat invalide');
     }
     
-    console.log('📄 Blob converti:', {
-      size: blob.size,
-      type: blob.type
-    });
-    
-    // Créer un nouveau fichier avec le blob converti et s'assurer de l'extension .jpg
+    // Création du fichier converti
     const originalName = file.name.replace(/\.(heic|heif)$/i, '');
     const convertedFile = new File(
       [blob], 
       `${originalName}.jpg`, 
-      { type: 'image/jpeg' }
+      { 
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      }
     );
     
     console.log('🎯 Fichier HEIC converti avec succès:', {
       originalName: file.name,
-      convertedName: convertedFile.name,
       originalSize: file.size,
+      originalType: file.type,
+      convertedName: convertedFile.name,
       convertedSize: convertedFile.size,
-      type: convertedFile.type
+      convertedType: convertedFile.type
     });
     
     return convertedFile;
   } catch (error) {
-    console.error('❌ Erreur détaillée lors de la conversion HEIC:', {
+    console.error('💥 Erreur lors de la conversion HEIC:', {
       error,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      errorStack: error?.stack,
       fileName: file?.name,
       fileSize: file?.size,
-      fileType: file?.type,
-      errorMessage: error instanceof Error ? error.message : 'Erreur inconnue',
-      errorStack: error instanceof Error ? error.stack : undefined
+      fileType: file?.type
     });
     
-    // Messages d'erreur plus spécifiques selon le type d'erreur
+    // Messages d'erreur plus spécifiques
     if (error instanceof Error) {
-      if (error.message.includes('network') || error.message.includes('fetch')) {
-        throw new Error('Erreur de réseau lors de la conversion. Vérifiez votre connexion internet.');
+      const errorMsg = error.message.toLowerCase();
+      
+      if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('load')) {
+        throw new Error('Erreur de chargement de la librairie de conversion. Vérifiez votre connexion internet.');
       }
-      if (error.message.includes('memory') || error.message.includes('heap')) {
+      
+      if (errorMsg.includes('memory') || errorMsg.includes('heap') || errorMsg.includes('quota')) {
         throw new Error('Le fichier est trop volumineux pour être traité. Essayez avec une image plus petite.');
       }
-      if (error.message.includes('format') || error.message.includes('invalid')) {
-        throw new Error('Le format du fichier HEIC n\'est pas supporté ou le fichier est corrompu.');
+      
+      if (errorMsg.includes('format') || errorMsg.includes('invalid') || errorMsg.includes('corrupt')) {
+        throw new Error('Le format du fichier n\'est pas valide ou le fichier est corrompu.');
+      }
+      
+      if (errorMsg.includes('timeout')) {
+        throw new Error('La conversion a pris trop de temps. Essayez avec un fichier plus petit.');
       }
     }
     
-    throw new Error('Impossible de convertir le fichier HEIC. Veuillez essayer avec un fichier JPEG ou PNG.');
+    // Erreur générique si aucune correspondance
+    throw new Error('Impossible de convertir le fichier HEIC. Le fichier pourrait être corrompu ou dans un format non supporté.');
   }
 };
 
@@ -95,15 +119,27 @@ export const processImageFile = async (file: File): Promise<File> => {
   console.log('🔍 Traitement du fichier:', {
     name: file.name,
     type: file.type,
-    size: file.size,
-    isHeic: isHeicFile(file)
+    size: `${Math.round(file.size / 1024)}KB`,
+    isHeicDetected: isHeicFile(file)
   });
+  
+  // Vérification de base
+  if (!file) {
+    throw new Error('Aucun fichier sélectionné');
+  }
   
   if (isHeicFile(file)) {
     console.log('📱 Fichier HEIC détecté, conversion nécessaire');
-    return await convertHeicToJpeg(file);
+    try {
+      const convertedFile = await convertHeicToJpeg(file);
+      console.log('✅ Conversion HEIC terminée avec succès');
+      return convertedFile;
+    } catch (conversionError) {
+      console.error('❌ Échec de la conversion HEIC:', conversionError);
+      throw conversionError;
+    }
   }
   
-  console.log('✅ Fichier déjà au bon format, aucune conversion nécessaire');
+  console.log('✅ Fichier standard, aucune conversion nécessaire');
   return file;
 };
