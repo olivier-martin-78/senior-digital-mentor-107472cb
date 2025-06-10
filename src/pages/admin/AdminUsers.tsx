@@ -13,9 +13,12 @@ import { useNavigate } from 'react-router-dom';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import UserRoleSelector from '@/components/admin/UserRoleSelector';
-import { AppRole } from '@/types/supabase';
+import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// Utiliser le type AppRole depuis l'intégration Supabase
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface UserAdmin {
   id: string;
@@ -197,7 +200,7 @@ const AdminUsers = () => {
                         <UserRoleSelector
                           userId={user.id}
                           currentRole={user.role}
-                          onRoleChanged={handleRoleChanged}
+                          onRoleChange={handleRoleChanged}
                         />
                       </TableCell>
                       <TableCell>

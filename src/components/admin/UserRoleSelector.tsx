@@ -5,9 +5,10 @@ import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
 
-// Type pour les rôles disponibles
-type AppRole = 'admin' | 'reader' | 'professionnel' | 'editor';
+// Utiliser le type AppRole depuis l'intégration Supabase
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface UserRoleSelectorProps {
   userId: string;
