@@ -72,6 +72,8 @@ const AdminLifeStoryEdit: React.FC = () => {
         // Convertir le champ JSON chapters en type Chapter[] de façon sécurisée
         let parsedChapters: Chapter[] = [];
         
+        console.log('Raw chapters data:', data.chapters);
+        
         if (data.chapters) {
           try {
             if (typeof data.chapters === 'string') {
@@ -82,8 +84,28 @@ const AdminLifeStoryEdit: React.FC = () => {
               parsedChapters = (data.chapters as any[]).map(chapter => ({
                 id: chapter.id || '',
                 title: chapter.title || '',
-                description: chapter.description,
-                questions: Array.isArray(chapter.questions) ? chapter.questions : []
+                description: chapter.description || '',
+                questions: Array.isArray(chapter.questions) ? chapter.questions.map(q => ({
+                  id: q.id || '',
+                  text: q.text || '',
+                  answer: q.answer || '',
+                  audioBlob: q.audioBlob || null,
+                  audioUrl: q.audioUrl || null
+                })) : []
+              }));
+            } else if (typeof data.chapters === 'object') {
+              // Si c'est un objet, essayer de le convertir en tableau
+              parsedChapters = Object.values(data.chapters as any).map((chapter: any) => ({
+                id: chapter.id || '',
+                title: chapter.title || '',
+                description: chapter.description || '',
+                questions: Array.isArray(chapter.questions) ? chapter.questions.map((q: any) => ({
+                  id: q.id || '',
+                  text: q.text || '',
+                  answer: q.answer || '',
+                  audioBlob: q.audioBlob || null,
+                  audioUrl: q.audioUrl || null
+                })) : []
               }));
             }
           } catch (parseError) {
@@ -91,6 +113,8 @@ const AdminLifeStoryEdit: React.FC = () => {
             parsedChapters = [];
           }
         }
+        
+        console.log('Parsed chapters:', parsedChapters);
         
         // Formater l'histoire de vie pour le composant LifeStoryForm
         const lifeStory: LifeStory = {

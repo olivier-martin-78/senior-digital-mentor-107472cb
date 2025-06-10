@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,22 +94,56 @@ const AdminLifeStories = () => {
         
         // Traitement des données pour calculer les statistiques de chaque histoire
         const formattedStories = storiesData.map((story: any) => {
+          console.log('Processing story chapters:', story.chapters);
+          
           // Vérification et initialisation sécurisée de chapters
-          const chapters = Array.isArray(story.chapters) ? story.chapters : [];
+          let chapters = [];
+          if (story.chapters) {
+            if (Array.isArray(story.chapters)) {
+              chapters = story.chapters;
+            } else if (typeof story.chapters === 'string') {
+              try {
+                chapters = JSON.parse(story.chapters);
+              } catch (e) {
+                console.error('Error parsing chapters JSON:', e);
+                chapters = [];
+              }
+            } else if (typeof story.chapters === 'object') {
+              chapters = Object.values(story.chapters);
+            }
+          }
+          
+          // S'assurer que chapters est un tableau
+          if (!Array.isArray(chapters)) {
+            console.warn('Chapters is not an array, converting:', chapters);
+            chapters = [];
+          }
+          
           const userProfile = profilesMap[story.user_id];
           
           let totalQuestions = 0;
           let answeredQuestions = 0;
           
+          console.log('Chapters array length:', chapters.length);
+          
           // Compter le nombre total de questions et de réponses
-          chapters.forEach((chapter: any) => {
+          chapters.forEach((chapter: any, index: number) => {
+            console.log(`Chapter ${index}:`, chapter);
+            
             if (chapter && chapter.questions && Array.isArray(chapter.questions)) {
               totalQuestions += chapter.questions.length;
-              answeredQuestions += chapter.questions.filter((q: any) => 
+              
+              const answered = chapter.questions.filter((q: any) => 
                 q && q.answer && q.answer.trim() !== ''
               ).length;
+              
+              answeredQuestions += answered;
+              
+              console.log(`Chapter ${index}: ${chapter.questions.length} questions, ${answered} answered`);
             }
           });
+          
+          console.log(`Story ${story.title}: ${chapters.length} chapters, ${totalQuestions} questions, ${answeredQuestions} answered`);
           
           return {
             id: story.id,
