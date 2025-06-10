@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { Switch } from '@/components/ui/switch';
 
 const Profile = () => {
   const { user, profile, isLoading, hasRole, roles } = useAuth();
@@ -21,7 +20,6 @@ const Profile = () => {
 
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [receiveContacts, setReceiveContacts] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
@@ -35,7 +33,6 @@ const Profile = () => {
     if (profile) {
       setDisplayName(profile.display_name || '');
       setAvatarUrl(profile.avatar_url || '');
-      setReceiveContacts(profile.receive_contacts || false);
     }
   }, [user, profile, isLoading, navigate]);
 
@@ -116,8 +113,7 @@ const Profile = () => {
         .from('profiles')
         .update({
           display_name: displayName,
-          avatar_url: avatarUrl,
-          receive_contacts: receiveContacts
+          avatar_url: avatarUrl
         })
         .eq('id', user?.id);
 
@@ -272,22 +268,6 @@ const Profile = () => {
                         )}
                       </div>
                     </div>
-                    
-                    {hasRole('admin') && (
-                      <div className="space-y-2 pt-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="receiveContacts">Recevoir les demandes de contact</Label>
-                          <Switch 
-                            id="receiveContacts" 
-                            checked={receiveContacts} 
-                            onCheckedChange={setReceiveContacts}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Si activé, vous recevrez les emails envoyés via le formulaire de contact.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </CardContent>
