@@ -32,11 +32,13 @@ interface WishPost {
 }
 
 const Wishes = () => {
-  const { user, session } = useAuth();
+  const { user, session, hasRole } = useAuth();
   const navigate = useNavigate();
   const [wishes, setWishes] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
+  
+  const isReader = hasRole('reader');
 
   useEffect(() => {
     if (!session) {
@@ -123,26 +125,34 @@ const Wishes = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Souhaits</h1>
           <div className="flex items-center gap-4">
-            <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-              <a href="/wishes/new">
-                <Plus className="mr-2 h-5 w-5" />
-                Nouveau souhait
-              </a>
-            </Button>
-            <InviteUserDialog />
+            {!isReader && (
+              <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+                <a href="/wishes/new">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Nouveau souhait
+                </a>
+              </Button>
+            )}
+            {!isReader && <InviteUserDialog />}
           </div>
         </div>
         
         {wishes.length === 0 ? (
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold text-gray-600 mb-4">Aucun souhait pour le moment</h2>
-            <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
-            <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-              <a href="/wishes/new">
-                <Plus className="mr-2 h-5 w-5" />
-                Créer un souhait
-              </a>
-            </Button>
+            {!isReader ? (
+              <>
+                <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
+                <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+                  <a href="/wishes/new">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Créer un souhait
+                  </a>
+                </Button>
+              </>
+            ) : (
+              <p className="text-gray-500">Aucun souhait disponible à consulter.</p>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

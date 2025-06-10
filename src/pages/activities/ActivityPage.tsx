@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -51,6 +52,8 @@ const ActivityPage = () => {
     activity_date: '',
     sub_activity_tag_id: '',
   });
+
+  const isReader = hasRole('reader');
 
   const getYouTubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -161,10 +164,12 @@ const ActivityPage = () => {
                   </Link>
                 </Button>
               )}
-              <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une activité
-              </Button>
+              {!isReader && (
+                <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Ajouter une activité
+                </Button>
+              )}
             </div>
           </div>
 
@@ -178,7 +183,7 @@ const ActivityPage = () => {
             </div>
           )}
 
-          {showForm && !editingActivity && (
+          {showForm && !editingActivity && !isReader && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Nouvelle activité</CardTitle>
@@ -263,9 +268,11 @@ const ActivityPage = () => {
               <p className="text-gray-500 mb-4">
                 Aucune activité disponible pour le moment.
               </p>
-              <Button onClick={() => setShowForm(true)}>
-                Ajouter la première activité
-              </Button>
+              {!isReader && (
+                <Button onClick={() => setShowForm(true)}>
+                  Ajouter la première activité
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

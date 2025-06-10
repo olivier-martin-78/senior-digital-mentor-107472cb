@@ -102,15 +102,15 @@ const LifeStory = () => {
   };
 
   // CORRECTION FINALE: Les permissions se basent uniquement sur qui possède l'histoire
-  // - Si c'est sa propre histoire (selectedUserId est null OU selectedUserId === user?.id), TOUJOURS autoriser l'édition
+  // - Si c'est sa propre histoire (selectedUserId est null OU selectedUserId === user?.id), TOUJOURS autoriser l'édition (sauf pour les readers)
   // - Si c'est l'histoire de quelqu'un d'autre, interdire l'édition (mode lecture seule)
-  // Le rôle "reader" ne s'applique que pour les histoires des autres, jamais pour sa propre histoire
+  // Le rôle "reader" ne peut jamais éditer, même sa propre histoire
   const isViewingOwnStory = selectedUserId === null || selectedUserId === user?.id;
-  const canSave = isViewingOwnStory; // Toujours permettre l'édition de sa propre histoire
+  const canSave = isViewingOwnStory && !isReader; // Les readers ne peuvent jamais sauvegarder, même leur propre histoire
   const isViewingOthersStory = selectedUserId !== null && selectedUserId !== user?.id;
   
   // NOUVELLE LOGIQUE: Calculer isReadOnly pour les composants enfants
-  const isReadOnly = isViewingOthersStory; // Mode lecture seule SEULEMENT pour les histoires des autres
+  const isReadOnly = isViewingOthersStory || isReader; // Mode lecture seule pour les histoires des autres OU pour les readers
 
   console.log('🏠 Permissions calculées:', {
     canSave,
@@ -123,21 +123,20 @@ const LifeStory = () => {
     isSelectedUserIdNull: selectedUserId === null,
     isReader,
     isReadOnly,
-    finalDecision: `canSave: ${canSave}, isReadOnly: ${isReadOnly}, car isViewingOwnStory: ${isViewingOwnStory} (le rôle ne compte pas pour sa propre histoire)`
+    finalDecision: `canSave: ${canSave}, isReadOnly: ${isReadOnly}, car isViewingOwnStory: ${isViewingOwnStory} et isReader: ${isReader}`
   });
 
-  console.log('🔍 DEBUG PERMISSIONS DÉTAILLÉ pour Olivier78:', {
+  console.log('🔍 DEBUG PERMISSIONS DÉTAILLÉ pour utilisateur:', {
     userEmail: user?.email,
     userId: user?.id,
     selectedUserId,
-    isOlivier78: user?.email === 'olivier.devulder@gmail.com',
     isViewingMyStory: selectedUserId === null,
     isSelectedUserIdMyId: selectedUserId === user?.id,
     calculatedIsViewingOwnStory: isViewingOwnStory,
     calculatedIsReadOnly: isReadOnly,
     calculatedCanSave: canSave,
     userRole: isReader ? 'reader' : 'not-reader',
-    shouldBeAbleToEdit: selectedUserId === null || selectedUserId === user?.id
+    shouldBeAbleToEdit: (selectedUserId === null || selectedUserId === user?.id) && !isReader
   });
 
   if (lifeStoryData.isLoading) {
@@ -192,17 +191,19 @@ const LifeStory = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        {/* Sélecteur d'utilisateur */}
-        <LifeStoryUserSelector
-          selectedUserId={selectedUserId}
-          onUserChange={setSelectedUserId}
-          className="mb-6"
-        />
+        {/* Sélecteur d'utilisateur - masqué pour les readers */}
+        {!isReader && (
+          <LifeStoryUserSelector
+            selectedUserId={selectedUserId}
+            onUserChange={setSelectedUserId}
+            className="mb-6"
+          />
+        )}
 
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
-            {isViewingOthersStory && (
+            {(isViewingOthersStory || isReader) && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
                 <span>Mode lecture seule</span>
@@ -250,8 +251,8 @@ const LifeStory = () => {
             lifeStoryData.handleQuestionFocus(questionId);
           }}
           updateAnswer={(chapterId: string, questionId: string, answer: string) => {
-            // Empêcher la modification si on regarde l'histoire de quelqu'un d'autre
-            if (!isViewingOthersStory) {
+            // Empêcher la modification si on regarde l'histoire de quelqu'un d'autre ou si on est reader
+            if (!isViewingOthersStory && !isReader) {
               lifeStoryData.updateAnswer(questionId, answer);
             }
           }}

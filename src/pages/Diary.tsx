@@ -12,7 +12,7 @@ import { useDiaryFilters } from '@/hooks/diary/useDiaryFilters';
 import { Plus } from 'lucide-react';
 
 const Diary = () => {
-  const { session } = useAuth();
+  const { session, hasRole } = useAuth();
   const navigate = useNavigate();
   
   const {
@@ -27,6 +27,8 @@ const Diary = () => {
 
   // Utiliser le hook exactement comme dans les autres sections
   const { entries, loading } = useDiaryEntries(searchTerm, startDate, endDate);
+  
+  const isReader = hasRole('reader');
 
   if (!session) {
     navigate('/auth');
@@ -49,14 +51,16 @@ const Diary = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
           <div className="flex gap-3">
-            <InviteUserDialog />
-            <Button 
-              onClick={() => navigate('/diary/new')}
-              className="bg-tranches-sage hover:bg-tranches-sage/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvelle entrée
-            </Button>
+            {!isReader && <InviteUserDialog />}
+            {!isReader && (
+              <Button 
+                onClick={() => navigate('/diary/new')}
+                className="bg-tranches-sage hover:bg-tranches-sage/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle entrée
+              </Button>
+            )}
           </div>
         </div>
         
