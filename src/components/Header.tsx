@@ -3,16 +3,16 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock, Brain, Gamepad2, Users, Dumbbell, BookMarked, PenTool, Settings } from 'lucide-react';
+import { LogOut, Menu, User, Calendar, FileText, Heart, BookOpen, Clock, Brain, Gamepad2, Users, Dumbbell, BookMarked, PenTool, Settings, ChevronDown } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSeparator,
-} from '@/components/ui/context-menu';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -154,48 +154,48 @@ const Header = () => {
             </nav>
           )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
-                <div className="hidden md:flex items-center gap-4">
-                  <ContextMenu>
-                    <ContextMenuTrigger asChild>
-                      <div className="cursor-pointer">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Avatar'} />
-                          <AvatarFallback className="bg-tranches-sage text-white text-sm">
-                            {getAvatarFallback()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48">
-                      <ContextMenuItem asChild>
-                        <Link to="/profile" className="flex items-center gap-2 w-full">
-                          <User className="h-4 w-4" />
-                          Profil
-                        </Link>
-                      </ContextMenuItem>
-                      {hasRole('admin') && (
-                        <>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem asChild>
-                            <Link to="/admin/users" className="flex items-center gap-2 w-full">
-                              <Settings className="h-4 w-4" />
-                              Administration
-                            </Link>
-                          </ContextMenuItem>
-                        </>
-                      )}
-                      <ContextMenuSeparator />
-                      <ContextMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-red-600">
-                        <LogOut className="h-4 w-4" />
-                        Déconnexion
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                </div>
+                {/* Avatar pour desktop ET mobile */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Avatar'} />
+                        <AvatarFallback className="bg-tranches-sage text-white text-sm">
+                          {getAvatarFallback()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2 w-full cursor-pointer">
+                        <User className="h-4 w-4" />
+                        Profil
+                      </Link>
+                    </DropdownMenuItem>
+                    {hasRole('admin') && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/users" className="flex items-center gap-2 w-full cursor-pointer">
+                            <Settings className="h-4 w-4" />
+                            Administration
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-red-600 cursor-pointer">
+                      <LogOut className="h-4 w-4" />
+                      Déconnexion
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
+                {/* Menu hamburger pour mobile */}
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="sm" className="md:hidden">
@@ -217,61 +217,67 @@ const Header = () => {
                         </div>
                       </div>
 
-                      {visibleItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.href}
-                            to={item.href}
-                            className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
-                          >
-                            <Icon className="h-5 w-5" />
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                      
-                      <div className="border-t pt-4">
-                        <p className="text-sm font-medium text-gray-900 mb-2">Activités</p>
-                        {activitiesItems.map((activity) => {
-                          const Icon = activity.icon;
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-900 px-2">Navigation</p>
+                        {visibleItems.map((item) => {
+                          const Icon = item.icon;
                           return (
                             <Link
-                              key={activity.href}
-                              to={activity.href}
-                              className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50 ml-2"
+                              key={item.href}
+                              to={item.href}
+                              className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
                             >
-                              <Icon className="h-4 w-4" />
-                              {activity.label}
+                              <Icon className="h-5 w-5" />
+                              {item.label}
                             </Link>
                           );
                         })}
                       </div>
                       
-                      <hr className="my-4" />
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
-                      >
-                        <User className="h-5 w-5" />
-                        Profil
-                      </Link>
-                      {hasRole('admin') && (
+                      <div className="border-t pt-4">
+                        <p className="text-sm font-medium text-gray-900 mb-2 px-2">Activités</p>
+                        <div className="space-y-1">
+                          {activitiesItems.map((activity) => {
+                            const Icon = activity.icon;
+                            return (
+                              <Link
+                                key={activity.href}
+                                to={activity.href}
+                                className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50 ml-2"
+                              >
+                                <Icon className="h-4 w-4" />
+                                {activity.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-4 space-y-1">
                         <Link
-                          to="/admin/users"
+                          to="/profile"
                           className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
                         >
-                          <Settings className="h-5 w-5" />
-                          Administration
+                          <User className="h-5 w-5" />
+                          Profil
                         </Link>
-                      )}
-                      <button
-                        onClick={handleSignOut}
-                        className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50 text-left w-full"
-                      >
-                        <LogOut className="h-5 w-5" />
-                        Déconnexion
-                      </button>
+                        {hasRole('admin') && (
+                          <Link
+                            to="/admin/users"
+                            className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50"
+                          >
+                            <Settings className="h-5 w-5" />
+                            Administration
+                          </Link>
+                        )}
+                        <button
+                          onClick={handleSignOut}
+                          className="flex items-center gap-3 text-gray-600 hover:text-tranches-sage transition-colors p-2 rounded-md hover:bg-gray-50 text-left w-full"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Déconnexion
+                        </button>
+                      </div>
                     </nav>
                   </SheetContent>
                 </Sheet>
