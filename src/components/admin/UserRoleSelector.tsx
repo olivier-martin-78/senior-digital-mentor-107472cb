@@ -2,39 +2,39 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { AppRole } from '@/types/supabase';
+
+// Type pour les rôles disponibles
+type AppRole = 'admin' | 'reader' | 'professionnel' | 'editor';
 
 interface UserRoleSelectorProps {
   userId: string;
   currentRole: AppRole;
-  onRoleChanged: () => void;
+  onRoleChange: (newRole: AppRole) => void;
 }
 
 const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
   userId,
   currentRole,
-  onRoleChanged
+  onRoleChange,
 }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
   const [selectedRole, setSelectedRole] = useState<AppRole>(currentRole);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const availableRoles: { value: AppRole; label: string }[] = [
+  const roles: { value: AppRole; label: string }[] = [
     { value: 'reader', label: 'Lecteur' },
-    { value: 'user', label: 'Utilisateur' },
     { value: 'editor', label: 'Éditeur' },
-    { value: 'moderator', label: 'Modérateur' },
     { value: 'professionnel', label: 'Professionnel' },
-    { value: 'admin', label: 'Administrateur' }
+    { value: 'admin', label: 'Administrateur' },
   ];
 
-  const handleRoleChange = async () => {
+  const handleRoleUpdate = async () => {
     if (selectedRole === currentRole) {
       toast({
         title: 'Information',
-        description: 'Le rôle sélectionné est identique au rôle actuel.',
+        description: 'Le rôle sélectionné est identique au rôle actuel',
       });
       return;
     }
@@ -47,18 +47,15 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
         .update({ role: selectedRole })
         .eq('user_id', userId);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+
+      onRoleChange(selectedRole);
 
       toast({
         title: 'Rôle mis à jour',
-        description: `Le rôle de l'utilisateur a été changé vers "${availableRoles.find(r => r.value === selectedRole)?.label}".`,
+        description: `Le rôle de l'utilisateur a été changé vers ${roles.find(r => r.value === selectedRole)?.label}`,
       });
-
-      onRoleChanged();
     } catch (error: any) {
-      console.error('Erreur lors de la mise à jour du rôle:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de mettre à jour le rôle : ${error.message}`,
@@ -76,15 +73,16 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {availableRoles.map((role) => (
+          {roles.map((role) => (
             <SelectItem key={role.value} value={role.value}>
               {role.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      
       <Button
-        onClick={handleRoleChange}
+        onClick={handleRoleUpdate}
         disabled={isUpdating || selectedRole === currentRole}
         size="sm"
       >
@@ -94,7 +92,7 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
             Mise à jour...
           </>
         ) : (
-          'Changer'
+          'Mettre à jour'
         )}
       </Button>
     </div>

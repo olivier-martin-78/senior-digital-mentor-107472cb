@@ -19,7 +19,78 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
   // Déterminer l'utilisateur cible depuis l'histoire existante
   const targetUserId = existingStory?.user_id;
 
-  // Toujours utiliser tous les chapitres initiaux pour tous les utilisateurs
+  // En mode lecture seule (admin), utiliser directement les données existantes sans hook
+  if (isReadOnly && existingStory) {
+    // Mélanger les chapitres initiaux avec les données existantes pour préserver les réponses
+    const storyWithChapters = {
+      ...existingStory,
+      chapters: initialChapters.map(initialChapter => {
+        // Chercher le chapitre correspondant dans l'histoire existante
+        const existingChapter = existingStory.chapters.find(ch => ch.id === initialChapter.id);
+        
+        // Préserver les réponses des questions existantes
+        return {
+          ...initialChapter,
+          questions: initialChapter.questions.map(initialQuestion => {
+            // Chercher si cette question existe déjà dans les données de l'utilisateur
+            const existingQuestion = existingChapter?.questions.find(q => q.id === initialQuestion.id);
+            
+            // Si la question existe, préserver sa réponse et l'audio
+            if (existingQuestion) {
+              return {
+                ...initialQuestion,
+                answer: existingQuestion.answer || initialQuestion.answer || '',
+                audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl || null,
+                audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob || null,
+              };
+            }
+            
+            return {
+              ...initialQuestion,
+              answer: initialQuestion.answer || '',
+            };
+          }),
+        };
+      }),
+    };
+
+    console.log('Mode lecture seule - Histoire avec chapitres:', storyWithChapters);
+
+    return (
+      <div className="space-y-6">
+        <StoryHeader 
+          title={storyWithChapters.title} 
+          lastSaved={null} 
+          isSaving={false} 
+          onSave={() => {}} 
+        />
+        
+        {/* Layout principal avec navigation et contenu */}
+        {storyWithChapters.chapters.length > 0 ? (
+          <LifeStoryLayout
+            chapters={storyWithChapters.chapters}
+            activeTab="chapter-1"
+            openQuestions={{}}
+            activeQuestion={null}
+            isReadOnly={true}
+            setActiveTab={() => {}}
+            toggleQuestions={() => {}}
+            handleQuestionFocus={() => {}}
+            updateAnswer={() => {}}
+            onAudioRecorded={() => {}}
+            onAudioDeleted={() => {}}
+            onAudioUrlChange={() => {}}
+          />
+        ) : (
+          <div className="p-6 text-center bg-gray-100 rounded-lg">
+            <p>Aucun chapitre n'a été trouvé. Veuillez réessayer plus tard.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mode normal avec hook pour l'édition
   const storyWithChapters = {
     ...existingStory,
     chapters: initialChapters,

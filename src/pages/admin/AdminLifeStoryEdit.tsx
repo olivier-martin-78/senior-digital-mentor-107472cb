@@ -233,7 +233,10 @@ const AdminLifeStoryEdit: React.FC = () => {
 
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-medium mb-6">Contenu de l'histoire</h2>
-              <LifeStoryForm existingStory={story} />
+              <LifeStoryForm 
+                existingStory={story} 
+                isReadOnly={true}
+              />
             </div>
           </div>
         ) : (
