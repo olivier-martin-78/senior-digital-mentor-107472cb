@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +31,6 @@ const Diary = () => {
 
   console.log('📖 Diary - Vérification rôle reader:', {
     isReader,
-    userRoles: JSON.stringify(Array.from(arguments)),
     hasReaderRole: hasRole('reader')
   });
 
