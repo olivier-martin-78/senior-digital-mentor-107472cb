@@ -24,12 +24,12 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     
-    console.log('📁 Nouveau fichier sélectionné:', file ? JSON.stringify({
+    console.log('📁 Nouveau fichier sélectionné:', file ? {
       name: file.name,
       type: file.type,
       size: Math.round(file.size / 1024) + 'KB',
       lastModified: new Date(file.lastModified).toISOString()
-    }) : 'null');
+    } : 'null');
     
     if (!file) {
       form.setValue('media', null);
@@ -67,13 +67,13 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       }
       
     } catch (error: any) {
-      console.error('💥 Erreur lors du traitement du fichier:', JSON.stringify({
+      console.error('💥 Erreur lors du traitement du fichier:', {
         errorName: error?.name || 'Unknown',
         errorMessage: error?.message || 'Unknown error',
         fileName: file?.name,
         fileType: file?.type,
         fileSize: file?.size
-      }));
+      });
       
       // Toast d'erreur avec message détaillé
       toast({
@@ -113,7 +113,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           <div className="text-xs text-gray-500 space-y-1">
             <div>Formats supportés : JPEG, PNG, GIF, WebP, HEIC, MP4, MOV, MP3, WAV</div>
             <div className="text-orange-600 font-medium">
-              📱 iPhone : Pour éviter les problèmes HEIC, activez "Plus compatible" dans Réglages > Appareil photo > Formats
+              📱 iPhone : Pour éviter les problèmes HEIC, activez "Plus compatible" dans Réglages &gt; Appareil photo &gt; Formats
             </div>
             {isProcessing && (
               <div className="flex items-center gap-2 text-blue-600 font-medium">
