@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -20,10 +19,8 @@ import SubActivitySelector from '@/components/activities/SubActivitySelector';
 const activityTitles: Record<string, string> = {
   meditation: 'Méditation',
   games: 'Jeux',
-  gratitude: 'Gratitude',
   connection: 'Connexion',
   exercises: 'Exercices',
-  compassion: 'Compassion',
   reading: 'Lecture',
   writing: 'Écriture',
 };
@@ -31,10 +28,8 @@ const activityTitles: Record<string, string> = {
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'gratitude', label: 'Gratitude' },
   { value: 'connection', label: 'Connexion' },
   { value: 'exercises', label: 'Exercices' },
-  { value: 'compassion', label: 'Compassion' },
   { value: 'reading', label: 'Lecture' },
   { value: 'writing', label: 'Écriture' },
 ];

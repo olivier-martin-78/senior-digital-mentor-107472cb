@@ -20,10 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'gratitude', label: 'Gratitude' },
   { value: 'connection', label: 'Connexion' },
   { value: 'exercises', label: 'Exercices' },
-  { value: 'compassion', label: 'Compassion' },
   { value: 'reading', label: 'Lecture' },
   { value: 'writing', label: 'Écriture' },
 ];

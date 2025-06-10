@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,10 +19,8 @@ interface ActivityEditFormProps {
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'gratitude', label: 'Gratitude' },
   { value: 'connection', label: 'Connexion' },
   { value: 'exercises', label: 'Exercices' },
-  { value: 'compassion', label: 'Compassion' },
   { value: 'reading', label: 'Lecture' },
   { value: 'writing', label: 'Écriture' },
 ];
