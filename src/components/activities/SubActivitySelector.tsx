@@ -23,6 +23,8 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
 
   const handleCreateSubTag = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
+    
     if (!newTagName.trim()) return;
 
     setCreating(true);
@@ -35,9 +37,19 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
     setCreating(false);
   };
 
-  const handleCancelCreate = () => {
+  const handleCancelCreate = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
+    }
     setNewTagName('');
     setShowCreateForm(false);
+  };
+
+  const handleShowCreateForm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
+    setShowCreateForm(true);
   };
 
   return (
@@ -68,7 +80,7 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setShowCreateForm(true)}
+            onClick={handleShowCreateForm}
             className="flex items-center gap-1"
           >
             <Plus className="h-4 w-4" />
