@@ -33,11 +33,6 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       console.log('🎙️ INTERVENTION - Enregistrement démarré');
     } catch (error) {
       console.error('❌ INTERVENTION - Erreur démarrage enregistrement:', error);
-      toast({
-        title: "Erreur d'enregistrement",
-        description: "Impossible de démarrer l'enregistrement. Vérifiez les permissions du microphone.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -45,39 +40,27 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     try {
       await stopRecording();
       console.log('🎙️ INTERVENTION - Enregistrement arrêté');
-      
-      // Attendre un peu que le blob soit disponible
-      setTimeout(() => {
-        if (audioBlob && audioBlob.size > 0) {
-          console.log('✅ INTERVENTION - Audio capturé, taille:', audioBlob.size);
-          onAudioRecorded(audioBlob);
-          
-          if (audioUrl && onAudioUrlGenerated) {
-            onAudioUrlGenerated(audioUrl);
-          }
-          
-          toast({
-            title: "Enregistrement réussi",
-            description: "Votre message vocal a été enregistré avec succès",
-          });
-        } else {
-          console.warn('⚠️ INTERVENTION - Pas de données audio capturées');
-          toast({
-            title: "Erreur d'enregistrement",
-            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
-            variant: "destructive",
-          });
-        }
-      }, 100);
     } catch (error) {
       console.error('❌ INTERVENTION - Erreur arrêt enregistrement:', error);
-      toast({
-        title: "Erreur d'enregistrement",
-        description: "Erreur lors de l'arrêt de l'enregistrement",
-        variant: "destructive",
-      });
     }
   };
+
+  // Surveiller les changements d'audioBlob pour notifier le parent
+  React.useEffect(() => {
+    if (audioBlob && audioBlob.size > 0) {
+      console.log('✅ INTERVENTION - Audio capturé, taille:', audioBlob.size);
+      onAudioRecorded(audioBlob);
+      
+      if (audioUrl && onAudioUrlGenerated) {
+        onAudioUrlGenerated(audioUrl);
+      }
+      
+      toast({
+        title: "Enregistrement réussi",
+        description: "Votre message vocal a été enregistré avec succès",
+      });
+    }
+  }, [audioBlob, audioUrl, onAudioRecorded, onAudioUrlGenerated]);
 
   const handlePlay = () => {
     if (!audioUrl) return;

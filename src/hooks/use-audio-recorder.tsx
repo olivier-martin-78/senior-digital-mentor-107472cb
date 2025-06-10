@@ -94,29 +94,62 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       setRecordingTime(0);
       
       console.log("Demande d'autorisation pour le microphone...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        }
+      });
       streamRef.current = stream;
       
       console.log("Autorisation accordée, création du MediaRecorder...");
-      const recorder = new MediaRecorder(stream);
+      
+      // Utiliser le format le plus compatible
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';
+          }
+        }
+      }
+      
+      const recorder = new MediaRecorder(stream, {
+        mimeType: mimeType || undefined,
+        bitsPerSecond: 128000
+      });
+      
       mediaRecorder.current = recorder;
       
       recorder.ondataavailable = (event) => {
+        console.log('📊 Données audio reçues:', event.data.size, 'octets');
         if (event.data.size > 0) {
           audioChunks.current.push(event.data);
         }
       };
       
       recorder.onstop = () => {
+        console.log('🛑 Enregistrement arrêté, chunks collectés:', audioChunks.current.length);
+        
         if (audioChunks.current.length > 0) {
-          const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const blob = new Blob(audioChunks.current, { 
+            type: mimeType || 'audio/webm' 
+          });
           const url = URL.createObjectURL(blob);
           
+          console.log("✅ Blob audio créé:", blob.size, "octets, type:", blob.type);
           setAudioBlob(blob);
           setAudioUrl(url);
-          console.log("Enregistrement terminé, blob créé:", blob.size, "octets");
         } else {
-          console.warn("Aucune donnée audio collectée");
+          console.warn("⚠️ Aucune donnée audio collectée");
+          toast({
+            title: "Erreur d'enregistrement",
+            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
+            variant: "destructive",
+          });
         }
         
         setIsRecording(false);
@@ -128,26 +161,49 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         }
       };
       
-      recorder.start();
+      recorder.onerror = (event) => {
+        console.error('❌ Erreur MediaRecorder:', event);
+        setIsRecording(false);
+        toast({
+          title: "Erreur d'enregistrement",
+          description: "Une erreur est survenue pendant l'enregistrement.",
+          variant: "destructive",
+        });
+      };
+      
+      // Démarrer l'enregistrement avec un intervalle de capture plus court
+      recorder.start(100); // Capturer des données toutes les 100ms
       setIsRecording(true);
+      
+      console.log('🎙️ Enregistrement démarré avec succès');
       
     } catch (error) {
       console.error("Erreur lors de l'accès au microphone:", error);
       setIsRecording(false);
       setRecordingTime(0);
       
+      let errorMessage = "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = "Permission refusée. Veuillez autoriser l'accès au microphone.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "Aucun microphone détecté. Vérifiez votre matériel.";
+        }
+      }
+      
       toast({
         title: "Erreur d'accès au microphone",
-        description: "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   }, [stopAllRecording, audioUrl]);
   
   const stopRecording = useCallback(async () => {
-    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       try {
-        console.log("Arrêt de l'enregistrement...");
+        console.log("🛑 Arrêt de l'enregistrement...");
         mediaRecorder.current.stop();
       } catch (error) {
         console.error("Erreur lors de l'arrêt de l'enregistrement:", error);
@@ -165,6 +221,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       }
     } else {
       // Si déjà arrêté, assurons-nous que l'état est cohérent
+      console.log("⚠️ MediaRecorder déjà arrêté ou inactif");
       setIsRecording(false);
       setRecordingTime(0);
     }
