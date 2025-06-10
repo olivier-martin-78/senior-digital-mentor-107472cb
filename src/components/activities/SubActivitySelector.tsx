@@ -21,10 +21,7 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
   const [newTagName, setNewTagName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const handleCreateSubTag = async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
-    
+  const handleCreateSubTag = async () => {
     if (!newTagName.trim()) return;
 
     setCreating(true);
@@ -37,19 +34,20 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
     setCreating(false);
   };
 
-  const handleCancelCreate = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
-    }
+  const handleCancelCreate = () => {
     setNewTagName('');
     setShowCreateForm(false);
   };
 
-  const handleShowCreateForm = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation(); // Empêcher la propagation vers le formulaire parent
+  const handleShowCreateForm = () => {
     setShowCreateForm(true);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateSubTag();
+    }
   };
 
   return (
@@ -88,18 +86,20 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleCreateSubTag} className="flex gap-2">
+        <div className="flex gap-2">
           <Input
             value={newTagName}
             onChange={(e) => setNewTagName(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Nom de la sous-activité"
             disabled={creating}
             className="flex-1"
           />
           <Button
-            type="submit"
+            type="button"
             variant="outline"
             size="sm"
+            onClick={handleCreateSubTag}
             disabled={creating || !newTagName.trim()}
           >
             {creating ? 'Création...' : 'Créer'}
@@ -113,7 +113,7 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
           >
             <X className="h-4 w-4" />
           </Button>
-        </form>
+        </div>
       )}
     </div>
   );
