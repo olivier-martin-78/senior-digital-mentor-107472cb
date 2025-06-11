@@ -893,5 +893,3 @@ const InterventionReportForm = () => {
 };
 
 export default InterventionReportForm;
-
-</edits_to_apply>
