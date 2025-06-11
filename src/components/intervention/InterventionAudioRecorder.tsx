@@ -31,65 +31,67 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   // Initialiser avec l'URL existante si disponible
   useEffect(() => {
     if (existingAudioUrl && existingAudioUrl.trim() !== '') {
+      console.log("🎵 INTERVENTION - Initialisation avec URL existante:", existingAudioUrl);
       setAudioUrl(existingAudioUrl.trim());
+    } else {
+      console.log("🎵 INTERVENTION - Pas d'URL existante ou URL vide");
+      setAudioUrl(null);
     }
   }, [existingAudioUrl]);
 
   const handleAudioRecorded = (blob: Blob) => {
-    console.log('🎤 INTERVENTION - Audio enregistré dans InterventionAudioRecorder:', blob?.size);
-    // Passer le blob au parent IMMÉDIATEMENT
+    console.log('🎤 INTERVENTION - Audio enregistré:', blob?.size);
     onAudioRecorded(blob);
   };
 
   const handleAudioUrlGenerated = (url: string) => {
-    console.log('🎵 INTERVENTION - URL audio générée dans InterventionAudioRecorder:', url);
+    console.log('🎵 INTERVENTION - URL audio générée:', url);
     
-    // Si l'URL est vide (suppression), réinitialiser
     if (!url || url.trim() === '') {
+      console.log('🎵 INTERVENTION - URL vide, suppression');
       setAudioUrl(null);
-      if (onAudioUrlGenerated) {
-        onAudioUrlGenerated('');
-      }
-      return;
+    } else {
+      console.log('🎵 INTERVENTION - Nouvelle URL audio:', url);
+      setAudioUrl(url);
     }
     
-    setAudioUrl(url);
     if (onAudioUrlGenerated) {
       onAudioUrlGenerated(url);
     }
   };
 
   const handleDeleteAudio = () => {
-    console.log('🗑️ INTERVENTION - Suppression audio dans InterventionAudioRecorder');
+    console.log('🗑️ INTERVENTION - Suppression audio');
     setAudioUrl(null);
+    
     // Notifier le parent avec un blob vide
     const emptyBlob = new Blob([], { type: 'audio/webm' });
     onAudioRecorded(emptyBlob);
     
-    // Notifier également que l'URL doit être supprimée
     if (onAudioUrlGenerated) {
       onAudioUrlGenerated('');
     }
   };
 
   // Déterminer ce qui doit être affiché
-  const hasValidAudioUrl = !!(audioUrl || existingAudioUrl);
+  const currentUrl = audioUrl || existingAudioUrl;
+  const hasValidAudioUrl = !!(currentUrl && currentUrl.trim() !== '');
   
   console.log('🎵 INTERVENTION - Logique d\'affichage:', {
     hasValidAudioUrl,
     audioUrl,
     existingAudioUrl,
+    currentUrl,
     isReadOnly
   });
 
   // Si on a une URL audio valide, afficher le lecteur
   if (hasValidAudioUrl) {
-    const urlToUse = audioUrl || existingAudioUrl;
-    console.log('🎵 INTERVENTION - Affichage lecteur avec URL:', urlToUse);
+    console.log('🎵 INTERVENTION - Affichage lecteur avec URL:', currentUrl);
     
     return (
       <VoiceAnswerPlayer
-        audioUrl={urlToUse!}
+        audioUrl={currentUrl!}
         onDelete={isReadOnly ? undefined : handleDeleteAudio}
         readOnly={isReadOnly}
       />
@@ -98,12 +100,12 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 
   // Si en mode lecture seule sans audio, ne rien afficher
   if (isReadOnly) {
-    console.log('🎵 INTERVENTION - Mode lecture seule sans audio, rien à afficher');
+    console.log('🎵 INTERVENTION - Mode lecture seule sans audio');
     return null;
   }
 
   // Sinon, afficher l'enregistreur simplifié
-  console.log('🎙️ INTERVENTION - Affichage enregistreur simplifié avec reportId:', reportId);
+  console.log('🎙️ INTERVENTION - Affichage enregistreur avec reportId:', reportId);
   return (
     <SimpleAudioRecorder
       onAudioRecorded={handleAudioRecorded}
