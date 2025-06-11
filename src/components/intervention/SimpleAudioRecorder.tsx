@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Play, Pause } from 'lucide-react';
-import { useAudioRecorder } from '@/hooks/use-audio-recorder';
+import { useStableAudioRecorder } from '@/hooks/use-stable-audio-recorder';
 
 interface SimpleAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
@@ -31,9 +31,9 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     startRecording,
     stopRecording,
     clearRecording
-  } = useAudioRecorder();
+  } = useStableAudioRecorder();
 
-  console.log("🔧 INTERVENTION - SimpleAudioRecorder rendu", {
+  console.log("🔧 STABLE - SimpleAudioRecorder rendu", {
     hasUser: !!user,
     userId: user?.id,
     isUploading,
@@ -46,7 +46,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
 
   // Gestion de l'upload automatique quand un nouveau blob est disponible
   useEffect(() => {
-    console.log("🎙️ INTERVENTION - useEffect audioBlob changé:", {
+    console.log("🎙️ STABLE - useEffect audioBlob changé:", {
       hasBlob: !!audioBlob,
       blobSize: audioBlob?.size,
       isUploading,
@@ -54,7 +54,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     });
 
     if (audioBlob && audioBlob.size > 0 && user?.id && !isUploading) {
-      console.log("🎙️ INTERVENTION - Début du processus d'upload");
+      console.log("🎙️ STABLE - Début du processus d'upload");
       
       // Notifier IMMÉDIATEMENT le parent avec le blob
       onAudioRecorded(audioBlob);
@@ -66,12 +66,12 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
 
   const handleUpload = async (blob: Blob) => {
     if (!user?.id || isUploading) {
-      console.log("🎙️ INTERVENTION - Upload annulé:", { hasUser: !!user?.id, isUploading });
+      console.log("🎙️ STABLE - Upload annulé:", { hasUser: !!user?.id, isUploading });
       return;
     }
 
     try {
-      console.log(`🎙️ INTERVENTION - Début upload, taille: ${blob.size} octets, type: ${blob.type}`);
+      console.log(`🎙️ STABLE - Début upload, taille: ${blob.size} octets, type: ${blob.type}`);
       setIsUploading(true);
       
       await uploadAudio(
@@ -81,13 +81,13 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         'audio-record',
         // Callback de succès
         (publicUrl) => {
-          console.log(`🎙️ INTERVENTION - ✅ Upload réussi, URL:`, publicUrl);
+          console.log(`🎙️ STABLE - ✅ Upload réussi, URL:`, publicUrl);
           setUploadedAudioUrl(publicUrl);
           setIsUploading(false);
           
           // Notifier le parent de l'URL générée
           if (onAudioUrlGenerated) {
-            console.log(`🎙️ INTERVENTION - Appel onAudioUrlGenerated avec:`, publicUrl);
+            console.log(`🎙️ STABLE - Appel onAudioUrlGenerated avec:`, publicUrl);
             onAudioUrlGenerated(publicUrl);
           }
           
@@ -99,7 +99,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         },
         // Callback d'erreur
         (errorMessage) => {
-          console.error(`🎙️ INTERVENTION - ❌ Erreur upload:`, errorMessage);
+          console.error(`🎙️ STABLE - ❌ Erreur upload:`, errorMessage);
           setIsUploading(false);
           
           toast({
@@ -111,16 +111,16 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         },
         // Callback de début d'upload
         () => {
-          console.log(`🎙️ INTERVENTION - 📤 Début téléchargement`);
+          console.log(`🎙️ STABLE - 📤 Début téléchargement`);
         },
         // Callback de fin d'upload
         () => {
-          console.log(`🎙️ INTERVENTION - 📥 Fin téléchargement`);
+          console.log(`🎙️ STABLE - 📥 Fin téléchargement`);
           setIsUploading(false);
         }
       );
     } catch (error) {
-      console.error(`🎙️ INTERVENTION - 💥 Erreur non gérée dans handleUpload:`, error);
+      console.error(`🎙️ STABLE - 💥 Erreur non gérée dans handleUpload:`, error);
       setIsUploading(false);
       
       toast({
@@ -133,7 +133,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   };
 
   const handleStartRecording = async () => {
-    console.log("🎙️ INTERVENTION - Début enregistrement demandé");
+    console.log("🎙️ STABLE - Début enregistrement demandé");
     if (!user?.id) {
       toast({
         title: "Erreur",
@@ -146,24 +146,24 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     
     try {
       await startRecording();
-      console.log("🎙️ INTERVENTION - Enregistrement démarré avec succès");
+      console.log("🎙️ STABLE - Enregistrement démarré avec succès");
     } catch (error) {
-      console.error("🎙️ INTERVENTION - Erreur démarrage enregistrement:", error);
+      console.error("🎙️ STABLE - Erreur démarrage enregistrement:", error);
     }
   };
 
   const handleStopRecording = async () => {
-    console.log("🎙️ INTERVENTION - Arrêt enregistrement demandé");
+    console.log("🎙️ STABLE - Arrêt enregistrement demandé");
     try {
       await stopRecording();
-      console.log("🎙️ INTERVENTION - Enregistrement arrêté avec succès");
+      console.log("🎙️ STABLE - Enregistrement arrêté avec succès");
     } catch (error) {
-      console.error("🎙️ INTERVENTION - Erreur arrêt enregistrement:", error);
+      console.error("🎙️ STABLE - Erreur arrêt enregistrement:", error);
     }
   };
 
   const handleClearRecording = () => {
-    console.log("🎙️ INTERVENTION - Suppression enregistrement demandée");
+    console.log("🎙️ STABLE - Suppression enregistrement demandée");
     clearRecording();
     setUploadedAudioUrl(null);
     
@@ -197,7 +197,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  console.log("🔧 INTERVENTION - SimpleAudioRecorder avant render final");
+  console.log("🔧 STABLE - SimpleAudioRecorder avant render final");
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
