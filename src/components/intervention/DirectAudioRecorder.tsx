@@ -229,7 +229,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
         
         {/* Interface d'enregistrement */}
         {!hasAudio && (
-          <div className="flex items-center gap-4">
+          <div className="space-y-4">
             {!isRecording ? (
               <Button
                 onClick={handleStartRecording}
@@ -242,20 +242,25 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
                 Commencer l'enregistrement
               </Button>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="space-y-3">
+                {/* Indicateur d'enregistrement */}
+                <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-red-700">
+                    Enregistrement en cours... {formatTime(recordingTime)}
+                  </span>
+                </div>
+                
+                {/* Bouton d'arrêt - TRÈS VISIBLE */}
                 <Button
                   onClick={handleStopRecording}
                   variant="destructive"
-                  size="sm"
-                  className="flex items-center gap-2"
+                  size="lg"
+                  className="w-full flex items-center gap-2 bg-red-600 hover:bg-red-700"
                 >
-                  <Square className="h-4 w-4" />
-                  Arrêter
+                  <Square className="h-5 w-5" />
+                  Arrêter l'enregistrement
                 </Button>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  {formatTime(recordingTime)}
-                </div>
               </div>
             )}
           </div>
