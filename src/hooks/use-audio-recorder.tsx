@@ -22,13 +22,22 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   const audioChunks = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isStoppingRef = useRef<boolean>(false);
   const isProcessingRef = useRef<boolean>(false);
+  const isInitializingRef = useRef<boolean>(false);
+  
+  console.log('🎤 useAudioRecorder render - État:', {
+    isRecording,
+    hasBlob: !!audioBlob,
+    hasUrl: !!audioUrl,
+    isProcessing: isProcessingRef.current,
+    isInitializing: isInitializingRef.current
+  });
   
   // Nettoyer les ressources lors du démontage
   useEffect(() => {
     return () => {
-      stopAllRecording();
+      console.log('🧹 useAudioRecorder - Démontage du hook');
+      cleanupResources();
       
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -39,11 +48,13 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   // Gestion du timer d'enregistrement
   useEffect(() => {
     if (isRecording) {
+      console.log('⏱️ Démarrage du timer d\'enregistrement');
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } else {
       if (timerRef.current) {
+        console.log('⏱️ Arrêt du timer d\'enregistrement');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
@@ -58,18 +69,9 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     };
   }, [isRecording]);
   
-  // Fonction pour arrêter l'enregistrement et libérer les ressources
-  const stopAllRecording = useCallback(() => {
-    console.log('🧹 Nettoyage de toutes les ressources d\'enregistrement');
-    
-    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
-      try {
-        console.log('🛑 Arrêt forcé du MediaRecorder, état:', mediaRecorder.current.state);
-        mediaRecorder.current.stop();
-      } catch (error) {
-        console.error("Erreur lors de l'arrêt forcé du MediaRecorder:", error);
-      }
-    }
+  // Fonction pour nettoyer les ressources
+  const cleanupResources = useCallback(() => {
+    console.log('🧹 Nettoyage des ressources (sans arrêt forcé)');
     
     if (streamRef.current) {
       console.log('🔇 Arrêt des pistes audio');
@@ -85,17 +87,32 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       timerRef.current = null;
     }
     
-    mediaRecorder.current = null;
-    isStoppingRef.current = false;
     isProcessingRef.current = false;
+    isInitializingRef.current = false;
   }, []);
   
   const startRecording = useCallback(async () => {
+    console.log('🎙️ === DÉBUT PROCESSUS D\'ENREGISTREMENT ===');
+    
+    // Protection contre les appels simultanés
+    if (isInitializingRef.current) {
+      console.log('⚠️ Enregistrement déjà en cours d\'initialisation');
+      return;
+    }
+    
+    if (isRecording) {
+      console.log('⚠️ Enregistrement déjà en cours');
+      return;
+    }
+    
+    isInitializingRef.current = true;
+    
     try {
-      console.log('🎙️ === DÉBUT PROCESSUS D\'ENREGISTREMENT ===');
-      
-      // Nettoyer les enregistrements précédents
-      stopAllRecording();
+      // Nettoyer les ressources précédentes (mais pas le MediaRecorder actif)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
       
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -105,10 +122,9 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       setAudioBlob(null);
       audioChunks.current = [];
       setRecordingTime(0);
-      isStoppingRef.current = false;
       isProcessingRef.current = false;
       
-      console.log("Demande d'autorisation pour le microphone...");
+      console.log("🎤 Demande d'autorisation pour le microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -118,7 +134,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       });
       streamRef.current = stream;
       
-      console.log("Autorisation accordée, création du MediaRecorder...");
+      console.log("✅ Autorisation accordée, création du MediaRecorder...");
       
       // Utiliser le format le plus compatible
       let mimeType = 'audio/webm;codecs=opus';
@@ -152,8 +168,6 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       recorder.onstop = () => {
         console.log('🛑 === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
         console.log('🛑 Enregistrement arrêté, chunks collectés:', audioChunks.current.length);
-        console.log('🔍 État isProcessingRef:', isProcessingRef.current);
-        console.log('🔍 État isStoppingRef:', isStoppingRef.current);
         
         // Éviter le double traitement
         if (isProcessingRef.current) {
@@ -163,7 +177,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         isProcessingRef.current = true;
         
         // Attendre un délai pour s'assurer que tous les chunks sont reçus
-        console.log('⏳ Attente de 200ms pour collecter les derniers chunks...');
+        console.log('⏳ Attente de 300ms pour collecter les derniers chunks...');
         setTimeout(() => {
           console.log('📊 Chunks finaux disponibles:', audioChunks.current.length);
           
@@ -189,21 +203,22 @@ export const useAudioRecorder = (): AudioRecorderHook => {
           }
           
           setIsRecording(false);
+          isInitializingRef.current = false;
           
-          // Arrêter tous les tracks du stream
+          // Arrêter les tracks du stream
           if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
           }
           
           isProcessingRef.current = false;
-        }, 200); // Délai augmenté pour être sûr
+        }, 300);
       };
       
       recorder.onerror = (event) => {
         console.error('❌ Erreur MediaRecorder:', event);
         setIsRecording(false);
-        isStoppingRef.current = false;
+        isInitializingRef.current = false;
         isProcessingRef.current = false;
         toast({
           title: "Erreur d'enregistrement",
@@ -212,22 +227,11 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         });
       };
       
-      recorder.onstart = () => {
-        console.log('🎬 Événement onstart déclenché');
-      };
-      
-      recorder.onpause = () => {
-        console.log('⏸️ Événement onpause déclenché');
-      };
-      
-      recorder.onresume = () => {
-        console.log('▶️ Événement onresume déclenché');
-      };
-      
-      // Démarrer l'enregistrement avec un intervalle pour capturer des données
+      // Démarrer l'enregistrement
       console.log('🎬 Démarrage de l\'enregistrement...');
-      recorder.start(500); // Capturer des données toutes les 500ms
+      recorder.start(250); // Capturer des données toutes les 250ms
       setIsRecording(true);
+      isInitializingRef.current = false;
       
       console.log('🎙️ Enregistrement démarré avec succès');
       console.log('📊 État du MediaRecorder:', recorder.state);
@@ -236,7 +240,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       console.error("❌ Erreur lors de l'accès au microphone:", error);
       setIsRecording(false);
       setRecordingTime(0);
-      isStoppingRef.current = false;
+      isInitializingRef.current = false;
       isProcessingRef.current = false;
       
       let errorMessage = "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.";
@@ -255,28 +259,27 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         variant: "destructive",
       });
     }
-  }, [stopAllRecording, audioUrl]);
+  }, [audioUrl]);
   
   const stopRecording = useCallback(async () => {
     console.log('🛑 === DEMANDE D\'ARRÊT MANUEL ===');
     console.log('🔍 État MediaRecorder:', mediaRecorder.current?.state);
-    console.log('🔍 État isStoppingRef:', isStoppingRef.current);
+    console.log('🔍 État isRecording:', isRecording);
     
-    if (!mediaRecorder.current) {
-      console.log('❌ Aucun MediaRecorder actif');
+    if (!mediaRecorder.current || !isRecording) {
+      console.log('❌ Aucun enregistrement actif à arrêter');
       return;
     }
     
     if (mediaRecorder.current.state === 'recording') {
       try {
         console.log("🛑 Arrêt de l'enregistrement en cours...");
-        isStoppingRef.current = true;
         
         // Forcer la collecte des dernières données
         mediaRecorder.current.requestData();
         
         // Attendre un peu avant d'arrêter
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         console.log('🛑 Appel de recorder.stop()');
         mediaRecorder.current.stop();
@@ -284,7 +287,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         console.error("Erreur lors de l'arrêt de l'enregistrement:", error);
         
         // Nettoyage forcé en cas d'erreur
-        stopAllRecording();
+        cleanupResources();
         setIsRecording(false);
         setRecordingTime(0);
         
@@ -299,9 +302,10 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       setIsRecording(false);
       setRecordingTime(0);
     }
-  }, [stopAllRecording]);
+  }, [isRecording, cleanupResources]);
   
   const clearRecording = useCallback(() => {
+    console.log('🗑️ Suppression de l\'enregistrement');
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
