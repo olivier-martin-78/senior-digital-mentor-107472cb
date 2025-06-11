@@ -119,8 +119,10 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
       const recorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = recorder;
       
+      // LOGS DÉTAILLÉS pour traquer les événements MediaRecorder
       recorder.ondataavailable = (event) => {
         console.log('📊 STABLE - Données audio reçues:', event.data.size, 'octets');
+        console.log('📊 STABLE - État du recorder dans ondataavailable:', recorder.state);
         if (event.data.size > 0) {
           console.log('📦 STABLE - AVANT ajout chunk, longueur:', audioChunksRef.current.length);
           audioChunksRef.current.push(event.data);
@@ -130,10 +132,10 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
       
       recorder.onstop = () => {
         console.log('🛑 STABLE - === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
-        console.log('🛑 STABLE - Enregistrement arrêté, chunks collectés:', audioChunksRef.current.length);
+        console.log('🛑 STABLE - Raison de l\'arrêt - État recorder:', recorder.state);
+        console.log('🛑 STABLE - isStoppingRef:', isStoppingRef.current);
+        console.log('🛑 STABLE - Chunks collectés:', audioChunksRef.current.length);
         
-        // CORRECTION CRITIQUE: Arrêter l'enregistrement IMMÉDIATEMENT
-        console.log('🔄 STABLE - Mise à jour isRecording à false IMMÉDIATEMENT');
         setIsRecording(false);
         
         if (audioChunksRef.current.length > 0) {
@@ -146,8 +148,6 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
           
           console.log("✅ STABLE - Blob audio créé:", blob.size, "octets, type:", blob.type);
           
-          // CORRECTION CRITIQUE: Créer le blob APRÈS avoir mis isRecording à false
-          console.log('🎵 STABLE - Création du blob et de l\'URL...');
           const url = URL.createObjectURL(blob);
           console.log("✅ STABLE - URL générée:", url);
           
@@ -155,29 +155,31 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
           setAudioUrl(url);
         } else {
           console.warn("⚠️ STABLE - Aucune donnée audio collectée");
-          toast({
-            title: "Erreur d'enregistrement",
-            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
-            variant: "destructive",
-          });
         }
         
         cleanupResources();
       };
       
+      // NOUVEAU: Log détaillé des erreurs
       recorder.onerror = (event) => {
-        console.error('❌ STABLE - Erreur MediaRecorder:', event);
+        console.error('❌ STABLE - ERREUR MediaRecorder détectée:', event);
+        console.error('❌ STABLE - Type d\'erreur:', event.error);
+        console.error('❌ STABLE - État du recorder lors de l\'erreur:', recorder.state);
+        console.error('❌ STABLE - Stack trace:', new Error().stack);
+        
         setIsRecording(false);
         cleanupResources();
+        
         toast({
           title: "Erreur d'enregistrement",
-          description: "Une erreur est survenue pendant l'enregistrement.",
+          description: `Erreur MediaRecorder: ${event.error}`,
           variant: "destructive",
         });
       };
       
       recorder.onstart = () => {
         console.log('🎬 STABLE - Événement onstart déclenché');
+        console.log('🎬 STABLE - État du recorder dans onstart:', recorder.state);
         isStartingRef.current = false;
         setIsRecording(true);
         
@@ -187,6 +189,35 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         
         console.log('🎙️ STABLE - Enregistrement complètement démarré');
       };
+      
+      // NOUVEAU: Log de tous les événements possibles
+      recorder.onpause = () => {
+        console.log('⏸️ STABLE - Événement onpause déclenché');
+        console.log('⏸️ STABLE - État du recorder:', recorder.state);
+      };
+      
+      recorder.onresume = () => {
+        console.log('▶️ STABLE - Événement onresume déclenché');
+        console.log('▶️ STABLE - État du recorder:', recorder.state);
+      };
+      
+      // NOUVEAU: Surveiller l'état du stream
+      stream.getTracks().forEach(track => {
+        track.onended = () => {
+          console.log('🔇 STABLE - PISTE AUDIO TERMINÉE !');
+          console.log('🔇 STABLE - Track label:', track.label);
+          console.log('🔇 STABLE - Track state:', track.readyState);
+          console.log('🔇 STABLE - Ceci peut causer l\'arrêt automatique de l\'enregistrement');
+        };
+        
+        track.onmute = () => {
+          console.log('🔇 STABLE - PISTE AUDIO MUTED !');
+        };
+        
+        track.onunmute = () => {
+          console.log('🔊 STABLE - PISTE AUDIO UNMUTED !');
+        };
+      });
       
       console.log('🎬 STABLE - Démarrage de l\'enregistrement...');
       recorder.start(1000);
@@ -229,12 +260,12 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
     
     if (mediaRecorderRef.current.state === 'recording') {
       try {
-        console.log("🛑 STABLE - Arrêt de l'enregistrement en cours...");
+        console.log("🛑 STABLE - Arrêt MANUEL de l'enregistrement en cours...");
         isStoppingRef.current = true;
         
         mediaRecorderRef.current.requestData();
         
-        console.log('🛑 STABLE - Appel de recorder.stop()');
+        console.log('🛑 STABLE - Appel MANUEL de recorder.stop()');
         mediaRecorderRef.current.stop();
       } catch (error) {
         console.error("❌ STABLE - Erreur lors de l'arrêt:", error);
