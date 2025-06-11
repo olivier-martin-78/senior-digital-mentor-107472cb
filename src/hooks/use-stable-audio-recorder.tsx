@@ -24,12 +24,17 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef<boolean>(false);
+  const isStartingRef = useRef<boolean>(false);
   
   console.log('🎤 STABLE - useStableAudioRecorder render - État:', {
     isRecording,
     hasBlob: !!audioBlob,
     hasUrl: !!audioUrl,
-    recordingTime
+    recordingTime,
+    isStoppingRef: isStoppingRef.current,
+    isStartingRef: isStartingRef.current,
+    hasMediaRecorder: !!mediaRecorderRef.current,
+    mediaRecorderState: mediaRecorderRef.current?.state
   });
   
   const cleanupResources = useCallback(() => {
@@ -53,15 +58,25 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
     
     // Reset des flags
     isStoppingRef.current = false;
+    isStartingRef.current = false;
   }, []);
   
   const startRecording = useCallback(async () => {
     console.log('🎙️ STABLE - === DÉBUT PROCESSUS D\'ENREGISTREMENT ===');
+    console.log('🎙️ STABLE - État avant démarrage:', {
+      isRecording,
+      isStarting: isStartingRef.current,
+      isStopping: isStoppingRef.current,
+      hasMediaRecorder: !!mediaRecorderRef.current,
+      mediaRecorderState: mediaRecorderRef.current?.state
+    });
     
-    if (isRecording) {
-      console.log('⚠️ STABLE - Enregistrement déjà en cours');
+    if (isRecording || isStartingRef.current) {
+      console.log('⚠️ STABLE - Enregistrement déjà en cours ou en train de démarrer');
       return;
     }
+    
+    isStartingRef.current = true;
     
     try {
       console.log("🎤 STABLE - Demande d'autorisation pour le microphone...");
@@ -116,6 +131,12 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
       recorder.onstop = () => {
         console.log('🛑 STABLE - === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
         console.log('🛑 STABLE - Enregistrement arrêté, chunks collectés:', audioChunksRef.current.length);
+        console.log('🛑 STABLE - État au moment du stop:', {
+          isStoppingRef: isStoppingRef.current,
+          isStartingRef: isStartingRef.current,
+          isRecording,
+          chunksLength: audioChunksRef.current.length
+        });
         
         if (isStoppingRef.current) {
           console.log('⚠️ STABLE - Traitement déjà en cours');
@@ -163,22 +184,35 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         });
       };
       
+      recorder.onstart = () => {
+        console.log('🎬 STABLE - Événement onstart déclenché');
+        console.log('🎬 STABLE - État MediaRecorder:', recorder.state);
+        isStartingRef.current = false;
+        setIsRecording(true);
+        
+        // Démarrer le timer
+        timerRef.current = setInterval(() => {
+          setRecordingTime(prev => {
+            const newTime = prev + 1;
+            console.log('⏱️ STABLE - Timer:', newTime, 'secondes');
+            return newTime;
+          });
+        }, 1000);
+        
+        console.log('🎙️ STABLE - Enregistrement complètement démarré');
+      };
+      
       // Démarrer l'enregistrement avec timeslice plus court pour une meilleure capture
       console.log('🎬 STABLE - Démarrage de l\'enregistrement...');
-      recorder.start(100); // Capturer des données toutes les 100ms
-      setIsRecording(true);
+      recorder.start(200); // Capturer des données toutes les 200ms
       
-      // Démarrer le timer
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      
-      console.log('🎙️ STABLE - Enregistrement démarré avec succès');
+      console.log('🎙️ STABLE - start() appelé, attente de l\'événement onstart...');
       
     } catch (error) {
       console.error("❌ STABLE - Erreur lors de l'accès au microphone:", error);
       setIsRecording(false);
       setRecordingTime(0);
+      isStartingRef.current = false;
       cleanupResources();
       
       let errorMessage = "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.";
@@ -203,9 +237,10 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
     console.log('🛑 STABLE - === DEMANDE D\'ARRÊT MANUEL ===');
     console.log('🔍 STABLE - État MediaRecorder:', mediaRecorderRef.current?.state);
     console.log('🔍 STABLE - État isRecording:', isRecording);
+    console.log('🔍 STABLE - isStoppingRef:', isStoppingRef.current);
     
-    if (!mediaRecorderRef.current || !isRecording) {
-      console.log('❌ STABLE - Aucun enregistrement actif à arrêter');
+    if (!mediaRecorderRef.current || !isRecording || isStoppingRef.current) {
+      console.log('❌ STABLE - Conditions d\'arrêt non remplies');
       return;
     }
     
