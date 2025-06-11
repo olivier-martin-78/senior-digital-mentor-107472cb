@@ -809,10 +809,10 @@ const InterventionReportForm = () => {
                 <InterventionAudioRecorder
                   onAudioRecorded={handleAudioRecorded}
                   onAudioUrlGenerated={handleAudioUrlGenerated}
-                  onRecordingStatusChange={handleRecordingStatusChange} // NOUVEAU
+                  onRecordingStatusChange={handleRecordingStatusChange}
                   existingAudioUrl={formData.audio_url}
                   isReadOnly={!canEdit}
-                  reportId={reportData?.id} // Passer l'ID du rapport
+                  reportId={reportData?.id}
                 />
               </div>
 
@@ -894,4 +894,4 @@ const InterventionReportForm = () => {
 
 export default InterventionReportForm;
 
-</initial_code>
+</edits_to_apply>
