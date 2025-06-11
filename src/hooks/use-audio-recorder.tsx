@@ -23,6 +23,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef<boolean>(false);
+  const isProcessingRef = useRef<boolean>(false);
   
   // Nettoyer les ressources lors du démontage
   useEffect(() => {
@@ -59,8 +60,11 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   
   // Fonction pour arrêter l'enregistrement et libérer les ressources
   const stopAllRecording = useCallback(() => {
+    console.log('🧹 Nettoyage de toutes les ressources d\'enregistrement');
+    
     if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
       try {
+        console.log('🛑 Arrêt forcé du MediaRecorder, état:', mediaRecorder.current.state);
         mediaRecorder.current.stop();
       } catch (error) {
         console.error("Erreur lors de l'arrêt forcé du MediaRecorder:", error);
@@ -68,7 +72,11 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     }
     
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      console.log('🔇 Arrêt des pistes audio');
+      streamRef.current.getTracks().forEach(track => {
+        console.log('🔇 Arrêt piste:', track.label, track.kind);
+        track.stop();
+      });
       streamRef.current = null;
     }
     
@@ -79,10 +87,13 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     
     mediaRecorder.current = null;
     isStoppingRef.current = false;
+    isProcessingRef.current = false;
   }, []);
   
   const startRecording = useCallback(async () => {
     try {
+      console.log('🎙️ === DÉBUT PROCESSUS D\'ENREGISTREMENT ===');
+      
       // Nettoyer les enregistrements précédents
       stopAllRecording();
       
@@ -95,6 +106,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       audioChunks.current = [];
       setRecordingTime(0);
       isStoppingRef.current = false;
+      isProcessingRef.current = false;
       
       console.log("Demande d'autorisation pour le microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -120,6 +132,8 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         }
       }
       
+      console.log('🎵 Type MIME sélectionné:', mimeType || 'défaut');
+      
       const recorder = new MediaRecorder(stream, {
         mimeType: mimeType || undefined,
         bitsPerSecond: 128000
@@ -131,22 +145,32 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         console.log('📊 Données audio reçues:', event.data.size, 'octets');
         if (event.data.size > 0) {
           audioChunks.current.push(event.data);
+          console.log('📦 Total chunks collectés:', audioChunks.current.length);
         }
       };
       
       recorder.onstop = () => {
+        console.log('🛑 === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
         console.log('🛑 Enregistrement arrêté, chunks collectés:', audioChunks.current.length);
+        console.log('🔍 État isProcessingRef:', isProcessingRef.current);
+        console.log('🔍 État isStoppingRef:', isStoppingRef.current);
         
         // Éviter le double traitement
-        if (isStoppingRef.current) {
+        if (isProcessingRef.current) {
           console.log('⚠️ Traitement déjà en cours, éviter le doublon');
           return;
         }
-        isStoppingRef.current = true;
+        isProcessingRef.current = true;
         
-        // Attendre un petit délai pour s'assurer que tous les chunks sont reçus
+        // Attendre un délai pour s'assurer que tous les chunks sont reçus
+        console.log('⏳ Attente de 200ms pour collecter les derniers chunks...');
         setTimeout(() => {
+          console.log('📊 Chunks finaux disponibles:', audioChunks.current.length);
+          
           if (audioChunks.current.length > 0) {
+            const totalSize = audioChunks.current.reduce((total, chunk) => total + chunk.size, 0);
+            console.log('📊 Taille totale des chunks:', totalSize, 'octets');
+            
             const blob = new Blob(audioChunks.current, { 
               type: mimeType || 'audio/webm' 
             });
@@ -171,13 +195,16 @@ export const useAudioRecorder = (): AudioRecorderHook => {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
           }
-        }, 100); // Petit délai pour recevoir les derniers chunks
+          
+          isProcessingRef.current = false;
+        }, 200); // Délai augmenté pour être sûr
       };
       
       recorder.onerror = (event) => {
         console.error('❌ Erreur MediaRecorder:', event);
         setIsRecording(false);
         isStoppingRef.current = false;
+        isProcessingRef.current = false;
         toast({
           title: "Erreur d'enregistrement",
           description: "Une erreur est survenue pendant l'enregistrement.",
@@ -185,17 +212,32 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         });
       };
       
-      // Démarrer l'enregistrement avec un intervalle plus court pour capturer plus de données
-      recorder.start(250); // Capturer des données toutes les 250ms
+      recorder.onstart = () => {
+        console.log('🎬 Événement onstart déclenché');
+      };
+      
+      recorder.onpause = () => {
+        console.log('⏸️ Événement onpause déclenché');
+      };
+      
+      recorder.onresume = () => {
+        console.log('▶️ Événement onresume déclenché');
+      };
+      
+      // Démarrer l'enregistrement avec un intervalle pour capturer des données
+      console.log('🎬 Démarrage de l\'enregistrement...');
+      recorder.start(500); // Capturer des données toutes les 500ms
       setIsRecording(true);
       
       console.log('🎙️ Enregistrement démarré avec succès');
+      console.log('📊 État du MediaRecorder:', recorder.state);
       
     } catch (error) {
-      console.error("Erreur lors de l'accès au microphone:", error);
+      console.error("❌ Erreur lors de l'accès au microphone:", error);
       setIsRecording(false);
       setRecordingTime(0);
       isStoppingRef.current = false;
+      isProcessingRef.current = false;
       
       let errorMessage = "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.";
       
@@ -216,13 +258,27 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   }, [stopAllRecording, audioUrl]);
   
   const stopRecording = useCallback(async () => {
-    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+    console.log('🛑 === DEMANDE D\'ARRÊT MANUEL ===');
+    console.log('🔍 État MediaRecorder:', mediaRecorder.current?.state);
+    console.log('🔍 État isStoppingRef:', isStoppingRef.current);
+    
+    if (!mediaRecorder.current) {
+      console.log('❌ Aucun MediaRecorder actif');
+      return;
+    }
+    
+    if (mediaRecorder.current.state === 'recording') {
       try {
-        console.log("🛑 Arrêt de l'enregistrement...");
+        console.log("🛑 Arrêt de l'enregistrement en cours...");
+        isStoppingRef.current = true;
         
-        // Ajouter une petite attente avant d'arrêter pour s'assurer qu'on a des données
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Forcer la collecte des dernières données
+        mediaRecorder.current.requestData();
         
+        // Attendre un peu avant d'arrêter
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        console.log('🛑 Appel de recorder.stop()');
         mediaRecorder.current.stop();
       } catch (error) {
         console.error("Erreur lors de l'arrêt de l'enregistrement:", error);
@@ -239,8 +295,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         });
       }
     } else {
-      // Si déjà arrêté, assurons-nous que l'état est cohérent
-      console.log("⚠️ MediaRecorder déjà arrêté ou inactif");
+      console.log("⚠️ MediaRecorder déjà arrêté ou inactif, état:", mediaRecorder.current.state);
       setIsRecording(false);
       setRecordingTime(0);
     }
