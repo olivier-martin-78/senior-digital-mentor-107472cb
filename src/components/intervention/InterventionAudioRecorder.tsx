@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SimpleAudioRecorder from './SimpleAudioRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
@@ -8,7 +8,7 @@ interface InterventionAudioRecorderProps {
   onAudioUrlGenerated?: (url: string) => void;
   existingAudioUrl?: string | null;
   isReadOnly?: boolean;
-  reportId?: string; // Nouvel paramètre
+  reportId?: string;
 }
 
 const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
@@ -18,7 +18,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   isReadOnly = false,
   reportId
 }) => {
-  const [audioUrl, setAudioUrl] = useState<string | null>(existingAudioUrl || null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
   console.log("🎵 INTERVENTION - InterventionAudioRecorder rendu:", {
     hasExistingUrl: !!existingAudioUrl,
@@ -27,11 +27,13 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     isReadOnly,
     reportId
   });
-  
-  // Normaliser l'URL existante
-  const normalizedExistingUrl = (existingAudioUrl && typeof existingAudioUrl === 'string' && existingAudioUrl.trim() !== '') 
-    ? existingAudioUrl.trim() 
-    : null;
+
+  // Initialiser avec l'URL existante si disponible
+  useEffect(() => {
+    if (existingAudioUrl && existingAudioUrl.trim() !== '') {
+      setAudioUrl(existingAudioUrl.trim());
+    }
+  }, [existingAudioUrl]);
 
   const handleAudioRecorded = (blob: Blob) => {
     console.log('🎤 INTERVENTION - Audio enregistré dans InterventionAudioRecorder:', blob?.size);
@@ -70,24 +72,25 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     }
   };
 
-  // Si on a une URL audio valide, afficher le lecteur
-  const shouldShowPlayer = audioUrl || normalizedExistingUrl;
+  // Déterminer ce qui doit être affiché
+  const hasValidAudioUrl = !!(audioUrl || existingAudioUrl);
   
   console.log('🎵 INTERVENTION - Logique d\'affichage:', {
-    shouldShowPlayer,
+    hasValidAudioUrl,
     audioUrl,
-    normalizedExistingUrl,
+    existingAudioUrl,
     isReadOnly
   });
-  
-  if (shouldShowPlayer) {
-    const urlToUse = audioUrl || normalizedExistingUrl;
+
+  // Si on a une URL audio valide, afficher le lecteur
+  if (hasValidAudioUrl) {
+    const urlToUse = audioUrl || existingAudioUrl;
     console.log('🎵 INTERVENTION - Affichage lecteur avec URL:', urlToUse);
     
     return (
       <VoiceAnswerPlayer
         audioUrl={urlToUse!}
-        onDelete={handleDeleteAudio}
+        onDelete={isReadOnly ? undefined : handleDeleteAudio}
         readOnly={isReadOnly}
       />
     );
