@@ -58,28 +58,21 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       isRecording
     });
 
-    if (audioBlob && !isRecording && !isUploading) {
+    if (audioBlob && !isRecording && !isUploading && audioBlob.size > 0) {
       console.log("🎙️ INTERVENTION - Traitement du blob audio");
       
       // Notifier IMMÉDIATEMENT le parent avec le blob
       onAudioRecorded(audioBlob);
       
       // Si on a un reportId et un blob valide, faire l'upload
-      if (reportId && audioBlob.size > 0 && user?.id) {
+      if (reportId && user?.id) {
         console.log("🎙️ INTERVENTION - Conditions remplies pour upload");
         handleUpload(audioBlob);
-      } else if (audioBlob.size === 0) {
-        // Blob vide = suppression
-        console.log("🎙️ INTERVENTION - Blob vide, suppression");
-        setUploadedAudioUrl(null);
-        if (onAudioUrlGenerated) {
-          onAudioUrlGenerated('');
-        }
       } else {
         console.log("🎙️ INTERVENTION - Upload différé, manque reportId ou user");
       }
     }
-  }, [audioBlob, isRecording, isUploading, user?.id, reportId]);
+  }, [audioBlob, isRecording, isUploading, user?.id, reportId, onAudioRecorded]);
 
   const handleUpload = async (blob: Blob) => {
     if (!user?.id || isUploading || !reportId) {
@@ -160,7 +153,6 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       return;
     }
     
-    // Reset des états
     setUploadedAudioUrl(null);
     
     try {
@@ -222,7 +214,13 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  console.log("🔧 INTERVENTION - SimpleAudioRecorder avant render final");
+  const hasAudio = !!(audioUrl || uploadedAudioUrl);
+
+  console.log("🔧 INTERVENTION - SimpleAudioRecorder avant render final", {
+    hasAudio,
+    audioUrl,
+    uploadedAudioUrl
+  });
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
@@ -231,7 +229,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       <div className={`transition-all ${isUploading ? "opacity-60 pointer-events-none" : ""}`}>
         
         {/* Interface d'enregistrement */}
-        {!audioUrl && !uploadedAudioUrl && (
+        {!hasAudio && (
           <div className="flex items-center gap-4">
             {!isRecording ? (
               <Button
@@ -265,7 +263,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         )}
 
         {/* Interface de lecture */}
-        {(audioUrl || uploadedAudioUrl) && (
+        {hasAudio && (
           <div className="flex items-center gap-4">
             <Button
               onClick={handlePlayPause}

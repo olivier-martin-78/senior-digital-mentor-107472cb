@@ -73,7 +73,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     }
   };
 
-  // Déterminer ce qui doit être affiché
+  // Simplifier la logique d'affichage
   const currentUrl = audioUrl || existingAudioUrl;
   const hasValidAudioUrl = !!(currentUrl && currentUrl.trim() !== '');
   
