@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import SimpleAudioRecorder from './SimpleAudioRecorder';
+import DirectAudioRecorder from './DirectAudioRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
 interface InterventionAudioRecorderProps {
@@ -34,7 +34,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
       console.log("🎵 INTERVENTION - Initialisation avec URL existante:", existingAudioUrl);
       setAudioUrl(existingAudioUrl.trim());
     } else {
-      console.log("🎵 INTERVENTION - Pas d'URL existante ou URL vide");
+      console.log("🎵 INTERVENTION - Pas d'URL existante");
       setAudioUrl(null);
     }
   }, [existingAudioUrl]);
@@ -73,11 +73,11 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     }
   };
 
-  // Simplifier la logique d'affichage
+  // Logique d'affichage simplifiée
   const currentUrl = audioUrl || existingAudioUrl;
   const hasValidAudioUrl = !!(currentUrl && currentUrl.trim() !== '');
   
-  console.log('🎵 INTERVENTION - Logique d\'affichage:', {
+  console.log('🎵 INTERVENTION - Logique affichage:', {
     hasValidAudioUrl,
     audioUrl,
     existingAudioUrl,
@@ -104,10 +104,10 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     return null;
   }
 
-  // Sinon, afficher l'enregistreur simplifié
-  console.log('🎙️ INTERVENTION - Affichage enregistreur avec reportId:', reportId);
+  // Sinon, afficher le nouvel enregistreur direct
+  console.log('🎙️ INTERVENTION - Affichage enregistreur direct avec reportId:', reportId);
   return (
-    <SimpleAudioRecorder
+    <DirectAudioRecorder
       onAudioRecorded={handleAudioRecorded}
       onAudioUrlGenerated={handleAudioUrlGenerated}
       reportId={reportId}
