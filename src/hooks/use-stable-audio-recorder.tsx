@@ -34,7 +34,8 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
     isStoppingRef: isStoppingRef.current,
     isStartingRef: isStartingRef.current,
     hasMediaRecorder: !!mediaRecorderRef.current,
-    mediaRecorderState: mediaRecorderRef.current?.state
+    mediaRecorderState: mediaRecorderRef.current?.state,
+    chunksLength: audioChunksRef.current.length
   });
   
   const cleanupResources = useCallback(() => {
@@ -97,7 +98,12 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         URL.revokeObjectURL(audioUrl);
         setAudioUrl(null);
       }
+      
+      // ATTENTION: NE PAS vider audioChunksRef ici si l'enregistrement est en cours
+      console.log('🗑️ STABLE - AVANT vidage chunks, longueur:', audioChunksRef.current.length);
       audioChunksRef.current = [];
+      console.log('🗑️ STABLE - APRÈS vidage chunks, longueur:', audioChunksRef.current.length);
+      
       setRecordingTime(0);
       isStoppingRef.current = false;
       
@@ -123,8 +129,16 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
       recorder.ondataavailable = (event) => {
         console.log('📊 STABLE - Données audio reçues:', event.data.size, 'octets');
         if (event.data.size > 0) {
+          console.log('📦 STABLE - AVANT ajout chunk, longueur:', audioChunksRef.current.length);
           audioChunksRef.current.push(event.data);
-          console.log('📦 STABLE - Total chunks collectés:', audioChunksRef.current.length);
+          console.log('📦 STABLE - APRÈS ajout chunk, longueur:', audioChunksRef.current.length);
+          
+          // Vérifier si les chunks disparaissent mystérieusement
+          setTimeout(() => {
+            if (audioChunksRef.current.length === 0) {
+              console.error('🚨 STABLE - CHUNKS VIDÉS MYSTÉRIEUSEMENT !');
+            }
+          }, 10);
         }
       };
       
@@ -187,6 +201,7 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
       recorder.onstart = () => {
         console.log('🎬 STABLE - Événement onstart déclenché');
         console.log('🎬 STABLE - État MediaRecorder:', recorder.state);
+        console.log('🎬 STABLE - Chunks au démarrage:', audioChunksRef.current.length);
         isStartingRef.current = false;
         setIsRecording(true);
         
@@ -194,7 +209,7 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         timerRef.current = setInterval(() => {
           setRecordingTime(prev => {
             const newTime = prev + 1;
-            console.log('⏱️ STABLE - Timer:', newTime, 'secondes');
+            console.log('⏱️ STABLE - Timer:', newTime, 'secondes, chunks:', audioChunksRef.current.length);
             return newTime;
           });
         }, 1000);
@@ -238,6 +253,7 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
     console.log('🔍 STABLE - État MediaRecorder:', mediaRecorderRef.current?.state);
     console.log('🔍 STABLE - État isRecording:', isRecording);
     console.log('🔍 STABLE - isStoppingRef:', isStoppingRef.current);
+    console.log('🔍 STABLE - Chunks avant arrêt:', audioChunksRef.current.length);
     
     if (!mediaRecorderRef.current || !isRecording || isStoppingRef.current) {
       console.log('❌ STABLE - Conditions d\'arrêt non remplies');
