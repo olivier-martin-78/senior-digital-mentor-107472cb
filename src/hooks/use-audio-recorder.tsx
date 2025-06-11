@@ -24,26 +24,52 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef<boolean>(false);
   const isInitializingRef = useRef<boolean>(false);
+  const isUnmountingRef = useRef<boolean>(false);
   
   console.log('🎤 useAudioRecorder render - État:', {
     isRecording,
     hasBlob: !!audioBlob,
     hasUrl: !!audioUrl,
     isProcessing: isProcessingRef.current,
-    isInitializing: isInitializingRef.current
+    isInitializing: isInitializingRef.current,
+    isUnmounting: isUnmountingRef.current
   });
   
   // Nettoyer les ressources lors du démontage
   useEffect(() => {
     return () => {
-      console.log('🧹 useAudioRecorder - Démontage du hook');
+      console.log('🧹 useAudioRecorder - Démontage du hook détecté');
+      
+      // Marquer comme en cours de démontage
+      isUnmountingRef.current = true;
+      
+      // Si on est en train d'enregistrer, NE PAS nettoyer immédiatement
+      if (isRecording && mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+        console.log('⚠️ Démontage pendant l\'enregistrement - report du nettoyage');
+        
+        // Essayer de finir l'enregistrement proprement
+        try {
+          mediaRecorder.current.requestData();
+          setTimeout(() => {
+            if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+              mediaRecorder.current.stop();
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Erreur lors de l\'arrêt d\'urgence:', error);
+        }
+        
+        return; // Ne pas nettoyer maintenant
+      }
+      
+      // Nettoyage normal si pas d'enregistrement en cours
       cleanupResources();
       
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
     };
-  }, []);
+  }, []); // Retirer isRecording des dépendances pour éviter les re-renders
   
   // Gestion du timer d'enregistrement
   useEffect(() => {
@@ -71,7 +97,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   
   // Fonction pour nettoyer les ressources
   const cleanupResources = useCallback(() => {
-    console.log('🧹 Nettoyage des ressources (sans arrêt forcé)');
+    console.log('🧹 Nettoyage des ressources');
     
     if (streamRef.current) {
       console.log('🔇 Arrêt des pistes audio');
@@ -89,6 +115,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     
     isProcessingRef.current = false;
     isInitializingRef.current = false;
+    isUnmountingRef.current = false;
   }, []);
   
   const startRecording = useCallback(async () => {
@@ -106,24 +133,9 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     }
     
     isInitializingRef.current = true;
+    isUnmountingRef.current = false; // Réinitialiser le flag
     
     try {
-      // Nettoyer les ressources précédentes (mais pas le MediaRecorder actif)
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-        setAudioUrl(null);
-      }
-      
-      setAudioBlob(null);
-      audioChunks.current = [];
-      setRecordingTime(0);
-      isProcessingRef.current = false;
-      
       console.log("🎤 Demande d'autorisation pour le microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -135,6 +147,16 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       streamRef.current = stream;
       
       console.log("✅ Autorisation accordée, création du MediaRecorder...");
+      
+      // Nettoyer les anciennes données
+      setAudioBlob(null);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+      audioChunks.current = [];
+      setRecordingTime(0);
+      isProcessingRef.current = false;
       
       // Utiliser le format le plus compatible
       let mimeType = 'audio/webm;codecs=opus';
@@ -159,7 +181,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       
       recorder.ondataavailable = (event) => {
         console.log('📊 Données audio reçues:', event.data.size, 'octets');
-        if (event.data.size > 0) {
+        if (event.data.size > 0 && !isUnmountingRef.current) {
           audioChunks.current.push(event.data);
           console.log('📦 Total chunks collectés:', audioChunks.current.length);
         }
@@ -168,6 +190,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       recorder.onstop = () => {
         console.log('🛑 === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
         console.log('🛑 Enregistrement arrêté, chunks collectés:', audioChunks.current.length);
+        console.log('🔍 État isUnmounting:', isUnmountingRef.current);
         
         // Éviter le double traitement
         if (isProcessingRef.current) {
@@ -177,7 +200,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         isProcessingRef.current = true;
         
         // Attendre un délai pour s'assurer que tous les chunks sont reçus
-        console.log('⏳ Attente de 300ms pour collecter les derniers chunks...');
+        console.log('⏳ Attente de 500ms pour collecter les derniers chunks...');
         setTimeout(() => {
           console.log('📊 Chunks finaux disponibles:', audioChunks.current.length);
           
@@ -205,14 +228,14 @@ export const useAudioRecorder = (): AudioRecorderHook => {
           setIsRecording(false);
           isInitializingRef.current = false;
           
-          // Arrêter les tracks du stream
+          // Arrêter les tracks du stream seulement maintenant
           if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
           }
           
           isProcessingRef.current = false;
-        }, 300);
+        }, 500); // Délai plus long pour laisser le temps aux chunks
       };
       
       recorder.onerror = (event) => {
@@ -229,7 +252,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       
       // Démarrer l'enregistrement
       console.log('🎬 Démarrage de l\'enregistrement...');
-      recorder.start(250); // Capturer des données toutes les 250ms
+      recorder.start(100); // Capturer des données toutes les 100ms
       setIsRecording(true);
       isInitializingRef.current = false;
       
@@ -275,11 +298,11 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       try {
         console.log("🛑 Arrêt de l'enregistrement en cours...");
         
-        // Forcer la collecte des dernières données
+        // Forcer la collecte des dernières données avant d'arrêter
         mediaRecorder.current.requestData();
         
-        // Attendre un peu avant d'arrêter
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Attendre un peu avant d'arrêter pour laisser le temps aux données
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         console.log('🛑 Appel de recorder.stop()');
         mediaRecorder.current.stop();
