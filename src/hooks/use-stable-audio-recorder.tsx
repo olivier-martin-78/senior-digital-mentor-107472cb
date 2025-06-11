@@ -136,6 +136,7 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         console.log('🛑 STABLE - isStoppingRef:', isStoppingRef.current);
         console.log('🛑 STABLE - Chunks collectés:', audioChunksRef.current.length);
         
+        // NOUVEAU: Mettre isRecording à false AVANT de créer le blob
         setIsRecording(false);
         
         if (audioChunksRef.current.length > 0) {
@@ -160,19 +161,24 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         cleanupResources();
       };
       
-      // NOUVEAU: Log détaillé des erreurs
-      recorder.onerror = (event) => {
+      // CORRECTION: Utiliser le bon type d'événement pour les erreurs MediaRecorder
+      recorder.onerror = (event: Event) => {
         console.error('❌ STABLE - ERREUR MediaRecorder détectée:', event);
-        console.error('❌ STABLE - Type d\'erreur:', event.error);
+        console.error('❌ STABLE - Type d\'événement:', event.type);
         console.error('❌ STABLE - État du recorder lors de l\'erreur:', recorder.state);
         console.error('❌ STABLE - Stack trace:', new Error().stack);
+        
+        // Vérifier si l'événement a une propriété error (MediaRecorderErrorEvent)
+        const errorEvent = event as any;
+        const errorMessage = errorEvent.error ? errorEvent.error.toString() : 'Erreur inconnue';
+        console.error('❌ STABLE - Message d\'erreur:', errorMessage);
         
         setIsRecording(false);
         cleanupResources();
         
         toast({
           title: "Erreur d'enregistrement",
-          description: `Erreur MediaRecorder: ${event.error}`,
+          description: `Erreur MediaRecorder: ${errorMessage}`,
           variant: "destructive",
         });
       };
@@ -201,21 +207,32 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         console.log('▶️ STABLE - État du recorder:', recorder.state);
       };
       
-      // NOUVEAU: Surveiller l'état du stream
-      stream.getTracks().forEach(track => {
+      // NOUVEAU: Surveiller l'état du stream avec logs détaillés
+      stream.getTracks().forEach((track, index) => {
+        console.log(`🎧 STABLE - Initialisation track ${index}:`, {
+          label: track.label,
+          kind: track.kind,
+          readyState: track.readyState,
+          enabled: track.enabled,
+          muted: track.muted
+        });
+        
         track.onended = () => {
-          console.log('🔇 STABLE - PISTE AUDIO TERMINÉE !');
+          console.log(`🔇 STABLE - ⚠️ PISTE AUDIO ${index} TERMINÉE !`);
           console.log('🔇 STABLE - Track label:', track.label);
           console.log('🔇 STABLE - Track state:', track.readyState);
-          console.log('🔇 STABLE - Ceci peut causer l\'arrêt automatique de l\'enregistrement');
+          console.log('🔇 STABLE - Ceci CAUSE l\'arrêt automatique de l\'enregistrement');
+          console.log('🔇 STABLE - État MediaRecorder au moment de l\'arrêt track:', recorder.state);
         };
         
         track.onmute = () => {
-          console.log('🔇 STABLE - PISTE AUDIO MUTED !');
+          console.log(`🔇 STABLE - PISTE AUDIO ${index} MUTED !`);
+          console.log('🔇 STABLE - État MediaRecorder:', recorder.state);
         };
         
         track.onunmute = () => {
-          console.log('🔊 STABLE - PISTE AUDIO UNMUTED !');
+          console.log(`🔊 STABLE - PISTE AUDIO ${index} UNMUTED !`);
+          console.log('🔊 STABLE - État MediaRecorder:', recorder.state);
         };
       });
       
