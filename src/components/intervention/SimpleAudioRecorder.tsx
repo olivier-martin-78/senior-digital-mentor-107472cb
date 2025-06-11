@@ -23,6 +23,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [hasProcessedBlob, setHasProcessedBlob] = useState(false);
   const { user } = useAuth();
 
   const {
@@ -44,10 +45,11 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     isRecording,
     hasAudioBlob: !!audioBlob,
     hasAudioUrl: !!audioUrl,
-    recordingTime
+    recordingTime,
+    hasProcessedBlob
   });
 
-  // Traiter le blob audio quand il est disponible
+  // CORRECTION CRITIQUE: useEffect séparé uniquement pour audioBlob
   useEffect(() => {
     console.log("🎙️ INTERVENTION - useEffect audioBlob changé:", {
       hasBlob: !!audioBlob,
@@ -55,11 +57,14 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       isUploading,
       userConnected: !!user?.id,
       hasReportId: !!reportId,
-      isRecording
+      hasProcessedBlob
     });
 
-    if (audioBlob && !isRecording && !isUploading && audioBlob.size > 0) {
-      console.log("🎙️ INTERVENTION - Traitement du blob audio");
+    // CORRECTION: Traiter le blob seulement s'il n'a pas déjà été traité
+    if (audioBlob && audioBlob.size > 0 && !hasProcessedBlob && !isUploading) {
+      console.log("🎙️ INTERVENTION - Traitement du nouveau blob audio");
+      
+      setHasProcessedBlob(true);
       
       // Notifier IMMÉDIATEMENT le parent avec le blob
       onAudioRecorded(audioBlob);
@@ -72,7 +77,15 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         console.log("🎙️ INTERVENTION - Upload différé, manque reportId ou user");
       }
     }
-  }, [audioBlob, isRecording, isUploading, user?.id, reportId, onAudioRecorded]);
+  }, [audioBlob, hasProcessedBlob, isUploading, user?.id, reportId, onAudioRecorded]);
+
+  // Reset hasProcessedBlob quand on démarre un nouvel enregistrement
+  useEffect(() => {
+    if (isRecording && hasProcessedBlob) {
+      console.log("🔄 INTERVENTION - Reset du flag de traitement pour nouvel enregistrement");
+      setHasProcessedBlob(false);
+    }
+  }, [isRecording, hasProcessedBlob]);
 
   const handleUpload = async (blob: Blob) => {
     if (!user?.id || isUploading || !reportId) {
@@ -154,6 +167,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     }
     
     setUploadedAudioUrl(null);
+    setHasProcessedBlob(false);
     
     try {
       await startRecording();
@@ -177,6 +191,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     console.log("🎙️ INTERVENTION - Suppression enregistrement demandée");
     clearRecording();
     setUploadedAudioUrl(null);
+    setHasProcessedBlob(false);
     
     // Notifier le parent avec un blob vide
     const emptyBlob = new Blob([], { type: 'audio/webm' });
@@ -219,7 +234,8 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   console.log("🔧 INTERVENTION - SimpleAudioRecorder avant render final", {
     hasAudio,
     audioUrl,
-    uploadedAudioUrl
+    uploadedAudioUrl,
+    hasProcessedBlob
   });
 
   return (

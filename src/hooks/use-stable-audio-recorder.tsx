@@ -132,34 +132,37 @@ export const useStableAudioRecorder = (): StableAudioRecorderHook => {
         console.log('🛑 STABLE - === ÉVÉNEMENT STOP DÉCLENCHÉ ===');
         console.log('🛑 STABLE - Enregistrement arrêté, chunks collectés:', audioChunksRef.current.length);
         
-        // Attendre un peu pour s'assurer que tous les chunks sont arrivés
-        setTimeout(() => {
-          if (audioChunksRef.current.length > 0) {
-            const totalSize = audioChunksRef.current.reduce((total, chunk) => total + chunk.size, 0);
-            console.log('📊 STABLE - Taille totale des chunks:', totalSize, 'octets');
-            
-            const blob = new Blob([...audioChunksRef.current], { 
-              type: options.mimeType || 'audio/webm' 
-            });
-            const url = URL.createObjectURL(blob);
-            
-            console.log("✅ STABLE - Blob audio créé:", blob.size, "octets, type:", blob.type);
-            console.log("✅ STABLE - URL générée:", url);
-            
-            setAudioBlob(blob);
-            setAudioUrl(url);
-          } else {
-            console.warn("⚠️ STABLE - Aucune donnée audio collectée");
-            toast({
-              title: "Erreur d'enregistrement",
-              description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
-              variant: "destructive",
-            });
-          }
+        // CORRECTION CRITIQUE: Arrêter l'enregistrement IMMÉDIATEMENT
+        console.log('🔄 STABLE - Mise à jour isRecording à false IMMÉDIATEMENT');
+        setIsRecording(false);
+        
+        if (audioChunksRef.current.length > 0) {
+          const totalSize = audioChunksRef.current.reduce((total, chunk) => total + chunk.size, 0);
+          console.log('📊 STABLE - Taille totale des chunks:', totalSize, 'octets');
           
-          setIsRecording(false);
-          cleanupResources();
-        }, 100); // Délai de 100ms pour s'assurer que tous les chunks arrivent
+          const blob = new Blob([...audioChunksRef.current], { 
+            type: options.mimeType || 'audio/webm' 
+          });
+          
+          console.log("✅ STABLE - Blob audio créé:", blob.size, "octets, type:", blob.type);
+          
+          // CORRECTION CRITIQUE: Créer le blob APRÈS avoir mis isRecording à false
+          console.log('🎵 STABLE - Création du blob et de l\'URL...');
+          const url = URL.createObjectURL(blob);
+          console.log("✅ STABLE - URL générée:", url);
+          
+          setAudioBlob(blob);
+          setAudioUrl(url);
+        } else {
+          console.warn("⚠️ STABLE - Aucune donnée audio collectée");
+          toast({
+            title: "Erreur d'enregistrement",
+            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
+            variant: "destructive",
+          });
+        }
+        
+        cleanupResources();
       };
       
       recorder.onerror = (event) => {
