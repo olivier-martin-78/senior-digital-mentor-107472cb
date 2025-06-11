@@ -41,6 +41,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
     reportId,
     isRecording,
     hasAudioBlob: !!audioBlob,
+    blobSize: audioBlob?.size,
     hasAudioUrl: !!audioUrl,
     isUploading,
     uploadedAudioUrl,
@@ -49,11 +50,20 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
 
   // === TRAITEMENT AUTOMATIQUE DU BLOB AUDIO ===
   useEffect(() => {
+    console.log("🎙️ DIRECT - useEffect audioBlob:", {
+      hasBlob: !!audioBlob,
+      blobSize: audioBlob?.size,
+      isUploading,
+      userConnected: !!user?.id,
+      hasReportId: !!reportId
+    });
+
     if (audioBlob && audioBlob.size > 0 && !isUploading) {
       console.log("🎙️ DIRECT - Nouveau blob détecté, traitement automatique");
       console.log("🎙️ DIRECT - Taille blob:", audioBlob.size, "octets");
       
       // 1. Notifier IMMÉDIATEMENT le parent
+      console.log("🎙️ DIRECT - Notification du parent avec le blob");
       onAudioRecorded(audioBlob);
       
       // 2. Déclencher l'upload si les conditions sont remplies
@@ -78,6 +88,8 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
 
     console.log(`🎙️ DIRECT - === DÉBUT UPLOAD ===`);
     console.log(`🎙️ DIRECT - Taille blob: ${blob.size} octets`);
+    console.log(`🎙️ DIRECT - User ID: ${user.id}`);
+    console.log(`🎙️ DIRECT - Report ID: ${reportId}`);
     
     try {
       await uploadInterventionAudio(
@@ -89,6 +101,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
           console.log(`🎙️ DIRECT - ✅ Upload réussi:`, publicUrl);
           setUploadedAudioUrl(publicUrl);
           
+          console.log(`🎙️ DIRECT - Notification parent avec URL:`, publicUrl);
           if (onAudioUrlGenerated) {
             onAudioUrlGenerated(publicUrl);
           }

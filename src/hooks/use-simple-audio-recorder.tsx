@@ -22,6 +22,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const healthCheckRef = useRef<NodeJS.Timeout | null>(null);
   
   console.log('🎤 SIMPLE - useSimpleAudioRecorder render:', {
     isRecording,
@@ -39,6 +40,11 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    
+    if (healthCheckRef.current) {
+      clearInterval(healthCheckRef.current);
+      healthCheckRef.current = null;
     }
     
     if (streamRef.current) {
@@ -105,11 +111,16 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
         console.log('📊 SIMPLE - ondataavailable:', {
           dataSize: event.data.size,
           recorderState: recorder.state,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          streamActive: streamRef.current?.active,
+          tracksLength: streamRef.current?.getTracks().length
         });
+        
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
           console.log('📦 SIMPLE - Chunk ajouté, total:', audioChunksRef.current.length);
+        } else {
+          console.warn('⚠️ SIMPLE - Chunk vide reçu !');
         }
       };
       
@@ -117,6 +128,8 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
         console.log('🛑 SIMPLE - === ÉVÉNEMENT ONSTOP ===');
         console.log('🛑 SIMPLE - Chunks collectés:', audioChunksRef.current.length);
         console.log('🛑 SIMPLE - État recorder:', recorder.state);
+        console.log('🛑 SIMPLE - Stream actif:', streamRef.current?.active);
+        console.log('🛑 SIMPLE - Timestamp:', new Date().toISOString());
         
         setIsRecording(false);
         
@@ -147,6 +160,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
         console.error('❌ SIMPLE - Événement:', event);
         console.error('❌ SIMPLE - Type:', event.type);
         console.error('❌ SIMPLE - État recorder:', recorder.state);
+        console.error('❌ SIMPLE - Timestamp:', new Date().toISOString());
         
         const errorEvent = event as any;
         const errorMessage = errorEvent.error ? errorEvent.error.toString() : 'Erreur MediaRecorder inconnue';
@@ -165,12 +179,47 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
       recorder.onstart = () => {
         console.log('🎬 SIMPLE - === ÉVÉNEMENT ONSTART ===');
         console.log('🎬 SIMPLE - État recorder:', recorder.state);
+        console.log('🎬 SIMPLE - Timestamp:', new Date().toISOString());
         setIsRecording(true);
         
         // Démarrer le timer
         timerRef.current = setInterval(() => {
           setRecordingTime(prev => prev + 1);
         }, 1000);
+        
+        // NOUVEAU : Health check toutes les 5 secondes pour détecter les arrêts silencieux
+        healthCheckRef.current = setInterval(() => {
+          const currentState = recorder.state;
+          const streamActive = streamRef.current?.active;
+          const tracksActive = streamRef.current?.getTracks().every(track => track.readyState === 'live');
+          
+          console.log('🔍 SIMPLE - Health check:', {
+            recorderState: currentState,
+            streamActive,
+            tracksActive,
+            chunksCount: audioChunksRef.current.length,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Si le recorder n'est plus en recording mais qu'on pense qu'il l'est
+          if (currentState !== 'recording' && isRecording) {
+            console.error('💀 SIMPLE - ARRÊT SILENCIEUX DÉTECTÉ !');
+            console.error('💀 SIMPLE - État attendu: recording, état réel:', currentState);
+            
+            // Déclencher manuellement l'arrêt si nécessaire
+            if (currentState === 'inactive') {
+              console.log('💀 SIMPLE - Déclenchement manuel de onstop...');
+              recorder.onstop?.call(recorder, new Event('stop'));
+            }
+          }
+          
+          // Vérifier l'état des tracks
+          if (!streamActive || !tracksActive) {
+            console.error('💀 SIMPLE - STREAM/TRACKS INACTIFS DÉTECTÉS !');
+            console.error('💀 SIMPLE - streamActive:', streamActive, 'tracksActive:', tracksActive);
+          }
+          
+        }, 5000);
         
         console.log('🎙️ SIMPLE - Enregistrement démarré avec succès');
       };
@@ -202,17 +251,25 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
           console.error('🔇 SIMPLE - MediaRecorder état:', recorder.state);
           console.error('🔇 SIMPLE - Timestamp:', new Date().toISOString());
           
-          // L'arrêt de la piste va déclencher l'arrêt du MediaRecorder
-          // C'est probablement la cause de notre problème !
+          // Tentative de récupération
+          if (recorder.state === 'recording') {
+            console.log('🔇 SIMPLE - Tentative d\'arrêt propre du recorder...');
+            try {
+              recorder.requestData();
+              recorder.stop();
+            } catch (e) {
+              console.error('🔇 SIMPLE - Erreur lors de l\'arrêt:', e);
+            }
+          }
         };
         
         track.onmute = () => {
-          console.warn(`🔇 SIMPLE - Track ${index} MUTED`);
+          console.warn(`🔇 SIMPLE - Track ${index} MUTED !`);
           console.warn('🔇 SIMPLE - MediaRecorder état:', recorder.state);
         };
         
         track.onunmute = () => {
-          console.log(`🔊 SIMPLE - Track ${index} UNMUTED`);
+          console.log(`🔊 SIMPLE - Track ${index} UNMUTED !`);
         };
       });
       
@@ -247,6 +304,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
     console.log('🛑 SIMPLE - === DEMANDE ARRÊT MANUEL ===');
     console.log('🛑 SIMPLE - État MediaRecorder:', mediaRecorderRef.current?.state);
     console.log('🛑 SIMPLE - Chunks avant arrêt:', audioChunksRef.current.length);
+    console.log('🛑 SIMPLE - Timestamp:', new Date().toISOString());
     
     if (!mediaRecorderRef.current || !isRecording) {
       console.log('❌ SIMPLE - Impossible d\'arrêter');
