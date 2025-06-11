@@ -11,12 +11,14 @@ import { useSimpleAudioRecorder } from '@/hooks/use-simple-audio-recorder';
 interface DirectAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
   onAudioUrlGenerated?: (url: string) => void;
+  onRecordingStatusChange?: (isRecording: boolean) => void; // NOUVEAU
   reportId?: string;
 }
 
 const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
   onAudioRecorded,
   onAudioUrlGenerated,
+  onRecordingStatusChange, // NOUVEAU
   reportId
 }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -47,6 +49,13 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
     uploadedAudioUrl,
     recordingTime
   });
+
+  // NOUVEAU: Notifier les changements de statut d'enregistrement
+  useEffect(() => {
+    if (onRecordingStatusChange) {
+      onRecordingStatusChange(isRecording);
+    }
+  }, [isRecording, onRecordingStatusChange]);
 
   // === TRAITEMENT AUTOMATIQUE DU BLOB AUDIO ===
   useEffect(() => {

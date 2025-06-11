@@ -6,6 +6,7 @@ import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 interface InterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
   onAudioUrlGenerated?: (url: string) => void;
+  onRecordingStatusChange?: (isRecording: boolean) => void; // NOUVEAU
   existingAudioUrl?: string | null;
   isReadOnly?: boolean;
   reportId?: string;
@@ -14,6 +15,7 @@ interface InterventionAudioRecorderProps {
 const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   onAudioRecorded,
   onAudioUrlGenerated,
+  onRecordingStatusChange, // NOUVEAU
   existingAudioUrl,
   isReadOnly = false,
   reportId
@@ -57,6 +59,14 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     
     if (onAudioUrlGenerated) {
       onAudioUrlGenerated(url);
+    }
+  };
+
+  // NOUVEAU: Gérer le changement de statut d'enregistrement
+  const handleRecordingStatusChange = (isRecording: boolean) => {
+    console.log('🎙️ INTERVENTION - Changement statut dans InterventionAudioRecorder:', isRecording);
+    if (onRecordingStatusChange) {
+      onRecordingStatusChange(isRecording);
     }
   };
 
@@ -110,6 +120,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     <DirectAudioRecorder
       onAudioRecorded={handleAudioRecorded}
       onAudioUrlGenerated={handleAudioUrlGenerated}
+      onRecordingStatusChange={handleRecordingStatusChange} // NOUVEAU
       reportId={reportId}
     />
   );

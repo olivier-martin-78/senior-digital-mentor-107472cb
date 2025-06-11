@@ -72,6 +72,7 @@ const InterventionReportForm = () => {
   // NOUVEAU: État pour gérer l'URL audio et déclencher l'auto-sauvegarde
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('');
   const [hasAudioBlob, setHasAudioBlob] = useState(false);
+  const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); // NOUVEAU
 
   // Variables pour déterminer si on peut éditer
   const canEdit = !isViewMode || isEditMode;
@@ -107,11 +108,14 @@ const InterventionReportForm = () => {
 
   // NOUVEAU: Auto-sauvegarde quand une URL audio est générée
   useEffect(() => {
-    if (currentAudioUrl && hasAudioBlob && reportData?.id) {
+    // NOUVEAU: Ne pas auto-sauvegarder si un enregistrement est en cours
+    if (currentAudioUrl && hasAudioBlob && reportData?.id && !isRecordingInProgress) {
       console.log("🔄 INTERVENTION - Auto-sauvegarde déclenchée pour l'audio:", currentAudioUrl);
       autoSaveAudioUrl();
+    } else if (isRecordingInProgress) {
+      console.log("🔄 INTERVENTION - Auto-sauvegarde différée (enregistrement en cours)");
     }
-  }, [currentAudioUrl, hasAudioBlob, reportData?.id]);
+  }, [currentAudioUrl, hasAudioBlob, reportData?.id, isRecordingInProgress]);
 
   const autoSaveAudioUrl = async () => {
     if (!reportData?.id || !currentAudioUrl || !user?.id) {
@@ -325,6 +329,7 @@ const InterventionReportForm = () => {
     if (audioBlob.size === 0) {
       setCurrentAudioUrl('');
       setFormData(prev => ({ ...prev, audio_url: '' }));
+      setIsRecordingInProgress(false); // NOUVEAU: Arrêter le flag d'enregistrement
     }
   };
 
@@ -336,10 +341,12 @@ const InterventionReportForm = () => {
       setCurrentAudioUrl('');
       setHasAudioBlob(false);
       setFormData(prev => ({ ...prev, audio_url: '' }));
+      setIsRecordingInProgress(false); // NOUVEAU: Arrêter le flag d'enregistrement
     } else {
       // Nouvelle URL audio
       setCurrentAudioUrl(url);
       setFormData(prev => ({ ...prev, audio_url: url }));
+      setIsRecordingInProgress(false); // NOUVEAU: Arrêter le flag d'enregistrement
     }
   };
 
@@ -366,6 +373,11 @@ const InterventionReportForm = () => {
   const followUpOptions = [
     'Rien à signaler', 'Contacter médecin', 'Surveillance accrue', 'Ajuster traitement', 'Prévenir famille'
   ];
+
+  const handleRecordingStatusChange = (isRecording: boolean) => {
+    console.log('🎙️ INTERVENTION - Changement statut enregistrement:', isRecording);
+    setIsRecordingInProgress(isRecording);
+  };
 
   return (
     <div className="space-y-6">
@@ -797,6 +809,7 @@ const InterventionReportForm = () => {
                 <InterventionAudioRecorder
                   onAudioRecorded={handleAudioRecorded}
                   onAudioUrlGenerated={handleAudioUrlGenerated}
+                  onRecordingStatusChange={handleRecordingStatusChange} // NOUVEAU
                   existingAudioUrl={formData.audio_url}
                   isReadOnly={!canEdit}
                   reportId={reportData?.id} // Passer l'ID du rapport
@@ -880,3 +893,5 @@ const InterventionReportForm = () => {
 };
 
 export default InterventionReportForm;
+
+</initial_code>
