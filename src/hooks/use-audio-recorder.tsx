@@ -22,6 +22,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
   const audioChunks = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isStoppingRef = useRef<boolean>(false);
   
   // Nettoyer les ressources lors du démontage
   useEffect(() => {
@@ -77,6 +78,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     }
     
     mediaRecorder.current = null;
+    isStoppingRef.current = false;
   }, []);
   
   const startRecording = useCallback(async () => {
@@ -92,6 +94,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       setAudioBlob(null);
       audioChunks.current = [];
       setRecordingTime(0);
+      isStoppingRef.current = false;
       
       console.log("Demande d'autorisation pour le microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -134,36 +137,47 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       recorder.onstop = () => {
         console.log('🛑 Enregistrement arrêté, chunks collectés:', audioChunks.current.length);
         
-        if (audioChunks.current.length > 0) {
-          const blob = new Blob(audioChunks.current, { 
-            type: mimeType || 'audio/webm' 
-          });
-          const url = URL.createObjectURL(blob);
+        // Éviter le double traitement
+        if (isStoppingRef.current) {
+          console.log('⚠️ Traitement déjà en cours, éviter le doublon');
+          return;
+        }
+        isStoppingRef.current = true;
+        
+        // Attendre un petit délai pour s'assurer que tous les chunks sont reçus
+        setTimeout(() => {
+          if (audioChunks.current.length > 0) {
+            const blob = new Blob(audioChunks.current, { 
+              type: mimeType || 'audio/webm' 
+            });
+            const url = URL.createObjectURL(blob);
+            
+            console.log("✅ Blob audio créé:", blob.size, "octets, type:", blob.type);
+            setAudioBlob(blob);
+            setAudioUrl(url);
+          } else {
+            console.warn("⚠️ Aucune donnée audio collectée");
+            toast({
+              title: "Erreur d'enregistrement",
+              description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
+              variant: "destructive",
+            });
+          }
           
-          console.log("✅ Blob audio créé:", blob.size, "octets, type:", blob.type);
-          setAudioBlob(blob);
-          setAudioUrl(url);
-        } else {
-          console.warn("⚠️ Aucune donnée audio collectée");
-          toast({
-            title: "Erreur d'enregistrement",
-            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer.",
-            variant: "destructive",
-          });
-        }
-        
-        setIsRecording(false);
-        
-        // Arrêter tous les tracks du stream
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
+          setIsRecording(false);
+          
+          // Arrêter tous les tracks du stream
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+        }, 100); // Petit délai pour recevoir les derniers chunks
       };
       
       recorder.onerror = (event) => {
         console.error('❌ Erreur MediaRecorder:', event);
         setIsRecording(false);
+        isStoppingRef.current = false;
         toast({
           title: "Erreur d'enregistrement",
           description: "Une erreur est survenue pendant l'enregistrement.",
@@ -171,8 +185,8 @@ export const useAudioRecorder = (): AudioRecorderHook => {
         });
       };
       
-      // Démarrer l'enregistrement avec un intervalle de capture plus court
-      recorder.start(100); // Capturer des données toutes les 100ms
+      // Démarrer l'enregistrement avec un intervalle plus court pour capturer plus de données
+      recorder.start(250); // Capturer des données toutes les 250ms
       setIsRecording(true);
       
       console.log('🎙️ Enregistrement démarré avec succès');
@@ -181,6 +195,7 @@ export const useAudioRecorder = (): AudioRecorderHook => {
       console.error("Erreur lors de l'accès au microphone:", error);
       setIsRecording(false);
       setRecordingTime(0);
+      isStoppingRef.current = false;
       
       let errorMessage = "Veuillez vérifier que vous avez accordé les permissions nécessaires à votre navigateur.";
       
@@ -204,6 +219,10 @@ export const useAudioRecorder = (): AudioRecorderHook => {
     if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       try {
         console.log("🛑 Arrêt de l'enregistrement...");
+        
+        // Ajouter une petite attente avant d'arrêter pour s'assurer qu'on a des données
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         mediaRecorder.current.stop();
       } catch (error) {
         console.error("Erreur lors de l'arrêt de l'enregistrement:", error);
