@@ -5,14 +5,18 @@ import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
 interface InterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
+  onAudioUrlGenerated?: (url: string) => void;
   existingAudioUrl?: string | null;
   isReadOnly?: boolean;
+  reportId?: string; // Nouvel paramètre
 }
 
 const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   onAudioRecorded,
+  onAudioUrlGenerated,
   existingAudioUrl,
   isReadOnly = false,
+  reportId
 }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(existingAudioUrl || null);
   
@@ -20,7 +24,8 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     hasExistingUrl: !!existingAudioUrl,
     existingAudioUrl,
     currentAudioUrl: audioUrl,
-    isReadOnly
+    isReadOnly,
+    reportId
   });
   
   // Normaliser l'URL existante
@@ -36,7 +41,20 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 
   const handleAudioUrlGenerated = (url: string) => {
     console.log('🎵 INTERVENTION - URL audio générée dans InterventionAudioRecorder:', url);
+    
+    // Si l'URL est vide (suppression), réinitialiser
+    if (!url || url.trim() === '') {
+      setAudioUrl(null);
+      if (onAudioUrlGenerated) {
+        onAudioUrlGenerated('');
+      }
+      return;
+    }
+    
     setAudioUrl(url);
+    if (onAudioUrlGenerated) {
+      onAudioUrlGenerated(url);
+    }
   };
 
   const handleDeleteAudio = () => {
@@ -45,6 +63,11 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     // Notifier le parent avec un blob vide
     const emptyBlob = new Blob([], { type: 'audio/webm' });
     onAudioRecorded(emptyBlob);
+    
+    // Notifier également que l'URL doit être supprimée
+    if (onAudioUrlGenerated) {
+      onAudioUrlGenerated('');
+    }
   };
 
   // Si on a une URL audio valide, afficher le lecteur
@@ -77,11 +100,12 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   }
 
   // Sinon, afficher l'enregistreur simplifié
-  console.log('🎙️ INTERVENTION - Affichage enregistreur simplifié');
+  console.log('🎙️ INTERVENTION - Affichage enregistreur simplifié avec reportId:', reportId);
   return (
     <SimpleAudioRecorder
       onAudioRecorded={handleAudioRecorded}
       onAudioUrlGenerated={handleAudioUrlGenerated}
+      reportId={reportId}
     />
   );
 };

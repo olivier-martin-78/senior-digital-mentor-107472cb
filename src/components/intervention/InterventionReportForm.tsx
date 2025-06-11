@@ -68,6 +68,10 @@ const InterventionReportForm = () => {
   const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  
+  // NOUVEAU: État pour gérer l'URL audio et déclencher l'auto-sauvegarde
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('');
+  const [hasAudioBlob, setHasAudioBlob] = useState(false);
 
   // Variables pour déterminer si on peut éditer
   const canEdit = !isViewMode || isEditMode;
@@ -86,6 +90,11 @@ const InterventionReportForm = () => {
         follow_up: Array.isArray(reportData.follow_up) ? reportData.follow_up : [],
         media_files: Array.isArray(reportData.media_files) ? reportData.media_files : []
       });
+      
+      // Initialiser l'URL audio existante
+      if (reportData.audio_url) {
+        setCurrentAudioUrl(reportData.audio_url);
+      }
     }
   }, [reportData]);
 
@@ -95,6 +104,44 @@ const InterventionReportForm = () => {
       loadTodayAppointments();
     }
   }, [user, reportData]);
+
+  // NOUVEAU: Auto-sauvegarde quand une URL audio est générée
+  useEffect(() => {
+    if (currentAudioUrl && hasAudioBlob && reportData?.id) {
+      console.log("🔄 INTERVENTION - Auto-sauvegarde déclenchée pour l'audio:", currentAudioUrl);
+      autoSaveAudioUrl();
+    }
+  }, [currentAudioUrl, hasAudioBlob, reportData?.id]);
+
+  const autoSaveAudioUrl = async () => {
+    if (!reportData?.id || !currentAudioUrl || !user?.id) {
+      console.log("🔄 INTERVENTION - Auto-sauvegarde annulée:", {
+        hasReportId: !!reportData?.id,
+        hasAudioUrl: !!currentAudioUrl,
+        hasUserId: !!user?.id
+      });
+      return;
+    }
+
+    try {
+      console.log("🔄 INTERVENTION - Début auto-sauvegarde audio pour rapport:", reportData.id);
+      
+      const { error } = await supabase
+        .from('intervention_reports')
+        .update({ audio_url: currentAudioUrl })
+        .eq('id', reportData.id);
+
+      if (error) throw error;
+
+      console.log("✅ INTERVENTION - Auto-sauvegarde audio réussie");
+      
+      // Mettre à jour formData pour maintenir la cohérence
+      setFormData(prev => ({ ...prev, audio_url: currentAudioUrl }));
+      
+    } catch (error) {
+      console.error('❌ INTERVENTION - Erreur auto-sauvegarde audio:', error);
+    }
+  };
 
   const loadTodayAppointments = async () => {
     if (!user) return;
@@ -165,6 +212,7 @@ const InterventionReportForm = () => {
         ...formData,
         professional_id: user.id,
         appointment_id: appointmentId || formData.appointment_id,
+        audio_url: currentAudioUrl || formData.audio_url || '', // Inclure l'URL audio
         // S'assurer que les champs requis sont présents
         auxiliary_name: formData.auxiliary_name || '',
         patient_name: formData.patient_name || '',
@@ -172,6 +220,8 @@ const InterventionReportForm = () => {
         start_time: formData.start_time || '09:00',
         end_time: formData.end_time || '11:00'
       };
+
+      console.log("💾 INTERVENTION - Sauvegarde avec audio_url:", dataToSubmit.audio_url);
 
       if (reportData?.id) {
         // Mise à jour d'un rapport existant
@@ -198,12 +248,20 @@ const InterventionReportForm = () => {
 
         if (error) throw error;
 
+        console.log("✅ INTERVENTION - Nouveau rapport créé avec ID:", newReport.id);
+
         // Mettre à jour le rendez-vous avec l'ID du rapport
         if (appointmentId || formData.appointment_id) {
           await supabase
             .from('appointments')
             .update({ intervention_report_id: newReport.id })
             .eq('id', appointmentId || formData.appointment_id);
+        }
+
+        // Si on a un audio en attente, déclencher l'upload maintenant
+        if (hasAudioBlob && !currentAudioUrl) {
+          console.log("🎙️ INTERVENTION - Déclenchement upload audio différé pour rapport:", newReport.id);
+          // Ici on pourrait déclencher l'upload via une ref ou un callback
         }
 
         toast({
@@ -258,9 +316,31 @@ const InterventionReportForm = () => {
   };
 
   const handleAudioRecorded = (audioBlob: Blob) => {
-    console.log('🎤 INTERVENTION - Audio enregistré:', audioBlob?.size);
-    // Ici on pourrait traiter le blob si nécessaire
-    // L'URL est déjà gérée par le composant InterventionAudioRecorder
+    console.log('🎤 INTERVENTION - Audio enregistré dans le formulaire:', audioBlob?.size);
+    
+    // Marquer qu'on a un blob audio (même vide pour la suppression)
+    setHasAudioBlob(audioBlob.size > 0);
+    
+    // Si le blob est vide, c'est une suppression
+    if (audioBlob.size === 0) {
+      setCurrentAudioUrl('');
+      setFormData(prev => ({ ...prev, audio_url: '' }));
+    }
+  };
+
+  const handleAudioUrlGenerated = (url: string) => {
+    console.log('🎵 INTERVENTION - URL audio générée dans le formulaire:', url);
+    
+    if (!url || url.trim() === '') {
+      // Suppression de l'audio
+      setCurrentAudioUrl('');
+      setHasAudioBlob(false);
+      setFormData(prev => ({ ...prev, audio_url: '' }));
+    } else {
+      // Nouvelle URL audio
+      setCurrentAudioUrl(url);
+      setFormData(prev => ({ ...prev, audio_url: url }));
+    }
   };
 
   const handleMediaChange = (mediaFiles: any[]) => {
@@ -705,7 +785,7 @@ const InterventionReportForm = () => {
           </CardContent>
         </Card>
 
-        {/* Enregistrement audio et médias - NOUVEAU COMPOSANT */}
+        {/* Enregistrement audio et médias - MODIFIÉ */}
         {showAudioRecorder && (
           <Card>
             <CardHeader>
@@ -716,8 +796,10 @@ const InterventionReportForm = () => {
                 <Label>Enregistrement vocal</Label>
                 <InterventionAudioRecorder
                   onAudioRecorded={handleAudioRecorded}
+                  onAudioUrlGenerated={handleAudioUrlGenerated}
                   existingAudioUrl={formData.audio_url}
                   isReadOnly={!canEdit}
+                  reportId={reportData?.id} // Passer l'ID du rapport
                 />
               </div>
 
@@ -798,3 +880,5 @@ const InterventionReportForm = () => {
 };
 
 export default InterventionReportForm;
+
+</edits_to_apply>
