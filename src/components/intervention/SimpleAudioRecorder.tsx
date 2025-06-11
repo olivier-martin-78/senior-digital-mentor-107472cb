@@ -19,17 +19,26 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const { user } = useAuth();
 
+  console.log("🔧 INTERVENTION - SimpleAudioRecorder rendu", {
+    hasUser: !!user,
+    userId: user?.id,
+    isUploading,
+    uploadedAudioUrl
+  });
+
   // Gestion de l'enregistrement audio - EXACTEMENT comme dans AudioRecorder.tsx
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    console.log("🎙️ INTERVENTION - handleAudioChange:", { 
+    console.log("🎙️ INTERVENTION - handleAudioChange DÉBUT:", { 
       hasBlob: !!newAudioBlob, 
       blobSize: newAudioBlob?.size,
-      isUploading
+      blobType: newAudioBlob?.type,
+      isUploading,
+      userConnected: !!user?.id
     });
     
     // Si pas de blob, audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
-      console.log("🎙️ INTERVENTION - Audio supprimé ou vide");
+      console.log("🎙️ INTERVENTION - Audio supprimé ou vide, reset des états");
       setUploadedAudioUrl(null);
       setIsUploading(false);
       return;
@@ -37,7 +46,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     
     // Si pas d'utilisateur, ne rien faire
     if (!user?.id) {
-      console.log("🎙️ INTERVENTION - Pas d'utilisateur connecté");
+      console.log("🎙️ INTERVENTION - Pas d'utilisateur connecté, arrêt du processus");
       toast({
         title: "Erreur",
         description: "Vous devez être connecté pour enregistrer un audio",
@@ -49,12 +58,17 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
     
     // Vérifier si un upload est déjà en cours
     if (isUploading) {
-      console.log("🎙️ INTERVENTION - Upload déjà en cours");
+      console.log("🎙️ INTERVENTION - Upload déjà en cours, ignorer cette requête");
       return;
     }
     
+    console.log("🎙️ INTERVENTION - Avant appel onAudioRecorded");
+    // Notifier IMMÉDIATEMENT le parent avec le blob
+    onAudioRecorded(newAudioBlob);
+    console.log("🎙️ INTERVENTION - Après appel onAudioRecorded");
+    
     try {
-      console.log(`🎙️ INTERVENTION - Début upload, taille: ${newAudioBlob.size} octets`);
+      console.log(`🎙️ INTERVENTION - Début upload, taille: ${newAudioBlob.size} octets, type: ${newAudioBlob.type}`);
       setIsUploading(true);
       
       // Tentative de téléchargement de l'audio
@@ -69,9 +83,9 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
           setUploadedAudioUrl(publicUrl);
           setIsUploading(false);
           
-          // Notifier le parent
-          onAudioRecorded(newAudioBlob);
+          // Notifier le parent de l'URL générée
           if (onAudioUrlGenerated) {
+            console.log(`🎙️ INTERVENTION - Appel onAudioUrlGenerated avec:`, publicUrl);
             onAudioUrlGenerated(publicUrl);
           }
           
@@ -105,7 +119,7 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         }
       );
     } catch (error) {
-      console.error(`🎙️ INTERVENTION - 💥 Erreur non gérée:`, error);
+      console.error(`🎙️ INTERVENTION - 💥 Erreur non gérée dans handleAudioChange:`, error);
       setIsUploading(false);
       
       toast({
@@ -116,6 +130,8 @@ const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
       });
     }
   };
+
+  console.log("🔧 INTERVENTION - SimpleAudioRecorder avant render final");
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
