@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -253,6 +252,21 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
+  // Composant personnalisé pour l'événement dans l'agenda qui inclut toujours la date
+  const AgendaEventWithDate = ({ event }: { event: CalendarEvent }) => {
+    const eventDate = event.start;
+    
+    return (
+      <div className="w-full">
+        {/* Afficher la date pour chaque événement */}
+        <div className="text-sm font-medium text-gray-900 py-1 border-b border-gray-200 mb-2">
+          {format(eventDate, 'dd/MM/yyyy')}
+        </div>
+        <AgendaEvent event={event} />
+      </div>
+    );
+  };
+
   const getEventStyle = (event: CalendarEvent) => {
     const appointment = event.resource;
     const clientColor = appointment?.client?.color || '#3174ad';
@@ -315,7 +329,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         components={{
           event: EventComponent,
           agenda: {
-            event: AgendaEvent,
+            event: AgendaEventWithDate,
             date: AgendaDateComponent,
           },
         }}
