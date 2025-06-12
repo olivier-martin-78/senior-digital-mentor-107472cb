@@ -26,9 +26,9 @@ export const uploadInterventionAudio = async (
 
     console.log("🔧 AUDIO_UTILS - Upload path:", filePath);
 
-    // Upload vers Supabase Storage
+    // Upload vers Supabase Storage - CORRECTION: bucket "intervention-audios" avec un "s"
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('intervention-audio')
+      .from('intervention-audios')
       .upload(filePath, audioBlob, {
         contentType: 'audio/webm',
         upsert: true
@@ -43,7 +43,7 @@ export const uploadInterventionAudio = async (
 
     // Récupérer l'URL publique
     const { data: urlData } = supabase.storage
-      .from('intervention-audio')
+      .from('intervention-audios')
       .getPublicUrl(filePath);
 
     const publicUrl = urlData.publicUrl;
