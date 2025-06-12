@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,10 +77,7 @@ const Header = () => {
   const activitiesItems = [
     { label: 'Méditation', href: '/activities/meditation', icon: Brain },
     { label: 'Jeux', href: '/activities/games', icon: Gamepad2 },
-    { label: 'Connexion', href: '/activities/connection', icon: Users },
     { label: 'Exercices', href: '/activities/exercises', icon: Dumbbell },
-    { label: 'Lecture', href: '/activities/reading', icon: BookMarked },
-    { label: 'Ecriture', href: '/activities/writing', icon: PenTool },
   ];
 
   const adminMenuItems = [
