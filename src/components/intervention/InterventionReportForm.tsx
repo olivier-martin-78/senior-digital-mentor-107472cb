@@ -38,14 +38,17 @@ const InterventionReportForm = () => {
   const reportData = location.state?.reportData as InterventionReport | undefined;
   const appointmentId = location.state?.appointmentId as string | undefined;
   const isViewMode = location.state?.isViewMode as boolean | false;
+  const clientName = location.state?.clientName as string | undefined;
+  const appointmentData = location.state?.appointmentData;
 
   const [formData, setFormData] = useState<Partial<InterventionReport>>({
     professional_id: user?.id || '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    start_time: '09:00',
-    end_time: '11:00',
+    appointment_id: appointmentId,
+    date: appointmentData?.date || format(new Date(), 'yyyy-MM-dd'),
+    start_time: appointmentData?.start_time || '09:00',
+    end_time: appointmentData?.end_time || '11:00',
     auxiliary_name: '',
-    patient_name: '',
+    patient_name: clientName || '',
     physical_state: [],
     physical_state_other: '',
     pain_location: '',
@@ -69,26 +72,10 @@ const InterventionReportForm = () => {
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // NOUVEAU: État stable pour l'audio sans déclencher de re-renders
+  // États pour l'audio et médias
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('');
   const [hasAudioBlob, setHasAudioBlob] = useState(false);
   const [isRecordingInProgress, setIsRecordingInProgress] = useState(false);
-
-  // NOUVEAU: Refs pour éviter les re-renders intempestifs
-  const audioStateRef = useRef({
-    currentAudioUrl,
-    hasAudioBlob,
-    isRecordingInProgress
-  });
-
-  // NOUVEAU: Mettre à jour la ref sans déclencher de re-render
-  useEffect(() => {
-    audioStateRef.current = {
-      currentAudioUrl,
-      hasAudioBlob,
-      isRecordingInProgress
-    };
-  });
 
   // Variables pour déterminer si on peut éditer
   const canEdit = !isViewMode || isEditMode;
@@ -391,6 +378,7 @@ const InterventionReportForm = () => {
     }
   }, []);
 
+  // Callback stable pour traiter les médias
   const handleMediaChange = useCallback((mediaFiles: any[]) => {
     setFormData(prev => ({ ...prev, media_files: mediaFiles }));
   }, []);
@@ -766,17 +754,17 @@ const InterventionReportForm = () => {
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="activities_other">Autres activités</Label>
-              <Input
-                id="activities_other"
-                value={formData.activities_other || ''}
-                onChange={(e) => handleInputChange('activities_other', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Autres activités non listées"
-              />
+              <div>
+                <Label htmlFor="activities_other">Autres activités</Label>
+                <Input
+                  id="activities_other"
+                  value={formData.activities_other || ''}
+                  onChange={(e) => handleInputChange('activities_other', e.target.value)}
+                  disabled={!canEdit}
+                  placeholder="Autres activités non listées"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -838,7 +826,7 @@ const InterventionReportForm = () => {
           </CardContent>
         </Card>
 
-        {/* Enregistrement audio et médias - STABILISÉ */}
+        {/* Enregistrement audio et médias */}
         {showAudioRecorder && (
           <Card>
             <CardHeader>
@@ -859,7 +847,10 @@ const InterventionReportForm = () => {
 
               <div>
                 <Label>Photos et documents</Label>
-                <MediaUploader onMediaChange={handleMediaChange} />
+                <MediaUploader 
+                  onMediaChange={handleMediaChange}
+                  existingMediaFiles={formData.media_files || []}
+                />
               </div>
             </CardContent>
           </Card>

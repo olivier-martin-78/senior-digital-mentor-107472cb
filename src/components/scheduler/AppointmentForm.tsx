@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +12,7 @@ import { Client, Appointment } from '@/types/appointments';
 import { format, addDays, addWeeks } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import RecurringAppointmentForm from './RecurringAppointmentForm';
+import { FileText } from 'lucide-react';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
@@ -201,6 +201,23 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
+  const handleCreateIntervention = () => {
+    if (!appointment) return;
+
+    navigate('/intervention-report', {
+      state: {
+        appointmentId: appointment.id,
+        isViewMode: false,
+        clientName: appointment.client ? `${appointment.client.first_name} ${appointment.client.last_name}` : '',
+        appointmentData: {
+          date: format(new Date(appointment.start_time), 'yyyy-MM-dd'),
+          start_time: format(new Date(appointment.start_time), 'HH:mm'),
+          end_time: format(new Date(appointment.end_time), 'HH:mm')
+        }
+      }
+    });
+  };
+
   return (
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -303,6 +320,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   onClick={handleViewIntervention}
                 >
                   Voir l'intervention
+                </Button>
+              )}
+              
+              {appointment && !appointment.intervention_report_id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCreateIntervention}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Créer l'intervention
                 </Button>
               )}
             </div>

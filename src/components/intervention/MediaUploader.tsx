@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Image, File } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -13,11 +13,27 @@ interface MediaFile {
 
 interface MediaUploaderProps {
   onMediaChange: (files: MediaFile[]) => void;
+  existingMediaFiles?: MediaFile[];
 }
 
-export const MediaUploader: React.FC<MediaUploaderProps> = ({ onMediaChange }) => {
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+export const MediaUploader: React.FC<MediaUploaderProps> = ({ 
+  onMediaChange, 
+  existingMediaFiles = [] 
+}) => {
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(existingMediaFiles);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Initialiser avec les médias existants
+  useEffect(() => {
+    if (existingMediaFiles.length > 0) {
+      setMediaFiles(existingMediaFiles);
+    }
+  }, [existingMediaFiles]);
+
+  // Notifier le parent quand les médias changent
+  useEffect(() => {
+    onMediaChange(mediaFiles);
+  }, [mediaFiles, onMediaChange]);
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files) return;
@@ -49,7 +65,6 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ onMediaChange }) =
           mediaFile.preview = e.target?.result as string;
           setMediaFiles(prev => {
             const updated = [...prev, mediaFile];
-            onMediaChange(updated);
             return updated;
           });
         };
@@ -60,13 +75,9 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ onMediaChange }) =
     });
 
     if (newFiles.length > 0) {
-      setMediaFiles(prev => {
-        const updated = [...prev, ...newFiles];
-        onMediaChange(updated);
-        return updated;
-      });
+      setMediaFiles(prev => [...prev, ...newFiles]);
     }
-  }, [onMediaChange]);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -85,11 +96,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ onMediaChange }) =
   }, []);
 
   const removeFile = (id: string) => {
-    setMediaFiles(prev => {
-      const updated = prev.filter(file => file.id !== id);
-      onMediaChange(updated);
-      return updated;
-    });
+    setMediaFiles(prev => prev.filter(file => file.id !== id));
   };
 
   return (
