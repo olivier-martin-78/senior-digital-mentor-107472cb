@@ -212,7 +212,16 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  const AgendaDateComponent = ({ event }: { event: CalendarEvent }) => {
+  const AgendaDateComponent = ({ event }: { event?: CalendarEvent }) => {
+    // Vérification de sécurité pour éviter l'erreur
+    if (!event || !event.start) {
+      return (
+        <div className="text-sm font-medium text-gray-900">
+          -
+        </div>
+      );
+    }
+    
     return (
       <div className="text-sm font-medium text-gray-900">
         {format(event.start, 'dd/MM/yyyy')}
