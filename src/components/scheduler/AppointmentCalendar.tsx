@@ -101,7 +101,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               if (appointment) onAppointmentEdit(appointment);
             }}
           >
-            <Edit className="h-3 w-3 text-gray-600" />
+            <Edit className="h-3 w-3 text-gray-700" />
           </Button>
           <Button
             size="sm"
@@ -116,7 +116,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               }
             }}
           >
-            <Trash2 className="h-3 w-3 text-gray-600" />
+            <Trash2 className="h-3 w-3 text-gray-700" />
           </Button>
           {hasReport && (
             <Button
@@ -175,7 +175,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               if (appointment) onAppointmentEdit(appointment);
             }}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 text-gray-700" />
           </Button>
           <Button
             size="sm"
@@ -189,7 +189,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               }
             }}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-gray-700" />
           </Button>
           {hasReport && (
             <Button
