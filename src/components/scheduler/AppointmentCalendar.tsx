@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -277,7 +278,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             event: AgendaEvent,
             date: ({ date }) => {
               try {
-                // Toujours afficher la date pour chaque rendez-vous
+                // Convertir la date en objet Date valide
                 let validDate;
                 
                 if (date instanceof Date && isValid(date)) {
@@ -289,22 +290,22 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                 }
                 
                 if (!isValid(validDate)) {
-                  return <div className="text-sm font-medium">-</div>;
+                  return <div className="text-sm font-medium text-gray-400">Date invalide</div>;
                 }
                 
                 return (
-                  <div className="text-sm font-medium">
+                  <div className="text-sm font-medium text-gray-900">
                     {format(validDate, 'dd/MM/yyyy')}
                   </div>
                 );
               } catch (error) {
                 console.error('Erreur lors du formatage de la date:', error, date);
-                return <div className="text-sm font-medium">-</div>;
+                return <div className="text-sm font-medium text-gray-400">-</div>;
               }
             },
             time: ({ event }) => {
               if (!event || !event.start || !event.end) {
-                return <div className="text-sm">-</div>;
+                return <div className="text-sm text-gray-400">-</div>;
               }
               
               try {
@@ -312,17 +313,17 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                 let endDate = event.end instanceof Date ? event.end : new Date(event.end);
                 
                 if (!isValid(startDate) || !isValid(endDate)) {
-                  return <div className="text-sm">-</div>;
+                  return <div className="text-sm text-gray-400">-</div>;
                 }
                 
                 return (
-                  <div className="text-sm">
+                  <div className="text-sm text-gray-700">
                     {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                   </div>
                 );
               } catch (error) {
                 console.error('Erreur lors du formatage de l\'heure:', error, event);
-                return <div className="text-sm">-</div>;
+                return <div className="text-sm text-gray-400">-</div>;
               }
             },
           },
