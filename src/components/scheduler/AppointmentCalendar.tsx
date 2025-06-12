@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -212,19 +213,20 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  const AgendaDateComponent = ({ event }: { event?: CalendarEvent }) => {
-    // Vérification de sécurité pour éviter l'erreur
-    if (!event || !event.start) {
+  const AgendaDateComponent = ({ label, date }: { label?: string; date?: Date; event?: CalendarEvent }) => {
+    // Utiliser directement la date fournie par react-big-calendar
+    if (date) {
       return (
         <div className="text-sm font-medium text-gray-900">
-          -
+          {format(date, 'dd/MM/yyyy')}
         </div>
       );
     }
     
+    // Fallback si aucune date n'est fournie
     return (
       <div className="text-sm font-medium text-gray-900">
-        {format(event.start, 'dd/MM/yyyy')}
+        -
       </div>
     );
   };
