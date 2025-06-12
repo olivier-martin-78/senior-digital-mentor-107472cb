@@ -76,6 +76,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     const hasReport = appointment?.intervention_report_id;
     const clientColor = appointment?.client?.color || '#3174ad';
     
+    // Utiliser les initiales de l'intervenant s'il existe, sinon celles de l'utilisateur connecté
+    const displayName = appointment?.intervenant 
+      ? `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`
+      : user?.email?.split('@')[0] || 'Auxiliaire';
+    
     return (
       <div className="p-1">
         <div className="text-xs font-medium flex items-center gap-1 mb-1">
@@ -84,12 +89,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: clientColor }}
             />
-            {user && (
-              <AuxiliaryAvatar 
-                name={user.email?.split('@')[0] || 'Auxiliaire'} 
-                size="sm" 
-              />
-            )}
+            <AuxiliaryAvatar 
+              name={displayName} 
+              size="sm" 
+            />
           </div>
           {hasReport && (
             <div className="bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center">
@@ -152,6 +155,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     const hasReport = appointment?.intervention_report_id;
     const clientColor = appointment?.client?.color || '#3174ad';
     
+    // Utiliser les initiales de l'intervenant s'il existe, sinon celles de l'utilisateur connecté
+    const displayName = appointment?.intervenant 
+      ? `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`
+      : user?.email?.split('@')[0] || 'Auxiliaire';
+    
     return (
       <div className="flex items-center gap-3 p-2 w-full">
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -159,12 +167,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             className="w-4 h-4 rounded-full"
             style={{ backgroundColor: clientColor }}
           />
-          {user && (
-            <AuxiliaryAvatar 
-              name={user.email?.split('@')[0] || 'Auxiliaire'} 
-              size="md" 
-            />
-          )}
+          <AuxiliaryAvatar 
+            name={displayName} 
+            size="md" 
+          />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-medium text-sm truncate">
