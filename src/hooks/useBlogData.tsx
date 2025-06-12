@@ -15,11 +15,11 @@ export const useBlogData = (
 ) => {
   const { user, hasRole } = useAuth();
   
-  // Un utilisateur peut créer du contenu s'il a les rôles admin, editor ou professional
-  const hasCreatePermission = hasRole('admin') || hasRole('editor') || hasRole('professional');
+  // Un utilisateur peut créer du contenu s'il a les rôles admin, editor ou professionnel
+  const hasCreatePermission = hasRole('admin') || hasRole('editor') || hasRole('professionnel');
   
   const { posts, loading: postsLoading } = useBlogPosts(searchTerm, selectedAlbum, startDate, endDate);
-  const { albums, loading: albumsLoading, refetch: refetchAlbums } = useBlogAlbums();
+  const { albums, loading: albumsLoading } = useBlogAlbums();
 
   const loading = postsLoading || albumsLoading;
 
@@ -27,12 +27,14 @@ export const useBlogData = (
     userId: user?.id,
     hasAdmin: hasRole('admin'),
     hasEditor: hasRole('editor'),
-    hasProfessional: hasRole('professional'),
+    hasProfessionnel: hasRole('professionnel'),
     hasCreatePermission
   });
 
   const refetch = async () => {
-    await refetchAlbums();
+    // Pour le moment, on peut refetch manuellement en rechargeant la page
+    // ou implémenter une logique de refetch spécifique si nécessaire
+    window.location.reload();
   };
 
   return {
