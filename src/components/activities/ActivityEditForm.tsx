@@ -19,10 +19,7 @@ interface ActivityEditFormProps {
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'connection', label: 'Connexion' },
   { value: 'exercises', label: 'Exercices' },
-  { value: 'reading', label: 'Lecture' },
-  { value: 'writing', label: 'Écriture' },
 ];
 
 const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, onCancel }) => {

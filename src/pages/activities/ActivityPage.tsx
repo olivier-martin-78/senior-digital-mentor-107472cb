@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -22,19 +21,13 @@ import { Activity } from '@/hooks/useActivities';
 const activityTitles: Record<string, string> = {
   meditation: 'Méditation',
   games: 'Jeux',
-  connection: 'Connexion',
   exercises: 'Exercices',
-  reading: 'Lecture',
-  writing: 'Écriture',
 };
 
 const activityTypes = [
   { value: 'meditation', label: 'Méditation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'connection', label: 'Connexion' },
   { value: 'exercises', label: 'Exercices' },
-  { value: 'reading', label: 'Lecture' },
-  { value: 'writing', label: 'Écriture' },
 ];
 
 const ActivityPage = () => {
