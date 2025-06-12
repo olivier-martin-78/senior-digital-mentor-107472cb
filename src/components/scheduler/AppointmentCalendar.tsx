@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -269,32 +270,41 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           agenda: {
             event: AgendaEvent,
             date: ({ date }) => {
-              // Convertir la date en objet Date si nécessaire
-              let dateToFormat;
-              if (date instanceof Date) {
-                dateToFormat = date;
-              } else if (typeof date === 'string' || typeof date === 'number') {
-                dateToFormat = new Date(date);
-              } else {
-                console.error('Invalid date format in agenda:', date);
-                return <div className="text-sm font-medium">-</div>;
-              }
+              console.log('Date reçue dans agenda:', date, typeof date);
               
-              // Vérifier si la date est valide après conversion
-              if (!isValid(dateToFormat)) {
-                console.error('Invalid date after conversion in agenda:', date, dateToFormat);
-                return <div className="text-sm font-medium">-</div>;
-              }
+              // Essayer de convertir la date de manière plus permissive
+              let validDate;
               
               try {
+                // Si c'est déjà une date valide
+                if (date instanceof Date && isValid(date)) {
+                  validDate = date;
+                } else {
+                  // Essayer de créer une date
+                  validDate = new Date(date);
+                  if (!isValid(validDate)) {
+                    // Si ça ne marche pas, essayer de parser différemment
+                    validDate = new Date(String(date));
+                  }
+                }
+                
+                // Vérifier une dernière fois
+                if (!isValid(validDate)) {
+                  console.warn('Impossible de formatter la date:', date);
+                  return <div className="text-sm font-medium">Date invalide</div>;
+                }
+                
+                const formattedDate = format(validDate, 'dd/MM/yyyy');
+                console.log('Date formatée:', formattedDate);
+                
                 return (
                   <div className="text-sm font-medium">
-                    {format(dateToFormat, 'dd/MM/yyyy')}
+                    {formattedDate}
                   </div>
                 );
               } catch (error) {
-                console.error('Error formatting date in agenda:', error, date);
-                return <div className="text-sm font-medium">-</div>;
+                console.error('Erreur lors du formatage de la date:', error, date);
+                return <div className="text-sm font-medium">Erreur date</div>;
               }
             },
             time: ({ event }) => {
