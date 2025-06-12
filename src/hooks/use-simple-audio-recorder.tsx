@@ -12,6 +12,9 @@ interface SimpleAudioRecorderHook {
   recordingTime: number;
 }
 
+// NOUVEAU: Protection globale contre les enregistrements multiples
+let globalRecordingInstance: string | null = null;
+
 export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -23,19 +26,22 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const healthCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const instanceIdRef = useRef<string>(Math.random().toString(36).substr(2, 9));
   
   console.log('🎤 SIMPLE - useSimpleAudioRecorder render:', {
+    instanceId: instanceIdRef.current,
     isRecording,
     hasBlob: !!audioBlob,
     hasUrl: !!audioUrl,
     recordingTime,
     hasMediaRecorder: !!mediaRecorderRef.current,
     mediaRecorderState: mediaRecorderRef.current?.state,
-    chunksLength: audioChunksRef.current.length
+    chunksLength: audioChunksRef.current.length,
+    globalInstance: globalRecordingInstance
   });
   
   const cleanupResources = useCallback(() => {
-    console.log('🧹 SIMPLE - Nettoyage des ressources');
+    console.log('🧹 SIMPLE - Nettoyage des ressources pour instance:', instanceIdRef.current);
     
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -57,15 +63,38 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
     }
     
     mediaRecorderRef.current = null;
+    
+    // NOUVEAU: Libérer l'instance globale si c'est la nôtre
+    if (globalRecordingInstance === instanceIdRef.current) {
+      console.log('🔓 SIMPLE - Libération de l\'instance globale:', instanceIdRef.current);
+      globalRecordingInstance = null;
+    }
   }, []);
   
   const startRecording = useCallback(async () => {
     console.log('🎙️ SIMPLE - === DÉBUT ENREGISTREMENT ===');
+    console.log('🎙️ SIMPLE - Instance:', instanceIdRef.current);
+    console.log('🎙️ SIMPLE - Instance globale actuelle:', globalRecordingInstance);
     
-    if (isRecording) {
-      console.log('⚠️ SIMPLE - Enregistrement déjà en cours');
+    // NOUVEAU: Vérifier s'il y a déjà un enregistrement en cours
+    if (globalRecordingInstance && globalRecordingInstance !== instanceIdRef.current) {
+      console.error('❌ SIMPLE - Enregistrement refusé: une autre instance est active:', globalRecordingInstance);
+      toast({
+        title: "Enregistrement en cours",
+        description: "Un autre enregistrement est déjà en cours. Veuillez l'arrêter d'abord.",
+        variant: "destructive",
+      });
       return;
     }
+    
+    if (isRecording) {
+      console.log('⚠️ SIMPLE - Enregistrement déjà en cours pour cette instance');
+      return;
+    }
+    
+    // NOUVEAU: Réserver l'instance globale
+    globalRecordingInstance = instanceIdRef.current;
+    console.log('🔒 SIMPLE - Instance globale verrouillée:', globalRecordingInstance);
     
     try {
       console.log("🎤 SIMPLE - Demande d'autorisation microphone...");
@@ -109,12 +138,20 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
       // === ÉVÉNEMENTS MEDIARECORDER AVEC LOGS EXHAUSTIFS ===
       recorder.ondataavailable = (event) => {
         console.log('📊 SIMPLE - ondataavailable:', {
+          instanceId: instanceIdRef.current,
           dataSize: event.data.size,
           recorderState: recorder.state,
           timestamp: new Date().toISOString(),
           streamActive: streamRef.current?.active,
-          tracksLength: streamRef.current?.getTracks().length
+          tracksLength: streamRef.current?.getTracks().length,
+          isGlobalInstance: globalRecordingInstance === instanceIdRef.current
         });
+        
+        // NOUVEAU: Vérifier si cette instance est toujours autorisée
+        if (globalRecordingInstance !== instanceIdRef.current) {
+          console.warn('⚠️ SIMPLE - Données ignorées: instance non autorisée');
+          return;
+        }
         
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
@@ -126,6 +163,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
       
       recorder.onstop = () => {
         console.log('🛑 SIMPLE - === ÉVÉNEMENT ONSTOP ===');
+        console.log('🛑 SIMPLE - Instance:', instanceIdRef.current);
         console.log('🛑 SIMPLE - Chunks collectés:', audioChunksRef.current.length);
         console.log('🛑 SIMPLE - État recorder:', recorder.state);
         console.log('🛑 SIMPLE - Stream actif:', streamRef.current?.active);
@@ -157,6 +195,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
       
       recorder.onerror = (event: Event) => {
         console.error('❌ SIMPLE - === ERREUR MEDIARECORDER ===');
+        console.error('❌ SIMPLE - Instance:', instanceIdRef.current);
         console.error('❌ SIMPLE - Événement:', event);
         console.error('❌ SIMPLE - Type:', event.type);
         console.error('❌ SIMPLE - État recorder:', recorder.state);
@@ -178,6 +217,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
       
       recorder.onstart = () => {
         console.log('🎬 SIMPLE - === ÉVÉNEMENT ONSTART ===');
+        console.log('🎬 SIMPLE - Instance:', instanceIdRef.current);
         console.log('🎬 SIMPLE - État recorder:', recorder.state);
         console.log('🎬 SIMPLE - Timestamp:', new Date().toISOString());
         setIsRecording(true);
@@ -187,18 +227,20 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
           setRecordingTime(prev => prev + 1);
         }, 1000);
         
-        // NOUVEAU : Health check toutes les 5 secondes pour détecter les arrêts silencieux
+        // Health check toutes les 5 secondes pour détecter les arrêts silencieux
         healthCheckRef.current = setInterval(() => {
           const currentState = recorder.state;
           const streamActive = streamRef.current?.active;
           const tracksActive = streamRef.current?.getTracks().every(track => track.readyState === 'live');
           
           console.log('🔍 SIMPLE - Health check:', {
+            instanceId: instanceIdRef.current,
             recorderState: currentState,
             streamActive,
             tracksActive,
             chunksCount: audioChunksRef.current.length,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            isGlobalInstance: globalRecordingInstance === instanceIdRef.current
           });
           
           // Si le recorder n'est plus en recording mais qu'on pense qu'il l'est
@@ -302,6 +344,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
   
   const stopRecording = useCallback(async () => {
     console.log('🛑 SIMPLE - === DEMANDE ARRÊT MANUEL ===');
+    console.log('🛑 SIMPLE - Instance:', instanceIdRef.current);
     console.log('🛑 SIMPLE - État MediaRecorder:', mediaRecorderRef.current?.state);
     console.log('🛑 SIMPLE - Chunks avant arrêt:', audioChunksRef.current.length);
     console.log('🛑 SIMPLE - Timestamp:', new Date().toISOString());
