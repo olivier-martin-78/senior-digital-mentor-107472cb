@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,17 +13,21 @@ import ClientManager from '@/components/scheduler/ClientManager';
 import IntervenantManager from '@/components/scheduler/IntervenantManager';
 import AppointmentForm from '@/components/scheduler/AppointmentForm';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
+import SchedulerFilters from '@/components/scheduler/SchedulerFilters';
 
 const ProfessionalScheduler = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'intervenants'>('calendar');
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedIntervenantId, setSelectedIntervenantId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasRole('admin') && !hasRole('professionnel')) {
@@ -34,6 +37,21 @@ const ProfessionalScheduler = () => {
     
     loadData();
   }, [hasRole, navigate, user]);
+
+  useEffect(() => {
+    // Filtrer les rendez-vous selon les sélections
+    let filtered = appointments;
+
+    if (selectedClientId) {
+      filtered = filtered.filter(appointment => appointment.client_id === selectedClientId);
+    }
+
+    if (selectedIntervenantId) {
+      filtered = filtered.filter(appointment => appointment.intervenant_id === selectedIntervenantId);
+    }
+
+    setFilteredAppointments(filtered);
+  }, [appointments, selectedClientId, selectedIntervenantId]);
 
   const loadData = async () => {
     if (!user) return;
@@ -242,21 +260,31 @@ const ProfessionalScheduler = () => {
         </div>
 
         {activeTab === 'calendar' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Planning des rendez-vous
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AppointmentCalendar
-                appointments={appointments}
-                onAppointmentEdit={handleAppointmentEdit}
-                onAppointmentDelete={handleAppointmentDelete}
-              />
-            </CardContent>
-          </Card>
+          <>
+            <SchedulerFilters
+              clients={clients}
+              intervenants={intervenants}
+              selectedClientId={selectedClientId}
+              selectedIntervenantId={selectedIntervenantId}
+              onClientChange={setSelectedClientId}
+              onIntervenantChange={setSelectedIntervenantId}
+            />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Planning des rendez-vous
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AppointmentCalendar
+                  appointments={filteredAppointments}
+                  onAppointmentEdit={handleAppointmentEdit}
+                  onAppointmentDelete={handleAppointmentDelete}
+                />
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {activeTab === 'clients' && (

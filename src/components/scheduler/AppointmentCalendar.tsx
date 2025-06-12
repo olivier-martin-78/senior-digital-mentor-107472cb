@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -270,68 +269,52 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           agenda: {
             event: AgendaEvent,
             date: ({ date }) => {
-              console.log('Date reçue dans agenda:', date, typeof date);
-              
-              // Essayer de convertir la date de manière plus permissive
-              let validDate;
-              
               try {
-                // Si c'est déjà une date valide
+                // Toujours afficher la date pour chaque rendez-vous
+                let validDate;
+                
                 if (date instanceof Date && isValid(date)) {
                   validDate = date;
-                } else {
-                  // Essayer de créer une date
+                } else if (typeof date === 'string') {
                   validDate = new Date(date);
-                  if (!isValid(validDate)) {
-                    // Si ça ne marche pas, essayer de parser différemment
-                    validDate = new Date(String(date));
-                  }
+                } else {
+                  validDate = new Date(String(date));
                 }
                 
-                // Vérifier une dernière fois
                 if (!isValid(validDate)) {
-                  console.warn('Impossible de formatter la date:', date);
-                  return <div className="text-sm font-medium">Date invalide</div>;
+                  return <div className="text-sm font-medium">-</div>;
                 }
-                
-                const formattedDate = format(validDate, 'dd/MM/yyyy');
-                console.log('Date formatée:', formattedDate);
                 
                 return (
                   <div className="text-sm font-medium">
-                    {formattedDate}
+                    {format(validDate, 'dd/MM/yyyy')}
                   </div>
                 );
               } catch (error) {
                 console.error('Erreur lors du formatage de la date:', error, date);
-                return <div className="text-sm font-medium">Erreur date</div>;
+                return <div className="text-sm font-medium">-</div>;
               }
             },
             time: ({ event }) => {
-              // Vérifier que l'événement et ses propriétés existent
               if (!event || !event.start || !event.end) {
-                console.error('Missing event or time properties in agenda:', event);
-                return <div className="text-sm">-</div>;
-              }
-              
-              // Convertir en objets Date si nécessaire
-              let startDate = event.start instanceof Date ? event.start : new Date(event.start);
-              let endDate = event.end instanceof Date ? event.end : new Date(event.end);
-              
-              // Vérifier la validité des dates
-              if (!isValid(startDate) || !isValid(endDate)) {
-                console.error('Invalid event times in agenda:', event);
                 return <div className="text-sm">-</div>;
               }
               
               try {
+                let startDate = event.start instanceof Date ? event.start : new Date(event.start);
+                let endDate = event.end instanceof Date ? event.end : new Date(event.end);
+                
+                if (!isValid(startDate) || !isValid(endDate)) {
+                  return <div className="text-sm">-</div>;
+                }
+                
                 return (
                   <div className="text-sm">
                     {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                   </div>
                 );
               } catch (error) {
-                console.error('Error formatting time in agenda:', error, event);
+                console.error('Erreur lors du formatage de l\'heure:', error, event);
                 return <div className="text-sm">-</div>;
               }
             },
