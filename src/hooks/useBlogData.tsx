@@ -1,42 +1,42 @@
+
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { PostWithAuthor, BlogAlbum } from '@/types/supabase';
 import { useBlogPosts } from '@/hooks/blog/useBlogPosts';
 import { useBlogAlbums } from '@/hooks/blog/useBlogAlbums';
-import { useAuth } from '@/contexts/AuthContext';
-import { PostWithAuthor } from '@/types/supabase';
 
 export const useBlogData = (
   searchTerm: string,
   selectedAlbum: string,
   startDate?: string,
   endDate?: string,
-  categoryId?: string | null
+  authorId?: string | null
 ) => {
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   
-  const { posts, loading: postsLoading } = useBlogPosts(
-    searchTerm,
-    selectedAlbum,
-    startDate,
-    endDate
-  );
+  // Un utilisateur peut créer du contenu s'il a les rôles admin, editor ou professional
+  const hasCreatePermission = hasRole('admin') || hasRole('editor') || hasRole('professional');
   
-  const { albums, loading: albumsLoading } = useBlogAlbums();
-  
-  const [loading, setLoading] = useState(true);
+  const { posts, loading: postsLoading } = useBlogPosts(searchTerm, selectedAlbum, startDate, endDate);
+  const { albums, loading: albumsLoading, refetch: refetchAlbums } = useBlogAlbums();
 
-  useEffect(() => {
-    setLoading(postsLoading || albumsLoading);
-  }, [postsLoading, albumsLoading]);
+  const loading = postsLoading || albumsLoading;
 
-  const hasCreatePermission = hasRole('admin') || hasRole('editor');
+  console.log('🎯 useBlogData - Permissions:', {
+    userId: user?.id,
+    hasAdmin: hasRole('admin'),
+    hasEditor: hasRole('editor'),
+    hasProfessional: hasRole('professional'),
+    hasCreatePermission
+  });
 
-  const refetch = () => {
-    // This would trigger a refetch of both posts and albums
-    // Implementation depends on the specific hooks
+  const refetch = async () => {
+    await refetchAlbums();
   };
 
   return {
-    posts: posts as PostWithAuthor[],
+    posts,
     albums,
     loading,
     hasCreatePermission,
