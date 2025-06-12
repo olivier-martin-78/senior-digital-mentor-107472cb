@@ -25,24 +25,22 @@ const InterventionReportForm = () => {
     start_time: '09:00',
     end_time: '11:00',
     patient_name: '',
-    mood: 'good',
-    general_health: '',
-    treatment_taken: '',
+    physical_state: [] as string[],
+    physical_state_other: '',
+    pain_location: '',
+    mental_state: [] as string[],
+    mental_state_change: '',
+    appetite: '',
+    hydration: '',
+    appetite_comments: '',
+    hygiene: [] as string[],
+    hygiene_comments: '',
     activities: [] as string[],
     activities_other: '',
-    hygiene: '',
-    appetite: '',
-    appetite_comments: '',
-    toileting: '',
-    mobility: '',
-    mobility_assistance: '',
-    social_interactions: '',
-    cognitive_status: '',
-    pain_level: 0,
-    pain_location: '',
-    other_observations: '',
+    observations: '',
+    follow_up: [] as string[],
+    follow_up_other: '',
     audio_url: '',
-    professional_signature: false,
     hourly_rate: 0
   });
   const [loading, setLoading] = useState(false);
@@ -72,24 +70,22 @@ const InterventionReportForm = () => {
         start_time: data.start_time || '09:00',
         end_time: data.end_time || '11:00',
         patient_name: data.patient_name || '',
-        mood: data.mood || 'good',
-        general_health: data.general_health || '',
-        treatment_taken: data.treatment_taken || '',
+        physical_state: data.physical_state || [],
+        physical_state_other: data.physical_state_other || '',
+        pain_location: data.pain_location || '',
+        mental_state: data.mental_state || [],
+        mental_state_change: data.mental_state_change || '',
+        appetite: data.appetite || '',
+        hydration: data.hydration || '',
+        appetite_comments: data.appetite_comments || '',
+        hygiene: data.hygiene || [],
+        hygiene_comments: data.hygiene_comments || '',
         activities: data.activities || [],
         activities_other: data.activities_other || '',
-        hygiene: data.hygiene || '',
-        appetite: data.appetite || '',
-        appetite_comments: data.appetite_comments || '',
-        toileting: data.toileting || '',
-        mobility: data.mobility || '',
-        mobility_assistance: data.mobility_assistance || '',
-        social_interactions: data.social_interactions || '',
-        cognitive_status: data.cognitive_status || '',
-        pain_level: data.pain_level || 0,
-        pain_location: data.pain_location || '',
-        other_observations: data.other_observations || '',
+        observations: data.observations || '',
+        follow_up: data.follow_up || [],
+        follow_up_other: data.follow_up_other || '',
         audio_url: data.audio_url || '',
-        professional_signature: data.professional_signature || false,
         hourly_rate: data.hourly_rate || 0
       });
     } catch (error) {
@@ -140,12 +136,11 @@ const InterventionReportForm = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    const checked = 'checked' in e.target ? e.target.checked : false;
+    const { name, value } = e.target;
     
     setReportData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -270,11 +265,42 @@ const InterventionReportForm = () => {
             </div>
 
             <div>
-              <Label htmlFor="other_observations">Observations</Label>
+              <Label htmlFor="appetite">Appétit</Label>
+              <Input
+                id="appetite"
+                name="appetite"
+                value={reportData.appetite}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="appetite_comments">Commentaires sur l'appétit</Label>
               <Textarea
-                id="other_observations"
-                name="other_observations"
-                value={reportData.other_observations}
+                id="appetite_comments"
+                name="appetite_comments"
+                value={reportData.appetite_comments}
+                onChange={handleInputChange}
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="hydration">Hydratation</Label>
+              <Input
+                id="hydration"
+                name="hydration"
+                value={reportData.hydration}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="observations">Observations</Label>
+              <Textarea
+                id="observations"
+                name="observations"
+                value={reportData.observations}
                 onChange={handleInputChange}
                 rows={4}
               />
@@ -290,16 +316,6 @@ const InterventionReportForm = () => {
                 value={reportData.hourly_rate}
                 onChange={handleInputChange}
               />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="professional_signature"
-                name="professional_signature"
-                checked={reportData.professional_signature}
-                onCheckedChange={(checked) => setReportData(prev => ({ ...prev, professional_signature: checked === true }))}
-              />
-              <Label htmlFor="professional_signature">Signature du professionnel</Label>
             </div>
 
             <div className="flex justify-end">
