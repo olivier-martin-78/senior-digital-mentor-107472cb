@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarDays, Clock, User, FileText, Save, ArrowLeft, Edit3, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import InterventionAudioRecorder from './InterventionAudioRecorder';
+import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
 import MediaUploader from './MediaUploader';
+import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,13 @@ const InterventionReportForm = () => {
   const isViewMode = location.state?.isViewMode as boolean | false;
   const clientName = location.state?.clientName as string | undefined;
   const appointmentData = location.state?.appointmentData;
+
+  console.log("📝 FORM - Render avec reportData:", {
+    hasReportData: !!reportData,
+    reportId: reportData?.id,
+    appointmentId,
+    isViewMode
+  });
 
   const [formData, setFormData] = useState<Partial<InterventionReport>>({
     professional_id: user?.id || '',
@@ -72,17 +80,18 @@ const InterventionReportForm = () => {
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // États pour l'audio et médias
-  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('');
-  const [hasAudioBlob, setHasAudioBlob] = useState(false);
-  const [isRecordingInProgress, setIsRecordingInProgress] = useState(false);
+  // États découplés pour l'audio - plus de couplage avec le formulaire
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUploadUrl, setAudioUploadUrl] = useState<string>('');
+  const [isAudioUploading, setIsAudioUploading] = useState(false);
 
   // Variables pour déterminer si on peut éditer
   const canEdit = !isViewMode || isEditMode;
-  const showAudioRecorder = canEdit;
 
   // Charger les données du rapport si elles sont fournies
   useEffect(() => {
+    console.log("📝 FORM - useEffect charger données rapport:", { hasReportData: !!reportData });
+    
     if (reportData) {
       setFormData({
         ...reportData,
@@ -95,85 +104,25 @@ const InterventionReportForm = () => {
         media_files: Array.isArray(reportData.media_files) ? reportData.media_files : []
       });
       
-      // Initialiser l'URL audio existante
+      // Initialiser l'URL audio existante sans déclencher de re-render
       if (reportData.audio_url) {
-        setCurrentAudioUrl(reportData.audio_url);
+        setAudioUploadUrl(reportData.audio_url);
       }
     }
   }, [reportData]);
 
   // Charger les rendez-vous du jour pour le professionnel
   useEffect(() => {
+    console.log("📝 FORM - useEffect charger appointments:", { hasUser: !!user, hasReportData: !!reportData });
+    
     if (user && !reportData) {
       loadTodayAppointments();
     }
   }, [user, reportData]);
 
-  // NOUVEAU: Auto-sauvegarde stable qui ne déclenche pas de re-renders
-  useEffect(() => {
-    // NOUVEAU: Ne pas auto-sauvegarder si un enregistrement est en cours
-    if (currentAudioUrl && hasAudioBlob && reportData?.id && !isRecordingInProgress) {
-      console.log("🔄 INTERVENTION - Auto-sauvegarde déclenchée pour l'audio (stable):", currentAudioUrl);
-      
-      // NOUVEAU: Utiliser une promesse pour éviter les re-renders pendant la sauvegarde
-      const autoSavePromise = async () => {
-        try {
-          console.log("🔄 INTERVENTION - Début auto-sauvegarde audio pour rapport:", reportData.id);
-          
-          const { error } = await supabase
-            .from('intervention_reports')
-            .update({ audio_url: currentAudioUrl })
-            .eq('id', reportData.id);
-
-          if (error) throw error;
-
-          console.log("✅ INTERVENTION - Auto-sauvegarde audio réussie (stable)");
-          
-          // NOUVEAU: Mettre à jour formData de manière stable
-          setFormData(prev => ({ ...prev, audio_url: currentAudioUrl }));
-          
-        } catch (error) {
-          console.error('❌ INTERVENTION - Erreur auto-sauvegarde audio (stable):', error);
-        }
-      };
-
-      autoSavePromise();
-    } else if (isRecordingInProgress) {
-      console.log("🔄 INTERVENTION - Auto-sauvegarde différée (enregistrement en cours, stable)");
-    }
-  }, [currentAudioUrl, hasAudioBlob, reportData?.id, isRecordingInProgress]);
-
-  const autoSaveAudioUrl = async () => {
-    if (!reportData?.id || !currentAudioUrl || !user?.id) {
-      console.log("🔄 INTERVENTION - Auto-sauvegarde annulée:", {
-        hasReportId: !!reportData?.id,
-        hasAudioUrl: !!currentAudioUrl,
-        hasUserId: !!user?.id
-      });
-      return;
-    }
-
-    try {
-      console.log("🔄 INTERVENTION - Début auto-sauvegarde audio pour rapport:", reportData.id);
-      
-      const { error } = await supabase
-        .from('intervention_reports')
-        .update({ audio_url: currentAudioUrl })
-        .eq('id', reportData.id);
-
-      if (error) throw error;
-
-      console.log("✅ INTERVENTION - Auto-sauvegarde audio réussie");
-      
-      // Mettre à jour formData pour maintenir la cohérence
-      setFormData(prev => ({ ...prev, audio_url: currentAudioUrl }));
-      
-    } catch (error) {
-      console.error('❌ INTERVENTION - Erreur auto-sauvegarde audio:', error);
-    }
-  };
-
   const loadTodayAppointments = async () => {
+    console.log("📝 FORM - loadTodayAppointments");
+    
     if (!user) return;
 
     try {
@@ -217,11 +166,72 @@ const InterventionReportForm = () => {
     }
   };
 
+  // Callback stable pour l'audio - découplé du formulaire
+  const handleAudioChange = useCallback((blob: Blob | null, url: string | null) => {
+    console.log("📝 FORM - handleAudioChange:", { 
+      hasBlob: !!blob, 
+      blobSize: blob?.size, 
+      url,
+      reportId: reportData?.id 
+    });
+
+    setAudioBlob(blob);
+    
+    if (url) {
+      setAudioUploadUrl(url);
+    } else {
+      setAudioUploadUrl('');
+    }
+
+    // Si on a un rapport existant et un blob, faire l'upload immédiatement
+    if (blob && blob.size > 0 && reportData?.id && user?.id) {
+      console.log("📝 FORM - Déclenchement upload audio immédiat");
+      
+      uploadInterventionAudio(
+        blob,
+        user.id,
+        reportData.id,
+        // Success
+        (publicUrl) => {
+          console.log("📝 FORM - Upload audio réussi:", publicUrl);
+          setAudioUploadUrl(publicUrl);
+          toast({
+            title: "Audio sauvegardé",
+            description: "L'enregistrement a été sauvegardé avec succès",
+            duration: 2000
+          });
+        },
+        // Error
+        (errorMessage) => {
+          console.error("📝 FORM - Erreur upload audio:", errorMessage);
+          toast({
+            title: "Erreur de sauvegarde",
+            description: errorMessage,
+            variant: "destructive",
+            duration: 3000
+          });
+        },
+        // Start
+        () => {
+          console.log("📝 FORM - Début upload audio");
+          setIsAudioUploading(true);
+        },
+        // End
+        () => {
+          console.log("📝 FORM - Fin upload audio");
+          setIsAudioUploading(false);
+        }
+      );
+    }
+  }, [reportData?.id, user?.id]);
+
   const handleInputChange = (field: keyof InterventionReport, value: string) => {
+    console.log("📝 FORM - handleInputChange:", { field, value });
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleCheckboxChange = (field: keyof InterventionReport, value: string, checked: boolean) => {
+    console.log("📝 FORM - handleCheckboxChange:", { field, value, checked });
     setFormData(prev => {
       const currentArray = (prev[field] as string[]) || [];
       if (checked) {
@@ -234,6 +244,8 @@ const InterventionReportForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("📝 FORM - handleSubmit");
+    
     if (!user) return;
 
     setLoading(true);
@@ -242,7 +254,7 @@ const InterventionReportForm = () => {
         ...formData,
         professional_id: user.id,
         appointment_id: appointmentId || formData.appointment_id,
-        audio_url: currentAudioUrl || formData.audio_url || '', // Inclure l'URL audio
+        audio_url: audioUploadUrl || formData.audio_url || '',
         // S'assurer que les champs requis sont présents
         auxiliary_name: formData.auxiliary_name || '',
         patient_name: formData.patient_name || '',
@@ -251,7 +263,7 @@ const InterventionReportForm = () => {
         end_time: formData.end_time || '11:00'
       };
 
-      console.log("💾 INTERVENTION - Sauvegarde avec audio_url:", dataToSubmit.audio_url);
+      console.log("📝 FORM - Sauvegarde avec audio_url:", dataToSubmit.audio_url);
 
       if (reportData?.id) {
         // Mise à jour d'un rapport existant
@@ -278,7 +290,7 @@ const InterventionReportForm = () => {
 
         if (error) throw error;
 
-        console.log("✅ INTERVENTION - Nouveau rapport créé avec ID:", newReport.id);
+        console.log("📝 FORM - Nouveau rapport créé avec ID:", newReport.id);
 
         // Mettre à jour le rendez-vous avec l'ID du rapport
         if (appointmentId || formData.appointment_id) {
@@ -289,9 +301,23 @@ const InterventionReportForm = () => {
         }
 
         // Si on a un audio en attente, déclencher l'upload maintenant
-        if (hasAudioBlob && !currentAudioUrl) {
-          console.log("🎙️ INTERVENTION - Déclenchement upload audio différé pour rapport:", newReport.id);
-          // Ici on pourrait déclencher l'upload via une ref ou un callback
+        if (audioBlob && audioBlob.size > 0) {
+          console.log("📝 FORM - Déclenchement upload audio différé pour nouveau rapport:", newReport.id);
+          
+          uploadInterventionAudio(
+            audioBlob,
+            user.id,
+            newReport.id,
+            (publicUrl) => {
+              console.log("📝 FORM - Upload audio différé réussi:", publicUrl);
+              setAudioUploadUrl(publicUrl);
+            },
+            (errorMessage) => {
+              console.error("📝 FORM - Erreur upload audio différé:", errorMessage);
+            },
+            () => setIsAudioUploading(true),
+            () => setIsAudioUploading(false)
+          );
         }
 
         toast({
@@ -316,6 +342,8 @@ const InterventionReportForm = () => {
   };
 
   const handleDelete = async () => {
+    console.log("📝 FORM - handleDelete");
+    
     if (!reportData?.id) return;
 
     setLoading(true);
@@ -345,41 +373,9 @@ const InterventionReportForm = () => {
     }
   };
 
-  // NOUVEAU: Callbacks stables pour l'audio
-  const handleAudioRecorded = useCallback((audioBlob: Blob) => {
-    console.log('🎤 INTERVENTION - Audio enregistré dans le formulaire (stable):', audioBlob?.size);
-    
-    // Marquer qu'on a un blob audio (même vide pour la suppression)
-    const hasBlob = audioBlob.size > 0;
-    setHasAudioBlob(hasBlob);
-    
-    // Si le blob est vide, c'est une suppression
-    if (!hasBlob) {
-      setCurrentAudioUrl('');
-      setFormData(prev => ({ ...prev, audio_url: '' }));
-      setIsRecordingInProgress(false);
-    }
-  }, []);
-
-  const handleAudioUrlGenerated = useCallback((url: string) => {
-    console.log('🎵 INTERVENTION - URL audio générée dans le formulaire (stable):', url);
-    
-    if (!url || url.trim() === '') {
-      // Suppression de l'audio
-      setCurrentAudioUrl('');
-      setHasAudioBlob(false);
-      setFormData(prev => ({ ...prev, audio_url: '' }));
-      setIsRecordingInProgress(false);
-    } else {
-      // Nouvelle URL audio
-      setCurrentAudioUrl(url);
-      setFormData(prev => ({ ...prev, audio_url: url }));
-      setIsRecordingInProgress(false);
-    }
-  }, []);
-
   // Callback stable pour traiter les médias
   const handleMediaChange = useCallback((mediaFiles: any[]) => {
+    console.log("📝 FORM - handleMediaChange:", { mediaFilesCount: mediaFiles.length });
     setFormData(prev => ({ ...prev, media_files: mediaFiles }));
   }, []);
 
@@ -402,11 +398,6 @@ const InterventionReportForm = () => {
   const followUpOptions = [
     'Rien à signaler', 'Contacter médecin', 'Surveillance accrue', 'Ajuster traitement', 'Prévenir famille'
   ];
-
-  const handleRecordingStatusChange = useCallback((isRecording: boolean) => {
-    console.log('🎙️ INTERVENTION - Changement statut enregistrement (stable):', isRecording);
-    setIsRecordingInProgress(isRecording);
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -826,8 +817,8 @@ const InterventionReportForm = () => {
           </CardContent>
         </Card>
 
-        {/* Enregistrement audio et médias */}
-        {showAudioRecorder && (
+        {/* Enregistrement audio et médias - NOUVEAU COMPOSANT DÉCOUPLÉ */}
+        {canEdit && (
           <Card>
             <CardHeader>
               <CardTitle>Enregistrement audio et médias</CardTitle>
@@ -835,14 +826,17 @@ const InterventionReportForm = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label>Enregistrement vocal</Label>
-                <InterventionAudioRecorder
-                  onAudioRecorded={handleAudioRecorded}
-                  onAudioUrlGenerated={handleAudioUrlGenerated}
-                  onRecordingStatusChange={handleRecordingStatusChange}
+                <SimpleInterventionAudioRecorder
+                  onAudioChange={handleAudioChange}
                   existingAudioUrl={formData.audio_url}
-                  isReadOnly={!canEdit}
-                  reportId={reportData?.id}
+                  disabled={isAudioUploading}
                 />
+                
+                {isAudioUploading && (
+                  <div className="mt-2 text-sm text-blue-600">
+                    Sauvegarde de l'audio en cours...
+                  </div>
+                )}
               </div>
 
               <div>
@@ -890,10 +884,10 @@ const InterventionReportForm = () => {
               <CardTitle>Enregistrement audio</CardTitle>
             </CardHeader>
             <CardContent>
-              <InterventionAudioRecorder
-                onAudioRecorded={handleAudioRecorded}
+              <SimpleInterventionAudioRecorder
+                onAudioChange={() => {}} // Pas de changement en mode lecture
                 existingAudioUrl={formData.audio_url}
-                isReadOnly={true}
+                disabled={true}
               />
             </CardContent>
           </Card>
@@ -912,7 +906,7 @@ const InterventionReportForm = () => {
                   Annuler
                 </Button>
               )}
-              <Button type="submit" disabled={loading} className="flex items-center gap-2">
+              <Button type="submit" disabled={loading || isAudioUploading} className="flex items-center gap-2">
                 <Save className="h-4 w-4" />
                 {loading ? 'Sauvegarde...' : (reportData?.id ? 'Mettre à jour' : 'Sauvegarder')}
               </Button>
