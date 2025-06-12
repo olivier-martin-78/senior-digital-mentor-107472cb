@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns';
@@ -53,7 +52,6 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   const handleReportClick = (appointment: Appointment) => {
     if (appointment.intervention_report_id) {
-      // Ouvrir directement le rapport d'intervention
       navigate(`/intervention-report?reportId=${appointment.intervention_report_id}`);
     }
   };
@@ -159,10 +157,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         </div>
         <div className="flex-1">
           <div className="font-medium text-sm">
-            {format(event.start, 'dd/MM/yyyy')} - {event.title}
+            {event.title}
           </div>
           <div className="text-xs text-gray-600">
-            {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+            {format(event.start, 'dd/MM/yyyy')}
           </div>
           {appointment?.notes && (
             <div className="text-xs text-gray-500 mt-1">{appointment.notes}</div>
