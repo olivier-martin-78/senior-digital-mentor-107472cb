@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useRef } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,6 +36,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Référence pour mémoriser la dernière date valide
+  const lastValidDateRef = useRef<Date | null>(null);
 
   const events: CalendarEvent[] = appointments.map(appointment => ({
     id: appointment.id,
@@ -213,8 +217,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   };
 
   const AgendaDateComponent = ({ label, date }: { label?: string; date?: Date }) => {
-    // Forcer l'affichage de la date pour chaque événement
+    // Si une date valide est fournie, la mémoriser et l'afficher
     if (date && isValid(date)) {
+      lastValidDateRef.current = date;
       return (
         <div className="text-sm font-medium text-gray-900 py-1">
           {format(date, 'dd/MM/yyyy')}
@@ -222,8 +227,17 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       );
     }
     
+    // Si pas de date mais qu'on a une dernière date valide, l'utiliser
+    if (lastValidDateRef.current) {
+      return (
+        <div className="text-sm font-medium text-gray-900 py-1">
+          {format(lastValidDateRef.current, 'dd/MM/yyyy')}
+        </div>
+      );
+    }
+    
     // Si pas de date valide, essayer d'utiliser le label
-    if (label) {
+    if (label && label !== '-') {
       return (
         <div className="text-sm font-medium text-gray-900 py-1">
           {label}
@@ -231,6 +245,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       );
     }
     
+    // En dernier recours, afficher la date du jour
     return (
       <div className="text-sm font-medium text-gray-900 py-1">
         {format(new Date(), 'dd/MM/yyyy')}
