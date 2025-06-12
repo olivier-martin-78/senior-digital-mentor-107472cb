@@ -56,10 +56,16 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
   };
 
-  const handleDeleteClick = async (appointment: Appointment) => {
+  const handleDeleteClick = async (appointment: Appointment, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
       await onAppointmentDelete(appointment.id);
     }
+  };
+
+  const handleEditClick = (appointment: Appointment, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAppointmentEdit(appointment);
   };
 
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
@@ -103,8 +109,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             variant="outline"
             className="h-6 w-6 p-0 bg-white border-gray-300 hover:bg-gray-50"
             onClick={(e) => {
-              e.stopPropagation();
-              if (appointment) onAppointmentEdit(appointment);
+              if (appointment) handleEditClick(appointment, e);
             }}
           >
             <Edit className="h-3 w-3 text-gray-700" />
@@ -114,9 +119,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             variant="outline"
             className="h-6 w-6 p-0 bg-white border-gray-300 hover:bg-gray-50"
             onClick={(e) => {
-              e.stopPropagation();
               if (appointment) {
-                handleDeleteClick(appointment);
+                handleDeleteClick(appointment, e);
               }
             }}
           >
@@ -172,8 +176,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             size="sm"
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              if (appointment) onAppointmentEdit(appointment);
+            onClick={(e) => {
+              if (appointment) handleEditClick(appointment, e);
             }}
           >
             <Edit className="h-4 w-4 text-gray-700" />
@@ -182,9 +186,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             size="sm"
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
+            onClick={(e) => {
               if (appointment) {
-                handleDeleteClick(appointment);
+                handleDeleteClick(appointment, e);
               }
             }}
           >
@@ -195,7 +199,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               size="sm"
               variant="outline"
               className="h-8 w-8 p-0 bg-green-50"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (appointment) handleReportClick(appointment);
               }}
             >
