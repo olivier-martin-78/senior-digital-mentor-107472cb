@@ -22,14 +22,14 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
-  // NOUVEAU: Refs stables pour éviter les re-créations
+  // Refs stables pour éviter les re-créations
   const stableCallbacksRef = useRef({
     onAudioRecorded,
     onAudioUrlGenerated,
     onRecordingStatusChange
   });
 
-  // NOUVEAU: Mettre à jour les refs sans déclencher de re-render
+  // Mettre à jour les refs sans déclencher de re-render
   useEffect(() => {
     stableCallbacksRef.current = {
       onAudioRecorded,
@@ -38,7 +38,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     };
   });
   
-  console.log("🎵 INTERVENTION - InterventionAudioRecorder rendu:", {
+  console.log("🎵 INTERVENTION - InterventionAudioRecorder rendu SIMPLIFIÉ:", {
     hasExistingUrl: !!existingAudioUrl,
     existingAudioUrl,
     currentAudioUrl: audioUrl,
@@ -46,33 +46,33 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     reportId
   });
 
-  // NOUVEAU: Initialisation stable de l'URL existante
+  // Initialisation stable de l'URL existante
   useEffect(() => {
     if (existingAudioUrl && existingAudioUrl.trim() !== '') {
-      console.log("🎵 INTERVENTION - Initialisation avec URL existante (stable):", existingAudioUrl);
+      console.log("🎵 INTERVENTION - Initialisation avec URL existante SIMPLIFIÉ:", existingAudioUrl);
       setAudioUrl(existingAudioUrl.trim());
     } else {
-      console.log("🎵 INTERVENTION - Pas d'URL existante (stable)");
+      console.log("🎵 INTERVENTION - Pas d'URL existante SIMPLIFIÉ");
       setAudioUrl(null);
     }
   }, [existingAudioUrl]);
 
-  // NOUVEAU: Callbacks stables
+  // Callbacks stables
   const stableHandleAudioRecorded = useCallback((blob: Blob) => {
-    console.log('🎤 INTERVENTION - Audio enregistré (stable):', blob?.size);
+    console.log('🎤 INTERVENTION - Audio enregistré SIMPLIFIÉ:', blob?.size);
     if (stableCallbacksRef.current.onAudioRecorded) {
       stableCallbacksRef.current.onAudioRecorded(blob);
     }
   }, []);
 
   const stableHandleAudioUrlGenerated = useCallback((url: string) => {
-    console.log('🎵 INTERVENTION - URL audio générée (stable):', url);
+    console.log('🎵 INTERVENTION - URL audio générée SIMPLIFIÉ:', url);
     
     if (!url || url.trim() === '') {
-      console.log('🎵 INTERVENTION - URL vide, suppression (stable)');
+      console.log('🎵 INTERVENTION - URL vide, suppression SIMPLIFIÉ');
       setAudioUrl(null);
     } else {
-      console.log('🎵 INTERVENTION - Nouvelle URL audio (stable):', url);
+      console.log('🎵 INTERVENTION - Nouvelle URL audio SIMPLIFIÉ:', url);
       setAudioUrl(url);
     }
     
@@ -81,15 +81,8 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     }
   }, []);
 
-  const stableHandleRecordingStatusChange = useCallback((isRecording: boolean) => {
-    console.log('🎙️ INTERVENTION - Changement statut dans InterventionAudioRecorder (stable):', isRecording);
-    if (stableCallbacksRef.current.onRecordingStatusChange) {
-      stableCallbacksRef.current.onRecordingStatusChange(isRecording);
-    }
-  }, []);
-
   const stableHandleDeleteAudio = useCallback(() => {
-    console.log('🗑️ INTERVENTION - Suppression audio (stable)');
+    console.log('🗑️ INTERVENTION - Suppression audio SIMPLIFIÉ');
     setAudioUrl(null);
     
     // Notifier le parent avec un blob vide
@@ -107,7 +100,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   const currentUrl = audioUrl || existingAudioUrl;
   const hasValidAudioUrl = !!(currentUrl && currentUrl.trim() !== '');
   
-  console.log('🎵 INTERVENTION - Logique affichage (stable):', {
+  console.log('🎵 INTERVENTION - Logique affichage SIMPLIFIÉ:', {
     hasValidAudioUrl,
     audioUrl,
     existingAudioUrl,
@@ -117,7 +110,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 
   // Si on a une URL audio valide, afficher le lecteur
   if (hasValidAudioUrl) {
-    console.log('🎵 INTERVENTION - Affichage lecteur avec URL (stable):', currentUrl);
+    console.log('🎵 INTERVENTION - Affichage lecteur avec URL SIMPLIFIÉ:', currentUrl);
     
     return (
       <VoiceAnswerPlayer
@@ -130,17 +123,17 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 
   // Si en mode lecture seule sans audio, ne rien afficher
   if (isReadOnly) {
-    console.log('🎵 INTERVENTION - Mode lecture seule sans audio (stable)');
+    console.log('🎵 INTERVENTION - Mode lecture seule sans audio SIMPLIFIÉ');
     return null;
   }
 
-  // Sinon, afficher le nouvel enregistreur direct
-  console.log('🎙️ INTERVENTION - Affichage enregistreur direct avec reportId (stable):', reportId);
+  // Sinon, afficher l'enregistreur direct
+  console.log('🎙️ INTERVENTION - Affichage enregistreur direct SIMPLIFIÉ avec reportId:', reportId);
   return (
     <DirectAudioRecorder
       onAudioRecorded={stableHandleAudioRecorded}
       onAudioUrlGenerated={stableHandleAudioUrlGenerated}
-      onRecordingStatusChange={stableHandleRecordingStatusChange}
+      onRecordingStatusChange={stableCallbacksRef.current.onRecordingStatusChange}
       reportId={reportId}
     />
   );
