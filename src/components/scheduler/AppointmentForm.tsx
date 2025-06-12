@@ -299,13 +299,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Label htmlFor="intervenant">Intervenant</Label>
               <Select
                 value={formData.intervenant_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, intervenant_id: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, intervenant_id: value === 'none' ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un intervenant (optionnel)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun intervenant spécifique</SelectItem>
+                  <SelectItem value="none">Aucun intervenant spécifique</SelectItem>
                   {activeIntervenants.map((intervenant) => (
                     <SelectItem key={intervenant.id} value={intervenant.id}>
                       {intervenant.first_name} {intervenant.last_name}

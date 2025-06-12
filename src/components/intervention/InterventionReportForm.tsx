@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,24 +20,40 @@ const InterventionReportForm = () => {
   const reportId = searchParams.get('reportId');
 
   const [reportData, setReportData] = useState({
-    report: '',
-    additional_notes: '',
-    client_signature: false,
+    auxiliary_name: '',
+    date: new Date().toISOString().split('T')[0],
+    start_time: '09:00',
+    end_time: '11:00',
+    patient_name: '',
+    mood: 'good',
+    general_health: '',
+    treatment_taken: '',
+    activities: [] as string[],
+    activities_other: '',
+    hygiene: '',
+    appetite: '',
+    appetite_comments: '',
+    toileting: '',
+    mobility: '',
+    mobility_assistance: '',
+    social_interactions: '',
+    cognitive_status: '',
+    pain_level: 0,
+    pain_location: '',
+    other_observations: '',
+    audio_url: '',
     professional_signature: false,
-    media_url: '',
-    media_name: '',
-    media_type: '',
-    media_size: 0,
+    hourly_rate: 0
   });
   const [loading, setLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioName, setAudioName] = useState<string | null>(null);
 
   useEffect(() => {
     if (reportId) {
       loadReportData(reportId);
+    } else if (appointmentId) {
+      loadAppointmentData(appointmentId);
     }
-  }, [reportId]);
+  }, [reportId, appointmentId]);
 
   const loadReportData = async (reportId: string) => {
     setLoading(true);
@@ -50,17 +67,31 @@ const InterventionReportForm = () => {
       if (error) throw error;
 
       setReportData({
-        report: data.report || '',
-        additional_notes: data.additional_notes || '',
-        client_signature: data.client_signature || false,
+        auxiliary_name: data.auxiliary_name || '',
+        date: data.date || new Date().toISOString().split('T')[0],
+        start_time: data.start_time || '09:00',
+        end_time: data.end_time || '11:00',
+        patient_name: data.patient_name || '',
+        mood: data.mood || 'good',
+        general_health: data.general_health || '',
+        treatment_taken: data.treatment_taken || '',
+        activities: data.activities || [],
+        activities_other: data.activities_other || '',
+        hygiene: data.hygiene || '',
+        appetite: data.appetite || '',
+        appetite_comments: data.appetite_comments || '',
+        toileting: data.toileting || '',
+        mobility: data.mobility || '',
+        mobility_assistance: data.mobility_assistance || '',
+        social_interactions: data.social_interactions || '',
+        cognitive_status: data.cognitive_status || '',
+        pain_level: data.pain_level || 0,
+        pain_location: data.pain_location || '',
+        other_observations: data.other_observations || '',
+        audio_url: data.audio_url || '',
         professional_signature: data.professional_signature || false,
-        media_url: data.media_url || '',
-        media_name: data.media_name || '',
-        media_type: data.media_type || '',
-        media_size: data.media_size || 0,
+        hourly_rate: data.hourly_rate || 0
       });
-      setAudioUrl(data.media_url || null);
-      setAudioName(data.media_name || null);
     } catch (error) {
       console.error('Erreur lors du chargement du rapport:', error);
       toast({
@@ -73,41 +104,49 @@ const InterventionReportForm = () => {
     }
   };
 
+  const loadAppointmentData = async (appointmentId: string) => {
+    try {
+      const { data: appointment, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          clients:client_id (
+            first_name,
+            last_name,
+            hourly_rate
+          )
+        `)
+        .eq('id', appointmentId)
+        .single();
+
+      if (error) throw error;
+
+      if (appointment) {
+        const startDate = new Date(appointment.start_time);
+        const endDate = new Date(appointment.end_time);
+        
+        setReportData(prev => ({
+          ...prev,
+          date: startDate.toISOString().split('T')[0],
+          start_time: startDate.toTimeString().slice(0, 5),
+          end_time: endDate.toTimeString().slice(0, 5),
+          patient_name: appointment.clients ? `${appointment.clients.first_name} ${appointment.clients.last_name}` : '',
+          hourly_rate: appointment.clients?.hourly_rate || 0
+        }));
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données du rendez-vous:', error);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const checked = 'checked' in e.target ? e.target.checked : false;
+    
     setReportData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-  };
-
-  const handleAudioUpload = async (file: File) => {
-    setLoading(true);
-    try {
-      const mediaInfo = await uploadMediaFile(file);
-      setReportData(prev => ({
-        ...prev,
-        media_url: mediaInfo.url,
-        media_name: mediaInfo.name,
-        media_type: mediaInfo.type,
-        media_size: mediaInfo.size,
-      }));
-      setAudioUrl(mediaInfo.url);
-      setAudioName(mediaInfo.name);
-      toast({
-        title: 'Succès',
-        description: 'Fichier audio uploadé avec succès',
-      });
-    } catch (error) {
-      console.error('Erreur lors de l\'upload du fichier audio:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'uploader le fichier audio',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,34 +199,6 @@ const InterventionReportForm = () => {
     }
   };
 
-  const uploadMediaFile = async (file: File) => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `intervention-media/${fileName}`;
-
-      const { error: uploadError, data } = await supabase.storage
-        .from('intervention-audio')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('intervention-audio')
-        .getPublicUrl(filePath);
-
-      return {
-        url: publicUrl,
-        name: file.name,
-        type: file.type,
-        size: file.size
-      };
-    } catch (error) {
-      console.error('Erreur lors de l\'upload du fichier:', error);
-      throw error;
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
@@ -196,42 +207,89 @@ const InterventionReportForm = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="patient_name">Nom du patient</Label>
+                <Input
+                  id="patient_name"
+                  name="patient_name"
+                  value={reportData.patient_name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="auxiliary_name">Nom de l'auxiliaire</Label>
+                <Input
+                  id="auxiliary_name"
+                  name="auxiliary_name"
+                  value={reportData.auxiliary_name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={reportData.date}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="start_time">Heure de début</Label>
+                <Input
+                  id="start_time"
+                  name="start_time"
+                  type="time"
+                  value={reportData.start_time}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="end_time">Heure de fin</Label>
+                <Input
+                  id="end_time"
+                  name="end_time"
+                  type="time"
+                  value={reportData.end_time}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
             <div>
-              <Label htmlFor="report">Rapport *</Label>
+              <Label htmlFor="other_observations">Observations</Label>
               <Textarea
-                id="report"
-                name="report"
-                value={reportData.report}
+                id="other_observations"
+                name="other_observations"
+                value={reportData.other_observations}
                 onChange={handleInputChange}
-                required
+                rows={4}
               />
             </div>
 
             <div>
-              <Label htmlFor="additional_notes">Notes additionnelles</Label>
-              <Textarea
-                id="additional_notes"
-                name="additional_notes"
-                value={reportData.additional_notes}
+              <Label htmlFor="hourly_rate">Tarif horaire (€)</Label>
+              <Input
+                id="hourly_rate"
+                name="hourly_rate"
+                type="number"
+                step="0.01"
+                value={reportData.hourly_rate}
                 onChange={handleInputChange}
               />
-            </div>
-
-            <InterventionAudioRecorder
-              onAudioUpload={handleAudioUpload}
-              existingAudioUrl={audioUrl}
-              existingAudioName={audioName}
-              disabled={loading}
-            />
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="client_signature"
-                name="client_signature"
-                checked={reportData.client_signature}
-                onCheckedChange={(checked) => setReportData(prev => ({ ...prev, client_signature: checked || false }))}
-              />
-              <Label htmlFor="client_signature">Signature du client</Label>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -239,7 +297,7 @@ const InterventionReportForm = () => {
                 id="professional_signature"
                 name="professional_signature"
                 checked={reportData.professional_signature}
-                onCheckedChange={(checked) => setReportData(prev => ({ ...prev, professional_signature: checked || false }))}
+                onCheckedChange={(checked) => setReportData(prev => ({ ...prev, professional_signature: checked === true }))}
               />
               <Label htmlFor="professional_signature">Signature du professionnel</Label>
             </div>
