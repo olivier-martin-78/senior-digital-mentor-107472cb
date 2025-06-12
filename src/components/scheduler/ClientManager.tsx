@@ -65,8 +65,15 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, onClientUpdate }
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div><strong>Adresse:</strong> {client.address}</div>
+                {(client.postal_code || client.city) && (
+                  <div>
+                    <strong>Code postal / Ville:</strong> {client.postal_code} {client.city}
+                  </div>
+                )}
                 {client.phone && <div><strong>Téléphone:</strong> {client.phone}</div>}
                 {client.email && <div><strong>Email:</strong> {client.email}</div>}
+                {client.hourly_rate && <div><strong>Prix horaire:</strong> {client.hourly_rate}€</div>}
+                {client.comment && <div><strong>Commentaire:</strong> {client.comment}</div>}
               </div>
               
               {showCaregivers === client.id && (

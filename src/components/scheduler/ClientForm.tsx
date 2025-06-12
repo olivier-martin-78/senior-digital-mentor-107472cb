@@ -27,10 +27,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
     first_name: '',
     last_name: '',
     address: '',
+    postal_code: '',
+    city: '',
     phone: '',
     email: '',
     color: '#3174ad',
     hourly_rate: '',
+    comment: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -40,10 +43,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         first_name: client.first_name,
         last_name: client.last_name,
         address: client.address,
+        postal_code: client.postal_code || '',
+        city: client.city || '',
         phone: client.phone || '',
         email: client.email || '',
         color: client.color || '#3174ad',
         hourly_rate: client.hourly_rate ? client.hourly_rate.toString() : '',
+        comment: client.comment || '',
       });
     }
   }, [client]);
@@ -58,10 +64,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         first_name: formData.first_name,
         last_name: formData.last_name,
         address: formData.address,
+        postal_code: formData.postal_code || null,
+        city: formData.city || null,
         phone: formData.phone || null,
         email: formData.email || null,
         color: formData.color,
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+        comment: formData.comment || null,
       };
 
       if (client) {
@@ -104,7 +113,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
 
   return (
     <Dialog open onOpenChange={onCancel}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {client ? 'Modifier le client' : 'Nouveau client'}
@@ -145,6 +154,27 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <Label htmlFor="postal_code">Code postal</Label>
+              <Input
+                id="postal_code"
+                value={formData.postal_code}
+                onChange={(e) => setFormData(prev => ({ ...prev, postal_code: e.target.value }))}
+                placeholder="75001"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">Ville</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="Paris"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="phone">Téléphone</Label>
               <Input
                 id="phone"
@@ -174,6 +204,17 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
               type="email"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="comment">Commentaire</Label>
+            <Textarea
+              id="comment"
+              value={formData.comment}
+              onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
+              placeholder="Informations supplémentaires..."
+              rows={3}
             />
           </div>
 
