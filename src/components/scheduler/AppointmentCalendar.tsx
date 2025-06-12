@@ -269,16 +269,27 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           agenda: {
             event: AgendaEvent,
             date: ({ date }) => {
-              // Add validation to prevent "Invalid time value" error
-              if (!date || !isValid(new Date(date))) {
-                console.error('Invalid date passed to agenda date component:', date);
+              // Convertir la date en objet Date si nécessaire
+              let dateToFormat;
+              if (date instanceof Date) {
+                dateToFormat = date;
+              } else if (typeof date === 'string' || typeof date === 'number') {
+                dateToFormat = new Date(date);
+              } else {
+                console.error('Invalid date format in agenda:', date);
+                return <div className="text-sm font-medium">-</div>;
+              }
+              
+              // Vérifier si la date est valide après conversion
+              if (!isValid(dateToFormat)) {
+                console.error('Invalid date after conversion in agenda:', date, dateToFormat);
                 return <div className="text-sm font-medium">-</div>;
               }
               
               try {
                 return (
                   <div className="text-sm font-medium">
-                    {format(new Date(date), 'dd/MM/yyyy')}
+                    {format(dateToFormat, 'dd/MM/yyyy')}
                   </div>
                 );
               } catch (error) {
@@ -287,16 +298,26 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               }
             },
             time: ({ event }) => {
-              // Add validation to prevent "Invalid time value" error
-              if (!event || !event.start || !event.end || !isValid(new Date(event.start)) || !isValid(new Date(event.end))) {
-                console.error('Invalid event times passed to agenda time component:', event);
+              // Vérifier que l'événement et ses propriétés existent
+              if (!event || !event.start || !event.end) {
+                console.error('Missing event or time properties in agenda:', event);
+                return <div className="text-sm">-</div>;
+              }
+              
+              // Convertir en objets Date si nécessaire
+              let startDate = event.start instanceof Date ? event.start : new Date(event.start);
+              let endDate = event.end instanceof Date ? event.end : new Date(event.end);
+              
+              // Vérifier la validité des dates
+              if (!isValid(startDate) || !isValid(endDate)) {
+                console.error('Invalid event times in agenda:', event);
                 return <div className="text-sm">-</div>;
               }
               
               try {
                 return (
                   <div className="text-sm">
-                    {format(new Date(event.start), 'HH:mm')} - {format(new Date(event.end), 'HH:mm')}
+                    {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
                   </div>
                 );
               } catch (error) {
