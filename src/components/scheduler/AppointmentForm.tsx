@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,23 +71,50 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   }, [appointment]);
 
-  const createRecurringAppointments = async (baseAppointment: any, endDate: string) => {
+  const createRecurringAppointments = async (baseData: any, endDate: string, parentId: string) => {
     const appointments = [];
     const startDate = new Date(formData.start_time);
     const finalDate = new Date(endDate);
     
     let currentDate = addWeeks(startDate, 1); // Commencer la semaine suivante
     
+    // Supprimer les rendez-vous récurrents existants pour ce client et ce professionnel
+    // sur le même jour de la semaine dans la plage de dates
+    const dayOfWeek = startDate.getDay();
+    
+    const { error: deleteError } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('client_id', formData.client_id)
+      .eq('professional_id', user?.id)
+      .eq('is_recurring', true)
+      .gte('start_time', currentDate.toISOString())
+      .lte('start_time', finalDate.toISOString());
+
+    if (deleteError) {
+      console.error('Erreur lors de la suppression des anciens rendez-vous:', deleteError);
+    }
+    
     while (currentDate <= finalDate) {
-      const duration = new Date(formData.end_time).getTime() - new Date(formData.start_time).getTime();
-      const endTime = new Date(currentDate.getTime() + duration);
-      
-      appointments.push({
-        ...baseAppointment,
-        start_time: currentDate.toISOString(),
-        end_time: endTime.toISOString(),
-        parent_appointment_id: baseAppointment.id
-      });
+      // Vérifier que c'est bien le même jour de la semaine
+      if (currentDate.getDay() === dayOfWeek) {
+        const duration = new Date(formData.end_time).getTime() - new Date(formData.start_time).getTime();
+        const endTime = new Date(currentDate.getTime() + duration);
+        
+        appointments.push({
+          client_id: baseData.client_id,
+          professional_id: baseData.professional_id,
+          start_time: currentDate.toISOString(),
+          end_time: endTime.toISOString(),
+          notes: baseData.notes,
+          status: baseData.status,
+          is_recurring: true,
+          recurrence_type: 'weekly',
+          recurrence_end_date: baseData.recurrence_end_date,
+          parent_appointment_id: parentId,
+          email_sent: false
+        });
+      }
       
       currentDate = addWeeks(currentDate, 1);
     }
@@ -96,7 +124,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         .from('appointments')
         .insert(appointments);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de l\'insertion des rendez-vous récurrents:', error);
+        throw error;
+      }
     }
     
     return appointments.length;
@@ -117,7 +148,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         status: formData.status,
         is_recurring: formData.is_recurring,
         recurrence_type: formData.is_recurring ? 'weekly' as const : null,
-        recurrence_end_date: formData.is_recurring ? formData.recurrence_end_date : null
+        recurrence_end_date: formData.is_recurring ? formData.recurrence_end_date : null,
+        email_sent: false
       };
 
       if (appointment?.id) {
@@ -141,11 +173,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erreur lors de la création du rendez-vous principal:', error);
+          throw error;
+        }
 
         // Si c'est récurrent, créer les autres rendez-vous
         if (formData.is_recurring && formData.recurrence_end_date) {
-          const recurringCount = await createRecurringAppointments(newAppointment, formData.recurrence_end_date);
+          const recurringCount = await createRecurringAppointments(
+            appointmentData, 
+            formData.recurrence_end_date,
+            newAppointment.id
+          );
           
           toast({
             title: 'Succès',
