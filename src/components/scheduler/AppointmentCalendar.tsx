@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -276,77 +275,6 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           event: EventComponent,
           agenda: {
             event: AgendaEvent,
-            date: ({ date }) => {
-              console.log('Date reçue dans agenda.date:', date, typeof date);
-              
-              try {
-                let validDate;
-                
-                // Si c'est déjà un objet Date valide
-                if (date instanceof Date && isValid(date)) {
-                  validDate = date;
-                } else if (typeof date === 'string') {
-                  // Si c'est une chaîne, essayer de la parser
-                  validDate = new Date(date);
-                } else if (typeof date === 'number') {
-                  // Si c'est un timestamp
-                  validDate = new Date(date);
-                } else {
-                  // Dernier recours
-                  validDate = new Date(String(date));
-                }
-                
-                console.log('Date convertie:', validDate, 'valide:', isValid(validDate));
-                
-                if (!isValid(validDate)) {
-                  return (
-                    <div className="text-sm font-medium text-gray-400">
-                      Date invalide
-                    </div>
-                  );
-                }
-                
-                return (
-                  <div className="text-sm font-medium text-gray-900">
-                    {format(validDate, 'dd/MM/yyyy')}
-                  </div>
-                );
-              } catch (error) {
-                console.error('Erreur lors du formatage de la date:', error, 'date originale:', date);
-                return (
-                  <div className="text-sm font-medium text-gray-400">
-                    Erreur date
-                  </div>
-                );
-              }
-            },
-            time: ({ event }) => {
-              console.log('Event reçu dans agenda.time:', event);
-              
-              if (!event || !event.start || !event.end) {
-                return <div className="text-sm text-gray-400">-</div>;
-              }
-              
-              try {
-                let startDate = event.start instanceof Date ? event.start : new Date(event.start);
-                let endDate = event.end instanceof Date ? event.end : new Date(event.end);
-                
-                console.log('Dates converties:', { startDate, endDate });
-                
-                if (!isValid(startDate) || !isValid(endDate)) {
-                  return <div className="text-sm text-gray-400">-</div>;
-                }
-                
-                return (
-                  <div className="text-sm text-gray-700">
-                    {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
-                  </div>
-                );
-              } catch (error) {
-                console.error('Erreur lors du formatage de l\'heure:', error, event);
-                return <div className="text-sm text-gray-400">-</div>;
-              }
-            },
           },
         }}
         eventPropGetter={getEventStyle}
