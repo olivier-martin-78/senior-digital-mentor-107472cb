@@ -14,6 +14,7 @@ interface SimpleAudioRecorderHook {
 
 // NOUVEAU: Protection globale contre les enregistrements multiples
 let globalRecordingInstance: string | null = null;
+let globalStopCallback: (() => void) | null = null;
 
 export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -68,23 +69,37 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
     if (globalRecordingInstance === instanceIdRef.current) {
       console.log('🔓 SIMPLE - Libération de l\'instance globale:', instanceIdRef.current);
       globalRecordingInstance = null;
+      globalStopCallback = null;
     }
   }, []);
+
+  // NOUVEAU: Fonction pour arrêter cet enregistrement depuis l'extérieur
+  const forceStop = useCallback(() => {
+    console.log('🛑 SIMPLE - Arrêt forcé demandé pour instance:', instanceIdRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (error) {
+        console.error('❌ SIMPLE - Erreur lors de l\'arrêt forcé:', error);
+      }
+    }
+    setIsRecording(false);
+    cleanupResources();
+  }, [cleanupResources]);
   
   const startRecording = useCallback(async () => {
     console.log('🎙️ SIMPLE - === DÉBUT ENREGISTREMENT ===');
     console.log('🎙️ SIMPLE - Instance:', instanceIdRef.current);
     console.log('🎙️ SIMPLE - Instance globale actuelle:', globalRecordingInstance);
     
-    // NOUVEAU: Vérifier s'il y a déjà un enregistrement en cours
+    // NOUVEAU: Si une autre instance est active, la forcer à s'arrêter
     if (globalRecordingInstance && globalRecordingInstance !== instanceIdRef.current) {
-      console.error('❌ SIMPLE - Enregistrement refusé: une autre instance est active:', globalRecordingInstance);
-      toast({
-        title: "Enregistrement en cours",
-        description: "Un autre enregistrement est déjà en cours. Veuillez l'arrêter d'abord.",
-        variant: "destructive",
-      });
-      return;
+      console.log('⚠️ SIMPLE - Arrêt forcé de l\'instance précédente:', globalRecordingInstance);
+      if (globalStopCallback) {
+        globalStopCallback();
+      }
+      // Attendre un peu pour que l'arrêt se propage
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     if (isRecording) {
@@ -94,6 +109,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
     
     // NOUVEAU: Réserver l'instance globale
     globalRecordingInstance = instanceIdRef.current;
+    globalStopCallback = forceStop;
     console.log('🔒 SIMPLE - Instance globale verrouillée:', globalRecordingInstance);
     
     try {
@@ -340,7 +356,7 @@ export const useSimpleAudioRecorder = (): SimpleAudioRecorderHook => {
         variant: "destructive",
       });
     }
-  }, [isRecording, audioUrl, cleanupResources]);
+  }, [isRecording, audioUrl, cleanupResources, forceStop]);
   
   const stopRecording = useCallback(async () => {
     console.log('🛑 SIMPLE - === DEMANDE ARRÊT MANUEL ===');
