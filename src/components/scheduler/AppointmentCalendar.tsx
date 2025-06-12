@@ -56,6 +56,12 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
   };
 
+  const handleDeleteClick = async (appointment: Appointment) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
+      await onAppointmentDelete(appointment.id);
+    }
+  };
+
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const hasReport = appointment?.intervention_report_id;
@@ -110,9 +116,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               if (appointment) {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
-                  onAppointmentDelete(appointment.id);
-                }
+                handleDeleteClick(appointment);
               }
             }}
           >
@@ -180,9 +184,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             className="h-8 w-8 p-0"
             onClick={() => {
               if (appointment) {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
-                  onAppointmentDelete(appointment.id);
-                }
+                handleDeleteClick(appointment);
               }
             }}
           >

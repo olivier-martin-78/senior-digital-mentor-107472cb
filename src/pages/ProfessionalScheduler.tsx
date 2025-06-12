@@ -190,6 +190,12 @@ const ProfessionalScheduler = () => {
       description: 'Rendez-vous supprimé avec succès',
     });
 
+    // Fermer le formulaire si le rendez-vous supprimé était sélectionné
+    if (selectedAppointment && selectedAppointment.id === appointmentId) {
+      setShowAppointmentForm(false);
+      setSelectedAppointment(null);
+    }
+
     loadAppointments();
   };
 
