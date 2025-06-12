@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Appointment, CalendarEvent } from '@/types/appointments';
@@ -269,16 +268,42 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           event: EventComponent,
           agenda: {
             event: AgendaEvent,
-            date: ({ date }) => (
-              <div className="text-sm font-medium">
-                {format(date, 'dd/MM/yyyy')}
-              </div>
-            ),
-            time: ({ event }) => (
-              <div className="text-sm">
-                {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
-              </div>
-            ),
+            date: ({ date }) => {
+              // Add validation to prevent "Invalid time value" error
+              if (!date || !isValid(new Date(date))) {
+                console.error('Invalid date passed to agenda date component:', date);
+                return <div className="text-sm font-medium">-</div>;
+              }
+              
+              try {
+                return (
+                  <div className="text-sm font-medium">
+                    {format(new Date(date), 'dd/MM/yyyy')}
+                  </div>
+                );
+              } catch (error) {
+                console.error('Error formatting date in agenda:', error, date);
+                return <div className="text-sm font-medium">-</div>;
+              }
+            },
+            time: ({ event }) => {
+              // Add validation to prevent "Invalid time value" error
+              if (!event || !event.start || !event.end || !isValid(new Date(event.start)) || !isValid(new Date(event.end))) {
+                console.error('Invalid event times passed to agenda time component:', event);
+                return <div className="text-sm">-</div>;
+              }
+              
+              try {
+                return (
+                  <div className="text-sm">
+                    {format(new Date(event.start), 'HH:mm')} - {format(new Date(event.end), 'HH:mm')}
+                  </div>
+                );
+              } catch (error) {
+                console.error('Error formatting time in agenda:', error, event);
+                return <div className="text-sm">-</div>;
+              }
+            },
           },
         }}
         eventPropGetter={getEventStyle}
