@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -214,19 +212,28 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  const AgendaDateComponent = ({ event }: { event: CalendarEvent }) => {
-    // Toujours afficher la date de l'événement, même si c'est répétitif
-    if (event && event.start) {
+  const AgendaDateComponent = ({ label, date }: { label?: string; date?: Date }) => {
+    // Forcer l'affichage de la date pour chaque événement
+    if (date && isValid(date)) {
       return (
         <div className="text-sm font-medium text-gray-900 py-1">
-          {format(event.start, 'dd/MM/yyyy')}
+          {format(date, 'dd/MM/yyyy')}
+        </div>
+      );
+    }
+    
+    // Si pas de date valide, essayer d'utiliser le label
+    if (label) {
+      return (
+        <div className="text-sm font-medium text-gray-900 py-1">
+          {label}
         </div>
       );
     }
     
     return (
       <div className="text-sm font-medium text-gray-900 py-1">
-        -
+        {format(new Date(), 'dd/MM/yyyy')}
       </div>
     );
   };
@@ -300,10 +307,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         eventPropGetter={getEventStyle}
         step={30}
         showMultiDayTimes
+        // Forcer l'affichage de la date pour chaque événement dans l'agenda
+        dayLayoutAlgorithm="no-overlap"
       />
     </div>
   );
 };
 
 export default AppointmentCalendar;
-
