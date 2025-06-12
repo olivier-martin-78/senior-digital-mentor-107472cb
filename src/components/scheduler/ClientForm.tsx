@@ -16,6 +16,11 @@ interface ClientFormProps {
   onCancel: () => void;
 }
 
+const defaultColors = [
+  '#3174ad', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+  '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+];
+
 const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -24,6 +29,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
     address: '',
     phone: '',
     email: '',
+    color: '#3174ad',
   });
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +41,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         address: client.address,
         phone: client.phone || '',
         email: client.email || '',
+        color: client.color || '#3174ad',
       });
     }
   }, [client]);
@@ -147,6 +154,30 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
               type="email"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="color">Couleur du client</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {defaultColors.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`w-8 h-8 rounded-full border-2 ${
+                    formData.color === color ? 'border-gray-800' : 'border-gray-300'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setFormData(prev => ({ ...prev, color }))}
+                />
+              ))}
+            </div>
+            <Input
+              id="color"
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+              className="mt-2 w-20 h-10"
             />
           </div>
 

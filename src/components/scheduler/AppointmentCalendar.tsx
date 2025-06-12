@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { Appointment, CalendarEvent } from '@/types/appointments';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, FileText } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import AuxiliaryAvatar from './AuxiliaryAvatar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
@@ -32,6 +34,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   onAppointmentEdit,
   onAppointmentDelete,
 }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const events: CalendarEvent[] = appointments.map(appointment => ({
     id: appointment.id,
     title: `${appointment.client?.first_name} ${appointment.client?.last_name}`,
@@ -46,41 +51,64 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
   };
 
+  const handleReportClick = (appointment: Appointment) => {
+    if (appointment.intervention_report_id) {
+      // Ouvrir directement le rapport d'intervention
+      navigate(`/intervention-report?reportId=${appointment.intervention_report_id}`);
+    }
+  };
+
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const hasReport = appointment?.intervention_report_id;
+    const clientColor = appointment?.client?.color || '#3174ad';
     
     return (
       <div className="p-1">
-        <div className="text-xs font-medium flex items-center gap-1">
+        <div className="text-xs font-medium flex items-center gap-1 mb-1">
+          <div className="flex items-center gap-1">
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: clientColor }}
+            />
+            {user && (
+              <AuxiliaryAvatar 
+                name={user.email?.split('@')[0] || 'Auxiliaire'} 
+                size="sm" 
+              />
+            )}
+          </div>
           {hasReport && (
             <div className="bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center">
               <FileText className="h-2.5 w-2.5" />
             </div>
           )}
-          {event.title}
         </div>
-        <div className="text-xs opacity-75">
-          {appointment?.notes && (
+        <div className="text-xs mb-1">
+          <div className="font-medium">{format(event.start, 'dd/MM/yyyy')}</div>
+          <div>{event.title}</div>
+        </div>
+        {appointment?.notes && (
+          <div className="text-xs opacity-75 mb-1">
             <div className="truncate">{appointment.notes}</div>
-          )}
-        </div>
-        <div className="flex gap-1 mt-1">
+          </div>
+        )}
+        <div className="flex gap-1">
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 bg-white border-gray-300 hover:bg-gray-50"
             onClick={(e) => {
               e.stopPropagation();
               if (appointment) onAppointmentEdit(appointment);
             }}
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3 w-3 text-gray-600" />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 bg-white border-gray-300 hover:bg-gray-50"
             onClick={(e) => {
               e.stopPropagation();
               if (appointment) {
@@ -90,19 +118,16 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               }
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3 w-3 text-gray-600" />
           </Button>
           {hasReport && (
             <Button
               size="sm"
               variant="outline"
-              className="h-6 w-6 p-0 bg-green-50"
+              className="h-6 w-6 p-0 bg-green-50 border-green-300 hover:bg-green-100"
               onClick={(e) => {
                 e.stopPropagation();
-                toast({
-                  title: 'Rapport d\'intervention',
-                  description: 'Un rapport d\'intervention existe pour ce rendez-vous',
-                });
+                if (appointment) handleReportClick(appointment);
               }}
             >
               <FileText className="h-3 w-3 text-green-600" />
@@ -113,23 +138,94 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
+  const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
+    const appointment = event.resource;
+    const hasReport = appointment?.intervention_report_id;
+    const clientColor = appointment?.client?.color || '#3174ad';
+    
+    return (
+      <div className="flex items-center gap-3 p-2">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-4 h-4 rounded-full"
+            style={{ backgroundColor: clientColor }}
+          />
+          {user && (
+            <AuxiliaryAvatar 
+              name={user.email?.split('@')[0] || 'Auxiliaire'} 
+              size="md" 
+            />
+          )}
+        </div>
+        <div className="flex-1">
+          <div className="font-medium text-sm">
+            {format(event.start, 'dd/MM/yyyy')} - {event.title}
+          </div>
+          <div className="text-xs text-gray-600">
+            {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+          </div>
+          {appointment?.notes && (
+            <div className="text-xs text-gray-500 mt-1">{appointment.notes}</div>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+            onClick={() => {
+              if (appointment) onAppointmentEdit(appointment);
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+            onClick={() => {
+              if (appointment) {
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
+                  onAppointmentDelete(appointment.id);
+                }
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          {hasReport && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0 bg-green-50"
+              onClick={() => {
+                if (appointment) handleReportClick(appointment);
+              }}
+            >
+              <FileText className="h-4 w-4 text-green-600" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const getEventStyle = (event: CalendarEvent) => {
     const appointment = event.resource;
-    let backgroundColor = '#3174ad';
+    const clientColor = appointment?.client?.color || '#3174ad';
+    let backgroundColor = clientColor;
     
     if (appointment?.status === 'completed') {
       backgroundColor = '#10b981';
     } else if (appointment?.status === 'cancelled') {
       backgroundColor = '#ef4444';
-    } else if (appointment?.intervention_report_id) {
-      backgroundColor = '#059669';
     }
     
     return {
       style: {
         backgroundColor,
         borderRadius: '5px',
-        opacity: 0.8,
+        opacity: 0.9,
         color: 'white',
         border: appointment?.intervention_report_id ? '2px solid #065f46' : '0px',
         display: 'block'
@@ -170,9 +266,13 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           agendaTimeRangeFormat: ({ start, end }) => {
             return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
           },
+          agendaDateFormat: (date) => format(date, 'dd/MM/yyyy'),
         }}
         components={{
           event: EventComponent,
+          agenda: {
+            event: AgendaEvent,
+          },
         }}
         eventPropGetter={getEventStyle}
         step={30}
