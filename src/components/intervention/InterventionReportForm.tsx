@@ -1,323 +1,188 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { InterventionReport, AppointmentForIntervention } from '@/types/intervention';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Clock, User, FileText, Save, ArrowLeft, Edit3, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FileText, Mic, Upload, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
-import MediaUploader from './MediaUploader';
-import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+interface MediaFile {
+  name: string;
+  url: string;
+}
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
-  
-  // Récupérer les données depuis location.state si elles existent
-  const reportData = location.state?.reportData as InterventionReport | undefined;
-  const appointmentId = location.state?.appointmentId as string | undefined;
-  const isViewMode = location.state?.isViewMode as boolean | false;
-  const clientName = location.state?.clientName as string | undefined;
-  const appointmentData = location.state?.appointmentData;
-
-  console.log("📝 FORM - Render avec reportData:", {
-    hasReportData: !!reportData,
-    reportId: reportData?.id,
-    appointmentId,
-    isViewMode
-  });
-
-  const [formData, setFormData] = useState<Partial<InterventionReport>>({
-    professional_id: user?.id || '',
-    appointment_id: appointmentId,
-    date: appointmentData?.date || format(new Date(), 'yyyy-MM-dd'),
-    start_time: appointmentData?.start_time || '09:00',
-    end_time: appointmentData?.end_time || '11:00',
-    auxiliary_name: '',
-    patient_name: clientName || '',
-    physical_state: [],
-    physical_state_other: '',
-    pain_location: '',
-    mental_state: [],
-    mental_state_change: '',
-    appetite: '',
-    hydration: '',
-    appetite_comments: '',
-    hygiene: [],
-    hygiene_comments: '',
-    activities: [],
-    activities_other: '',
-    observations: '',
-    follow_up: [],
-    follow_up_other: '',
-    audio_url: '',
-    media_files: []
-  });
-
-  const [appointments, setAppointments] = useState<AppointmentForIntervention[]>([]);
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  
-  // États découplés pour l'audio - plus de couplage avec le formulaire
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUploadUrl, setAudioUploadUrl] = useState<string>('');
-  const [isAudioUploading, setIsAudioUploading] = useState(false);
+  const [appointment, setAppointment] = useState<any>(null);
+  const [reportData, setReportData] = useState<any>(null);
+  const [isViewMode, setIsViewMode] = useState(false);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
 
-  // Variables pour déterminer si on peut éditer
-  const canEdit = !isViewMode || isEditMode;
-
-  // Charger les données du rapport si elles sont fournies
-  useEffect(() => {
-    console.log("📝 FORM - useEffect charger données rapport:", { hasReportData: !!reportData });
-    
-    if (reportData) {
-      setFormData({
-        ...reportData,
-        // S'assurer que les tableaux sont bien des tableaux
-        physical_state: Array.isArray(reportData.physical_state) ? reportData.physical_state : [],
-        mental_state: Array.isArray(reportData.mental_state) ? reportData.mental_state : [],
-        hygiene: Array.isArray(reportData.hygiene) ? reportData.hygiene : [],
-        activities: Array.isArray(reportData.activities) ? reportData.activities : [],
-        follow_up: Array.isArray(reportData.follow_up) ? reportData.follow_up : [],
-        media_files: Array.isArray(reportData.media_files) ? reportData.media_files : []
-      });
-      
-      // Initialiser l'URL audio existante sans déclencher de re-render
-      if (reportData.audio_url) {
-        setAudioUploadUrl(reportData.audio_url);
-      }
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      auxiliary_name: user?.email?.split('@')[0] || 'Auxiliaire',
+      patient_name: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      start_time: '09:00',
+      end_time: '11:00',
+      physical_state: [],
+      physical_state_other: '',
+      pain_location: '',
+      mental_state: [],
+      mental_state_change: '',
+      appetite: '',
+      hydration: '',
+      appetite_comments: '',
+      hygiene: [],
+      hygiene_comments: '',
+      activities: [],
+      activities_other: '',
+      observations: '',
+      follow_up: [],
+      follow_up_other: '',
+      hourly_rate: 0
     }
-  }, [reportData]);
+  });
 
-  // Charger les rendez-vous du jour pour le professionnel
   useEffect(() => {
-    console.log("📝 FORM - useEffect charger appointments:", { hasUser: !!user, hasReportData: !!reportData });
-    
-    if (user && !reportData) {
-      loadTodayAppointments();
+    const state = location.state as any;
+    if (state?.appointmentId) {
+      loadAppointmentData(state.appointmentId);
     }
-  }, [user, reportData]);
+    if (state?.reportData) {
+      setReportData(state.reportData);
+      populateFormWithReportData(state.reportData);
+    }
+    if (state?.isViewMode) {
+      setIsViewMode(true);
+    }
+    if (state?.clientName) {
+      setValue('patient_name', state.clientName);
+    }
+    if (state?.appointmentData) {
+      setValue('date', state.appointmentData.date);
+      setValue('start_time', state.appointmentData.start_time);
+      setValue('end_time', state.appointmentData.end_time);
+    }
+  }, [location.state, setValue]);
 
-  const loadTodayAppointments = async () => {
-    console.log("📝 FORM - loadTodayAppointments");
-    
-    if (!user) return;
-
+  const loadAppointmentData = async (appointmentId: string) => {
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('appointments')
         .select(`
-          id,
-          start_time,
-          end_time,
-          status,
+          *,
           clients:client_id (
+            id,
             first_name,
-            last_name
+            last_name,
+            hourly_rate
           )
         `)
-        .eq('professional_id', user.id)
-        .eq('status', 'scheduled')
-        .gte('start_time', `${today}T00:00:00`)
-        .lt('start_time', `${today}T23:59:59`)
-        .order('start_time', { ascending: true });
+        .eq('id', appointmentId)
+        .single();
 
       if (error) throw error;
 
-      const transformedAppointments = (data || []).map(appointment => ({
-        id: appointment.id,
-        start_time: appointment.start_time,
-        end_time: appointment.end_time,
-        status: appointment.status,
-        client: appointment.clients
-      }));
-
-      setAppointments(transformedAppointments);
+      setAppointment(data);
+      if (data.clients) {
+        setValue('patient_name', `${data.clients.first_name} ${data.clients.last_name}`);
+        if (data.clients.hourly_rate) {
+          setValue('hourly_rate', data.clients.hourly_rate);
+        }
+      }
+      setValue('date', format(new Date(data.start_time), 'yyyy-MM-dd'));
+      setValue('start_time', format(new Date(data.start_time), 'HH:mm'));
+      setValue('end_time', format(new Date(data.end_time), 'HH:mm'));
     } catch (error) {
-      console.error('Erreur lors du chargement des rendez-vous:', error);
+      console.error('Erreur lors du chargement du rendez-vous:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les rendez-vous du jour',
+        description: 'Impossible de charger les données du rendez-vous',
         variant: 'destructive',
       });
     }
   };
 
-  // Callback stable pour l'audio - découplé du formulaire
-  const handleAudioChange = useCallback((blob: Blob | null, url: string | null) => {
-    console.log("📝 FORM - handleAudioChange:", { 
-      hasBlob: !!blob, 
-      blobSize: blob?.size, 
-      url,
-      reportId: reportData?.id 
-    });
-
-    setAudioBlob(blob);
-    
-    if (url) {
-      setAudioUploadUrl(url);
-    } else {
-      setAudioUploadUrl('');
-    }
-
-    // Si on a un rapport existant et un blob, faire l'upload immédiatement
-    if (blob && blob.size > 0 && reportData?.id && user?.id) {
-      console.log("📝 FORM - Déclenchement upload audio immédiat");
-      
-      uploadInterventionAudio(
-        blob,
-        user.id,
-        reportData.id,
-        // Success
-        (publicUrl) => {
-          console.log("📝 FORM - Upload audio réussi:", publicUrl);
-          setAudioUploadUrl(publicUrl);
-          toast({
-            title: "Audio sauvegardé",
-            description: "L'enregistrement a été sauvegardé avec succès",
-            duration: 2000
-          });
-        },
-        // Error
-        (errorMessage) => {
-          console.error("📝 FORM - Erreur upload audio:", errorMessage);
-          toast({
-            title: "Erreur de sauvegarde",
-            description: errorMessage,
-            variant: "destructive",
-            duration: 3000
-          });
-        },
-        // Start
-        () => {
-          console.log("📝 FORM - Début upload audio");
-          setIsAudioUploading(true);
-        },
-        // End
-        () => {
-          console.log("📝 FORM - Fin upload audio");
-          setIsAudioUploading(false);
-        }
-      );
-    }
-  }, [reportData?.id, user?.id]);
-
-  const handleInputChange = (field: keyof InterventionReport, value: string) => {
-    console.log("📝 FORM - handleInputChange:", { field, value });
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleCheckboxChange = (field: keyof InterventionReport, value: string, checked: boolean) => {
-    console.log("📝 FORM - handleCheckboxChange:", { field, value, checked });
-    setFormData(prev => {
-      const currentArray = (prev[field] as string[]) || [];
-      if (checked) {
-        return { ...prev, [field]: [...currentArray, value] };
-      } else {
-        return { ...prev, [field]: currentArray.filter(item => item !== value) };
+  const populateFormWithReportData = (data: any) => {
+    Object.keys(data).forEach(key => {
+      if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && key !== 'professional_id') {
+        setValue(key as any, data[key]);
       }
     });
+    
+    if (data.audio_url) {
+      setAudioUrl(data.audio_url);
+    }
+    
+    if (data.media_files) {
+      setMediaFiles(data.media_files);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("📝 FORM - handleSubmit");
-    
+  const onSubmit = async (formData: any) => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const dataToSubmit = {
+      const reportPayload = {
         ...formData,
         professional_id: user.id,
-        appointment_id: appointmentId || formData.appointment_id,
-        audio_url: audioUploadUrl || formData.audio_url || '',
-        // S'assurer que les champs requis sont présents
-        auxiliary_name: formData.auxiliary_name || '',
-        patient_name: formData.patient_name || '',
-        date: formData.date || format(new Date(), 'yyyy-MM-dd'),
-        start_time: formData.start_time || '09:00',
-        end_time: formData.end_time || '11:00'
+        appointment_id: appointment?.id || null,
+        audio_url: audioUrl || null,
+        media_files: mediaFiles.length > 0 ? mediaFiles : null,
       };
 
-      console.log("📝 FORM - Sauvegarde avec audio_url:", dataToSubmit.audio_url);
-
+      let savedReport;
+      
       if (reportData?.id) {
         // Mise à jour d'un rapport existant
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('intervention_reports')
-          .update(dataToSubmit)
-          .eq('id', reportData.id);
+          .update(reportPayload)
+          .eq('id', reportData.id)
+          .select()
+          .single();
 
         if (error) throw error;
+        savedReport = data;
 
         toast({
           title: 'Succès',
           description: 'Rapport d\'intervention mis à jour avec succès',
         });
-
-        setIsEditMode(false);
       } else {
         // Création d'un nouveau rapport
-        const { data: newReport, error } = await supabase
+        const { data, error } = await supabase
           .from('intervention_reports')
-          .insert(dataToSubmit)
+          .insert([reportPayload])
           .select()
           .single();
 
         if (error) throw error;
-
-        console.log("📝 FORM - Nouveau rapport créé avec ID:", newReport.id);
+        savedReport = data;
 
         // Mettre à jour le rendez-vous avec l'ID du rapport
-        if (appointmentId || formData.appointment_id) {
+        if (appointment?.id) {
           await supabase
             .from('appointments')
-            .update({ intervention_report_id: newReport.id })
-            .eq('id', appointmentId || formData.appointment_id);
-        }
-
-        // Si on a un audio en attente, déclencher l'upload maintenant
-        if (audioBlob && audioBlob.size > 0) {
-          console.log("📝 FORM - Déclenchement upload audio différé pour nouveau rapport:", newReport.id);
-          
-          uploadInterventionAudio(
-            audioBlob,
-            user.id,
-            newReport.id,
-            (publicUrl) => {
-              console.log("📝 FORM - Upload audio différé réussi:", publicUrl);
-              setAudioUploadUrl(publicUrl);
-            },
-            (errorMessage) => {
-              console.error("📝 FORM - Erreur upload audio différé:", errorMessage);
-            },
-            () => setIsAudioUploading(true),
-            () => setIsAudioUploading(false)
-          );
+            .update({ 
+              intervention_report_id: savedReport.id,
+              status: 'completed'
+            })
+            .eq('id', appointment.id);
         }
 
         toast({
@@ -326,9 +191,7 @@ const InterventionReportForm = () => {
         });
       }
 
-      if (isViewMode && !isEditMode) {
-        navigate('/scheduler');
-      }
+      navigate('/scheduler');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       toast({
@@ -341,31 +204,72 @@ const InterventionReportForm = () => {
     }
   };
 
-  const handleDelete = async () => {
-    console.log("📝 FORM - handleDelete");
-    
-    if (!reportData?.id) return;
+  const physicalStateOptions = [
+    'Stable',
+    'Fatigue',
+    'Douleur',
+    'Difficulté à se déplacer',
+    'Chute',
+    'Autre',
+  ];
+
+  const mentalStateOptions = [
+    'Stable',
+    'Confusion',
+    'Anxiété',
+    'Tristesse',
+    'Agressivité',
+  ];
+
+  const hygieneOptions = [
+    'Autonome',
+    'Partielle',
+    'Totale',
+  ];
+
+  const activitiesOptions = [
+    'Lecture',
+    'Marche',
+    'Jeux',
+    'Visites',
+    'Autre',
+  ];
+
+  const followUpOptions = [
+    'Médical',
+    'Paramédical',
+    'Social',
+    'Autre',
+  ];
+
+  const handleAudioUpload = async (event: any) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('intervention_reports')
-        .delete()
-        .eq('id', reportData.id);
+      const fileName = `audio-${Date.now()}.${file.name.split('.').pop()}`;
+      const { data, error } = await supabase.storage
+        .from('intervention-reports')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (error) throw error;
 
+      const audioUrl = `${supabase.storageUrl}/intervention-reports/${data.path}`;
+      setAudioUrl(audioUrl);
+
       toast({
         title: 'Succès',
-        description: 'Rapport d\'intervention supprimé avec succès',
+        description: 'Fichier audio enregistré avec succès',
       });
-
-      navigate('/scheduler');
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      console.error('Erreur lors de l\'upload du fichier audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer le rapport',
+        description: 'Impossible d\'enregistrer le fichier audio',
         variant: 'destructive',
       });
     } finally {
@@ -373,548 +277,436 @@ const InterventionReportForm = () => {
     }
   };
 
-  // Callback stable pour traiter les médias
-  const handleMediaChange = useCallback((mediaFiles: any[]) => {
-    console.log("📝 FORM - handleMediaChange:", { mediaFilesCount: mediaFiles.length });
-    setFormData(prev => ({ ...prev, media_files: mediaFiles }));
-  }, []);
+  const handleFileUpload = async (event: any) => {
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
 
-  const physicalStateOptions = [
-    'Autonome', 'Besoin d\'aide partielle', 'Dépendant', 'Alité', 'Mobilité réduite', 'Chutes'
-  ];
+    setLoading(true);
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        const fileName = `media-${Date.now()}-${index}.${file.name.split('.').pop()}`;
+        const { data, error } = await supabase.storage
+          .from('intervention-reports')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-  const mentalStateOptions = [
-    'Calme', 'Anxieux', 'Confus', 'Agité', 'Triste', 'Joyeux', 'Apathique'
-  ];
+        if (error) throw error;
 
-  const hygieneOptions = [
-    'Toilette complète', 'Toilette partielle', 'Aide pour l\'habillage', 'Soins des pieds', 'Soins des cheveux'
-  ];
+        const fileUrl = `${supabase.storageUrl}/intervention-reports/${data.path}`;
+        return { name: file.name, url: fileUrl };
+      });
 
-  const activitiesOptions = [
-    'Repas', 'Promenade', 'Lecture', 'Télévision', 'Jeux', 'Exercices', 'Sorties'
-  ];
+      const uploadedFiles = await Promise.all(uploadPromises);
+      setMediaFiles(prevFiles => [...prevFiles, ...uploadedFiles]);
 
-  const followUpOptions = [
-    'Rien à signaler', 'Contacter médecin', 'Surveillance accrue', 'Ajuster traitement', 'Prévenir famille'
-  ];
+      toast({
+        title: 'Succès',
+        description: 'Fichiers enregistrés avec succès',
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'upload des fichiers:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'enregistrer les fichiers',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeMediaFile = (fileToRemove: MediaFile) => {
+    setMediaFiles(prevFiles => prevFiles.filter(file => file.url !== fileToRemove.url));
+  };
 
   return (
-    <div className="space-y-6">
-      {isViewMode && (
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/scheduler')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Retour au planificateur
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {isEditMode ? 'Modification du rapport d\'intervention' : 'Consultation du rapport d\'intervention'}
-            </h2>
+    <Card className="max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          {isViewMode ? 'Visualisation du rapport d\'intervention' : 
+           reportData ? 'Modification du rapport d\'intervention' : 
+           'Nouveau rapport d\'intervention'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Section Informations générales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="auxiliary_name">Nom de l'auxiliaire</Label>
+              <Input
+                id="auxiliary_name"
+                {...register('auxiliary_name', { required: 'Ce champ est requis' })}
+                disabled={isViewMode}
+              />
+              {errors.auxiliary_name && (
+                <p className="text-sm text-red-600">{errors.auxiliary_name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="patient_name">Nom du patient</Label>
+              <Input
+                id="patient_name"
+                {...register('patient_name', { required: 'Ce champ est requis' })}
+                disabled={isViewMode}
+              />
+              {errors.patient_name && (
+                <p className="text-sm text-red-600">{errors.patient_name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="date">Date d'intervention</Label>
+              <Input
+                id="date"
+                type="date"
+                {...register('date', { required: 'Ce champ est requis' })}
+                disabled={isViewMode}
+              />
+              {errors.date && (
+                <p className="text-sm text-red-600">{errors.date.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="hourly_rate">Prix horaire (€)</Label>
+              <Input
+                id="hourly_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register('hourly_rate')}
+                disabled={isViewMode}
+                placeholder="Tarif horaire"
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!isEditMode && (
-              <Button 
-                onClick={() => setIsEditMode(true)}
-                className="flex items-center gap-2"
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="start_time">Heure de début</Label>
+              <Input
+                id="start_time"
+                type="time"
+                {...register('start_time', { required: 'Ce champ est requis' })}
+                disabled={isViewMode}
+              />
+              {errors.start_time && (
+                <p className="text-sm text-red-600">{errors.start_time.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="end_time">Heure de fin</Label>
+              <Input
+                id="end_time"
+                type="time"
+                {...register('end_time', { required: 'Ce champ est requis' })}
+                disabled={isViewMode}
+              />
+              {errors.end_time && (
+                <p className="text-sm text-red_600">{errors.end_time.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Section État physique */}
+          <div>
+            <Label>État physique</Label>
+            <div className="flex flex-col space-y-2">
+              {physicalStateOptions.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`physical_state_${option}`}
+                    {...register('physical_state')}
+                    value={option}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor={`physical_state_${option}`}>{option}</Label>
+                </div>
+              ))}
+              <Textarea
+                id="physical_state_other"
+                placeholder="Autres détails sur l'état physique"
+                {...register('physical_state_other')}
+                disabled={isViewMode}
+              />
+            </div>
+          </div>
+
+          {/* Section Localisation de la douleur */}
+          <div>
+            <Label htmlFor="pain_location">Localisation de la douleur</Label>
+            <Input
+              id="pain_location"
+              {...register('pain_location')}
+              disabled={isViewMode}
+            />
+          </div>
+
+          {/* Section État mental */}
+          <div>
+            <Label>État mental</Label>
+            <div className="flex flex-col space-y-2">
+              {mentalStateOptions.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`mental_state_${option}`}
+                    {...register('mental_state')}
+                    value={option}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor={`mental_state_${option}`}>{option}</Label>
+                </div>
+              ))}
+              <Textarea
+                id="mental_state_change"
+                placeholder="Changements d'état mental"
+                {...register('mental_state_change')}
+                disabled={isViewMode}
+              />
+            </div>
+          </div>
+
+          {/* Section Appétit et Hydratation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="appetite">Appétit</Label>
+              <Select
+                disabled={isViewMode}
+                onValueChange={(value) => setValue('appetite', value)}
+                defaultValue={watch('appetite')}
               >
-                <Edit3 className="h-4 w-4" />
-                Modifier
-              </Button>
-            )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  Supprimer
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? Cette action est irréversible.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={loading}>
-                    {loading ? 'Suppression...' : 'Supprimer'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner l'appétit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bon">Bon</SelectItem>
+                  <SelectItem value="Moyen">Moyen</SelectItem>
+                  <SelectItem value="Faible">Faible</SelectItem>
+                  <SelectItem value="Nul">Nul</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="hydration">Hydratation</Label>
+              <Select
+                disabled={isViewMode}
+                onValueChange={(value) => setValue('hydration', value)}
+                defaultValue={watch('hydration')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner l'hydratation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bonne">Bonne</SelectItem>
+                  <SelectItem value="Moyenne">Moyenne</SelectItem>
+                  <SelectItem value="Faible">Faible</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informations générales */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Informations générales
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="date">Date d'intervention</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date || ''}
-                  onChange={(e) => handleInputChange('date', e.target.value)}
-                  disabled={!canEdit}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="start_time">Heure de début</Label>
-                <Input
-                  id="start_time"
-                  type="time"
-                  value={formData.start_time || ''}
-                  onChange={(e) => handleInputChange('start_time', e.target.value)}
-                  disabled={!canEdit}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="end_time">Heure de fin</Label>
-                <Input
-                  id="end_time"
-                  type="time"
-                  value={formData.end_time || ''}
-                  onChange={(e) => handleInputChange('end_time', e.target.value)}
-                  disabled={!canEdit}
-                  required
-                />
-              </div>
-            </div>
+          <div>
+            <Label htmlFor="appetite_comments">Commentaires sur l'appétit et l'hydratation</Label>
+            <Textarea
+              id="appetite_comments"
+              placeholder="Commentaires supplémentaires..."
+              {...register('appetite_comments')}
+              disabled={isViewMode}
+            />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="auxiliary_name">Nom de l'auxiliaire</Label>
-                <Input
-                  id="auxiliary_name"
-                  value={formData.auxiliary_name || ''}
-                  onChange={(e) => handleInputChange('auxiliary_name', e.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Nom et prénom de l'auxiliaire"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="patient_name">Nom du patient</Label>
-                <Input
-                  id="patient_name"
-                  value={formData.patient_name || ''}
-                  onChange={(e) => handleInputChange('patient_name', e.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Nom et prénom du patient"
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* État physique */}
-        <Card>
-          <CardHeader>
-            <CardTitle>État physique</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>État général</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {physicalStateOptions.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`physical-${option}`}
-                      checked={(formData.physical_state || []).includes(option)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxChange('physical_state', option, checked as boolean)
-                      }
-                      disabled={!canEdit}
-                    />
-                    <Label htmlFor={`physical-${option}`} className="text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="physical_other">Autre (préciser)</Label>
-              <Input
-                id="physical_other"
-                value={formData.physical_state_other || ''}
-                onChange={(e) => handleInputChange('physical_state_other', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Autres observations sur l'état physique"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="pain_location">Localisation de la douleur</Label>
-              <Input
-                id="pain_location"
-                value={formData.pain_location || ''}
-                onChange={(e) => handleInputChange('pain_location', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Indiquer la localisation si douleur"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* État mental */}
-        <Card>
-          <CardHeader>
-            <CardTitle>État mental et comportement</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>État mental</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {mentalStateOptions.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`mental-${option}`}
-                      checked={(formData.mental_state || []).includes(option)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxChange('mental_state', option, checked as boolean)
-                      }
-                      disabled={!canEdit}
-                    />
-                    <Label htmlFor={`mental-${option}`} className="text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="mental_change">Changements comportementaux</Label>
-              <Textarea
-                id="mental_change"
-                value={formData.mental_state_change || ''}
-                onChange={(e) => handleInputChange('mental_state_change', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Décrire les changements observés"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Alimentation et hydratation */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Alimentation et hydratation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Appétit</Label>
-                <RadioGroup
-                  value={formData.appetite || ''}
-                  onValueChange={(value) => handleInputChange('appetite', value)}
-                  disabled={!canEdit}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="bon" id="appetite-bon" />
-                    <Label htmlFor="appetite-bon">Bon</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="moyen" id="appetite-moyen" />
-                    <Label htmlFor="appetite-moyen">Moyen</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="faible" id="appetite-faible" />
-                    <Label htmlFor="appetite-faible">Faible</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div>
-                <Label>Hydratation</Label>
-                <RadioGroup
-                  value={formData.hydration || ''}
-                  onValueChange={(value) => handleInputChange('hydration', value)}
-                  disabled={!canEdit}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="suffisante" id="hydration-suffisante" />
-                    <Label htmlFor="hydration-suffisante">Suffisante</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="insuffisante" id="hydration-insuffisante" />
-                    <Label htmlFor="hydration-insuffisante">Insuffisante</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="appetite_comments">Commentaires sur l'alimentation</Label>
-              <Textarea
-                id="appetite_comments"
-                value={formData.appetite_comments || ''}
-                onChange={(e) => handleInputChange('appetite_comments', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Détails sur les repas, difficultés..."
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Hygiène */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Hygiène et soins</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Soins prodigués</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {hygieneOptions.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`hygiene-${option}`}
-                      checked={(formData.hygiene || []).includes(option)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxChange('hygiene', option, checked as boolean)
-                      }
-                      disabled={!canEdit}
-                    />
-                    <Label htmlFor={`hygiene-${option}`} className="text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="hygiene_comments">Commentaires sur l'hygiène</Label>
+          {/* Section Hygiène */}
+          <div>
+            <Label>Hygiène</Label>
+            <div className="flex flex-col space-y-2">
+              {hygieneOptions.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`hygiene_${option}`}
+                    {...register('hygiene')}
+                    value={option}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor={`hygiene_${option}`}>{option}</Label>
+                </div>
+              ))}
               <Textarea
                 id="hygiene_comments"
-                value={formData.hygiene_comments || ''}
-                onChange={(e) => handleInputChange('hygiene_comments', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Précisions sur les soins effectués"
-                rows={3}
+                placeholder="Commentaires sur l'hygiène"
+                {...register('hygiene_comments')}
+                disabled={isViewMode}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Activités */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Activités et stimulation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Activités réalisées</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {activitiesOptions.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`activity-${option}`}
-                      checked={(formData.activities || []).includes(option)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxChange('activities', option, checked as boolean)
-                      }
-                      disabled={!canEdit}
-                    />
-                    <Label htmlFor={`activity-${option}`} className="text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <Label htmlFor="activities_other">Autres activités</Label>
-                <Input
-                  id="activities_other"
-                  value={formData.activities_other || ''}
-                  onChange={(e) => handleInputChange('activities_other', e.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Autres activités non listées"
-                />
-              </div>
+          {/* Section Activités */}
+          <div>
+            <Label>Activités</Label>
+            <div className="flex flex-col space-y-2">
+              {activitiesOptions.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`activities_${option}`}
+                    {...register('activities')}
+                    value={option}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor={`activities_${option}`}>{option}</Label>
+                </div>
+              ))}
+              <Textarea
+                id="activities_other"
+                placeholder="Autres activités"
+                {...register('activities_other')}
+                disabled={isViewMode}
+              />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Observations générales */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Observations générales</CardTitle>
-          </CardHeader>
-          <CardContent>
+          {/* Section Observations */}
+          <div>
+            <Label htmlFor="observations">Observations</Label>
             <Textarea
-              value={formData.observations || ''}
-              onChange={(e) => handleInputChange('observations', e.target.value)}
-              disabled={!canEdit}
-              placeholder="Observations, incidents, particularités..."
-              rows={4}
+              id="observations"
+              placeholder="Observations générales"
+              {...register('observations', { required: 'Ce champ est requis' })}
+              disabled={isViewMode}
             />
-          </CardContent>
-        </Card>
+            {errors.observations && (
+              <p className="text-sm text-red-600">{errors.observations.message}</p>
+            )}
+          </div>
 
-        {/* Suivi à prévoir */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Suivi et recommandations</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Actions à prévoir</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {followUpOptions.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`followup-${option}`}
-                      checked={(formData.follow_up || []).includes(option)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxChange('follow_up', option, checked as boolean)
-                      }
-                      disabled={!canEdit}
-                    />
-                    <Label htmlFor={`followup-${option}`} className="text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="follow_up_other">Autres recommandations</Label>
+          {/* Section Suivi */}
+          <div>
+            <Label>Suivi</Label>
+            <div className="flex flex-col space-y-2">
+              {followUpOptions.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`follow_up_${option}`}
+                    {...register('follow_up')}
+                    value={option}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor={`follow_up_${option}`}>{option}</Label>
+                </div>
+              ))}
               <Textarea
                 id="follow_up_other"
-                value={formData.follow_up_other || ''}
-                onChange={(e) => handleInputChange('follow_up_other', e.target.value)}
-                disabled={!canEdit}
-                placeholder="Précisions sur le suivi nécessaire"
-                rows={3}
+                placeholder="Autres suivis"
+                {...register('follow_up_other')}
+                disabled={isViewMode}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Enregistrement audio et médias - NOUVEAU COMPOSANT DÉCOUPLÉ */}
-        {canEdit && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Enregistrement audio et médias</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Enregistrement vocal</Label>
-                <SimpleInterventionAudioRecorder
-                  onAudioChange={handleAudioChange}
-                  existingAudioUrl={formData.audio_url}
-                  disabled={isAudioUploading}
-                />
-                
-                {isAudioUploading && (
-                  <div className="mt-2 text-sm text-blue-600">
-                    Sauvegarde de l'audio en cours...
-                  </div>
-                )}
-              </div>
+          {/* Section Audio */}
+          <div>
+            <Label htmlFor="audio">Enregistrement audio</Label>
+            <div className="flex items-center space-x-4">
+              <Input
+                type="file"
+                id="audio"
+                accept="audio/*"
+                onChange={handleAudioUpload}
+                disabled={isViewMode}
+                className="hidden"
+              />
+              <Label htmlFor="audio" className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Mic className="h-4 w-4" />
+                  Télécharger un audio
+                </div>
+              </Label>
+              {audioUrl && (
+                <div className="flex items-center space-x-2">
+                  <audio src={audioUrl} controls />
+                  {!isViewMode && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setAudioUrl('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
-              <div>
-                <Label>Photos et documents</Label>
-                <MediaUploader 
-                  onMediaChange={handleMediaChange}
-                  existingMediaFiles={formData.media_files || []}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Affichage des médias en mode consultation */}
-        {isViewMode && !isEditMode && formData.media_files && formData.media_files.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Médias attachés</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {formData.media_files.map((media: any, index: number) => (
-                  <div key={index} className="border rounded-lg p-2">
-                    {media.type === 'image' && media.preview && (
-                      <img 
-                        src={media.preview} 
-                        alt={`Média ${index + 1}`}
-                        className="w-full h-32 object-cover rounded"
-                      />
+          {/* Section Médias */}
+          <div>
+            <Label htmlFor="media">Médias (images, vidéos)</Label>
+            <div className="flex items-center space-x-4">
+              <Input
+                type="file"
+                id="media"
+                accept="image/*, video/*"
+                multiple
+                onChange={handleFileUpload}
+                disabled={isViewMode}
+                className="hidden"
+              />
+              <Label htmlFor="media" className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Télécharger des fichiers
+                </div>
+              </Label>
+            </div>
+            {mediaFiles.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-4">
+                {mediaFiles.map((file) => (
+                  <div key={file.url} className="relative">
+                    {file.url.match(/\.(jpeg|jpg|gif|png)$/) ? (
+                      <img src={file.url} alt={file.name} className="w-full h-32 object-cover rounded-md" />
+                    ) : (
+                      <video src={file.url} controls className="w-full h-32 object-cover rounded-md" />
                     )}
-                    <p className="text-sm text-gray-600 mt-2">
-                      Type: {media.type}
-                    </p>
+                    {!isViewMode && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1 right-1 bg-white/80 text-gray-900 shadow-sm"
+                        onClick={() => removeMediaFile(file)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </div>
 
-        {/* Affichage de l'audio en mode consultation */}
-        {isViewMode && !isEditMode && formData.audio_url && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Enregistrement audio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SimpleInterventionAudioRecorder
-                onAudioChange={() => {}} // Pas de changement en mode lecture
-                existingAudioUrl={formData.audio_url}
-                disabled={true}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Boutons d'action */}
-        <div className="flex justify-end gap-4">
-          {canEdit && (
-            <>
-              {isEditMode && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditMode(false)}
-                >
-                  Annuler
-                </Button>
-              )}
-              <Button type="submit" disabled={loading || isAudioUploading} className="flex items-center gap-2">
-                <Save className="h-4 w-4" />
-                {loading ? 'Sauvegarde...' : (reportData?.id ? 'Mettre à jour' : 'Sauvegarder')}
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/scheduler')}
+            >
+              {isViewMode ? 'Retour' : 'Annuler'}
+            </Button>
+            {!isViewMode && (
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Sauvegarde...' : reportData ? 'Mettre à jour' : 'Créer le rapport'}
               </Button>
-            </>
-          )}
-        </div>
-      </form>
-    </div>
+            )}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

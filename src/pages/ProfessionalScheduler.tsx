@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -6,10 +7,11 @@ import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Users, Plus, FileText } from 'lucide-react';
-import { Client, Appointment, CalendarEvent } from '@/types/appointments';
+import { Calendar, Clock, Users, Plus, FileText, UserCheck } from 'lucide-react';
+import { Client, Appointment, Intervenant, CalendarEvent } from '@/types/appointments';
 import AppointmentCalendar from '@/components/scheduler/AppointmentCalendar';
 import ClientManager from '@/components/scheduler/ClientManager';
+import IntervenantManager from '@/components/scheduler/IntervenantManager';
 import AppointmentForm from '@/components/scheduler/AppointmentForm';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
 
@@ -18,10 +20,11 @@ const ProfessionalScheduler = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'clients'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'intervenants'>('calendar');
 
   useEffect(() => {
     if (!hasRole('admin') && !hasRole('professionnel')) {
@@ -37,7 +40,7 @@ const ProfessionalScheduler = () => {
     
     try {
       setLoading(true);
-      await Promise.all([loadAppointments(), loadClients()]);
+      await Promise.all([loadAppointments(), loadClients(), loadIntervenants()]);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       toast({
@@ -65,6 +68,19 @@ const ProfessionalScheduler = () => {
           phone,
           email,
           color,
+          hourly_rate,
+          created_at,
+          updated_at,
+          created_by
+        ),
+        intervenants:intervenant_id (
+          id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          speciality,
+          active,
           created_at,
           updated_at,
           created_by
@@ -84,6 +100,7 @@ const ProfessionalScheduler = () => {
       status: item.status as 'scheduled' | 'completed' | 'cancelled',
       recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
       client: item.clients,
+      intervenant: item.intervenants,
       caregivers: []
     }));
 
@@ -105,6 +122,23 @@ const ProfessionalScheduler = () => {
     }
 
     setClients(data || []);
+  };
+
+  const loadIntervenants = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('intervenants')
+      .select('*')
+      .eq('created_by', user.id)
+      .order('last_name', { ascending: true });
+
+    if (error) {
+      console.error('Erreur lors du chargement des intervenants:', error);
+      throw error;
+    }
+
+    setIntervenants(data || []);
   };
 
   const handleAppointmentSave = () => {
@@ -197,6 +231,14 @@ const ProfessionalScheduler = () => {
             <Users className="h-4 w-4" />
             Clients
           </Button>
+          <Button
+            variant={activeTab === 'intervenants' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('intervenants')}
+            className="flex items-center gap-2"
+          >
+            <UserCheck className="h-4 w-4" />
+            Intervenants
+          </Button>
         </div>
 
         {activeTab === 'calendar' && (
@@ -224,10 +266,18 @@ const ProfessionalScheduler = () => {
           />
         )}
 
+        {activeTab === 'intervenants' && (
+          <IntervenantManager 
+            intervenants={intervenants}
+            onIntervenantUpdate={loadIntervenants}
+          />
+        )}
+
         {showAppointmentForm && (
           <AppointmentForm
             appointment={selectedAppointment}
             clients={clients}
+            intervenants={intervenants}
             onSave={handleAppointmentSave}
             onCancel={() => {
               setShowAppointmentForm(false);

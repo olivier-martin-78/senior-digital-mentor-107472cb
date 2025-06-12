@@ -7,6 +7,20 @@ export interface Client {
   phone?: string;
   email?: string;
   color?: string;
+  hourly_rate?: number;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface Intervenant {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  speciality?: string;
+  active: boolean;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -29,6 +43,7 @@ export interface Appointment {
   id: string;
   client_id: string;
   professional_id: string;
+  intervenant_id?: string;
   start_time: string;
   end_time: string;
   notes?: string;
@@ -42,6 +57,7 @@ export interface Appointment {
   recurrence_end_date?: string;
   parent_appointment_id?: string;
   client?: Client;
+  intervenant?: Intervenant;
   caregivers?: Caregiver[];
 }
 

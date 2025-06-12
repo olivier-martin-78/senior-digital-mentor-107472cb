@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Client, Appointment } from '@/types/appointments';
+import { Client, Appointment, Intervenant } from '@/types/appointments';
 import { format, addDays, addWeeks } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import RecurringAppointmentForm from './RecurringAppointmentForm';
@@ -18,6 +17,7 @@ import { FileText } from 'lucide-react';
 interface AppointmentFormProps {
   appointment?: Appointment | null;
   clients: Client[];
+  intervenants: Intervenant[];
   onSave: () => void;
   onCancel: () => void;
 }
@@ -25,6 +25,7 @@ interface AppointmentFormProps {
 const AppointmentForm: React.FC<AppointmentFormProps> = ({
   appointment,
   clients,
+  intervenants,
   onSave,
   onCancel
 }) => {
@@ -34,6 +35,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   
   const [formData, setFormData] = useState({
     client_id: '',
+    intervenant_id: '',
     start_time: '',
     end_time: '',
     notes: '',
@@ -46,6 +48,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (appointment) {
       setFormData({
         client_id: appointment.client_id,
+        intervenant_id: appointment.intervenant_id || '',
         start_time: format(new Date(appointment.start_time), "yyyy-MM-dd'T'HH:mm"),
         end_time: format(new Date(appointment.end_time), "yyyy-MM-dd'T'HH:mm"),
         notes: appointment.notes || '',
@@ -61,6 +64,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       
       setFormData({
         client_id: '',
+        intervenant_id: '',
         start_time: startTime,
         end_time: endTime,
         notes: '',
@@ -142,6 +146,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       const appointmentData = {
         client_id: formData.client_id,
         professional_id: user.id,
+        intervenant_id: formData.intervenant_id || null,
         start_time: new Date(formData.start_time).toISOString(),
         end_time: new Date(formData.end_time).toISOString(),
         notes: formData.notes,
@@ -257,6 +262,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     });
   };
 
+  const activeIntervenants = intervenants.filter(intervenant => intervenant.active);
+
   return (
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -289,18 +296,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Statut</Label>
+              <Label htmlFor="intervenant">Intervenant</Label>
               <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                value={formData.intervenant_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, intervenant_id: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionner un intervenant (optionnel)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">Programmé</SelectItem>
-                  <SelectItem value="completed">Terminé</SelectItem>
-                  <SelectItem value="cancelled">Annulé</SelectItem>
+                  <SelectItem value="">Aucun intervenant spécifique</SelectItem>
+                  {activeIntervenants.map((intervenant) => (
+                    <SelectItem key={intervenant.id} value={intervenant.id}>
+                      {intervenant.first_name} {intervenant.last_name}
+                      {intervenant.speciality && ` - ${intervenant.speciality}`}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -328,6 +339,23 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Statut</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="scheduled">Programmé</SelectItem>
+                <SelectItem value="completed">Terminé</SelectItem>
+                <SelectItem value="cancelled">Annulé</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

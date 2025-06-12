@@ -81,6 +81,7 @@ export type Database = {
           email_sent: boolean | null
           end_time: string
           id: string
+          intervenant_id: string | null
           intervention_report_id: string | null
           is_recurring: boolean | null
           notes: string | null
@@ -98,6 +99,7 @@ export type Database = {
           email_sent?: boolean | null
           end_time: string
           id?: string
+          intervenant_id?: string | null
           intervention_report_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           email_sent?: boolean | null
           end_time?: string
           id?: string
+          intervenant_id?: string | null
           intervention_report_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
@@ -132,6 +135,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_intervenant_id_fkey"
+            columns: ["intervenant_id"]
+            isOneToOne: false
+            referencedRelation: "intervenants"
             referencedColumns: ["id"]
           },
           {
@@ -392,6 +402,7 @@ export type Database = {
           created_by: string
           email: string | null
           first_name: string
+          hourly_rate: number | null
           id: string
           last_name: string
           phone: string | null
@@ -404,6 +415,7 @@ export type Database = {
           created_by: string
           email?: string | null
           first_name: string
+          hourly_rate?: number | null
           id?: string
           last_name: string
           phone?: string | null
@@ -416,6 +428,7 @@ export type Database = {
           created_by?: string
           email?: string | null
           first_name?: string
+          hourly_rate?: number | null
           id?: string
           last_name?: string
           phone?: string | null
@@ -580,6 +593,45 @@ export type Database = {
           },
         ]
       }
+      intervenants: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          speciality: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          speciality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          speciality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intervention_reports: {
         Row: {
           activities: string[] | null
@@ -594,6 +646,7 @@ export type Database = {
           end_time: string
           follow_up: string[] | null
           follow_up_other: string | null
+          hourly_rate: number | null
           hydration: string | null
           hygiene: string[] | null
           hygiene_comments: string | null
@@ -623,6 +676,7 @@ export type Database = {
           end_time: string
           follow_up?: string[] | null
           follow_up_other?: string | null
+          hourly_rate?: number | null
           hydration?: string | null
           hygiene?: string[] | null
           hygiene_comments?: string | null
@@ -652,6 +706,7 @@ export type Database = {
           end_time?: string
           follow_up?: string[] | null
           follow_up_other?: string | null
+          hourly_rate?: number | null
           hydration?: string | null
           hygiene?: string[] | null
           hygiene_comments?: string | null

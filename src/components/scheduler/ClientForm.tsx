@@ -30,6 +30,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
     phone: '',
     email: '',
     color: '#3174ad',
+    hourly_rate: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +43,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         phone: client.phone || '',
         email: client.email || '',
         color: client.color || '#3174ad',
+        hourly_rate: client.hourly_rate ? client.hourly_rate.toString() : '',
       });
     }
   }, [client]);
@@ -53,9 +55,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
     setLoading(true);
     try {
       const data = {
-        ...formData,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        address: formData.address,
         phone: formData.phone || null,
         email: formData.email || null,
+        color: formData.color,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       };
 
       if (client) {
@@ -137,14 +143,28 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
             />
           </div>
 
-          <div>
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="hourly_rate">Prix horaire (€)</Label>
+              <Input
+                id="hourly_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.hourly_rate}
+                onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
+                placeholder="25.00"
+              />
+            </div>
           </div>
 
           <div>
