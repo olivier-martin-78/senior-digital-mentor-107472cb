@@ -21,13 +21,11 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
   
   // États locaux pour éviter les re-renders du parent
   const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(existingAudioUrl || null);
-  const [hasNotifiedParent, setHasNotifiedParent] = useState(false);
 
   console.log("🎯 SIMPLE_AUDIO - Render:", {
     hasExistingUrl: !!existingAudioUrl,
     hasLocalUrl: !!localAudioUrl,
-    disabled,
-    hasNotifiedParent
+    disabled
   });
 
   const {
@@ -45,12 +43,9 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       if (blob.size > 0) {
         setLocalAudioUrl(url);
         
-        // Notifier le parent une seule fois
-        if (!hasNotifiedParent) {
-          console.log("🎯 SIMPLE_AUDIO - Notifying parent with blob:", blob.size);
-          onAudioChange(blob, url);
-          setHasNotifiedParent(true);
-        }
+        // Notifier le parent immédiatement
+        console.log("🎯 SIMPLE_AUDIO - Notifying parent with blob:", blob.size);
+        onAudioChange(blob, url);
       } else {
         console.log("🎯 SIMPLE_AUDIO - Empty blob received");
         toast({
@@ -59,29 +54,45 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
           variant: "destructive",
         });
       }
-    }, [onAudioChange, hasNotifiedParent])
+    }, [onAudioChange])
   });
 
-  // Reset du flag quand on démarre un nouvel enregistrement
-  const handleStartRecording = useCallback(() => {
+  // CORRECTION: Simplifier le démarrage d'enregistrement
+  const handleStartRecording = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Empêcher la soumission du formulaire
+    e.stopPropagation(); // Empêcher la propagation de l'événement
+    
     console.log("🎯 SIMPLE_AUDIO - Starting new recording");
-    setHasNotifiedParent(false);
     setLocalAudioUrl(null);
     startRecording();
   }, [startRecording]);
 
-  const handleClearRecording = useCallback(() => {
+  // CORRECTION: Simplifier l'arrêt d'enregistrement  
+  const handleStopRecording = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Empêcher la soumission du formulaire
+    e.stopPropagation(); // Empêcher la propagation de l'événement
+    
+    console.log("🎯 SIMPLE_AUDIO - Stopping recording");
+    stopRecording();
+  }, [stopRecording]);
+
+  const handleClearRecording = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Empêcher la soumission du formulaire
+    e.stopPropagation(); // Empêcher la propagation de l'événement
+    
     console.log("🎯 SIMPLE_AUDIO - Clearing recording");
     clearRecording();
     setLocalAudioUrl(null);
-    setHasNotifiedParent(false);
     setIsPlaying(false);
     
     // Notifier le parent de la suppression
     onAudioChange(null, null);
   }, [clearRecording, onAudioChange]);
 
-  const handlePlayPause = useCallback(() => {
+  const handlePlayPause = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Empêcher la soumission du formulaire
+    e.stopPropagation(); // Empêcher la propagation de l'événement
+    
     if (!audioRef.current) return;
 
     if (isPlaying) {
@@ -94,7 +105,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
   }, [isPlaying]);
 
   // Utiliser l'URL locale ou l'URL existante
-  const currentAudioUrl = localAudioUrl || existingAudioUrl;
+  const currentAudioUrl = localAudioUrl || audioUrl || existingAudioUrl;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -119,6 +130,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       <div className="flex items-center gap-2">
         {!isRecording && !currentAudioUrl && (
           <Button
+            type="button"
             onClick={handleStartRecording}
             disabled={disabled}
             className="flex items-center gap-2"
@@ -130,7 +142,8 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
 
         {isRecording && (
           <Button
-            onClick={stopRecording}
+            type="button"
+            onClick={handleStopRecording}
             variant="destructive"
             className="flex items-center gap-2"
           >
@@ -142,6 +155,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
         {currentAudioUrl && !isRecording && (
           <>
             <Button
+              type="button"
               onClick={handlePlayPause}
               variant="outline"
               className="flex items-center gap-2"
@@ -151,6 +165,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
             </Button>
             
             <Button
+              type="button"
               onClick={handleClearRecording}
               variant="ghost"
               size="sm"
