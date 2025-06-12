@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 import { toast } from '@/hooks/use-toast';
@@ -11,21 +11,38 @@ import { useSimpleAudioRecorder } from '@/hooks/use-simple-audio-recorder';
 interface DirectAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
   onAudioUrlGenerated?: (url: string) => void;
-  onRecordingStatusChange?: (isRecording: boolean) => void; // NOUVEAU
+  onRecordingStatusChange?: (isRecording: boolean) => void;
   reportId?: string;
 }
 
 const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
   onAudioRecorded,
   onAudioUrlGenerated,
-  onRecordingStatusChange, // NOUVEAU
+  onRecordingStatusChange,
   reportId
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [hasProcessedCurrentBlob, setHasProcessedCurrentBlob] = useState(false);
   const { user } = useAuth();
+
+  // NOUVEAU: Refs stables pour éviter les re-créations
+  const stableCallbacksRef = useRef({
+    onAudioRecorded,
+    onAudioUrlGenerated,
+    onRecordingStatusChange
+  });
+
+  // NOUVEAU: Mettre à jour les refs sans déclencher de re-render
+  useEffect(() => {
+    stableCallbacksRef.current = {
+      onAudioRecorded,
+      onAudioUrlGenerated,
+      onRecordingStatusChange
+    };
+  });
 
   const {
     isRecording,
@@ -47,47 +64,82 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
     hasAudioUrl: !!audioUrl,
     isUploading,
     uploadedAudioUrl,
-    recordingTime
+    recordingTime,
+    hasProcessedCurrentBlob
   });
 
-  // NOUVEAU: Notifier les changements de statut d'enregistrement
-  useEffect(() => {
-    if (onRecordingStatusChange) {
-      onRecordingStatusChange(isRecording);
+  // NOUVEAU: Callback stable pour le changement de statut
+  const stableOnRecordingStatusChange = useCallback((isRecording: boolean) => {
+    console.log('🎙️ DIRECT - Changement statut (stable):', isRecording);
+    if (stableCallbacksRef.current.onRecordingStatusChange) {
+      stableCallbacksRef.current.onRecordingStatusChange(isRecording);
     }
-  }, [isRecording, onRecordingStatusChange]);
+  }, []);
 
-  // === TRAITEMENT AUTOMATIQUE DU BLOB AUDIO ===
+  // NOUVEAU: Notifier les changements de statut de manière stable
   useEffect(() => {
-    console.log("🎙️ DIRECT - useEffect audioBlob:", {
+    stableOnRecordingStatusChange(isRecording);
+  }, [isRecording, stableOnRecordingStatusChange]);
+
+  // NOUVEAU: Callback stable pour traiter l'audio
+  const stableHandleAudio = useCallback((blob: Blob, url?: string) => {
+    console.log('🎙️ DIRECT - Traitement audio stable:', { blobSize: blob.size, url });
+    
+    // Notifier immédiatement le parent avec le blob
+    if (stableCallbacksRef.current.onAudioRecorded) {
+      stableCallbacksRef.current.onAudioRecorded(blob);
+    }
+
+    // Si on a une URL, la notifier aussi
+    if (url && stableCallbacksRef.current.onAudioUrlGenerated) {
+      stableCallbacksRef.current.onAudioUrlGenerated(url);
+    }
+  }, []);
+
+  // NOUVEAU: Traitement unique et stable du blob audio
+  useEffect(() => {
+    console.log("🎙️ DIRECT - useEffect audioBlob (stable):", {
       hasBlob: !!audioBlob,
       blobSize: audioBlob?.size,
       isUploading,
       userConnected: !!user?.id,
-      hasReportId: !!reportId
+      hasReportId: !!reportId,
+      hasProcessedCurrentBlob,
+      audioUrl
     });
 
-    if (audioBlob && audioBlob.size > 0 && !isUploading) {
-      console.log("🎙️ DIRECT - Nouveau blob détecté, traitement automatique");
-      console.log("🎙️ DIRECT - Taille blob:", audioBlob.size, "octets");
+    // NOUVEAU: Traiter seulement si c'est un nouveau blob non traité
+    if (audioBlob && audioBlob.size > 0 && !hasProcessedCurrentBlob && !isUploading) {
+      console.log("🎙️ DIRECT - Traitement du nouveau blob audio (stable)");
       
-      // 1. Notifier IMMÉDIATEMENT le parent
-      console.log("🎙️ DIRECT - Notification du parent avec le blob");
-      onAudioRecorded(audioBlob);
+      // Marquer comme traité AVANT de faire quoi que ce soit
+      setHasProcessedCurrentBlob(true);
       
-      // 2. Déclencher l'upload si les conditions sont remplies
+      // Traiter l'audio de manière stable
+      stableHandleAudio(audioBlob, audioUrl);
+      
+      // Si on a un reportId et un utilisateur, faire l'upload
       if (reportId && user?.id) {
-        console.log("🎙️ DIRECT - Conditions OK pour upload, démarrage...");
+        console.log("🎙️ DIRECT - Conditions remplies pour upload (stable)");
         handleUpload(audioBlob);
       } else {
-        console.log("🎙️ DIRECT - Upload différé:", { hasReportId: !!reportId, hasUser: !!user?.id });
+        console.log("🎙️ DIRECT - Upload différé (stable):", { hasReportId: !!reportId, hasUser: !!user?.id });
       }
     }
-  }, [audioBlob, isUploading, user?.id, reportId, onAudioRecorded]);
+  }, [audioBlob, hasProcessedCurrentBlob, isUploading, user?.id, reportId, audioUrl, stableHandleAudio]);
+
+  // NOUVEAU: Reset du flag de traitement quand un nouvel enregistrement commence
+  useEffect(() => {
+    if (isRecording && hasProcessedCurrentBlob) {
+      console.log("🔄 DIRECT - Reset du flag de traitement pour nouvel enregistrement (stable)");
+      setHasProcessedCurrentBlob(false);
+      setUploadedAudioUrl(null);
+    }
+  }, [isRecording, hasProcessedCurrentBlob]);
 
   const handleUpload = async (blob: Blob) => {
     if (!user?.id || !reportId || isUploading) {
-      console.log("🎙️ DIRECT - Upload annulé:", { 
+      console.log("🎙️ DIRECT - Upload annulé (stable):", { 
         hasUser: !!user?.id, 
         hasReportId: !!reportId,
         isUploading 
@@ -95,7 +147,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
       return;
     }
 
-    console.log(`🎙️ DIRECT - === DÉBUT UPLOAD ===`);
+    console.log(`🎙️ DIRECT - === DÉBUT UPLOAD (stable) ===`);
     console.log(`🎙️ DIRECT - Taille blob: ${blob.size} octets`);
     console.log(`🎙️ DIRECT - User ID: ${user.id}`);
     console.log(`🎙️ DIRECT - Report ID: ${reportId}`);
@@ -107,12 +159,12 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
         reportId,
         // Callback succès
         (publicUrl) => {
-          console.log(`🎙️ DIRECT - ✅ Upload réussi:`, publicUrl);
+          console.log(`🎙️ DIRECT - ✅ Upload réussi (stable):`, publicUrl);
           setUploadedAudioUrl(publicUrl);
           
-          console.log(`🎙️ DIRECT - Notification parent avec URL:`, publicUrl);
-          if (onAudioUrlGenerated) {
-            onAudioUrlGenerated(publicUrl);
+          console.log(`🎙️ DIRECT - Notification parent avec URL (stable):`, publicUrl);
+          if (stableCallbacksRef.current.onAudioUrlGenerated) {
+            stableCallbacksRef.current.onAudioUrlGenerated(publicUrl);
           }
           
           toast({
@@ -123,7 +175,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
         },
         // Callback erreur
         (errorMessage) => {
-          console.error(`🎙️ DIRECT - ❌ Erreur upload:`, errorMessage);
+          console.error(`🎙️ DIRECT - ❌ Erreur upload (stable):`, errorMessage);
           toast({
             title: "Erreur de sauvegarde",
             description: errorMessage,
@@ -133,17 +185,17 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
         },
         // Callback début upload
         () => {
-          console.log(`🎙️ DIRECT - 📤 Début upload`);
+          console.log(`🎙️ DIRECT - 📤 Début upload (stable)`);
           setIsUploading(true);
         },
         // Callback fin upload
         () => {
-          console.log(`🎙️ DIRECT - 📥 Fin upload`);
+          console.log(`🎙️ DIRECT - 📥 Fin upload (stable)`);
           setIsUploading(false);
         }
       );
     } catch (error) {
-      console.error(`🎙️ DIRECT - 💥 Erreur non gérée:`, error);
+      console.error(`🎙️ DIRECT - 💥 Erreur non gérée (stable):`, error);
       setIsUploading(false);
       
       toast({
@@ -155,8 +207,8 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
     }
   };
 
-  const handleStartRecording = async () => {
-    console.log("🎙️ DIRECT - Début enregistrement demandé");
+  const handleStartRecording = useCallback(async () => {
+    console.log("🎙️ DIRECT - Début enregistrement demandé (stable)");
     if (!user?.id) {
       toast({
         title: "Erreur",
@@ -169,40 +221,44 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
     
     // Réinitialiser l'état
     setUploadedAudioUrl(null);
+    setHasProcessedCurrentBlob(false);
     
     try {
       await startRecording();
-      console.log("🎙️ DIRECT - Enregistrement démarré");
+      console.log("🎙️ DIRECT - Enregistrement démarré (stable)");
     } catch (error) {
-      console.error("🎙️ DIRECT - Erreur démarrage:", error);
+      console.error("🎙️ DIRECT - Erreur démarrage (stable):", error);
     }
-  };
+  }, [user?.id, startRecording]);
 
-  const handleStopRecording = async () => {
-    console.log("🎙️ DIRECT - Arrêt enregistrement demandé");
+  const handleStopRecording = useCallback(async () => {
+    console.log("🎙️ DIRECT - Arrêt enregistrement demandé (stable)");
     try {
       await stopRecording();
-      console.log("🎙️ DIRECT - Enregistrement arrêté");
+      console.log("🎙️ DIRECT - Enregistrement arrêté (stable)");
     } catch (error) {
-      console.error("🎙️ DIRECT - Erreur arrêt:", error);
+      console.error("🎙️ DIRECT - Erreur arrêt (stable):", error);
     }
-  };
+  }, [stopRecording]);
 
-  const handleClearRecording = () => {
-    console.log("🎙️ DIRECT - Suppression enregistrement");
+  const handleClearRecording = useCallback(() => {
+    console.log("🎙️ DIRECT - Suppression enregistrement (stable)");
     clearRecording();
     setUploadedAudioUrl(null);
+    setHasProcessedCurrentBlob(false);
     
-    // Notifier le parent avec un blob vide
-    const emptyBlob = new Blob([], { type: 'audio/webm' });
-    onAudioRecorded(emptyBlob);
-    
-    if (onAudioUrlGenerated) {
-      onAudioUrlGenerated('');
+    // Notifier le parent avec un blob vide de manière stable
+    if (stableCallbacksRef.current.onAudioRecorded) {
+      const emptyBlob = new Blob([], { type: 'audio/webm' });
+      stableCallbacksRef.current.onAudioRecorded(emptyBlob);
     }
-  };
+    
+    if (stableCallbacksRef.current.onAudioUrlGenerated) {
+      stableCallbacksRef.current.onAudioUrlGenerated('');
+    }
+  }, [clearRecording]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     const urlToPlay = uploadedAudioUrl || audioUrl;
     if (!urlToPlay) return;
 
@@ -220,13 +276,13 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
       }
     }
     setIsPlaying(!isPlaying);
-  };
+  }, [uploadedAudioUrl, audioUrl, isPlaying, audioElement]);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
   const hasAudio = !!(audioUrl || uploadedAudioUrl);
 
@@ -245,7 +301,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
-                disabled={isUploading}
+                disabled={isUploading || isRecording}
               >
                 <Mic className="h-4 w-4" />
                 Commencer l'enregistrement
@@ -266,6 +322,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
                   variant="destructive"
                   size="lg"
                   className="w-full flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                  disabled={isUploading}
                 >
                   <Square className="h-5 w-5" />
                   Arrêter l'enregistrement
@@ -283,6 +340,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              disabled={isUploading}
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {isPlaying ? 'Pause' : 'Écouter'}
@@ -293,6 +351,7 @@ const DirectAudioRecorder: React.FC<DirectAudioRecorderProps> = ({
               variant="outline"
               size="sm"
               className="flex items-center gap-2 text-red-600 hover:text-red-700"
+              disabled={isUploading}
             >
               <Trash2 className="h-4 w-4" />
               Supprimer
