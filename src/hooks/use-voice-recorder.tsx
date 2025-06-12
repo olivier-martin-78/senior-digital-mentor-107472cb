@@ -17,6 +17,7 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
+  const finalizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Nettoyer les ressources lors du démontage
   useEffect(() => {
@@ -24,6 +25,9 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
       stopRecording();
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
+      }
+      if (finalizeTimeoutRef.current) {
+        clearTimeout(finalizeTimeoutRef.current);
       }
     };
   }, []);
@@ -46,10 +50,64 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
     };
   }, [isRecording]);
   
+  const finalizeRecording = () => {
+    console.log("Finalisation de l'enregistrement...");
+    console.log("Chunks finaux disponibles:", audioChunks.current.length);
+    
+    if (audioChunks.current.length > 0) {
+      // Création du blob audio
+      const mimeType = mediaRecorder.current?.mimeType || 'audio/webm';
+      const blob = new Blob(audioChunks.current, { type: mimeType });
+      console.log("Blob audio final créé:", blob.size, "octets, type:", blob.type);
+      
+      if (blob.size > 0) {
+        const tempUrl = URL.createObjectURL(blob);
+        console.log("URL temporaire créée:", tempUrl);
+        
+        setAudioBlob(blob);
+        setAudioUrl(tempUrl);
+        
+        if (onRecordingComplete) {
+          console.log("Appel du callback onRecordingComplete");
+          onRecordingComplete(blob, tempUrl);
+        }
+      } else {
+        console.error("Blob audio vide après finalisation");
+        toast({
+          title: "Erreur d'enregistrement",
+          description: "L'enregistrement audio est vide. Veuillez réessayer et parler plus longtemps.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      console.error("Aucun chunk audio disponible après finalisation");
+      toast({
+        title: "Erreur d'enregistrement", 
+        description: "Aucune donnée audio n'a été capturée. Veuillez réessayer et parler plus longtemps.",
+        variant: "destructive",
+      });
+    }
+    
+    setIsRecording(false);
+    isStoppingRef.current = false;
+    
+    // Arrêter toutes les pistes du flux
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+  
   const startRecording = async () => {
     try {
       // Réinitialiser les flags
       isStoppingRef.current = false;
+      
+      // Nettoyer les timeouts précédents
+      if (finalizeTimeoutRef.current) {
+        clearTimeout(finalizeTimeoutRef.current);
+        finalizeTimeoutRef.current = null;
+      }
       
       // Nettoyer l'enregistrement précédent s'il existe
       if (audioUrl) {
@@ -92,57 +150,18 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
       
       recorder.ondataavailable = (event) => {
         console.log("Chunk audio reçu:", event.data.size, "octets");
-        if (event.data.size > 0 && !isStoppingRef.current) {
+        if (event.data.size > 0) {
           audioChunks.current.push(event.data);
         }
       };
       
       recorder.onstop = () => {
-        console.log("Enregistrement arrêté, traitement des données...");
-        console.log("Nombre de chunks audio:", audioChunks.current.length);
+        console.log("Enregistrement arrêté, attendre les derniers chunks...");
         
-        if (audioChunks.current.length > 0) {
-          // Création du blob audio
-          const mimeType = recorder.mimeType || 'audio/webm';
-          const blob = new Blob(audioChunks.current, { type: mimeType });
-          console.log("Blob audio créé:", blob.size, "octets, type:", blob.type);
-          
-          if (blob.size > 0) {
-            const tempUrl = URL.createObjectURL(blob);
-            console.log("URL temporaire créée:", tempUrl);
-            
-            setAudioBlob(blob);
-            setAudioUrl(tempUrl);
-            
-            if (onRecordingComplete) {
-              console.log("Appel du callback onRecordingComplete");
-              onRecordingComplete(blob, tempUrl);
-            }
-          } else {
-            console.error("Blob audio vide");
-            toast({
-              title: "Erreur d'enregistrement",
-              description: "L'enregistrement audio est vide. Veuillez réessayer et parler plus longtemps.",
-              variant: "destructive",
-            });
-          }
-        } else {
-          console.error("Aucun chunk audio disponible");
-          toast({
-            title: "Erreur d'enregistrement", 
-            description: "Aucune donnée audio n'a été capturée. Veuillez réessayer et parler plus longtemps.",
-            variant: "destructive",
-          });
-        }
-        
-        setIsRecording(false);
-        isStoppingRef.current = false;
-        
-        // Arrêter toutes les pistes du flux
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
+        // CORRECTION: Attendre un délai pour que tous les chunks arrivent
+        finalizeTimeoutRef.current = setTimeout(() => {
+          finalizeRecording();
+        }, 300); // Attendre 300ms pour les derniers chunks
       };
       
       recorder.onerror = (event) => {
@@ -200,18 +219,17 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
       if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
         console.log("État du MediaRecorder avant arrêt:", mediaRecorder.current.state);
         
-        // Attendre un peu avant d'arrêter pour s'assurer qu'on a des données
         if (mediaRecorder.current.state === 'recording') {
-          // Force la collecte d'un dernier chunk
+          // Force la collecte d'un dernier chunk avant l'arrêt
           mediaRecorder.current.requestData();
           
-          // Petit délai pour permettre la collecte finale des données
+          // Petit délai puis arrêt
           setTimeout(() => {
             if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
               mediaRecorder.current.stop();
               console.log("MediaRecorder arrêté");
             }
-          }, 100);
+          }, 50);
         } else {
           mediaRecorder.current.stop();
           console.log("MediaRecorder arrêté");
@@ -246,6 +264,11 @@ export const useVoiceRecorder = ({ onRecordingComplete }: UseVoiceRecorderProps 
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
       console.log("URL temporaire révoquée");
+    }
+    
+    if (finalizeTimeoutRef.current) {
+      clearTimeout(finalizeTimeoutRef.current);
+      finalizeTimeoutRef.current = null;
     }
     
     setAudioBlob(null);
