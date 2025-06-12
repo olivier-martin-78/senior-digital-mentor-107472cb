@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay } from 'date-fns';
@@ -142,8 +143,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     const clientColor = appointment?.client?.color || '#3174ad';
     
     return (
-      <div className="flex items-center gap-3 p-2">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 p-2 w-full">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div 
             className="w-4 h-4 rounded-full"
             style={{ backgroundColor: clientColor }}
@@ -155,18 +156,15 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             />
           )}
         </div>
-        <div className="flex-1">
-          <div className="font-medium text-sm">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate">
             {event.title}
           </div>
-          <div className="text-xs text-gray-600">
-            {format(event.start, 'dd/MM/yyyy')}
-          </div>
           {appointment?.notes && (
-            <div className="text-xs text-gray-500 mt-1">{appointment.notes}</div>
+            <div className="text-xs text-gray-500 mt-1 truncate">{appointment.notes}</div>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-shrink-0">
           <Button
             size="sm"
             variant="outline"
@@ -265,11 +263,22 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
           },
           agendaDateFormat: (date) => format(date, 'dd/MM/yyyy'),
+          agendaTimeFormat: (date) => format(date, 'HH:mm'),
         }}
         components={{
           event: EventComponent,
           agenda: {
             event: AgendaEvent,
+            date: ({ date }) => (
+              <div className="text-sm font-medium">
+                {format(date, 'dd/MM/yyyy')}
+              </div>
+            ),
+            time: ({ event }) => (
+              <div className="text-sm">
+                {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+              </div>
+            ),
           },
         }}
         eventPropGetter={getEventStyle}
