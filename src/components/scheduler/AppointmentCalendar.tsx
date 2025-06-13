@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -150,6 +151,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
+  // Composant pour les événements dans l'agenda (sans la date car elle sera dans la colonne Date)
   const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const hasReport = appointment?.intervention_report_id;
@@ -221,6 +223,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
+  // Composant pour la colonne Date dans l'agenda
   const AgendaDateComponent = ({ label, date }: { label?: string; date?: Date }) => {
     // Si une date valide est fournie, la mémoriser et l'afficher
     if (date && isValid(date)) {
@@ -254,21 +257,6 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     return (
       <div className="text-sm font-medium text-gray-900 py-1">
         {format(new Date(), 'dd/MM/yyyy')}
-      </div>
-    );
-  };
-
-  // Composant personnalisé pour l'événement dans l'agenda qui inclut toujours la date
-  const AgendaEventWithDate = ({ event }: { event: CalendarEvent }) => {
-    const eventDate = event.start;
-    
-    return (
-      <div className="w-full">
-        {/* Afficher la date pour chaque événement */}
-        <div className="text-sm font-medium text-gray-900 py-1 border-b border-gray-200 mb-2">
-          {format(eventDate, 'dd/MM/yyyy')}
-        </div>
-        <AgendaEvent event={event} />
       </div>
     );
   };
@@ -335,14 +323,13 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         components={{
           event: EventComponent,
           agenda: {
-            event: AgendaEventWithDate,
+            event: AgendaEvent,
             date: AgendaDateComponent,
           },
         }}
         eventPropGetter={getEventStyle}
         step={30}
         showMultiDayTimes
-        // Forcer l'affichage de la date pour chaque événement dans l'agenda
         dayLayoutAlgorithm="no-overlap"
       />
     </div>
