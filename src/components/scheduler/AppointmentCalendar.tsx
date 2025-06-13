@@ -27,7 +27,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   // Fonction pour obtenir l'icône de statut avec fond blanc
   const getStatusIcon = (status: string) => {
-    const iconClass = "h-4 w-4 p-0.5 rounded-full bg-white shadow-sm border";
+    const iconClass = "h-5 w-5 p-0.5 rounded-full bg-white shadow-sm border";
     switch (status) {
       case 'completed':
         return <CircleDot className={`${iconClass} text-green-500 border-green-200`} />;
