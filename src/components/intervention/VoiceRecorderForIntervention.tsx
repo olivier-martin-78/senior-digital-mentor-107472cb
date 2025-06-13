@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download, Upload } from 'lucide-react';
@@ -48,37 +47,37 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   });
 
   // Charger l'audio existant si un reportId est fourni
-  useEffect(() => {
+  const loadExistingAudio = async () => {
     if (reportId && !existingAudioUrl && !audioUrl && !isRecording) {
       console.log("🎙️ VOICE_RECORDER_INTERVENTION - Chargement audio existant pour reportId:", reportId);
       
-      const loadExistingAudio = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('intervention_reports')
-            .select('audio_url')
-            .eq('id', reportId)
-            .single();
+      try {
+        const { data, error } = await supabase
+          .from('intervention_reports')
+          .select('audio_url')
+          .eq('id', reportId)
+          .single();
 
-          if (error) {
-            console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur chargement audio:", error);
-            return;
-          }
-
-          if (data?.audio_url && data.audio_url.trim() !== '') {
-            console.log("🎙️ VOICE_RECORDER_INTERVENTION - Audio existant trouvé:", data.audio_url);
-            setExistingAudioUrl(data.audio_url);
-            setUploadedAudioUrl(data.audio_url);
-          } else {
-            console.log("🎙️ VOICE_RECORDER_INTERVENTION - Aucun audio existant trouvé");
-          }
-        } catch (error) {
-          console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur lors du chargement:", error);
+        if (error) {
+          console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur chargement audio:", error);
+          return;
         }
-      };
 
-      loadExistingAudio();
+        if (data?.audio_url && data.audio_url.trim() !== '') {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Audio existant trouvé:", data.audio_url);
+          setExistingAudioUrl(data.audio_url);
+          setUploadedAudioUrl(data.audio_url);
+        } else {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Aucun audio existant trouvé");
+        }
+      } catch (error) {
+        console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur lors du chargement:", error);
+      }
     }
+  };
+
+  useEffect(() => {
+    loadExistingAudio();
   }, [reportId, existingAudioUrl, audioUrl, isRecording]);
   
   // Formater le temps d'enregistrement
@@ -288,15 +287,18 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
             <span className="text-gray-500">
               {isUploading ? "Upload en cours..." : currentAudioUrl ? "Enregistrement disponible" : "Prêt à enregistrer"}
             </span>
-            <Button 
-              type="button"
-              variant="outline" 
-              size="sm" 
-              onClick={handleStartRecording}
-              disabled={isRecording || isUploading}
-            >
-              <Mic className="w-4 h-4 mr-1" /> {currentAudioUrl ? "Nouvel enregistrement" : "Enregistrer"}
-            </Button>
+            {/* Afficher le bouton Enregistrer seulement si le rapport existe déjà (reportId présent) */}
+            {reportId && (
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm" 
+                onClick={handleStartRecording}
+                disabled={isRecording || isUploading}
+              >
+                <Mic className="w-4 h-4 mr-1" /> {currentAudioUrl ? "Nouvel enregistrement" : "Enregistrer"}
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -349,7 +351,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
 
       {!reportId && (
         <div className="text-xs text-orange-600 mt-2">
-          ⚠️ Rapport non sauvegardé - l'audio sera uploadé après la création du rapport
+          ⚠️ Rapport non sauvegardé - veuillez d'abord enregistrer le rapport pour pouvoir ajouter un enregistrement audio
         </div>
       )}
     </div>
