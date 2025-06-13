@@ -277,7 +277,7 @@ const InterventionReportForm = () => {
         // via les props onAudioRecorded et reportId
       }
 
-      navigate('/professional-scheduler');
+      navigate('/scheduler');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du rapport:', error);
       toast({
