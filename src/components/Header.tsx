@@ -70,7 +70,7 @@ const Header = () => {
       label: 'Planificateur',
       href: '/scheduler',
       icon: Calendar,
-      show: hasRole('admin') || hasRole('professionnel') || hasRole('editor')
+      show: hasRole('admin') || hasRole('professionnel')
     }
   ];
 
