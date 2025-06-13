@@ -8,7 +8,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useNavigate } from 'react-router-dom';
 import { Appointment } from '@/types/appointments';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, FileText } from 'lucide-react';
+import { Edit, Trash2, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AuxiliaryAvatar from './AuxiliaryAvatar';
 
@@ -26,6 +26,19 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Fonction pour obtenir l'icône de statut
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="h-3 w-3 text-green-600" />;
+      case 'cancelled':
+        return <XCircle className="h-3 w-3 text-red-600" />;
+      case 'scheduled':
+      default:
+        return <Clock className="h-3 w-3 text-blue-600" />;
+    }
+  };
+
   // Convertir les appointments vers le format requis par FullCalendar
   const events = appointments.map(appointment => ({
     id: appointment.id,
@@ -40,7 +53,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       hasReport: !!appointment.intervention_report_id,
       displayName: appointment?.intervenant 
         ? `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`
-        : user?.email?.split('@')[0] || 'Auxiliaire'
+        : user?.email?.split('@')[0] || 'Auxiliaire',
+      status: appointment.status
     }
   }));
 
@@ -75,6 +89,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     const appointment = eventInfo.event.extendedProps.appointment;
     const hasReport = eventInfo.event.extendedProps.hasReport;
     const displayName = eventInfo.event.extendedProps.displayName;
+    const status = eventInfo.event.extendedProps.status;
 
     return (
       <div className="p-1 w-full h-full">
@@ -83,6 +98,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             name={displayName} 
             size="sm" 
           />
+          {getStatusIcon(status)}
           {hasReport && (
             <div className="bg-green-600 text-white rounded-full w-3 h-3 flex items-center justify-center">
               <FileText className="h-2 w-2" />

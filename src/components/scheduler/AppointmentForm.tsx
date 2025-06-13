@@ -248,15 +248,26 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleCreateIntervention = () => {
     if (!appointment) return;
 
+    // Préparer les données pour le préremplissage
+    const selectedClient = clients.find(c => c.id === appointment.client_id);
+    const selectedIntervenant = appointment.intervenant_id 
+      ? intervenants.find(i => i.id === appointment.intervenant_id)
+      : null;
+
     navigate('/intervention-report', {
       state: {
         appointmentId: appointment.id,
         isViewMode: false,
-        clientName: appointment.client ? `${appointment.client.first_name} ${appointment.client.last_name}` : '',
-        appointmentData: {
+        prefilledData: {
+          patient_name: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : '',
+          auxiliary_name: selectedIntervenant 
+            ? `${selectedIntervenant.first_name} ${selectedIntervenant.last_name}`
+            : user?.email?.split('@')[0] || '',
           date: format(new Date(appointment.start_time), 'yyyy-MM-dd'),
           start_time: format(new Date(appointment.start_time), 'HH:mm'),
-          end_time: format(new Date(appointment.end_time), 'HH:mm')
+          end_time: format(new Date(appointment.end_time), 'HH:mm'),
+          hourly_rate: selectedClient?.hourly_rate || 0,
+          observations: appointment.notes || ''
         }
       }
     });

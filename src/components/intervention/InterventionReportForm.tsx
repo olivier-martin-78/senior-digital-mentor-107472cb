@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,12 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import InterventionAudioRecorder from './InterventionAudioRecorder';
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
   const reportId = searchParams.get('reportId');
@@ -46,12 +46,19 @@ const InterventionReportForm = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (reportId) {
+    // Préremplir avec les données de l'état de navigation si disponibles
+    if (location.state?.prefilledData) {
+      const prefilledData = location.state.prefilledData;
+      setReportData(prev => ({
+        ...prev,
+        ...prefilledData
+      }));
+    } else if (reportId) {
       loadReportData(reportId);
     } else if (appointmentId) {
       loadAppointmentData(appointmentId);
     }
-  }, [reportId, appointmentId]);
+  }, [reportId, appointmentId, location.state]);
 
   const loadReportData = async (reportId: string) => {
     setLoading(true);
@@ -215,7 +222,7 @@ const InterventionReportForm = () => {
               </div>
               
               <div>
-                <Label htmlFor="auxiliary_name">Nom de l'auxiliaire</Label>
+                <Label htmlFor="auxiliary_name">Nom de l'intervenant</Label>
                 <Input
                   id="auxiliary_name"
                   name="auxiliary_name"
