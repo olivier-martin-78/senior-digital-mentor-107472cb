@@ -76,7 +76,11 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    console.log('🔍 SCHEDULER - Chargement des rendez-vous pour l\'utilisateur:', user.id);
+
+    // Charger les rendez-vous créés par l'utilisateur connecté ET 
+    // les rapports d'intervention créés/modifiés par cet utilisateur
+    const { data: appointmentsData, error: appointmentsError } = await supabase
       .from('appointments')
       .select(`
         *,
@@ -109,13 +113,70 @@ const ProfessionalScheduler = () => {
       .eq('professional_id', user.id)
       .order('start_time', { ascending: true });
 
-    if (error) {
-      console.error('Erreur lors du chargement des rendez-vous:', error);
-      throw error;
+    if (appointmentsError) {
+      console.error('🔍 SCHEDULER - Erreur lors du chargement des rendez-vous:', appointmentsError);
+      throw appointmentsError;
+    }
+
+    console.log('🔍 SCHEDULER - Rendez-vous chargés:', appointmentsData?.length || 0);
+
+    // Charger aussi les rendez-vous qui ont des rapports d'intervention créés par l'utilisateur
+    const { data: reportsData, error: reportsError } = await supabase
+      .from('intervention_reports')
+      .select(`
+        appointment_id,
+        appointments:appointment_id (
+          *,
+          clients:client_id (
+            id,
+            first_name,
+            last_name,
+            address,
+            phone,
+            email,
+            color,
+            hourly_rate,
+            created_at,
+            updated_at,
+            created_by
+          ),
+          intervenants:intervenant_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            speciality,
+            active,
+            created_at,
+            updated_at,
+            created_by
+          )
+        )
+      `)
+      .eq('professional_id', user.id)
+      .not('appointment_id', 'is', null);
+
+    if (reportsError) {
+      console.error('🔍 SCHEDULER - Erreur lors du chargement des rapports:', reportsError);
+      // Ne pas échouer si les rapports ne se chargent pas
+    }
+
+    console.log('🔍 SCHEDULER - Rapports avec rendez-vous chargés:', reportsData?.length || 0);
+
+    // Combiner les rendez-vous et éliminer les doublons
+    const allAppointments = [...(appointmentsData || [])];
+    
+    if (reportsData) {
+      reportsData.forEach(report => {
+        if (report.appointments && !allAppointments.find(apt => apt.id === report.appointments.id)) {
+          allAppointments.push(report.appointments);
+        }
+      });
     }
 
     // Transformer les données pour correspondre au type Appointment
-    const transformedData = (data || []).map(item => ({
+    const transformedData = allAppointments.map(item => ({
       ...item,
       status: item.status as 'scheduled' | 'completed' | 'cancelled',
       recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
@@ -124,11 +185,14 @@ const ProfessionalScheduler = () => {
       caregivers: []
     }));
 
+    console.log('🔍 SCHEDULER - Total rendez-vous transformés:', transformedData.length);
     setAppointments(transformedData);
   };
 
   const loadClients = async () => {
     if (!user) return;
+
+    console.log('🔍 SCHEDULER - Chargement des clients pour l\'utilisateur:', user.id);
 
     const { data, error } = await supabase
       .from('clients')
@@ -137,15 +201,18 @@ const ProfessionalScheduler = () => {
       .order('last_name', { ascending: true });
 
     if (error) {
-      console.error('Erreur lors du chargement des clients:', error);
+      console.error('🔍 SCHEDULER - Erreur lors du chargement des clients:', error);
       throw error;
     }
 
+    console.log('🔍 SCHEDULER - Clients chargés:', data?.length || 0);
     setClients(data || []);
   };
 
   const loadIntervenants = async () => {
     if (!user) return;
+
+    console.log('🔍 SCHEDULER - Chargement des intervenants pour l\'utilisateur:', user.id);
 
     const { data, error } = await supabase
       .from('intervenants')
@@ -154,10 +221,11 @@ const ProfessionalScheduler = () => {
       .order('last_name', { ascending: true });
 
     if (error) {
-      console.error('Erreur lors du chargement des intervenants:', error);
+      console.error('🔍 SCHEDULER - Erreur lors du chargement des intervenants:', error);
       throw error;
     }
 
+    console.log('🔍 SCHEDULER - Intervenants chargés:', data?.length || 0);
     setIntervenants(data || []);
   };
 

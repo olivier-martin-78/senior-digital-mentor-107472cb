@@ -22,22 +22,41 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [selectedIntervenant, setSelectedIntervenant] = useState<Intervenant | null>(null);
 
+  console.log('🔍 INTERVENANT_MANAGER - Intervenants reçus:', intervenants.length);
+  console.log('🔍 INTERVENANT_MANAGER - Utilisateur connecté:', user?.id);
+
   const handleEdit = (intervenant: Intervenant) => {
+    console.log('🔍 INTERVENANT_MANAGER - Édition intervenant:', intervenant.id, 'créé par:', intervenant.created_by);
     setSelectedIntervenant(intervenant);
     setShowForm(true);
   };
 
   const handleDelete = async (intervenantId: string) => {
+    const intervenantToDelete = intervenants.find(i => i.id === intervenantId);
+    console.log('🔍 INTERVENANT_MANAGER - Suppression intervenant:', intervenantId, 'créé par:', intervenantToDelete?.created_by);
+
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet intervenant ?')) {
+      return;
+    }
+
+    // Vérifier que l'utilisateur a le droit de supprimer cet intervenant
+    if (intervenantToDelete && intervenantToDelete.created_by !== user?.id) {
+      toast({
+        title: 'Erreur',
+        description: 'Vous ne pouvez supprimer que les intervenants que vous avez créés',
+        variant: 'destructive',
+      });
       return;
     }
 
     const { error } = await supabase
       .from('intervenants')
       .delete()
-      .eq('id', intervenantId);
+      .eq('id', intervenantId)
+      .eq('created_by', user?.id); // Double vérification côté requête
 
     if (error) {
+      console.error('🔍 INTERVENANT_MANAGER - Erreur suppression:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer l\'intervenant',
@@ -59,6 +78,13 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
     setSelectedIntervenant(null);
   };
 
+  // Filtrer les intervenants pour ne montrer que ceux créés par l'utilisateur connecté
+  const userIntervenants = intervenants.filter(intervenant => 
+    intervenant.created_by === user?.id
+  );
+
+  console.log('🔍 INTERVENANT_MANAGER - Intervenants filtrés pour l\'utilisateur:', userIntervenants.length);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -73,7 +99,7 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {intervenants.map((intervenant) => (
+        {userIntervenants.map((intervenant) => (
           <Card key={intervenant.id}>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -125,7 +151,7 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
         ))}
       </div>
 
-      {intervenants.length === 0 && (
+      {userIntervenants.length === 0 && (
         <Card>
           <CardContent className="text-center py-8">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
