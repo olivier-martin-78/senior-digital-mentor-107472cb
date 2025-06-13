@@ -56,10 +56,13 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ professionalId }) =
 
       // Grouper les rendez-vous par client
       const appointmentsByClient = data.reduce((acc, appointment) => {
-        const clientId = appointment.client_id;
+        const client = appointment.clients;
+        const clientId = client?.id;
+        if (!clientId) return acc;
+        
         if (!acc[clientId]) {
           acc[clientId] = {
-            client: appointment.clients,
+            client: client,
             appointments: []
           };
         }
@@ -109,7 +112,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ professionalId }) =
           'Date': '',
           'Heure début': '',
           'Heure fin': '',
-          'Nombre d\'heures': '',
+          'Nombre d\'heures': totalHours,
           'Description': 'TOTAL',
           'Prix horaire (€)': '',
           'Total (€)': Number(totalAmount.toFixed(2))
