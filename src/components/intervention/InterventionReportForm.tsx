@@ -610,10 +610,15 @@ const InterventionReportForm = () => {
                 <div>
                   <Label>Enregistrement audio (optionnel)</Label>
                   <InterventionAudioRecorder
-                    onRecordingComplete={(audioUrl) => 
+                    onAudioRecorded={(blob) => {
+                      // Le callback pour traiter le blob audio si nécessaire
+                      console.log('Audio recorded:', blob);
+                    }}
+                    onAudioUrlGenerated={(audioUrl) => 
                       setReportData(prev => ({ ...prev, audio_url: audioUrl }))
                     }
                     existingAudioUrl={reportData.audio_url}
+                    reportId={reportId || undefined}
                   />
                 </div>
               </CollapsibleContent>
