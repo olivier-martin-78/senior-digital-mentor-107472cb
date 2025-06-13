@@ -240,33 +240,67 @@ const ProfessionalScheduler = () => {
     setShowAppointmentForm(true);
   };
 
-  const handleAppointmentDelete = async (appointmentId: string) => {
-    const { error } = await supabase
-      .from('appointments')
-      .delete()
-      .eq('id', appointmentId);
+  const handleAppointmentDelete = async (appointmentId: string, deleteReport?: boolean) => {
+    try {
+      // Si on doit supprimer le rapport d'intervention
+      if (deleteReport) {
+        const appointmentToDelete = appointments.find(apt => apt.id === appointmentId);
+        if (appointmentToDelete?.intervention_report_id) {
+          const { error: reportError } = await supabase
+            .from('intervention_reports')
+            .delete()
+            .eq('id', appointmentToDelete.intervention_report_id);
 
-    if (error) {
+          if (reportError) {
+            console.error('Erreur lors de la suppression du rapport:', reportError);
+            toast({
+              title: 'Erreur',
+              description: 'Impossible de supprimer le rapport d\'intervention',
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
+      }
+
+      // Supprimer le rendez-vous
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId);
+
+      if (error) {
+        console.error('Erreur lors de la suppression du rendez-vous:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de supprimer le rendez-vous',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Succès',
+        description: deleteReport 
+          ? 'Rendez-vous et rapport d\'intervention supprimés avec succès'
+          : 'Rendez-vous supprimé avec succès',
+      });
+
+      // Fermer le formulaire si le rendez-vous supprimé était sélectionné
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setShowAppointmentForm(false);
+        setSelectedAppointment(null);
+      }
+
+      loadAppointments();
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer le rendez-vous',
+        description: 'Une erreur est survenue lors de la suppression',
         variant: 'destructive',
       });
-      return;
     }
-
-    toast({
-      title: 'Succès',
-      description: 'Rendez-vous supprimé avec succès',
-    });
-
-    // Fermer le formulaire si le rendez-vous supprimé était sélectionné
-    if (selectedAppointment && selectedAppointment.id === appointmentId) {
-      setShowAppointmentForm(false);
-      setSelectedAppointment(null);
-    }
-
-    loadAppointments();
   };
 
   if (loading) {

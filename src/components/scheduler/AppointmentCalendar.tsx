@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -16,12 +16,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import AuxiliaryAvatar from './AuxiliaryAvatar';
+import AppointmentDeleteDialog from './AppointmentDeleteDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AppointmentCalendarProps {
   appointments: Appointment[];
   onAppointmentEdit: (appointment: Appointment) => void;
-  onAppointmentDelete: (appointmentId: string) => void;
+  onAppointmentDelete: (appointmentId: string, deleteReport?: boolean) => void;
 }
 
 const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
@@ -32,6 +33,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isMobileViewport } = useIsMobile();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
 
   // Fonction pour obtenir l'icône de statut avec fond blanc
   const getStatusIcon = (status: string) => {
@@ -74,9 +77,13 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   const handleDeleteClick = async (appointment: Appointment, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
-      await onAppointmentDelete(appointment.id);
-    }
+    setAppointmentToDelete(appointment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async (appointmentId: string, deleteReport?: boolean) => {
+    await onAppointmentDelete(appointmentId, deleteReport);
+    setAppointmentToDelete(null);
   };
 
   const handleEditClick = (appointment: Appointment, e: React.MouseEvent) => {
@@ -243,39 +250,48 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   };
 
   return (
-    <div className="h-[600px]">
-      <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
-        headerToolbar={getHeaderToolbar()}
-        events={events}
-        eventClick={handleEventClick}
-        eventContent={renderEventContent}
-        height={600}
-        locale="fr"
-        slotMinTime="06:00:00"
-        slotMaxTime="22:00:00"
-        allDaySlot={false}
-        slotDuration="00:30:00"
-        slotLabelInterval="01:00:00"
-        weekends={true}
-        editable={false}
-        selectable={false}
-        dayMaxEvents={true}
-        buttonText={getButtonText()}
-        noEventsText="Aucun rendez-vous"
-        eventTimeFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }}
-        slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }}
+    <>
+      <div className="h-[600px]">
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+          initialView="timeGridWeek"
+          headerToolbar={getHeaderToolbar()}
+          events={events}
+          eventClick={handleEventClick}
+          eventContent={renderEventContent}
+          height={600}
+          locale="fr"
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          allDaySlot={false}
+          slotDuration="00:30:00"
+          slotLabelInterval="01:00:00"
+          weekends={true}
+          editable={false}
+          selectable={false}
+          dayMaxEvents={true}
+          buttonText={getButtonText()}
+          noEventsText="Aucun rendez-vous"
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }}
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }}
+        />
+      </div>
+      
+      <AppointmentDeleteDialog
+        appointment={appointmentToDelete}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </>
   );
 };
 
