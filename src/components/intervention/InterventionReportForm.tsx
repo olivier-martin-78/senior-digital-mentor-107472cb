@@ -48,6 +48,8 @@ const InterventionReportForm = () => {
     hourly_rate: 0
   });
   const [loading, setLoading] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [pendingAudioUpload, setPendingAudioUpload] = useState(false);
   const [openSections, setOpenSections] = useState({
     general: true,
     physical: true,
@@ -168,7 +170,8 @@ const InterventionReportForm = () => {
           start_time: startDate.toTimeString().slice(0, 5),
           end_time: endDate.toTimeString().slice(0, 5),
           patient_name: appointment.clients ? `${appointment.clients.first_name} ${appointment.clients.last_name}` : '',
-          hourly_rate: appointment.clients?.hourly_rate || 0
+          hourly_rate: appointment.clients?.hourly_rate || 0,
+          observations: appointment.notes || ''
         }));
       }
     } catch (error) {
@@ -201,6 +204,19 @@ const InterventionReportForm = () => {
     }));
   };
 
+  const handleAudioRecorded = (blob: Blob) => {
+    console.log('Audio recorded, storing blob:', blob.size);
+    setAudioBlob(blob);
+    if (blob.size === 0) {
+      setReportData(prev => ({ ...prev, audio_url: '' }));
+    }
+  };
+
+  const handleAudioUrlGenerated = (url: string) => {
+    console.log('Audio URL generated:', url);
+    setReportData(prev => ({ ...prev, audio_url: url }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -212,6 +228,8 @@ const InterventionReportForm = () => {
         professional_id: user.id,
         appointment_id: appointmentId,
       };
+
+      let savedReportId = reportId;
 
       if (reportId) {
         const { error } = await supabase
@@ -226,16 +244,27 @@ const InterventionReportForm = () => {
           description: 'Rapport modifié avec succès',
         });
       } else {
-        const { error } = await supabase
+        const { data: insertedData, error } = await supabase
           .from('intervention_reports')
-          .insert([data]);
+          .insert([data])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        savedReportId = insertedData.id;
 
         toast({
           title: 'Succès',
           description: 'Rapport créé avec succès',
         });
+      }
+
+      // Si on a un blob audio en attente et maintenant un reportId, uploader l'audio
+      if (audioBlob && audioBlob.size > 0 && savedReportId && !reportData.audio_url) {
+        setPendingAudioUpload(true);
+        // L'upload sera géré par le composant InterventionAudioRecorder
+        // via les props onAudioRecorded et reportId
       }
 
       navigate('/professional-scheduler');
@@ -248,6 +277,7 @@ const InterventionReportForm = () => {
       });
     } finally {
       setLoading(false);
+      setPendingAudioUpload(false);
     }
   };
 
@@ -610,16 +640,16 @@ const InterventionReportForm = () => {
                 <div>
                   <Label>Enregistrement audio (optionnel)</Label>
                   <InterventionAudioRecorder
-                    onAudioRecorded={(blob) => {
-                      // Le callback pour traiter le blob audio si nécessaire
-                      console.log('Audio recorded:', blob);
-                    }}
-                    onAudioUrlGenerated={(audioUrl) => 
-                      setReportData(prev => ({ ...prev, audio_url: audioUrl }))
-                    }
+                    onAudioRecorded={handleAudioRecorded}
+                    onAudioUrlGenerated={handleAudioUrlGenerated}
                     existingAudioUrl={reportData.audio_url}
                     reportId={reportId || undefined}
                   />
+                  {pendingAudioUpload && (
+                    <p className="text-sm text-blue-600 mt-2">
+                      ⏳ Upload audio en attente après sauvegarde du rapport...
+                    </p>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>
