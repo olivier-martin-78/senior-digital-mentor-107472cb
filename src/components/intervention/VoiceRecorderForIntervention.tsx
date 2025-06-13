@@ -42,7 +42,10 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   };
   
   // Gérer l'export audio
-  const handleExportAudio = () => {
+  const handleExportAudio = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (audioBlob && audioUrl) {
       try {
         const downloadLink = document.createElement('a');
@@ -68,12 +71,33 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   };
   
   // Gérer la suppression de l'audio (action explicite de l'utilisateur)
-  const handleClearRecording = () => {
+  const handleClearRecording = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     console.log("🎙️ VOICE_RECORDER_INTERVENTION - Suppression explicite de l'enregistrement par l'utilisateur");
     clearRecording();
     setAudioLoaded(false);
     setHasNotifiedParent(false);
     onAudioChange(null);
+  };
+
+  // CORRECTION: Ajout des handlers avec preventDefault pour empêcher la soumission du formulaire
+  const handleStartRecording = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🎙️ VOICE_RECORDER_INTERVENTION - Démarrage enregistrement");
+    setHasNotifiedParent(false);
+    startRecording();
+  };
+
+  const handleStopRecording = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🎙️ VOICE_RECORDER_INTERVENTION - Arrêt enregistrement");
+    stopRecording();
   };
   
   // Notifier le parent quand l'audio change
@@ -135,9 +159,10 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
               <span className="text-red-500 font-medium">Enregistrement en cours ({formatTime(recordingTime)})</span>
             </div>
             <Button 
+              type="button"
               variant="outline" 
               size="sm" 
-              onClick={stopRecording}
+              onClick={handleStopRecording}
               className="ml-2"
             >
               <Square className="w-4 h-4 mr-1" /> Arrêter
@@ -147,9 +172,10 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
           <>
             <span className="text-gray-500">Prêt à enregistrer</span>
             <Button 
+              type="button"
               variant="outline" 
               size="sm" 
-              onClick={startRecording}
+              onClick={handleStartRecording}
               disabled={isRecording}
             >
               <Mic className="w-4 h-4 mr-1" /> Enregistrer
@@ -170,6 +196,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
           
           <div className="flex mt-2 space-x-2">
             <Button 
+              type="button"
               variant="ghost" 
               size="sm" 
               onClick={handleClearRecording}
@@ -180,6 +207,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
             
             {audioLoaded && (
               <Button 
+                type="button"
                 variant="outline" 
                 size="sm"
                 onClick={handleExportAudio}
