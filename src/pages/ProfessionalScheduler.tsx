@@ -13,6 +13,7 @@ import ClientManager from '@/components/scheduler/ClientManager';
 import IntervenantManager from '@/components/scheduler/IntervenantManager';
 import AppointmentForm from '@/components/scheduler/AppointmentForm';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
+import InvoiceGenerator from '@/components/scheduler/InvoiceGenerator';
 import SchedulerFilters from '@/components/scheduler/SchedulerFilters';
 
 const ProfessionalScheduler = () => {
@@ -220,6 +221,7 @@ const ProfessionalScheduler = () => {
           <h1 className="text-3xl font-serif text-tranches-charcoal">Planificateur Professionnel</h1>
           <div className="flex gap-3">
             <AppointmentExporter professionalId={user?.id || ''} />
+            <InvoiceGenerator professionalId={user?.id || ''} />
             <Button 
               onClick={() => navigate('/intervention-report')}
               variant="outline"
