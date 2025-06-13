@@ -867,6 +867,7 @@ const InterventionReportForm = () => {
                   <VoiceRecorderForIntervention
                     onAudioChange={handleAudioRecorded}
                     reportId={reportId || undefined}
+                    existingAudioUrl={reportData.audio_url}
                   />
                   {pendingAudioUpload && (
                     <p className="text-sm text-blue-600 mt-2">
