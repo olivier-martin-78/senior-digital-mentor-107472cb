@@ -15,6 +15,7 @@ import AppointmentForm from '@/components/scheduler/AppointmentForm';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
 import InvoiceGenerator from '@/components/scheduler/InvoiceGenerator';
 import SchedulerFilters from '@/components/scheduler/SchedulerFilters';
+import ActionMenu from '@/components/scheduler/ActionMenu';
 
 const ProfessionalScheduler = () => {
   const { user, hasRole } = useAuth();
@@ -217,9 +218,11 @@ const ProfessionalScheduler = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Planificateur Professionnel</h1>
-          <div className="flex gap-3">
+          
+          {/* Actions pour desktop */}
+          <div className="hidden md:flex gap-3">
             <AppointmentExporter professionalId={user?.id || ''} />
             <InvoiceGenerator professionalId={user?.id || ''} />
             <Button 
@@ -236,6 +239,20 @@ const ProfessionalScheduler = () => {
             >
               <Plus className="h-4 w-4" />
               Nouveau rendez-vous
+            </Button>
+          </div>
+
+          {/* Actions pour mobile */}
+          <div className="flex md:hidden gap-2 w-full sm:w-auto">
+            <ActionMenu professionalId={user?.id || ''} />
+            <Button 
+              onClick={() => setShowAppointmentForm(true)}
+              className="flex items-center gap-2 flex-1 sm:flex-none"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Nouveau rendez-vous</span>
+              <span className="sm:hidden">Nouveau RDV</span>
             </Button>
           </div>
         </div>
