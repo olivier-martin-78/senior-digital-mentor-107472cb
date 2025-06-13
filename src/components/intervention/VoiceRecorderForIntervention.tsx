@@ -23,6 +23,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(existingAudioUrl || null);
 
@@ -57,8 +58,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             
             console.log("🎯 VOICE_RECORDER - Uploading to:", filePath);
             
+            // CORRECTION: Utiliser le bon nom de bucket avec "s"
             const { data, error } = await supabase.storage
-              .from('intervention-audio')
+              .from('intervention-audios')
               .upload(filePath, blob, {
                 contentType: 'audio/webm',
                 upsert: false
@@ -72,7 +74,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             console.log("🎯 VOICE_RECORDER - Upload successful:", data);
 
             const { data: urlData } = supabase.storage
-              .from('intervention-audio')
+              .from('intervention-audios')
               .getPublicUrl(filePath);
 
             const publicUrl = urlData.publicUrl;
@@ -170,13 +172,13 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         }
 
         // Optionnel: supprimer le fichier du storage
-        if (localAudioUrl.includes('intervention-audio')) {
+        if (localAudioUrl.includes('intervention-audios')) {
           const urlParts = localAudioUrl.split('/');
           const fileName = urlParts[urlParts.length - 1];
           const filePath = `intervention-audio/${user.id}/${fileName}`;
           
           const { error: deleteError } = await supabase.storage
-            .from('intervention-audio')
+            .from('intervention-audios')
             .remove([filePath]);
 
           if (deleteError) {
@@ -203,14 +205,30 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     
     if (!audioRef.current) return;
 
+    // Marquer que l'utilisateur a interagi
+    setHasUserInteracted(true);
+
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(error => {
+        // Gestion d'erreur améliorée pour iPhone
+        console.error("🎯 VOICE_RECORDER - Play error:", error);
+        
+        // Ne pas afficher de toast d'erreur sur iPhone si l'audio fonctionne réellement
+        // iPhone génère parfois des erreurs même quand l'audio fonctionne
+        if (hasUserInteracted) {
+          toast({
+            title: "Erreur de lecture",
+            description: "Impossible de lire l'enregistrement audio",
+            variant: "destructive",
+          });
+        }
+      });
       setIsPlaying(true);
     }
-  }, [isPlaying]);
+  }, [isPlaying, hasUserInteracted]);
 
   const currentAudioUrl = localAudioUrl || audioUrl;
 
@@ -303,6 +321,25 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
+          onError={(e) => {
+            // Gestion d'erreur améliorée pour iPhone
+            console.log("🎯 VOICE_RECORDER - Audio error event:", e);
+            
+            // Ne pas afficher d'erreur automatiquement sur iPhone
+            // Car il génère parfois des erreurs même quand l'audio fonctionne
+            if (hasUserInteracted) {
+              const audio = audioRef.current;
+              if (audio?.error) {
+                const error = audio.error;
+                // Seulement pour les erreurs critiques
+                if (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+                    error.code === MediaError.MEDIA_ERR_NETWORK ||
+                    error.code === MediaError.MEDIA_ERR_DECODE) {
+                  console.error("🎯 VOICE_RECORDER - Critical audio error:", error);
+                }
+              }
+            }
+          }}
           className="hidden"
         />
       )}
