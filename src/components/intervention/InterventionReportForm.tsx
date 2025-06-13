@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ChevronDown } from 'lucide-react';
+import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
@@ -374,6 +375,7 @@ const InterventionReportForm = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            
             {/* Section Informations générales */}
             <Collapsible open={openSections.general} onOpenChange={() => toggleSection('general')}>
               <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
@@ -724,10 +726,8 @@ const InterventionReportForm = () => {
 
                 <div>
                   <Label>Enregistrement audio (optionnel)</Label>
-                  <InterventionAudioRecorder
-                    onAudioRecorded={handleAudioRecorded}
-                    onAudioUrlGenerated={handleAudioUrlGenerated}
-                    existingAudioUrl={reportData.audio_url}
+                  <VoiceRecorderForIntervention
+                    onAudioChange={handleAudioRecorded}
                     reportId={reportId || undefined}
                   />
                   {pendingAudioUpload && (

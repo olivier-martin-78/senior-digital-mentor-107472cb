@@ -1,17 +1,22 @@
 
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash2, Download } from 'lucide-react';
+import { Mic, Square, Trash2, Download, Upload } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { toast } from '@/hooks/use-toast';
+import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VoiceRecorderForInterventionProps {
   onAudioChange: (audioBlob: Blob | null) => void;
+  reportId?: string;
 }
 
 export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> = ({ 
-  onAudioChange 
+  onAudioChange,
+  reportId 
 }) => {
+  const { user } = useAuth();
   const {
     isRecording,
     audioBlob,
@@ -24,6 +29,8 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   
   const [audioLoaded, setAudioLoaded] = React.useState(false);
   const [hasNotifiedParent, setHasNotifiedParent] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = React.useState<string | null>(null);
   
   console.log("🎙️ VOICE_RECORDER_INTERVENTION - État:", { 
     isRecording, 
@@ -31,7 +38,10 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     hasUrl: !!audioUrl, 
     blobSize: audioBlob?.size,
     hasNotifiedParent,
-    recordingTime
+    recordingTime,
+    reportId,
+    isUploading,
+    uploadedAudioUrl
   });
   
   // Formater le temps d'enregistrement
@@ -41,15 +51,57 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // Upload automatique de l'audio quand l'enregistrement est terminé
+  useEffect(() => {
+    if (audioBlob && audioBlob.size > 0 && !isRecording && reportId && user && !isUploading && !uploadedAudioUrl) {
+      console.log("🎙️ VOICE_RECORDER_INTERVENTION - Démarrage upload automatique:", {
+        blobSize: audioBlob.size,
+        reportId,
+        userId: user.id
+      });
+      
+      uploadInterventionAudio(
+        audioBlob,
+        user.id,
+        reportId,
+        (publicUrl: string) => {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Upload réussi:", publicUrl);
+          setUploadedAudioUrl(publicUrl);
+          toast({
+            title: "Upload réussi",
+            description: "L'enregistrement audio a été sauvegardé",
+          });
+        },
+        (error: string) => {
+          console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur upload:", error);
+          toast({
+            title: "Erreur d'upload",
+            description: error,
+            variant: "destructive",
+          });
+        },
+        () => {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Début upload");
+          setIsUploading(true);
+        },
+        () => {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Fin upload");
+          setIsUploading(false);
+        }
+      );
+    }
+  }, [audioBlob, isRecording, reportId, user, isUploading, uploadedAudioUrl]);
+  
   // Gérer l'export audio
   const handleExportAudio = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (audioBlob && audioUrl) {
+    const urlToExport = uploadedAudioUrl || audioUrl;
+    if (audioBlob && urlToExport) {
       try {
         const downloadLink = document.createElement('a');
-        downloadLink.href = audioUrl;
+        downloadLink.href = urlToExport;
         downloadLink.download = `enregistrement_intervention_${new Date().toISOString().slice(0,10)}.webm`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
@@ -79,6 +131,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     clearRecording();
     setAudioLoaded(false);
     setHasNotifiedParent(false);
+    setUploadedAudioUrl(null);
     onAudioChange(null);
   };
 
@@ -89,6 +142,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     
     console.log("🎙️ VOICE_RECORDER_INTERVENTION - Démarrage enregistrement");
     setHasNotifiedParent(false);
+    setUploadedAudioUrl(null);
     startRecording();
   };
 
@@ -146,6 +200,9 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
       variant: "destructive",
     });
   };
+
+  // Utiliser l'URL uploadée si disponible, sinon l'URL locale
+  const currentAudioUrl = uploadedAudioUrl || audioUrl;
   
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
@@ -170,24 +227,34 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
           </>
         ) : (
           <>
-            <span className="text-gray-500">Prêt à enregistrer</span>
+            <span className="text-gray-500">
+              {isUploading ? "Upload en cours..." : "Prêt à enregistrer"}
+            </span>
             <Button 
               type="button"
               variant="outline" 
               size="sm" 
               onClick={handleStartRecording}
-              disabled={isRecording}
+              disabled={isRecording || isUploading}
             >
               <Mic className="w-4 h-4 mr-1" /> Enregistrer
             </Button>
           </>
         )}
       </div>
+
+      {/* Indicateur d'upload */}
+      {isUploading && (
+        <div className="flex items-center text-blue-600 text-sm mb-2">
+          <Upload className="w-4 h-4 mr-2 animate-spin" />
+          Sauvegarde de l'enregistrement...
+        </div>
+      )}
       
-      {audioUrl && !isRecording && (
+      {currentAudioUrl && !isRecording && (
         <div className="mb-4">
           <audio 
-            src={audioUrl} 
+            src={currentAudioUrl} 
             controls 
             className="w-full" 
             onLoadedData={handleAudioLoaded}
@@ -201,6 +268,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
               size="sm" 
               onClick={handleClearRecording}
               className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              disabled={isUploading}
             >
               <Trash2 className="w-4 h-4 mr-1" /> Supprimer
             </Button>
@@ -212,11 +280,18 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
                 size="sm"
                 onClick={handleExportAudio}
                 className="ml-auto"
+                disabled={isUploading}
               >
                 <Download className="w-4 h-4 mr-1" /> Exporter l'audio
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {!reportId && (
+        <div className="text-xs text-orange-600 mt-2">
+          ⚠️ Rapport non sauvegardé - l'audio sera uploadé après la création du rapport
         </div>
       )}
     </div>
