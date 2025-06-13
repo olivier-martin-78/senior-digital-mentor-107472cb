@@ -25,16 +25,17 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fonction pour obtenir l'icône de statut
+  // Fonction pour obtenir l'icône de statut avec fond blanc
   const getStatusIcon = (status: string) => {
+    const iconClass = "h-4 w-4 p-0.5 rounded-full bg-white shadow-sm border";
     switch (status) {
       case 'completed':
-        return <CircleDot className="h-3 w-3 text-green-500" />;
+        return <CircleDot className={`${iconClass} text-green-500 border-green-200`} />;
       case 'cancelled':
-        return <XCircle className="h-3 w-3 text-red-600" />;
+        return <XCircle className={`${iconClass} text-red-600 border-red-200`} />;
       case 'scheduled':
       default:
-        return <Clock className="h-3 w-3 text-blue-600" />;
+        return <Clock className={`${iconClass} text-blue-600 border-blue-200`} />;
     }
   };
 
