@@ -139,7 +139,7 @@ const Header = () => {
                       Activités
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="grid gap-3 p-6 w-[400px] grid-cols-2">
+                      <div className="grid gap-3 p-6 w-[300px] grid-cols-1">
                         {activitiesItems.map((activity) => {
                           const Icon = activity.icon;
                           return (
