@@ -1,5 +1,3 @@
-
-
 import React, { useRef } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isSameDay, isValid } from 'date-fns';
@@ -221,18 +219,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // Composant pour la colonne Date dans l'agenda - simplifié pour toujours afficher la date de l'événement
-  const AgendaDateComponent = ({ label, date }: { label?: string; date?: Date }) => {
-    // Toujours afficher la date fournie si elle est valide
-    if (date && isValid(date)) {
-      return (
-        <div className="text-sm font-medium text-gray-900 py-1">
-          {format(date, 'dd/MM/yyyy')}
-        </div>
-      );
-    }
-    
-    // Si pas de date valide, utiliser le label s'il existe
+  // Composant pour la colonne Date dans l'agenda - utilise le label pour afficher la date
+  const AgendaDateComponent = ({ label }: { label?: string; date?: Date }) => {
+    // Le label contient déjà la date formatée par React Big Calendar
     if (label && label !== '-') {
       return (
         <div className="text-sm font-medium text-gray-900 py-1">
@@ -325,4 +314,3 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 };
 
 export default AppointmentCalendar;
-
