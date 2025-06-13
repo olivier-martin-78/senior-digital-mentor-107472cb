@@ -25,14 +25,24 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const [isUploading, setIsUploading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(existingAudioUrl || null);
+  const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(null);
 
   console.log("🎯 VOICE_RECORDER - Render:", {
     hasExistingUrl: !!existingAudioUrl,
+    existingAudioUrl,
     hasLocalUrl: !!localAudioUrl,
+    localAudioUrl,
     disabled,
     reportId
   });
+
+  // CORRECTION: Initialiser l'URL locale avec l'URL existante dès le montage
+  useEffect(() => {
+    if (existingAudioUrl && existingAudioUrl.trim() !== '') {
+      console.log("🎯 VOICE_RECORDER - Initializing with existing audio URL:", existingAudioUrl);
+      setLocalAudioUrl(existingAudioUrl.trim());
+    }
+  }, [existingAudioUrl]);
 
   const {
     isRecording,
@@ -54,7 +64,6 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           setIsUploading(true);
           try {
             const fileName = `intervention_${reportId}_${Date.now()}.webm`;
-            // CORRECTION: Utiliser le même chemin que dans la base de données
             const filePath = `interventions/${user.id}/${fileName}`;
             
             console.log("🎯 VOICE_RECORDER - Uploading to:", filePath);
@@ -126,14 +135,6 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }, [onAudioChange, reportId, user])
   });
 
-  // Mettre à jour l'URL locale quand l'URL existante change
-  useEffect(() => {
-    if (existingAudioUrl && existingAudioUrl !== localAudioUrl) {
-      console.log("🎯 VOICE_RECORDER - Setting existing audio URL:", existingAudioUrl);
-      setLocalAudioUrl(existingAudioUrl);
-    }
-  }, [existingAudioUrl, localAudioUrl]);
-
   const handleStartRecording = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -176,7 +177,6 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         if (localAudioUrl.includes('intervention-audios')) {
           const urlParts = localAudioUrl.split('/');
           const fileName = urlParts[urlParts.length - 1];
-          // CORRECTION: Utiliser le même chemin que pour l'upload
           const filePath = `interventions/${user.id}/${fileName}`;
           
           const { error: deleteError } = await supabase.storage
@@ -215,7 +215,6 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
       setIsPlaying(false);
     } else {
       audioRef.current.play().catch(error => {
-        // Gestion d'erreur améliorée pour iPhone
         console.error("🎯 VOICE_RECORDER - Play error:", error);
         
         // Ne pas afficher de toast d'erreur sur iPhone sauf en cas d'erreur critique
@@ -236,13 +235,16 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }
   }, [isPlaying, hasUserInteracted]);
 
-  const currentAudioUrl = localAudioUrl || audioUrl;
+  // CORRECTION: Utiliser l'URL locale d'abord, puis l'URL d'enregistrement, puis l'URL existante
+  const currentAudioUrl = localAudioUrl || audioUrl || existingAudioUrl;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  console.log("🎯 VOICE_RECORDER - Current audio URL:", currentAudioUrl);
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">

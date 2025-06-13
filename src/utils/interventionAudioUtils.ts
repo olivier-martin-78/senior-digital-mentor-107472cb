@@ -19,10 +19,8 @@ export const uploadInterventionAudio = async (
   onUploadStart();
 
   try {
-    // Générer un nom de fichier unique
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `intervention-audio-${reportId}-${timestamp}.webm`;
-    // CORRECTION: Utiliser le chemin cohérent avec la base de données
+    // CORRECTION: Utiliser le même format de nom que VoiceRecorderForIntervention
+    const fileName = `intervention_${reportId}_${Date.now()}.webm`;
     const filePath = `interventions/${userId}/${fileName}`;
 
     console.log("🔧 AUDIO_UTILS - Upload path:", filePath);
