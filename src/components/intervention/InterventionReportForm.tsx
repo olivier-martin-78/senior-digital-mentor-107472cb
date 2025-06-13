@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -472,14 +473,15 @@ const InterventionReportForm = () => {
     <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <CardTitle>Rapport d'Intervention</CardTitle>
             {reportId && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Supprimer le rapport
+                  <Button variant="destructive" size="sm" className="w-full sm:w-auto">
+                    <Trash2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Supprimer le rapport</span>
+                    <span className="sm:hidden">Supprimer</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
