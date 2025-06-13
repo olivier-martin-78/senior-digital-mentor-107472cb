@@ -230,10 +230,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
       navigate('/intervention-report', {
         state: {
-          reportData,
           appointmentId: appointment.id,
-          isViewMode: true
-        }
+          prefilledData: reportData
+        },
+        search: `?reportId=${appointment.intervention_report_id}&appointmentId=${appointment.id}`
       });
     } catch (error) {
       console.error('Erreur lors de la récupération du rapport:', error);

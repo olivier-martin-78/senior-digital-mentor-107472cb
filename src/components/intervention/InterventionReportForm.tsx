@@ -460,7 +460,6 @@ const InterventionReportForm = () => {
                       {intervenants.map((intervenant) => (
                         <option key={intervenant.id} value={`${intervenant.first_name} ${intervenant.last_name}`}>
                           {intervenant.first_name} {intervenant.last_name}
-                          {intervenant.speciality && ` - ${intervenant.speciality}`}
                         </option>
                       ))}
                     </select>
