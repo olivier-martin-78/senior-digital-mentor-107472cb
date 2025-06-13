@@ -1,4 +1,3 @@
-
 import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,7 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useNavigate } from 'react-router-dom';
 import { Appointment } from '@/types/appointments';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Edit, Trash2, FileText, Clock, CircleDot, XCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AuxiliaryAvatar from './AuxiliaryAvatar';
 
@@ -30,7 +29,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-3 w-3 text-green-600" />;
+        return <CircleDot className="h-3 w-3 text-green-500" />;
       case 'cancelled':
         return <XCircle className="h-3 w-3 text-red-600" />;
       case 'scheduled':
