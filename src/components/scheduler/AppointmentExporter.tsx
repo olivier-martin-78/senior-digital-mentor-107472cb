@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import * as XLSX from 'xlsx';
 
 interface AppointmentExporterProps {
   professionalId: string;
@@ -31,7 +32,8 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
             last_name,
             address,
             phone,
-            email
+            email,
+            hourly_rate
           )
         `)
         .eq('professional_id', professionalId)
@@ -50,49 +52,90 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
         return;
       }
 
-      // Créer le contenu CSV
-      const csvHeaders = [
-        'Date',
-        'Heure début',
-        'Heure fin',
-        'Client',
-        'Adresse',
-        'Téléphone',
-        'Email',
-        'Notes'
+      // Préparer les données pour Excel
+      const excelData = data.map(appointment => {
+        const client = appointment.clients;
+        const startTime = new Date(appointment.start_time);
+        const endTime = new Date(appointment.end_time);
+        
+        // Calculer le nombre d'heures
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+        
+        // Prix horaire du client
+        const hourlyRate = client?.hourly_rate || 0;
+        
+        // Total en euros
+        const total = durationHours * hourlyRate;
+
+        return {
+          'Date': format(startTime, 'dd/MM/yyyy'),
+          'Heure début': format(startTime, 'HH:mm'),
+          'Heure fin': format(endTime, 'HH:mm'),
+          'Nombre d\'heures': Number(durationHours.toFixed(2)),
+          'Client': `${client?.first_name || ''} ${client?.last_name || ''}`.trim(),
+          'Adresse': client?.address || '',
+          'Téléphone': client?.phone || '',
+          'Email': client?.email || '',
+          'Prix horaire (€)': hourlyRate,
+          'Total (€)': Number(total.toFixed(2)),
+          'Notes': appointment.notes || ''
+        };
+      });
+
+      // Créer le classeur Excel
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      
+      // Définir la largeur des colonnes
+      const columnWidths = [
+        { wch: 12 }, // Date
+        { wch: 12 }, // Heure début
+        { wch: 12 }, // Heure fin
+        { wch: 15 }, // Nombre d'heures
+        { wch: 25 }, // Client
+        { wch: 30 }, // Adresse
+        { wch: 15 }, // Téléphone
+        { wch: 25 }, // Email
+        { wch: 15 }, // Prix horaire
+        { wch: 12 }, // Total
+        { wch: 30 }  // Notes
       ];
+      worksheet['!cols'] = columnWidths;
 
-      const csvContent = [
-        csvHeaders.join(','),
-        ...data.map(appointment => {
-          const client = appointment.clients;
-          return [
-            format(new Date(appointment.start_time), 'dd/MM/yyyy'),
-            format(new Date(appointment.start_time), 'HH:mm'),
-            format(new Date(appointment.end_time), 'HH:mm'),
-            `"${client?.first_name || ''} ${client?.last_name || ''}"`,
-            `"${client?.address || ''}"`,
-            `"${client?.phone || ''}"`,
-            `"${client?.email || ''}"`,
-            `"${appointment.notes || ''}"`
-          ].join(',');
-        })
-      ].join('\n');
+      // Ajouter la feuille au classeur
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'RDV Terminés');
 
-      // Créer et télécharger le fichier
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      // Générer le fichier Excel avec encodage UTF-8
+      const excelBuffer = XLSX.write(workbook, { 
+        bookType: 'xlsx', 
+        type: 'array',
+        bookSST: false,
+        compression: true
+      });
+
+      // Créer le blob et télécharger
+      const blob = new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+      });
+      
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `rendez-vous-termines-${format(currentDate, 'MM-yyyy')}.csv`);
+      link.setAttribute('download', `rendez-vous-termines-${format(currentDate, 'MM-yyyy')}.xlsx`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Calculer les totaux pour le message
+      const totalHours = excelData.reduce((sum, row) => sum + row['Nombre d\'heures'], 0);
+      const totalAmount = excelData.reduce((sum, row) => sum + row['Total (€)'], 0);
 
       toast({
         title: 'Export réussi',
-        description: `${data.length} rendez-vous exportés avec succès`,
+        description: `${data.length} rendez-vous exportés (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
       });
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
@@ -111,7 +154,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       className="flex items-center gap-2"
     >
       <Download className="h-4 w-4" />
-      Exporter RDV terminés (CSV)
+      Exporter RDV terminés (Excel)
     </Button>
   );
 };
