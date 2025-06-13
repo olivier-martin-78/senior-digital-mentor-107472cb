@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Trash2 } from 'lucide-react';
@@ -8,12 +7,14 @@ interface VoiceAnswerPlayerProps {
   audioUrl: string;
   onDelete?: () => void;
   readOnly?: boolean;
+  shouldLog?: boolean;
 }
 
 const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   audioUrl,
   onDelete,
-  readOnly = false
+  readOnly = false,
+  shouldLog = false
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -22,14 +23,18 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, readOnly, hasError });
+  if (shouldLog) {
+    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, readOnly, hasError });
+  }
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleLoadedMetadata = () => {
-      console.log("🎵 VOICE_PLAYER - Metadata loaded:", audio.duration);
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Metadata loaded:", audio.duration);
+      }
       setDuration(audio.duration || 0);
       setHasError(false);
     };
@@ -39,30 +44,40 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     };
 
     const handleEnded = () => {
-      console.log("🎵 VOICE_PLAYER - Playback ended");
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Playback ended");
+      }
       setIsPlaying(false);
       setCurrentTime(0);
     };
 
     const handlePause = () => {
-      console.log("🎵 VOICE_PLAYER - Paused");
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Paused");
+      }
       setIsPlaying(false);
     };
 
     const handlePlay = () => {
-      console.log("🎵 VOICE_PLAYER - Playing");
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Playing");
+      }
       setIsPlaying(true);
       setHasError(false);
     };
 
     // Gestion d'erreur améliorée pour éviter les faux positifs sur iPhone
     const handleError = (e: Event) => {
-      console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
+      }
       
       // Ne pas afficher d'erreur si l'utilisateur n'a pas encore interagi
       // Cela évite les erreurs automatiques sur iPhone lors du chargement
       if (!hasUserInteracted) {
-        console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
+        if (shouldLog) {
+          console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
+        }
         return;
       }
 
@@ -99,7 +114,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('error', handleError);
     };
-  }, [hasUserInteracted]);
+  }, [hasUserInteracted, shouldLog]);
 
   const handlePlayPause = async () => {
     const audio = audioRef.current;
@@ -108,7 +123,9 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     // Marquer que l'utilisateur a interagi
     setHasUserInteracted(true);
 
-    console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError });
+    if (shouldLog) {
+      console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError });
+    }
 
     try {
       if (isPlaying) {
