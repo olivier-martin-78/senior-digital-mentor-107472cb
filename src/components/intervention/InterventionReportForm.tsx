@@ -23,8 +23,11 @@ const InterventionReportForm = () => {
   const appointmentId = searchParams.get('appointmentId');
   const reportId = searchParams.get('reportId');
 
+  console.log('🔍 FORM - URL searchParams bruts:', Object.fromEntries(searchParams));
   console.log('🔍 FORM - appointmentId récupéré depuis searchParams:', appointmentId);
   console.log('🔍 FORM - reportId récupéré depuis searchParams:', reportId);
+  console.log('🔍 FORM - Type de appointmentId:', typeof appointmentId);
+  console.log('🔍 FORM - location.state:', location.state);
 
   const [reportData, setReportData] = useState({
     auxiliary_name: '',
@@ -85,16 +88,21 @@ const InterventionReportForm = () => {
   ];
 
   useEffect(() => {
+    console.log('🔍 FORM - useEffect déclenché avec:', { reportId, appointmentId, locationState: location.state });
+    
     // Préremplir avec les données de l'état de navigation si disponibles
     if (location.state?.prefilledData) {
       const prefilledData = location.state.prefilledData;
+      console.log('🔍 FORM - Préremplissage avec prefilledData:', prefilledData);
       setReportData(prev => ({
         ...prev,
         ...prefilledData
       }));
     } else if (reportId) {
+      console.log('🔍 FORM - Chargement du rapport existant:', reportId);
       loadReportData(reportId);
     } else if (appointmentId) {
+      console.log('🔍 FORM - Chargement des données du rendez-vous:', appointmentId);
       loadAppointmentData(appointmentId);
     }
   }, [reportId, appointmentId, location.state]);
@@ -224,28 +232,32 @@ const InterventionReportForm = () => {
     e.preventDefault();
     if (!user) return;
 
+    console.log('🔍 FORM - Début de handleSubmit');
+    console.log('🔍 FORM - appointmentId avant traitement:', appointmentId);
+    console.log('🔍 FORM - reportId avant traitement:', reportId);
+
     setLoading(true);
     try {
       const data = {
         ...reportData,
         professional_id: user.id,
-        // Correction: S'assurer que appointment_id est correctement assigné
         appointment_id: appointmentId || null,
       };
 
-      console.log('🔍 FORM - appointmentId utilisé pour la sauvegarde:', appointmentId);
-      console.log('🔍 FORM - Données à insérer avec appointment_id:', data);
+      console.log('🔍 FORM - appointmentId dans les données:', data.appointment_id);
+      console.log('🔍 FORM - Données complètes à sauvegarder:', data);
 
       let savedReportId = reportId;
 
       if (reportId) {
+        console.log('🔍 FORM - Mise à jour du rapport existant:', reportId);
         const { error } = await supabase
           .from('intervention_reports')
           .update(data)
           .eq('id', reportId);
 
         if (error) {
-          console.error('Erreur lors de la mise à jour:', error);
+          console.error('🔍 FORM - Erreur lors de la mise à jour:', error);
           throw error;
         }
 
@@ -254,7 +266,9 @@ const InterventionReportForm = () => {
           description: 'Rapport modifié avec succès',
         });
       } else {
-        console.log('Données à insérer:', data);
+        console.log('🔍 FORM - Création d\'un nouveau rapport');
+        console.log('🔍 FORM - Données à insérer dans intervention_reports:', data);
+        
         const { data: insertedData, error } = await supabase
           .from('intervention_reports')
           .insert([data])
@@ -262,26 +276,62 @@ const InterventionReportForm = () => {
           .single();
 
         if (error) {
-          console.error('Erreur lors de l\'insertion:', error);
+          console.error('🔍 FORM - Erreur lors de l\'insertion:', error);
+          console.error('🔍 FORM - Détails de l\'erreur:', { 
+            message: error.message, 
+            details: error.details, 
+            hint: error.hint,
+            code: error.code 
+          });
           throw error;
         }
 
+        console.log('🔍 FORM - Rapport inséré avec succès:', insertedData);
         savedReportId = insertedData.id;
-        console.log('Rapport créé avec ID:', savedReportId);
+        console.log('🔍 FORM - savedReportId assigné:', savedReportId);
+
+        // Vérifier que le rapport a bien été créé avec l'appointment_id
+        const { data: verificationData, error: verificationError } = await supabase
+          .from('intervention_reports')
+          .select('id, appointment_id')
+          .eq('id', savedReportId)
+          .single();
+
+        if (verificationError) {
+          console.error('🔍 FORM - Erreur lors de la vérification:', verificationError);
+        } else {
+          console.log('🔍 FORM - Vérification du rapport créé:', verificationData);
+        }
 
         // Mettre à jour le rendez-vous avec l'ID du rapport d'intervention
         if (appointmentId && savedReportId) {
-          console.log('🔗 FORM - Liaison appointment-report:', { appointmentId, reportId: savedReportId });
-          const { error: updateError } = await supabase
+          console.log('🔍 FORM - Mise à jour de l\'appointment avec intervention_report_id');
+          console.log('🔍 FORM - appointmentId:', appointmentId, 'savedReportId:', savedReportId);
+          
+          const { data: updateData, error: updateError } = await supabase
             .from('appointments')
             .update({ intervention_report_id: savedReportId })
-            .eq('id', appointmentId);
+            .eq('id', appointmentId)
+            .select();
 
           if (updateError) {
-            console.error('Erreur lors de la mise à jour du rendez-vous:', updateError);
+            console.error('🔍 FORM - Erreur lors de la mise à jour du rendez-vous:', updateError);
+            console.error('🔍 FORM - Détails de l\'erreur update:', { 
+              message: updateError.message, 
+              details: updateError.details, 
+              hint: updateError.hint,
+              code: updateError.code 
+            });
           } else {
-            console.log('✅ FORM - Rendez-vous mis à jour avec intervention_report_id');
+            console.log('🔍 FORM - Rendez-vous mis à jour avec succès:', updateData);
           }
+        } else {
+          console.log('🔍 FORM - Pas de mise à jour du rendez-vous car:', { 
+            appointmentId, 
+            savedReportId,
+            hasAppointmentId: !!appointmentId,
+            hasSavedReportId: !!savedReportId
+          });
         }
 
         toast({
@@ -299,7 +349,7 @@ const InterventionReportForm = () => {
 
       navigate('/scheduler');
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du rapport:', error);
+      console.error('🔍 FORM - Erreur générale lors de la sauvegarde du rapport:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de sauvegarder le rapport: ${error.message}`,
