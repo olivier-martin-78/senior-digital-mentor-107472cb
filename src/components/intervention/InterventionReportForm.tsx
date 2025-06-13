@@ -347,14 +347,17 @@ const InterventionReportForm = () => {
           console.log('🔍 FORM - Vérification du rapport créé:', verificationData);
         }
 
-        // Mettre à jour le rendez-vous avec l'ID du rapport d'intervention
+        // Mettre à jour le rendez-vous avec l'ID du rapport d'intervention ET changer le statut à "completed"
         if (appointmentId && savedReportId) {
-          console.log('🔍 FORM - Mise à jour de l\'appointment avec intervention_report_id');
+          console.log('🔍 FORM - Mise à jour de l\'appointment avec intervention_report_id et statut completed');
           console.log('🔍 FORM - appointmentId:', appointmentId, 'savedReportId:', savedReportId);
           
           const { data: updateData, error: updateError } = await supabase
             .from('appointments')
-            .update({ intervention_report_id: savedReportId })
+            .update({ 
+              intervention_report_id: savedReportId,
+              status: 'completed'
+            })
             .eq('id', appointmentId)
             .select();
 
@@ -367,7 +370,7 @@ const InterventionReportForm = () => {
               code: updateError.code 
             });
           } else {
-            console.log('🔍 FORM - Rendez-vous mis à jour avec succès:', updateData);
+            console.log('🔍 FORM - Rendez-vous mis à jour avec succès (statut: completed):', updateData);
           }
         } else {
           console.log('🔍 FORM - Pas de mise à jour du rendez-vous car:', { 
