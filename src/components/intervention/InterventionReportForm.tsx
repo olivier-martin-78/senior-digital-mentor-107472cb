@@ -426,6 +426,7 @@ const InterventionReportForm = () => {
     
     try {
       // Supprimer le rapport d'intervention
+      // La contrainte ON DELETE SET NULL se charge automatiquement de mettre à jour l'appointment
       const { error } = await supabase
         .from('intervention_reports')
         .delete()
@@ -437,25 +438,6 @@ const InterventionReportForm = () => {
       }
 
       console.log('🗑️ FORM - Rapport supprimé avec succès');
-
-      // Si le rapport était lié à un rendez-vous, remettre le statut à "scheduled"
-      if (appointmentId) {
-        console.log('🗑️ FORM - Mise à jour du statut du rendez-vous:', appointmentId);
-        
-        const { error: updateError } = await supabase
-          .from('appointments')
-          .update({ 
-            intervention_report_id: null,
-            status: 'scheduled'
-          })
-          .eq('id', appointmentId);
-
-        if (updateError) {
-          console.error('🗑️ FORM - Erreur lors de la mise à jour du rendez-vous:', updateError);
-        } else {
-          console.log('🗑️ FORM - Rendez-vous mis à jour (statut: scheduled)');
-        }
-      }
 
       toast({
         title: 'Succès',
