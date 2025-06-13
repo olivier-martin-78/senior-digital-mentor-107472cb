@@ -97,21 +97,17 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   }, [isRecording]);
   
-  // Gérer le chargement audio
+  // Gérer le chargement audio - ne pas afficher d'erreur sur iPhone
   const handleAudioLoaded = () => {
     console.log("Audio chargé avec succès");
     setAudioLoaded(true);
   };
   
-  // Gérer l'erreur audio
-  const handleAudioError = () => {
-    console.error("Erreur de chargement audio");
-    setAudioLoaded(false);
-    toast({
-      title: "Erreur audio",
-      description: "Impossible de lire l'enregistrement audio",
-      variant: "destructive",
-    });
+  // Gérer l'erreur audio - silencieux sur les appareils mobiles où l'audio fonctionne malgré l'erreur
+  const handleAudioError = (error: any) => {
+    console.log("Événement d'erreur audio détecté (peut être normal sur certains appareils):", error);
+    // Ne pas afficher de toast d'erreur car l'audio peut fonctionner malgré cet événement
+    // Cela évite les faux positifs sur iPhone et autres appareils mobiles
   };
   
   return (
@@ -169,16 +165,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               <Trash2 className="w-4 h-4 mr-1" /> Supprimer
             </Button>
             
-            {audioLoaded && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleExportAudio}
-                className="ml-auto"
-              >
-                <Download className="w-4 h-4 mr-1" /> Exporter l'audio
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleExportAudio}
+              className="ml-auto"
+            >
+              <Download className="w-4 h-4 mr-1" /> Exporter l'audio
+            </Button>
           </div>
         </div>
       )}
