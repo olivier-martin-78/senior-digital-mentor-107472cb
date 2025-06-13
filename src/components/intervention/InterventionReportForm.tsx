@@ -13,8 +13,19 @@ import InterventionAudioRecorder from './InterventionAudioRecorder';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide-react';
 import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
@@ -408,6 +419,60 @@ const InterventionReportForm = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!reportId || !user) return;
+
+    console.log('🗑️ FORM - Début de la suppression du rapport:', reportId);
+    
+    try {
+      // Supprimer le rapport d'intervention
+      const { error } = await supabase
+        .from('intervention_reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) {
+        console.error('🗑️ FORM - Erreur lors de la suppression:', error);
+        throw error;
+      }
+
+      console.log('🗑️ FORM - Rapport supprimé avec succès');
+
+      // Si le rapport était lié à un rendez-vous, remettre le statut à "scheduled"
+      if (appointmentId) {
+        console.log('🗑️ FORM - Mise à jour du statut du rendez-vous:', appointmentId);
+        
+        const { error: updateError } = await supabase
+          .from('appointments')
+          .update({ 
+            intervention_report_id: null,
+            status: 'scheduled'
+          })
+          .eq('id', appointmentId);
+
+        if (updateError) {
+          console.error('🗑️ FORM - Erreur lors de la mise à jour du rendez-vous:', updateError);
+        } else {
+          console.log('🗑️ FORM - Rendez-vous mis à jour (statut: scheduled)');
+        }
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Le rapport d\'intervention a été supprimé',
+      });
+
+      navigate('/scheduler');
+    } catch (error) {
+      console.error('🗑️ FORM - Erreur générale lors de la suppression:', error);
+      toast({
+        title: 'Erreur',
+        description: `Impossible de supprimer le rapport: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -425,7 +490,34 @@ const InterventionReportForm = () => {
     <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader>
-          <CardTitle>Rapport d'Intervention</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Rapport d'Intervention</CardTitle>
+            {reportId && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer le rapport
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? 
+                      Cette action est irréversible et supprimera également tous les fichiers audio associés.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Supprimer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
