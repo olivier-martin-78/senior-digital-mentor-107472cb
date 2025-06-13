@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -226,7 +227,8 @@ const InterventionReportForm = () => {
       const data = {
         ...reportData,
         professional_id: user.id,
-        appointment_id: appointmentId,
+        // S'assurer que appointment_id est null si pas défini plutôt qu'une chaîne vide
+        appointment_id: appointmentId || null,
       };
 
       let savedReportId = reportId;
@@ -237,22 +239,30 @@ const InterventionReportForm = () => {
           .update(data)
           .eq('id', reportId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erreur lors de la mise à jour:', error);
+          throw error;
+        }
 
         toast({
           title: 'Succès',
           description: 'Rapport modifié avec succès',
         });
       } else {
+        console.log('Données à insérer:', data);
         const { data: insertedData, error } = await supabase
           .from('intervention_reports')
           .insert([data])
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erreur lors de l\'insertion:', error);
+          throw error;
+        }
 
         savedReportId = insertedData.id;
+        console.log('Rapport créé avec ID:', savedReportId);
 
         toast({
           title: 'Succès',
@@ -272,7 +282,7 @@ const InterventionReportForm = () => {
       console.error('Erreur lors de la sauvegarde du rapport:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder le rapport',
+        description: `Impossible de sauvegarder le rapport: ${error.message}`,
         variant: 'destructive',
       });
     } finally {
