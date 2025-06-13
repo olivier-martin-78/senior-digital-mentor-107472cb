@@ -232,7 +232,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       className="flex items-center gap-2"
     >
       <Download className="h-4 w-4" />
-      Exporter RDV du mois (Excel)
+      Exporter RDV du mois
     </Button>
   );
 };
