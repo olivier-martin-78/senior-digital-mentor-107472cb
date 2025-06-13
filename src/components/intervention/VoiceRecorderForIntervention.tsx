@@ -34,6 +34,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   const [uploadedAudioUrl, setUploadedAudioUrl] = React.useState<string | null>(null);
   const [existingAudioUrl, setExistingAudioUrl] = React.useState<string | null>(null);
   const [isLoadingExisting, setIsLoadingExisting] = React.useState(false);
+  const [hasUploadedCurrentBlob, setHasUploadedCurrentBlob] = React.useState(false);
   
   console.log("🎙️ VOICE_RECORDER_INTERVENTION - État:", { 
     isRecording, 
@@ -46,7 +47,8 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     isUploading,
     uploadedAudioUrl,
     existingAudioUrl,
-    isLoadingExisting
+    isLoadingExisting,
+    hasUploadedCurrentBlob
   });
 
   // Charger l'audio existant si un reportId est fourni
@@ -71,11 +73,12 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
       if (data?.audio_url && data.audio_url.trim() !== '') {
         console.log("🎙️ VOICE_RECORDER_INTERVENTION - Audio existant trouvé:", data.audio_url);
         setExistingAudioUrl(data.audio_url);
-        setUploadedAudioUrl(data.audio_url);
+        if (!uploadedAudioUrl) {
+          setUploadedAudioUrl(data.audio_url);
+        }
       } else {
         console.log("🎙️ VOICE_RECORDER_INTERVENTION - Aucun audio existant trouvé");
         setExistingAudioUrl(null);
-        setUploadedAudioUrl(null);
       }
     } catch (error) {
       console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur lors du chargement:", error);
@@ -90,16 +93,6 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
       loadExistingAudio();
     }
   }, [reportId]);
-
-  // Recharger l'audio existant après un upload réussi
-  const reloadExistingAudio = () => {
-    if (reportId) {
-      console.log("🎙️ VOICE_RECORDER_INTERVENTION - Rechargement audio après upload");
-      setExistingAudioUrl(null);
-      setUploadedAudioUrl(null);
-      loadExistingAudio();
-    }
-  };
   
   // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
@@ -110,12 +103,28 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   
   // Upload automatique de l'audio quand l'enregistrement est terminé
   useEffect(() => {
-    if (audioBlob && audioBlob.size > 0 && !isRecording && reportId && user && !isUploading && !uploadedAudioUrl) {
+    // Conditions pour déclencher l'upload :
+    // 1. Il y a un blob audio valide
+    // 2. L'enregistrement est terminé
+    // 3. Un reportId existe
+    // 4. L'utilisateur est connecté
+    // 5. Pas d'upload en cours
+    // 6. Ce blob n'a pas encore été uploadé
+    if (audioBlob && 
+        audioBlob.size > 0 && 
+        !isRecording && 
+        reportId && 
+        user && 
+        !isUploading && 
+        !hasUploadedCurrentBlob) {
+      
       console.log("🎙️ VOICE_RECORDER_INTERVENTION - Démarrage upload automatique:", {
         blobSize: audioBlob.size,
         reportId,
         userId: user.id
       });
+      
+      setHasUploadedCurrentBlob(true); // Marquer ce blob comme en cours d'upload
       
       uploadInterventionAudio(
         audioBlob,
@@ -125,10 +134,6 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
           console.log("🎙️ VOICE_RECORDER_INTERVENTION - Upload réussi:", publicUrl);
           setUploadedAudioUrl(publicUrl);
           setExistingAudioUrl(publicUrl);
-          // Recharger depuis la base de données pour s'assurer de la cohérence
-          setTimeout(() => {
-            reloadExistingAudio();
-          }, 1000);
           toast({
             title: "Upload réussi",
             description: "L'enregistrement audio a été sauvegardé",
@@ -136,6 +141,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
         },
         (error: string) => {
           console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur upload:", error);
+          setHasUploadedCurrentBlob(false); // Réinitialiser en cas d'erreur
           toast({
             title: "Erreur d'upload",
             description: error,
@@ -152,7 +158,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
         }
       );
     }
-  }, [audioBlob, isRecording, reportId, user, isUploading, uploadedAudioUrl]);
+  }, [audioBlob, isRecording, reportId, user, isUploading, hasUploadedCurrentBlob]);
   
   // Gérer l'export audio
   const handleExportAudio = (e: React.MouseEvent) => {
@@ -214,6 +220,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     setHasNotifiedParent(false);
     setUploadedAudioUrl(null);
     setExistingAudioUrl(null);
+    setHasUploadedCurrentBlob(false); // Réinitialiser le flag d'upload
     onAudioChange(null);
   };
 
@@ -225,6 +232,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     setHasNotifiedParent(false);
     setUploadedAudioUrl(null);
     setExistingAudioUrl(null);
+    setHasUploadedCurrentBlob(false); // Réinitialiser pour le nouvel enregistrement
     startRecording();
   };
 
