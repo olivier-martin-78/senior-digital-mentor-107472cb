@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -319,7 +320,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   {activeIntervenants.map((intervenant) => (
                     <SelectItem key={intervenant.id} value={intervenant.id}>
                       {intervenant.first_name} {intervenant.last_name}
-                      {intervenant.speciality && ` - ${intervenant.speciality}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
