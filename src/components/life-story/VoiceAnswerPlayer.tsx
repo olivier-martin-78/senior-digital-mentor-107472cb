@@ -1,256 +1,138 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Trash2, Download, RefreshCw } from 'lucide-react';
+import { Play, Pause, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { getAccessibleAudioUrl } from '@/utils/audioUploadUtils';
 
 interface VoiceAnswerPlayerProps {
-  audioUrl: string; // Maintenant c'est un chemin relatif
-  onDelete: () => void;
+  audioUrl: string;
+  onDelete?: () => void;
   readOnly?: boolean;
-  shouldLog?: boolean;
 }
 
 const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   audioUrl,
   onDelete,
-  readOnly = false,
-  shouldLog = false,
+  readOnly = false
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
-  const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
-  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // LOG DÉTAILLÉ pour question 1 chapitre 1
-  if (shouldLog) {
-    console.log('🎵 PLAYER - Question 1 Chapitre 1 - État initial:', {
-      audioUrl,
-      accessibleUrl,
-      isLoadingUrl,
-      urlError,
-      timestamp: new Date().toISOString()
-    });
-  }
+  console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, readOnly, hasError });
 
-  // Générer l'URL accessible à partir du chemin
   useEffect(() => {
-    const generateAccessibleUrl = async () => {
-      if (!audioUrl || audioUrl.trim() === '') {
-        setAccessibleUrl(null);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleLoadedMetadata = () => {
+      console.log("🎵 VOICE_PLAYER - Metadata loaded:", audio.duration);
+      setDuration(audio.duration || 0);
+      setHasError(false);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleEnded = () => {
+      console.log("🎵 VOICE_PLAYER - Playback ended");
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    const handlePause = () => {
+      console.log("🎵 VOICE_PLAYER - Paused");
+      setIsPlaying(false);
+    };
+
+    const handlePlay = () => {
+      console.log("🎵 VOICE_PLAYER - Playing");
+      setIsPlaying(true);
+      setHasError(false);
+    };
+
+    // Gestion d'erreur améliorée pour éviter les faux positifs sur iPhone
+    const handleError = (e: Event) => {
+      console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
+      
+      // Ne pas afficher d'erreur si l'utilisateur n'a pas encore interagi
+      // Cela évite les erreurs automatiques sur iPhone lors du chargement
+      if (!hasUserInteracted) {
+        console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
         return;
       }
 
-      setIsLoadingUrl(true);
-      setUrlError(null);
-      setPlaybackError(null);
-
-      try {
-        if (shouldLog) {
-          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Génération URL pour chemin:', {
-            audioUrl,
-            audioUrlType: typeof audioUrl,
-            audioUrlLength: audioUrl.length
-          });
-        }
-
-        const url = await getAccessibleAudioUrl(audioUrl);
+      // Vérifier si c'est une vraie erreur critique
+      const error = audio.error;
+      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+                   error.code === MediaError.MEDIA_ERR_NETWORK ||
+                   error.code === MediaError.MEDIA_ERR_DECODE)) {
+        console.error("🎵 VOICE_PLAYER - Critical audio error:", error);
+        setHasError(true);
+        setIsPlaying(false);
         
-        if (url) {
-          setAccessibleUrl(url);
-          if (shouldLog) {
-            console.log('✅ PLAYER - Question 1 Chapitre 1 - URL générée:', {
-              originalPath: audioUrl,
-              generatedUrl: url,
-              urlLength: url.length
-            });
-          }
-        } else {
-          throw new Error('Impossible de générer l\'URL d\'accès');
-        }
-      } catch (error) {
-        console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur génération URL:', error);
-        setUrlError('Impossible de charger l\'audio');
-        setAccessibleUrl(null);
-      } finally {
-        setIsLoadingUrl(false);
+        // Afficher le toast seulement pour les erreurs critiques et après interaction utilisateur
+        toast({
+          title: "Erreur audio",
+          description: "Impossible de lire l'enregistrement audio",
+          variant: "destructive",
+        });
       }
     };
 
-    generateAccessibleUrl();
-  }, [audioUrl, shouldLog]);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('error', handleError);
 
-  // Créer l'élément audio quand l'URL accessible est disponible
-  useEffect(() => {
-    if (accessibleUrl) {
-      if (shouldLog) {
-        console.log('🎵 PLAYER - Question 1 Chapitre 1 - Création élément audio avec URL:', accessibleUrl);
-      }
-      
-      const audio = new Audio(accessibleUrl);
-      
-      const updateTime = () => setCurrentTime(audio.currentTime);
-      const updateDuration = () => {
-        setDuration(audio.duration);
-        if (shouldLog) {
-          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Durée audio chargée:', audio.duration);
-        }
-      };
-      const handleEnded = () => {
-        setIsPlaying(false);
-        if (shouldLog) {
-          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Lecture terminée');
-        }
-      };
-      const handleError = (e: any) => {
-        console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur audio:', e);
-        // CORRECTION: Ne pas afficher d'erreur automatiquement, seulement en cas de vraie erreur de lecture
-        if (shouldLog) {
-          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Erreur audio détectée mais ignorée (souvent faux positif sur iOS)');
-        }
-      };
-      const handleCanPlay = () => {
-        // CORRECTION: Effacer toute erreur quand l'audio peut être lu
-        setPlaybackError(null);
-        if (shouldLog) {
-          console.log('✅ PLAYER - Question 1 Chapitre 1 - Audio prêt à être lu');
-        }
-      };
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [hasUserInteracted]);
 
-      audio.addEventListener('timeupdate', updateTime);
-      audio.addEventListener('loadedmetadata', updateDuration);
-      audio.addEventListener('ended', handleEnded);
-      audio.addEventListener('error', handleError);
-      audio.addEventListener('canplay', handleCanPlay);
+  const handlePlayPause = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-      setAudioElement(audio);
+    // Marquer que l'utilisateur a interagi
+    setHasUserInteracted(true);
 
-      return () => {
-        audio.removeEventListener('timeupdate', updateTime);
-        audio.removeEventListener('loadedmetadata', updateDuration);
-        audio.removeEventListener('ended', handleEnded);
-        audio.removeEventListener('error', handleError);
-        audio.removeEventListener('canplay', handleCanPlay);
-        audio.pause();
-        setAudioElement(null);
-        if (shouldLog) {
-          console.log('🎵 PLAYER - Question 1 Chapitre 1 - Nettoyage élément audio');
-        }
-      };
-    } else {
-      setAudioElement(null);
-    }
-  }, [accessibleUrl, shouldLog]);
-
-  const togglePlayPause = async () => {
-    if (!audioElement) {
-      if (shouldLog) {
-        console.log('❌ PLAYER - Question 1 Chapitre 1 - Pas d\'élément audio disponible');
-      }
-      return;
-    }
+    console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError });
 
     try {
       if (isPlaying) {
-        audioElement.pause();
-        setIsPlaying(false);
-        if (shouldLog) {
-          console.log('⏸️ PLAYER - Question 1 Chapitre 1 - Audio mis en pause');
-        }
+        audio.pause();
       } else {
-        await audioElement.play();
-        setIsPlaying(true);
-        setPlaybackError(null); // CORRECTION: Effacer l'erreur lors d'une lecture réussie
-        if (shouldLog) {
-          console.log('▶️ PLAYER - Question 1 Chapitre 1 - Audio en lecture');
+        setHasError(false);
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          await playPromise;
         }
       }
     } catch (error) {
-      console.error('❌ PLAYER - Question 1 Chapitre 1 - Erreur de lecture audio:', error);
-      setPlaybackError('Impossible de lire l\'audio');
+      console.error("🎵 VOICE_PLAYER - Play error:", error);
+      setHasError(true);
+      setIsPlaying(false);
+      
+      // Toast d'erreur seulement en cas d'échec réel de lecture
       toast({
         title: "Erreur de lecture",
         description: "Impossible de lire l'enregistrement audio",
         variant: "destructive",
-        duration: 500,
       });
     }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (audioElement) {
-      const newTime = parseFloat(e.target.value);
-      audioElement.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!accessibleUrl) {
-      toast({
-        title: "Erreur de téléchargement",
-        description: "URL audio non disponible",
-        variant: "destructive",
-        duration: 500,
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch(accessibleUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = `enregistrement_vocal_${new Date().toISOString().slice(0,10)}.webm`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Téléchargement réussi",
-        description: "L'enregistrement audio a été téléchargé",
-        duration: 500,
-      });
-    } catch (error) {
-      console.error("Erreur lors du téléchargement:", error);
-      toast({
-        title: "Erreur de téléchargement",
-        description: "Impossible de télécharger l'enregistrement audio",
-        variant: "destructive",
-        duration: 500,
-      });
-    }
-  };
-
-  const handleDelete = () => {
-    if (shouldLog) {
-      console.log('🗑️ PLAYER - Question 1 Chapitre 1 - Suppression audio demandée');
-    }
-    
-    if (audioElement) {
-      audioElement.pause();
-      setIsPlaying(false);
-    }
-    onDelete();
-  };
-
-  const handleRefreshUrl = () => {
-    if (shouldLog) {
-      console.log('🔄 PLAYER - Question 1 Chapitre 1 - Rafraîchissement URL demandé');
-    }
-    // Forcer la régénération de l'URL
-    setAccessibleUrl(null);
-    setUrlError(null);
-    setPlaybackError(null);
   };
 
   const formatTime = (time: number) => {
@@ -259,105 +141,60 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  if (shouldLog) {
-    console.log('🎵 PLAYER - Question 1 Chapitre 1 - État du rendu:', {
-      audioUrl,
-      accessibleUrl: !!accessibleUrl,
-      isLoadingUrl,
-      urlError,
-      playbackError,
-      hasAudioElement: !!audioElement,
-      isPlaying,
-      readOnly,
-      timestamp: new Date().toISOString()
-    });
+  if (hasError && hasUserInteracted) {
+    return (
+      <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+        <span className="text-red-600 text-sm">Erreur de lecture audio</span>
+        {!readOnly && onDelete && (
+          <Button
+            onClick={onDelete}
+            variant="ghost"
+            size="sm"
+            className="text-red-500 hover:text-red-700"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    );
   }
 
-  // Utiliser urlError pour les erreurs de chargement et playbackError pour les erreurs de lecture
-  const displayError = urlError || playbackError;
-
   return (
-    <div className="border rounded-md p-4 bg-white shadow-sm">
-      <div className="text-sm font-medium mb-3 text-gray-700">Enregistrement vocal</div>
-      
-      {isLoadingUrl ? (
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin h-6 w-6 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
-          <span className="ml-2 text-sm text-gray-600">Chargement de l'audio...</span>
+    <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="flex items-center space-x-3">
+        <Button
+          onClick={handlePlayPause}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          disabled={hasError}
+        >
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          <span className="hidden sm:inline">{isPlaying ? 'Pause' : 'Écouter'}</span>
+        </Button>
+        
+        <div className="text-sm text-gray-600">
+          {formatTime(currentTime)} / {formatTime(duration)}
         </div>
-      ) : displayError ? (
-        <div className="text-center py-4">
-          <p className="text-red-600 text-sm mb-2">{displayError}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefreshUrl}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Réessayer
-          </Button>
-        </div>
-      ) : accessibleUrl && audioElement ? (
-        <>
-          <div className="flex items-center space-x-3 mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={togglePlayPause}
-              className="flex-shrink-0"
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-            </Button>
-            
-            <div className="flex-1">
-              <input
-                type="range"
-                min="0"
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-            
-            <span className="text-xs text-gray-500 flex-shrink-0">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          </div>
-          
-          <div className="flex space-x-2">
-            {!readOnly && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleDelete}
-                className="text-red-600 hover:text-red-800 hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Supprimer
-              </Button>
-            )}
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleDownload}
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Télécharger
-            </Button>
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-4">
-          <p className="text-gray-500 text-sm">Aucun enregistrement disponible</p>
-        </div>
+      </div>
+
+      {!readOnly && onDelete && (
+        <Button
+          onClick={onDelete}
+          variant="ghost"
+          size="sm"
+          className="text-red-500 hover:text-red-700"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span className="hidden sm:inline ml-1">Supprimer</span>
+        </Button>
       )}
+
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        preload="metadata"
+      />
     </div>
   );
 };
