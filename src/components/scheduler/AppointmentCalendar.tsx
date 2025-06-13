@@ -8,7 +8,13 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useNavigate } from 'react-router-dom';
 import { Appointment } from '@/types/appointments';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, FileText, Clock, CircleDot, XCircle } from 'lucide-react';
+import { Edit, Trash2, FileText, Clock, CircleDot, XCircle, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import AuxiliaryAvatar from './AuxiliaryAvatar';
 
@@ -28,7 +34,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   // Fonction pour obtenir l'icône de statut avec fond blanc
   const getStatusIcon = (status: string) => {
-    const iconClass = "h-7 w-7 p-0.5 rounded-full bg-white shadow-sm border";
+    const iconClass = "h-5 w-5 p-0.5 rounded-full bg-white shadow-sm border";
     switch (status) {
       case 'completed':
         return <CircleDot className={`${iconClass} text-green-500 border-green-200`} />;
@@ -112,36 +118,88 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             <div className="opacity-75 truncate text-xs">{appointment.notes}</div>
           )}
         </div>
-        <div className="flex gap-1 mt-1">
+        
+        {/* Actions pour desktop */}
+        <div className="hidden md:flex gap-1 mt-1">
           <Button
             size="sm"
             variant="outline"
-            className="h-7 w-7 p-0 bg-white/90 border-white/50 hover:bg-white"
+            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
             onClick={(e) => handleEditClick(appointment, e)}
           >
-            <Edit className="h-7 w-7 text-gray-700" />
+            <Edit className="h-3 w-3 text-gray-700" />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-7 w-7 p-0 bg-white/90 border-white/50 hover:bg-white"
+            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
             onClick={(e) => handleDeleteClick(appointment, e)}
           >
-            <Trash2 className="h-7 w-7 text-gray-700" />
+            <Trash2 className="h-3 w-3 text-gray-700" />
           </Button>
           {hasReport && (
             <Button
               size="sm"
               variant="outline"
-              className="h-7 w-7 p-0 bg-green-50/90 border-green-300/50 hover:bg-green-50"
+              className="h-6 w-6 p-0 bg-green-50/90 border-green-300/50 hover:bg-green-50"
               onClick={(e) => {
                 e.stopPropagation();
                 handleReportClick(appointment);
               }}
             >
-              <FileText className="h-7 w-7 text-green-600" />
+              <FileText className="h-3 w-3 text-green-600" />
             </Button>
           )}
+        </div>
+
+        {/* Actions pour mobile - Dropdown */}
+        <div className="md:hidden mt-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-3 w-3 text-gray-700" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-white z-50">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(appointment, e);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(appointment, e);
+                }}
+                className="flex items-center gap-2 text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </DropdownMenuItem>
+              {hasReport && (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReportClick(appointment);
+                  }}
+                  className="flex items-center gap-2 text-green-600"
+                >
+                  <FileText className="h-4 w-4" />
+                  Voir le rapport
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     );
