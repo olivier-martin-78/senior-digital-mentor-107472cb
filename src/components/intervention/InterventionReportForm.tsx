@@ -62,6 +62,7 @@ const InterventionReportForm = () => {
   const [loading, setLoading] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [pendingAudioUpload, setPendingAudioUpload] = useState(false);
+  const [intervenants, setIntervenants] = useState<any[]>([]);
   const [openSections, setOpenSections] = useState({
     general: true,
     physical: true,
@@ -113,43 +114,80 @@ const InterventionReportForm = () => {
     }
   }, [reportId, appointmentId, location.state]);
 
+  useEffect(() => {
+    const loadIntervenants = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('intervenants')
+          .select('*')
+          .eq('created_by', user.id)
+          .eq('active', true)
+          .order('first_name', { ascending: true });
+
+        if (error) {
+          console.error('Erreur lors du chargement des intervenants:', error);
+          return;
+        }
+
+        setIntervenants(data || []);
+      } catch (error) {
+        console.error('Erreur lors du chargement des intervenants:', error);
+      }
+    };
+
+    loadIntervenants();
+  }, [user]);
+
   const loadReportData = async (reportId: string) => {
     setLoading(true);
     try {
+      console.log('🔍 FORM - Chargement rapport avec ID:', reportId);
+      
       const { data, error } = await supabase
         .from('intervention_reports')
         .select('*')
         .eq('id', reportId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔍 FORM - Erreur chargement rapport:', error);
+        throw error;
+      }
 
-      setReportData({
-        auxiliary_name: data.auxiliary_name || '',
-        date: data.date || new Date().toISOString().split('T')[0],
-        start_time: data.start_time || '09:00',
-        end_time: data.end_time || '11:00',
-        patient_name: data.patient_name || '',
-        physical_state: data.physical_state || [],
-        physical_state_other: data.physical_state_other || '',
-        pain_location: data.pain_location || '',
-        mental_state: data.mental_state || [],
-        mental_state_change: data.mental_state_change || '',
-        appetite: data.appetite || '',
-        hydration: data.hydration || '',
-        appetite_comments: data.appetite_comments || '',
-        hygiene: data.hygiene || [],
-        hygiene_comments: data.hygiene_comments || '',
-        activities: data.activities || [],
-        activities_other: data.activities_other || '',
-        observations: data.observations || '',
-        follow_up: data.follow_up || [],
-        follow_up_other: data.follow_up_other || '',
-        audio_url: data.audio_url || '',
-        hourly_rate: data.hourly_rate || 0
-      });
+      if (data) {
+        console.log('🔍 FORM - Données rapport chargées:', data);
+        
+        setReportData({
+          auxiliary_name: data.auxiliary_name || '',
+          date: data.date || new Date().toISOString().split('T')[0],
+          start_time: data.start_time || '09:00',
+          end_time: data.end_time || '11:00',
+          patient_name: data.patient_name || '',
+          physical_state: data.physical_state || [],
+          physical_state_other: data.physical_state_other || '',
+          pain_location: data.pain_location || '',
+          mental_state: data.mental_state || [],
+          mental_state_change: data.mental_state_change || '',
+          appetite: data.appetite || '',
+          hydration: data.hydration || '',
+          appetite_comments: data.appetite_comments || '',
+          hygiene: data.hygiene || [],
+          hygiene_comments: data.hygiene_comments || '',
+          activities: data.activities || [],
+          activities_other: data.activities_other || '',
+          observations: data.observations || '',
+          follow_up: data.follow_up || [],
+          follow_up_other: data.follow_up_other || '',
+          audio_url: data.audio_url || '',
+          hourly_rate: data.hourly_rate || 0
+        });
+      } else {
+        console.log('🔍 FORM - Aucune donnée trouvée pour le rapport');
+      }
     } catch (error) {
-      console.error('Erreur lors du chargement du rapport:', error);
+      console.error('🔍 FORM - Erreur lors du chargement du rapport:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger le rapport',
@@ -367,6 +405,19 @@ const InterventionReportForm = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p>Chargement du rapport...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
@@ -396,14 +447,23 @@ const InterventionReportForm = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="auxiliary_name">Nom de l'intervenant</Label>
-                    <Input
+                    <Label htmlFor="auxiliary_name">Intervenant</Label>
+                    <select
                       id="auxiliary_name"
                       name="auxiliary_name"
                       value={reportData.auxiliary_name}
-                      onChange={handleInputChange}
+                      onChange={(e) => setReportData(prev => ({ ...prev, auxiliary_name: e.target.value }))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       required
-                    />
+                    >
+                      <option value="">Sélectionner un intervenant</option>
+                      {intervenants.map((intervenant) => (
+                        <option key={intervenant.id} value={`${intervenant.first_name} ${intervenant.last_name}`}>
+                          {intervenant.first_name} {intervenant.last_name}
+                          {intervenant.speciality && ` - ${intervenant.speciality}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

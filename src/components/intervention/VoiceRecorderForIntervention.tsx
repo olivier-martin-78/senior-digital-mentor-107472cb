@@ -6,6 +6,7 @@ import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { toast } from '@/hooks/use-toast';
 import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceRecorderForInterventionProps {
   onAudioChange: (audioBlob: Blob | null) => void;
@@ -31,6 +32,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   const [hasNotifiedParent, setHasNotifiedParent] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = React.useState<string | null>(null);
+  const [existingAudioUrl, setExistingAudioUrl] = React.useState<string | null>(null);
   
   console.log("🎙️ VOICE_RECORDER_INTERVENTION - État:", { 
     isRecording, 
@@ -41,8 +43,43 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     recordingTime,
     reportId,
     isUploading,
-    uploadedAudioUrl
+    uploadedAudioUrl,
+    existingAudioUrl
   });
+
+  // Charger l'audio existant si un reportId est fourni
+  useEffect(() => {
+    if (reportId && !existingAudioUrl && !audioUrl && !isRecording) {
+      console.log("🎙️ VOICE_RECORDER_INTERVENTION - Chargement audio existant pour reportId:", reportId);
+      
+      const loadExistingAudio = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('intervention_reports')
+            .select('audio_url')
+            .eq('id', reportId)
+            .single();
+
+          if (error) {
+            console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur chargement audio:", error);
+            return;
+          }
+
+          if (data?.audio_url && data.audio_url.trim() !== '') {
+            console.log("🎙️ VOICE_RECORDER_INTERVENTION - Audio existant trouvé:", data.audio_url);
+            setExistingAudioUrl(data.audio_url);
+            setUploadedAudioUrl(data.audio_url);
+          } else {
+            console.log("🎙️ VOICE_RECORDER_INTERVENTION - Aucun audio existant trouvé");
+          }
+        } catch (error) {
+          console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur lors du chargement:", error);
+        }
+      };
+
+      loadExistingAudio();
+    }
+  }, [reportId, existingAudioUrl, audioUrl, isRecording]);
   
   // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
@@ -67,6 +104,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
         (publicUrl: string) => {
           console.log("🎙️ VOICE_RECORDER_INTERVENTION - Upload réussi:", publicUrl);
           setUploadedAudioUrl(publicUrl);
+          setExistingAudioUrl(publicUrl);
           toast({
             title: "Upload réussi",
             description: "L'enregistrement audio a été sauvegardé",
@@ -97,8 +135,8 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     e.preventDefault();
     e.stopPropagation();
     
-    const urlToExport = uploadedAudioUrl || audioUrl;
-    if (audioBlob && urlToExport) {
+    const urlToExport = uploadedAudioUrl || existingAudioUrl || audioUrl;
+    if (urlToExport) {
       try {
         const downloadLink = document.createElement('a');
         downloadLink.href = urlToExport;
@@ -123,19 +161,38 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
   };
   
   // Gérer la suppression de l'audio (action explicite de l'utilisateur)
-  const handleClearRecording = (e: React.MouseEvent) => {
+  const handleClearRecording = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
     console.log("🎙️ VOICE_RECORDER_INTERVENTION - Suppression explicite de l'enregistrement par l'utilisateur");
+    
+    // Supprimer de la base de données si un reportId existe
+    if (reportId) {
+      try {
+        const { error } = await supabase
+          .from('intervention_reports')
+          .update({ audio_url: null })
+          .eq('id', reportId);
+
+        if (error) {
+          console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur suppression DB:", error);
+        } else {
+          console.log("🎙️ VOICE_RECORDER_INTERVENTION - Audio supprimé de la DB");
+        }
+      } catch (error) {
+        console.error("🎙️ VOICE_RECORDER_INTERVENTION - Erreur lors de la suppression:", error);
+      }
+    }
+    
     clearRecording();
     setAudioLoaded(false);
     setHasNotifiedParent(false);
     setUploadedAudioUrl(null);
+    setExistingAudioUrl(null);
     onAudioChange(null);
   };
 
-  // CORRECTION: Ajout des handlers avec preventDefault pour empêcher la soumission du formulaire
   const handleStartRecording = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -143,6 +200,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     console.log("🎙️ VOICE_RECORDER_INTERVENTION - Démarrage enregistrement");
     setHasNotifiedParent(false);
     setUploadedAudioUrl(null);
+    setExistingAudioUrl(null);
     startRecording();
   };
 
@@ -201,8 +259,8 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
     });
   };
 
-  // Utiliser l'URL uploadée si disponible, sinon l'URL locale
-  const currentAudioUrl = uploadedAudioUrl || audioUrl;
+  // Utiliser l'URL uploadée, l'URL existante ou l'URL locale dans l'ordre de priorité
+  const currentAudioUrl = uploadedAudioUrl || existingAudioUrl || audioUrl;
   
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
@@ -228,7 +286,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
         ) : (
           <>
             <span className="text-gray-500">
-              {isUploading ? "Upload en cours..." : "Prêt à enregistrer"}
+              {isUploading ? "Upload en cours..." : currentAudioUrl ? "Enregistrement disponible" : "Prêt à enregistrer"}
             </span>
             <Button 
               type="button"
@@ -237,7 +295,7 @@ export const VoiceRecorderForIntervention: React.FC<VoiceRecorderForIntervention
               onClick={handleStartRecording}
               disabled={isRecording || isUploading}
             >
-              <Mic className="w-4 h-4 mr-1" /> Enregistrer
+              <Mic className="w-4 h-4 mr-1" /> {currentAudioUrl ? "Nouvel enregistrement" : "Enregistrer"}
             </Button>
           </>
         )}
