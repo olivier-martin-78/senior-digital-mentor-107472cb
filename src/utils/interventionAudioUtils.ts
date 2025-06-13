@@ -22,11 +22,12 @@ export const uploadInterventionAudio = async (
     // Générer un nom de fichier unique
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `intervention-audio-${reportId}-${timestamp}.webm`;
+    // CORRECTION: Utiliser le chemin cohérent avec la base de données
     const filePath = `interventions/${userId}/${fileName}`;
 
     console.log("🔧 AUDIO_UTILS - Upload path:", filePath);
 
-    // Upload vers Supabase Storage - CORRECTION: bucket "intervention-audios" avec un "s"
+    // Upload vers Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('intervention-audios')
       .upload(filePath, audioBlob, {

@@ -54,11 +54,11 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           setIsUploading(true);
           try {
             const fileName = `intervention_${reportId}_${Date.now()}.webm`;
-            const filePath = `intervention-audio/${user.id}/${fileName}`;
+            // CORRECTION: Utiliser le même chemin que dans la base de données
+            const filePath = `interventions/${user.id}/${fileName}`;
             
             console.log("🎯 VOICE_RECORDER - Uploading to:", filePath);
             
-            // CORRECTION: Utiliser le bon nom de bucket avec "s"
             const { data, error } = await supabase.storage
               .from('intervention-audios')
               .upload(filePath, blob, {
@@ -129,6 +129,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   // Mettre à jour l'URL locale quand l'URL existante change
   useEffect(() => {
     if (existingAudioUrl && existingAudioUrl !== localAudioUrl) {
+      console.log("🎯 VOICE_RECORDER - Setting existing audio URL:", existingAudioUrl);
       setLocalAudioUrl(existingAudioUrl);
     }
   }, [existingAudioUrl, localAudioUrl]);
@@ -175,7 +176,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         if (localAudioUrl.includes('intervention-audios')) {
           const urlParts = localAudioUrl.split('/');
           const fileName = urlParts[urlParts.length - 1];
-          const filePath = `intervention-audio/${user.id}/${fileName}`;
+          // CORRECTION: Utiliser le même chemin que pour l'upload
+          const filePath = `interventions/${user.id}/${fileName}`;
           
           const { error: deleteError } = await supabase.storage
             .from('intervention-audios')
@@ -216,14 +218,18 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         // Gestion d'erreur améliorée pour iPhone
         console.error("🎯 VOICE_RECORDER - Play error:", error);
         
-        // Ne pas afficher de toast d'erreur sur iPhone si l'audio fonctionne réellement
-        // iPhone génère parfois des erreurs même quand l'audio fonctionne
-        if (hasUserInteracted) {
-          toast({
-            title: "Erreur de lecture",
-            description: "Impossible de lire l'enregistrement audio",
-            variant: "destructive",
-          });
+        // Ne pas afficher de toast d'erreur sur iPhone sauf en cas d'erreur critique
+        if (hasUserInteracted && audioRef.current?.error) {
+          const audioError = audioRef.current.error;
+          if (audioError.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+              audioError.code === MediaError.MEDIA_ERR_NETWORK ||
+              audioError.code === MediaError.MEDIA_ERR_DECODE) {
+            toast({
+              title: "Erreur de lecture",
+              description: "Impossible de lire l'enregistrement audio",
+              variant: "destructive",
+            });
+          }
         }
       });
       setIsPlaying(true);
@@ -322,23 +328,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onError={(e) => {
-            // Gestion d'erreur améliorée pour iPhone
-            console.log("🎯 VOICE_RECORDER - Audio error event:", e);
-            
-            // Ne pas afficher d'erreur automatiquement sur iPhone
-            // Car il génère parfois des erreurs même quand l'audio fonctionne
-            if (hasUserInteracted) {
-              const audio = audioRef.current;
-              if (audio?.error) {
-                const error = audio.error;
-                // Seulement pour les erreurs critiques
-                if (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
-                    error.code === MediaError.MEDIA_ERR_NETWORK ||
-                    error.code === MediaError.MEDIA_ERR_DECODE) {
-                  console.error("🎯 VOICE_RECORDER - Critical audio error:", error);
-                }
-              }
-            }
+            // Gestion d'erreur améliorée pour iPhone - ne pas afficher de toast
+            console.log("🎯 VOICE_RECORDER - Audio error event (silent):", e);
           }}
           className="hidden"
         />
