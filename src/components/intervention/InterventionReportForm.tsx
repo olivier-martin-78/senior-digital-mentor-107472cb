@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +22,9 @@ const InterventionReportForm = () => {
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
   const reportId = searchParams.get('reportId');
+
+  console.log('🔍 FORM - appointmentId récupéré depuis searchParams:', appointmentId);
+  console.log('🔍 FORM - reportId récupéré depuis searchParams:', reportId);
 
   const [reportData, setReportData] = useState({
     auxiliary_name: '',
@@ -227,9 +229,12 @@ const InterventionReportForm = () => {
       const data = {
         ...reportData,
         professional_id: user.id,
-        // S'assurer que appointment_id est null si pas défini plutôt qu'une chaîne vide
+        // Correction: S'assurer que appointment_id est correctement assigné
         appointment_id: appointmentId || null,
       };
+
+      console.log('🔍 FORM - appointmentId utilisé pour la sauvegarde:', appointmentId);
+      console.log('🔍 FORM - Données à insérer avec appointment_id:', data);
 
       let savedReportId = reportId;
 
@@ -263,6 +268,21 @@ const InterventionReportForm = () => {
 
         savedReportId = insertedData.id;
         console.log('Rapport créé avec ID:', savedReportId);
+
+        // Mettre à jour le rendez-vous avec l'ID du rapport d'intervention
+        if (appointmentId && savedReportId) {
+          console.log('🔗 FORM - Liaison appointment-report:', { appointmentId, reportId: savedReportId });
+          const { error: updateError } = await supabase
+            .from('appointments')
+            .update({ intervention_report_id: savedReportId })
+            .eq('id', appointmentId);
+
+          if (updateError) {
+            console.error('Erreur lors de la mise à jour du rendez-vous:', updateError);
+          } else {
+            console.log('✅ FORM - Rendez-vous mis à jour avec intervention_report_id');
+          }
+        }
 
         toast({
           title: 'Succès',
