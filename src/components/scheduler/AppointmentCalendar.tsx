@@ -1,4 +1,3 @@
-
 import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -17,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import AuxiliaryAvatar from './AuxiliaryAvatar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AppointmentCalendarProps {
   appointments: Appointment[];
@@ -31,6 +31,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isMobileViewport } = useIsMobile();
 
   // Fonction pour obtenir l'icône de statut avec fond blanc
   const getStatusIcon = (status: string) => {
@@ -89,6 +90,42 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     if (appointment) {
       onAppointmentEdit(appointment);
     }
+  };
+
+  // Configuration responsive pour la toolbar
+  const getHeaderToolbar = () => {
+    if (isMobileViewport) {
+      return {
+        left: 'prev,next',
+        center: 'title',
+        right: 'today,timeGridDay,timeGridWeek'
+      };
+    }
+    return {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+    };
+  };
+
+  // Configuration responsive pour les textes des boutons
+  const getButtonText = () => {
+    if (isMobileViewport) {
+      return {
+        today: "Auj.",
+        month: 'M',
+        week: 'S',
+        day: 'J',
+        list: 'L'
+      };
+    }
+    return {
+      today: "Aujourd'hui",
+      month: 'Mois',
+      week: 'Semaine',
+      day: 'Jour',
+      list: 'Agenda'
+    };
   };
 
   // Rendu personnalisé pour le contenu des événements
@@ -210,11 +247,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
         initialView="timeGridWeek"
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-        }}
+        headerToolbar={getHeaderToolbar()}
         events={events}
         eventClick={handleEventClick}
         eventContent={renderEventContent}
@@ -229,13 +262,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         editable={false}
         selectable={false}
         dayMaxEvents={true}
-        buttonText={{
-          today: "Aujourd'hui",
-          month: 'Mois',
-          week: 'Semaine',
-          day: 'Jour',
-          list: 'Agenda'
-        }}
+        buttonText={getButtonText()}
         noEventsText="Aucun rendez-vous"
         eventTimeFormat={{
           hour: '2-digit',
