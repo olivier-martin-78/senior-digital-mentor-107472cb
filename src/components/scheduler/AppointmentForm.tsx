@@ -248,6 +248,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleCreateIntervention = () => {
     if (!appointment) return;
 
+    // Vérifier qu'un intervenant est sélectionné
+    if (!appointment.intervenant_id) {
+      toast({
+        title: 'Intervenant requis',
+        description: 'Veuillez d\'abord sélectionner un intervenant pour ce rendez-vous avant de créer le rapport d\'intervention.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Préparer les données pour le préremplissage
     const selectedClient = clients.find(c => c.id === appointment.client_id);
     const selectedIntervenant = appointment.intervenant_id 
