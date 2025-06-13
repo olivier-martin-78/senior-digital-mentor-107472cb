@@ -20,13 +20,18 @@ const InterventionReportForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const appointmentId = searchParams.get('appointmentId');
+  
+  // Prioriser location.state.appointmentId puis searchParams
+  const appointmentIdFromState = location.state?.appointmentId;
+  const appointmentIdFromParams = searchParams.get('appointmentId');
+  const appointmentId = appointmentIdFromState || appointmentIdFromParams;
   const reportId = searchParams.get('reportId');
 
   console.log('🔍 FORM - URL searchParams bruts:', Object.fromEntries(searchParams));
-  console.log('🔍 FORM - appointmentId récupéré depuis searchParams:', appointmentId);
+  console.log('🔍 FORM - appointmentIdFromState:', appointmentIdFromState);
+  console.log('🔍 FORM - appointmentIdFromParams:', appointmentIdFromParams);
+  console.log('🔍 FORM - appointmentId final utilisé:', appointmentId);
   console.log('🔍 FORM - reportId récupéré depuis searchParams:', reportId);
-  console.log('🔍 FORM - Type de appointmentId:', typeof appointmentId);
   console.log('🔍 FORM - location.state:', location.state);
 
   const [reportData, setReportData] = useState({

@@ -116,30 +116,30 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
+            className="h-7 w-7 p-0 bg-white/90 border-white/50 hover:bg-white"
             onClick={(e) => handleEditClick(appointment, e)}
           >
-            <Edit className="h-6 w-6 text-gray-700" />
+            <Edit className="h-7 w-7 text-gray-700" />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
+            className="h-7 w-7 p-0 bg-white/90 border-white/50 hover:bg-white"
             onClick={(e) => handleDeleteClick(appointment, e)}
           >
-            <Trash2 className="h-6 w-6 text-gray-700" />
+            <Trash2 className="h-7 w-7 text-gray-700" />
           </Button>
           {hasReport && (
             <Button
               size="sm"
               variant="outline"
-              className="h-6 w-6 p-0 bg-green-50/90 border-green-300/50 hover:bg-green-50"
+              className="h-7 w-7 p-0 bg-green-50/90 border-green-300/50 hover:bg-green-50"
               onClick={(e) => {
                 e.stopPropagation();
                 handleReportClick(appointment);
               }}
             >
-              <FileText className="h-6 w-6 text-green-600" />
+              <FileText className="h-7 w-7 text-green-600" />
             </Button>
           )}
         </div>
