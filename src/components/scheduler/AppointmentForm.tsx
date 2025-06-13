@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -245,11 +244,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
-  const handleCreateIntervention = () => {
+  const handleCreateIntervention = async () => {
     if (!appointment) return;
 
-    // Vérifier qu'un intervenant est sélectionné
-    if (!appointment.intervenant_id) {
+    // Vérifier qu'un intervenant est sélectionné dans le formulaire
+    if (!formData.intervenant_id) {
       toast({
         title: 'Intervenant requis',
         description: 'Veuillez d\'abord sélectionner un intervenant pour ce rendez-vous avant de créer le rapport d\'intervention.',
@@ -258,29 +257,64 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       return;
     }
 
-    // Préparer les données pour le préremplissage
-    const selectedClient = clients.find(c => c.id === appointment.client_id);
-    const selectedIntervenant = appointment.intervenant_id 
-      ? intervenants.find(i => i.id === appointment.intervenant_id)
-      : null;
+    // Sauvegarder d'abord le rendez-vous avec l'intervenant sélectionné
+    try {
+      setLoading(true);
+      
+      const appointmentData = {
+        client_id: formData.client_id,
+        professional_id: user?.id,
+        intervenant_id: formData.intervenant_id,
+        start_time: new Date(formData.start_time).toISOString(),
+        end_time: new Date(formData.end_time).toISOString(),
+        notes: formData.notes,
+        status: formData.status,
+        is_recurring: formData.is_recurring,
+        recurrence_type: formData.is_recurring ? 'weekly' as const : null,
+        recurrence_end_date: formData.is_recurring ? formData.recurrence_end_date : null,
+        email_sent: false
+      };
 
-    navigate('/intervention-report', {
-      state: {
-        appointmentId: appointment.id,
-        isViewMode: false,
-        prefilledData: {
-          patient_name: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : '',
-          auxiliary_name: selectedIntervenant 
-            ? `${selectedIntervenant.first_name} ${selectedIntervenant.last_name}`
-            : user?.email?.split('@')[0] || '',
-          date: format(new Date(appointment.start_time), 'yyyy-MM-dd'),
-          start_time: format(new Date(appointment.start_time), 'HH:mm'),
-          end_time: format(new Date(appointment.end_time), 'HH:mm'),
-          hourly_rate: selectedClient?.hourly_rate || 0,
-          observations: appointment.notes || ''
+      const { error } = await supabase
+        .from('appointments')
+        .update(appointmentData)
+        .eq('id', appointment.id);
+
+      if (error) throw error;
+
+      // Préparer les données pour le préremplissage
+      const selectedClient = clients.find(c => c.id === formData.client_id);
+      const selectedIntervenant = formData.intervenant_id 
+        ? intervenants.find(i => i.id === formData.intervenant_id)
+        : null;
+
+      navigate('/intervention-report', {
+        state: {
+          appointmentId: appointment.id,
+          isViewMode: false,
+          prefilledData: {
+            patient_name: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : '',
+            auxiliary_name: selectedIntervenant 
+              ? `${selectedIntervenant.first_name} ${selectedIntervenant.last_name}`
+              : user?.email?.split('@')[0] || '',
+            date: format(new Date(formData.start_time), 'yyyy-MM-dd'),
+            start_time: format(new Date(formData.start_time), 'HH:mm'),
+            end_time: format(new Date(formData.end_time), 'HH:mm'),
+            hourly_rate: selectedClient?.hourly_rate || 0,
+            observations: formData.notes || ''
+          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du rendez-vous:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder le rendez-vous',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const activeIntervenants = intervenants.filter(intervenant => intervenant.active);
@@ -416,6 +450,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   variant="outline"
                   onClick={handleCreateIntervention}
                   className="flex items-center gap-2"
+                  disabled={loading}
                 >
                   <FileText className="w-4 h-4" />
                   Créer l'intervention
