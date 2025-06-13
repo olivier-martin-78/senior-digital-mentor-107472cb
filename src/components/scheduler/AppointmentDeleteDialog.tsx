@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Appointment } from '@/types/appointments';
 
 interface AppointmentDeleteDialogProps {
@@ -60,24 +61,21 @@ const AppointmentDeleteDialog: React.FC<AppointmentDeleteDialogProps> = ({
           <AlertDialogCancel>Annuler</AlertDialogCancel>
           {hasReport ? (
             <>
-              <AlertDialogAction
+              <Button
                 variant="outline"
                 onClick={() => handleConfirm(false)}
               >
                 Supprimer uniquement le rendez-vous
-              </AlertDialogAction>
-              <AlertDialogAction
+              </Button>
+              <Button
                 variant="destructive"
                 onClick={() => handleConfirm(true)}
               >
                 Supprimer rendez-vous et rapport
-              </AlertDialogAction>
+              </Button>
             </>
           ) : (
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => handleConfirm(false)}
-            >
+            <AlertDialogAction onClick={() => handleConfirm(false)}>
               Supprimer
             </AlertDialogAction>
           )}

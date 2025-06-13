@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ const ProfessionalScheduler = () => {
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'intervenants'>('calendar');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedIntervenantId, setSelectedIntervenantId] = useState<string | null>(null);
+  const [currentIntervenantId, setCurrentIntervenantId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasRole('admin') && !hasRole('professionnel')) {
@@ -60,7 +62,24 @@ const ProfessionalScheduler = () => {
     
     try {
       setLoading(true);
-      await Promise.all([loadAppointments(), loadClients(), loadIntervenants()]);
+      
+      // Déterminer si l'utilisateur connecté est un intervenant
+      const { data: intervenantData } = await supabase
+        .from('intervenants')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (intervenantData) {
+        setCurrentIntervenantId(intervenantData.id);
+        console.log('🔍 SCHEDULER - Utilisateur est un intervenant:', intervenantData.id);
+      }
+
+      await Promise.all([
+        loadAppointments(intervenantData?.id || null), 
+        loadClients(), 
+        loadIntervenants()
+      ]);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       toast({
@@ -73,14 +92,13 @@ const ProfessionalScheduler = () => {
     }
   };
 
-  const loadAppointments = async () => {
+  const loadAppointments = async (intervenantId: string | null = null) => {
     if (!user) return;
 
     console.log('🔍 SCHEDULER - Chargement des rendez-vous pour l\'utilisateur:', user.id);
+    console.log('🔍 SCHEDULER - IntervenantId:', intervenantId);
 
-    // Charger les rendez-vous créés par l'utilisateur connecté ET 
-    // les rapports d'intervention créés/modifiés par cet utilisateur
-    const { data: appointmentsData, error: appointmentsError } = await supabase
+    let appointmentsQuery = supabase
       .from('appointments')
       .select(`
         *,
@@ -109,8 +127,17 @@ const ProfessionalScheduler = () => {
           updated_at,
           created_by
         )
-      `)
-      .eq('professional_id', user.id)
+      `);
+
+    // Si l'utilisateur connecté est un intervenant, filtrer par intervenant_id
+    if (intervenantId) {
+      appointmentsQuery = appointmentsQuery.eq('intervenant_id', intervenantId);
+    } else {
+      // Sinon, filtrer par professional_id (comportement actuel pour les professionnels)
+      appointmentsQuery = appointmentsQuery.eq('professional_id', user.id);
+    }
+
+    const { data: appointmentsData, error: appointmentsError } = await appointmentsQuery
       .order('start_time', { ascending: true });
 
     if (appointmentsError) {
@@ -120,59 +147,59 @@ const ProfessionalScheduler = () => {
 
     console.log('🔍 SCHEDULER - Rendez-vous chargés:', appointmentsData?.length || 0);
 
-    // Charger aussi les rendez-vous qui ont des rapports d'intervention créés par l'utilisateur
-    const { data: reportsData, error: reportsError } = await supabase
-      .from('intervention_reports')
-      .select(`
-        appointment_id,
-        appointments:appointment_id (
-          *,
-          clients:client_id (
-            id,
-            first_name,
-            last_name,
-            address,
-            phone,
-            email,
-            color,
-            hourly_rate,
-            created_at,
-            updated_at,
-            created_by
-          ),
-          intervenants:intervenant_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            speciality,
-            active,
-            created_at,
-            updated_at,
-            created_by
-          )
-        )
-      `)
-      .eq('professional_id', user.id)
-      .not('appointment_id', 'is', null);
-
-    if (reportsError) {
-      console.error('🔍 SCHEDULER - Erreur lors du chargement des rapports:', reportsError);
-      // Ne pas échouer si les rapports ne se chargent pas
-    }
-
-    console.log('🔍 SCHEDULER - Rapports avec rendez-vous chargés:', reportsData?.length || 0);
-
-    // Combiner les rendez-vous et éliminer les doublons
-    const allAppointments = [...(appointmentsData || [])];
+    // Si l'utilisateur n'est pas un intervenant, charger aussi les rendez-vous avec des rapports créés par lui
+    let allAppointments = [...(appointmentsData || [])];
     
-    if (reportsData) {
-      reportsData.forEach(report => {
-        if (report.appointments && !allAppointments.find(apt => apt.id === report.appointments.id)) {
-          allAppointments.push(report.appointments);
-        }
-      });
+    if (!intervenantId) {
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('intervention_reports')
+        .select(`
+          appointment_id,
+          appointments:appointment_id (
+            *,
+            clients:client_id (
+              id,
+              first_name,
+              last_name,
+              address,
+              phone,
+              email,
+              color,
+              hourly_rate,
+              created_at,
+              updated_at,
+              created_by
+            ),
+            intervenants:intervenant_id (
+              id,
+              first_name,
+              last_name,
+              email,
+              phone,
+              speciality,
+              active,
+              created_at,
+              updated_at,
+              created_by
+            )
+          )
+        `)
+        .eq('professional_id', user.id)
+        .not('appointment_id', 'is', null);
+
+      if (reportsError) {
+        console.error('🔍 SCHEDULER - Erreur lors du chargement des rapports:', reportsError);
+      }
+
+      console.log('🔍 SCHEDULER - Rapports avec rendez-vous chargés:', reportsData?.length || 0);
+
+      if (reportsData) {
+        reportsData.forEach(report => {
+          if (report.appointments && !allAppointments.find(apt => apt.id === report.appointments.id)) {
+            allAppointments.push(report.appointments);
+          }
+        });
+      }
     }
 
     // Transformer les données pour correspondre au type Appointment
@@ -230,7 +257,7 @@ const ProfessionalScheduler = () => {
   };
 
   const handleAppointmentSave = () => {
-    loadAppointments();
+    loadAppointments(currentIntervenantId);
     setShowAppointmentForm(false);
     setSelectedAppointment(null);
   };
@@ -292,7 +319,7 @@ const ProfessionalScheduler = () => {
         setSelectedAppointment(null);
       }
 
-      loadAppointments();
+      loadAppointments(currentIntervenantId);
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({
@@ -302,6 +329,9 @@ const ProfessionalScheduler = () => {
       });
     }
   };
+
+  // Si l'utilisateur connecté est un intervenant, masquer certains onglets et actions
+  const isIntervenant = !!currentIntervenantId;
 
   if (loading) {
     return (
@@ -321,44 +351,51 @@ const ProfessionalScheduler = () => {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Planificateur Professionnel</h1>
+          <h1 className="text-3xl font-serif text-tranches-charcoal">
+            {isIntervenant ? 'Mes Rendez-vous' : 'Planificateur Professionnel'}
+          </h1>
           
-          {/* Actions pour desktop */}
-          <div className="hidden md:flex gap-3">
-            <AppointmentExporter professionalId={user?.id || ''} />
-            <InvoiceGenerator professionalId={user?.id || ''} />
-            <Button 
-              onClick={() => navigate('/intervention-report')}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Nouvelle intervention
-            </Button>
-            <Button 
-              onClick={() => setShowAppointmentForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Nouveau rendez-vous
-            </Button>
-          </div>
+          {/* Actions pour desktop - masquées pour les intervenants */}
+          {!isIntervenant && (
+            <div className="hidden md:flex gap-3">
+              <AppointmentExporter professionalId={user?.id || ''} />
+              <InvoiceGenerator professionalId={user?.id || ''} />
+              <Button 
+                onClick={() => navigate('/intervention-report')}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Nouvelle intervention
+              </Button>
+              <Button 
+                onClick={() => setShowAppointmentForm(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Nouveau rendez-vous
+              </Button>
+            </div>
+          )}
 
-          {/* Actions pour mobile */}
-          <div className="flex md:hidden gap-2 w-full sm:w-auto">
-            <ActionMenu professionalId={user?.id || ''} />
-            <Button 
-              onClick={() => setShowAppointmentForm(true)}
-              className="flex items-center gap-2 flex-1 sm:flex-none"
-              size="sm"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nouveau rendez-vous</span>
-              <span className="sm:hidden">Nouveau RDV</span>
-            </Button>
-          </div>
+          {/* Actions pour mobile - masquées pour les intervenants */}
+          {!isIntervenant && (
+            <div className="flex md:hidden gap-2 w-full sm:w-auto">
+              <ActionMenu professionalId={user?.id || ''} />
+              <Button 
+                onClick={() => setShowAppointmentForm(true)}
+                className="flex items-center gap-2 flex-1 sm:flex-none"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nouveau rendez-vous</span>
+                <span className="sm:hidden">Nouveau RDV</span>
+              </Button>
+            </div>
+          )}
         </div>
 
+        {/* Onglets - simplifiés pour les intervenants */}
         <div className="flex gap-4 mb-6">
           <Button
             variant={activeTab === 'calendar' ? 'default' : 'outline'}
@@ -366,41 +403,47 @@ const ProfessionalScheduler = () => {
             className="flex items-center gap-2"
           >
             <Calendar className="h-4 w-4" />
-            Calendrier
+            {isIntervenant ? 'Mes Rendez-vous' : 'Calendrier'}
           </Button>
-          <Button
-            variant={activeTab === 'clients' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('clients')}
-            className="flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Clients
-          </Button>
-          <Button
-            variant={activeTab === 'intervenants' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('intervenants')}
-            className="flex items-center gap-2"
-          >
-            <UserCheck className="h-4 w-4" />
-            Intervenants
-          </Button>
+          {!isIntervenant && (
+            <>
+              <Button
+                variant={activeTab === 'clients' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('clients')}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Clients
+              </Button>
+              <Button
+                variant={activeTab === 'intervenants' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('intervenants')}
+                className="flex items-center gap-2"
+              >
+                <UserCheck className="h-4 w-4" />
+                Intervenants
+              </Button>
+            </>
+          )}
         </div>
 
         {activeTab === 'calendar' && (
           <>
-            <SchedulerFilters
-              clients={clients}
-              intervenants={intervenants}
-              selectedClientId={selectedClientId}
-              selectedIntervenantId={selectedIntervenantId}
-              onClientChange={setSelectedClientId}
-              onIntervenantChange={setSelectedIntervenantId}
-            />
+            {!isIntervenant && (
+              <SchedulerFilters
+                clients={clients}
+                intervenants={intervenants}
+                selectedClientId={selectedClientId}
+                selectedIntervenantId={selectedIntervenantId}
+                onClientChange={setSelectedClientId}
+                onIntervenantChange={setSelectedIntervenantId}
+              />
+            )}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Planning des rendez-vous
+                  {isIntervenant ? 'Mes rendez-vous' : 'Planning des rendez-vous'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -414,21 +457,21 @@ const ProfessionalScheduler = () => {
           </>
         )}
 
-        {activeTab === 'clients' && (
+        {!isIntervenant && activeTab === 'clients' && (
           <ClientManager 
             clients={clients}
             onClientUpdate={loadClients}
           />
         )}
 
-        {activeTab === 'intervenants' && (
+        {!isIntervenant && activeTab === 'intervenants' && (
           <IntervenantManager 
             intervenants={intervenants}
             onIntervenantUpdate={loadIntervenants}
           />
         )}
 
-        {showAppointmentForm && (
+        {showAppointmentForm && !isIntervenant && (
           <AppointmentForm
             appointment={selectedAppointment}
             clients={clients}
