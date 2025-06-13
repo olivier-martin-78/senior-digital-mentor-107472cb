@@ -19,6 +19,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
 
+      // Récupérer tous les rendez-vous du mois (terminés, programmés et annulés)
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -37,7 +38,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
           )
         `)
         .eq('professional_id', professionalId)
-        .eq('status', 'completed')
+        .in('status', ['completed', 'scheduled', 'cancelled'])
         .gte('start_time', monthStart.toISOString())
         .lte('start_time', monthEnd.toISOString())
         .order('start_time', { ascending: true });
@@ -47,64 +48,125 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       if (!data || data.length === 0) {
         toast({
           title: 'Aucun rendez-vous',
-          description: 'Aucun rendez-vous terminé trouvé pour ce mois',
+          description: 'Aucun rendez-vous trouvé pour ce mois',
         });
         return;
       }
 
-      // Préparer les données pour Excel
-      const excelData = data.map(appointment => {
-        const client = appointment.clients;
-        const startTime = new Date(appointment.start_time);
-        const endTime = new Date(appointment.end_time);
-        
-        // Calculer le nombre d'heures
-        const durationMs = endTime.getTime() - startTime.getTime();
-        const durationHours = durationMs / (1000 * 60 * 60);
-        
-        // Prix horaire du client
-        const hourlyRate = client?.hourly_rate || 0;
-        
-        // Total en euros
-        const total = durationHours * hourlyRate;
-
-        return {
-          'Date': format(startTime, 'dd/MM/yyyy'),
-          'Heure début': format(startTime, 'HH:mm'),
-          'Heure fin': format(endTime, 'HH:mm'),
-          'Nombre d\'heures': Number(durationHours.toFixed(2)),
-          'Client': `${client?.first_name || ''} ${client?.last_name || ''}`.trim(),
-          'Adresse': client?.address || '',
-          'Téléphone': client?.phone || '',
-          'Email': client?.email || '',
-          'Prix horaire (€)': hourlyRate,
-          'Total (€)': Number(total.toFixed(2)),
-          'Notes': appointment.notes || ''
-        };
-      });
+      // Séparer les rendez-vous par statut
+      const completedAppointments = data.filter(apt => apt.status === 'completed');
+      const scheduledAppointments = data.filter(apt => apt.status === 'scheduled');
+      const cancelledAppointments = data.filter(apt => apt.status === 'cancelled');
 
       // Créer le classeur Excel
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
-      
-      // Définir la largeur des colonnes
-      const columnWidths = [
-        { wch: 12 }, // Date
-        { wch: 12 }, // Heure début
-        { wch: 12 }, // Heure fin
-        { wch: 15 }, // Nombre d'heures
-        { wch: 25 }, // Client
-        { wch: 30 }, // Adresse
-        { wch: 15 }, // Téléphone
-        { wch: 25 }, // Email
-        { wch: 15 }, // Prix horaire
-        { wch: 12 }, // Total
-        { wch: 30 }  // Notes
-      ];
-      worksheet['!cols'] = columnWidths;
 
-      // Ajouter la feuille au classeur
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'RDV Terminés');
+      // Fonction pour préparer les données d'une liste de rendez-vous
+      const prepareAppointmentData = (appointments: any[], includeFinancialData = false) => {
+        return appointments.map(appointment => {
+          const client = appointment.clients;
+          const startTime = new Date(appointment.start_time);
+          const endTime = new Date(appointment.end_time);
+          
+          const baseData = {
+            'Date': format(startTime, 'dd/MM/yyyy'),
+            'Heure début': format(startTime, 'HH:mm'),
+            'Heure fin': format(endTime, 'HH:mm'),
+            'Client': `${client?.first_name || ''} ${client?.last_name || ''}`.trim(),
+            'Adresse': client?.address || '',
+            'Téléphone': client?.phone || '',
+            'Email': client?.email || '',
+            'Notes': appointment.notes || ''
+          };
+
+          if (includeFinancialData) {
+            // Calculer le nombre d'heures
+            const durationMs = endTime.getTime() - startTime.getTime();
+            const durationHours = durationMs / (1000 * 60 * 60);
+            
+            // Prix horaire du client
+            const hourlyRate = client?.hourly_rate || 0;
+            
+            // Total en euros
+            const total = durationHours * hourlyRate;
+
+            return {
+              ...baseData,
+              'Nombre d\'heures': Number(durationHours.toFixed(2)),
+              'Prix horaire (€)': hourlyRate,
+              'Total (€)': Number(total.toFixed(2))
+            };
+          }
+
+          return baseData;
+        });
+      };
+
+      // 1. Feuille des rendez-vous terminés (avec données financières)
+      if (completedAppointments.length > 0) {
+        const completedData = prepareAppointmentData(completedAppointments, true);
+        const completedWorksheet = XLSX.utils.json_to_sheet(completedData);
+        
+        // Définir la largeur des colonnes pour les RDV terminés
+        const completedColumnWidths = [
+          { wch: 12 }, // Date
+          { wch: 12 }, // Heure début
+          { wch: 12 }, // Heure fin
+          { wch: 25 }, // Client
+          { wch: 30 }, // Adresse
+          { wch: 15 }, // Téléphone
+          { wch: 25 }, // Email
+          { wch: 30 }, // Notes
+          { wch: 15 }, // Nombre d'heures
+          { wch: 15 }, // Prix horaire
+          { wch: 12 }  // Total
+        ];
+        completedWorksheet['!cols'] = completedColumnWidths;
+        
+        XLSX.utils.book_append_sheet(workbook, completedWorksheet, 'RDV Terminés');
+      }
+
+      // 2. Feuille des rendez-vous programmés
+      if (scheduledAppointments.length > 0) {
+        const scheduledData = prepareAppointmentData(scheduledAppointments, false);
+        const scheduledWorksheet = XLSX.utils.json_to_sheet(scheduledData);
+        
+        // Définir la largeur des colonnes pour les RDV programmés
+        const scheduledColumnWidths = [
+          { wch: 12 }, // Date
+          { wch: 12 }, // Heure début
+          { wch: 12 }, // Heure fin
+          { wch: 25 }, // Client
+          { wch: 30 }, // Adresse
+          { wch: 15 }, // Téléphone
+          { wch: 25 }, // Email
+          { wch: 30 }  // Notes
+        ];
+        scheduledWorksheet['!cols'] = scheduledColumnWidths;
+        
+        XLSX.utils.book_append_sheet(workbook, scheduledWorksheet, 'RDV Programmés');
+      }
+
+      // 3. Feuille des rendez-vous annulés
+      if (cancelledAppointments.length > 0) {
+        const cancelledData = prepareAppointmentData(cancelledAppointments, false);
+        const cancelledWorksheet = XLSX.utils.json_to_sheet(cancelledData);
+        
+        // Définir la largeur des colonnes pour les RDV annulés
+        const cancelledColumnWidths = [
+          { wch: 12 }, // Date
+          { wch: 12 }, // Heure début
+          { wch: 12 }, // Heure fin
+          { wch: 25 }, // Client
+          { wch: 30 }, // Adresse
+          { wch: 15 }, // Téléphone
+          { wch: 25 }, // Email
+          { wch: 30 }  // Notes
+        ];
+        cancelledWorksheet['!cols'] = cancelledColumnWidths;
+        
+        XLSX.utils.book_append_sheet(workbook, cancelledWorksheet, 'RDV Annulés');
+      }
 
       // Générer le fichier Excel avec encodage UTF-8
       const excelBuffer = XLSX.write(workbook, { 
@@ -122,7 +184,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `rendez-vous-termines-${format(currentDate, 'MM-yyyy')}.xlsx`);
+      link.setAttribute('download', `rendez-vous-${format(currentDate, 'MM-yyyy')}.xlsx`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -130,12 +192,28 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       URL.revokeObjectURL(url);
 
       // Calculer les totaux pour le message
-      const totalHours = excelData.reduce((sum, row) => sum + row['Nombre d\'heures'], 0);
-      const totalAmount = excelData.reduce((sum, row) => sum + row['Total (€)'], 0);
+      const totalHours = completedAppointments.reduce((sum, appointment) => {
+        const startTime = new Date(appointment.start_time);
+        const endTime = new Date(appointment.end_time);
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+        return sum + durationHours;
+      }, 0);
+
+      const totalAmount = completedAppointments.reduce((sum, appointment) => {
+        const client = appointment.clients;
+        const startTime = new Date(appointment.start_time);
+        const endTime = new Date(appointment.end_time);
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+        const hourlyRate = client?.hourly_rate || 0;
+        const total = durationHours * hourlyRate;
+        return sum + total;
+      }, 0);
 
       toast({
         title: 'Export réussi',
-        description: `${data.length} rendez-vous exportés (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
+        description: `${completedAppointments.length} RDV terminés, ${scheduledAppointments.length} programmés, ${cancelledAppointments.length} annulés (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
       });
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
@@ -154,7 +232,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       className="flex items-center gap-2"
     >
       <Download className="h-4 w-4" />
-      Exporter RDV terminés (Excel)
+      Exporter RDV du mois (Excel)
     </Button>
   );
 };
