@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Save, ArrowLeft, Upload, X } from 'lucide-react';
 import { Client, Appointment, Intervenant } from '@/types/appointments';
-import MediaUploader from './MediaUploader';
+import { MediaUploader } from './MediaUploader';
 import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
 
 const InterventionReportForm = () => {
@@ -353,8 +352,8 @@ const InterventionReportForm = () => {
     }));
   };
 
-  const handleAudioUpload = (url: string) => {
-    setFormData(prev => ({ ...prev, audio_url: url }));
+  const handleAudioUpload = (audioBlob: Blob | null, audioUrl: string | null) => {
+    setFormData(prev => ({ ...prev, audio_url: audioUrl || '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -718,7 +717,7 @@ const InterventionReportForm = () => {
           {/* Média */}
           <div>
             <Label>Médias</Label>
-            <MediaUploader onFilesSelected={handleMediaUpload} />
+            <MediaUploader onMediaChange={handleMediaUpload} />
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.media_files.map((file, index) => (
                 <Badge key={index} variant="secondary">
@@ -734,7 +733,7 @@ const InterventionReportForm = () => {
           {/* Enregistrement audio */}
           <div>
             <Label>Enregistrement audio</Label>
-            <SimpleInterventionAudioRecorder onAudioSaved={handleAudioUpload} />
+            <SimpleInterventionAudioRecorder onAudioChange={handleAudioUpload} />
             {formData.audio_url && (
               <audio controls src={formData.audio_url} className="mt-2">
                 Your browser does not support the audio element.
