@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (!user) return;
 
     console.log('🔍 APPOINTMENT_FORM - Chargement des données autorisées...');
+    console.log('🔍 APPOINTMENT_FORM - Props reçues - Clients:', clients.length, 'Intervenants:', intervenants.length);
     
     // 1. Charger les clients créés par l'utilisateur connecté
     let authorizedClients: Client[] = [...clients];
@@ -89,11 +91,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     console.log('🔍 APPOINTMENT_FORM - Total clients autorisés:', authorizedClients.length);
     setAllowedClients(authorizedClients);
 
-    // 4. Pour les intervenants, utiliser ceux passés en props + charger les intervenants autorisés via permissions
+    // 4. Pour les intervenants, commencer par ceux passés en props
     let authorizedIntervenants: Intervenant[] = [...intervenants];
-    console.log('🔍 APPOINTMENT_FORM - Intervenants créés par l\'utilisateur:', intervenants.length);
+    console.log('🔍 APPOINTMENT_FORM - Intervenants créés par l\'utilisateur (props):', intervenants.length);
 
-    // Charger les intervenants autorisés via les permissions
+    // 5. Charger les intervenants autorisés via les permissions
     const { data: intervenantPermissions, error: intervenantError } = await supabase
       .from('user_intervenant_permissions')
       .select(`
@@ -111,9 +113,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         }
       });
       console.log('🔍 APPOINTMENT_FORM - Intervenants via permissions:', permissionIntervenants.length);
+    } else if (intervenantError) {
+      console.error('🔍 APPOINTMENT_FORM - Erreur permissions intervenants:', intervenantError);
     }
 
-    // 5. Si un rendez-vous existe et qu'il a un intervenant assigné, l'ajouter aussi
+    // 6. Si un rendez-vous existe et qu'il a un intervenant assigné, l'ajouter aussi
     if (appointment?.intervenant_id && appointment.intervenant) {
       const existingIntervenant = authorizedIntervenants.find(i => i.id === appointment.intervenant_id);
       if (!existingIntervenant) {
@@ -123,6 +127,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
 
     console.log('🔍 APPOINTMENT_FORM - Total intervenants autorisés:', authorizedIntervenants.length);
+    console.log('🔍 APPOINTMENT_FORM - Liste des intervenants autorisés:', authorizedIntervenants.map(i => `${i.first_name} ${i.last_name} (${i.id})`));
     setAvailableIntervenants(authorizedIntervenants);
   };
 
