@@ -1,5 +1,4 @@
-
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import { Dialog, DialogContent, VisuallyHidden, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   onNavigate,
 }) => {
   const currentMedia = media[currentIndex];
+  const [videoError, setVideoError] = useState(false);
 
   // Navigation par clavier
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -64,6 +64,10 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
       onNavigate('prev');
     }
   };
+
+  useEffect(() => {
+    setVideoError(false); // Reset error when media changes
+  }, [currentIndex]);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -128,16 +132,26 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
               }}
             />
           ) : currentMedia.media_type.startsWith('video/') ? (
-            <video
-              src={currentMedia.media_url}
-              controls
-              autoPlay
-              className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
-              style={{ 
-                maxWidth: '100vw',
-                maxHeight: '100vh'
-              }}
-            />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video
+                src={currentMedia.media_url}
+                type={currentMedia.media_type}
+                controls
+                autoPlay
+                className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
+                style={{ 
+                  maxWidth: '100vw',
+                  maxHeight: '100vh'
+                }}
+                onError={() => setVideoError(true)}
+              />
+              {videoError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white z-20 p-8 rounded">
+                  <span className="font-bold mb-2">Erreur de lecture</span>
+                  <span className="text-sm">Votre navigateur ne supporte pas ce format vidéo.<br/>Essayez sur mobile ou contactez l'auteur.</span>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex items-center justify-center text-white">
               <p>Fichier non prévisualisable</p>

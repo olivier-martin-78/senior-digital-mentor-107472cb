@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
@@ -11,6 +12,7 @@ interface PostMediaProps {
 const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [videoErrors, setVideoErrors] = useState<Set<string>>(new Set());
 
   if (media.length === 0) return null;
 
@@ -54,7 +56,6 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
 
   const navigateMedia = (direction: 'next' | 'prev') => {
     if (selectedMediaIndex === null) return;
-    
     if (direction === 'next') {
       setSelectedMediaIndex((selectedMediaIndex + 1) % media.length);
     } else {
@@ -66,10 +67,15 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
     setImageErrors(prev => new Set([...prev, mediaId]));
   };
 
+  // Ajout handler erreur vidéo
+  const handleVideoError = (mediaId: string) => {
+    setVideoErrors(prev => new Set([...prev, mediaId]));
+  };
+
   const renderVideoThumbnail = (item: BlogMedia) => {
     const hasError = imageErrors.has(item.id);
-    
-    // Si nous avons une vignette et qu'elle n'a pas d'erreur, l'utiliser
+
+    // Si vignette ok
     if (item.thumbnail_url && !hasError) {
       return (
         <div className="relative">
@@ -88,17 +94,19 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
         </div>
       );
     }
-    
-    // Fallback : utiliser la vidéo avec poster ou une vignette par défaut
+
+    // Fallback vidéo
     return (
       <div className="relative bg-gray-900">
         <video
           src={item.media_url}
+          type={item.media_type}
           className="w-full aspect-square object-cover"
           muted
           playsInline
           preload="metadata"
           poster={item.thumbnail_url || undefined}
+          onError={() => handleVideoError(item.id)}
         />
         {/* Icône play au centre */}
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
@@ -112,6 +120,13 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
             📹 Vidéo
           </div>
         )}
+        {/* Message d'erreur si la vidéo échoue à charger */}
+        {videoErrors.has(item.id) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4 z-10">
+            <p className="font-semibold mb-1">Vidéo non supportée</p>
+            <p className="text-xs text-gray-200">Ce format n'est pas lisible par votre navigateur. Essayez un autre appareil ou contactez l'auteur.</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -120,7 +135,7 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
     <>
       <div className="mb-8">
         <MediaDownloader media={media} postTitle={postTitle} />
-        
+
         {mediaRows.map((row, rowIndex) => (
           <div key={rowIndex} className="flex w-full">
             {row.map((item, itemIndex) => (
