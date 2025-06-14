@@ -134,14 +134,15 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🔍 SCHEDULER - Chargement avec politiques RLS DÉFINITIVES...');
+    console.log('🔍 SCHEDULER - Chargement avec politiques RLS ULTRA-STRICTES...');
     console.log('🔍 SCHEDULER - User ID:', user.id);
     console.log('🔍 SCHEDULER - User Email:', user.email);
 
-    // AVEC LES NOUVELLES POLITIQUES DÉFINITIVES :
-    // - Si l'utilisateur est créateur (professional_id) → voit ses rendez-vous
-    // - Si l'utilisateur est intervenant avec email exact → voit uniquement ses interventions
-    // - Plus de conflit entre les deux rôles
+    // AVEC LES NOUVELLES POLITIQUES ULTRA-STRICTES :
+    // - Utilise la fonction check_intervenant_email_match() pour vérification stricte
+    // - Si l'utilisateur est créateur (professional_id) → voit ses rendez-vous créés
+    // - Si l'utilisateur est intervenant avec email EXACTEMENT identique → voit uniquement ses interventions
+    // - Aucun autre accès possible
     const { data: authorizedAppointments, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
@@ -179,7 +180,7 @@ const ProfessionalScheduler = () => {
       throw appointmentError;
     }
 
-    console.log('🔍 SCHEDULER - Rendez-vous autorisés (politiques DÉFINITIVES):', authorizedAppointments?.length || 0);
+    console.log('🔍 SCHEDULER - Rendez-vous autorisés (politiques ULTRA-STRICTES):', authorizedAppointments?.length || 0);
     
     // Transformer les données pour correspondre au type Appointment
     const transformedData = (authorizedAppointments || []).map(item => ({
