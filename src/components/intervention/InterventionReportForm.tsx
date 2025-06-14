@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,21 +70,19 @@ const InterventionReportForm = () => {
       console.log('🔍 INTERVENTION_FORM - reportId:', reportId);
       console.log('🔍 INTERVENTION_FORM - appointmentId:', appointmentId);
       
-      // Charger les clients autorisés pour cet utilisateur
-      const { data: clientPermissions, error: clientError } = await supabase
-        .from('user_client_permissions')
-        .select(`
-          client_id,
-          clients!inner(*)
-        `)
-        .eq('user_id', user.id);
+      // SIMPLIFICATION: Charger TOUS les clients créés par le professionnel
+      // Plus de système de permissions pour l'instant
+      const { data: allClients, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('created_by', user.id);
 
-      let authorizedClients: Client[] = [];
-      if (!clientError && clientPermissions) {
-        authorizedClients = clientPermissions.map(p => p.clients);
+      if (clientError) {
+        console.error('🔍 INTERVENTION_FORM - Erreur clients:', clientError);
       }
 
-      console.log('🔍 INTERVENTION_FORM - Clients autorisés:', authorizedClients.length);
+      const authorizedClients: Client[] = allClients || [];
+      console.log('🔍 INTERVENTION_FORM - Clients chargés:', authorizedClients.length);
       setClients(authorizedClients);
 
       // Charger les rendez-vous (filtrés automatiquement par les clients autorisés)
@@ -123,8 +120,8 @@ const InterventionReportForm = () => {
     const clientIds = authorizedClients.map(c => c.id);
     console.log('🔍 INTERVENTION_FORM - IDs des clients autorisés:', clientIds);
     
-    // 1. Charger les rendez-vous créés par le professionnel pour les clients autorisés
-    const { data: professionalAppointments, error: professionalError } = await supabase
+    // Charger TOUS les rendez-vous pour ces clients (sans filtrage RLS)
+    const { data: allAppointmentsData, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
         *,
@@ -135,50 +132,17 @@ const InterventionReportForm = () => {
           id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
         )
       `)
-      .eq('professional_id', user.id)
       .in('client_id', clientIds)
       .order('start_time', { ascending: false });
 
-    if (professionalError) {
-      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement des rendez-vous du professionnel:', professionalError);
+    if (appointmentError) {
+      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement des rendez-vous:', appointmentError);
+      setAppointments([]);
+      return [];
     }
 
-    let allAppointments = professionalAppointments || [];
-    console.log('🔍 INTERVENTION_FORM - Rendez-vous du professionnel:', allAppointments.length);
-
-    // 2. Charger les rendez-vous où l'utilisateur est intervenant par email (pour les clients autorisés)
-    const { data: allAppointmentsData, error: allError } = await supabase
-      .from('appointments')
-      .select(`
-        *,
-        clients:client_id (
-          id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
-        ),
-        intervenants:intervenant_id (
-          id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
-        )
-      `)
-      .not('intervenant_id', 'is', null)
-      .in('client_id', clientIds);
-
-    if (allError) {
-      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement de tous les rendez-vous:', allError);
-    }
-
-    if (!allError && allAppointmentsData) {
-      const matchingAppointments = allAppointmentsData.filter(appointment => 
-        appointment.intervenants?.email === user.email
-      );
-      
-      console.log('🔍 INTERVENTION_FORM - Rendez-vous via email intervenant:', matchingAppointments.length);
-      
-      // Ajouter sans doublons
-      matchingAppointments.forEach(appointment => {
-        if (!allAppointments.find(apt => apt.id === appointment.id)) {
-          allAppointments.push(appointment);
-        }
-      });
-    }
+    const allAppointments = allAppointmentsData || [];
+    console.log('🔍 INTERVENTION_FORM - Rendez-vous chargés:', allAppointments.length);
 
     // Transformer les données
     const transformedAppointments = allAppointments.map(item => ({
@@ -214,37 +178,19 @@ const InterventionReportForm = () => {
 
     console.log('🔍 INTERVENTION_FORM - Chargement des intervenants...');
     
-    // Charger les intervenants autorisés pour cet utilisateur
-    const { data: intervenantPermissions, error: intervenantError } = await supabase
-      .from('user_intervenant_permissions')
-      .select(`
-        intervenant_id,
-        intervenants!inner(*)
-      `)
-      .eq('user_id', user.id);
-
-    let allIntervenantsData: Intervenant[] = [];
-    if (!intervenantError && intervenantPermissions) {
-      allIntervenantsData = intervenantPermissions.map(p => p.intervenants);
-    }
-
-    // Ajouter l'utilisateur connecté s'il est un intervenant
-    const { data: currentUserIntervenant, error: currentError } = await supabase
+    // SIMPLIFICATION: Charger TOUS les intervenants créés par le professionnel
+    const { data: allIntervenantsData, error: intervenantError } = await supabase
       .from('intervenants')
       .select('*')
-      .eq('email', user.email)
-      .maybeSingle();
+      .eq('created_by', user.id);
 
-    if (!currentError && currentUserIntervenant) {
-      const existingIntervenant = allIntervenantsData.find(i => i.id === currentUserIntervenant.id);
-      if (!existingIntervenant) {
-        allIntervenantsData.push(currentUserIntervenant);
-        console.log('🔍 INTERVENTION_FORM - Utilisateur intervenant ajouté:', currentUserIntervenant);
-      }
+    if (intervenantError) {
+      console.error('🔍 INTERVENTION_FORM - Erreur intervenants:', intervenantError);
+      return;
     }
 
-    console.log('🔍 INTERVENTION_FORM - Intervenants chargés:', allIntervenantsData.length);
-    setAllIntervenants(allIntervenantsData);
+    console.log('🔍 INTERVENTION_FORM - Intervenants chargés:', allIntervenantsData?.length || 0);
+    setAllIntervenants(allIntervenantsData || []);
   };
 
   const loadExistingReport = async (appointmentsList: Appointment[]) => {
@@ -256,11 +202,10 @@ const InterventionReportForm = () => {
       .from('intervention_reports')
       .select('*')
       .eq('id', reportId)
-      .eq('professional_id', user.id)
       .single();
 
     if (error) {
-      console.error('Erreur lors du chargement du rapport:', error);
+      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement du rapport:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger le rapport',
@@ -307,9 +252,37 @@ const InterventionReportForm = () => {
         const foundAppointment = appointmentsList.find(apt => apt.id === report.appointment_id);
         if (foundAppointment) {
           console.log('🔍 INTERVENTION_FORM - Rendez-vous associé trouvé:', foundAppointment);
-          handleAppointmentChange(report.appointment_id, appointmentsList);
+          setSelectedAppointment(foundAppointment);
         } else {
           console.log('🔍 INTERVENTION_FORM - Rendez-vous associé non trouvé dans la liste');
+          // Si le rendez-vous n'est pas trouvé dans la liste, essayer de le charger directement
+          console.log('🔍 INTERVENTION_FORM - Tentative de chargement direct du rendez-vous...');
+          const { data: directAppointment, error: directError } = await supabase
+            .from('appointments')
+            .select(`
+              *,
+              clients:client_id (
+                id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
+              ),
+              intervenants:intervenant_id (
+                id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
+              )
+            `)
+            .eq('id', report.appointment_id)
+            .single();
+
+          if (!directError && directAppointment) {
+            console.log('🔍 INTERVENTION_FORM - Rendez-vous chargé directement:', directAppointment);
+            const transformedDirectAppointment = {
+              ...directAppointment,
+              status: directAppointment.status as 'scheduled' | 'completed' | 'cancelled',
+              recurrence_type: directAppointment.recurrence_type as 'weekly' | 'monthly' | undefined,
+              client: directAppointment.clients,
+              intervenant: directAppointment.intervenants,
+              caregivers: []
+            };
+            setSelectedAppointment(transformedDirectAppointment);
+          }
         }
       } else {
         console.log('🔍 INTERVENTION_FORM - Pas d\'appointment_id ou liste vide');
@@ -549,7 +522,7 @@ const InterventionReportForm = () => {
             ) : (
               <div className="p-3 bg-gray-50 rounded-md border">
                 <div className="text-sm text-gray-500">
-                  Aucun rendez-vous associé
+                  Aucun rendez-vous associé - Vérifiez les logs de la console pour plus de détails
                 </div>
               </div>
             )}
