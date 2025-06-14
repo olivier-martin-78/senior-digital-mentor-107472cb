@@ -20,8 +20,8 @@ const InterventionReportForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const reportId = searchParams.get('reportId');
-  const appointmentId = searchParams.get('appointmentId');
+  const reportId = searchParams.get('report_id');
+  const appointmentId = searchParams.get('appointment_id');
 
   const [clients, setClients] = useState<Client[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -95,6 +95,16 @@ const InterventionReportForm = () => {
       if (reportId) {
         console.log('🔍 INTERVENTION_FORM - Chargement du rapport existant...');
         await loadExistingReport(loadedAppointments);
+      } else if (appointmentId && loadedAppointments.length > 0) {
+        // NOUVEAU: Si on crée un nouveau rapport avec un appointmentId depuis l'URL
+        console.log('🔍 INTERVENTION_FORM - Nouveau rapport avec appointmentId depuis URL:', appointmentId);
+        const foundAppointment = loadedAppointments.find(apt => apt.id === appointmentId);
+        if (foundAppointment) {
+          console.log('🔍 INTERVENTION_FORM - Rendez-vous trouvé pour nouveau rapport:', foundAppointment);
+          handleAppointmentChange(appointmentId, loadedAppointments);
+        } else {
+          console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé ou accès non autorisé via RLS');
+        }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -486,25 +496,24 @@ const InterventionReportForm = () => {
                   {new Date(selectedAppointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   {selectedAppointment.intervenant && ` (${selectedAppointment.intervenant.first_name} ${selectedAppointment.intervenant.last_name})`}
                 </div>
-                {reportId && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="p-0 h-auto text-xs"
-                    onClick={() => setShowAppointmentSelector(true)}
-                  >
-                    Changer le rendez-vous associé
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="p-0 h-auto text-xs"
+                  onClick={() => setShowAppointmentSelector(true)}
+                >
+                  Changer le rendez-vous associé
+                </Button>
               </div>
             ) : showAppointmentSelector && appointments.length > 0 ? (
               <div className="space-y-2">
-                <Select onValueChange={handleAppointmentChange}>
+                <Select onValueChange={handleAppointmentChange} value={formData.appointment_id || ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un rendez-vous" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Aucun rendez-vous</SelectItem>
                     {appointments.map((appointment) => (
                       <SelectItem key={appointment.id} value={appointment.id}>
                         {appointment.client?.first_name} {appointment.client?.last_name} - {' '}
@@ -529,7 +538,7 @@ const InterventionReportForm = () => {
                 <div className="text-sm text-gray-500">
                   Aucun rendez-vous associé
                 </div>
-                {appointments.length > 0 && reportId && (
+                {appointments.length > 0 && (
                   <Button
                     type="button"
                     variant="link"
