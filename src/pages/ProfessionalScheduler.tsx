@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -138,6 +137,25 @@ const ProfessionalScheduler = () => {
     console.log('🔍 SCHEDULER - Chargement des rendez-vous avec RLS strict...');
     console.log('🔍 SCHEDULER - User ID:', user.id);
     console.log('🔍 SCHEDULER - User Email:', user.email);
+
+    // DIAGNOSTIC: Test direct pour comprendre pourquoi les politiques RLS ne fonctionnent pas
+    const { data: diagnosticData, error: diagnosticError } = await supabase
+      .from('appointments')
+      .select('id, professional_id, intervenant_id')
+      .limit(5);
+
+    console.log('🔍 SCHEDULER - Diagnostic RLS - Rendez-vous retournés:', diagnosticData?.length || 0);
+    console.log('🔍 SCHEDULER - Diagnostic RLS - Erreur:', diagnosticError);
+    if (diagnosticData) {
+      diagnosticData.forEach(apt => {
+        console.log(`🔍 SCHEDULER - RDV ${apt.id}: professional_id=${apt.professional_id}, intervenant_id=${apt.intervenant_id}`);
+      });
+    }
+
+    // Vérifier également si l'utilisateur existe bien dans auth.users
+    const { data: authUser, error: authError } = await supabase.auth.getUser();
+    console.log('🔍 SCHEDULER - Auth user:', authUser?.user?.id, 'Email:', authUser?.user?.email);
+    console.log('🔍 SCHEDULER - Auth error:', authError);
 
     // Maintenant que RLS est activé, cette requête ne retournera QUE les rendez-vous autorisés
     // Les politiques RLS filtrent automatiquement côté base de données
