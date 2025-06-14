@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
@@ -10,6 +11,7 @@ import { Edit, Trash2, FileText, Plus, User, Clock, MapPin } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import AppointmentDeleteDialog from './AppointmentDeleteDialog';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Configure moment en français
 moment.locale('fr');
@@ -27,6 +29,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   onAppointmentDelete
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentView, setCurrentView] = useState<View>('week');
@@ -75,6 +78,27 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     onAppointmentDelete(appointmentId, deleteReport);
     setSelectedAppointment(null);
     setShowDeleteDialog(false);
+  };
+
+  // Fonction pour déterminer si l'utilisateur peut modifier le rendez-vous
+  const canEditAppointment = (appointment: Appointment) => {
+    if (!user) return false;
+    
+    // L'utilisateur peut modifier s'il est le créateur
+    if (appointment.professional_id === user.id) return true;
+    
+    // L'utilisateur peut modifier s'il est l'intervenant avec le même email
+    if (appointment.intervenant?.email === user.email) return true;
+    
+    return false;
+  };
+
+  // Fonction pour déterminer si l'utilisateur peut supprimer le rendez-vous
+  const canDeleteAppointment = (appointment: Appointment) => {
+    if (!user) return false;
+    
+    // Seul le créateur peut supprimer
+    return appointment.professional_id === user.id;
   };
 
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -204,15 +228,19 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleEdit} size="sm" variant="outline" className="flex items-center gap-1">
-                <Edit className="h-4 w-4" />
-                Modifier
-              </Button>
+              {canEditAppointment(selectedAppointment) && (
+                <Button onClick={handleEdit} size="sm" variant="outline" className="flex items-center gap-1">
+                  <Edit className="h-4 w-4" />
+                  Modifier
+                </Button>
+              )}
               
-              <Button onClick={handleDelete} size="sm" variant="outline" className="flex items-center gap-1 text-red-600 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-                Supprimer
-              </Button>
+              {canDeleteAppointment(selectedAppointment) && (
+                <Button onClick={handleDelete} size="sm" variant="outline" className="flex items-center gap-1 text-red-600 hover:text-red-700">
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </Button>
+              )}
 
               {/* Boutons pour les rapports d'intervention */}
               {selectedAppointment.intervention_report_id ? (

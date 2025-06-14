@@ -281,8 +281,27 @@ const ProfessionalScheduler = () => {
   };
 
   const handleAppointmentEdit = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setShowAppointmentForm(true);
+    console.log('🔍 SCHEDULER - Tentative d\'édition du rendez-vous:', appointment.id);
+    console.log('🔍 SCHEDULER - Utilisateur courant:', user?.email);
+    console.log('🔍 SCHEDULER - Créateur du RDV:', appointment.professional_id);
+    console.log('🔍 SCHEDULER - Intervenant du RDV:', appointment.intervenant?.email);
+    
+    // Permettre l'édition si l'utilisateur est le créateur OU l'intervenant
+    const canEdit = user && (
+      appointment.professional_id === user.id || 
+      appointment.intervenant?.email === user.email
+    );
+    
+    if (canEdit) {
+      setSelectedAppointment(appointment);
+      setShowAppointmentForm(true);
+    } else {
+      toast({
+        title: 'Accès refusé',
+        description: 'Vous n\'êtes pas autorisé à modifier ce rendez-vous',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAppointmentDelete = async (appointmentId: string, deleteReport?: boolean) => {
@@ -481,7 +500,8 @@ const ProfessionalScheduler = () => {
           />
         )}
 
-        {showAppointmentForm && !isIntervenant && (
+        {/* Permettre le formulaire d'édition même pour les intervenants */}
+        {showAppointmentForm && (
           <AppointmentForm
             appointment={selectedAppointment}
             clients={clients}
