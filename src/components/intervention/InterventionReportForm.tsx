@@ -61,15 +61,6 @@ const InterventionReportForm = () => {
     loadData();
   }, [user, reportId, appointmentId]);
 
-  useEffect(() => {
-    if (appointmentId && appointments.length > 0) {
-      const appointment = appointments.find(apt => apt.id === appointmentId);
-      if (appointment) {
-        handleAppointmentChange(appointmentId);
-      }
-    }
-  }, [appointmentId, appointments]);
-
   const loadData = async () => {
     if (!user) return;
 
@@ -94,14 +85,14 @@ const InterventionReportForm = () => {
       setClients(authorizedClients);
 
       // Charger les rendez-vous (filtrés automatiquement par les clients autorisés)
-      await loadAppointments(authorizedClients);
+      const loadedAppointments = await loadAppointments(authorizedClients);
       
       // Charger les intervenants autorisés
       await loadIntervenants();
 
       // Si on édite un rapport existant, le charger APRÈS avoir chargé les rendez-vous
       if (reportId) {
-        await loadExistingReport();
+        await loadExistingReport(loadedAppointments);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -118,7 +109,7 @@ const InterventionReportForm = () => {
   const loadAppointments = async (authorizedClients: Client[]) => {
     if (!user || authorizedClients.length === 0) {
       setAppointments([]);
-      return;
+      return [];
     }
 
     console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous...');
@@ -191,6 +182,8 @@ const InterventionReportForm = () => {
         handleAppointmentChange(appointmentId, transformedAppointments);
       }
     }
+
+    return transformedAppointments;
   };
 
   const loadIntervenants = async () => {
@@ -231,7 +224,7 @@ const InterventionReportForm = () => {
     setAllIntervenants(allIntervenantsData);
   };
 
-  const loadExistingReport = async () => {
+  const loadExistingReport = async (appointmentsList: Appointment[]) => {
     if (!reportId || !user) return;
 
     const { data: report, error } = await supabase
@@ -280,11 +273,9 @@ const InterventionReportForm = () => {
       });
 
       // Si le rapport a un appointment_id, chercher le rendez-vous correspondant
-      if (report.appointment_id) {
-        // Utiliser setTimeout pour s'assurer que les rendez-vous sont chargés
-        setTimeout(() => {
-          handleAppointmentChange(report.appointment_id, appointments);
-        }, 100);
+      if (report.appointment_id && appointmentsList.length > 0) {
+        console.log('🔍 INTERVENTION_FORM - Recherche du rendez-vous associé:', report.appointment_id);
+        handleAppointmentChange(report.appointment_id, appointmentsList);
       }
     }
   };
