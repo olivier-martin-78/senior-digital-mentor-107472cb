@@ -63,7 +63,8 @@ const ProfessionalScheduler = () => {
       setLoading(true);
       
       // Identifier si l'utilisateur connecté est un intervenant
-      console.log('🔍 SCHEDULER - Email utilisateur connecté:', user.email);
+      console.log('🔥 NOUVELLES POLITIQUES RLS - Email utilisateur connecté:', user.email);
+      console.log('🔥 NOUVELLES POLITIQUES RLS - User ID:', user.id);
       
       // Chercher d'abord par email exact
       let { data: intervenantDataByEmail } = await supabase
@@ -74,7 +75,7 @@ const ProfessionalScheduler = () => {
 
       let currentIntervenantIdFound = intervenantDataByEmail?.id || null;
       
-      console.log('🔍 SCHEDULER - Intervenant trouvé par email:', intervenantDataByEmail);
+      console.log('🔥 NOUVELLES POLITIQUES RLS - Intervenant trouvé par email:', intervenantDataByEmail);
 
       // Si pas trouvé par email, chercher par nom/prénom dans le profil
       if (!currentIntervenantIdFound) {
@@ -84,7 +85,7 @@ const ProfessionalScheduler = () => {
           .eq('id', user.id)
           .maybeSingle();
 
-        console.log('🔍 SCHEDULER - Profil utilisateur:', profileData);
+        console.log('🔥 NOUVELLES POLITIQUES RLS - Profil utilisateur:', profileData);
 
         if (profileData?.display_name) {
           const nameParts = profileData.display_name.split(' ');
@@ -92,7 +93,7 @@ const ProfessionalScheduler = () => {
             const firstName = nameParts[0];
             const lastName = nameParts.slice(1).join(' ');
             
-            console.log('🔍 SCHEDULER - Recherche par nom:', firstName, lastName);
+            console.log('🔥 NOUVELLES POLITIQUES RLS - Recherche par nom:', firstName, lastName);
             
             const { data: intervenantDataByName } = await supabase
               .from('intervenants')
@@ -101,7 +102,7 @@ const ProfessionalScheduler = () => {
               .eq('last_name', lastName)
               .maybeSingle();
 
-            console.log('🔍 SCHEDULER - Intervenant trouvé par nom:', intervenantDataByName);
+            console.log('🔥 NOUVELLES POLITIQUES RLS - Intervenant trouvé par nom:', intervenantDataByName);
             currentIntervenantIdFound = intervenantDataByName?.id || null;
           }
         }
@@ -109,9 +110,9 @@ const ProfessionalScheduler = () => {
 
       if (currentIntervenantIdFound) {
         setCurrentIntervenantId(currentIntervenantIdFound);
-        console.log('🔍 SCHEDULER - Utilisateur est un intervenant:', currentIntervenantIdFound);
+        console.log('🔥 NOUVELLES POLITIQUES RLS - Utilisateur est un intervenant:', currentIntervenantIdFound);
       } else {
-        console.log('🔍 SCHEDULER - Utilisateur n\'est pas un intervenant identifié');
+        console.log('🔥 NOUVELLES POLITIQUES RLS - Utilisateur n\'est pas un intervenant identifié');
       }
 
       await Promise.all([
@@ -134,44 +135,15 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🚨🚨🚨 DÉBOGAGE RLS ULTRA-DÉTAILLÉ 🚨🚨🚨');
-    console.log('🔍 SCHEDULER - User ID:', user.id);
-    console.log('🔍 SCHEDULER - User Email:', user.email);
+    console.log('🔥🔥🔥 TEST NOUVELLES POLITIQUES RLS ULTRA-STRICTES 🔥🔥🔥');
+    console.log('🔥 TEST RLS - User ID:', user.id);
+    console.log('🔥 TEST RLS - User Email:', user.email);
 
     try {
-      // ÉTAPE 1: Récupérer TOUS les intervenants pour debug
-      console.log('🔍 ÉTAPE 1: Récupération de tous les intervenants...');
-      const { data: allIntervenants } = await supabase
-        .from('intervenants')
-        .select('id, email, first_name, last_name');
-      console.log('🔍 Tous les intervenants:', allIntervenants);
-
-      // ÉTAPE 2: Tester la fonction RLS avec les vrais IDs
-      if (allIntervenants) {
-        console.log('🔍 ÉTAPE 2: Test de la fonction check_intervenant_email_match...');
-        for (const intervenant of allIntervenants) {
-          try {
-            const { data: testResult, error: testError } = await supabase
-              .rpc('check_intervenant_email_match', { 
-                appointment_intervenant_id: intervenant.id 
-              });
-            
-            console.log(`🔍 Test RLS pour intervenant ID ${intervenant.id} (${intervenant.email}):`, {
-              result: testResult,
-              error: testError,
-              shouldMatch: intervenant.email === user.email
-            });
-          } catch (error) {
-            console.error(`🔍 Erreur test RLS pour ${intervenant.id}:`, error);
-          }
-        }
-      }
-
-      // ÉTAPE 3: Requête avec débogage détaillé
-      console.log('🔍 ÉTAPE 3: Exécution de la requête principale avec RLS...');
-      console.log('🔍 Cette requête devrait être filtrée par les politiques RLS ULTRA-STRICTES');
+      console.log('🔥 TEST RLS - Exécution de la requête avec les NOUVELLES politiques RLS...');
+      console.log('🔥 TEST RLS - Les politiques doivent maintenant être ULTRA-STRICTES');
       
-      const { data: authorizedAppointments, error: appointmentError } = await supabase
+      const { data: appointmentsWithNewPolicies, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -204,29 +176,29 @@ const ProfessionalScheduler = () => {
         .order('start_time', { ascending: true });
 
       if (appointmentError) {
-        console.error('🚨 ERREUR lors du chargement des rendez-vous:', appointmentError);
+        console.error('🔥 TEST RLS - ERREUR lors du chargement:', appointmentError);
         throw appointmentError;
       }
 
-      console.log('🔍 RÉSULTAT CRITIQUE:', {
-        totalRetournes: authorizedAppointments?.length || 0,
+      console.log('🔥 TEST RLS - RÉSULTAT CRITIQUE AVEC NOUVELLES POLITIQUES:', {
+        totalRetournes: appointmentsWithNewPolicies?.length || 0,
         utilisateurConnecte: {
           id: user.id,
           email: user.email
         },
-        politiquesRLSActives: 'ULTRA_STRICT_appointments_*'
+        politiquesRLS: 'appointments_final_strict_select_v3 (NOUVELLES)'
       });
 
-      // ÉTAPE 4: Analyse détaillée de chaque rendez-vous retourné
-      if (authorizedAppointments && authorizedAppointments.length > 0) {
-        console.log('🔍 ÉTAPE 4: Analyse de chaque rendez-vous retourné...');
+      // ÉTAPE CRITIQUE : Analyse de chaque rendez-vous avec les nouvelles politiques
+      if (appointmentsWithNewPolicies && appointmentsWithNewPolicies.length > 0) {
+        console.log('🔥 TEST RLS - Analyse de chaque rendez-vous avec NOUVELLES politiques...');
         
-        authorizedAppointments.forEach((apt, index) => {
+        appointmentsWithNewPolicies.forEach((apt, index) => {
           const isCreator = apt.professional_id === user.id;
           const intervenantEmail = apt.intervenants?.email;
           const emailMatch = intervenantEmail === user.email;
           
-          console.log(`🔍 RDV ${index + 1} - ID: ${apt.id}`, {
+          console.log(`🔥 TEST RLS - RDV ${index + 1} - ID: ${apt.id}`, {
             professional_id: apt.professional_id,
             user_id: user.id,
             is_creator: isCreator,
@@ -235,21 +207,29 @@ const ProfessionalScheduler = () => {
             user_email: user.email,
             email_match: emailMatch,
             should_be_visible: isCreator || emailMatch,
+            client_name: `${apt.clients?.first_name} ${apt.clients?.last_name}`,
             date: apt.start_time
           });
 
-          // 🚨 ALERTE si un RDV est visible alors qu'il ne devrait pas l'être
+          // 🚨 ALERTE CRITIQUE si un RDV est visible alors qu'il ne devrait pas l'être
           if (!isCreator && !emailMatch) {
-            console.error('🚨🚨🚨 ALERTE RLS: Ce rendez-vous ne devrait PAS être visible!', {
+            console.error('🚨🚨🚨 ALERTE RLS CRITIQUE: Ce rendez-vous ne devrait PAS être visible avec les nouvelles politiques!', {
               rdv_id: apt.id,
-              raison: 'Utilisateur n\'est ni créateur ni intervenant avec email correspondant'
+              raison: 'Utilisateur n\'est ni créateur ni intervenant avec email correspondant',
+              professional_id: apt.professional_id,
+              intervenant_email: intervenantEmail,
+              user_email: user.email
             });
+          } else {
+            console.log('✅ RLS OK - Ce rendez-vous est correctement visible');
           }
         });
+      } else {
+        console.log('🔥 TEST RLS - Aucun rendez-vous retourné (c\'est peut-être normal si l\'utilisateur n\'a pas de RDV autorisés)');
       }
 
       // Transformer les données
-      const transformedData = (authorizedAppointments || []).map(item => ({
+      const transformedData = (appointmentsWithNewPolicies || []).map(item => ({
         ...item,
         status: item.status as 'scheduled' | 'completed' | 'cancelled',
         recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
@@ -258,10 +238,10 @@ const ProfessionalScheduler = () => {
         caregivers: []
       }));
 
-      console.log('🔍 DONNÉES FINALES:', transformedData.length, 'rendez-vous');
+      console.log('🔥 TEST RLS - DONNÉES FINALES AVEC NOUVELLES POLITIQUES:', transformedData.length, 'rendez-vous');
       setAppointments(transformedData);
     } catch (error) {
-      console.error('🚨 ERREUR lors du chargement des rendez-vous:', error);
+      console.error('🔥 TEST RLS - ERREUR CRITIQUE:', error);
       throw error;
     }
   };
