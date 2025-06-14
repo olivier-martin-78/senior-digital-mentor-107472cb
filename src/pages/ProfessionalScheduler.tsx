@@ -290,20 +290,50 @@ const ProfessionalScheduler = () => {
     if (!user) return;
 
     console.log('🔍 SCHEDULER - Chargement des intervenants pour l\'utilisateur:', user.id);
+    console.log('🔍 SCHEDULER - Email de l\'utilisateur:', user.email);
 
-    const { data, error } = await supabase
+    // 1. Récupérer tous les intervenants créés par l'utilisateur
+    const { data: userIntervenants, error: userError } = await supabase
       .from('intervenants')
       .select('*')
       .eq('created_by', user.id)
       .order('last_name', { ascending: true });
 
-    if (error) {
-      console.error('🔍 SCHEDULER - Erreur lors du chargement des intervenants:', error);
-      throw error;
+    console.log('🔍 SCHEDULER - Intervenants créés par l\'utilisateur:', userIntervenants?.length || 0);
+    if (userError) {
+      console.error('🔍 SCHEDULER - Erreur intervenants créés:', userError);
     }
 
-    console.log('🔍 SCHEDULER - Intervenants chargés:', data?.length || 0);
-    setIntervenants(data || []);
+    // 2. Récupérer les intervenants autorisés via permissions
+    const { data: permittedIntervenants, error: permError } = await supabase
+      .from('user_intervenant_permissions')
+      .select(`
+        intervenant_id,
+        intervenants!inner(*)
+      `)
+      .eq('user_id', user.id);
+
+    console.log('🔍 SCHEDULER - Intervenants via permissions:', permittedIntervenants?.length || 0);
+    if (permError) {
+      console.error('🔍 SCHEDULER - Erreur permissions intervenants:', permError);
+    }
+
+    // 3. Fusionner les deux listes
+    let allIntervenants: Intervenant[] = [...(userIntervenants || [])];
+    
+    if (permittedIntervenants) {
+      permittedIntervenants.forEach(perm => {
+        const intervenant = perm.intervenants;
+        if (!allIntervenants.find(i => i.id === intervenant.id)) {
+          allIntervenants.push(intervenant);
+        }
+      });
+    }
+
+    console.log('🔍 SCHEDULER - Total intervenants accessibles:', allIntervenants.length);
+    console.log('🔍 SCHEDULER - Liste des intervenants:', allIntervenants.map(i => `${i.first_name} ${i.last_name} (${i.email})`));
+
+    setIntervenants(allIntervenants);
   };
 
   const handleAppointmentSave = () => {
