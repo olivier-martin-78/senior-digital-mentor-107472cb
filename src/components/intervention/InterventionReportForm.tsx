@@ -99,7 +99,7 @@ const InterventionReportForm = () => {
       // Charger les intervenants autorisés
       await loadIntervenants();
 
-      // Si on édite un rapport existant
+      // Si on édite un rapport existant, le charger APRÈS avoir chargé les rendez-vous
       if (reportId) {
         await loadExistingReport();
       }
@@ -183,6 +183,14 @@ const InterventionReportForm = () => {
 
     console.log('🔍 INTERVENTION_FORM - Rendez-vous chargés:', transformedAppointments.length);
     setAppointments(transformedAppointments);
+
+    // Après avoir chargé les rendez-vous, vérifier si on doit sélectionner un rendez-vous spécifique
+    if (appointmentId && transformedAppointments.length > 0) {
+      const appointment = transformedAppointments.find(apt => apt.id === appointmentId);
+      if (appointment) {
+        handleAppointmentChange(appointmentId, transformedAppointments);
+      }
+    }
   };
 
   const loadIntervenants = async () => {
@@ -271,13 +279,19 @@ const InterventionReportForm = () => {
         audio_url: report.audio_url || '',
       });
 
+      // Si le rapport a un appointment_id, chercher le rendez-vous correspondant
       if (report.appointment_id) {
-        handleAppointmentChange(report.appointment_id);
+        // Utiliser setTimeout pour s'assurer que les rendez-vous sont chargés
+        setTimeout(() => {
+          handleAppointmentChange(report.appointment_id, appointments);
+        }, 100);
       }
     }
   };
 
-  const handleAppointmentChange = (appointmentId: string) => {
+  const handleAppointmentChange = (appointmentId: string, appointmentsList?: Appointment[]) => {
+    const appointmentsToUse = appointmentsList || appointments;
+    
     // Handle the special "none" value
     if (appointmentId === "none") {
       setSelectedAppointment(null);
@@ -289,8 +303,9 @@ const InterventionReportForm = () => {
       return;
     }
 
-    const appointment = appointments.find(apt => apt.id === appointmentId);
+    const appointment = appointmentsToUse.find(apt => apt.id === appointmentId);
     if (appointment) {
+      console.log('🔍 INTERVENTION_FORM - Rendez-vous sélectionné:', appointment);
       setSelectedAppointment(appointment);
       
       const startDate = new Date(appointment.start_time);
@@ -307,6 +322,8 @@ const InterventionReportForm = () => {
         end_time: endDate.toTimeString().slice(0, 5),
         hourly_rate: appointment.client?.hourly_rate?.toString() || '',
       }));
+    } else {
+      console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé pour ID:', appointmentId);
     }
   };
 
