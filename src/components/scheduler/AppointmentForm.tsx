@@ -29,8 +29,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onCancel
 }) => {
   const { user } = useAuth();
-  const [allIntervenants, setAllIntervenants] = useState<Intervenant[]>([]);
   const [allowedClients, setAllowedClients] = useState<Client[]>([]);
+  const [availableIntervenants, setAvailableIntervenants] = useState<Intervenant[]>([]);
   const [formData, setFormData] = useState({
     client_id: appointment?.client_id || '',
     intervenant_id: appointment?.intervenant_id || '',
@@ -89,22 +89,41 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     console.log('🔍 APPOINTMENT_FORM - Total clients autorisés:', authorizedClients.length);
     setAllowedClients(authorizedClients);
 
-    // Charger TOUS les intervenants actifs pour les professionnels
-    console.log('🔍 APPOINTMENT_FORM - Chargement de tous les intervenants actifs...');
-    const { data: allActiveIntervenants, error: intervenantError } = await supabase
-      .from('intervenants')
-      .select('*')
-      .eq('active', true)
-      .order('last_name', { ascending: true });
+    // 4. Pour les intervenants, utiliser ceux passés en props + charger les intervenants autorisés via permissions
+    let authorizedIntervenants: Intervenant[] = [...intervenants];
+    console.log('🔍 APPOINTMENT_FORM - Intervenants créés par l\'utilisateur:', intervenants.length);
 
-    if (!intervenantError && allActiveIntervenants) {
-      console.log('🔍 APPOINTMENT_FORM - Tous les intervenants actifs chargés:', allActiveIntervenants.length);
-      setAllIntervenants(allActiveIntervenants);
-    } else {
-      console.error('🔍 APPOINTMENT_FORM - Erreur lors du chargement des intervenants:', intervenantError);
-      // Fallback vers les intervenants passés en props
-      setAllIntervenants(intervenants);
+    // Charger les intervenants autorisés via les permissions
+    const { data: intervenantPermissions, error: intervenantError } = await supabase
+      .from('user_intervenant_permissions')
+      .select(`
+        intervenant_id,
+        intervenants!inner(*)
+      `)
+      .eq('user_id', user.id);
+
+    if (!intervenantError && intervenantPermissions) {
+      const permissionIntervenants = intervenantPermissions.map(p => p.intervenants);
+      // Fusionner en évitant les doublons
+      permissionIntervenants.forEach(permIntervenant => {
+        if (!authorizedIntervenants.find(i => i.id === permIntervenant.id)) {
+          authorizedIntervenants.push(permIntervenant);
+        }
+      });
+      console.log('🔍 APPOINTMENT_FORM - Intervenants via permissions:', permissionIntervenants.length);
     }
+
+    // 5. Si un rendez-vous existe et qu'il a un intervenant assigné, l'ajouter aussi
+    if (appointment?.intervenant_id && appointment.intervenant) {
+      const existingIntervenant = authorizedIntervenants.find(i => i.id === appointment.intervenant_id);
+      if (!existingIntervenant) {
+        authorizedIntervenants.push(appointment.intervenant);
+        console.log('🔍 APPOINTMENT_FORM - Intervenant du rendez-vous ajouté:', appointment.intervenant);
+      }
+    }
+
+    console.log('🔍 APPOINTMENT_FORM - Total intervenants autorisés:', authorizedIntervenants.length);
+    setAvailableIntervenants(authorizedIntervenants);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,7 +304,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Aucun intervenant</SelectItem>
-                  {allIntervenants.map((intervenant) => (
+                  {availableIntervenants.map((intervenant) => (
                     <SelectItem key={intervenant.id} value={intervenant.id}>
                       {intervenant.first_name} {intervenant.last_name}
                       {intervenant.email === user?.email && " (Vous)"}
