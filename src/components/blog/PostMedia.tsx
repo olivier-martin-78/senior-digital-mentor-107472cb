@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
@@ -100,7 +99,6 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
       <div className="relative bg-gray-900">
         <video
           src={item.media_url}
-          type={item.media_type}
           className="w-full aspect-square object-cover"
           muted
           playsInline

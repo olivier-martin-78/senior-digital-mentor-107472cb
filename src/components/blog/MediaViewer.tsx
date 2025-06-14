@@ -135,7 +135,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             <div className="relative w-full h-full flex items-center justify-center">
               <video
                 src={currentMedia.media_url}
-                type={currentMedia.media_type}
                 controls
                 autoPlay
                 className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
