@@ -60,7 +60,18 @@ const IntervenantForm: React.FC<IntervenantFormProps> = ({ intervenant, onSave, 
           .update(data)
           .eq('id', intervenant.id);
 
-        if (error) throw error;
+        if (error) {
+          // Erreur d'unicité (email déjà pris)
+          if ((error as any).code === '23505' && (error as any).message.includes('unique_intervenant_email')) {
+            toast({
+              title: 'Erreur',
+              description: "Cet email est déjà utilisé par un autre intervenant.",
+              variant: 'destructive',
+            });
+            return;
+          }
+          throw error;
+        }
 
         toast({
           title: 'Succès',
@@ -71,7 +82,18 @@ const IntervenantForm: React.FC<IntervenantFormProps> = ({ intervenant, onSave, 
           .from('intervenants')
           .insert([{ ...data, created_by: user.id }]);
 
-        if (error) throw error;
+        if (error) {
+          // Erreur d'unicité (email déjà pris)
+          if ((error as any).code === '23505' && (error as any).message.includes('unique_intervenant_email')) {
+            toast({
+              title: 'Erreur',
+              description: "Cet email est déjà utilisé par un autre intervenant.",
+              variant: 'destructive',
+            });
+            return;
+          }
+          throw error;
+        }
 
         toast({
           title: 'Succès',
