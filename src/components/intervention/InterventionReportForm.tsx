@@ -1,396 +1,416 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import InterventionAudioRecorder from './InterventionAudioRecorder';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Separator } from '@/components/ui/separator';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ChevronDown, Trash2 } from 'lucide-react';
-import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Save, ArrowLeft, Upload, X } from 'lucide-react';
+import { Client, Appointment, Intervenant } from '@/types/appointments';
+import MediaUploader from './MediaUploader';
+import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
 
 const InterventionReportForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
-  
-  // Prioriser location.state.appointmentId puis searchParams
-  const appointmentIdFromState = location.state?.appointmentId;
-  const appointmentIdFromParams = searchParams.get('appointmentId');
-  const appointmentId = appointmentIdFromState || appointmentIdFromParams;
   const reportId = searchParams.get('reportId');
+  const appointmentId = searchParams.get('appointmentId');
 
-  console.log('🔍 FORM - URL searchParams bruts:', Object.fromEntries(searchParams));
-  console.log('🔍 FORM - appointmentIdFromState:', appointmentIdFromState);
-  console.log('🔍 FORM - appointmentIdFromParams:', appointmentIdFromParams);
-  console.log('🔍 FORM - appointmentId final utilisé:', appointmentId);
-  console.log('🔍 FORM - reportId récupéré depuis searchParams:', reportId);
-  console.log('🔍 FORM - location.state:', location.state);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [allIntervenants, setAllIntervenants] = useState<Intervenant[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
-  const [reportData, setReportData] = useState({
+  const [formData, setFormData] = useState({
+    appointment_id: appointmentId || '',
+    patient_name: '',
     auxiliary_name: '',
     date: new Date().toISOString().split('T')[0],
-    start_time: '09:00',
-    end_time: '11:00',
-    patient_name: '',
+    start_time: '',
+    end_time: '',
+    activities: [] as string[],
+    activities_other: '',
     physical_state: [] as string[],
     physical_state_other: '',
     pain_location: '',
     mental_state: [] as string[],
     mental_state_change: '',
-    appetite: '',
-    hydration: '',
-    appetite_comments: '',
     hygiene: [] as string[],
     hygiene_comments: '',
-    activities: [] as string[],
-    activities_other: '',
+    appetite: '',
+    appetite_comments: '',
+    hydration: '',
     observations: '',
     follow_up: [] as string[],
     follow_up_other: '',
+    hourly_rate: '',
+    media_files: [] as any[],
     audio_url: '',
-    hourly_rate: 0
   });
-  const [loading, setLoading] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [pendingAudioUpload, setPendingAudioUpload] = useState(false);
-  const [intervenants, setIntervenants] = useState<any[]>([]);
-  const [openSections, setOpenSections] = useState({
-    general: true,
-    physical: true,
-    mental: true,
-    nutrition: true,
-    hygiene: true,
-    activities: true,
-    observations: true,
-    followUp: true
-  });
-
-  const physicalStateOptions = [
-    'Bien', 'Fatigué(e)', 'Douloureux/se', 'Essoufflé(e)', 'Difficultés de mobilité', 'Chutes', 'Autre'
-  ];
-
-  const mentalStateOptions = [
-    'Calme', 'Anxieux/se', 'Confus(e)', 'Agité(e)', 'Triste', 'Joyeux/se', 'Désorienté(e)'
-  ];
-
-  const hygieneOptions = [
-    'Toilette complète', 'Toilette partielle', 'Aide au lever/coucher', 'Change', 'Soins des pieds', 'Coiffure', 'Rasage'
-  ];
-
-  const activitiesOptions = [
-    'Promenade', 'Lecture', 'Télévision', 'Jeux', 'Exercices', 'Sortie', 'Visite médicale', 'Courses'
-  ];
-
-  const followUpOptions = [
-    'RAS', 'Signaler à la famille', 'Prévenir le médecin', 'Renouveler ordonnance', 'Prendre RDV', 'Surveillance particulière'
-  ];
 
   useEffect(() => {
-    console.log('🔍 FORM - useEffect déclenché avec:', { reportId, appointmentId, locationState: location.state });
-    
-    // Préremplir avec les données de l'état de navigation si disponibles
-    if (location.state?.prefilledData) {
-      const prefilledData = location.state.prefilledData;
-      console.log('🔍 FORM - Préremplissage avec prefilledData:', prefilledData);
-      setReportData(prev => ({
-        ...prev,
-        ...prefilledData
-      }));
-    } else if (reportId) {
-      console.log('🔍 FORM - Chargement du rapport existant:', reportId);
-      loadReportData(reportId);
-    } else if (appointmentId) {
-      console.log('🔍 FORM - Chargement des données du rendez-vous:', appointmentId);
-      loadAppointmentData(appointmentId);
+    loadData();
+  }, [user, reportId, appointmentId]);
+
+  useEffect(() => {
+    if (appointmentId && appointments.length > 0) {
+      const appointment = appointments.find(apt => apt.id === appointmentId);
+      if (appointment) {
+        handleAppointmentChange(appointmentId);
+      }
     }
-  }, [reportId, appointmentId, location.state]);
+  }, [appointmentId, appointments]);
 
-  useEffect(() => {
-    const loadIntervenants = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('intervenants')
-          .select('*')
-          .eq('created_by', user.id)
-          .eq('active', true)
-          .order('first_name', { ascending: true });
+  const loadData = async () => {
+    if (!user) return;
 
-        if (error) {
-          console.error('Erreur lors du chargement des intervenants:', error);
-          return;
-        }
-
-        setIntervenants(data || []);
-      } catch (error) {
-        console.error('Erreur lors du chargement des intervenants:', error);
-      }
-    };
-
-    loadIntervenants();
-  }, [user]);
-
-  const loadReportData = async (reportId: string) => {
-    setLoading(true);
     try {
-      console.log('🔍 FORM - Chargement rapport avec ID:', reportId);
+      setLoadingData(true);
       
-      const { data, error } = await supabase
-        .from('intervention_reports')
+      // Charger les clients
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
         .select('*')
-        .eq('id', reportId)
-        .single();
+        .eq('created_by', user.id)
+        .order('last_name');
 
-      if (error) {
-        console.error('🔍 FORM - Erreur chargement rapport:', error);
-        throw error;
-      }
+      if (clientsError) throw clientsError;
+      setClients(clientsData || []);
 
-      if (data) {
-        console.log('🔍 FORM - Données rapport chargées:', data);
-        
-        setReportData({
-          auxiliary_name: data.auxiliary_name || '',
-          date: data.date || new Date().toISOString().split('T')[0],
-          start_time: data.start_time || '09:00',
-          end_time: data.end_time || '11:00',
-          patient_name: data.patient_name || '',
-          physical_state: data.physical_state || [],
-          physical_state_other: data.physical_state_other || '',
-          pain_location: data.pain_location || '',
-          mental_state: data.mental_state || [],
-          mental_state_change: data.mental_state_change || '',
-          appetite: data.appetite || '',
-          hydration: data.hydration || '',
-          appetite_comments: data.appetite_comments || '',
-          hygiene: data.hygiene || [],
-          hygiene_comments: data.hygiene_comments || '',
-          activities: data.activities || [],
-          activities_other: data.activities_other || '',
-          observations: data.observations || '',
-          follow_up: data.follow_up || [],
-          follow_up_other: data.follow_up_other || '',
-          audio_url: data.audio_url || '',
-          hourly_rate: data.hourly_rate || 0
-        });
-      } else {
-        console.log('🔍 FORM - Aucune donnée trouvée pour le rapport');
+      // Charger tous les rendez-vous (comme dans ProfessionalScheduler)
+      await loadAppointments();
+      
+      // Charger les intervenants
+      await loadIntervenants();
+
+      // Si on édite un rapport existant
+      if (reportId) {
+        await loadExistingReport();
       }
     } catch (error) {
-      console.error('🔍 FORM - Erreur lors du chargement du rapport:', error);
+      console.error('Erreur lors du chargement des données:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les données',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const loadAppointments = async () => {
+    if (!user) return;
+
+    console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous...');
+    
+    // 1. Charger les rendez-vous créés par le professionnel
+    const { data: professionalAppointments, error: professionalError } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        clients:client_id (
+          id, first_name, last_name, address, phone, email, color, hourly_rate
+        ),
+        intervenants:intervenant_id (
+          id, first_name, last_name, email, phone, speciality, active
+        )
+      `)
+      .eq('professional_id', user.id)
+      .order('start_time', { ascending: false });
+
+    let allAppointments = professionalAppointments || [];
+
+    // 2. Charger les rendez-vous où l'utilisateur est intervenant par email
+    const { data: allAppointmentsData, error: allError } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        clients:client_id (
+          id, first_name, last_name, address, phone, email, color, hourly_rate
+        ),
+        intervenants:intervenant_id (
+          id, first_name, last_name, email, phone, speciality, active
+        )
+      `)
+      .not('intervenant_id', 'is', null);
+
+    if (!allError && allAppointmentsData) {
+      const matchingAppointments = allAppointmentsData.filter(appointment => 
+        appointment.intervenants?.email === user.email
+      );
+      
+      // Ajouter sans doublons
+      matchingAppointments.forEach(appointment => {
+        if (!allAppointments.find(apt => apt.id === appointment.id)) {
+          allAppointments.push(appointment);
+        }
+      });
+    }
+
+    // Transformer les données
+    const transformedAppointments = allAppointments.map(item => ({
+      ...item,
+      status: item.status as 'scheduled' | 'completed' | 'cancelled',
+      recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
+      client: item.clients,
+      intervenant: item.intervenants,
+      caregivers: []
+    }));
+
+    console.log('🔍 INTERVENTION_FORM - Rendez-vous chargés:', transformedAppointments.length);
+    setAppointments(transformedAppointments);
+  };
+
+  const loadIntervenants = async () => {
+    if (!user) return;
+
+    console.log('🔍 INTERVENTION_FORM - Chargement des intervenants...');
+    
+    // Charger les intervenants créés par l'utilisateur
+    const { data: createdIntervenants, error: createdError } = await supabase
+      .from('intervenants')
+      .select('*')
+      .eq('created_by', user.id)
+      .order('last_name');
+
+    let allIntervenantsData = createdIntervenants || [];
+
+    // Ajouter l'utilisateur connecté s'il est un intervenant
+    const { data: currentUserIntervenant, error: currentError } = await supabase
+      .from('intervenants')
+      .select('*')
+      .eq('email', user.email)
+      .maybeSingle();
+
+    if (!currentError && currentUserIntervenant) {
+      const existingIntervenant = allIntervenantsData.find(i => i.id === currentUserIntervenant.id);
+      if (!existingIntervenant) {
+        allIntervenantsData.push(currentUserIntervenant);
+        console.log('🔍 INTERVENTION_FORM - Utilisateur intervenant ajouté:', currentUserIntervenant);
+      }
+    }
+
+    console.log('🔍 INTERVENTION_FORM - Intervenants chargés:', allIntervenantsData.length);
+    setAllIntervenants(allIntervenantsData);
+  };
+
+  const loadExistingReport = async () => {
+    if (!reportId || !user) return;
+
+    const { data: report, error } = await supabase
+      .from('intervention_reports')
+      .select('*')
+      .eq('id', reportId)
+      .eq('professional_id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Erreur lors du chargement du rapport:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger le rapport',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
-  const loadAppointmentData = async (appointmentId: string) => {
-    try {
-      const { data: appointment, error } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          clients:client_id (
-            first_name,
-            last_name,
-            hourly_rate
-          )
-        `)
-        .eq('id', appointmentId)
-        .single();
+    if (report) {
+      setFormData({
+        appointment_id: report.appointment_id || '',
+        patient_name: report.patient_name || '',
+        auxiliary_name: report.auxiliary_name || '',
+        date: report.date || '',
+        start_time: report.start_time || '',
+        end_time: report.end_time || '',
+        activities: report.activities || [],
+        activities_other: report.activities_other || '',
+        physical_state: report.physical_state || [],
+        physical_state_other: report.physical_state_other || '',
+        pain_location: report.pain_location || '',
+        mental_state: report.mental_state || [],
+        mental_state_change: report.mental_state_change || '',
+        hygiene: report.hygiene || [],
+        hygiene_comments: report.hygiene_comments || '',
+        appetite: report.appetite || '',
+        appetite_comments: report.appetite_comments || '',
+        hydration: report.hydration || '',
+        observations: report.observations || '',
+        follow_up: report.follow_up || [],
+        follow_up_other: report.follow_up_other || '',
+        hourly_rate: report.hourly_rate?.toString() || '',
+        media_files: report.media_files || [],
+        audio_url: report.audio_url || '',
+      });
 
-      if (error) throw error;
-
-      if (appointment) {
-        const startDate = new Date(appointment.start_time);
-        const endDate = new Date(appointment.end_time);
-        
-        setReportData(prev => ({
-          ...prev,
-          date: startDate.toISOString().split('T')[0],
-          start_time: startDate.toTimeString().slice(0, 5),
-          end_time: endDate.toTimeString().slice(0, 5),
-          patient_name: appointment.clients ? `${appointment.clients.first_name} ${appointment.clients.last_name}` : '',
-          hourly_rate: appointment.clients?.hourly_rate || 0,
-          observations: appointment.notes || ''
-        }));
+      if (report.appointment_id) {
+        handleAppointmentChange(report.appointment_id);
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des données du rendez-vous:', error);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    setReportData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
-    setReportData(prev => ({
-      ...prev,
-      [field]: checked 
-        ? [...(prev[field] as string[]), value]
-        : (prev[field] as string[]).filter(item => item !== value)
-    }));
-  };
-
-  const toggleSection = (section: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const handleAudioRecorded = (blob: Blob) => {
-    console.log('Audio recorded, storing blob:', blob.size);
-    setAudioBlob(blob);
-    if (blob.size === 0) {
-      setReportData(prev => ({ ...prev, audio_url: '' }));
+  const handleAppointmentChange = (appointmentId: string) => {
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    if (appointment) {
+      setSelectedAppointment(appointment);
+      
+      const startDate = new Date(appointment.start_time);
+      const endDate = new Date(appointment.end_time);
+      
+      setFormData(prev => ({
+        ...prev,
+        appointment_id: appointmentId,
+        patient_name: appointment.client ? `${appointment.client.first_name} ${appointment.client.last_name}` : '',
+        auxiliary_name: appointment.intervenant ? `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}` : 
+                       (user?.email?.split('@')[0] || 'Auxiliaire'),
+        date: startDate.toISOString().split('T')[0],
+        start_time: startDate.toTimeString().slice(0, 5),
+        end_time: endDate.toTimeString().slice(0, 5),
+        hourly_rate: appointment.client?.hourly_rate?.toString() || '',
+      }));
     }
   };
 
-  const handleAudioUrlGenerated = (url: string) => {
-    console.log('Audio URL generated:', url);
-    setReportData(prev => ({ ...prev, audio_url: url }));
+  const activitiesOptions = [
+    { label: 'Aide à la mobilité', value: 'mobility' },
+    { label: 'Préparation des repas', value: 'meals' },
+    { label: 'Aide à la toilette', value: 'hygiene' },
+    { label: 'Courses', value: 'groceries' },
+    { label: 'Compagnie et conversation', value: 'company' },
+    { label: 'Tâches ménagères légères', value: 'housekeeping' },
+    { label: 'Suivi des médicaments', value: 'medication' },
+    { label: 'Exercices physiques légers', value: 'exercises' },
+    { label: 'Lecture', value: 'reading' },
+    { label: 'Promenade', value: 'walk' },
+    { label: 'Rendez-vous médicaux', value: 'appointments' },
+  ];
+
+  const physicalStateOptions = [
+    { label: 'Stable', value: 'stable' },
+    { label: 'Fatigué', value: 'tired' },
+    { label: 'Agité', value: 'agitated' },
+    { label: 'Douloureux', value: 'painful' },
+    { label: 'Confus', value: 'confused' },
+    { label: 'Vertiges', value: 'dizzy' },
+    { label: 'Nausées', value: 'nauseous' },
+    { label: 'Essoufflé', value: 'breathless' },
+  ];
+
+  const mentalStateOptions = [
+    { label: 'Clair et alerte', value: 'clear' },
+    { label: 'Légèrement confus', value: 'slightly_confused' },
+    { label: 'Anxieux', value: 'anxious' },
+    { label: 'Triste', value: 'sad' },
+    { label: 'Irritable', value: 'irritable' },
+    { label: 'Apathique', value: 'apathetic' },
+    { label: 'Désorienté', value: 'disoriented' },
+  ];
+
+  const hygieneOptions = [
+    { label: 'Autonome', value: 'autonomous' },
+    { label: 'Partielle', value: 'partial' },
+    { label: 'Totale', value: 'total' },
+    { label: 'Refusée', value: 'refused' },
+  ];
+
+  const followUpOptions = [
+    { label: 'Contacter la famille', value: 'contact_family' },
+    { label: 'Contacter le médecin', value: 'contact_doctor' },
+    { label: 'Surveiller les symptômes', value: 'monitor_symptoms' },
+    { label: 'Ajuster les médicaments', value: 'adjust_medication' },
+    { label: 'Planifier un rendez-vous', value: 'schedule_appointment' },
+  ];
+
+  const handleCheckboxChange = (group: string, value: string) => {
+    setFormData(prev => {
+      const currentValues = prev[group] as string[];
+      if (currentValues.includes(value)) {
+        return { ...prev, [group]: currentValues.filter(v => v !== value) };
+      } else {
+        return { ...prev, [group]: [...currentValues, value] };
+      }
+    });
+  };
+
+  const handleMediaUpload = (files: any[]) => {
+    setFormData(prev => ({ ...prev, media_files: [...prev.media_files, ...files] }));
+  };
+
+  const handleMediaRemove = (fileToRemove: any) => {
+    setFormData(prev => ({
+      ...prev,
+      media_files: prev.media_files.filter(file => file !== fileToRemove),
+    }));
+  };
+
+  const handleAudioUpload = (url: string) => {
+    setFormData(prev => ({ ...prev, audio_url: url }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    console.log('🔍 FORM - Début de handleSubmit');
-    console.log('🔍 FORM - appointmentId avant traitement:', appointmentId);
-    console.log('🔍 FORM - reportId avant traitement:', reportId);
+    if (!formData.patient_name || !formData.auxiliary_name || !formData.date) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    setLoading(true);
     try {
-      const data = {
-        ...reportData,
+      setLoading(true);
+
+      const reportData = {
+        ...formData,
         professional_id: user.id,
-        appointment_id: appointmentId || null,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+        appointment_id: formData.appointment_id || null,
       };
 
-      console.log('🔍 FORM - appointmentId dans les données:', data.appointment_id);
-      console.log('🔍 FORM - Données complètes à sauvegarder:', data);
-
-      let savedReportId = reportId;
-
       if (reportId) {
-        console.log('🔍 FORM - Mise à jour du rapport existant:', reportId);
+        // Mise à jour
         const { error } = await supabase
           .from('intervention_reports')
-          .update(data)
+          .update(reportData)
           .eq('id', reportId);
 
-        if (error) {
-          console.error('🔍 FORM - Erreur lors de la mise à jour:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         toast({
           title: 'Succès',
-          description: 'Rapport modifié avec succès',
+          description: 'Rapport mis à jour avec succès',
         });
       } else {
-        console.log('🔍 FORM - Création d\'un nouveau rapport');
-        console.log('🔍 FORM - Données à insérer dans intervention_reports:', data);
-        
-        const { data: insertedData, error } = await supabase
+        // Création
+        const { data: newReport, error } = await supabase
           .from('intervention_reports')
-          .insert([data])
+          .insert([reportData])
           .select()
           .single();
 
-        if (error) {
-          console.error('🔍 FORM - Erreur lors de l\'insertion:', error);
-          console.error('🔍 FORM - Détails de l\'erreur:', { 
-            message: error.message, 
-            details: error.details, 
-            hint: error.hint,
-            code: error.code 
-          });
-          throw error;
-        }
+        if (error) throw error;
 
-        console.log('🔍 FORM - Rapport inséré avec succès:', insertedData);
-        savedReportId = insertedData.id;
-        console.log('🔍 FORM - savedReportId assigné:', savedReportId);
-
-        // Vérifier que le rapport a bien été créé avec l'appointment_id
-        const { data: verificationData, error: verificationError } = await supabase
-          .from('intervention_reports')
-          .select('id, appointment_id')
-          .eq('id', savedReportId)
-          .single();
-
-        if (verificationError) {
-          console.error('🔍 FORM - Erreur lors de la vérification:', verificationError);
-        } else {
-          console.log('🔍 FORM - Vérification du rapport créé:', verificationData);
-        }
-
-        // Mettre à jour le rendez-vous avec l'ID du rapport d'intervention ET changer le statut à "completed"
-        if (appointmentId && savedReportId) {
-          console.log('🔍 FORM - Mise à jour de l\'appointment avec intervention_report_id et statut completed');
-          console.log('🔍 FORM - appointmentId:', appointmentId, 'savedReportId:', savedReportId);
-          
-          const { data: updateData, error: updateError } = await supabase
+        // Si un rendez-vous est sélectionné, associer le rapport
+        if (formData.appointment_id && newReport) {
+          await supabase
             .from('appointments')
             .update({ 
-              intervention_report_id: savedReportId,
+              intervention_report_id: newReport.id,
               status: 'completed'
             })
-            .eq('id', appointmentId)
-            .select();
-
-          if (updateError) {
-            console.error('🔍 FORM - Erreur lors de la mise à jour du rendez-vous:', updateError);
-            console.error('🔍 FORM - Détails de l\'erreur update:', { 
-              message: updateError.message, 
-              details: updateError.details, 
-              hint: updateError.hint,
-              code: updateError.code 
-            });
-          } else {
-            console.log('🔍 FORM - Rendez-vous mis à jour avec succès (statut: completed):', updateData);
-          }
-        } else {
-          console.log('🔍 FORM - Pas de mise à jour du rendez-vous car:', { 
-            appointmentId, 
-            savedReportId,
-            hasAppointmentId: !!appointmentId,
-            hasSavedReportId: !!savedReportId
-          });
+            .eq('id', formData.appointment_id);
         }
 
         toast({
@@ -399,535 +419,340 @@ const InterventionReportForm = () => {
         });
       }
 
-      // Si on a un blob audio en attente et maintenant un reportId, uploader l'audio
-      if (audioBlob && audioBlob.size > 0 && savedReportId && !reportData.audio_url) {
-        setPendingAudioUpload(true);
-        // L'upload sera géré par le composant InterventionAudioRecorder
-        // via les props onAudioRecorded et reportId
-      }
-
       navigate('/scheduler');
     } catch (error) {
-      console.error('🔍 FORM - Erreur générale lors de la sauvegarde du rapport:', error);
+      console.error('Erreur lors de la sauvegarde:', error);
       toast({
         title: 'Erreur',
-        description: `Impossible de sauvegarder le rapport: ${error.message}`,
+        description: 'Impossible de sauvegarder le rapport',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
-      setPendingAudioUpload(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!reportId || !user) return;
-
-    console.log('🗑️ FORM - Début de la suppression du rapport:', reportId);
-    
-    try {
-      // Supprimer le rapport d'intervention
-      // La contrainte ON DELETE SET NULL se charge automatiquement de mettre à jour l'appointment
-      const { error } = await supabase
-        .from('intervention_reports')
-        .delete()
-        .eq('id', reportId);
-
-      if (error) {
-        console.error('🗑️ FORM - Erreur lors de la suppression:', error);
-        throw error;
-      }
-
-      console.log('🗑️ FORM - Rapport supprimé avec succès');
-
-      toast({
-        title: 'Succès',
-        description: 'Le rapport d\'intervention a été supprimé',
-      });
-
-      navigate('/scheduler');
-    } catch (error) {
-      console.error('🗑️ FORM - Erreur générale lors de la suppression:', error);
-      toast({
-        title: 'Erreur',
-        description: `Impossible de supprimer le rapport: ${error.message}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (loading) {
+  if (loadingData) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p>Chargement du rapport...</p>
-          </div>
-        </div>
+      <div className="flex justify-center py-20">
+        <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <CardTitle>Rapport d'Intervention</CardTitle>
-            {reportId && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full sm:w-auto">
-                    <Trash2 className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Supprimer le rapport</span>
-                    <span className="sm:hidden">Supprimer</span>
+    <Card className="max-w-4xl mx-auto">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {reportId ? 'Modifier le rapport d\'intervention' : 'Nouveau rapport d\'intervention'}
+          </CardTitle>
+          <Button variant="outline" onClick={() => navigate('/scheduler')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Sélection du rendez-vous */}
+          <div>
+            <Label htmlFor="appointment">Rendez-vous associé</Label>
+            <Select value={formData.appointment_id} onValueChange={handleAppointmentChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un rendez-vous (optionnel)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucun rendez-vous</SelectItem>
+                {appointments.map((appointment) => (
+                  <SelectItem key={appointment.id} value={appointment.id}>
+                    {appointment.client?.first_name} {appointment.client?.last_name} - {' '}
+                    {new Date(appointment.start_time).toLocaleDateString()} {' '}
+                    {new Date(appointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {appointment.intervenant && ` (${appointment.intervenant.first_name} ${appointment.intervenant.last_name})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Informations de base */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="patient_name">Nom du patient *</Label>
+              <Input
+                id="patient_name"
+                value={formData.patient_name}
+                onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="auxiliary_name">Nom de l'auxiliaire *</Label>
+              <Input
+                id="auxiliary_name"
+                value={formData.auxiliary_name}
+                onChange={(e) => setFormData({ ...formData, auxiliary_name: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Date et heure */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Date *</Label>
+              <Input
+                type="date"
+                id="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Heure</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="start_time">Début</Label>
+                  <Input
+                    type="time"
+                    id="start_time"
+                    value={formData.start_time}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end_time">Fin</Label>
+                  <Input
+                    type="time"
+                    id="end_time"
+                    value={formData.end_time}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Activités */}
+          <div>
+            <Label>Activités réalisées</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {activitiesOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`activity-${option.value}`}
+                    checked={(formData.activities as string[]).includes(option.value)}
+                    onCheckedChange={(checked) => handleCheckboxChange('activities', option.value)}
+                  />
+                  <Label htmlFor={`activity-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Autres activités..."
+              value={formData.activities_other}
+              onChange={(e) => setFormData({ ...formData, activities_other: e.target.value })}
+            />
+          </div>
+
+          {/* État physique */}
+          <div>
+            <Label>État physique</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {physicalStateOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`physical-${option.value}`}
+                    checked={(formData.physical_state as string[]).includes(option.value)}
+                    onCheckedChange={(checked) => handleCheckboxChange('physical_state', option.value)}
+                  />
+                  <Label htmlFor={`physical-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Autres détails sur l'état physique..."
+              value={formData.physical_state_other}
+              onChange={(e) => setFormData({ ...formData, physical_state_other: e.target.value })}
+            />
+          </div>
+
+          {/* Douleur */}
+          <div>
+            <Label htmlFor="pain_location">Localisation de la douleur</Label>
+            <Input
+              id="pain_location"
+              value={formData.pain_location}
+              onChange={(e) => setFormData({ ...formData, pain_location: e.target.value })}
+              placeholder="Si applicable, où se situe la douleur ?"
+            />
+          </div>
+
+          {/* État mental */}
+          <div>
+            <Label>État mental</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {mentalStateOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`mental-${option.value}`}
+                    checked={(formData.mental_state as string[]).includes(option.value)}
+                    onCheckedChange={(checked) => handleCheckboxChange('mental_state', option.value)}
+                  />
+                  <Label htmlFor={`mental-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Changements d'humeur ou état mental particulier..."
+              value={formData.mental_state_change}
+              onChange={(e) => setFormData({ ...formData, mental_state_change: e.target.value })}
+            />
+          </div>
+
+          {/* Hygiène */}
+          <div>
+            <Label>Hygiène</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {hygieneOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`hygiene-${option.value}`}
+                    checked={(formData.hygiene as string[]).includes(option.value)}
+                    onCheckedChange={(checked) => handleCheckboxChange('hygiene', option.value)}
+                  />
+                  <Label htmlFor={`hygiene-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Commentaires sur l'hygiène..."
+              value={formData.hygiene_comments}
+              onChange={(e) => setFormData({ ...formData, hygiene_comments: e.target.value })}
+            />
+          </div>
+
+          {/* Appétit */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="appetite">Appétit</Label>
+              <Input
+                id="appetite"
+                value={formData.appetite}
+                onChange={(e) => setFormData({ ...formData, appetite: e.target.value })}
+                placeholder="Comment était l'appétit ?"
+              />
+            </div>
+            <div>
+              <Label htmlFor="appetite_comments">Commentaires sur l'appétit</Label>
+              <Input
+                id="appetite_comments"
+                value={formData.appetite_comments}
+                onChange={(e) => setFormData({ ...formData, appetite_comments: e.target.value })}
+                placeholder="Des commentaires additionnels ?"
+              />
+            </div>
+          </div>
+
+          {/* Hydratation */}
+          <div>
+            <Label htmlFor="hydration">Hydratation</Label>
+            <Input
+              id="hydration"
+              value={formData.hydration}
+              onChange={(e) => setFormData({ ...formData, hydration: e.target.value })}
+              placeholder="Comment s'est passée l'hydratation ?"
+            />
+          </div>
+
+          {/* Observations */}
+          <div>
+            <Label htmlFor="observations">Observations générales</Label>
+            <Textarea
+              id="observations"
+              value={formData.observations}
+              onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+              placeholder="Observations générales sur la journée..."
+            />
+          </div>
+
+          {/* Suivi */}
+          <div>
+            <Label>Suivi nécessaire</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {followUpOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`followup-${option.value}`}
+                    checked={(formData.follow_up as string[]).includes(option.value)}
+                    onCheckedChange={(checked) => handleCheckboxChange('follow_up', option.value)}
+                  />
+                  <Label htmlFor={`followup-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Autres suivis à faire..."
+              value={formData.follow_up_other}
+              onChange={(e) => setFormData({ ...formData, follow_up_other: e.target.value })}
+            />
+          </div>
+
+          {/* Taux horaire */}
+          <div>
+            <Label htmlFor="hourly_rate">Taux horaire</Label>
+            <Input
+              id="hourly_rate"
+              type="number"
+              step="0.01"
+              value={formData.hourly_rate}
+              onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+              placeholder="Taux horaire pour cette intervention"
+            />
+          </div>
+
+          {/* Média */}
+          <div>
+            <Label>Médias</Label>
+            <MediaUploader onUpload={handleMediaUpload} />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.media_files.map((file, index) => (
+                <Badge key={index} variant="secondary">
+                  {file.name}
+                  <Button variant="ghost" size="icon" onClick={() => handleMediaRemove(file)}>
+                    <X className="h-4 w-4" />
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? 
-                      Cette action est irréversible et supprimera également tous les fichiers audio associés.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Supprimer
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Enregistrement audio */}
+          <div>
+            <Label>Enregistrement audio</Label>
+            <SimpleInterventionAudioRecorder onUpload={handleAudioUpload} />
+            {formData.audio_url && (
+              <audio controls src={formData.audio_url} className="mt-2">
+                Your browser does not support the audio element.
+              </audio>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Section Informations générales */}
-            <Collapsible open={openSections.general} onOpenChange={() => toggleSection('general')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Informations générales</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.general ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="patient_name">Nom du patient</Label>
-                    <Input
-                      id="patient_name"
-                      name="patient_name"
-                      value={reportData.patient_name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="auxiliary_name">Intervenant</Label>
-                    <select
-                      id="auxiliary_name"
-                      name="auxiliary_name"
-                      value={reportData.auxiliary_name}
-                      onChange={(e) => setReportData(prev => ({ ...prev, auxiliary_name: e.target.value }))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      required
-                    >
-                      <option value="">Sélectionner un intervenant</option>
-                      {intervenants.map((intervenant) => (
-                        <option key={intervenant.id} value={`${intervenant.first_name} ${intervenant.last_name}`}>
-                          {intervenant.first_name} {intervenant.last_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input
-                      id="date"
-                      name="date"
-                      type="date"
-                      value={reportData.date}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="start_time">Heure de début</Label>
-                    <Input
-                      id="start_time"
-                      name="start_time"
-                      type="time"
-                      value={reportData.start_time}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="end_time">Heure de fin</Label>
-                    <Input
-                      id="end_time"
-                      name="end_time"
-                      type="time"
-                      value={reportData.end_time}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="hourly_rate">Tarif horaire (€)</Label>
-                  <Input
-                    id="hourly_rate"
-                    name="hourly_rate"
-                    type="number"
-                    step="0.01"
-                    value={reportData.hourly_rate}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section État physique */}
-            <Collapsible open={openSections.physical} onOpenChange={() => toggleSection('physical')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">État physique</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.physical ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label>État physique observé</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {physicalStateOptions.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`physical_${option}`}
-                          checked={reportData.physical_state.includes(option)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange('physical_state', option, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`physical_${option}`} className="text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {reportData.physical_state.includes('Autre') && (
-                  <div>
-                    <Label htmlFor="physical_state_other">Précisions sur l'état physique</Label>
-                    <Input
-                      id="physical_state_other"
-                      name="physical_state_other"
-                      value={reportData.physical_state_other}
-                      onChange={handleInputChange}
-                      placeholder="Précisez l'état physique observé"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <Label htmlFor="pain_location">Localisation des douleurs</Label>
-                  <Input
-                    id="pain_location"
-                    name="pain_location"
-                    value={reportData.pain_location}
-                    onChange={handleInputChange}
-                    placeholder="Précisez la localisation des douleurs si applicable"
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section État mental */}
-            <Collapsible open={openSections.mental} onOpenChange={() => toggleSection('mental')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">État mental et comportement</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.mental ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label>État mental observé</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {mentalStateOptions.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`mental_${option}`}
-                          checked={reportData.mental_state.includes(option)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange('mental_state', option, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`mental_${option}`} className="text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="mental_state_change">Évolution de l'état mental</Label>
-                  <Textarea
-                    id="mental_state_change"
-                    name="mental_state_change"
-                    value={reportData.mental_state_change}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Décrivez les changements observés dans l'état mental ou le comportement"
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section Alimentation et hydratation */}
-            <Collapsible open={openSections.nutrition} onOpenChange={() => toggleSection('nutrition')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Alimentation et hydratation</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.nutrition ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="appetite">Appétit</Label>
-                    <RadioGroup value={reportData.appetite} onValueChange={(value) => 
-                      setReportData(prev => ({ ...prev, appetite: value }))
-                    }>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="bon" id="appetite_bon" />
-                        <Label htmlFor="appetite_bon">Bon</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="moyen" id="appetite_moyen" />
-                        <Label htmlFor="appetite_moyen">Moyen</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="faible" id="appetite_faible" />
-                        <Label htmlFor="appetite_faible">Faible</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="refuse" id="appetite_refuse" />
-                        <Label htmlFor="appetite_refuse">Refuse de manger</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="hydration">Hydratation</Label>
-                    <RadioGroup value={reportData.hydration} onValueChange={(value) => 
-                      setReportData(prev => ({ ...prev, hydration: value }))
-                    }>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="suffisante" id="hydration_suffisante" />
-                        <Label htmlFor="hydration_suffisante">Suffisante</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="insuffisante" id="hydration_insuffisante" />
-                        <Label htmlFor="hydration_insuffisante">Insuffisante</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="refuse" id="hydration_refuse" />
-                        <Label htmlFor="hydration_refuse">Refuse de boire</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="appetite_comments">Commentaires sur l'alimentation et l'hydratation</Label>
-                  <Textarea
-                    id="appetite_comments"
-                    name="appetite_comments"
-                    value={reportData.appetite_comments}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Précisions sur les repas, quantités, préférences, difficultés..."
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section Hygiène */}
-            <Collapsible open={openSections.hygiene} onOpenChange={() => toggleSection('hygiene')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Hygiène et soins</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.hygiene ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label>Soins d'hygiène réalisés</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {hygieneOptions.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`hygiene_${option}`}
-                          checked={reportData.hygiene.includes(option)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange('hygiene', option, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`hygiene_${option}`} className="text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="hygiene_comments">Commentaires sur l'hygiène</Label>
-                  <Textarea
-                    id="hygiene_comments"
-                    name="hygiene_comments"
-                    value={reportData.hygiene_comments}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Précisions sur les soins réalisés, difficultés rencontrées, état de la peau..."
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section Activités */}
-            <Collapsible open={openSections.activities} onOpenChange={() => toggleSection('activities')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Activités et animation</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.activities ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label>Activités réalisées</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {activitiesOptions.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`activity_${option}`}
-                          checked={reportData.activities.includes(option)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange('activities', option, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`activity_${option}`} className="text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="activities_other">Autres activités</Label>
-                  <Input
-                    id="activities_other"
-                    name="activities_other"
-                    value={reportData.activities_other}
-                    onChange={handleInputChange}
-                    placeholder="Décrivez les autres activités réalisées"
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section Observations */}
-            <Collapsible open={openSections.observations} onOpenChange={() => toggleSection('observations')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Observations générales</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.observations ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label htmlFor="observations">Observations et remarques</Label>
-                  <Textarea
-                    id="observations"
-                    name="observations"
-                    value={reportData.observations}
-                    onChange={handleInputChange}
-                    rows={5}
-                    placeholder="Observations générales, événements particuliers, évolution de l'état de santé..."
-                  />
-                </div>
-
-                <div>
-                  <Label>Enregistrement audio (optionnel)</Label>
-                  <VoiceRecorderForIntervention
-                    onAudioChange={handleAudioRecorded}
-                    reportId={reportId || undefined}
-                    existingAudioUrl={reportData.audio_url}
-                  />
-                  {pendingAudioUpload && (
-                    <p className="text-sm text-blue-600 mt-2">
-                      ⏳ Upload audio en attente après sauvegarde du rapport...
-                    </p>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Separator />
-
-            {/* Section Suivi */}
-            <Collapsible open={openSections.followUp} onOpenChange={() => toggleSection('followUp')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold">Suivi et recommandations</h3>
-                <ChevronDown className={`h-4 w-4 transition-transform ${openSections.followUp ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div>
-                  <Label>Actions de suivi</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                    {followUpOptions.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`followup_${option}`}
-                          checked={reportData.follow_up.includes(option)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange('follow_up', option, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`followup_${option}`} className="text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="follow_up_other">Autres recommandations</Label>
-                  <Textarea
-                    id="follow_up_other"
-                    name="follow_up_other"
-                    value={reportData.follow_up_other}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Autres actions de suivi, recommandations spécifiques..."
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <div className="flex justify-end pt-6">
-              <Button type="submit" disabled={loading} className="min-w-32">
-                {loading ? 'Sauvegarde...' : 'Sauvegarder'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="flex gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => navigate('/scheduler')} className="flex-1">
+              Annuler
+            </Button>
+            <Button type="submit" disabled={loading} className="flex-1">
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Sauvegarde...' : reportId ? 'Mettre à jour' : 'Sauvegarder'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
