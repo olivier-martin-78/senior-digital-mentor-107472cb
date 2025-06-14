@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +29,7 @@ const InterventionReportForm = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [showAppointmentSelector, setShowAppointmentSelector] = useState(false);
 
   const [formData, setFormData] = useState({
     appointment_id: appointmentId || '',
@@ -331,6 +331,12 @@ const InterventionReportForm = () => {
         }
       } else {
         console.log('🔍 INTERVENTION_FORM - Pas d\'appointment_id ou liste vide');
+        // Si le rapport n'a pas d'appointment_id mais qu'il y a des rendez-vous disponibles,
+        // permettre à l'utilisateur de sélectionner manuellement
+        if (appointmentsList.length > 0) {
+          setShowAppointmentSelector(true);
+          console.log('🔍 INTERVENTION_FORM - Affichage du sélecteur de rendez-vous');
+        }
       }
     }
   };
@@ -353,6 +359,7 @@ const InterventionReportForm = () => {
     if (appointment) {
       console.log('🔍 INTERVENTION_FORM - Rendez-vous sélectionné:', appointment);
       setSelectedAppointment(appointment);
+      setShowAppointmentSelector(false);
       
       const startDate = new Date(appointment.start_time);
       const endDate = new Date(appointment.end_time);
@@ -549,7 +556,7 @@ const InterventionReportForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Rendez-vous associé - NON MODIFIABLE */}
+          {/* Rendez-vous associé */}
           <div>
             <Label htmlFor="appointment">Rendez-vous associé</Label>
             {selectedAppointment ? (
@@ -560,15 +567,60 @@ const InterventionReportForm = () => {
                   {new Date(selectedAppointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   {selectedAppointment.intervenant && ` (${selectedAppointment.intervenant.first_name} ${selectedAppointment.intervenant.last_name})`}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Ce champ n'est pas modifiable
-                </div>
+                {reportId && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-xs"
+                    onClick={() => setShowAppointmentSelector(true)}
+                  >
+                    Changer le rendez-vous associé
+                  </Button>
+                )}
+              </div>
+            ) : showAppointmentSelector && appointments.length > 0 ? (
+              <div className="space-y-2">
+                <Select onValueChange={handleAppointmentChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un rendez-vous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {appointments.map((appointment) => (
+                      <SelectItem key={appointment.id} value={appointment.id}>
+                        {appointment.client?.first_name} {appointment.client?.last_name} - {' '}
+                        {new Date(appointment.start_time).toLocaleDateString()} {' '}
+                        {new Date(appointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {appointment.intervenant && ` (${appointment.intervenant.first_name} ${appointment.intervenant.last_name})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAppointmentSelector(false)}
+                >
+                  Annuler la sélection
+                </Button>
               </div>
             ) : (
               <div className="p-3 bg-gray-50 rounded-md border">
                 <div className="text-sm text-gray-500">
-                  Aucun rendez-vous associé - Vérifiez les logs de la console pour plus de détails
+                  Aucun rendez-vous associé
                 </div>
+                {appointments.length > 0 && reportId && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-xs"
+                    onClick={() => setShowAppointmentSelector(true)}
+                  >
+                    Associer un rendez-vous
+                  </Button>
+                )}
               </div>
             )}
           </div>
