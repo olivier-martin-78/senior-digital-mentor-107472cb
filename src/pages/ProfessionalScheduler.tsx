@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -62,7 +63,7 @@ const ProfessionalScheduler = () => {
     try {
       setLoading(true);
       
-      // Améliorer la détection de l'intervenant connecté
+      // Identifier si l'utilisateur connecté est un intervenant
       console.log('🔍 SCHEDULER - Email utilisateur connecté:', user.email);
       
       // Chercher d'abord par email exact
@@ -115,7 +116,7 @@ const ProfessionalScheduler = () => {
       }
 
       await Promise.all([
-        loadAppointments(currentIntervenantIdFound), 
+        loadAppointments(), 
         loadClients(), 
         loadIntervenants()
       ]);
@@ -131,15 +132,16 @@ const ProfessionalScheduler = () => {
     }
   };
 
-  const loadAppointments = async (intervenantId: string | null = null) => {
+  const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🔍 SCHEDULER - Chargement des rendez-vous...');
+    console.log('🔍 SCHEDULER - Chargement des rendez-vous avec RLS strict...');
     console.log('🔍 SCHEDULER - User ID:', user.id);
     console.log('🔍 SCHEDULER - User Email:', user.email);
-    console.log('🔍 SCHEDULER - Intervenant ID trouvé:', intervenantId);
 
-    const appointmentsQuery = supabase
+    // Maintenant que RLS est activé, cette requête ne retournera QUE les rendez-vous autorisés
+    // Les politiques RLS filtrent automatiquement côté base de données
+    const { data: authorizedAppointments, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
         *,
@@ -168,156 +170,18 @@ const ProfessionalScheduler = () => {
           updated_at,
           created_by
         )
-      `);
-
-    let allAppointments: any[] = [];
-
-    // 1. Charger les rendez-vous créés par le professionnel (professional_id)
-    console.log('🔍 SCHEDULER - Chargement des rendez-vous créés par le professionnel...');
-    const { data: professionalAppointments, error: professionalError } = await appointmentsQuery
-      .eq('professional_id', user.id)
+      `)
       .order('start_time', { ascending: true });
 
-    if (professionalError) {
-      console.error('🔍 SCHEDULER - Erreur lors du chargement des rendez-vous professionnel:', professionalError);
-    } else {
-      console.log('🔍 SCHEDULER - Rendez-vous professionnel chargés:', professionalAppointments?.length || 0);
-      allAppointments = [...(professionalAppointments || [])];
+    if (appointmentError) {
+      console.error('🔍 SCHEDULER - Erreur lors du chargement des rendez-vous:', appointmentError);
+      throw appointmentError;
     }
 
-    // 2. Si l'utilisateur connecté est un intervenant, charger SES rendez-vous assignés
-    if (intervenantId) {
-      console.log('🔍 SCHEDULER - Chargement des rendez-vous assignés à l\'intervenant:', intervenantId);
-      const { data: intervenantAppointments, error: intervenantError } = await appointmentsQuery
-        .eq('intervenant_id', intervenantId)
-        .order('start_time', { ascending: true });
-
-      if (intervenantError) {
-        console.error('🔍 SCHEDULER - Erreur lors du chargement des rendez-vous intervenant:', intervenantError);
-      } else {
-        console.log('🔍 SCHEDULER - Rendez-vous intervenant chargés:', intervenantAppointments?.length || 0);
-        // Fusionner en évitant les doublons
-        if (intervenantAppointments) {
-          intervenantAppointments.forEach(appointment => {
-            if (!allAppointments.find(apt => apt.id === appointment.id)) {
-              allAppointments.push(appointment);
-            }
-          });
-        }
-      }
-    }
-
-    // 3. Charger aussi les rendez-vous avec des rapports créés par le professionnel
-    console.log('🔍 SCHEDULER - Chargement des rendez-vous avec rapports...');
-    const { data: reportsData, error: reportsError } = await supabase
-      .from('intervention_reports')
-      .select(`
-        appointment_id,
-        appointments:appointment_id (
-          *,
-          clients:client_id (
-            id,
-            first_name,
-            last_name,
-            address,
-            phone,
-            email,
-            color,
-            hourly_rate,
-            created_at,
-            updated_at,
-            created_by
-          ),
-          intervenants:intervenant_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            speciality,
-            active,
-            created_at,
-            updated_at,
-            created_by
-          )
-        )
-      `)
-      .eq('professional_id', user.id)
-      .not('appointment_id', 'is', null);
-
-    if (reportsError) {
-      console.error('🔍 SCHEDULER - Erreur lors du chargement des rapports:', reportsError);
-    } else {
-      console.log('🔍 SCHEDULER - Rapports avec rendez-vous chargés:', reportsData?.length || 0);
-      if (reportsData) {
-        reportsData.forEach(report => {
-          if (report.appointments && !allAppointments.find(apt => apt.id === report.appointments.id)) {
-            allAppointments.push(report.appointments);
-          }
-        });
-      }
-    }
-
-    // 4. NOUVEAU: Charger TOUS les rendez-vous où l'email de l'utilisateur correspond à l'email de l'intervenant
-    console.log('🔍 SCHEDULER - Recherche de rendez-vous par email d\'intervenant...');
-    const { data: appointmentsByEmail, error: emailError } = await supabase
-      .from('appointments')
-      .select(`
-        *,
-        clients:client_id (
-          id,
-          first_name,
-          last_name,
-          address,
-          phone,
-          email,
-          color,
-          hourly_rate,
-          created_at,
-          updated_at,
-          created_by
-        ),
-        intervenants:intervenant_id (
-          id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          speciality,
-          active,
-          created_at,
-          updated_at,
-          created_by
-        )
-      `)
-      .not('intervenant_id', 'is', null);
-
-    if (emailError) {
-      console.error('🔍 SCHEDULER - Erreur lors du chargement par email:', emailError);
-    } else if (appointmentsByEmail) {
-      console.log('🔍 SCHEDULER - Rendez-vous trouvés pour filtrage par email:', appointmentsByEmail.length);
-      
-      // Filtrer les rendez-vous où l'email de l'intervenant correspond à celui de l'utilisateur connecté
-      const matchingAppointments = appointmentsByEmail.filter(appointment => {
-        const match = appointment.intervenants?.email === user.email;
-        if (match) {
-          console.log('🔍 SCHEDULER - RDV trouvé pour', user.email, ':', appointment.id, 'Date:', appointment.start_time);
-        }
-        return match;
-      });
-
-      console.log('🔍 SCHEDULER - Rendez-vous correspondant à l\'email:', matchingAppointments.length);
-      
-      // Ajouter les rendez-vous correspondants sans doublons
-      matchingAppointments.forEach(appointment => {
-        if (!allAppointments.find(apt => apt.id === appointment.id)) {
-          allAppointments.push(appointment);
-        }
-      });
-    }
-
+    console.log('🔍 SCHEDULER - Rendez-vous autorisés (après RLS):', authorizedAppointments?.length || 0);
+    
     // Transformer les données pour correspondre au type Appointment
-    const transformedData = allAppointments.map(item => ({
+    const transformedData = (authorizedAppointments || []).map(item => ({
       ...item,
       status: item.status as 'scheduled' | 'completed' | 'cancelled',
       recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
@@ -326,9 +190,9 @@ const ProfessionalScheduler = () => {
       caregivers: []
     }));
 
-    console.log('🔍 SCHEDULER - Total rendez-vous transformés:', transformedData.length);
+    console.log('🔍 SCHEDULER - Rendez-vous finaux après transformation:', transformedData.length);
     transformedData.forEach(apt => {
-      console.log('🔍 SCHEDULER - RDV Final:', apt.id, 'Intervenant:', apt.intervenant?.first_name, apt.intervenant?.last_name, 'Email:', apt.intervenant?.email, 'Date:', apt.start_time);
+      console.log('🔍 SCHEDULER - RDV autorisé:', apt.id, 'Professional:', apt.professional_id, 'Intervenant:', apt.intervenant?.email, 'Date:', apt.start_time);
     });
 
     setAppointments(transformedData);
@@ -375,7 +239,7 @@ const ProfessionalScheduler = () => {
   };
 
   const handleAppointmentSave = () => {
-    loadAppointments(currentIntervenantId);
+    loadAppointments();
     setShowAppointmentForm(false);
     setSelectedAppointment(null);
   };
@@ -437,7 +301,7 @@ const ProfessionalScheduler = () => {
         setSelectedAppointment(null);
       }
 
-      loadAppointments(currentIntervenantId);
+      loadAppointments();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({

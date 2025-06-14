@@ -67,11 +67,11 @@ const InterventionReportForm = () => {
 
     try {
       setLoadingData(true);
-      console.log('🔍 INTERVENTION_FORM - Début du chargement des données');
+      console.log('🔍 INTERVENTION_FORM - Début du chargement des données avec RLS strict');
       console.log('🔍 INTERVENTION_FORM - reportId:', reportId);
       console.log('🔍 INTERVENTION_FORM - appointmentId:', appointmentId);
       
-      // Charger TOUS les clients créés par le professionnel
+      // Charger les clients créés par le professionnel
       const { data: allClients, error: clientError } = await supabase
         .from('clients')
         .select('*')
@@ -115,11 +115,10 @@ const InterventionReportForm = () => {
       return [];
     }
 
-    console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous...');
+    console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous avec RLS strict...');
     
-    // Avec RLS activé, cette requête ne retournera que les rendez-vous autorisés :
-    // - Ceux créés par l'utilisateur (professional_id = user.id)
-    // - Ceux où l'utilisateur est assigné comme intervenant (via email)
+    // Avec RLS activé et politiques strictes, cette requête ne retournera QUE 
+    // les rendez-vous autorisés automatiquement côté base de données
     const { data: userAppointments, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
@@ -148,7 +147,7 @@ const InterventionReportForm = () => {
       caregivers: []
     }));
 
-    console.log('🔍 INTERVENTION_FORM - Total rendez-vous autorisés:', transformedAppointments.length);
+    console.log('🔍 INTERVENTION_FORM - Total rendez-vous autorisés par RLS:', transformedAppointments.length);
     console.log('🔍 INTERVENTION_FORM - IDs des rendez-vous:', transformedAppointments.map(apt => apt.id));
     setAppointments(transformedAppointments);
 
@@ -160,7 +159,7 @@ const InterventionReportForm = () => {
         console.log('🔍 INTERVENTION_FORM - Rendez-vous trouvé par URL:', appointment);
         handleAppointmentChange(appointmentId, transformedAppointments);
       } else {
-        console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé par URL');
+        console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé par URL (accès non autorisé via RLS)');
       }
     }
 
@@ -172,7 +171,7 @@ const InterventionReportForm = () => {
 
     console.log('🔍 INTERVENTION_FORM - Chargement des intervenants...');
     
-    // Charger TOUS les intervenants créés par le professionnel
+    // Charger les intervenants créés par le professionnel
     const { data: allIntervenantsData, error: intervenantError } = await supabase
       .from('intervenants')
       .select('*')
@@ -247,7 +246,7 @@ const InterventionReportForm = () => {
           console.log('🔍 INTERVENTION_FORM - Rendez-vous associé trouvé:', foundAppointment);
           setSelectedAppointment(foundAppointment);
         } else {
-          console.log('🔍 INTERVENTION_FORM - Rendez-vous associé non trouvé - probablement pas d\'accès autorisé');
+          console.log('🔍 INTERVENTION_FORM - Rendez-vous associé non trouvé - accès non autorisé via RLS');
         }
       } else {
         console.log('🔍 INTERVENTION_FORM - Pas d\'appointment_id ou liste vide');
