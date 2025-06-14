@@ -7,8 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Download, FileText, Menu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import AppointmentExporter from './AppointmentExporter';
 import InvoiceGenerator from './InvoiceGenerator';
 
@@ -17,8 +16,6 @@ interface ActionMenuProps {
 }
 
 const ActionMenu: React.FC<ActionMenuProps> = ({ professionalId }) => {
-  const navigate = useNavigate();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -36,13 +33,6 @@ const ActionMenu: React.FC<ActionMenuProps> = ({ professionalId }) => {
           <div className="w-full">
             <InvoiceGenerator professionalId={professionalId} />
           </div>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => navigate('/intervention-report')}
-          className="flex items-center gap-2"
-        >
-          <FileText className="h-4 w-4" />
-          Nouvelle intervention
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
