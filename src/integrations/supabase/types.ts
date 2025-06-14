@@ -1189,10 +1189,6 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
-      check_intervenant_email_match: {
-        Args: { appointment_intervenant_id: string }
-        Returns: boolean
-      }
       debug_life_story_access: {
         Args: { target_user_id: string }
         Returns: Json

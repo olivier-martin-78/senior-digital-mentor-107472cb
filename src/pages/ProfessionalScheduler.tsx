@@ -63,8 +63,8 @@ const ProfessionalScheduler = () => {
       setLoading(true);
       
       // Identifier si l'utilisateur connecté est un intervenant
-      console.log('🔥 POLITIQUES RLS V4 - Email utilisateur connecté:', user.email);
-      console.log('🔥 POLITIQUES RLS V4 - User ID:', user.id);
+      console.log('🔥 POLITIQUES RLS V5 - Email utilisateur connecté:', user.email);
+      console.log('🔥 POLITIQUES RLS V5 - User ID:', user.id);
       
       // Chercher d'abord par email exact
       let { data: intervenantDataByEmail } = await supabase
@@ -75,7 +75,7 @@ const ProfessionalScheduler = () => {
 
       let currentIntervenantIdFound = intervenantDataByEmail?.id || null;
       
-      console.log('🔥 POLITIQUES RLS V4 - Intervenant trouvé par email:', intervenantDataByEmail);
+      console.log('🔥 POLITIQUES RLS V5 - Intervenant trouvé par email:', intervenantDataByEmail);
 
       // Si pas trouvé par email, chercher par nom/prénom dans le profil
       if (!currentIntervenantIdFound) {
@@ -85,7 +85,7 @@ const ProfessionalScheduler = () => {
           .eq('id', user.id)
           .maybeSingle();
 
-        console.log('🔥 POLITIQUES RLS V4 - Profil utilisateur:', profileData);
+        console.log('🔥 POLITIQUES RLS V5 - Profil utilisateur:', profileData);
 
         if (profileData?.display_name) {
           const nameParts = profileData.display_name.split(' ');
@@ -93,7 +93,7 @@ const ProfessionalScheduler = () => {
             const firstName = nameParts[0];
             const lastName = nameParts.slice(1).join(' ');
             
-            console.log('🔥 POLITIQUES RLS V4 - Recherche par nom:', firstName, lastName);
+            console.log('🔥 POLITIQUES RLS V5 - Recherche par nom:', firstName, lastName);
             
             const { data: intervenantDataByName } = await supabase
               .from('intervenants')
@@ -102,7 +102,7 @@ const ProfessionalScheduler = () => {
               .eq('last_name', lastName)
               .maybeSingle();
 
-            console.log('🔥 POLITIQUES RLS V4 - Intervenant trouvé par nom:', intervenantDataByName);
+            console.log('🔥 POLITIQUES RLS V5 - Intervenant trouvé par nom:', intervenantDataByName);
             currentIntervenantIdFound = intervenantDataByName?.id || null;
           }
         }
@@ -110,9 +110,9 @@ const ProfessionalScheduler = () => {
 
       if (currentIntervenantIdFound) {
         setCurrentIntervenantId(currentIntervenantIdFound);
-        console.log('🔥 POLITIQUES RLS V4 - Utilisateur est un intervenant:', currentIntervenantIdFound);
+        console.log('🔥 POLITIQUES RLS V5 - Utilisateur est un intervenant:', currentIntervenantIdFound);
       } else {
-        console.log('🔥 POLITIQUES RLS V4 - Utilisateur n\'est pas un intervenant identifié');
+        console.log('🔥 POLITIQUES RLS V5 - Utilisateur n\'est pas un intervenant identifié');
       }
 
       await Promise.all([
@@ -135,15 +135,15 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🔥🔥🔥 TEST POLITIQUES RLS V4 ULTRA-STRICTES 🔥🔥🔥');
-    console.log('🔥 TEST RLS V4 - User ID:', user.id);
-    console.log('🔥 TEST RLS V4 - User Email:', user.email);
+    console.log('🔥🔥🔥 TEST POLITIQUES RLS V5 DÉFINITIVES 🔥🔥🔥');
+    console.log('🔥 TEST RLS V5 - User ID:', user.id);
+    console.log('🔥 TEST RLS V5 - User Email:', user.email);
 
     try {
-      console.log('🔥 TEST RLS V4 - Exécution de la requête avec les POLITIQUES V4...');
-      console.log('🔥 TEST RLS V4 - Les politiques doivent maintenant être ULTRA-STRICTES et corriger le problème');
+      console.log('🔥 TEST RLS V5 - Exécution de la requête avec les NOUVELLES POLITIQUES V5...');
+      console.log('🔥 TEST RLS V5 - Ces politiques sont maintenant les SEULES actives et ultra-strictes');
       
-      const { data: appointmentsWithV4Policies, error: appointmentError } = await supabase
+      const { data: appointmentsWithV5Policies, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -176,29 +176,29 @@ const ProfessionalScheduler = () => {
         .order('start_time', { ascending: true });
 
       if (appointmentError) {
-        console.error('🔥 TEST RLS V4 - ERREUR lors du chargement:', appointmentError);
+        console.error('🔥 TEST RLS V5 - ERREUR lors du chargement:', appointmentError);
         throw appointmentError;
       }
 
-      console.log('🔥 TEST RLS V4 - RÉSULTAT AVEC POLITIQUES V4:', {
-        totalRetournes: appointmentsWithV4Policies?.length || 0,
+      console.log('🔥 TEST RLS V5 - RÉSULTAT AVEC POLITIQUES V5 DÉFINITIVES:', {
+        totalRetournes: appointmentsWithV5Policies?.length || 0,
         utilisateurConnecte: {
           id: user.id,
           email: user.email
         },
-        politiquesRLS: 'appointments_ultra_final_strict_select_v4 (V4 STRICTES)'
+        politiquesRLS: 'appointments_final_v5_select_only_owner_or_exact_email_match (V5 DÉFINITIVES)'
       });
 
-      // ÉTAPE CRITIQUE : Analyse de chaque rendez-vous avec les politiques V4
-      if (appointmentsWithV4Policies && appointmentsWithV4Policies.length > 0) {
-        console.log('🔥 TEST RLS V4 - Analyse de chaque rendez-vous avec POLITIQUES V4...');
+      // ANALYSE CRITIQUE : Vérification que chaque rendez-vous retourné est bien autorisé
+      if (appointmentsWithV5Policies && appointmentsWithV5Policies.length > 0) {
+        console.log('🔥 TEST RLS V5 - Analyse de chaque rendez-vous avec POLITIQUES V5 DÉFINITIVES...');
         
-        appointmentsWithV4Policies.forEach((apt, index) => {
+        appointmentsWithV5Policies.forEach((apt, index) => {
           const isCreator = apt.professional_id === user.id;
           const intervenantEmail = apt.intervenants?.email;
           const emailMatch = intervenantEmail === user.email;
           
-          console.log(`🔥 TEST RLS V4 - RDV ${index + 1} - ID: ${apt.id}`, {
+          console.log(`🔥 TEST RLS V5 - RDV ${index + 1} - ID: ${apt.id}`, {
             professional_id: apt.professional_id,
             user_id: user.id,
             is_creator: isCreator,
@@ -211,18 +211,18 @@ const ProfessionalScheduler = () => {
             date: apt.start_time
           });
 
-          // 🚨 VÉRIFICATION CRITIQUE : Ce rendez-vous devrait-il être visible ?
+          // 🚨 VÉRIFICATION CRITIQUE V5 : Ce rendez-vous devrait-il être visible ?
           if (!isCreator && !emailMatch) {
-            console.error('🚨🚨🚨 ALERTE RLS V4 CRITIQUE: Ce rendez-vous ne devrait PAS être visible!', {
+            console.error('🚨🚨🚨 ALERTE RLS V5 CRITIQUE: Ce rendez-vous ne devrait PAS être visible!', {
               rdv_id: apt.id,
               raison: 'Utilisateur n\'est ni créateur ni intervenant avec email correspondant',
               professional_id: apt.professional_id,
               intervenant_email: intervenantEmail,
               user_email: user.email,
-              probleme: 'LES POLITIQUES V4 NE FONCTIONNENT PAS CORRECTEMENT!'
+              probleme: 'LES POLITIQUES V5 NE FONCTIONNENT PAS CORRECTEMENT!'
             });
           } else {
-            console.log('✅ RLS V4 OK - Ce rendez-vous est correctement visible');
+            console.log('✅ RLS V5 PARFAIT - Ce rendez-vous est correctement visible');
             if (isCreator) {
               console.log('   → Visible car utilisateur est le créateur');
             }
@@ -232,14 +232,14 @@ const ProfessionalScheduler = () => {
           }
         });
       } else {
-        console.log('🔥 TEST RLS V4 - Aucun rendez-vous retourné');
+        console.log('🔥 TEST RLS V5 - Aucun rendez-vous retourné par les politiques V5');
         if (user.email === 'olivier.fernandez15@sfr.fr') {
-          console.log('✅ EXCELLENT! L\'utilisateur olivier.fernandez15@sfr.fr ne voit plus les rendez-vous non autorisés!');
+          console.log('🎉🎉🎉 EXCELLENT! L\'utilisateur olivier.fernandez15@sfr.fr ne voit plus les rendez-vous non autorisés avec les politiques V5!');
         }
       }
 
       // Transformer les données
-      const transformedData = (appointmentsWithV4Policies || []).map(item => ({
+      const transformedData = (appointmentsWithV5Policies || []).map(item => ({
         ...item,
         status: item.status as 'scheduled' | 'completed' | 'cancelled',
         recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
@@ -248,22 +248,22 @@ const ProfessionalScheduler = () => {
         caregivers: []
       }));
 
-      console.log('🔥 TEST RLS V4 - DONNÉES FINALES AVEC POLITIQUES V4:', transformedData.length, 'rendez-vous');
+      console.log('🔥 TEST RLS V5 - DONNÉES FINALES AVEC POLITIQUES V5 DÉFINITIVES:', transformedData.length, 'rendez-vous');
       
-      // MESSAGE SPÉCIAL pour olivier.fernandez15@sfr.fr
+      // MESSAGE SPÉCIAL pour olivier.fernandez15@sfr.fr avec V5
       if (user.email === 'olivier.fernandez15@sfr.fr') {
         if (transformedData.length === 1) {
-          console.log('🎉🎉🎉 SUCCÈS! L\'utilisateur olivier.fernandez15@sfr.fr ne voit plus que 1 rendez-vous (le sien)');
+          console.log('🎉🎉🎉 SUCCÈS V5! L\'utilisateur olivier.fernandez15@sfr.fr ne voit plus que 1 rendez-vous (le sien)');
         } else if (transformedData.length === 0) {
-          console.log('🎉🎉🎉 SUCCÈS! L\'utilisateur olivier.fernandez15@sfr.fr ne voit aucun rendez-vous non autorisé');
+          console.log('🎉🎉🎉 SUCCÈS V5! L\'utilisateur olivier.fernandez15@sfr.fr ne voit aucun rendez-vous non autorisé');
         } else {
-          console.error('🚨 PROBLÈME! L\'utilisateur olivier.fernandez15@sfr.fr voit encore', transformedData.length, 'rendez-vous');
+          console.error('🚨 PROBLÈME V5! L\'utilisateur olivier.fernandez15@sfr.fr voit encore', transformedData.length, 'rendez-vous');
         }
       }
       
       setAppointments(transformedData);
     } catch (error) {
-      console.error('🔥 TEST RLS V4 - ERREUR CRITIQUE:', error);
+      console.error('🔥 TEST RLS V5 - ERREUR CRITIQUE:', error);
       throw error;
     }
   };
@@ -345,17 +345,17 @@ const ProfessionalScheduler = () => {
   };
 
   const handleAppointmentEdit = (appointment: Appointment) => {
-    console.log('🚨 DÉBOGAGE ÉDITION - Clic sur édition détecté');
-    console.log('🚨 DÉBOGAGE ÉDITION - Rendez-vous ID:', appointment.id);
-    console.log('🚨 DÉBOGAGE ÉDITION - Utilisateur connecté:', user?.email);
-    console.log('🚨 DÉBOGAGE ÉDITION - Créateur du RDV (professional_id):', appointment.professional_id);
-    console.log('🚨 DÉBOGAGE ÉDITION - User ID:', user?.id);
-    console.log('🚨 DÉBOGAGE ÉDITION - Intervenant du RDV:', appointment.intervenant?.email);
-    console.log('🚨 DÉBOGAGE ÉDITION - Objet intervenant complet:', appointment.intervenant);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Clic sur édition détecté');
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Rendez-vous ID:', appointment.id);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Utilisateur connecté:', user?.email);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Créateur du RDV (professional_id):', appointment.professional_id);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - User ID:', user?.id);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Intervenant du RDV:', appointment.intervenant?.email);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Objet intervenant complet:', appointment.intervenant);
     
     // Vérifier si l'utilisateur existe
     if (!user) {
-      console.log('🚨 DÉBOGAGE ÉDITION - ERREUR: Aucun utilisateur connecté');
+      console.log('🚨 DÉBOGAGE ÉDITION V5 - ERREUR: Aucun utilisateur connecté');
       toast({
         title: 'Erreur',
         description: 'Aucun utilisateur connecté',
@@ -366,12 +366,12 @@ const ProfessionalScheduler = () => {
     
     // Vérifier si l'utilisateur est le créateur
     const isCreator = appointment.professional_id === user.id;
-    console.log('🚨 DÉBOGAGE ÉDITION - Est créateur?', isCreator);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Est créateur?', isCreator);
     
     // Vérifier si l'utilisateur est l'intervenant
     const isIntervenant = appointment.intervenant?.email === user.email;
-    console.log('🚨 DÉBOGAGE ÉDITION - Est intervenant?', isIntervenant);
-    console.log('🚨 DÉBOGAGE ÉDITION - Comparaison emails:', {
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Est intervenant?', isIntervenant);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Comparaison emails:', {
       intervenantEmail: appointment.intervenant?.email,
       userEmail: user.email,
       match: appointment.intervenant?.email === user.email
@@ -379,14 +379,14 @@ const ProfessionalScheduler = () => {
     
     // Permettre l'édition si l'utilisateur est le créateur OU l'intervenant
     const canEdit = isCreator || isIntervenant;
-    console.log('🚨 DÉBOGAGE ÉDITION - Peut éditer?', canEdit);
+    console.log('🚨 DÉBOGAGE ÉDITION V5 - Peut éditer?', canEdit);
     
     if (canEdit) {
-      console.log('🚨 DÉBOGAGE ÉDITION - AUTORISATION ACCORDÉE - Ouverture du formulaire');
+      console.log('🚨 DÉBOGAGE ÉDITION V5 - AUTORISATION ACCORDÉE - Ouverture du formulaire');
       setSelectedAppointment(appointment);
       setShowAppointmentForm(true);
     } else {
-      console.log('🚨 DÉBOGAGE ÉDITION - ACCÈS REFUSÉ');
+      console.log('🚨 DÉBOGAGE ÉDITION V5 - ACCÈS REFUSÉ');
       toast({
         title: 'Accès refusé',
         description: 'Vous n\'êtes pas autorisé à modifier ce rendez-vous',
