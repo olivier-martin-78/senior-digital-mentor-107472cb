@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -135,12 +134,12 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🔍 SCHEDULER - Chargement des rendez-vous avec nouvelles politiques RLS...');
+    console.log('🔍 SCHEDULER - Chargement des rendez-vous avec fonction de debug stricte...');
     console.log('🔍 SCHEDULER - User ID:', user.id);
     console.log('🔍 SCHEDULER - User Email:', user.email);
 
-    // Maintenant avec les nouvelles politiques RLS ultra strictes,
-    // cette requête ne retournera QUE les rendez-vous autorisés
+    // Maintenant avec la fonction debug_email_match et les nouvelles politiques RLS,
+    // cette requête ne retournera QUE les rendez-vous strictement autorisés
     const { data: authorizedAppointments, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
@@ -178,7 +177,7 @@ const ProfessionalScheduler = () => {
       throw appointmentError;
     }
 
-    console.log('🔍 SCHEDULER - Rendez-vous autorisés (après nouvelles politiques RLS):', authorizedAppointments?.length || 0);
+    console.log('🔍 SCHEDULER - Rendez-vous autorisés (après fonction debug stricte):', authorizedAppointments?.length || 0);
     
     // Transformer les données pour correspondre au type Appointment
     const transformedData = (authorizedAppointments || []).map(item => ({
