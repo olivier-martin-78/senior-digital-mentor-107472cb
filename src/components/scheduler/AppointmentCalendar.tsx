@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
@@ -72,12 +71,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
   };
 
-  const confirmDelete = (deleteReport: boolean) => {
-    if (selectedAppointment) {
-      onAppointmentDelete(selectedAppointment.id, deleteReport);
-      setSelectedAppointment(null);
-      setShowDeleteDialog(false);
-    }
+  const confirmDelete = (appointmentId: string, deleteReport?: boolean) => {
+    onAppointmentDelete(appointmentId, deleteReport);
+    setSelectedAppointment(null);
+    setShowDeleteDialog(false);
   };
 
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -237,8 +234,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       {showDeleteDialog && selectedAppointment && (
         <AppointmentDeleteDialog
           appointment={selectedAppointment}
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
           onConfirm={confirmDelete}
-          onCancel={() => setShowDeleteDialog(false)}
         />
       )}
     </div>
