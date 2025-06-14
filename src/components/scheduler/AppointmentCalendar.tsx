@@ -1,23 +1,20 @@
-import React, { useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
-import interactionPlugin from '@fullcalendar/interaction';
-import { useNavigate } from 'react-router-dom';
-import { Appointment } from '@/types/appointments';
+
+import React, { useState, useCallback } from 'react';
+import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/fr';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Appointment, CalendarEvent } from '@/types/appointments';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, FileText, Clock, CircleDot, XCircle, MoreVertical } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
-import AuxiliaryAvatar from './AuxiliaryAvatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Edit, Trash2, FileText, Plus, User, Clock, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import AppointmentDeleteDialog from './AppointmentDeleteDialog';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
+
+// Configure moment en français
+moment.locale('fr');
+const localizer = momentLocalizer(moment);
 
 interface AppointmentCalendarProps {
   appointments: Appointment[];
@@ -28,270 +25,223 @@ interface AppointmentCalendarProps {
 const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   appointments,
   onAppointmentEdit,
-  onAppointmentDelete,
+  onAppointmentDelete
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isMobileViewport } = useIsMobile();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentView, setCurrentView] = useState<View>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Fonction pour obtenir l'icône de statut avec fond blanc
-  const getStatusIcon = (status: string) => {
-    const iconClass = "h-5 w-5 p-0.5 rounded-full bg-white shadow-sm border";
-    switch (status) {
-      case 'completed':
-        return <CircleDot className={`${iconClass} text-green-500 border-green-200`} />;
-      case 'cancelled':
-        return <XCircle className={`${iconClass} text-red-600 border-red-200`} />;
-      case 'scheduled':
-      default:
-        return <Clock className={`${iconClass} text-blue-600 border-blue-200`} />;
-    }
-  };
-
-  // Convertir les appointments vers le format requis par FullCalendar
-  const events = appointments.map(appointment => ({
+  const events: CalendarEvent[] = appointments.map((appointment) => ({
     id: appointment.id,
-    title: `${appointment.client?.first_name} ${appointment.client?.last_name}`,
-    start: appointment.start_time,
-    end: appointment.end_time,
-    backgroundColor: appointment.client?.color || '#3174ad',
-    borderColor: appointment.client?.color || '#3174ad',
-    textColor: '#ffffff',
-    extendedProps: {
-      appointment: appointment,
-      hasReport: !!appointment.intervention_report_id,
-      displayName: appointment?.intervenant 
-        ? `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`
-        : user?.email?.split('@')[0] || 'Auxiliaire',
-      status: appointment.status
-    }
+    title: `${appointment.client?.first_name} ${appointment.client?.last_name}${appointment.intervenant ? ` - ${appointment.intervenant.first_name} ${appointment.intervenant.last_name}` : ''}`,
+    start: new Date(appointment.start_time),
+    end: new Date(appointment.end_time),
+    resource: appointment,
   }));
 
-  const handleReportClick = (appointment: Appointment) => {
-    if (appointment.intervention_report_id) {
-      navigate(`/intervention-report?reportId=${appointment.intervention_report_id}`);
+  const handleSelectEvent = useCallback((event: CalendarEvent) => {
+    setSelectedAppointment(event.resource);
+  }, []);
+
+  const handleCreateReport = () => {
+    if (selectedAppointment) {
+      // Naviguer vers la page de création de rapport avec l'ID du rendez-vous
+      navigate(`/intervention-report?appointment_id=${selectedAppointment.id}`);
     }
   };
 
-  const handleDeleteClick = async (appointment: Appointment, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setAppointmentToDelete(appointment);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async (appointmentId: string, deleteReport?: boolean) => {
-    await onAppointmentDelete(appointmentId, deleteReport);
-    setAppointmentToDelete(null);
-  };
-
-  const handleEditClick = (appointment: Appointment, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onAppointmentEdit(appointment);
-  };
-
-  // Gestionnaire d'événements pour les clics sur les événements
-  const handleEventClick = (clickInfo: any) => {
-    const appointment = clickInfo.event.extendedProps.appointment;
-    if (appointment) {
-      onAppointmentEdit(appointment);
+  const handleViewReport = () => {
+    if (selectedAppointment?.intervention_report_id) {
+      // Naviguer vers la page de visualisation du rapport
+      navigate(`/intervention-report?report_id=${selectedAppointment.intervention_report_id}`);
     }
   };
 
-  // Configuration responsive pour la toolbar
-  const getHeaderToolbar = () => {
-    if (isMobileViewport) {
-      return {
-        left: 'prev,next',
-        center: 'title',
-        right: 'today,timeGridDay,timeGridWeek'
-      };
+  const handleEdit = () => {
+    if (selectedAppointment) {
+      onAppointmentEdit(selectedAppointment);
+      setSelectedAppointment(null);
     }
+  };
+
+  const handleDelete = () => {
+    if (selectedAppointment) {
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const confirmDelete = (deleteReport: boolean) => {
+    if (selectedAppointment) {
+      onAppointmentDelete(selectedAppointment.id, deleteReport);
+      setSelectedAppointment(null);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const eventStyleGetter = (event: CalendarEvent) => {
+    const appointment = event.resource;
+    let backgroundColor = appointment.client?.color || '#3174ad';
+    
+    // Ajuster la couleur selon le statut
+    if (appointment.status === 'cancelled') {
+      backgroundColor = '#ef4444';
+    } else if (appointment.status === 'completed') {
+      backgroundColor = '#22c55e';
+    }
+
     return {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+      style: {
+        backgroundColor,
+        borderRadius: '5px',
+        opacity: 0.8,
+        color: 'white',
+        border: '0px',
+        display: 'block'
+      }
     };
   };
 
-  // Configuration responsive pour les textes des boutons
-  const getButtonText = () => {
-    if (isMobileViewport) {
-      return {
-        today: "Auj.",
-        month: 'M',
-        week: 'S',
-        day: 'J',
-        list: 'L'
-      };
-    }
-    return {
-      today: "Aujourd'hui",
-      month: 'Mois',
-      week: 'Semaine',
-      day: 'Jour',
-      list: 'Agenda'
-    };
+  const messages = {
+    allDay: 'Toute la journée',
+    previous: 'Précédent',
+    next: 'Suivant',
+    today: "Aujourd'hui",
+    month: 'Mois',
+    week: 'Semaine',
+    day: 'Jour',
+    agenda: 'Agenda',
+    date: 'Date',
+    time: 'Heure',
+    event: 'Événement',
+    noEventsInRange: 'Aucun rendez-vous dans cette période',
+    showMore: (total: number) => `+ ${total} de plus`,
   };
 
-  // Rendu personnalisé pour le contenu des événements
-  const renderEventContent = (eventInfo: any) => {
-    const appointment = eventInfo.event.extendedProps.appointment;
-    const hasReport = eventInfo.event.extendedProps.hasReport;
-    const displayName = eventInfo.event.extendedProps.displayName;
-    const status = eventInfo.event.extendedProps.status;
-
-    return (
-      <div className="p-1 w-full h-full">
-        <div className="text-xs font-medium flex items-center gap-1 mb-1">
-          <AuxiliaryAvatar 
-            name={displayName} 
-            size="sm" 
-          />
-          {getStatusIcon(status)}
-          {hasReport && (
-            <div className="bg-green-600 text-white rounded-full w-3 h-3 flex items-center justify-center">
-              <FileText className="h-2 w-2" />
-            </div>
-          )}
-        </div>
-        <div className="text-xs">
-          <div className="font-medium truncate">{eventInfo.event.title}</div>
-          {appointment?.notes && (
-            <div className="opacity-75 truncate text-xs">{appointment.notes}</div>
-          )}
-        </div>
-        
-        {/* Actions pour desktop */}
-        <div className="hidden md:flex gap-1 mt-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
-            onClick={(e) => handleEditClick(appointment, e)}
-          >
-            <Edit className="h-3 w-3 text-gray-700" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
-            onClick={(e) => handleDeleteClick(appointment, e)}
-          >
-            <Trash2 className="h-3 w-3 text-gray-700" />
-          </Button>
-          {hasReport && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 w-6 p-0 bg-green-50/90 border-green-300/50 hover:bg-green-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReportClick(appointment);
-              }}
-            >
-              <FileText className="h-3 w-3 text-green-600" />
-            </Button>
-          )}
-        </div>
-
-        {/* Actions pour mobile - Dropdown */}
-        <div className="md:hidden mt-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 w-6 p-0 bg-white/90 border-white/50 hover:bg-white"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-3 w-3 text-gray-700" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-white z-50">
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditClick(appointment, e);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(appointment, e);
-                }}
-                className="flex items-center gap-2 text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer
-              </DropdownMenuItem>
-              {hasReport && (
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReportClick(appointment);
-                  }}
-                  className="flex items-center gap-2 text-green-600"
-                >
-                  <FileText className="h-4 w-4" />
-                  Voir le rapport
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    );
+  const formats = {
+    timeGutterFormat: 'HH:mm',
+    eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+      return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
+    },
+    dayFormat: (date: Date) => moment(date).format('dddd DD/MM'),
+    dayHeaderFormat: (date: Date) => moment(date).format('dddd DD/MM'),
+    dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
+      return `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`;
+    },
   };
 
   return (
-    <>
-      <div className="h-[600px]">
-        <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          headerToolbar={getHeaderToolbar()}
+    <div className="space-y-4">
+      <div style={{ height: '600px' }}>
+        <Calendar
+          localizer={localizer}
           events={events}
-          eventClick={handleEventClick}
-          eventContent={renderEventContent}
-          height={600}
-          locale="fr"
-          slotMinTime="06:00:00"
-          slotMaxTime="22:00:00"
-          allDaySlot={false}
-          slotDuration="00:30:00"
-          slotLabelInterval="01:00:00"
-          weekends={true}
-          editable={false}
-          selectable={false}
-          dayMaxEvents={true}
-          buttonText={getButtonText()}
-          noEventsText="Aucun rendez-vous"
-          eventTimeFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          }}
-          slotLabelFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          }}
+          startAccessor="start"
+          endAccessor="end"
+          onSelectEvent={handleSelectEvent}
+          eventPropGetter={eventStyleGetter}
+          messages={messages}
+          formats={formats}
+          view={currentView}
+          onView={setCurrentView}
+          date={currentDate}
+          onNavigate={setCurrentDate}
+          views={['month', 'week', 'day', 'agenda']}
+          step={15}
+          timeslots={4}
+          min={new Date(2024, 0, 1, 7, 0)}
+          max={new Date(2024, 0, 1, 22, 0)}
+          className="bg-white rounded-lg border"
         />
       </div>
-      
-      <AppointmentDeleteDialog
-        appointment={appointmentToDelete}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDeleteConfirm}
-      />
-    </>
+
+      {selectedAppointment && (
+        <Card className="border-l-4" style={{ borderLeftColor: selectedAppointment.client?.color || '#3174ad' }}>
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">
+                  {selectedAppointment.client?.first_name} {selectedAppointment.client?.last_name}
+                </h3>
+                
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    {moment(selectedAppointment.start_time).format('DD/MM/YYYY HH:mm')} - {moment(selectedAppointment.end_time).format('HH:mm')}
+                  </div>
+                  
+                  {selectedAppointment.intervenant && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {selectedAppointment.intervenant.first_name} {selectedAppointment.intervenant.last_name}
+                    </div>
+                  )}
+                  
+                  {selectedAppointment.client?.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      {selectedAppointment.client.address}
+                    </div>
+                  )}
+                </div>
+
+                {selectedAppointment.notes && (
+                  <p className="text-sm text-gray-700 mt-2 p-2 bg-gray-50 rounded">
+                    {selectedAppointment.notes}
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <Badge variant={
+                    selectedAppointment.status === 'completed' ? 'default' :
+                    selectedAppointment.status === 'cancelled' ? 'destructive' : 
+                    'secondary'
+                  }>
+                    {selectedAppointment.status === 'completed' ? 'Terminé' :
+                     selectedAppointment.status === 'cancelled' ? 'Annulé' : 
+                     'Planifié'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleEdit} size="sm" variant="outline" className="flex items-center gap-1">
+                <Edit className="h-4 w-4" />
+                Modifier
+              </Button>
+              
+              <Button onClick={handleDelete} size="sm" variant="outline" className="flex items-center gap-1 text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </Button>
+
+              {/* Boutons pour les rapports d'intervention */}
+              {selectedAppointment.intervention_report_id ? (
+                <Button onClick={handleViewReport} size="sm" variant="outline" className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                  <FileText className="h-4 w-4" />
+                  Voir le rapport
+                </Button>
+              ) : (
+                <Button onClick={handleCreateReport} size="sm" variant="outline" className="flex items-center gap-1 text-green-600 hover:text-green-700">
+                  <Plus className="h-4 w-4" />
+                  Créer un rapport
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showDeleteDialog && selectedAppointment && (
+        <AppointmentDeleteDialog
+          appointment={selectedAppointment}
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
+      )}
+    </div>
   );
 };
 
