@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, User, X } from 'lucide-react';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import RecurringAppointmentForm from './RecurringAppointmentForm';
+import { addWeeks } from 'date-fns';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
@@ -322,11 +323,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             {!appointment && (
               <RecurringAppointmentForm
                 isRecurring={formData.is_recurring}
-                recurrenceType={formData.recurrence_type}
-                recurrenceEndDate={formData.recurrence_end_date}
+                endDate={formData.recurrence_end_date}
                 onRecurringChange={(isRecurring) => setFormData({ ...formData, is_recurring: isRecurring })}
-                onRecurrenceTypeChange={(type) => setFormData({ ...formData, recurrence_type: type })}
-                onRecurrenceEndDateChange={(date) => setFormData({ ...formData, recurrence_end_date: date })}
+                onEndDateChange={(date) => setFormData({ ...formData, recurrence_end_date: date })}
               />
             )}
 

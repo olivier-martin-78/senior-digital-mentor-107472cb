@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -119,10 +120,10 @@ const InterventionReportForm = () => {
       .select(`
         *,
         clients:client_id (
-          id, first_name, last_name, address, phone, email, color, hourly_rate
+          id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
         ),
         intervenants:intervenant_id (
-          id, first_name, last_name, email, phone, speciality, active
+          id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
         )
       `)
       .eq('professional_id', user.id)
@@ -136,10 +137,10 @@ const InterventionReportForm = () => {
       .select(`
         *,
         clients:client_id (
-          id, first_name, last_name, address, phone, email, color, hourly_rate
+          id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
         ),
         intervenants:intervenant_id (
-          id, first_name, last_name, email, phone, speciality, active
+          id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
         )
       `)
       .not('intervenant_id', 'is', null);
@@ -232,23 +233,23 @@ const InterventionReportForm = () => {
         date: report.date || '',
         start_time: report.start_time || '',
         end_time: report.end_time || '',
-        activities: report.activities || [],
+        activities: Array.isArray(report.activities) ? report.activities : [],
         activities_other: report.activities_other || '',
-        physical_state: report.physical_state || [],
+        physical_state: Array.isArray(report.physical_state) ? report.physical_state : [],
         physical_state_other: report.physical_state_other || '',
         pain_location: report.pain_location || '',
-        mental_state: report.mental_state || [],
+        mental_state: Array.isArray(report.mental_state) ? report.mental_state : [],
         mental_state_change: report.mental_state_change || '',
-        hygiene: report.hygiene || [],
+        hygiene: Array.isArray(report.hygiene) ? report.hygiene : [],
         hygiene_comments: report.hygiene_comments || '',
         appetite: report.appetite || '',
         appetite_comments: report.appetite_comments || '',
         hydration: report.hydration || '',
         observations: report.observations || '',
-        follow_up: report.follow_up || [],
+        follow_up: Array.isArray(report.follow_up) ? report.follow_up : [],
         follow_up_other: report.follow_up_other || '',
         hourly_rate: report.hourly_rate?.toString() || '',
-        media_files: report.media_files || [],
+        media_files: Array.isArray(report.media_files) ? report.media_files : [],
         audio_url: report.audio_url || '',
       });
 
@@ -717,7 +718,7 @@ const InterventionReportForm = () => {
           {/* Média */}
           <div>
             <Label>Médias</Label>
-            <MediaUploader onUpload={handleMediaUpload} />
+            <MediaUploader onFilesSelected={handleMediaUpload} />
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.media_files.map((file, index) => (
                 <Badge key={index} variant="secondary">
@@ -733,7 +734,7 @@ const InterventionReportForm = () => {
           {/* Enregistrement audio */}
           <div>
             <Label>Enregistrement audio</Label>
-            <SimpleInterventionAudioRecorder onUpload={handleAudioUpload} />
+            <SimpleInterventionAudioRecorder onAudioSaved={handleAudioUpload} />
             {formData.audio_url && (
               <audio controls src={formData.audio_url} className="mt-2">
                 Your browser does not support the audio element.
