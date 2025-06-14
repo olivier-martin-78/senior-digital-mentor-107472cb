@@ -343,21 +343,48 @@ const ProfessionalScheduler = () => {
   };
 
   const handleAppointmentEdit = (appointment: Appointment) => {
-    console.log('🔍 SCHEDULER - Tentative d\'édition du rendez-vous:', appointment.id);
-    console.log('🔍 SCHEDULER - Utilisateur courant:', user?.email);
-    console.log('🔍 SCHEDULER - Créateur du RDV:', appointment.professional_id);
-    console.log('🔍 SCHEDULER - Intervenant du RDV:', appointment.intervenant?.email);
+    console.log('🚨 DÉBOGAGE ÉDITION - Clic sur édition détecté');
+    console.log('🚨 DÉBOGAGE ÉDITION - Rendez-vous ID:', appointment.id);
+    console.log('🚨 DÉBOGAGE ÉDITION - Utilisateur connecté:', user?.email);
+    console.log('🚨 DÉBOGAGE ÉDITION - Créateur du RDV (professional_id):', appointment.professional_id);
+    console.log('🚨 DÉBOGAGE ÉDITION - User ID:', user?.id);
+    console.log('🚨 DÉBOGAGE ÉDITION - Intervenant du RDV:', appointment.intervenant?.email);
+    console.log('🚨 DÉBOGAGE ÉDITION - Objet intervenant complet:', appointment.intervenant);
+    
+    // Vérifier si l'utilisateur existe
+    if (!user) {
+      console.log('🚨 DÉBOGAGE ÉDITION - ERREUR: Aucun utilisateur connecté');
+      toast({
+        title: 'Erreur',
+        description: 'Aucun utilisateur connecté',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Vérifier si l'utilisateur est le créateur
+    const isCreator = appointment.professional_id === user.id;
+    console.log('🚨 DÉBOGAGE ÉDITION - Est créateur?', isCreator);
+    
+    // Vérifier si l'utilisateur est l'intervenant
+    const isIntervenant = appointment.intervenant?.email === user.email;
+    console.log('🚨 DÉBOGAGE ÉDITION - Est intervenant?', isIntervenant);
+    console.log('🚨 DÉBOGAGE ÉDITION - Comparaison emails:', {
+      intervenantEmail: appointment.intervenant?.email,
+      userEmail: user.email,
+      match: appointment.intervenant?.email === user.email
+    });
     
     // Permettre l'édition si l'utilisateur est le créateur OU l'intervenant
-    const canEdit = user && (
-      appointment.professional_id === user.id || 
-      appointment.intervenant?.email === user.email
-    );
+    const canEdit = isCreator || isIntervenant;
+    console.log('🚨 DÉBOGAGE ÉDITION - Peut éditer?', canEdit);
     
     if (canEdit) {
+      console.log('🚨 DÉBOGAGE ÉDITION - AUTORISATION ACCORDÉE - Ouverture du formulaire');
       setSelectedAppointment(appointment);
       setShowAppointmentForm(true);
     } else {
+      console.log('🚨 DÉBOGAGE ÉDITION - ACCÈS REFUSÉ');
       toast({
         title: 'Accès refusé',
         description: 'Vous n\'êtes pas autorisé à modifier ce rendez-vous',
