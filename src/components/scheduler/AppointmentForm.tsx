@@ -53,7 +53,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
     console.log('🔍 APPOINTMENT_FORM - Chargement des données autorisées...');
     
-    // Charger les clients autorisés pour cet utilisateur
+    // 1. Charger les clients créés par l'utilisateur connecté
+    let authorizedClients: Client[] = [...clients];
+    console.log('🔍 APPOINTMENT_FORM - Clients créés par l\'utilisateur:', clients.length);
+
+    // 2. Charger les clients autorisés via les permissions
     const { data: clientPermissions, error: clientError } = await supabase
       .from('user_client_permissions')
       .select(`
@@ -62,12 +66,27 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       `)
       .eq('user_id', user.id);
 
-    let authorizedClients: Client[] = [];
     if (!clientError && clientPermissions) {
-      authorizedClients = clientPermissions.map(p => p.clients);
+      const permissionClients = clientPermissions.map(p => p.clients);
+      // Fusionner en évitant les doublons
+      permissionClients.forEach(permClient => {
+        if (!authorizedClients.find(c => c.id === permClient.id)) {
+          authorizedClients.push(permClient);
+        }
+      });
+      console.log('🔍 APPOINTMENT_FORM - Clients via permissions:', permissionClients.length);
     }
 
-    console.log('🔍 APPOINTMENT_FORM - Clients autorisés:', authorizedClients.length);
+    // 3. Si un rendez-vous existe et qu'il a un client assigné, l'ajouter aussi
+    if (appointment?.client_id && appointment.client) {
+      const existingClient = authorizedClients.find(c => c.id === appointment.client_id);
+      if (!existingClient) {
+        authorizedClients.push(appointment.client);
+        console.log('🔍 APPOINTMENT_FORM - Client du rendez-vous ajouté:', appointment.client);
+      }
+    }
+
+    console.log('🔍 APPOINTMENT_FORM - Total clients autorisés:', authorizedClients.length);
     setAllowedClients(authorizedClients);
 
     // Charger les intervenants autorisés
