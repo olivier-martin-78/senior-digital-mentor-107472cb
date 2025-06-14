@@ -259,6 +259,17 @@ const InterventionReportForm = () => {
   };
 
   const handleAppointmentChange = (appointmentId: string) => {
+    // Handle the special "none" value
+    if (appointmentId === "none") {
+      setSelectedAppointment(null);
+      setFormData(prev => ({
+        ...prev,
+        appointment_id: '',
+        // Keep other fields as they are
+      }));
+      return;
+    }
+
     const appointment = appointments.find(apt => apt.id === appointmentId);
     if (appointment) {
       setSelectedAppointment(appointment);
@@ -459,12 +470,12 @@ const InterventionReportForm = () => {
           {/* Sélection du rendez-vous */}
           <div>
             <Label htmlFor="appointment">Rendez-vous associé</Label>
-            <Select value={formData.appointment_id} onValueChange={handleAppointmentChange}>
+            <Select value={formData.appointment_id || "none"} onValueChange={handleAppointmentChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un rendez-vous (optionnel)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucun rendez-vous</SelectItem>
+                <SelectItem value="none">Aucun rendez-vous</SelectItem>
                 {appointments.map((appointment) => (
                   <SelectItem key={appointment.id} value={appointment.id}>
                     {appointment.client?.first_name} {appointment.client?.last_name} - {' '}
