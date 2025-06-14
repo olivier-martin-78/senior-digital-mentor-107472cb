@@ -76,20 +76,27 @@ const InterventionReportForm = () => {
     try {
       setLoadingData(true);
       
-      // Charger les clients
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('created_by', user.id)
-        .order('last_name');
+      // Charger les clients autorisés pour cet utilisateur
+      const { data: clientPermissions, error: clientError } = await supabase
+        .from('user_client_permissions')
+        .select(`
+          client_id,
+          clients!inner(*)
+        `)
+        .eq('user_id', user.id);
 
-      if (clientsError) throw clientsError;
-      setClients(clientsData || []);
+      let authorizedClients: Client[] = [];
+      if (!clientError && clientPermissions) {
+        authorizedClients = clientPermissions.map(p => p.clients);
+      }
 
-      // Charger tous les rendez-vous (comme dans ProfessionalScheduler)
-      await loadAppointments();
+      console.log('🔍 INTERVENTION_FORM - Clients autorisés:', authorizedClients.length);
+      setClients(authorizedClients);
+
+      // Charger les rendez-vous (filtrés automatiquement par les clients autorisés)
+      await loadAppointments(authorizedClients);
       
-      // Charger les intervenants
+      // Charger les intervenants autorisés
       await loadIntervenants();
 
       // Si on édite un rapport existant
@@ -108,12 +115,17 @@ const InterventionReportForm = () => {
     }
   };
 
-  const loadAppointments = async () => {
-    if (!user) return;
+  const loadAppointments = async (authorizedClients: Client[]) => {
+    if (!user || authorizedClients.length === 0) {
+      setAppointments([]);
+      return;
+    }
 
     console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous...');
     
-    // 1. Charger les rendez-vous créés par le professionnel
+    const clientIds = authorizedClients.map(c => c.id);
+    
+    // 1. Charger les rendez-vous créés par le professionnel pour les clients autorisés
     const { data: professionalAppointments, error: professionalError } = await supabase
       .from('appointments')
       .select(`
@@ -126,11 +138,12 @@ const InterventionReportForm = () => {
         )
       `)
       .eq('professional_id', user.id)
+      .in('client_id', clientIds)
       .order('start_time', { ascending: false });
 
     let allAppointments = professionalAppointments || [];
 
-    // 2. Charger les rendez-vous où l'utilisateur est intervenant par email
+    // 2. Charger les rendez-vous où l'utilisateur est intervenant par email (pour les clients autorisés)
     const { data: allAppointmentsData, error: allError } = await supabase
       .from('appointments')
       .select(`
@@ -142,7 +155,8 @@ const InterventionReportForm = () => {
           id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
         )
       `)
-      .not('intervenant_id', 'is', null);
+      .not('intervenant_id', 'is', null)
+      .in('client_id', clientIds);
 
     if (!allError && allAppointmentsData) {
       const matchingAppointments = allAppointmentsData.filter(appointment => 
@@ -176,14 +190,19 @@ const InterventionReportForm = () => {
 
     console.log('🔍 INTERVENTION_FORM - Chargement des intervenants...');
     
-    // Charger les intervenants créés par l'utilisateur
-    const { data: createdIntervenants, error: createdError } = await supabase
-      .from('intervenants')
-      .select('*')
-      .eq('created_by', user.id)
-      .order('last_name');
+    // Charger les intervenants autorisés pour cet utilisateur
+    const { data: intervenantPermissions, error: intervenantError } = await supabase
+      .from('user_intervenant_permissions')
+      .select(`
+        intervenant_id,
+        intervenants!inner(*)
+      `)
+      .eq('user_id', user.id);
 
-    let allIntervenantsData = createdIntervenants || [];
+    let allIntervenantsData: Intervenant[] = [];
+    if (!intervenantError && intervenantPermissions) {
+      allIntervenantsData = intervenantPermissions.map(p => p.intervenants);
+    }
 
     // Ajouter l'utilisateur connecté s'il est un intervenant
     const { data: currentUserIntervenant, error: currentError } = await supabase
@@ -467,25 +486,28 @@ const InterventionReportForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Sélection du rendez-vous */}
+          {/* Rendez-vous associé - NON MODIFIABLE */}
           <div>
             <Label htmlFor="appointment">Rendez-vous associé</Label>
-            <Select value={formData.appointment_id || "none"} onValueChange={handleAppointmentChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un rendez-vous (optionnel)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun rendez-vous</SelectItem>
-                {appointments.map((appointment) => (
-                  <SelectItem key={appointment.id} value={appointment.id}>
-                    {appointment.client?.first_name} {appointment.client?.last_name} - {' '}
-                    {new Date(appointment.start_time).toLocaleDateString()} {' '}
-                    {new Date(appointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {appointment.intervenant && ` (${appointment.intervenant.first_name} ${appointment.intervenant.last_name})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {selectedAppointment ? (
+              <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="text-sm font-medium">
+                  {selectedAppointment.client?.first_name} {selectedAppointment.client?.last_name} - {' '}
+                  {new Date(selectedAppointment.start_time).toLocaleDateString()} {' '}
+                  {new Date(selectedAppointment.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {selectedAppointment.intervenant && ` (${selectedAppointment.intervenant.first_name} ${selectedAppointment.intervenant.last_name})`}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Ce champ n'est pas modifiable
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="text-sm text-gray-500">
+                  Aucun rendez-vous associé
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Informations de base */}
