@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ImageIcon, X } from 'lucide-react';
+import { processImageFile } from '@/utils/imageUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface CoverImageUploaderProps {
   coverImage: string | null;
@@ -18,16 +20,43 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   setCoverImageFile,
   uploadingCoverImage
 }) => {
-  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { toast } = useToast();
+
+  const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setCoverImageFile(file);
-      // Ne pas stocker l'URL blob dans l'état, uniquement pour la prévisualisation locale
-      const previewUrl = URL.createObjectURL(file);
-      setCoverImage(previewUrl);
-      
-      // Libérer l'URL de l'objet lorsque le composant est démonté
-      return () => URL.revokeObjectURL(previewUrl);
+      try {
+        console.log('🖼️ Début du traitement de la miniature:', file.name);
+        
+        // Traiter le fichier (conversion HEIC si nécessaire)
+        const processedFile = await processImageFile(file);
+        
+        setCoverImageFile(processedFile);
+        
+        // Créer l'URL de prévisualisation avec le fichier traité
+        const previewUrl = URL.createObjectURL(processedFile);
+        setCoverImage(previewUrl);
+        
+        console.log('✅ Miniature traitée avec succès:', {
+          originalName: file.name,
+          processedName: processedFile.name,
+          originalSize: file.size,
+          processedSize: processedFile.size
+        });
+        
+        // Libérer l'URL de l'objet lorsque le composant est démonté
+        return () => URL.revokeObjectURL(previewUrl);
+      } catch (error) {
+        console.error('❌ Erreur lors du traitement de la miniature:', error);
+        toast({
+          title: "Erreur de traitement",
+          description: error instanceof Error ? error.message : "Impossible de traiter l'image",
+          variant: "destructive"
+        });
+        
+        // Réinitialiser l'input en cas d'erreur
+        e.target.value = '';
+      }
     }
   };
 
@@ -75,6 +104,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
             disabled={uploadingCoverImage}
           />
           <p className="text-xs text-gray-500 mt-1">Format recommandé: JPEG ou PNG, max 2MB</p>
+          <p className="text-xs text-gray-400 mt-1">Les images HEIC seront automatiquement converties en JPEG</p>
         </div>
       </div>
     </div>
