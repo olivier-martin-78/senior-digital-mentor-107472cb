@@ -256,12 +256,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             <div>
               <Label htmlFor="intervenant">Intervenant</Label>
-              <Select value={formData.intervenant_id} onValueChange={(value) => setFormData({ ...formData, intervenant_id: value })}>
+              <Select value={formData.intervenant_id || "none"} onValueChange={(value) => setFormData({ ...formData, intervenant_id: value === "none" ? "" : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un intervenant" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun intervenant</SelectItem>
+                  <SelectItem value="none">Aucun intervenant</SelectItem>
                   {allIntervenants.map((intervenant) => (
                     <SelectItem key={intervenant.id} value={intervenant.id}>
                       {intervenant.first_name} {intervenant.last_name}
