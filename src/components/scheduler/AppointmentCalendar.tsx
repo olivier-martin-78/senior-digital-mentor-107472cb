@@ -13,7 +13,16 @@ import AuxiliaryAvatar from './AuxiliaryAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Configure moment en français avec locale forcée
+// CORRECTION : Configuration complète de moment en français
+moment.locale('fr', {
+  months: 'janvier_février_mars_avril_mai_juin_juillet_août_septembre_octobre_novembre_décembre'.split('_'),
+  monthsShort: 'janv._févr._mars_avr._mai_juin_juil._août_sept._oct._nov._déc.'.split('_'),
+  weekdays: 'dimanche_lundi_mardi_mercredi_jeudi_vendredi_samedi'.split('_'),
+  weekdaysShort: 'dim._lun._mar._mer._jeu._ven._sam.'.split('_'),
+  weekdaysMin: 'Di_Lu_Ma_Me_Je_Ve_Sa'.split('_'),
+});
+
+// Forcer la locale française globalement
 moment.locale('fr');
 const localizer = momentLocalizer(moment);
 
@@ -71,13 +80,31 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // Composant personnalisé pour l'affichage des événements dans la vue agenda
+  // CORRECTION 3 : Composant pour la colonne Date - affiche la date dans la première colonne
+  const AgendaDate = ({ event }: { event: CalendarEvent }) => {
+    const eventDate = moment(event.start).format('DD/MM/YYYY');
+    return (
+      <div className="text-sm font-medium text-gray-600 min-w-[80px]">
+        {eventDate}
+      </div>
+    );
+  };
+
+  // CORRECTION 3 : Composant pour la colonne Heure - affiche les heures dans la deuxième colonne
+  const AgendaTime = ({ event }: { event: CalendarEvent }) => {
+    const startTime = moment(event.start).format('HH:mm');
+    const endTime = moment(event.end).format('HH:mm');
+    return (
+      <div className="text-sm text-gray-700 min-w-[100px]">
+        {startTime} - {endTime}
+      </div>
+    );
+  };
+
+  // CORRECTION 3 : Composant pour la colonne Event - affiche seulement le client, notes et initiales
   const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
-    const startTime = moment(event.start).format('HH:mm');
-    const endTime = moment(event.end).format('HH:mm');
-    const eventDate = moment(event.start).format('DD/MM/YYYY');
     
     // Initiales de l'intervenant
     const intervenantInitials = appointment?.intervenant 
@@ -85,49 +112,73 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       : null;
     
     return (
-      <div className="flex items-center justify-between w-full py-2 border-b border-gray-100">
-        <div className="flex items-center gap-3 flex-1">
-          {/* Date complète pour chaque événement */}
-          <div className="text-sm font-medium min-w-[80px] text-gray-600">
-            {eventDate}
-          </div>
-          
-          {/* Heures */}
-          <div className="text-sm min-w-[100px] text-gray-700">
-            {startTime} - {endTime}
-          </div>
-          
-          {/* Nom du client */}
-          <div className="flex-1">
-            <span className="font-medium text-gray-900">{clientName}</span>
-            {appointment?.notes && (
-              <div className="text-xs text-gray-600 italic mt-1">
-                {appointment.notes}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Initiales de l'intervenant alignées à droite */}
-        <div className="flex items-center gap-2 ml-4">
-          {intervenantInitials && (
-            <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full min-w-[32px] text-center">
-              {intervenantInitials}
+      <div className="flex items-center justify-between w-full py-2">
+        <div className="flex-1">
+          <span className="font-medium text-gray-900">{clientName}</span>
+          {appointment?.notes && (
+            <div className="text-xs text-gray-600 italic mt-1">
+              {appointment.notes}
             </div>
           )}
         </div>
+        
+        {/* Initiales de l'intervenant alignées à droite */}
+        {intervenantInitials && (
+          <div className="ml-4">
+            <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full min-w-[32px] text-center">
+              {intervenantInitials}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Composant pour masquer complètement la colonne date (on l'affiche dans chaque événement)
-  const AgendaDate = () => {
-    return null;
-  };
-
-  // Composant pour masquer complètement la colonne time (on l'affiche dans chaque événement)
-  const AgendaTime = () => {
-    return null;
+  // CORRECTION 1 : Composant personnalisé pour la toolbar avec format français
+  const CustomToolbar = ({ label, onNavigate, onView, view }: any) => {
+    // Convertir le label anglais en français pour la vue agenda
+    let frenchLabel = label;
+    if (view === 'agenda') {
+      // Le label est au format "Month Day, Year – Month Day, Year"
+      // On va le reconstruire en français
+      const parts = label.split(' – ');
+      if (parts.length === 2) {
+        const startDate = moment(parts[0]).format('DD/MM/YYYY');
+        const endDate = moment(parts[1]).format('DD/MM/YYYY');
+        frenchLabel = `${startDate} – ${endDate}`;
+      }
+    }
+    
+    return (
+      <div className="rbc-toolbar">
+        <span className="rbc-btn-group">
+          <button type="button" onClick={() => onNavigate('TODAY')}>
+            Aujourd'hui
+          </button>
+          <button type="button" onClick={() => onNavigate('PREV')}>
+            Précédent
+          </button>
+          <button type="button" onClick={() => onNavigate('NEXT')}>
+            Suivant
+          </button>
+        </span>
+        <span className="rbc-toolbar-label">{frenchLabel}</span>
+        <span className="rbc-btn-group">
+          <button type="button" className={view === 'month' ? 'rbc-active' : ''} onClick={() => onView('month')}>
+            Mois
+          </button>
+          <button type="button" className={view === 'week' ? 'rbc-active' : ''} onClick={() => onView('week')}>
+            Semaine
+          </button>
+          <button type="button" className={view === 'day' ? 'rbc-active' : ''} onClick={() => onView('day')}>
+            Jour
+          </button>
+          <button type="button" className={view === 'agenda' ? 'rbc-active' : ''} onClick={() => onView('agenda')}>
+            Agenda
+          </button>
+        </span>
+      </div>
+    );
   };
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
@@ -232,17 +283,15 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
     },
-    // CORRECTION 2 : Forcer les jours en français dans la vue semaine
+    // CORRECTION 2 : Forcer les jours en français dans la vue semaine avec locale explicite
     dayFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
     dayHeaderFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
-    // CORRECTION 1 : Format français pour la période dans la vue agenda
-    dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
-      return `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`;
+    // CORRECTION 3 : Restaurer les formats pour les colonnes de la vue agenda
+    agendaDateFormat: (date: Date) => moment(date).format('DD/MM/YYYY'),
+    agendaTimeFormat: (date: Date) => moment(date).format('HH:mm'),
+    agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+      return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
     },
-    // Ces formats ne seront plus utilisés car on masque les colonnes
-    agendaDateFormat: () => '',
-    agendaTimeFormat: () => '',
-    agendaTimeRangeFormat: () => '',
   };
 
   return (
@@ -257,11 +306,12 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           eventPropGetter={eventStyleGetter}
           components={{
             event: EventComponent,
+            toolbar: CustomToolbar, // CORRECTION 1 : Toolbar personnalisée
             agenda: {
-              // CORRECTION 3 : Affichage personnalisé pour chaque événement avec date complète
-              event: AgendaEvent,
-              date: AgendaDate, // Masqué
-              time: AgendaTime, // Masqué
+              // CORRECTION 3 : Composants restructurés pour utiliser les 3 colonnes correctement
+              event: AgendaEvent, // Seulement client, notes et initiales
+              date: AgendaDate,   // Date dans la première colonne
+              time: AgendaTime,   // Heures dans la deuxième colonne
             }
           }}
           messages={messages}
