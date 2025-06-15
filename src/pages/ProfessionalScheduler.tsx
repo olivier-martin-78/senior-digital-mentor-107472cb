@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -136,14 +135,15 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🚨🚨🚨 DIAGNOSTIC DISPARITION RDV - ANALYSE APPROFONDIE 🚨🚨🚨');
+    console.log('🚨🚨🚨 DIAGNOSTIC V10 FINAL - ANALYSE AVEC POLITIQUE ULTRA-SIMPLE 🚨🚨🚨');
     console.log('🚨 User ID:', user.id);
     console.log('🚨 User Email:', user.email);
 
     try {
-      console.log('🚨 ÉTAPE 1: Chargement des rendez-vous avec politiques RLS V6...');
+      console.log('🚨 ÉTAPE 1: Test avec requête ultra-simple - TOUS les RDV créés par l\'utilisateur...');
       
-      const { data: appointmentsWithV6Policies, error: appointmentError } = await supabase
+      // REQUÊTE ULTRA-SIMPLE : Récupérer TOUS les rendez-vous créés par l'utilisateur
+      const { data: allUserAppointments, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -173,80 +173,75 @@ const ProfessionalScheduler = () => {
             created_by
           )
         `)
+        .eq('professional_id', user.id)  // REQUÊTE DIRECTE - pas de politique complexe
         .order('start_time', { ascending: true });
 
       if (appointmentError) {
-        console.error('🚨 ERREUR lors du chargement:', appointmentError);
-        throw appointmentError;
+        console.error('🚨 ERREUR lors du chargement avec requête directe:', appointmentError);
+        
+        // Fallback avec la requête normale si problème
+        console.log('🚨 ÉTAPE 2: Fallback avec requête normale...');
+        const { data: fallbackAppointments, error: fallbackError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            clients:client_id (
+              id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
+            ),
+            intervenants:intervenant_id (
+              id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
+            )
+          `)
+          .order('start_time', { ascending: true });
+
+        if (fallbackError) {
+          console.error('🚨 ERREUR aussi avec requête normale:', fallbackError);
+          throw fallbackError;
+        }
+
+        console.log('🚨 FALLBACK - Rendez-vous récupérés:', fallbackAppointments?.length || 0);
+        allUserAppointments = fallbackAppointments;
       }
 
-      console.log('🚨 ÉTAPE 2: Analyse des résultats par statut...');
+      console.log('🚨 ÉTAPE 2: Analyse des résultats avec requête directe...');
       
-      if (appointmentsWithV6Policies && appointmentsWithV6Policies.length > 0) {
-        const groupedByStatus = appointmentsWithV6Policies.reduce((acc, apt) => {
+      if (allUserAppointments && allUserAppointments.length > 0) {
+        const groupedByStatus = allUserAppointments.reduce((acc, apt) => {
           const status = apt.status || 'unknown';
           if (!acc[status]) acc[status] = [];
           acc[status].push(apt);
           return acc;
         }, {} as Record<string, any[]>);
 
-        console.log('🚨 RÉPARTITION PAR STATUT:', {
+        console.log('🚨 RÉPARTITION PAR STATUT (REQUÊTE DIRECTE):', {
           scheduled: groupedByStatus.scheduled?.length || 0,
           completed: groupedByStatus.completed?.length || 0,
           cancelled: groupedByStatus.cancelled?.length || 0,
-          total: appointmentsWithV6Policies.length
+          total: allUserAppointments.length
         });
 
-        // Analyse détaillée pour chaque statut
-        Object.entries(groupedByStatus).forEach(([status, apts]) => {
-          console.log(`🚨 STATUT "${status.toUpperCase()}" (${apts.length} RDV):`);
-          apts.forEach((apt, index) => {
-            const isCreator = apt.professional_id === user.id;
-            const intervenantEmail = apt.intervenants?.email;
-            const emailMatch = intervenantEmail === user.email;
-            
-            console.log(`  📋 RDV ${index + 1} - ID: ${apt.id}`, {
+        // Analyse spécifique pour les RDV completed
+        const completedAppointments = groupedByStatus.completed || [];
+        if (completedAppointments.length > 0) {
+          console.log('🚨 RDV COMPLETED TROUVÉS AVEC REQUÊTE DIRECTE:', completedAppointments.length);
+          completedAppointments.forEach((apt, index) => {
+            console.log(`🚨 RDV COMPLETED ${index + 1} - ID: ${apt.id}`, {
               client: `${apt.clients?.first_name} ${apt.clients?.last_name}`,
               date: apt.start_time,
               status: apt.status,
-              professional_id: apt.professional_id,
-              user_id: user.id,
-              is_creator: isCreator,
-              intervenant_email: intervenantEmail,
-              user_email: user.email,
-              email_match: emailMatch,
-              should_be_visible: isCreator || emailMatch
-            });
-          });
-        });
-
-        // Vérification spécifique pour les RDV "completed"
-        const completedAppointments = groupedByStatus.completed || [];
-        if (completedAppointments.length > 0) {
-          console.log('🚨 ANALYSE SPÉCIFIQUE DES RDV TERMINÉS:');
-          completedAppointments.forEach((apt) => {
-            const isCreator = apt.professional_id === user.id;
-            const isIntervenant = apt.intervenants?.email === user.email;
-            
-            console.log(`🚨 RDV TERMINÉ - ID: ${apt.id}`, {
-              visible_car_createur: isCreator,
-              visible_car_intervenant: isIntervenant,
-              devrait_etre_visible: isCreator || isIntervenant,
-              professional_id: apt.professional_id,
-              intervenant_email: apt.intervenants?.email,
-              user_email: user.email
+              professional_id: apt.professional_id
             });
           });
         } else {
-          console.log('🚨 AUCUN RDV TERMINÉ TROUVÉ - Ceci pourrait expliquer la disparition !');
+          console.log('🚨 AUCUN RDV COMPLETED TROUVÉ MÊME AVEC REQUÊTE DIRECTE');
         }
 
       } else {
-        console.log('🚨 AUCUN RENDEZ-VOUS RETOURNÉ PAR LES POLITIQUES RLS V6');
+        console.log('🚨 AUCUN RENDEZ-VOUS RETOURNÉ MÊME AVEC REQUÊTE DIRECTE');
       }
 
       // Transformer les données
-      const transformedData = (appointmentsWithV6Policies || []).map(item => ({
+      const transformedData = (allUserAppointments || []).map(item => ({
         ...item,
         status: item.status as 'scheduled' | 'completed' | 'cancelled',
         recurrence_type: item.recurrence_type as 'weekly' | 'monthly' | undefined,
@@ -255,7 +250,7 @@ const ProfessionalScheduler = () => {
         caregivers: []
       }));
 
-      console.log('🚨 DONNÉES FINALES TRANSFORMÉES:', {
+      console.log('🚨 DONNÉES FINALES TRANSFORMÉES (REQUÊTE DIRECTE):', {
         total: transformedData.length,
         par_statut: transformedData.reduce((acc, apt) => {
           const status = apt.status;
