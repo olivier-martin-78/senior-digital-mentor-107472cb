@@ -80,9 +80,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION 3 : Composant pour la colonne Date - affiche la date dans la première colonne
+  // CORRECTION : Composant pour la colonne Date - utiliser directement l'objet Date sans moment
   const AgendaDate = ({ event }: { event: CalendarEvent }) => {
-    const eventDate = moment(event.start).format('DD/MM/YYYY');
+    // L'événement contient déjà un objet Date, pas besoin de le parser avec moment
+    const eventDate = new Date(event.start).toLocaleDateString('fr-FR');
     return (
       <div className="text-sm font-medium text-gray-600 min-w-[80px]">
         {eventDate}
@@ -90,10 +91,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION 3 : Composant pour la colonne Heure - affiche les heures dans la deuxième colonne
+  // CORRECTION : Composant pour la colonne Heure - utiliser directement l'objet Date
   const AgendaTime = ({ event }: { event: CalendarEvent }) => {
-    const startTime = moment(event.start).format('HH:mm');
-    const endTime = moment(event.end).format('HH:mm');
+    const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     return (
       <div className="text-sm text-gray-700 min-w-[100px]">
         {startTime} - {endTime}
@@ -101,7 +102,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION 3 : Composant pour la colonne Event - affiche seulement le client, notes et initiales
+  // Composant pour la colonne Event - affiche seulement le client, notes et initiales
   const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
@@ -134,18 +135,23 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION 1 : Composant personnalisé pour la toolbar avec format français
+  // CORRECTION : Composant personnalisé pour la toolbar avec format français
   const CustomToolbar = ({ label, onNavigate, onView, view }: any) => {
-    // Convertir le label anglais en français pour la vue agenda
+    // CORRECTION : Pour la vue agenda, reconstruire le label en français
     let frenchLabel = label;
     if (view === 'agenda') {
-      // Le label est au format "Month Day, Year – Month Day, Year"
-      // On va le reconstruire en français
+      // Extraire les dates de début et fin depuis le label
       const parts = label.split(' – ');
       if (parts.length === 2) {
-        const startDate = moment(parts[0]).format('DD/MM/YYYY');
-        const endDate = moment(parts[1]).format('DD/MM/YYYY');
-        frenchLabel = `${startDate} – ${endDate}`;
+        // Parser les dates anglaises et les reformater en français
+        const startDate = new Date(parts[0]);
+        const endDate = new Date(parts[1]);
+        
+        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+          const startFormatted = startDate.toLocaleDateString('fr-FR');
+          const endFormatted = endDate.toLocaleDateString('fr-FR');
+          frenchLabel = `${startFormatted} – ${endFormatted}`;
+        }
       }
     }
     
@@ -283,14 +289,16 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
     },
-    // CORRECTION 2 : Forcer les jours en français dans la vue semaine avec locale explicite
+    // CORRECTION : Forcer les jours en français dans la vue semaine avec locale explicite
     dayFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
     dayHeaderFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
-    // CORRECTION 3 : Restaurer les formats pour les colonnes de la vue agenda
-    agendaDateFormat: (date: Date) => moment(date).format('DD/MM/YYYY'),
-    agendaTimeFormat: (date: Date) => moment(date).format('HH:mm'),
+    // CORRECTION : Formats simplifiés pour éviter les erreurs de parsing
+    agendaDateFormat: (date: Date) => new Date(date).toLocaleDateString('fr-FR'),
+    agendaTimeFormat: (date: Date) => new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
-      return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
+      const startTime = new Date(start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const endTime = new Date(end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return `${startTime} - ${endTime}`;
     },
   };
 
@@ -306,9 +314,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           eventPropGetter={eventStyleGetter}
           components={{
             event: EventComponent,
-            toolbar: CustomToolbar, // CORRECTION 1 : Toolbar personnalisée
+            toolbar: CustomToolbar,
             agenda: {
-              // CORRECTION 3 : Composants restructurés pour utiliser les 3 colonnes correctement
               event: AgendaEvent, // Seulement client, notes et initiales
               date: AgendaDate,   // Date dans la première colonne
               time: AgendaTime,   // Heures dans la deuxième colonne
