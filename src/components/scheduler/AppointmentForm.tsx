@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -147,24 +146,33 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     try {
       setLoading(true);
 
-      const appointmentData = {
-        client_id: formData.client_id,
-        intervenant_id: formData.intervenant_id || null,
-        professional_id: user.id,
-        start_time: formData.start_time,
-        end_time: formData.end_time,
-        notes: formData.notes,
-        status: formData.status,
-        is_recurring: formData.is_recurring,
-        recurrence_type: formData.recurrence_type || null,
-        recurrence_end_date: formData.recurrence_end_date || null,
-      };
-
       if (appointment) {
-        // Mise à jour
+        // CORRECTION V10 : Pour les mises à jour, ne pas écraser professional_id
+        // Le trigger se chargera automatiquement de remplir updated_by_professional_id
+        const updateData = {
+          client_id: formData.client_id,
+          intervenant_id: formData.intervenant_id || null,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
+          notes: formData.notes,
+          status: formData.status,
+          is_recurring: formData.is_recurring,
+          recurrence_type: formData.recurrence_type || null,
+          recurrence_end_date: formData.recurrence_end_date || null,
+          // NE PAS inclure professional_id dans les mises à jour !
+          // updated_by_professional_id sera automatiquement rempli par le trigger
+        };
+
+        console.log('🔧 CORRECTION V10 - Mise à jour sans écraser professional_id:', {
+          appointmentId: appointment.id,
+          originalProfessionalId: appointment.professional_id,
+          currentUserId: user.id,
+          updateData
+        });
+
         const { error } = await supabase
           .from('appointments')
-          .update(appointmentData)
+          .update(updateData)
           .eq('id', appointment.id);
 
         if (error) throw error;
@@ -174,7 +182,20 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           description: 'Rendez-vous mis à jour avec succès',
         });
       } else {
-        // Création
+        // Création : inclure professional_id normalement
+        const appointmentData = {
+          client_id: formData.client_id,
+          intervenant_id: formData.intervenant_id || null,
+          professional_id: user.id, // Seulement lors de la création
+          start_time: formData.start_time,
+          end_time: formData.end_time,
+          notes: formData.notes,
+          status: formData.status,
+          is_recurring: formData.is_recurring,
+          recurrence_type: formData.recurrence_type || null,
+          recurrence_end_date: formData.recurrence_end_date || null,
+        };
+
         if (formData.is_recurring && formData.recurrence_type && formData.recurrence_end_date) {
           // Gérer les rendez-vous récurrents
           await createRecurringAppointments(appointmentData);

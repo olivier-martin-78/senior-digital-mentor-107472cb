@@ -49,6 +49,7 @@ export interface Appointment {
   intervenant_id?: string;
   intervenant?: Intervenant;
   professional_id: string;
+  updated_by_professional_id?: string; // NOUVEAU : ID de celui qui a modifié en dernier
   start_time: string;
   end_time: string;
   notes?: string;

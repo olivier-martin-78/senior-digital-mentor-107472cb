@@ -92,6 +92,7 @@ export type Database = {
           start_time: string
           status: string | null
           updated_at: string
+          updated_by_professional_id: string | null
         }
         Insert: {
           client_id: string
@@ -110,6 +111,7 @@ export type Database = {
           start_time: string
           status?: string | null
           updated_at?: string
+          updated_by_professional_id?: string | null
         }
         Update: {
           client_id?: string
@@ -128,6 +130,7 @@ export type Database = {
           start_time?: string
           status?: string | null
           updated_at?: string
+          updated_by_professional_id?: string | null
         }
         Relationships: [
           {

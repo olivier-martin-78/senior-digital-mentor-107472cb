@@ -135,14 +135,14 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🚨🚨🚨 DIAGNOSTIC V10 FINAL - ANALYSE AVEC POLITIQUE ULTRA-SIMPLE 🚨🚨🚨');
+    console.log('🚨🚨🚨 DIAGNOSTIC V10 AVEC UPDATED_BY_PROFESSIONAL_ID 🚨🚨🚨');
     console.log('🚨 User ID:', user.id);
     console.log('🚨 User Email:', user.email);
 
     try {
-      console.log('🚨 ÉTAPE 1: Test avec requête ultra-simple - TOUS les RDV créés par l\'utilisateur...');
+      console.log('🚨 ÉTAPE 1: Test avec nouvelle colonne updated_by_professional_id...');
       
-      // REQUÊTE ULTRA-SIMPLE : Récupérer TOUS les rendez-vous créés par l'utilisateur
+      // REQUÊTE V10 : Récupérer TOUS les rendez-vous avec la nouvelle logique
       let { data: allUserAppointments, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
@@ -173,71 +173,62 @@ const ProfessionalScheduler = () => {
             created_by
           )
         `)
-        .eq('professional_id', user.id)  // REQUÊTE DIRECTE - pas de politique complexe
         .order('start_time', { ascending: true });
 
       if (appointmentError) {
-        console.error('🚨 ERREUR lors du chargement avec requête directe:', appointmentError);
-        
-        // Fallback avec la requête normale si problème
-        console.log('🚨 ÉTAPE 2: Fallback avec requête normale...');
-        const { data: fallbackAppointments, error: fallbackError } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            clients:client_id (
-              id, first_name, last_name, address, phone, email, color, hourly_rate, created_at, updated_at, created_by
-            ),
-            intervenants:intervenant_id (
-              id, first_name, last_name, email, phone, speciality, active, created_at, updated_at, created_by
-            )
-          `)
-          .order('start_time', { ascending: true });
-
-        if (fallbackError) {
-          console.error('🚨 ERREUR aussi avec requête normale:', fallbackError);
-          throw fallbackError;
-        }
-
-        console.log('🚨 FALLBACK - Rendez-vous récupérés:', fallbackAppointments?.length || 0);
-        allUserAppointments = fallbackAppointments;
+        console.error('🚨 ERREUR lors du chargement:', appointmentError);
+        throw appointmentError;
       }
 
-      console.log('🚨 ÉTAPE 2: Analyse des résultats avec requête directe...');
+      console.log('🚨 ÉTAPE 2: Analyse des résultats avec updated_by_professional_id...');
       
       if (allUserAppointments && allUserAppointments.length > 0) {
-        const groupedByStatus = allUserAppointments.reduce((acc, apt) => {
+        // Analyser les créateurs vs modifiieurs
+        const analysis = allUserAppointments.reduce((acc, apt) => {
           const status = apt.status || 'unknown';
           if (!acc[status]) acc[status] = [];
-          acc[status].push(apt);
+          
+          // Analyser les permissions d'accès
+          const canAccessAsCreator = apt.professional_id === user.id;
+          const canAccessAsUpdater = apt.updated_by_professional_id === user.id;
+          const totalAccess = canAccessAsCreator || canAccessAsUpdater;
+          
+          acc[status].push({
+            id: apt.id,
+            canAccessAsCreator,
+            canAccessAsUpdater,
+            totalAccess,
+            professional_id: apt.professional_id,
+            updated_by_professional_id: apt.updated_by_professional_id,
+            start_time: apt.start_time
+          });
+          
           return acc;
         }, {} as Record<string, any[]>);
 
-        console.log('🚨 RÉPARTITION PAR STATUT (REQUÊTE DIRECTE):', {
-          scheduled: groupedByStatus.scheduled?.length || 0,
-          completed: groupedByStatus.completed?.length || 0,
-          cancelled: groupedByStatus.cancelled?.length || 0,
-          total: allUserAppointments.length
-        });
+        console.log('🚨 ANALYSE DÉTAILLÉE PAR STATUT (V10):', analysis);
 
-        // Analyse spécifique pour les RDV completed
-        const completedAppointments = groupedByStatus.completed || [];
+        // Analyser spécifiquement les rendez-vous completed
+        const completedAppointments = analysis.completed || [];
         if (completedAppointments.length > 0) {
-          console.log('🚨 RDV COMPLETED TROUVÉS AVEC REQUÊTE DIRECTE:', completedAppointments.length);
+          console.log('🚨 RDV COMPLETED - ANALYSE DES PERMISSIONS V10:');
           completedAppointments.forEach((apt, index) => {
-            console.log(`🚨 RDV COMPLETED ${index + 1} - ID: ${apt.id}`, {
-              client: `${apt.clients?.first_name} ${apt.clients?.last_name}`,
+            console.log(`🚨 RDV COMPLETED ${index + 1}:`, {
+              id: apt.id,
               date: apt.start_time,
-              status: apt.status,
-              professional_id: apt.professional_id
+              créateur: apt.professional_id,
+              modifieur: apt.updated_by_professional_id,
+              accès_créateur: apt.canAccessAsCreator,
+              accès_modifieur: apt.canAccessAsUpdater,
+              accès_total: apt.totalAccess
             });
           });
         } else {
-          console.log('🚨 AUCUN RDV COMPLETED TROUVÉ MÊME AVEC REQUÊTE DIRECTE');
+          console.log('🚨 AUCUN RDV COMPLETED VISIBLE AVEC POLITIQUE V10');
         }
 
       } else {
-        console.log('🚨 AUCUN RENDEZ-VOUS RETOURNÉ MÊME AVEC REQUÊTE DIRECTE');
+        console.log('🚨 AUCUN RENDEZ-VOUS RETOURNÉ PAR POLITIQUE V10');
       }
 
       // Transformer les données
@@ -250,7 +241,7 @@ const ProfessionalScheduler = () => {
         caregivers: []
       }));
 
-      console.log('🚨 DONNÉES FINALES TRANSFORMÉES (REQUÊTE DIRECTE):', {
+      console.log('🚨 DONNÉES FINALES V10:', {
         total: transformedData.length,
         par_statut: transformedData.reduce((acc, apt) => {
           const status = apt.status;
@@ -261,7 +252,7 @@ const ProfessionalScheduler = () => {
       
       setAppointments(transformedData);
     } catch (error) {
-      console.error('🚨 ERREUR CRITIQUE lors du chargement des RDV:', error);
+      console.error('🚨 ERREUR CRITIQUE V10:', error);
       throw error;
     }
   };
