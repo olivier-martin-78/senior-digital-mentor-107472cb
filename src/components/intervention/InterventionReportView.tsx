@@ -74,6 +74,7 @@ const InterventionReportView = () => {
           const transformedAppointment = {
             ...appointmentData,
             status: appointmentData.status as 'scheduled' | 'completed' | 'cancelled',
+            recurrence_type: appointmentData.recurrence_type ? (appointmentData.recurrence_type as 'weekly' | 'monthly') : undefined,
             client: appointmentData.clients,
             intervenant: appointmentData.intervenants,
             caregivers: []
