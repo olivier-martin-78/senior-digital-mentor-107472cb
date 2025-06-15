@@ -44,7 +44,71 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const [currentView, setCurrentView] = useState<View>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const events: CalendarEvent[] = appointments.map((appointment) => {
+  // Fonction pour valider et filtrer les rendez-vous
+  const validateAndFilterAppointments = (appointments: Appointment[]): Appointment[] => {
+    return appointments.filter((appointment) => {
+      const start = new Date(appointment.start_time);
+      const end = new Date(appointment.end_time);
+
+      // Vérifier que les dates sont valides
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        console.warn('🚨 CALENDAR - Rendez-vous avec dates invalides détecté:', {
+          appointmentId: appointment.id,
+          start_time: appointment.start_time,
+          end_time: appointment.end_time,
+          client: appointment.client?.first_name + ' ' + appointment.client?.last_name
+        });
+        return false;
+      }
+
+      // Vérifier que end_time > start_time
+      if (end <= start) {
+        console.warn('🚨 CALENDAR - Rendez-vous avec durée négative ou nulle détecté:', {
+          appointmentId: appointment.id,
+          start_time: appointment.start_time,
+          end_time: appointment.end_time,
+          duration: end.getTime() - start.getTime(),
+          client: appointment.client?.first_name + ' ' + appointment.client?.last_name
+        });
+        return false;
+      }
+
+      // Vérifier que les dates sont sur le même jour
+      if (start.toDateString() !== end.toDateString()) {
+        console.warn('🚨 CALENDAR - Rendez-vous sur plusieurs jours détecté:', {
+          appointmentId: appointment.id,
+          start_date: start.toDateString(),
+          end_date: end.toDateString(),
+          client: appointment.client?.first_name + ' ' + appointment.client?.last_name
+        });
+        return false;
+      }
+
+      // Vérifier que la durée ne dépasse pas 24 heures
+      const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      if (durationHours > 24) {
+        console.warn('🚨 CALENDAR - Rendez-vous de plus de 24h détecté:', {
+          appointmentId: appointment.id,
+          duration: durationHours + ' heures',
+          client: appointment.client?.first_name + ' ' + appointment.client?.last_name
+        });
+        return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Filtrer les rendez-vous valides avant de créer les événements
+  const validAppointments = validateAndFilterAppointments(appointments);
+
+  console.log('📅 CALENDAR - Rendez-vous traités:', {
+    total: appointments.length,
+    valid: validAppointments.length,
+    filtered: appointments.length - validAppointments.length
+  });
+
+  const events: CalendarEvent[] = validAppointments.map((appointment) => {
     // Créer le titre avec le nom du client et un avatar pour l'intervenant
     let title = `${appointment.client?.first_name} ${appointment.client?.last_name}`;
     
@@ -298,6 +362,24 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Afficher un avertissement s'il y a des rendez-vous filtrés */}
+      {appointments.length > validAppointments.length && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">
+              {appointments.length - validAppointments.length} rendez-vous masqué(s) en raison de données incohérentes
+            </span>
+          </div>
+          <p className="text-sm text-yellow-700 mt-1">
+            Certains rendez-vous ont des heures de début/fin invalides et ne s'affichent pas dans le calendrier.
+            Veuillez les modifier pour corriger les données.
+          </p>
+        </div>
+      )}
+
       <style>{`
         /* Masquer les colonnes Date et Heure dans la vue Agenda */
         .rbc-agenda-view .rbc-agenda-date-cell,

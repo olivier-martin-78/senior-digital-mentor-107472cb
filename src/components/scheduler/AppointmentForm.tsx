@@ -130,6 +130,42 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setAvailableIntervenants(authorizedIntervenants);
   };
 
+  // Nouvelle fonction de validation des dates/heures
+  const validateAppointmentTimes = (startTime: string, endTime: string): string | null => {
+    if (!startTime || !endTime) {
+      return null; // Les validations required s'en chargeront
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    // Vérifier que les dates sont valides
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return 'Les dates saisies ne sont pas valides';
+    }
+
+    // Vérifier que l'heure de fin est postérieure à l'heure de début
+    if (end <= start) {
+      return 'L\'heure de fin doit être postérieure à l\'heure de début';
+    }
+
+    // Vérifier que les rendez-vous sont sur la même date
+    const startDate = start.toDateString();
+    const endDate = end.toDateString();
+    if (startDate !== endDate) {
+      return 'Le début et la fin du rendez-vous doivent être sur la même date';
+    }
+
+    // Vérifier que la durée ne dépasse pas 24 heures
+    const durationMs = end.getTime() - start.getTime();
+    const durationHours = durationMs / (1000 * 60 * 60);
+    if (durationHours > 24) {
+      return 'La durée du rendez-vous ne peut pas dépasser 24 heures';
+    }
+
+    return null; // Pas d'erreur
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -138,6 +174,17 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       toast({
         title: 'Erreur',
         description: 'Veuillez remplir tous les champs obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validation des dates/heures
+    const timeValidationError = validateAppointmentTimes(formData.start_time, formData.end_time);
+    if (timeValidationError) {
+      toast({
+        title: 'Erreur de validation',
+        description: timeValidationError,
         variant: 'destructive',
       });
       return;
@@ -290,6 +337,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const selectedClient = allowedClients.find(c => c.id === formData.client_id);
 
+  // Calculer l'erreur de validation en temps réel
+  const timeValidationError = validateAppointmentTimes(formData.start_time, formData.end_time);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -362,6 +412,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 />
               </div>
             </div>
+
+            {/* Afficher l'erreur de validation si elle existe */}
+            {timeValidationError && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                {timeValidationError}
+              </div>
+            )}
 
             <div>
               <Label htmlFor="status">Statut</Label>
