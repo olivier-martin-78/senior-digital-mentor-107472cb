@@ -61,10 +61,10 @@ const InterventionReportView = () => {
           .select(`
             *,
             clients:client_id (
-              id, first_name, last_name, address, phone, email, color, hourly_rate
+              *
             ),
             intervenants:intervenant_id (
-              id, first_name, last_name, email, phone, speciality
+              *
             )
           `)
           .eq('id', reportData.appointment_id)
