@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,7 +40,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     notes: appointment?.notes || '',
     status: appointment?.status || 'scheduled' as const,
     is_recurring: appointment?.is_recurring || false,
-    recurrence_type: appointment?.recurrence_type || undefined,
+    recurrence_type: appointment?.recurrence_type || 'weekly',
     recurrence_end_date: appointment?.recurrence_end_date || '',
   });
   const [loading, setLoading] = useState(false);
@@ -166,6 +167,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     return null; // Pas d'erreur
   };
 
+  // Fonction pour valider la date de fin de récurrence
+  const validateRecurrenceEndDate = (startTime: string, endDate: string): string | null => {
+    if (!startTime || !endDate) {
+      return null;
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endDate);
+
+    if (end <= start) {
+      return 'La date de fin de récurrence doit être postérieure à la date du premier rendez-vous';
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -188,6 +205,28 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validation spécifique pour les rendez-vous récurrents
+    if (formData.is_recurring) {
+      if (!formData.recurrence_end_date) {
+        toast({
+          title: 'Erreur',
+          description: 'Veuillez spécifier une date de fin pour les rendez-vous récurrents',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const recurrenceValidationError = validateRecurrenceEndDate(formData.start_time, formData.recurrence_end_date);
+      if (recurrenceValidationError) {
+        toast({
+          title: 'Erreur de validation',
+          description: recurrenceValidationError,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     try {
@@ -239,13 +278,25 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           notes: formData.notes,
           status: formData.status,
           is_recurring: formData.is_recurring,
-          recurrence_type: formData.recurrence_type || null,
+          recurrence_type: formData.is_recurring ? 'weekly' : null,
           recurrence_end_date: formData.recurrence_end_date || null,
         };
 
-        if (formData.is_recurring && formData.recurrence_type && formData.recurrence_end_date) {
+        console.log('📅 CRÉATION RENDEZ-VOUS - Données:', {
+          appointmentData,
+          isRecurring: formData.is_recurring,
+          recurrenceEndDate: formData.recurrence_end_date
+        });
+
+        if (formData.is_recurring && formData.recurrence_end_date) {
           // Gérer les rendez-vous récurrents
-          await createRecurringAppointments(appointmentData);
+          const createdCount = await createRecurringAppointments(appointmentData);
+          console.log('📅 RÉCURRENCE - Rendez-vous créés:', createdCount);
+          
+          toast({
+            title: 'Succès',
+            description: `${createdCount} rendez-vous récurrents créés avec succès`,
+          });
         } else {
           // Rendez-vous unique
           const { error } = await supabase
@@ -253,12 +304,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             .insert([appointmentData]);
 
           if (error) throw error;
-        }
 
-        toast({
-          title: 'Succès',
-          description: 'Rendez-vous créé avec succès',
-        });
+          console.log('📅 UNIQUE - Rendez-vous créé avec succès');
+          
+          toast({
+            title: 'Succès',
+            description: 'Rendez-vous créé avec succès',
+          });
+        }
       }
 
       onSave();
@@ -275,15 +328,31 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   const createRecurringAppointments = async (baseData: any) => {
+    console.log('🔄 CRÉATION RÉCURRENCE - Début avec données:', baseData);
+    
     const appointments = [];
     const startDate = new Date(formData.start_time);
+    const endDate = new Date(formData.end_time);
     const finalDate = new Date(formData.recurrence_end_date);
     
-    let currentDate = addWeeks(startDate, 1); // Commencer la semaine suivante
+    // Calculer la durée du rendez-vous
+    const duration = endDate.getTime() - startDate.getTime();
+    
+    console.log('🔄 RÉCURRENCE - Paramètres:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      finalDate: finalDate.toISOString(),
+      duration: duration / (1000 * 60) + ' minutes'
+    });
+
+    // CORRECTION : Inclure le rendez-vous initial dans la série
+    let currentDate = new Date(startDate);
     
     // Supprimer les rendez-vous récurrents existants pour ce client et ce professionnel
     // sur le même jour de la semaine dans la plage de dates
     const dayOfWeek = startDate.getDay();
+    
+    console.log('🗑️ NETTOYAGE - Suppression des anciens rendez-vous récurrents...');
     
     const { error: deleteError } = await supabase
       .from('appointments')
@@ -295,24 +364,33 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       .lte('start_time', finalDate.toISOString());
 
     if (deleteError) {
-      console.error('Erreur lors de la suppression des anciens rendez-vous:', deleteError);
+      console.error('❌ Erreur lors de la suppression des anciens rendez-vous:', deleteError);
+    } else {
+      console.log('✅ Anciens rendez-vous récurrents supprimés');
     }
     
+    // Créer tous les rendez-vous de la série (y compris le premier)
     while (currentDate <= finalDate) {
       // Vérifier que c'est bien le même jour de la semaine
       if (currentDate.getDay() === dayOfWeek) {
-        const duration = new Date(formData.end_time).getTime() - new Date(formData.start_time).getTime();
-        const endTime = new Date(currentDate.getTime() + duration);
+        const appointmentEndTime = new Date(currentDate.getTime() + duration);
+        
+        console.log('📅 CRÉATION - Rendez-vous:', {
+          date: currentDate.toISOString(),
+          endTime: appointmentEndTime.toISOString(),
+          dayOfWeek: currentDate.getDay()
+        });
         
         appointments.push({
           client_id: baseData.client_id,
           professional_id: baseData.professional_id,
+          intervenant_id: baseData.intervenant_id, // CORRECTION : Inclure l'intervenant
           start_time: currentDate.toISOString(),
-          end_time: endTime.toISOString(),
+          end_time: appointmentEndTime.toISOString(),
           notes: baseData.notes,
           status: baseData.status,
           is_recurring: true,
-          recurrence_type: 'weekly',
+          recurrence_type: 'weekly', // CORRECTION : Définir explicitement
           recurrence_end_date: baseData.recurrence_end_date,
           email_sent: false
         });
@@ -321,15 +399,25 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       currentDate = addWeeks(currentDate, 1);
     }
     
+    console.log('📋 INSERTION - Nombre de rendez-vous à créer:', appointments.length);
+    console.log('📋 DÉTAIL des rendez-vous:', appointments.map(apt => ({
+      start: apt.start_time,
+      end: apt.end_time,
+      intervenant: apt.intervenant_id
+    })));
+    
     if (appointments.length > 0) {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('appointments')
-        .insert(appointments);
+        .insert(appointments)
+        .select();
         
       if (error) {
-        console.error('Erreur lors de l\'insertion des rendez-vous récurrents:', error);
+        console.error('❌ Erreur lors de l\'insertion des rendez-vous récurrents:', error);
         throw error;
       }
+      
+      console.log('✅ SUCCÈS - Rendez-vous récurrents insérés:', data?.length);
     }
     
     return appointments.length;
@@ -339,6 +427,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   // Calculer l'erreur de validation en temps réel
   const timeValidationError = validateAppointmentTimes(formData.start_time, formData.end_time);
+  const recurrenceValidationError = formData.is_recurring 
+    ? validateRecurrenceEndDate(formData.start_time, formData.recurrence_end_date)
+    : null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -446,19 +537,36 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
 
             {!appointment && (
-              <RecurringAppointmentForm
-                isRecurring={formData.is_recurring}
-                endDate={formData.recurrence_end_date}
-                onRecurringChange={(isRecurring) => setFormData({ ...formData, is_recurring: isRecurring })}
-                onEndDateChange={(date) => setFormData({ ...formData, recurrence_end_date: date })}
-              />
+              <>
+                <RecurringAppointmentForm
+                  isRecurring={formData.is_recurring}
+                  endDate={formData.recurrence_end_date}
+                  onRecurringChange={(isRecurring) => setFormData({ 
+                    ...formData, 
+                    is_recurring: isRecurring,
+                    recurrence_type: isRecurring ? 'weekly' : undefined
+                  })}
+                  onEndDateChange={(date) => setFormData({ ...formData, recurrence_end_date: date })}
+                />
+                
+                {/* Afficher l'erreur de validation de récurrence si elle existe */}
+                {recurrenceValidationError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                    {recurrenceValidationError}
+                  </div>
+                )}
+              </>
             )}
 
             <div className="flex gap-2 pt-4">
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
                 Annuler
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
+              <Button 
+                type="submit" 
+                disabled={loading || !!timeValidationError || !!recurrenceValidationError} 
+                className="flex-1"
+              >
                 {loading ? 'Sauvegarde...' : appointment ? 'Mettre à jour' : 'Créer'}
               </Button>
             </div>
