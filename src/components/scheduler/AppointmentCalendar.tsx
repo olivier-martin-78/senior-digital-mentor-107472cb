@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Trash2, FileText, Plus, User, Clock, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AppointmentDeleteDialog from './AppointmentDeleteDialog';
+import AuxiliaryAvatar from './AuxiliaryAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -35,13 +36,41 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const [currentView, setCurrentView] = useState<View>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const events: CalendarEvent[] = appointments.map((appointment) => ({
-    id: appointment.id,
-    title: `${appointment.client?.first_name} ${appointment.client?.last_name}${appointment.intervenant ? ` - ${appointment.intervenant.first_name} ${appointment.intervenant.last_name}` : ''}`,
-    start: new Date(appointment.start_time),
-    end: new Date(appointment.end_time),
-    resource: appointment,
-  }));
+  const events: CalendarEvent[] = appointments.map((appointment) => {
+    // Créer le titre avec le nom du client et un avatar pour l'intervenant
+    let title = `${appointment.client?.first_name} ${appointment.client?.last_name}`;
+    
+    if (appointment.intervenant) {
+      const intervenantName = `${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`;
+      title += ` - ${intervenantName}`;
+    }
+
+    return {
+      id: appointment.id,
+      title,
+      start: new Date(appointment.start_time),
+      end: new Date(appointment.end_time),
+      resource: appointment,
+    };
+  });
+
+  // Composant personnalisé pour l'affichage des événements
+  const EventComponent = ({ event }: { event: CalendarEvent }) => {
+    const appointment = event.resource;
+    const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
+    
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="truncate flex-1">{clientName}</span>
+        {appointment?.intervenant && (
+          <AuxiliaryAvatar 
+            name={`${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`}
+            size="sm"
+          />
+        )}
+      </div>
+    );
+  };
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
     setSelectedAppointment(event.resource);
@@ -162,6 +191,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           endAccessor="end"
           onSelectEvent={handleSelectEvent}
           eventPropGetter={eventStyleGetter}
+          components={{
+            event: EventComponent
+          }}
           messages={messages}
           formats={formats}
           view={currentView}
