@@ -33,6 +33,7 @@ import InterventionReport from "./pages/InterventionReport";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import AILanding from "./pages/AILanding";
+import CaprIA from "./pages/CaprIA";
 import ActivityPage from "./pages/activities/ActivityPage";
 
 // Admin pages
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
                 <Route path="/blog-landing" element={<BlogLanding />} />
                 <Route path="/ai-landing" element={<AILanding />} />
+                <Route path="/capria" element={<CaprIA />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 
                 {/* Protected routes */}
