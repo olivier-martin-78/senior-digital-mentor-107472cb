@@ -13,7 +13,7 @@ import AuxiliaryAvatar from './AuxiliaryAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-// CORRECTION : Configuration complète de moment en français
+// Configuration complète de moment en français
 moment.locale('fr', {
   months: 'janvier_février_mars_avril_mai_juin_juillet_août_septembre_octobre_novembre_décembre'.split('_'),
   monthsShort: 'janv._févr._mars_avr._mai_juin_juil._août_sept._oct._nov._déc.'.split('_'),
@@ -80,30 +80,60 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION : Composant pour la colonne Date - utiliser directement l'objet Date sans moment
-  const AgendaDate = ({ event }: { event: CalendarEvent }) => {
-    // L'événement contient déjà un objet Date, pas besoin de le parser avec moment
-    const eventDate = new Date(event.start).toLocaleDateString('fr-FR');
-    return (
-      <div className="text-sm font-medium text-gray-600 min-w-[80px]">
-        {eventDate}
-      </div>
-    );
+  // CORRECTION: Composant pour la colonne Date avec gestion d'erreur
+  const AgendaDate = ({ event }: { event?: CalendarEvent }) => {
+    console.log('AgendaDate - event reçu:', event);
+    
+    if (!event || !event.start) {
+      console.warn('AgendaDate - Event ou event.start est undefined');
+      return <div className="text-sm font-medium text-gray-600 min-w-[80px]">-</div>;
+    }
+    
+    try {
+      const eventDate = new Date(event.start).toLocaleDateString('fr-FR');
+      return (
+        <div className="text-sm font-medium text-gray-600 min-w-[80px]">
+          {eventDate}
+        </div>
+      );
+    } catch (error) {
+      console.error('AgendaDate - Erreur lors du formatage de la date:', error);
+      return <div className="text-sm font-medium text-gray-600 min-w-[80px]">-</div>;
+    }
   };
 
-  // CORRECTION : Composant pour la colonne Heure - utiliser directement l'objet Date
-  const AgendaTime = ({ event }: { event: CalendarEvent }) => {
-    const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    return (
-      <div className="text-sm text-gray-700 min-w-[100px]">
-        {startTime} - {endTime}
-      </div>
-    );
+  // CORRECTION: Composant pour la colonne Heure avec gestion d'erreur
+  const AgendaTime = ({ event }: { event?: CalendarEvent }) => {
+    console.log('AgendaTime - event reçu:', event);
+    
+    if (!event || !event.start || !event.end) {
+      console.warn('AgendaTime - Event, event.start ou event.end est undefined');
+      return <div className="text-sm text-gray-700 min-w-[100px]">-</div>;
+    }
+    
+    try {
+      const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return (
+        <div className="text-sm text-gray-700 min-w-[100px]">
+          {startTime} - {endTime}
+        </div>
+      );
+    } catch (error) {
+      console.error('AgendaTime - Erreur lors du formatage de l\'heure:', error);
+      return <div className="text-sm text-gray-700 min-w-[100px]">-</div>;
+    }
   };
 
   // Composant pour la colonne Event - affiche seulement le client, notes et initiales
-  const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
+  const AgendaEvent = ({ event }: { event?: CalendarEvent }) => {
+    console.log('AgendaEvent - event reçu:', event);
+    
+    if (!event || !event.resource) {
+      console.warn('AgendaEvent - Event ou event.resource est undefined');
+      return <div className="py-2">-</div>;
+    }
+    
     const appointment = event.resource;
     const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
     
@@ -135,22 +165,26 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION : Composant personnalisé pour la toolbar avec format français
+  // CORRECTION: Composant personnalisé pour la toolbar avec format français
   const CustomToolbar = ({ label, onNavigate, onView, view }: any) => {
-    // CORRECTION : Pour la vue agenda, reconstruire le label en français
+    // CORRECTION: Pour la vue agenda, reconstruire le label en français
     let frenchLabel = label;
     if (view === 'agenda') {
       // Extraire les dates de début et fin depuis le label
       const parts = label.split(' – ');
       if (parts.length === 2) {
-        // Parser les dates anglaises et les reformater en français
-        const startDate = new Date(parts[0]);
-        const endDate = new Date(parts[1]);
-        
-        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-          const startFormatted = startDate.toLocaleDateString('fr-FR');
-          const endFormatted = endDate.toLocaleDateString('fr-FR');
-          frenchLabel = `${startFormatted} – ${endFormatted}`;
+        try {
+          // Parser les dates anglaises et les reformater en français
+          const startDate = new Date(parts[0]);
+          const endDate = new Date(parts[1]);
+          
+          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            const startFormatted = startDate.toLocaleDateString('fr-FR');
+            const endFormatted = endDate.toLocaleDateString('fr-FR');
+            frenchLabel = `${startFormatted} – ${endFormatted}`;
+          }
+        } catch (error) {
+          console.error('CustomToolbar - Erreur lors du formatage:', error);
         }
       }
     }
@@ -289,16 +323,32 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
     },
-    // CORRECTION : Forcer les jours en français dans la vue semaine avec locale explicite
+    // CORRECTION: Forcer les jours en français dans la vue semaine avec locale explicite
     dayFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
     dayHeaderFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
-    // CORRECTION : Formats simplifiés pour éviter les erreurs de parsing
-    agendaDateFormat: (date: Date) => new Date(date).toLocaleDateString('fr-FR'),
-    agendaTimeFormat: (date: Date) => new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    // CORRECTION: Formats restaurés pour l'agenda avec gestion d'erreur
+    agendaDateFormat: (date: Date) => {
+      try {
+        return new Date(date).toLocaleDateString('fr-FR');
+      } catch {
+        return '-';
+      }
+    },
+    agendaTimeFormat: (date: Date) => {
+      try {
+        return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      } catch {
+        return '-';
+      }
+    },
     agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
-      const startTime = new Date(start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const endTime = new Date(end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      return `${startTime} - ${endTime}`;
+      try {
+        const startTime = new Date(start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const endTime = new Date(end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        return `${startTime} - ${endTime}`;
+      } catch {
+        return '-';
+      }
     },
   };
 
