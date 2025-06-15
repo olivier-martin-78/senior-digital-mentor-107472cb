@@ -80,28 +80,40 @@ const IntervenantSharingDialog: React.FC<IntervenantSharingDialogProps> = ({
 
     try {
       setSaving(true);
+      console.log('Début de la sauvegarde pour intervenant:', intervenant.id);
+      console.log('Utilisateurs actuels:', currentSharedUsers.map(u => u.user_id));
+      console.log('Utilisateurs sélectionnés:', selectedUserIds);
 
       // Récupérer les partages actuels
       const currentUserIds = currentSharedUsers.map(user => user.user_id);
       
       // Utilisateurs à ajouter
       const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
+      console.log('Utilisateurs à ajouter:', usersToAdd);
       
       // Utilisateurs à supprimer
       const usersToRemove = currentUserIds.filter(id => !selectedUserIds.includes(id));
+      console.log('Utilisateurs à supprimer:', usersToRemove);
 
-      // Ajouter les nouveaux partages
+      // Ajouter les nouveaux partages avec ON CONFLICT DO NOTHING
       if (usersToAdd.length > 0) {
         const { error: insertError } = await supabase
           .from('user_intervenant_permissions')
-          .insert(
+          .upsert(
             usersToAdd.map(userId => ({
               user_id: userId,
               intervenant_id: intervenant.id
-            }))
+            })),
+            { 
+              onConflict: 'user_id,intervenant_id',
+              ignoreDuplicates: true
+            }
           );
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Erreur lors de l\'insertion:', insertError);
+          throw insertError;
+        }
       }
 
       // Supprimer les anciens partages
@@ -112,7 +124,10 @@ const IntervenantSharingDialog: React.FC<IntervenantSharingDialogProps> = ({
           .eq('intervenant_id', intervenant.id)
           .in('user_id', usersToRemove);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error('Erreur lors de la suppression:', deleteError);
+          throw deleteError;
+        }
       }
 
       toast({
@@ -120,6 +135,8 @@ const IntervenantSharingDialog: React.FC<IntervenantSharingDialogProps> = ({
         description: 'Partages mis à jour avec succès'
       });
 
+      // Rafraîchir les données
+      await fetchCurrentSharedUsers();
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
