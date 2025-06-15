@@ -298,7 +298,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   return (
     <div className="space-y-4">
-      <style jsx>{`
+      <style>{`
         /* Masquer les colonnes Date et Heure dans la vue Agenda */
         .rbc-agenda-view .rbc-agenda-date-cell,
         .rbc-agenda-view .rbc-agenda-time-cell {
