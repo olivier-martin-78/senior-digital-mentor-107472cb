@@ -66,6 +66,8 @@ const ProfessionalScheduler: React.FC = () => {
         ...appointment,
         // Assurer que le statut correspond aux types attendus
         status: appointment.status as 'scheduled' | 'completed' | 'cancelled',
+        // Assurer que le type de récurrence correspond aux types attendus
+        recurrence_type: appointment.recurrence_type as 'weekly' | 'monthly' | undefined,
         // Ajouter la propriété caregivers manquante
         caregivers: [],
         // Renommer les propriétés pour correspondre à l'interface
