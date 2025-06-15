@@ -70,6 +70,8 @@ const InterventionReportForm = () => {
       console.log('🔍 INTERVENTION_FORM - Début du chargement des données avec RLS strict');
       console.log('🔍 INTERVENTION_FORM - reportId:', reportId);
       console.log('🔍 INTERVENTION_FORM - appointmentId:', appointmentId);
+      console.log('🔍 INTERVENTION_FORM - userId:', user.id);
+      console.log('🔍 INTERVENTION_FORM - userEmail:', user.email);
       
       // Charger les clients créés par le professionnel
       const { data: allClients, error: clientError } = await supabase
@@ -200,25 +202,85 @@ const InterventionReportForm = () => {
     if (!reportId || !user) return;
 
     console.log('🔍 INTERVENTION_FORM - Chargement du rapport ID:', reportId);
+    console.log('🔍 INTERVENTION_FORM - User ID:', user.id);
+    console.log('🔍 INTERVENTION_FORM - User Email:', user.email);
 
-    const { data: report, error } = await supabase
+    // Essayer de charger le rapport avec différentes stratégies d'accès
+    console.log('🔍 INTERVENTION_FORM - Tentative 1: Accès direct par professional_id');
+    let { data: report, error } = await supabase
       .from('intervention_reports')
       .select('*')
       .eq('id', reportId)
+      .eq('professional_id', user.id)
       .single();
 
-    if (error) {
-      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement du rapport:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger le rapport',
-        variant: 'destructive',
-      });
-      return;
+    if (error && error.code === 'PGRST116') {
+      console.log('🔍 INTERVENTION_FORM - Tentative 2: Accès via rendez-vous lié');
+      
+      // Si pas trouvé directement, chercher via les rendez-vous autorisés
+      const { data: reportViaAppointment, error: reportError } = await supabase
+        .from('intervention_reports')
+        .select(`
+          *,
+          appointments!inner (
+            id, professional_id, intervenant_id,
+            intervenants (email)
+          )
+        `)
+        .eq('id', reportId)
+        .single();
+
+      if (reportError) {
+        console.error('🔍 INTERVENTION_FORM - Tentative 2 échouée:', reportError);
+        
+        console.log('🔍 INTERVENTION_FORM - Tentative 3: Accès via email intervenant');
+        
+        // Dernière tentative : vérifier si l'utilisateur est l'intervenant du rendez-vous associé
+        const { data: reportWithIntervenant, error: reportIntervenantError } = await supabase
+          .from('intervention_reports')
+          .select(`
+            *,
+            appointments (
+              id, 
+              intervenants (email)
+            )
+          `)
+          .eq('id', reportId)
+          .single();
+
+        if (reportIntervenantError) {
+          console.error('🔍 INTERVENTION_FORM - Toutes tentatives échouées:', reportIntervenantError);
+          toast({
+            title: 'Erreur d\'accès',
+            description: `Impossible de charger le rapport. Vérifiez vos autorisations. (User: ${user.email})`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Vérifier si l'email de l'utilisateur correspond à celui de l'intervenant
+        const intervenantEmail = reportWithIntervenant?.appointments?.intervenants?.email;
+        console.log('🔍 INTERVENTION_FORM - Email intervenant du rapport:', intervenantEmail);
+        console.log('🔍 INTERVENTION_FORM - Email utilisateur:', user.email);
+        
+        if (intervenantEmail !== user.email) {
+          console.error('🔍 INTERVENTION_FORM - Accès refusé: emails ne correspondent pas');
+          toast({
+            title: 'Accès refusé',
+            description: 'Vous n\'êtes pas autorisé à consulter ce rapport d\'intervention.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        report = reportWithIntervenant;
+      } else {
+        report = reportViaAppointment;
+      }
     }
 
     if (report) {
-      console.log('🔍 INTERVENTION_FORM - Rapport chargé:', report);
+      console.log('🔍 INTERVENTION_FORM - Rapport chargé avec succès:', report);
       console.log('🔍 INTERVENTION_FORM - appointment_id du rapport:', report.appointment_id);
       
       setFormData({
