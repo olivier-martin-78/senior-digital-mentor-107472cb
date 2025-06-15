@@ -72,6 +72,50 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
+  // Composant personnalisé pour l'affichage des événements dans la vue agenda
+  const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
+    const appointment = event.resource;
+    const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
+    const startTime = moment(event.start).format('HH:mm');
+    const endTime = moment(event.end).format('HH:mm');
+    
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-medium">{clientName}</span>
+        {appointment?.intervenant && (
+          <AuxiliaryAvatar 
+            name={`${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`}
+            size="sm"
+          />
+        )}
+        {appointment?.notes && (
+          <span className="text-gray-600 italic text-xs">- {appointment.notes}</span>
+        )}
+      </div>
+    );
+  };
+
+  // Composant personnalisé pour afficher la date dans l'agenda
+  const AgendaDate = ({ date }: { date: Date }) => {
+    return (
+      <div className="text-sm font-medium">
+        {moment(date).format('DD/MM/YYYY')}
+      </div>
+    );
+  };
+
+  // Composant personnalisé pour afficher l'heure dans l'agenda
+  const AgendaTime = ({ event }: { event: CalendarEvent }) => {
+    const startTime = moment(event.start).format('HH:mm');
+    const endTime = moment(event.end).format('HH:mm');
+    
+    return (
+      <div className="text-sm">
+        {startTime} - {endTime}
+      </div>
+    );
+  };
+
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
     setSelectedAppointment(event.resource);
   }, []);
@@ -179,7 +223,6 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`;
     },
-    // Ajouter un format spécifique pour la vue agenda pour toujours afficher la date complète
     agendaDateFormat: (date: Date) => moment(date).format('DD/MM/YYYY'),
     agendaTimeFormat: (date: Date) => moment(date).format('HH:mm'),
     agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
@@ -198,7 +241,12 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           onSelectEvent={handleSelectEvent}
           eventPropGetter={eventStyleGetter}
           components={{
-            event: EventComponent
+            event: EventComponent,
+            agenda: {
+              event: AgendaEvent,
+              date: AgendaDate,
+              time: AgendaTime,
+            }
           }}
           messages={messages}
           formats={formats}
