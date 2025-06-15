@@ -143,7 +143,7 @@ const ProfessionalScheduler = () => {
       console.log('🚨 ÉTAPE 1: Test avec requête ultra-simple - TOUS les RDV créés par l\'utilisateur...');
       
       // REQUÊTE ULTRA-SIMPLE : Récupérer TOUS les rendez-vous créés par l'utilisateur
-      const { data: allUserAppointments, error: appointmentError } = await supabase
+      let { data: allUserAppointments, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
           *,
