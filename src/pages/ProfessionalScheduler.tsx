@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,7 +48,10 @@ const ProfessionalScheduler: React.FC = () => {
 
   const fetchAppointments = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Récupération des rendez-vous pour utilisateur:', user?.id, 'email:', user?.email);
+      
+      // Récupérer les rendez-vous où l'utilisateur est le professionnel créateur
+      const { data: professionalAppointments, error: professionalError } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -59,18 +61,50 @@ const ProfessionalScheduler: React.FC = () => {
         .eq('professional_id', user?.id)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (professionalError) {
+        console.error('Erreur rendez-vous professionnel:', professionalError);
+        throw professionalError;
+      }
+
+      console.log('Rendez-vous comme professionnel:', professionalAppointments?.length || 0);
+
+      // Récupérer les rendez-vous où l'utilisateur est intervenant (par email)
+      const { data: intervenantAppointments, error: intervenantError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          clients (*),
+          intervenants (*)
+        `)
+        .not('intervenant_id', 'is', null)
+        .neq('professional_id', user?.id); // Éviter les doublons
+
+      if (intervenantError) {
+        console.error('Erreur rendez-vous intervenant:', intervenantError);
+        throw intervenantError;
+      }
+
+      // Filtrer les rendez-vous où l'utilisateur est l'intervenant (par email)
+      const userIntervenantAppointments = (intervenantAppointments || []).filter(appointment => {
+        return appointment.intervenants?.email === user?.email;
+      });
+
+      console.log('Rendez-vous comme intervenant:', userIntervenantAppointments.length);
+
+      // Combiner les deux listes
+      const allAppointments = [
+        ...(professionalAppointments || []),
+        ...userIntervenantAppointments
+      ];
+
+      console.log('Total rendez-vous:', allAppointments.length);
       
       // Transformer les données pour correspondre au type Appointment
-      const appointmentsWithCaregivers = (data || []).map(appointment => ({
+      const appointmentsWithCaregivers = allAppointments.map(appointment => ({
         ...appointment,
-        // Assurer que le statut correspond aux types attendus
         status: appointment.status as 'scheduled' | 'completed' | 'cancelled',
-        // Assurer que le type de récurrence correspond aux types attendus
         recurrence_type: appointment.recurrence_type as 'weekly' | 'monthly' | undefined,
-        // Ajouter la propriété caregivers manquante
         caregivers: [],
-        // Renommer les propriétés pour correspondre à l'interface
         client: appointment.clients,
         intervenant: appointment.intervenants
       }));
@@ -88,14 +122,77 @@ const ProfessionalScheduler: React.FC = () => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Récupération des clients pour utilisateur:', user?.id);
+      
+      // Récupérer les clients créés par l'utilisateur
+      const { data: ownedClients, error: ownedError } = await supabase
         .from('clients')
         .select('*')
         .eq('created_by', user?.id)
         .order('first_name', { ascending: true });
 
-      if (error) throw error;
-      setClients(data || []);
+      if (ownedError) {
+        console.error('Erreur clients possédés:', ownedError);
+        throw ownedError;
+      }
+
+      console.log('Clients possédés:', ownedClients?.length || 0);
+
+      // Récupérer les clients partagés avec l'utilisateur
+      const { data: sharedClientIds, error: sharedError } = await supabase
+        .from('user_client_permissions')
+        .select('client_id')
+        .eq('user_id', user?.id);
+
+      if (sharedError) {
+        console.error('Erreur permissions clients:', sharedError);
+        throw sharedError;
+      }
+
+      console.log('Permissions trouvées:', sharedClientIds?.length || 0);
+
+      let sharedClients: any[] = [];
+      
+      if (sharedClientIds && sharedClientIds.length > 0) {
+        const clientIds = sharedClientIds.map(permission => permission.client_id);
+        
+        const { data: sharedClientsData, error: sharedClientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .in('id', clientIds)
+          .order('first_name', { ascending: true });
+
+        if (sharedClientsError) {
+          console.error('Erreur clients partagés:', sharedClientsError);
+          throw sharedClientsError;
+        }
+
+        sharedClients = sharedClientsData || [];
+        console.log('Clients partagés:', sharedClients.length);
+      }
+
+      // Combiner les clients possédés et partagés (éviter les doublons)
+      const allClientIds = new Set();
+      const allClients = [];
+
+      // Ajouter les clients possédés
+      for (const client of (ownedClients || [])) {
+        if (!allClientIds.has(client.id)) {
+          allClientIds.add(client.id);
+          allClients.push(client);
+        }
+      }
+
+      // Ajouter les clients partagés
+      for (const client of sharedClients) {
+        if (!allClientIds.has(client.id)) {
+          allClientIds.add(client.id);
+          allClients.push(client);
+        }
+      }
+
+      console.log('Total clients:', allClients.length);
+      setClients(allClients);
     } catch (error) {
       console.error('Erreur lors du chargement des clients:', error);
       toast({
