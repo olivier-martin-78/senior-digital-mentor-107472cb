@@ -186,7 +186,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
         {!manualPlayMode && !videoError && (
           <Button 
             onClick={handleManualPlay}
-            className="bg-blue-600 hover:bg-blue-700 w-full"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
           >
             <Play className="h-4 w-4 mr-2" />
             Essayer de lire
@@ -196,7 +196,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
         <Button 
           onClick={handleDownload}
           variant="outline"
-          className="text-white border-white hover:bg-white/10 w-full"
+          className="bg-white text-gray-900 border-gray-300 hover:bg-gray-100 w-full"
         >
           <Download className="h-4 w-4 mr-2" />
           Télécharger la vidéo
@@ -303,7 +303,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   <div className="flex gap-3">
                     <Button 
                       onClick={handleManualPlay}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Lire la vidéo
@@ -311,7 +311,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                     <Button 
                       onClick={handleDownload}
                       variant="outline"
-                      className="text-white border-white hover:bg-white/10"
+                      className="bg-white text-gray-900 border-gray-300 hover:bg-gray-100"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Télécharger
@@ -331,7 +331,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   <div className="flex flex-col gap-3 w-full">
                     <Button 
                       onClick={() => setManualPlayMode(true)}
-                      className="bg-blue-600 hover:bg-blue-700 w-full"
+                      className="bg-blue-600 hover:bg-blue-700 text-white w-full"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Essayer à nouveau
@@ -339,7 +339,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                     <Button 
                       onClick={handleDownload}
                       variant="outline"
-                      className="text-white border-white hover:bg-white/10 w-full"
+                      className="bg-white text-gray-900 border-gray-300 hover:bg-gray-100 w-full"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Télécharger le fichier
