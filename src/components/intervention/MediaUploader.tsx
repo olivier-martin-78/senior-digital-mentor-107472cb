@@ -23,22 +23,18 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(existingMediaFiles);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Initialiser avec les médias existants
+  // Initialiser avec les médias existants seulement au premier rendu
   useEffect(() => {
-    if (existingMediaFiles.length > 0) {
+    if (existingMediaFiles.length > 0 && mediaFiles.length === 0) {
       setMediaFiles(existingMediaFiles);
     }
-  }, [existingMediaFiles]);
-
-  // Notifier le parent quand les médias changent
-  useEffect(() => {
-    onMediaChange(mediaFiles);
-  }, [mediaFiles, onMediaChange]);
+  }, [existingMediaFiles.length]); // Dépendance sur la longueur seulement
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files) return;
 
     const newFiles: MediaFile[] = [];
+    let pendingImageFiles: MediaFile[] = [];
 
     Array.from(files).forEach((file) => {
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
@@ -60,24 +56,35 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       };
 
       if (type === 'image') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          mediaFile.preview = e.target?.result as string;
-          setMediaFiles(prev => {
-            const updated = [...prev, mediaFile];
-            return updated;
-          });
-        };
-        reader.readAsDataURL(file);
+        pendingImageFiles.push(mediaFile);
       } else {
         newFiles.push(mediaFile);
       }
     });
 
+    // Traiter d'abord les fichiers non-image
     if (newFiles.length > 0) {
-      setMediaFiles(prev => [...prev, ...newFiles]);
+      setMediaFiles(prev => {
+        const updated = [...prev, ...newFiles];
+        onMediaChange(updated);
+        return updated;
+      });
     }
-  }, []);
+
+    // Traiter les images avec preview
+    pendingImageFiles.forEach((mediaFile) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        mediaFile.preview = e.target?.result as string;
+        setMediaFiles(prev => {
+          const updated = [...prev, mediaFile];
+          onMediaChange(updated);
+          return updated;
+        });
+      };
+      reader.readAsDataURL(mediaFile.file);
+    });
+  }, [onMediaChange]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -95,9 +102,13 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     setIsDragging(false);
   }, []);
 
-  const removeFile = (id: string) => {
-    setMediaFiles(prev => prev.filter(file => file.id !== id));
-  };
+  const removeFile = useCallback((id: string) => {
+    setMediaFiles(prev => {
+      const updated = prev.filter(file => file.id !== id);
+      onMediaChange(updated);
+      return updated;
+    });
+  }, [onMediaChange]);
 
   return (
     <div className="space-y-4">
