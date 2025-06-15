@@ -58,8 +58,8 @@ const ClientSharingDialog: React.FC<ClientSharingDialogProps> = ({
 
       const sharedUsers = data?.map(item => ({
         user_id: item.user_id,
-        display_name: item.profiles.display_name || 'Nom non défini',
-        email: item.profiles.email
+        display_name: (item.profiles as any).display_name || 'Nom non défini',
+        email: (item.profiles as any).email
       })) || [];
 
       setCurrentSharedUsers(sharedUsers);

@@ -60,7 +60,14 @@ const ProfessionalScheduler: React.FC = () => {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Ajouter la propriété caregivers manquante pour compatibilité avec le type Appointment
+      const appointmentsWithCaregivers = (data || []).map(appointment => ({
+        ...appointment,
+        caregivers: []
+      }));
+      
+      setAppointments(appointmentsWithCaregivers);
     } catch (error) {
       console.error('Erreur lors du chargement des rendez-vous:', error);
       toast({
@@ -197,17 +204,9 @@ const ProfessionalScheduler: React.FC = () => {
             Nouveau rendez-vous
           </Button>
           
-          <AppointmentExporter 
-            appointments={appointments}
-            clients={clients}
-            intervenants={intervenants}
-          />
+          <AppointmentExporter />
           
-          <InvoiceGenerator 
-            appointments={appointments}
-            clients={clients}
-            intervenants={intervenants}
-          />
+          <InvoiceGenerator />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -271,14 +270,14 @@ const ProfessionalScheduler: React.FC = () => {
                           <div className="flex justify-between items-center">
                             <div>
                               <h4 className="font-medium">
-                                {appointment.client?.first_name} {appointment.client?.last_name}
+                                {appointment.clients?.first_name} {appointment.clients?.last_name}
                               </h4>
                               <p className="text-sm text-gray-600">
                                 {new Date(appointment.start_time).toLocaleString('fr-FR')}
                               </p>
-                              {appointment.intervenant && (
+                              {appointment.intervenants && (
                                 <p className="text-sm text-gray-500">
-                                  Intervenant: {appointment.intervenant.first_name} {appointment.intervenant.last_name}
+                                  Intervenant: {appointment.intervenants.first_name} {appointment.intervenants.last_name}
                                 </p>
                               )}
                             </div>
@@ -313,7 +312,7 @@ const ProfessionalScheduler: React.FC = () => {
         {showAppointmentForm && (
           <AppointmentForm
             appointment={selectedAppointment}
-            onClose={handleFormClose}
+            onCancel={handleFormClose}
             clients={clients}
             intervenants={intervenants}
           />
