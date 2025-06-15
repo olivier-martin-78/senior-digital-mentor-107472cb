@@ -179,6 +179,12 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`;
     },
+    // Ajouter un format spécifique pour la vue agenda pour toujours afficher la date complète
+    agendaDateFormat: (date: Date) => moment(date).format('DD/MM/YYYY'),
+    agendaTimeFormat: (date: Date) => moment(date).format('HH:mm'),
+    agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
+      return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
+    },
   };
 
   return (
