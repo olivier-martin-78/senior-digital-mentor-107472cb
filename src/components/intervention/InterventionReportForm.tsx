@@ -67,11 +67,11 @@ const InterventionReportForm = () => {
 
     try {
       setLoadingData(true);
-      console.log('🔍 INTERVENTION_FORM - Début du chargement des données avec RLS amélioré');
-      console.log('🔍 INTERVENTION_FORM - reportId:', reportId);
-      console.log('🔍 INTERVENTION_FORM - appointmentId:', appointmentId);
-      console.log('🔍 INTERVENTION_FORM - userId:', user.id);
-      console.log('🔍 INTERVENTION_FORM - userEmail:', user.email);
+      console.log('🔍 INTERVENTION_FORM V2 - Début du chargement avec politiques RLS corrigées');
+      console.log('🔍 INTERVENTION_FORM V2 - reportId:', reportId);
+      console.log('🔍 INTERVENTION_FORM V2 - appointmentId:', appointmentId);
+      console.log('🔍 INTERVENTION_FORM V2 - userId:', user.id);
+      console.log('🔍 INTERVENTION_FORM V2 - userEmail:', user.email);
       
       // Charger les clients créés par le professionnel
       const { data: allClients, error: clientError } = await supabase
@@ -80,14 +80,14 @@ const InterventionReportForm = () => {
         .eq('created_by', user.id);
 
       if (clientError) {
-        console.error('🔍 INTERVENTION_FORM - Erreur clients:', clientError);
+        console.error('🔍 INTERVENTION_FORM V2 - Erreur clients:', clientError);
       }
 
       const authorizedClients: Client[] = allClients || [];
-      console.log('🔍 INTERVENTION_FORM - Clients chargés:', authorizedClients.length);
+      console.log('🔍 INTERVENTION_FORM V2 - Clients chargés:', authorizedClients.length);
       setClients(authorizedClients);
 
-      // Charger les rendez-vous (maintenant filtrés automatiquement par RLS)
+      // Charger les rendez-vous (maintenant avec les nouvelles politiques RLS v11)
       const loadedAppointments = await loadAppointments();
       
       // Charger les intervenants autorisés
@@ -95,17 +95,17 @@ const InterventionReportForm = () => {
 
       // Si on édite un rapport existant, le charger APRÈS avoir chargé les rendez-vous
       if (reportId) {
-        console.log('🔍 INTERVENTION_FORM - Chargement du rapport existant...');
+        console.log('🔍 INTERVENTION_FORM V2 - Chargement du rapport existant...');
         await loadExistingReport(loadedAppointments);
       } else if (appointmentId && loadedAppointments.length > 0) {
-        // NOUVEAU: Si on crée un nouveau rapport avec un appointmentId depuis l'URL
-        console.log('🔍 INTERVENTION_FORM - Nouveau rapport avec appointmentId depuis URL:', appointmentId);
+        // Si on crée un nouveau rapport avec un appointmentId depuis l'URL
+        console.log('🔍 INTERVENTION_FORM V2 - Nouveau rapport avec appointmentId depuis URL:', appointmentId);
         const foundAppointment = loadedAppointments.find(apt => apt.id === appointmentId);
         if (foundAppointment) {
-          console.log('🔍 INTERVENTION_FORM - Rendez-vous trouvé pour nouveau rapport:', foundAppointment);
+          console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous trouvé pour nouveau rapport:', foundAppointment);
           handleAppointmentChange(appointmentId, loadedAppointments);
         } else {
-          console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé ou accès non autorisé via RLS');
+          console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous non trouvé ou accès non autorisé via RLS v11');
         }
       }
     } catch (error) {
@@ -122,15 +122,14 @@ const InterventionReportForm = () => {
 
   const loadAppointments = async () => {
     if (!user) {
-      console.log('🔍 INTERVENTION_FORM - Pas d\'utilisateur');
+      console.log('🔍 INTERVENTION_FORM V2 - Pas d\'utilisateur');
       setAppointments([]);
       return [];
     }
 
-    console.log('🔍 INTERVENTION_FORM - Chargement des rendez-vous avec RLS strict...');
+    console.log('🔍 INTERVENTION_FORM V2 - Chargement des rendez-vous avec politiques RLS v11...');
     
-    // Avec RLS activé et politiques strictes, cette requête ne retournera QUE 
-    // les rendez-vous autorisés automatiquement côté base de données
+    // Avec les nouvelles politiques RLS v11, cette requête utilisera les nouvelles règles sécurisées
     const { data: userAppointments, error: appointmentError } = await supabase
       .from('appointments')
       .select(`
@@ -144,7 +143,7 @@ const InterventionReportForm = () => {
       `);
 
     if (appointmentError) {
-      console.error('🔍 INTERVENTION_FORM - Erreur rendez-vous:', appointmentError);
+      console.error('🔍 INTERVENTION_FORM V2 - Erreur rendez-vous:', appointmentError);
       setAppointments([]);
       return [];
     }
@@ -159,19 +158,19 @@ const InterventionReportForm = () => {
       caregivers: []
     }));
 
-    console.log('🔍 INTERVENTION_FORM - Total rendez-vous autorisés par RLS:', transformedAppointments.length);
-    console.log('🔍 INTERVENTION_FORM - IDs des rendez-vous:', transformedAppointments.map(apt => apt.id));
+    console.log('🔍 INTERVENTION_FORM V2 - Total rendez-vous autorisés par RLS v11:', transformedAppointments.length);
+    console.log('🔍 INTERVENTION_FORM V2 - IDs des rendez-vous:', transformedAppointments.map(apt => apt.id));
     setAppointments(transformedAppointments);
 
     // Après avoir chargé les rendez-vous, vérifier si on doit sélectionner un rendez-vous spécifique
     if (appointmentId && transformedAppointments.length > 0) {
-      console.log('🔍 INTERVENTION_FORM - Recherche du rendez-vous par URL:', appointmentId);
+      console.log('🔍 INTERVENTION_FORM V2 - Recherche du rendez-vous par URL:', appointmentId);
       const appointment = transformedAppointments.find(apt => apt.id === appointmentId);
       if (appointment) {
-        console.log('🔍 INTERVENTION_FORM - Rendez-vous trouvé par URL:', appointment);
+        console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous trouvé par URL:', appointment);
         handleAppointmentChange(appointmentId, transformedAppointments);
       } else {
-        console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé par URL (accès non autorisé via RLS)');
+        console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous non trouvé par URL (accès non autorisé via RLS v11)');
       }
     }
 
@@ -181,7 +180,7 @@ const InterventionReportForm = () => {
   const loadIntervenants = async () => {
     if (!user) return;
 
-    console.log('🔍 INTERVENTION_FORM - Chargement des intervenants...');
+    console.log('🔍 INTERVENTION_FORM V2 - Chargement des intervenants...');
     
     // Charger les intervenants créés par le professionnel
     const { data: allIntervenantsData, error: intervenantError } = await supabase
@@ -190,90 +189,113 @@ const InterventionReportForm = () => {
       .eq('created_by', user.id);
 
     if (intervenantError) {
-      console.error('🔍 INTERVENTION_FORM - Erreur intervenants:', intervenantError);
+      console.error('🔍 INTERVENTION_FORM V2 - Erreur intervenants:', intervenantError);
       return;
     }
 
-    console.log('🔍 INTERVENTION_FORM - Intervenants chargés:', allIntervenantsData?.length || 0);
+    console.log('🔍 INTERVENTION_FORM V2 - Intervenants chargés:', allIntervenantsData?.length || 0);
     setAllIntervenants(allIntervenantsData || []);
   };
 
   const loadExistingReport = async (appointmentsList: Appointment[]) => {
     if (!reportId || !user) return;
 
-    console.log('🔍 INTERVENTION_FORM - Chargement du rapport ID:', reportId);
-    console.log('🔍 INTERVENTION_FORM - User ID:', user.id);
-    console.log('🔍 INTERVENTION_FORM - User Email:', user.email);
+    console.log('🔍 INTERVENTION_FORM V2 - Chargement du rapport ID:', reportId);
+    console.log('🔍 INTERVENTION_FORM V2 - User ID:', user.id);
+    console.log('🔍 INTERVENTION_FORM V2 - User Email:', user.email);
 
-    // Avec les nouvelles politiques RLS, on peut charger directement le rapport
-    // Les politiques permettent l'accès automatiquement si l'utilisateur est autorisé
-    console.log('🔍 INTERVENTION_FORM - Chargement direct via RLS');
-    const { data: report, error } = await supabase
-      .from('intervention_reports')
-      .select('*')
-      .eq('id', reportId)
-      .single();
+    try {
+      // Avec les nouvelles politiques RLS v2, on peut charger directement le rapport
+      // Les politiques permettent l'accès automatiquement si l'utilisateur est autorisé
+      console.log('🔍 INTERVENTION_FORM V2 - Chargement direct via politiques RLS v2 corrigées');
+      const { data: report, error } = await supabase
+        .from('intervention_reports')
+        .select('*')
+        .eq('id', reportId)
+        .single();
 
-    if (error) {
-      console.error('🔍 INTERVENTION_FORM - Erreur lors du chargement:', error);
-      toast({
-        title: 'Erreur d\'accès',
-        description: 'Impossible de charger ce rapport d\'intervention. Vérifiez vos autorisations.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (report) {
-      console.log('🔍 INTERVENTION_FORM - Rapport chargé avec succès:', report);
-      console.log('🔍 INTERVENTION_FORM - appointment_id du rapport:', report.appointment_id);
-      
-      setFormData({
-        appointment_id: report.appointment_id || '',
-        patient_name: report.patient_name || '',
-        auxiliary_name: report.auxiliary_name || '',
-        date: report.date || '',
-        start_time: report.start_time || '',
-        end_time: report.end_time || '',
-        activities: Array.isArray(report.activities) ? report.activities : [],
-        activities_other: report.activities_other || '',
-        physical_state: Array.isArray(report.physical_state) ? report.physical_state : [],
-        physical_state_other: report.physical_state_other || '',
-        pain_location: report.pain_location || '',
-        mental_state: Array.isArray(report.mental_state) ? report.mental_state : [],
-        mental_state_change: report.mental_state_change || '',
-        hygiene: Array.isArray(report.hygiene) ? report.hygiene : [],
-        hygiene_comments: report.hygiene_comments || '',
-        appetite: report.appetite || '',
-        appetite_comments: report.appetite_comments || '',
-        hydration: report.hydration || '',
-        observations: report.observations || '',
-        follow_up: Array.isArray(report.follow_up) ? report.follow_up : [],
-        follow_up_other: report.follow_up_other || '',
-        hourly_rate: report.hourly_rate?.toString() || '',
-        media_files: Array.isArray(report.media_files) ? report.media_files : [],
-        audio_url: report.audio_url || '',
-      });
-
-      // Si le rapport a un appointment_id, chercher le rendez-vous correspondant
-      if (report.appointment_id && appointmentsList.length > 0) {
-        console.log('🔍 INTERVENTION_FORM - Recherche du rendez-vous associé:', report.appointment_id);
-        const foundAppointment = appointmentsList.find(apt => apt.id === report.appointment_id);
-        if (foundAppointment) {
-          console.log('🔍 INTERVENTION_FORM - Rendez-vous associé trouvé:', foundAppointment);
-          setSelectedAppointment(foundAppointment);
+      if (error) {
+        console.error('🔍 INTERVENTION_FORM V2 - Erreur lors du chargement du rapport:', error);
+        
+        // Essayer de déboguer l'accès
+        console.log('🔍 INTERVENTION_FORM V2 - Test de la fonction de debug...');
+        const { data: debugResult, error: debugError } = await supabase.rpc(
+          'debug_intervention_report_access', 
+          { report_id_param: reportId }
+        );
+        
+        if (debugError) {
+          console.error('🔍 INTERVENTION_FORM V2 - Erreur debug:', debugError);
         } else {
-          console.log('🔍 INTERVENTION_FORM - Rendez-vous associé non trouvé - accès non autorisé via RLS');
+          console.log('🔍 INTERVENTION_FORM V2 - Résultat debug:', debugResult);
         }
-      } else {
-        console.log('🔍 INTERVENTION_FORM - Pas d\'appointment_id ou liste vide');
-        // Si le rapport n'a pas d'appointment_id mais qu'il y a des rendez-vous disponibles,
-        // permettre à l'utilisateur de sélectionner manuellement
-        if (appointmentsList.length > 0) {
-          setShowAppointmentSelector(true);
-          console.log('🔍 INTERVENTION_FORM - Affichage du sélecteur de rendez-vous');
+        
+        toast({
+          title: 'Erreur d\'accès',
+          description: 'Impossible de charger ce rapport d\'intervention. Vérifiez vos autorisations.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (report) {
+        console.log('🔍 INTERVENTION_FORM V2 - Rapport chargé avec succès:', report);
+        console.log('🔍 INTERVENTION_FORM V2 - appointment_id du rapport:', report.appointment_id);
+        
+        setFormData({
+          appointment_id: report.appointment_id || '',
+          patient_name: report.patient_name || '',
+          auxiliary_name: report.auxiliary_name || '',
+          date: report.date || '',
+          start_time: report.start_time || '',
+          end_time: report.end_time || '',
+          activities: Array.isArray(report.activities) ? report.activities : [],
+          activities_other: report.activities_other || '',
+          physical_state: Array.isArray(report.physical_state) ? report.physical_state : [],
+          physical_state_other: report.physical_state_other || '',
+          pain_location: report.pain_location || '',
+          mental_state: Array.isArray(report.mental_state) ? report.mental_state : [],
+          mental_state_change: report.mental_state_change || '',
+          hygiene: Array.isArray(report.hygiene) ? report.hygiene : [],
+          hygiene_comments: report.hygiene_comments || '',
+          appetite: report.appetite || '',
+          appetite_comments: report.appetite_comments || '',
+          hydration: report.hydration || '',
+          observations: report.observations || '',
+          follow_up: Array.isArray(report.follow_up) ? report.follow_up : [],
+          follow_up_other: report.follow_up_other || '',
+          hourly_rate: report.hourly_rate?.toString() || '',
+          media_files: Array.isArray(report.media_files) ? report.media_files : [],
+          audio_url: report.audio_url || '',
+        });
+
+        // Si le rapport a un appointment_id, chercher le rendez-vous correspondant
+        if (report.appointment_id && appointmentsList.length > 0) {
+          console.log('🔍 INTERVENTION_FORM V2 - Recherche du rendez-vous associé:', report.appointment_id);
+          const foundAppointment = appointmentsList.find(apt => apt.id === report.appointment_id);
+          if (foundAppointment) {
+            console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous associé trouvé:', foundAppointment);
+            setSelectedAppointment(foundAppointment);
+          } else {
+            console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous associé non trouvé - accès non autorisé via RLS v11');
+          }
+        } else {
+          console.log('🔍 INTERVENTION_FORM V2 - Pas d\'appointment_id ou liste vide');
+          // Si le rapport n'a pas d'appointment_id mais qu'il y a des rendez-vous disponibles,
+          // permettre à l'utilisateur de sélectionner manuellement
+          if (appointmentsList.length > 0) {
+            setShowAppointmentSelector(true);
+            console.log('🔍 INTERVENTION_FORM V2 - Affichage du sélecteur de rendez-vous');
+          }
         }
       }
+    } catch (error) {
+      console.error('🔍 INTERVENTION_FORM V2 - Erreur inattendue lors du chargement:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur inattendue s\'est produite lors du chargement du rapport.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -293,7 +315,7 @@ const InterventionReportForm = () => {
 
     const appointment = appointmentsToUse.find(apt => apt.id === appointmentId);
     if (appointment) {
-      console.log('🔍 INTERVENTION_FORM - Rendez-vous sélectionné:', appointment);
+      console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous sélectionné:', appointment);
       setSelectedAppointment(appointment);
       setShowAppointmentSelector(false);
       
@@ -312,7 +334,7 @@ const InterventionReportForm = () => {
         hourly_rate: appointment.client?.hourly_rate?.toString() || '',
       }));
     } else {
-      console.log('🔍 INTERVENTION_FORM - Rendez-vous non trouvé pour ID:', appointmentId);
+      console.log('🔍 INTERVENTION_FORM V2 - Rendez-vous non trouvé pour ID:', appointmentId);
     }
   };
 
