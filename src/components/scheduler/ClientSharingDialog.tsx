@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -45,22 +44,49 @@ const ClientSharingDialog: React.FC<ClientSharingDialogProps> = ({
 
     try {
       setLoading(true);
+      console.log('Récupération des partages pour client:', client.id);
       
-      const { data, error } = await supabase
+      // Étape 1: Récupérer les permissions
+      const { data: permissions, error: permissionsError } = await supabase
         .from('user_client_permissions')
-        .select(`
-          user_id,
-          profiles!inner(display_name, email)
-        `)
+        .select('user_id')
         .eq('client_id', client.id);
 
-      if (error) throw error;
+      if (permissionsError) {
+        console.error('Erreur permissions:', permissionsError);
+        throw permissionsError;
+      }
 
-      const sharedUsers = data?.map(item => ({
-        user_id: item.user_id,
-        display_name: (item.profiles as any).display_name || 'Nom non défini',
-        email: (item.profiles as any).email
-      })) || [];
+      console.log('Permissions trouvées:', permissions);
+
+      if (!permissions || permissions.length === 0) {
+        setCurrentSharedUsers([]);
+        setSelectedUserIds([]);
+        return;
+      }
+
+      // Étape 2: Récupérer les profils correspondants
+      const userIds = permissions.map(p => p.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Erreur profils:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Profils trouvés:', profiles);
+
+      // Étape 3: Combiner les données
+      const sharedUsers = (profiles || []).map(profile => ({
+        user_id: profile.id,
+        display_name: profile.display_name || 'Nom non défini',
+        email: profile.email
+      }));
+
+      console.log('Utilisateurs partagés finaux:', sharedUsers);
 
       setCurrentSharedUsers(sharedUsers);
       setSelectedUserIds(sharedUsers.map(user => user.user_id));
@@ -71,6 +97,9 @@ const ClientSharingDialog: React.FC<ClientSharingDialogProps> = ({
         description: 'Impossible de récupérer les partages actuels',
         variant: 'destructive'
       });
+      // Initialiser avec des valeurs vides en cas d'erreur
+      setCurrentSharedUsers([]);
+      setSelectedUserIds([]);
     } finally {
       setLoading(false);
     }
