@@ -76,29 +76,31 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const AgendaEvent = ({ event }: { event: CalendarEvent }) => {
     const appointment = event.resource;
     const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
-    const startTime = moment(event.start).format('HH:mm');
-    const endTime = moment(event.end).format('HH:mm');
     
     return (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="font-medium">{clientName}</span>
-        {appointment?.intervenant && (
-          <AuxiliaryAvatar 
-            name={`${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`}
-            size="sm"
-          />
-        )}
-        {appointment?.notes && (
-          <span className="text-gray-600 italic text-xs">- {appointment.notes}</span>
-        )}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2 flex-1">
+          <span className="font-medium">{clientName}</span>
+          {appointment?.notes && (
+            <span className="text-gray-600 italic text-xs">- {appointment.notes}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 ml-4">
+          {appointment?.intervenant && (
+            <AuxiliaryAvatar 
+              name={`${appointment.intervenant.first_name} ${appointment.intervenant.last_name}`}
+              size="sm"
+            />
+          )}
+        </div>
       </div>
     );
   };
 
-  // Composant personnalisé pour afficher la date dans l'agenda
+  // Composant personnalisé pour afficher la date dans l'agenda - TOUJOURS afficher la date complète
   const AgendaDate = ({ date }: { date: Date }) => {
     return (
-      <div className="text-sm font-medium">
+      <div className="text-sm font-medium min-w-[80px]">
         {moment(date).format('DD/MM/YYYY')}
       </div>
     );
@@ -110,7 +112,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     const endTime = moment(event.end).format('HH:mm');
     
     return (
-      <div className="text-sm">
+      <div className="text-sm min-w-[100px]">
         {startTime} - {endTime}
       </div>
     );
@@ -223,7 +225,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`;
     },
-    agendaDateFormat: (date: Date) => moment(date).format('DD/MM/YYYY'),
+    // Forcer l'affichage de la date complète pour chaque événement dans l'agenda
+    agendaDateFormat: (date: Date, culture?: string, localizer?: any) => {
+      return moment(date).format('DD/MM/YYYY');
+    },
     agendaTimeFormat: (date: Date) => moment(date).format('HH:mm'),
     agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
@@ -260,6 +265,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
           min={new Date(2024, 0, 1, 7, 0)}
           max={new Date(2024, 0, 1, 22, 0)}
           className="bg-white rounded-lg border"
+          // Propriété importante pour forcer l'affichage de la date sur chaque ligne dans l'agenda
+          showAllEvents={true}
         />
       </div>
 
