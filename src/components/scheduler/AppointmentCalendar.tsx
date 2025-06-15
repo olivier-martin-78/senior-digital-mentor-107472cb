@@ -80,62 +80,23 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     );
   };
 
-  // CORRECTION: Composant pour la colonne Date avec gestion d'erreur
-  const AgendaDate = ({ event }: { event?: CalendarEvent }) => {
-    console.log('AgendaDate - event reçu:', event);
-    
-    if (!event || !event.start) {
-      console.warn('AgendaDate - Event ou event.start est undefined');
-      return <div className="text-sm font-medium text-gray-600 min-w-[80px]">-</div>;
-    }
-    
-    try {
-      const eventDate = new Date(event.start).toLocaleDateString('fr-FR');
-      return (
-        <div className="text-sm font-medium text-gray-600 min-w-[80px]">
-          {eventDate}
-        </div>
-      );
-    } catch (error) {
-      console.error('AgendaDate - Erreur lors du formatage de la date:', error);
-      return <div className="text-sm font-medium text-gray-600 min-w-[80px]">-</div>;
-    }
-  };
-
-  // CORRECTION: Composant pour la colonne Heure avec gestion d'erreur
-  const AgendaTime = ({ event }: { event?: CalendarEvent }) => {
-    console.log('AgendaTime - event reçu:', event);
-    
-    if (!event || !event.start || !event.end) {
-      console.warn('AgendaTime - Event, event.start ou event.end est undefined');
-      return <div className="text-sm text-gray-700 min-w-[100px]">-</div>;
-    }
-    
-    try {
-      const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      return (
-        <div className="text-sm text-gray-700 min-w-[100px]">
-          {startTime} - {endTime}
-        </div>
-      );
-    } catch (error) {
-      console.error('AgendaTime - Erreur lors du formatage de l\'heure:', error);
-      return <div className="text-sm text-gray-700 min-w-[100px]">-</div>;
-    }
-  };
-
-  // Composant pour la colonne Event - affiche seulement le client, notes et initiales
+  // Composant pour la vue Agenda - affichage dans une seule colonne
   const AgendaEvent = ({ event }: { event?: CalendarEvent }) => {
     console.log('AgendaEvent - event reçu:', event);
     
-    if (!event || !event.resource) {
-      console.warn('AgendaEvent - Event ou event.resource est undefined');
+    if (!event || !event.resource || !event.start || !event.end) {
+      console.warn('AgendaEvent - Event, resource, start ou end est undefined');
       return <div className="py-2">-</div>;
     }
     
     const appointment = event.resource;
     const clientName = `${appointment?.client?.first_name} ${appointment?.client?.last_name}`;
+    
+    // Formatage de la date et de l'heure
+    const eventDate = new Date(event.start).toLocaleDateString('fr-FR');
+    const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const timeRange = `${startTime}-${endTime}`;
     
     // Initiales de l'intervenant
     const intervenantInitials = appointment?.intervenant 
@@ -143,31 +104,34 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       : null;
     
     return (
-      <div className="flex items-center justify-between w-full py-2">
-        <div className="flex-1">
-          <span className="font-medium text-gray-900">{clientName}</span>
-          {appointment?.notes && (
-            <div className="text-xs text-gray-600 italic mt-1">
-              {appointment.notes}
+      <div className="py-2 w-full">
+        {/* Première ligne : Date + tabulation + heure + tabulation + nom du client */}
+        <div className="font-medium text-gray-900 whitespace-pre">
+          {`${eventDate}\t${timeRange}\t${clientName}`}
+        </div>
+        
+        {/* Deuxième ligne : Notes et initiales */}
+        <div className="flex justify-between items-start mt-1">
+          <div className="text-xs text-gray-600 italic flex-1">
+            {appointment?.notes || ''}
+          </div>
+          
+          {/* Initiales de l'intervenant alignées à droite */}
+          {intervenantInitials && (
+            <div className="ml-4">
+              <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full min-w-[32px] text-center">
+                {intervenantInitials}
+              </div>
             </div>
           )}
         </div>
-        
-        {/* Initiales de l'intervenant alignées à droite */}
-        {intervenantInitials && (
-          <div className="ml-4">
-            <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full min-w-[32px] text-center">
-              {intervenantInitials}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
 
-  // CORRECTION: Composant personnalisé pour la toolbar avec format français
+  // Composant personnalisé pour la toolbar avec format français
   const CustomToolbar = ({ label, onNavigate, onView, view }: any) => {
-    // CORRECTION: Pour la vue agenda, reconstruire le label en français
+    // Pour la vue agenda, reconstruire le label en français
     let frenchLabel = label;
     if (view === 'agenda') {
       // Extraire les dates de début et fin depuis le label
@@ -323,10 +287,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
       return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
     },
-    // CORRECTION: Forcer les jours en français dans la vue semaine avec locale explicite
+    // Forcer les jours en français dans la vue semaine avec locale explicite
     dayFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
     dayHeaderFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
-    // CORRECTION: Formats restaurés pour l'agenda avec gestion d'erreur
+    // Formats pour l'agenda - utiliser les formats natifs
     agendaDateFormat: (date: Date) => {
       try {
         return new Date(date).toLocaleDateString('fr-FR');
@@ -366,9 +330,8 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             event: EventComponent,
             toolbar: CustomToolbar,
             agenda: {
-              event: AgendaEvent, // Seulement client, notes et initiales
-              date: AgendaDate,   // Date dans la première colonne
-              time: AgendaTime,   // Heures dans la deuxième colonne
+              event: AgendaEvent, // Seul composant personnalisé pour l'agenda
+              // Supprimer les composants date et time pour utiliser les composants natifs
             }
           }}
           messages={messages}
