@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
+import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -51,6 +51,13 @@ const InterventionReportView = () => {
         navigate('/scheduler');
         return;
       }
+
+      console.log('🎵 INTERVENTION_VIEW - Rapport chargé:', {
+        reportId,
+        hasAudioUrl: !!reportData.audio_url,
+        audioUrl: reportData.audio_url,
+        audioUrlLength: reportData.audio_url?.length
+      });
 
       setReport(reportData);
 
@@ -368,9 +375,11 @@ const InterventionReportView = () => {
           <div className="space-y-2">
             <h3 className="font-semibold">Enregistrement audio</h3>
             <div className="bg-gray-50 p-3 rounded-md">
-              <audio controls src={report.audio_url} className="w-full">
-                Votre navigateur ne supporte pas l'élément audio.
-              </audio>
+              <VoiceAnswerPlayer
+                audioUrl={report.audio_url}
+                readOnly={true}
+                shouldLog={true}
+              />
             </div>
           </div>
         )}
