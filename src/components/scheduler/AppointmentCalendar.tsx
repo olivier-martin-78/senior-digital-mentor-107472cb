@@ -290,34 +290,38 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     // Forcer les jours en français dans la vue semaine avec locale explicite
     dayFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
     dayHeaderFormat: (date: Date) => moment(date).locale('fr').format('dddd DD/MM'),
-    // Formats pour l'agenda - utiliser les formats natifs
-    agendaDateFormat: (date: Date) => {
-      try {
-        return new Date(date).toLocaleDateString('fr-FR');
-      } catch {
-        return '-';
-      }
-    },
-    agendaTimeFormat: (date: Date) => {
-      try {
-        return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      } catch {
-        return '-';
-      }
-    },
-    agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) => {
-      try {
-        const startTime = new Date(start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        const endTime = new Date(end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        return `${startTime} - ${endTime}`;
-      } catch {
-        return '-';
-      }
-    },
+    // Formats vides pour masquer les colonnes natives dans l'agenda
+    agendaDateFormat: () => '',
+    agendaTimeFormat: () => '',
+    agendaTimeRangeFormat: () => '',
   };
 
   return (
     <div className="space-y-4">
+      <style jsx>{`
+        /* Masquer les colonnes Date et Heure dans la vue Agenda */
+        .rbc-agenda-view .rbc-agenda-date-cell,
+        .rbc-agenda-view .rbc-agenda-time-cell {
+          display: none !important;
+        }
+        
+        /* Étendre la colonne Événement pour occuper tout l'espace */
+        .rbc-agenda-view .rbc-agenda-event-cell {
+          width: 100% !important;
+        }
+        
+        /* Masquer les en-têtes des colonnes Date et Heure */
+        .rbc-agenda-view thead th:first-child,
+        .rbc-agenda-view thead th:nth-child(2) {
+          display: none !important;
+        }
+        
+        /* Étendre l'en-tête de la colonne Événement */
+        .rbc-agenda-view thead th:last-child {
+          width: 100% !important;
+        }
+      `}</style>
+      
       <div style={{ height: '600px' }}>
         <Calendar
           localizer={localizer}
@@ -330,8 +334,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
             event: EventComponent,
             toolbar: CustomToolbar,
             agenda: {
-              event: AgendaEvent, // Seul composant personnalisé pour l'agenda
-              // Supprimer les composants date et time pour utiliser les composants natifs
+              event: AgendaEvent,
             }
           }}
           messages={messages}
