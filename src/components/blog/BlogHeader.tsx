@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BlogAlbum } from '@/types/supabase';
 import { Plus } from 'lucide-react';
 import AlbumCreator from './AlbumCreator';
+import InviteUserDialog from '@/components/InviteUserDialog';
 
 interface BlogHeaderProps {
   albums: BlogAlbum[];
@@ -26,17 +27,20 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, on
         <h1 className="text-3xl font-serif text-tranches-charcoal">Blog (Photos/Vidéos)</h1>
       </div>
 
-      {hasCreatePermission && (
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link to="/blog/new">
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvel article
-            </Link>
-          </Button>
-          <AlbumCreator onAlbumCreated={onAlbumCreated} />
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        {hasCreatePermission && (
+          <>
+            <Button asChild variant="outline">
+              <Link to="/blog/new">
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvel article
+              </Link>
+            </Button>
+            <AlbumCreator onAlbumCreated={onAlbumCreated} />
+          </>
+        )}
+        <InviteUserDialog />
+      </div>
     </div>
   );
 };
