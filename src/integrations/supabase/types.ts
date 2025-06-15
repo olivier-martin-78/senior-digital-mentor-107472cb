@@ -1188,6 +1188,14 @@ export type Database = {
         Args: { user_id_param: string; group_id_param?: string }
         Returns: boolean
       }
+      can_delete_client: {
+        Args: { client_id_param: string }
+        Returns: boolean
+      }
+      can_delete_intervenant: {
+        Args: { intervenant_id_param: string }
+        Returns: boolean
+      }
       can_view_group: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
@@ -1211,6 +1219,14 @@ export type Database = {
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_professional_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          display_name: string
+          email: string
+        }[]
       }
       get_user_role: {
         Args: { user_id: string }

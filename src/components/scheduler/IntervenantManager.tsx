@@ -5,9 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Share2 } from 'lucide-react';
 import { Intervenant } from '@/types/appointments';
 import IntervenantForm from './IntervenantForm';
+import IntervenantSharingDialog from './IntervenantSharingDialog';
 
 interface IntervenantManagerProps {
   intervenants: Intervenant[];
@@ -21,6 +22,8 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [selectedIntervenant, setSelectedIntervenant] = useState<Intervenant | null>(null);
+  const [showSharingDialog, setShowSharingDialog] = useState(false);
+  const [intervenantToShare, setIntervenantToShare] = useState<Intervenant | null>(null);
 
   console.log('🔍 INTERVENANT_MANAGER - Intervenants reçus:', intervenants.length);
   console.log('🔍 INTERVENANT_MANAGER - Utilisateur connecté:', user?.id);
@@ -31,46 +34,68 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
     setShowForm(true);
   };
 
+  const handleShare = (intervenant: Intervenant) => {
+    setIntervenantToShare(intervenant);
+    setShowSharingDialog(true);
+  };
+
   const handleDelete = async (intervenantId: string) => {
     const intervenantToDelete = intervenants.find(i => i.id === intervenantId);
     console.log('🔍 INTERVENANT_MANAGER - Suppression intervenant:', intervenantId, 'créé par:', intervenantToDelete?.created_by);
 
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet intervenant ?')) {
-      return;
-    }
-
-    // Vérifier que l'utilisateur a le droit de supprimer cet intervenant
-    if (intervenantToDelete && intervenantToDelete.created_by !== user?.id) {
-      toast({
-        title: 'Erreur',
-        description: 'Vous ne pouvez supprimer que les intervenants que vous avez créés',
-        variant: 'destructive',
+    try {
+      // Vérifier si l'intervenant peut être supprimé
+      const { data: canDelete, error: checkError } = await supabase.rpc('can_delete_intervenant', {
+        intervenant_id_param: intervenantId
       });
-      return;
-    }
 
-    const { error } = await supabase
-      .from('intervenants')
-      .delete()
-      .eq('id', intervenantId)
-      .eq('created_by', user?.id); // Double vérification côté requête
+      if (checkError) throw checkError;
 
-    if (error) {
+      if (!canDelete) {
+        toast({
+          title: 'Suppression impossible',
+          description: 'Cet intervenant est assigné à des rendez-vous et ne peut pas être supprimé.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (!confirm('Êtes-vous sûr de vouloir supprimer cet intervenant ?')) {
+        return;
+      }
+
+      // Vérifier que l'utilisateur a le droit de supprimer cet intervenant
+      if (intervenantToDelete && intervenantToDelete.created_by !== user?.id) {
+        toast({
+          title: 'Erreur',
+          description: 'Vous ne pouvez supprimer que les intervenants que vous avez créés',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('intervenants')
+        .delete()
+        .eq('id', intervenantId)
+        .eq('created_by', user?.id); // Double vérification côté requête
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Intervenant supprimé avec succès',
+      });
+
+      onIntervenantUpdate();
+    } catch (error: any) {
       console.error('🔍 INTERVENANT_MANAGER - Erreur suppression:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer l\'intervenant',
+        description: `Impossible de supprimer l'intervenant: ${error.message}`,
         variant: 'destructive',
       });
-      return;
     }
-
-    toast({
-      title: 'Succès',
-      description: 'Intervenant supprimé avec succès',
-    });
-
-    onIntervenantUpdate();
   };
 
   const handleFormClose = () => {
@@ -131,6 +156,16 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => handleShare(intervenant)}
+                  title="Partager l'intervenant"
+                  className="flex-1"
+                >
+                  <Share2 className="h-4 w-4 mr-1" />
+                  Partager
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => handleEdit(intervenant)}
                   className="flex-1"
                 >
@@ -175,6 +210,13 @@ const IntervenantManager: React.FC<IntervenantManagerProps> = ({
           onCancel={handleFormClose}
         />
       )}
+
+      <IntervenantSharingDialog
+        intervenant={intervenantToShare}
+        open={showSharingDialog}
+        onOpenChange={setShowSharingDialog}
+        onSuccess={onIntervenantUpdate}
+      />
     </div>
   );
 };
