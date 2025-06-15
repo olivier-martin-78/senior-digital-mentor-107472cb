@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -63,8 +64,8 @@ const ProfessionalScheduler = () => {
       setLoading(true);
       
       // Identifier si l'utilisateur connecté est un intervenant
-      console.log('🔥 POLITIQUES RLS V6 - Email utilisateur connecté:', user.email);
-      console.log('🔥 POLITIQUES RLS V6 - User ID:', user.id);
+      console.log('🔥 DIAGNOSTIC DISPARITION RDV - Email utilisateur connecté:', user.email);
+      console.log('🔥 DIAGNOSTIC DISPARITION RDV - User ID:', user.id);
       
       // Chercher d'abord par email exact
       let { data: intervenantDataByEmail } = await supabase
@@ -75,7 +76,7 @@ const ProfessionalScheduler = () => {
 
       let currentIntervenantIdFound = intervenantDataByEmail?.id || null;
       
-      console.log('🔥 POLITIQUES RLS V6 - Intervenant trouvé par email:', intervenantDataByEmail);
+      console.log('🔥 DIAGNOSTIC DISPARITION RDV - Intervenant trouvé par email:', intervenantDataByEmail);
 
       // Si pas trouvé par email, chercher par nom/prénom dans le profil
       if (!currentIntervenantIdFound) {
@@ -85,7 +86,7 @@ const ProfessionalScheduler = () => {
           .eq('id', user.id)
           .maybeSingle();
 
-        console.log('🔥 POLITIQUES RLS V6 - Profil utilisateur:', profileData);
+        console.log('🔥 DIAGNOSTIC DISPARITION RDV - Profil utilisateur:', profileData);
 
         if (profileData?.display_name) {
           const nameParts = profileData.display_name.split(' ');
@@ -93,7 +94,7 @@ const ProfessionalScheduler = () => {
             const firstName = nameParts[0];
             const lastName = nameParts.slice(1).join(' ');
             
-            console.log('🔥 POLITIQUES RLS V6 - Recherche par nom:', firstName, lastName);
+            console.log('🔥 DIAGNOSTIC DISPARITION RDV - Recherche par nom:', firstName, lastName);
             
             const { data: intervenantDataByName } = await supabase
               .from('intervenants')
@@ -102,7 +103,7 @@ const ProfessionalScheduler = () => {
               .eq('last_name', lastName)
               .maybeSingle();
 
-            console.log('🔥 POLITIQUES RLS V6 - Intervenant trouvé par nom:', intervenantDataByName);
+            console.log('🔥 DIAGNOSTIC DISPARITION RDV - Intervenant trouvé par nom:', intervenantDataByName);
             currentIntervenantIdFound = intervenantDataByName?.id || null;
           }
         }
@@ -110,9 +111,9 @@ const ProfessionalScheduler = () => {
 
       if (currentIntervenantIdFound) {
         setCurrentIntervenantId(currentIntervenantIdFound);
-        console.log('🔥 POLITIQUES RLS V6 - Utilisateur est un intervenant:', currentIntervenantIdFound);
+        console.log('🔥 DIAGNOSTIC DISPARITION RDV - Utilisateur est un intervenant:', currentIntervenantIdFound);
       } else {
-        console.log('🔥 POLITIQUES RLS V6 - Utilisateur n\'est pas un intervenant identifié');
+        console.log('🔥 DIAGNOSTIC DISPARITION RDV - Utilisateur n\'est pas un intervenant identifié');
       }
 
       await Promise.all([
@@ -135,13 +136,12 @@ const ProfessionalScheduler = () => {
   const loadAppointments = async () => {
     if (!user) return;
 
-    console.log('🔥🔥🔥 TEST POLITIQUES RLS V6 AVEC FONCTION SECURITY DEFINER 🔥🔥🔥');
-    console.log('🔥 TEST RLS V6 - User ID:', user.id);
-    console.log('🔥 TEST RLS V6 - User Email:', user.email);
+    console.log('🚨🚨🚨 DIAGNOSTIC DISPARITION RDV - ANALYSE APPROFONDIE 🚨🚨🚨');
+    console.log('🚨 User ID:', user.id);
+    console.log('🚨 User Email:', user.email);
 
     try {
-      console.log('🔥 TEST RLS V6 - Exécution de la requête avec les NOUVELLES POLITIQUES V6...');
-      console.log('🔥 TEST RLS V6 - Ces politiques utilisent get_current_user_email() pour éviter l\'erreur permission denied');
+      console.log('🚨 ÉTAPE 1: Chargement des rendez-vous avec politiques RLS V6...');
       
       const { data: appointmentsWithV6Policies, error: appointmentError } = await supabase
         .from('appointments')
@@ -176,64 +176,73 @@ const ProfessionalScheduler = () => {
         .order('start_time', { ascending: true });
 
       if (appointmentError) {
-        console.error('🔥 TEST RLS V6 - ERREUR lors du chargement:', appointmentError);
+        console.error('🚨 ERREUR lors du chargement:', appointmentError);
         throw appointmentError;
       }
 
-      console.log('🔥 TEST RLS V6 - RÉSULTAT AVEC POLITIQUES V6 (security definer):', {
-        totalRetournes: appointmentsWithV6Policies?.length || 0,
-        utilisateurConnecte: {
-          id: user.id,
-          email: user.email
-        },
-        politiquesRLS: 'appointments_final_v6_select_only_owner_or_exact_email_match (V6 avec get_current_user_email())'
-      });
-
-      // ANALYSE CRITIQUE : Vérification que chaque rendez-vous retourné est bien autorisé
+      console.log('🚨 ÉTAPE 2: Analyse des résultats par statut...');
+      
       if (appointmentsWithV6Policies && appointmentsWithV6Policies.length > 0) {
-        console.log('🔥 TEST RLS V6 - Analyse de chaque rendez-vous avec POLITIQUES V6...');
-        
-        appointmentsWithV6Policies.forEach((apt, index) => {
-          const isCreator = apt.professional_id === user.id;
-          const intervenantEmail = apt.intervenants?.email;
-          const emailMatch = intervenantEmail === user.email;
-          
-          console.log(`🔥 TEST RLS V6 - RDV ${index + 1} - ID: ${apt.id}`, {
-            professional_id: apt.professional_id,
-            user_id: user.id,
-            is_creator: isCreator,
-            intervenant_id: apt.intervenant_id,
-            intervenant_email: intervenantEmail,
-            user_email: user.email,
-            email_match: emailMatch,
-            should_be_visible: isCreator || emailMatch,
-            client_name: `${apt.clients?.first_name} ${apt.clients?.last_name}`,
-            date: apt.start_time
-          });
+        const groupedByStatus = appointmentsWithV6Policies.reduce((acc, apt) => {
+          const status = apt.status || 'unknown';
+          if (!acc[status]) acc[status] = [];
+          acc[status].push(apt);
+          return acc;
+        }, {} as Record<string, any[]>);
 
-          // 🚨 VÉRIFICATION CRITIQUE V6 : Ce rendez-vous devrait-il être visible ?
-          if (!isCreator && !emailMatch) {
-            console.error('🚨🚨🚨 ALERTE RLS V6 CRITIQUE: Ce rendez-vous ne devrait PAS être visible!', {
-              rdv_id: apt.id,
-              raison: 'Utilisateur n\'est ni créateur ni intervenant avec email correspondant',
+        console.log('🚨 RÉPARTITION PAR STATUT:', {
+          scheduled: groupedByStatus.scheduled?.length || 0,
+          completed: groupedByStatus.completed?.length || 0,
+          cancelled: groupedByStatus.cancelled?.length || 0,
+          total: appointmentsWithV6Policies.length
+        });
+
+        // Analyse détaillée pour chaque statut
+        Object.entries(groupedByStatus).forEach(([status, apts]) => {
+          console.log(`🚨 STATUT "${status.toUpperCase()}" (${apts.length} RDV):`);
+          apts.forEach((apt, index) => {
+            const isCreator = apt.professional_id === user.id;
+            const intervenantEmail = apt.intervenants?.email;
+            const emailMatch = intervenantEmail === user.email;
+            
+            console.log(`  📋 RDV ${index + 1} - ID: ${apt.id}`, {
+              client: `${apt.clients?.first_name} ${apt.clients?.last_name}`,
+              date: apt.start_time,
+              status: apt.status,
               professional_id: apt.professional_id,
+              user_id: user.id,
+              is_creator: isCreator,
               intervenant_email: intervenantEmail,
               user_email: user.email,
-              probleme: 'LES POLITIQUES V6 NE FONCTIONNENT PAS CORRECTEMENT!'
+              email_match: emailMatch,
+              should_be_visible: isCreator || emailMatch
             });
-          } else {
-            console.log('✅ RLS V6 PARFAIT - Ce rendez-vous est correctement visible');
-            if (isCreator) {
-              console.log('   → Visible car utilisateur est le créateur');
-            }
-            if (emailMatch) {
-              console.log('   → Visible car utilisateur est l\'intervenant avec email correspondant');
-            }
-          }
+          });
         });
+
+        // Vérification spécifique pour les RDV "completed"
+        const completedAppointments = groupedByStatus.completed || [];
+        if (completedAppointments.length > 0) {
+          console.log('🚨 ANALYSE SPÉCIFIQUE DES RDV TERMINÉS:');
+          completedAppointments.forEach((apt) => {
+            const isCreator = apt.professional_id === user.id;
+            const isIntervenant = apt.intervenants?.email === user.email;
+            
+            console.log(`🚨 RDV TERMINÉ - ID: ${apt.id}`, {
+              visible_car_createur: isCreator,
+              visible_car_intervenant: isIntervenant,
+              devrait_etre_visible: isCreator || isIntervenant,
+              professional_id: apt.professional_id,
+              intervenant_email: apt.intervenants?.email,
+              user_email: user.email
+            });
+          });
+        } else {
+          console.log('🚨 AUCUN RDV TERMINÉ TROUVÉ - Ceci pourrait expliquer la disparition !');
+        }
+
       } else {
-        console.log('🔥 TEST RLS V6 - Aucun rendez-vous retourné par les politiques V6');
-        console.log('🎯 Les politiques V6 avec get_current_user_email() empêchent l\'accès non autorisé');
+        console.log('🚨 AUCUN RENDEZ-VOUS RETOURNÉ PAR LES POLITIQUES RLS V6');
       }
 
       // Transformer les données
@@ -246,12 +255,18 @@ const ProfessionalScheduler = () => {
         caregivers: []
       }));
 
-      console.log('🔥 TEST RLS V6 - DONNÉES FINALES AVEC POLITIQUES V6:', transformedData.length, 'rendez-vous');
-      console.log('✅ Les politiques V6 fonctionnent correctement sans erreur permission denied');
+      console.log('🚨 DONNÉES FINALES TRANSFORMÉES:', {
+        total: transformedData.length,
+        par_statut: transformedData.reduce((acc, apt) => {
+          const status = apt.status;
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
       
       setAppointments(transformedData);
     } catch (error) {
-      console.error('🔥 TEST RLS V6 - ERREUR CRITIQUE:', error);
+      console.error('🚨 ERREUR CRITIQUE lors du chargement des RDV:', error);
       throw error;
     }
   };
