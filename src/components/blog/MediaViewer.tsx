@@ -86,54 +86,73 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     setIsVideoLoading(false);
     setIsQuickTimeVideo(isQuickTime);
 
-    // Si c'est une vidéo QuickTime sur desktop, proposer directement le mode manuel
-    if (isQuickTime && !isMobile) {
-      setManualPlayMode(true);
-    }
-  }, [currentIndex, isQuickTime, isMobile]);
+    // CORRECTION : Ne plus forcer le mode manuel automatiquement
+    // Laisser d'abord essayer la lecture normale
+    console.log('🎬 MEDIA_VIEWER - Initialisation vidéo:', {
+      mediaType: currentMedia.media_type,
+      mediaUrl: currentMedia.media_url,
+      isQuickTime,
+      isMobile,
+      forceManualMode: false // Plus de forçage automatique
+    });
+  }, [currentIndex, isQuickTime, isMobile, currentMedia]);
 
   const handleVideoError = useCallback((error: any) => {
-    console.error('Erreur vidéo détectée:', {
+    console.error('🎬 MEDIA_VIEWER - Erreur vidéo détectée:', {
       mediaUrl: currentMedia.media_url,
       mediaType: currentMedia.media_type,
       error: error?.target?.error,
       readyState: error?.target?.readyState,
       networkState: error?.target?.networkState,
       isQuickTime,
-      isMobile
+      isMobile,
+      retryCount: videoRetryCount
     });
     
     setIsVideoLoading(false);
     
-    // Pour les vidéos QuickTime, passer directement au téléchargement
-    if (isQuickTime) {
-      setVideoError(true);
-      return;
-    }
-    
-    if (videoRetryCount < 2) {
+    // Donner plus de chances à la lecture automatique avant de passer au mode manuel
+    if (videoRetryCount < 1) {
+      console.log('🎬 MEDIA_VIEWER - Tentative de relecture automatique, essai:', videoRetryCount + 1);
       setVideoRetryCount(prev => prev + 1);
       setTimeout(() => {
-        if (videoRetryCount === 0) {
-          setManualPlayMode(true);
-        } else {
-          setVideoError(true);
+        // Force le rechargement de la vidéo
+        const video = error?.target;
+        if (video) {
+          video.load();
         }
-      }, 1000);
+      }, 500);
+    } else if (videoRetryCount === 1) {
+      console.log('🎬 MEDIA_VIEWER - Passage en mode manuel après échec automatique');
+      setManualPlayMode(true);
     } else {
+      console.log('🎬 MEDIA_VIEWER - Échec définitif, affichage erreur');
       setVideoError(true);
     }
   }, [currentMedia.media_url, currentMedia.media_type, videoRetryCount, isQuickTime, isMobile]);
 
   const handleManualPlay = () => {
+    console.log('🎬 MEDIA_VIEWER - Lecture manuelle déclenchée');
     setIsVideoLoading(true);
     setVideoError(false);
     setManualPlayMode(false);
+    setVideoRetryCount(0); // Reset le compteur pour la lecture manuelle
   };
 
   const handleVideoCanPlay = () => {
+    console.log('🎬 MEDIA_VIEWER - Vidéo prête à être lue');
     setIsVideoLoading(false);
     setVideoError(false);
+  };
+
+  const handleVideoLoadStart = () => {
+    console.log('🎬 MEDIA_VIEWER - Début du chargement vidéo');
+    setIsVideoLoading(true);
+  };
+
+  const handleVideoLoadedData = () => {
+    console.log('🎬 MEDIA_VIEWER - Données vidéo chargées');
+    setIsVideoLoading(false);
   };
 
   const handleDownload = async () => {
@@ -157,7 +176,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     }
   };
 
-  // Composant pour l'interface QuickTime spécifique
+  // Composant pour l'interface QuickTime spécifique (seulement en cas d'échec)
   const QuickTimeInterface = () => (
     <div className="flex flex-col items-center justify-center bg-black/80 text-white p-8 rounded max-w-md mx-auto">
       <div className="flex items-center gap-3 mb-4">
@@ -183,15 +202,13 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           </div>
         )}
         
-        {!manualPlayMode && !videoError && (
-          <Button 
-            onClick={handleManualPlay}
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
-          >
-            <Play className="h-4 w-4 mr-2" />
-            Essayer de lire
-          </Button>
-        )}
+        <Button 
+          onClick={handleManualPlay}
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Essayer de lire
+        </Button>
         
         <Button 
           onClick={handleDownload}
@@ -273,17 +290,16 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             />
           ) : currentMedia.media_type.startsWith('video/') ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Interface spéciale pour QuickTime sur desktop */}
-              {isQuickTime && !isMobile && (manualPlayMode || videoError) ? (
-                <QuickTimeInterface />
-              ) : !videoError && !manualPlayMode ? (
+              {/* CORRECTION : Afficher d'abord la vidéo normale, puis les interfaces de fallback */}
+              {!videoError && !manualPlayMode ? (
                 <video
                   key={`${currentMedia.id}-${videoRetryCount}`}
                   src={currentMedia.media_url}
                   controls
-                  autoPlay={videoRetryCount === 0 && !isQuickTime}
+                  autoPlay={videoRetryCount === 0}
                   muted={videoRetryCount === 0}
                   playsInline
+                  preload="metadata"
                   className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
                   style={{ 
                     maxWidth: '100vw',
@@ -291,8 +307,11 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   }}
                   onError={handleVideoError}
                   onCanPlay={handleVideoCanPlay}
-                  onLoadStart={() => setIsVideoLoading(true)}
+                  onLoadStart={handleVideoLoadStart}
+                  onLoadedData={handleVideoLoadedData}
                 />
+              ) : manualPlayMode && isQuickTime && !isMobile ? (
+                <QuickTimeInterface />
               ) : manualPlayMode && !isQuickTime ? (
                 <div className="flex flex-col items-center justify-center bg-black/80 text-white p-8 rounded max-w-md mx-auto">
                   <Play className="h-16 w-16 mb-4 text-blue-400" />
