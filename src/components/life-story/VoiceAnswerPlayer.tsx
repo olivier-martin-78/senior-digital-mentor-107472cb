@@ -25,11 +25,16 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(true);
+  const [isPreparingAudio, setIsPreparingAudio] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   if (shouldLog) {
-    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl });
+    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl, isPreparingAudio });
   }
+
+  // Détecter iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   // Convertir le chemin relatif en URL accessible
   useEffect(() => {
@@ -95,6 +100,22 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setHasError(false);
     };
 
+    const handleCanPlay = () => {
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Can play - audio ready");
+      }
+      setIsPreparingAudio(false);
+      setHasError(false);
+    };
+
+    const handleCanPlayThrough = () => {
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Can play through - audio fully ready");
+      }
+      setIsPreparingAudio(false);
+      setHasError(false);
+    };
+
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
     };
@@ -120,9 +141,10 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       }
       setIsPlaying(true);
       setHasError(false);
+      setRetryCount(0); // Reset retry count on successful play
     };
 
-    // Gestion d'erreur améliorée
+    // Gestion d'erreur améliorée avec retry pour iOS
     const handleError = (e: Event) => {
       if (shouldLog) {
         console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
@@ -142,6 +164,21 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                    error.code === MediaError.MEDIA_ERR_NETWORK ||
                    error.code === MediaError.MEDIA_ERR_DECODE)) {
         console.error("🎵 VOICE_PLAYER - Critical audio error:", error);
+        
+        // Sur iOS, ne montrer l'erreur qu'après plusieurs tentatives
+        if (isIOS && retryCount < 2) {
+          if (shouldLog) {
+            console.log("🎵 VOICE_PLAYER - iOS retry, attempt:", retryCount + 1);
+          }
+          setRetryCount(prev => prev + 1);
+          setIsPreparingAudio(true);
+          // Recharger l'audio après un court délai
+          setTimeout(() => {
+            audio.load();
+          }, 100);
+          return;
+        }
+        
         setHasError(true);
         setIsPlaying(false);
         
@@ -154,6 +191,8 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('pause', handlePause);
@@ -162,13 +201,15 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('error', handleError);
     };
-  }, [hasUserInteracted, shouldLog, accessibleUrl]);
+  }, [hasUserInteracted, shouldLog, accessibleUrl, isIOS, retryCount]);
 
   const handlePlayPause = async () => {
     const audio = audioRef.current;
@@ -178,7 +219,14 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     setHasUserInteracted(true);
 
     if (shouldLog) {
-      console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError, accessibleUrl });
+      console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { 
+        isPlaying, 
+        hasError, 
+        accessibleUrl, 
+        isPreparingAudio,
+        retryCount,
+        readyState: audio.readyState
+      });
     }
 
     try {
@@ -186,6 +234,45 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         audio.pause();
       } else {
         setHasError(false);
+        
+        // Sur iOS, ajouter une préparation si l'audio n'est pas prêt
+        if (isIOS && audio.readyState < 2) {
+          setIsPreparingAudio(true);
+          if (shouldLog) {
+            console.log("🎵 VOICE_PLAYER - iOS: preparing audio for playback");
+          }
+          
+          // Attendre que l'audio soit prêt avant de jouer
+          const waitForReady = () => {
+            return new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                reject(new Error('Audio preparation timeout'));
+              }, 3000);
+              
+              const checkReady = () => {
+                if (audio.readyState >= 2) {
+                  clearTimeout(timeout);
+                  setIsPreparingAudio(false);
+                  resolve();
+                } else {
+                  setTimeout(checkReady, 50);
+                }
+              };
+              
+              checkReady();
+            });
+          };
+          
+          try {
+            await waitForReady();
+          } catch (error) {
+            if (shouldLog) {
+              console.log("🎵 VOICE_PLAYER - Audio preparation timeout, trying anyway");
+            }
+            setIsPreparingAudio(false);
+          }
+        }
+        
         const playPromise = audio.play();
         
         if (playPromise !== undefined) {
@@ -194,8 +281,30 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       }
     } catch (error) {
       console.error("🎵 VOICE_PLAYER - Play error:", error);
+      
+      // Sur iOS, tenter un retry avant d'afficher l'erreur
+      if (isIOS && retryCount < 2) {
+        if (shouldLog) {
+          console.log("🎵 VOICE_PLAYER - iOS play error, retrying:", retryCount + 1);
+        }
+        setRetryCount(prev => prev + 1);
+        setIsPreparingAudio(true);
+        
+        // Recharger et réessayer après un délai
+        setTimeout(() => {
+          audio.load();
+          setTimeout(() => {
+            setIsPreparingAudio(false);
+            handlePlayPause(); // Réessayer
+          }, 200);
+        }, 100);
+        
+        return;
+      }
+      
       setHasError(true);
       setIsPlaying(false);
+      setIsPreparingAudio(false);
       
       toast({
         title: "Erreur de lecture",
@@ -223,7 +332,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     );
   }
 
-  if (hasError && hasUserInteracted) {
+  if (hasError && hasUserInteracted && retryCount >= 2) {
     return (
       <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
         <span className="text-red-600 text-sm">Erreur de lecture audio</span>
@@ -241,6 +350,8 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     );
   }
 
+  const isButtonDisabled = hasError || !accessibleUrl || isPreparingAudio;
+
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
       <div className="flex items-center space-x-3">
@@ -249,15 +360,29 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
-          disabled={hasError || !accessibleUrl}
+          disabled={isButtonDisabled}
         >
-          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          <span className="hidden sm:inline">{isPlaying ? 'Pause' : 'Écouter'}</span>
+          {isPreparingAudio ? (
+            <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+          ) : isPlaying ? (
+            <Pause className="w-4 h-4" />
+          ) : (
+            <Play className="w-4 h-4" />
+          )}
+          <span className="hidden sm:inline">
+            {isPreparingAudio ? 'Préparation...' : isPlaying ? 'Pause' : 'Écouter'}
+          </span>
         </Button>
         
         <div className="text-sm text-gray-600">
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
+        
+        {isIOS && retryCount > 0 && (
+          <div className="text-xs text-orange-500">
+            Tentative {retryCount}/2
+          </div>
+        )}
       </div>
 
       {!readOnly && onDelete && (
@@ -276,7 +401,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         <audio
           ref={audioRef}
           src={accessibleUrl}
-          preload="metadata"
+          preload={isIOS ? "auto" : "metadata"}
         />
       )}
     </div>
