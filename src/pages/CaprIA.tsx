@@ -52,7 +52,7 @@ const CaprIA = () => {
   const testimonials = [
     {
       name: "Marie, 74 ans",
-      text: "Grâce à CaprIA, je partage mes souvenirs avec mes petits-enfants. Ils adorent découvrir mes histoires !",
+      text: "Grâce à CaprIA, j'ai partagé l'histoire de ma vie au sein de mon cercle familial. J'ai reçu de nombreux messages remplis de gratitude, et parfois des questions pour en savoir un peu plus sur certains moments marquants de mon parcours.",
       rating: 5
     },
     {
