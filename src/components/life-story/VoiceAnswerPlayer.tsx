@@ -30,7 +30,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
 
   if (shouldLog) {
-    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl, isPreparingAudio });
+    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl, isPreparingAudio, retryCount });
   }
 
   // Détecter iOS
@@ -144,13 +144,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setRetryCount(0); // Reset retry count on successful play
     };
 
-    // Gestion d'erreur améliorée avec retry pour iOS
+    // Gestion d'erreur simplifiée
     const handleError = (e: Event) => {
       if (shouldLog) {
         console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
       }
       
-      // Ne pas afficher d'erreur si l'utilisateur n'a pas encore interagi
+      // Ne pas traiter les erreurs si l'utilisateur n'a pas encore interagi
       if (!hasUserInteracted) {
         if (shouldLog) {
           console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
@@ -165,22 +165,22 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
                    error.code === MediaError.MEDIA_ERR_DECODE)) {
         console.error("🎵 VOICE_PLAYER - Critical audio error:", error);
         
-        // Sur iOS, ne montrer l'erreur qu'après plusieurs tentatives
-        if (isIOS && retryCount < 2) {
+        // Sur iOS, permettre quelques retries automatiques seulement pour les erreurs de chargement
+        if (isIOS && retryCount < 1 && error.code === MediaError.MEDIA_ERR_NETWORK) {
           if (shouldLog) {
-            console.log("🎵 VOICE_PLAYER - iOS retry, attempt:", retryCount + 1);
+            console.log("🎵 VOICE_PLAYER - iOS network error retry, attempt:", retryCount + 1);
           }
           setRetryCount(prev => prev + 1);
-          setIsPreparingAudio(true);
           // Recharger l'audio après un court délai
           setTimeout(() => {
             audio.load();
-          }, 100);
+          }, 500);
           return;
         }
         
         setHasError(true);
         setIsPlaying(false);
+        setIsPreparingAudio(false);
         
         toast({
           title: "Erreur audio",
@@ -232,62 +232,66 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     try {
       if (isPlaying) {
         audio.pause();
-      } else {
-        setHasError(false);
-        
-        // Sur iOS, ajouter une préparation si l'audio n'est pas prêt
-        if (isIOS && audio.readyState < 2) {
-          setIsPreparingAudio(true);
-          if (shouldLog) {
-            console.log("🎵 VOICE_PLAYER - iOS: preparing audio for playback");
-          }
-          
-          // Attendre que l'audio soit prêt avant de jouer
-          const waitForReady = () => {
-            return new Promise<void>((resolve, reject) => {
-              const timeout = setTimeout(() => {
-                reject(new Error('Audio preparation timeout'));
-              }, 3000);
-              
-              const checkReady = () => {
-                if (audio.readyState >= 2) {
-                  clearTimeout(timeout);
-                  setIsPreparingAudio(false);
-                  resolve();
-                } else {
-                  setTimeout(checkReady, 50);
-                }
-              };
-              
-              checkReady();
-            });
-          };
-          
-          try {
-            await waitForReady();
-          } catch (error) {
-            if (shouldLog) {
-              console.log("🎵 VOICE_PLAYER - Audio preparation timeout, trying anyway");
-            }
-            setIsPreparingAudio(false);
-          }
+        return;
+      }
+
+      // Reset des états d'erreur
+      setHasError(false);
+      
+      // Sur iOS, vérifier si l'audio a besoin de préparation
+      if (isIOS && audio.readyState < 2) {
+        setIsPreparingAudio(true);
+        if (shouldLog) {
+          console.log("🎵 VOICE_PLAYER - iOS: preparing audio for playback");
         }
         
-        const playPromise = audio.play();
+        // Attendre que l'audio soit prêt avec un timeout plus long
+        const waitForReady = () => {
+          return new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Audio preparation timeout'));
+            }, 5000); // Augmenté à 5 secondes
+            
+            const checkReady = () => {
+              if (audio.readyState >= 2) {
+                clearTimeout(timeout);
+                setIsPreparingAudio(false);
+                resolve();
+              } else {
+                setTimeout(checkReady, 100);
+              }
+            };
+            
+            checkReady();
+          });
+        };
         
-        if (playPromise !== undefined) {
-          await playPromise;
+        try {
+          await waitForReady();
+        } catch (error) {
+          if (shouldLog) {
+            console.log("🎵 VOICE_PLAYER - Audio preparation timeout, trying to play anyway");
+          }
+          setIsPreparingAudio(false);
         }
       }
+      
+      // Tentative de lecture
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
+      
     } catch (error) {
       console.error("🎵 VOICE_PLAYER - Play error:", error);
       
-      // Sur iOS, tenter un retry avant d'afficher l'erreur
-      if (isIOS && retryCount < 2) {
+      // Sur iOS, si c'est la première tentative, essayer une fois de plus
+      if (isIOS && retryCount === 0) {
         if (shouldLog) {
-          console.log("🎵 VOICE_PLAYER - iOS play error, retrying:", retryCount + 1);
+          console.log("🎵 VOICE_PLAYER - iOS play error, will retry once");
         }
-        setRetryCount(prev => prev + 1);
+        setRetryCount(1);
         setIsPreparingAudio(true);
         
         // Recharger et réessayer après un délai
@@ -295,20 +299,22 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           audio.load();
           setTimeout(() => {
             setIsPreparingAudio(false);
-            handlePlayPause(); // Réessayer
-          }, 200);
-        }, 100);
+            // Ne pas rappeler handlePlayPause pour éviter la récursion
+            // Laisser l'utilisateur cliquer à nouveau
+          }, 1000);
+        }, 500);
         
         return;
       }
       
+      // Si on arrive ici, c'est un échec définitif
       setHasError(true);
       setIsPlaying(false);
       setIsPreparingAudio(false);
       
       toast({
         title: "Erreur de lecture",
-        description: "Impossible de lire l'enregistrement audio",
+        description: "Impossible de lire l'enregistrement audio. Essayez à nouveau.",
         variant: "destructive",
       });
     }
@@ -378,9 +384,9 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
         
-        {isIOS && retryCount > 0 && (
+        {isIOS && retryCount > 0 && !hasError && (
           <div className="text-xs text-orange-500">
-            Tentative {retryCount}/2
+            Réessayez si nécessaire
           </div>
         )}
       </div>
@@ -401,7 +407,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         <audio
           ref={audioRef}
           src={accessibleUrl}
-          preload={isIOS ? "auto" : "metadata"}
+          preload="metadata"
         />
       )}
     </div>
