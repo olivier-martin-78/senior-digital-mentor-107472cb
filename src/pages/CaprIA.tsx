@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import Header from '@/components/Header';
+import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 
 const CaprIA = () => {
@@ -70,37 +71,9 @@ const CaprIA = () => {
     <div className="min-h-screen bg-white">
       <Header />
       
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-tranches-sage/30 to-tranches-dustyblue/30 py-20">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-serif text-tranches-charcoal mb-6">
-              CaprIA
-              <span className="block text-3xl md:text-4xl mt-2 text-tranches-dustyblue">
-                Votre compagnon numérique au quotidien
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl text-tranches-charcoal/80 mb-8 leading-relaxed">
-              Fini la solitude ! CaprIA vous accompagne pour <strong>retrouver joie, épanouissement et lien social</strong> grâce à des activités pensées spécialement pour vous.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button size="lg" className="bg-tranches-dustyblue text-white hover:bg-tranches-dustyblue/90 text-lg px-8 py-4" asChild>
-                <Link to="/auth">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Commencer gratuitement
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="border-tranches-dustyblue text-tranches-charcoal hover:bg-tranches-dustyblue/10 text-lg px-8 py-4">
-                Découvrir en vidéo
-              </Button>
-            </div>
-            <p className="text-sm text-tranches-charcoal/60">
-              ✨ 7 jours d'essai gratuit • Aucun engagement • Support inclus
-            </p>
-          </div>
-        </div>
-      </section>
-
+      {/* Hero Section ajoutée */}
+      <HeroSection />
+      
       {/* Problème/Solution */}
       <section className="py-16 bg-tranches-cream">
         <div className="container mx-auto px-4">
@@ -307,6 +280,7 @@ const CaprIA = () => {
         </div>
       </section>
 
+      {/* Footer ajouté */}
       <Footer />
     </div>
   );
