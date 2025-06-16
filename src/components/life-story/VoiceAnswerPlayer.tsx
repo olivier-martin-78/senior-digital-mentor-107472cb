@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Trash2 } from 'lucide-react';
@@ -24,12 +25,11 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(true);
-  const [isPreparingAudio, setIsPreparingAudio] = useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   if (shouldLog) {
-    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl, isPreparingAudio, needsUserInteraction });
+    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl, needsUserInteraction });
   }
 
   // Détecter iOS
@@ -103,15 +103,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       if (shouldLog) {
         console.log("🎵 VOICE_PLAYER - Can play - audio ready");
       }
-      setIsPreparingAudio(false);
-      setHasError(false);
-    };
-
-    const handleCanPlayThrough = () => {
-      if (shouldLog) {
-        console.log("🎵 VOICE_PLAYER - Can play through - audio fully ready");
-      }
-      setIsPreparingAudio(false);
       setHasError(false);
     };
 
@@ -143,29 +134,19 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setNeedsUserInteraction(false);
     };
 
-    // Gestion d'erreur simplifiée pour iOS
     const handleError = (e: Event) => {
       if (shouldLog) {
         console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
       }
       
-      // Ne pas traiter les erreurs si l'utilisateur n'a pas encore interagi
-      if (!hasUserInteracted) {
-        if (shouldLog) {
-          console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
-        }
-        return;
-      }
-
-      // Vérifier si c'est une vraie erreur critique
-      const error = audio.error;
-      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
-                   error.code === MediaError.MEDIA_ERR_DECODE)) {
-        console.error("🎵 VOICE_PLAYER - Critical audio error:", error);
+      // Ne traiter les erreurs que si l'utilisateur a interagi ET que c'est une erreur critique
+      if (hasUserInteracted && audio.error && 
+          (audio.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+           audio.error.code === MediaError.MEDIA_ERR_DECODE)) {
+        console.error("🎵 VOICE_PLAYER - Critical audio error:", audio.error);
         
         setHasError(true);
         setIsPlaying(false);
-        setIsPreparingAudio(false);
         
         toast({
           title: "Erreur audio",
@@ -177,7 +158,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('pause', handlePause);
@@ -187,14 +167,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('error', handleError);
     };
-  }, [hasUserInteracted, shouldLog, accessibleUrl, isIOS]);
+  }, [hasUserInteracted, shouldLog, accessibleUrl]);
 
   const handlePlayPause = async () => {
     const audio = audioRef.current;
@@ -208,7 +187,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         isPlaying, 
         hasError, 
         accessibleUrl, 
-        isPreparingAudio,
         needsUserInteraction,
         readyState: audio.readyState
       });
@@ -224,47 +202,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setHasError(false);
       setNeedsUserInteraction(false);
       
-      // Sur iOS, vérifier si l'audio a besoin de préparation
-      if (isIOS && audio.readyState < 2) {
-        setIsPreparingAudio(true);
-        if (shouldLog) {
-          console.log("🎵 VOICE_PLAYER - iOS: preparing audio for playback");
-        }
-        
-        // Attendre que l'audio soit prêt avec un timeout réduit
-        const waitForReady = () => {
-          return new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              reject(new Error('Audio preparation timeout'));
-            }, 2000); // Réduit à 2 secondes
-            
-            const checkReady = () => {
-              if (audio.readyState >= 2) {
-                clearTimeout(timeout);
-                setIsPreparingAudio(false);
-                resolve();
-              } else {
-                setTimeout(checkReady, 100);
-              }
-            };
-            
-            checkReady();
-          });
-        };
-        
-        try {
-          await waitForReady();
-        } catch (error) {
-          if (shouldLog) {
-            console.log("🎵 VOICE_PLAYER - Audio preparation timeout, stopping preparation");
-          }
-          setIsPreparingAudio(false);
-          // Ne pas essayer de jouer après un timeout
-          return;
-        }
-      }
-      
-      // Tentative de lecture
+      // Tentative de lecture directe - plus de préparation complexe
       const playPromise = audio.play();
       
       if (playPromise !== undefined) {
@@ -280,16 +218,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           console.log("🎵 VOICE_PLAYER - iOS NotAllowedError, needs user interaction");
         }
         setNeedsUserInteraction(true);
-        setIsPreparingAudio(false);
-        // Ne pas afficher d'erreur ni recharger automatiquement
-        // Laisser l'utilisateur cliquer à nouveau
+        // Ne pas afficher d'erreur, juste indiquer qu'il faut cliquer à nouveau
         return;
       }
       
       // Pour les autres erreurs
       setHasError(true);
       setIsPlaying(false);
-      setIsPreparingAudio(false);
       
       toast({
         title: "Erreur de lecture",
@@ -335,8 +270,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     );
   }
 
-  const isButtonDisabled = !accessibleUrl || isPreparingAudio;
-
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
       <div className="flex items-center space-x-3">
@@ -345,17 +278,15 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
-          disabled={isButtonDisabled}
+          disabled={!accessibleUrl}
         >
-          {isPreparingAudio ? (
-            <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
-          ) : isPlaying ? (
+          {isPlaying ? (
             <Pause className="w-4 h-4" />
           ) : (
             <Play className="w-4 h-4" />
           )}
           <span className="hidden sm:inline">
-            {isPreparingAudio ? 'Préparation...' : isPlaying ? 'Pause' : 'Écouter'}
+            {isPlaying ? 'Pause' : 'Écouter'}
           </span>
         </Button>
         
@@ -386,7 +317,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         <audio
           ref={audioRef}
           src={accessibleUrl}
-          preload={isIOS ? "auto" : "metadata"}
+          preload="metadata"
         />
       )}
     </div>
