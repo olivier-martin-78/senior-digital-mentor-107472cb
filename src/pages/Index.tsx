@@ -62,19 +62,19 @@ const Index = () => {
 
   const testimonials = [
     {
-      name: "Marie, 83 ans",
+      name: "Marie, 86 ans",
       text: "Grâce à CaprIA, j'ai partagé l'histoire de ma vie au sein de mon cercle familial. J'ai reçu de nombreux messages remplis de gratitude, et des questions pour en savoir un peu plus sur certains faits marquants de mon parcours.",
       rating: 5,
       image: "/lovable-uploads/efd23d12-e834-4877-95dc-3ef3f17a3949.png"
     },
     {
-      name: "Robert, 82 ans", 
+      name: "Robert, 80 ans", 
       text: "Les exercices de gym douce et de yoga m'ont redonné confiance. Je me sens plus énergique qu'avant.",
       rating: 5,
       image: "/lovable-uploads/27aeb031-b6fb-4376-aaaf-3d6cfb399d90.png"
     },
     {
-      name: "Suzanne, 78 ans",
+      name: "Suzanne, 72 ans",
       text: "Suzanne a invité sa petite-fille à découvrir son journal intime. Depuis, Suzanne est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
       rating: 5,
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
