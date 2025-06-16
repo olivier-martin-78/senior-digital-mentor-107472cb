@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
 import Index from "./pages/Index";
+import IndexBackup from "./pages/IndexBackup";
 import Auth from "./pages/Auth";
 import AuthConfirm from "./pages/AuthConfirm";
 import ResetPassword from "./pages/ResetPassword";
