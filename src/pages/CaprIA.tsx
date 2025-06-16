@@ -23,6 +23,18 @@ import Footer from '@/components/Footer';
 
 const CaprIA = () => {
   const features = [
+        {
+      icon: <Users className="w-8 h-8 text-blue-400" />,
+      title: "Lien social",
+      description: "Blog, albums photo, souhaits partagés avec vos proches",
+      benefits: ["Rompt l'isolement", "Renforce les liens familiaux", "Crée du partage"]
+    },
+    {
+      icon: <Brain className="w-8 h-8 text-purple-400" />,
+      title: "Stimulation mentale",
+      description: "Jeux de mémoire, casse-têtes, activités cognitives adaptées",
+      benefits: ["Améliore la mémoire", "Renforce la concentration", "Maintient l'autonomie"]
+    },    
     {
       icon: <Heart className="w-8 h-8 text-red-400" />,
       title: "Bien-être émotionnel",
@@ -30,23 +42,12 @@ const CaprIA = () => {
       benefits: ["Réduit stress et anxiété", "Favorise l'introspection", "Préserve vos souvenirs"]
     },
     {
-      icon: <Brain className="w-8 h-8 text-purple-400" />,
-      title: "Stimulation mentale",
-      description: "Jeux de mémoire, casse-têtes, activités cognitives adaptées",
-      benefits: ["Améliore la mémoire", "Renforce la concentration", "Maintient l'autonomie"]
-    },
-    {
       icon: <Activity className="w-8 h-8 text-green-400" />,
       title: "Activités physiques",
       description: "Gym douce, yoga, exercices adaptés depuis chez vous",
       benefits: ["Améliore la circulation", "Réduit les chutes", "Libère les endorphines"]
-    },
-    {
-      icon: <Users className="w-8 h-8 text-blue-400" />,
-      title: "Lien social",
-      description: "Blog, albums photo, souhaits partagés avec vos proches",
-      benefits: ["Rompt l'isolement", "Renforce les liens familiaux", "Crée du partage"]
     }
+
   ];
 
   const testimonials = [
