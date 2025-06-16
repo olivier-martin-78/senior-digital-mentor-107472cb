@@ -30,24 +30,23 @@ const CaprIA = () => {
       benefits: ["Rompt l'isolement", "Renforce les liens familiaux", "Crée du partage"]
     },
     {
+      icon: <Heart className="w-8 h-8 text-red-400" />,
+      title: "Bien-être émotionnel",
+      description: "Relaxation guidée, journal intime, récits de vie pour apaiser l'esprit",
+      benefits: ["Réduit stress et anxiété", "Favorise l'introspection", "Préserve vos souvenirs"]
+    },    
+    {
       icon: <Brain className="w-8 h-8 text-purple-400" />,
       title: "Stimulation mentale",
       description: "Jeux de mémoire, casse-têtes, activités cognitives adaptées",
       benefits: ["Améliore la mémoire", "Renforce la concentration", "Maintient l'autonomie"]
     },    
     {
-      icon: <Heart className="w-8 h-8 text-red-400" />,
-      title: "Bien-être émotionnel",
-      description: "Relaxation guidée, journal intime, récits de vie pour apaiser l'esprit",
-      benefits: ["Réduit stress et anxiété", "Favorise l'introspection", "Préserve vos souvenirs"]
-    },
-    {
       icon: <Activity className="w-8 h-8 text-green-400" />,
       title: "Activités physiques",
       description: "Gym douce, yoga, exercices adaptés depuis chez vous",
       benefits: ["Améliore la circulation", "Réduit les chutes", "Libère les endorphines"]
     }
-
   ];
 
   const testimonials = [
