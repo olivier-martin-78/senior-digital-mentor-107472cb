@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +26,7 @@ const CaprIA = () => {
     {
       icon: <Heart className="w-8 h-8 text-red-400" />,
       title: "Bien-être émotionnel",
-      description: "Méditation guidée, journal intime, récits de vie pour apaiser l'esprit",
+      description: "Relaxation guidée, journal intime, récits de vie pour apaiser l'esprit",
       benefits: ["Réduit stress et anxiété", "Favorise l'introspection", "Préserve vos souvenirs"]
     },
     {

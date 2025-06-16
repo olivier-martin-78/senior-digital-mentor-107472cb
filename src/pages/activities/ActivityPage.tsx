@@ -19,15 +19,15 @@ import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import { Activity } from '@/hooks/useActivities';
 
 const activityTitles: Record<string, string> = {
-  meditation: 'Méditation',
+  meditation: 'Relaxation',
   games: 'Jeux',
-  exercises: 'Exercices',
+  exercises: 'Gym douce',
 };
 
 const activityTypes = [
-  { value: 'meditation', label: 'Méditation' },
+  { value: 'meditation', label: 'Relaxation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'exercises', label: 'Exercices' },
+  { value: 'exercises', label: 'Gym douce' },
 ];
 
 const ActivityPage = () => {

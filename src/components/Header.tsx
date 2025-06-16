@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,9 +74,9 @@ const Header = () => {
   ];
 
   const activitiesItems = [
-    { label: 'Méditation', href: '/activities/meditation', icon: Brain },
+    { label: 'Relaxation', href: '/activities/meditation', icon: Brain },
     { label: 'Jeux', href: '/activities/games', icon: Gamepad2 },
-    { label: 'Exercices', href: '/activities/exercises', icon: Dumbbell },
+    { label: 'Gym douce', href: '/activities/exercises', icon: Dumbbell },
   ];
 
   const adminMenuItems = [
