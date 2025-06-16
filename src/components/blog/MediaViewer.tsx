@@ -24,6 +24,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   const [manualPlayMode, setManualPlayMode] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [isQuickTimeVideo, setIsQuickTimeVideo] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   // Détecter si c'est une vidéo QuickTime/iPhone
   const isQuickTime = currentMedia.media_type === 'video/quicktime' || 
@@ -85,15 +86,14 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     setManualPlayMode(false);
     setIsVideoLoading(false);
     setIsQuickTimeVideo(isQuickTime);
+    setHasUserInteracted(false);
 
-    // CORRECTION : Ne plus forcer le mode manuel automatiquement
-    // Laisser d'abord essayer la lecture normale
     console.log('🎬 MEDIA_VIEWER - Initialisation vidéo:', {
       mediaType: currentMedia.media_type,
       mediaUrl: currentMedia.media_url,
       isQuickTime,
       isMobile,
-      forceManualMode: false // Plus de forçage automatique
+      forceManualMode: false
     });
   }, [currentIndex, isQuickTime, isMobile, currentMedia]);
 
@@ -111,12 +111,10 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     
     setIsVideoLoading(false);
     
-    // Donner plus de chances à la lecture automatique avant de passer au mode manuel
     if (videoRetryCount < 1) {
       console.log('🎬 MEDIA_VIEWER - Tentative de relecture automatique, essai:', videoRetryCount + 1);
       setVideoRetryCount(prev => prev + 1);
       setTimeout(() => {
-        // Force le rechargement de la vidéo
         const video = error?.target;
         if (video) {
           video.load();
@@ -136,7 +134,8 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     setIsVideoLoading(true);
     setVideoError(false);
     setManualPlayMode(false);
-    setVideoRetryCount(0); // Reset le compteur pour la lecture manuelle
+    setVideoRetryCount(0);
+    setHasUserInteracted(true);
   };
 
   const handleVideoCanPlay = () => {
@@ -153,6 +152,10 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   const handleVideoLoadedData = () => {
     console.log('🎬 MEDIA_VIEWER - Données vidéo chargées');
     setIsVideoLoading(false);
+  };
+
+  const handleVideoClick = () => {
+    setHasUserInteracted(true);
   };
 
   const handleDownload = async () => {
@@ -290,14 +293,13 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             />
           ) : currentMedia.media_type.startsWith('video/') ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* CORRECTION : Afficher d'abord la vidéo normale, puis les interfaces de fallback */}
               {!videoError && !manualPlayMode ? (
                 <video
                   key={`${currentMedia.id}-${videoRetryCount}`}
                   src={currentMedia.media_url}
                   controls
                   autoPlay={videoRetryCount === 0}
-                  muted={videoRetryCount === 0}
+                  muted={!hasUserInteracted}
                   playsInline
                   preload="metadata"
                   className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
@@ -309,6 +311,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   onCanPlay={handleVideoCanPlay}
                   onLoadStart={handleVideoLoadStart}
                   onLoadedData={handleVideoLoadedData}
+                  onClick={handleVideoClick}
                 />
               ) : manualPlayMode && isQuickTime && !isMobile ? (
                 <QuickTimeInterface />
