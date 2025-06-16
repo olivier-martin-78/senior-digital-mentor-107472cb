@@ -62,7 +62,7 @@ const CaprIA = () => {
     },
     {
       name: "Suzanne, 78 ans",
-      text: "Mon journal intime numérique est devenu mon confident. C'est libérateur de pouvoir exprimer mes émotions.",
+      text: "Suzanne a invité sa petite-fille à découvrir son journal intime. Depuis, elle est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
       rating: 5
     }
   ];
