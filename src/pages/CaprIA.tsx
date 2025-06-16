@@ -96,7 +96,7 @@ const CaprIA = () => {
               CaprIA transforme votre quotidien !
             </h3>
             <p className="text-lg text-tranches-charcoal/80">
-              Une application simple et bienveillante qui vous redonne goût à la vie, 
+              Une application simple et bienveillante qui vous redonne de l'énergie, 
               stimule votre esprit et vous reconnecte avec vos proches.
             </p>
           </div>
