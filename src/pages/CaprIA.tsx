@@ -250,13 +250,13 @@ const CaprIA = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 mb-8">
               <h3 className="text-2xl font-serif mb-4">🎁 Offre de lancement</h3>
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
-                <span className="text-3xl font-bold">19,90€/mois</span>
-                <span className="text-lg opacity-75 line-through">29,90€/mois</span>
+                <span className="text-3xl font-bold">9,90€/mois</span>
+                <span className="text-lg opacity-75 line-through">3,30€/mois</span>
                 <span className="bg-yellow-400 text-tranches-charcoal px-3 py-1 rounded-full text-sm font-medium">
                   -33% pendant 6 mois
                 </span>
               </div>
-              <p className="text-sm opacity-75">Puis 29,90€/mois • Résiliable à tout moment</p>
+              <p className="text-sm opacity-75">Puis 9,90€/mois • Résiliable à tout moment</p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
