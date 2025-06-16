@@ -52,17 +52,17 @@ const CaprIA = () => {
   const testimonials = [
     {
       name: "Marie, 74 ans",
-      text: "Grâce à CaprIA, j'ai partagé l'histoire de ma vie au sein de mon cercle familial. J'ai reçu de nombreux messages remplis de gratitude, et parfois des questions pour en savoir un peu plus sur certains moments marquants de mon parcours.",
+      text: "Grâce à CaprIA, j'ai partagé l'histoire de ma vie au sein de mon cercle familial. J'ai reçu de nombreux messages remplis de gratitude, et des questions pour en savoir un peu plus sur certains faits marquants de mon parcours.",
       rating: 5
     },
     {
       name: "Robert, 82 ans", 
-      text: "Les exercices de gym douce m'ont redonné confiance. Je me sens plus énergique qu'avant.",
+      text: "Les exercices de gym douce et de yoga m'ont redonné confiance. Je me sens plus énergique qu'avant.",
       rating: 5
     },
     {
       name: "Suzanne, 78 ans",
-      text: "Suzanne a invité sa petite-fille à découvrir son journal intime. Depuis, elle est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
+      text: "Suzanne a invité sa petite-fille à découvrir son journal intime. Depuis, Suzanne est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
       rating: 5
     }
   ];
@@ -96,8 +96,8 @@ const CaprIA = () => {
               CaprIA transforme votre quotidien !
             </h3>
             <p className="text-lg text-tranches-charcoal/80">
-              Une application simple et bienveillante qui vous reconnecte avec vos proches, 
-              vous redonne de l'énergie et stimule votre esprit.
+              Une application simple et bienveillante qui vous redonne de l'énergie, 
+              stimule votre esprit et vous reconnecte avec vos proches.
             </p>
           </div>
         </div>
