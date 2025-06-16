@@ -227,7 +227,7 @@ const CaprIA = () => {
             </h2>
             <p className="text-lg text-tranches-charcoal/80 mb-8">
               Un outil de coordination professionnel intégré : planification, comptes-rendus, 
-              facturation. Simplifiez la communication et valorisez votre rôle avec les familles. Proposez de nouvelles activités engageantes pendant vos interventions.
+              facturation. Simplifiez la communication et valorisez votre rôle auprès des familles. Proposez de nouvelles activités engageantes pendant vos interventions.
             </p>
             <Button variant="outline" className="border-tranches-dustyblue text-tranches-charcoal">
               En savoir plus sur le module pro
@@ -250,10 +250,10 @@ const CaprIA = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 mb-8">
               <h3 className="text-2xl font-serif mb-4">🎁 Offre de lancement</h3>
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
-                <span className="text-3xl font-bold">9,90€/mois</span>
-                <span className="text-lg opacity-75 line-through">3,30€/mois</span>
+                <span className="text-3xl font-bold">4,95€/mois</span>
+                <span className="text-lg opacity-75 line-through">9,90€/mois</span>
                 <span className="bg-yellow-400 text-tranches-charcoal px-3 py-1 rounded-full text-sm font-medium">
-                  -33% pendant 6 mois
+                  -50% pendant 3 mois
                 </span>
               </div>
               <p className="text-sm opacity-75">Puis 9,90€/mois • Résiliable à tout moment</p>
@@ -262,7 +262,7 @@ const CaprIA = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-white text-tranches-dustyblue hover:bg-gray-100 text-lg px-8 py-4" asChild>
                 <Link to="/auth">
-                  Essayer 7 jours gratuitement
+                  Essayer 15 jours gratuitement
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
