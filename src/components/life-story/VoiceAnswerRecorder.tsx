@@ -10,7 +10,7 @@ interface VoiceAnswerRecorderProps {
   onAudioDeleted: (chapterId: string, questionId: string, showToast?: boolean) => void;
   onAudioUrlChange: (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => void;
   existingAudioUrl?: string | null;
-  isReadOnly: boolean; // Nouvelle prop pour remplacer hasRole('reader')
+  isReadOnly: boolean;
   shouldLog?: boolean;
 }
 
@@ -21,17 +21,17 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   onAudioDeleted,
   onAudioUrlChange,
   existingAudioUrl,
-  isReadOnly, // Utiliser cette prop au lieu de hasRole('reader')
+  isReadOnly,
   shouldLog = false,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   
-  // CORRECTION: Normaliser l'URL existante de manière plus stricte
+  // Normaliser l'URL existante de manière plus stricte
   const normalizedExistingUrl = (existingAudioUrl && typeof existingAudioUrl === 'string' && existingAudioUrl.trim() !== '') 
     ? existingAudioUrl.trim() 
     : null;
   
-  // DEBUG: Log l'état initial avec plus de détails (uniquement pour question 1 chapitre 1)
+  // DEBUG: Log l'état initial avec plus de détails
   if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
     console.log('🎤 RECORDER - Question 1 Chapitre 1 - État initial:', {
       chapterId,
@@ -41,13 +41,13 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       normalizedExistingUrl,
       hasValidAudio: !!normalizedExistingUrl,
       isUploading,
-      isReadOnly, // Log de la nouvelle prop
-      canRecord: !isReadOnly, // Calculé à partir de isReadOnly
+      isReadOnly,
+      canRecord: !isReadOnly,
       timestamp: new Date().toISOString()
     });
   }
   
-  const canRecord = !isReadOnly; // CORRECTION: Utiliser isReadOnly au lieu de hasRole('reader')
+  const canRecord = !isReadOnly;
 
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioUrl: string | null, preventAutoSave?: boolean) => {
     // LOG DÉTAILLÉ pour question 1 chapitre 1
@@ -63,7 +63,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       });
     }
     
-    // CORRECTION: Toujours permettre la sauvegarde automatique
+    // Toujours permettre la sauvegarde automatique
     onAudioUrlChange(chapterId, questionId, audioUrl, false);
     
     if (audioUrl && audioUrl.trim() !== '') {
@@ -74,7 +74,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
           audioUrlLength: audioUrl.length
         });
       }
-      // CORRECTION: Appeler onAudioRecorded APRÈS la mise à jour de l'URL
+      // Appeler onAudioRecorded APRÈS la mise à jour de l'URL
       const dummyBlob = new Blob(['audio'], { type: 'audio/webm' });
       onAudioRecorded(chapterId, questionId, dummyBlob);
       setIsUploading(false);
@@ -93,7 +93,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🎤 RECORDER - Question 1 Chapitre 1 - Suppression manuelle de l\'audio existant');
     }
-    // CORRECTION: Forcer la sauvegarde lors de la suppression
+    // Forcer la sauvegarde lors de la suppression
     onAudioUrlChange(chapterId, questionId, null, false);
     onAudioDeleted(chapterId, questionId, true);
   };
@@ -106,7 +106,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
     setIsUploading(true);
   };
 
-  // CORRECTION: Logique simplifiée pour l'affichage
+  // Logique simplifiée pour l'affichage
   const shouldShowPlayer = normalizedExistingUrl && !isUploading;
   
   // LOG DÉTAILLÉ pour question 1 chapitre 1
@@ -131,7 +131,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       <VoiceAnswerPlayer
         audioUrl={normalizedExistingUrl}
         onDelete={handleDeleteExistingAudio}
-        readOnly={isReadOnly} // Utiliser isReadOnly
+        readOnly={isReadOnly}
         shouldLog={shouldLog && chapterId === 'chapter-1' && questionId === 'question-1'}
       />
     );

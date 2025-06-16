@@ -1,7 +1,9 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { getAccessibleAudioUrl } from '@/utils/audioUploadUtils';
 
 interface VoiceAnswerPlayerProps {
   audioUrl: string;
@@ -21,15 +23,69 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [accessibleUrl, setAccessibleUrl] = useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   if (shouldLog) {
-    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, readOnly, hasError });
+    console.log("🎵 VOICE_PLAYER - Render:", { audioUrl, accessibleUrl, readOnly, hasError, isLoadingUrl });
   }
+
+  // Convertir le chemin relatif en URL accessible
+  useEffect(() => {
+    const convertToAccessibleUrl = async () => {
+      setIsLoadingUrl(true);
+      
+      // Si c'est déjà une URL complète (blob, http, etc.), l'utiliser directement
+      if (audioUrl.startsWith('blob:') || audioUrl.startsWith('http') || audioUrl.startsWith('data:')) {
+        if (shouldLog) {
+          console.log("🎵 VOICE_PLAYER - URL déjà accessible:", audioUrl);
+        }
+        setAccessibleUrl(audioUrl);
+        setIsLoadingUrl(false);
+        return;
+      }
+      
+      // Sinon, convertir le chemin relatif en URL publique
+      if (shouldLog) {
+        console.log("🎵 VOICE_PLAYER - Conversion du chemin relatif:", audioUrl);
+      }
+      
+      try {
+        const publicUrl = await getAccessibleAudioUrl(audioUrl);
+        if (publicUrl) {
+          if (shouldLog) {
+            console.log("🎵 VOICE_PLAYER - URL publique générée:", publicUrl);
+          }
+          setAccessibleUrl(publicUrl);
+        } else {
+          console.error("🎵 VOICE_PLAYER - Impossible de générer l'URL publique pour:", audioUrl);
+          setHasError(true);
+          toast({
+            title: "Erreur audio",
+            description: "Impossible de charger l'enregistrement audio",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("🎵 VOICE_PLAYER - Erreur lors de la conversion d'URL:", error);
+        setHasError(true);
+        toast({
+          title: "Erreur audio",
+          description: "Impossible de charger l'enregistrement audio",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingUrl(false);
+      }
+    };
+
+    convertToAccessibleUrl();
+  }, [audioUrl, shouldLog]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !accessibleUrl) return;
 
     const handleLoadedMetadata = () => {
       if (shouldLog) {
@@ -66,14 +122,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setHasError(false);
     };
 
-    // Gestion d'erreur améliorée pour éviter les faux positifs sur iPhone
+    // Gestion d'erreur améliorée
     const handleError = (e: Event) => {
       if (shouldLog) {
         console.log("🎵 VOICE_PLAYER - Error event:", e, audio.error);
       }
       
       // Ne pas afficher d'erreur si l'utilisateur n'a pas encore interagi
-      // Cela évite les erreurs automatiques sur iPhone lors du chargement
       if (!hasUserInteracted) {
         if (shouldLog) {
           console.log("🎵 VOICE_PLAYER - Ignoring error before user interaction");
@@ -90,7 +145,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         setHasError(true);
         setIsPlaying(false);
         
-        // Afficher le toast seulement pour les erreurs critiques et après interaction utilisateur
         toast({
           title: "Erreur audio",
           description: "Impossible de lire l'enregistrement audio",
@@ -114,17 +168,17 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('error', handleError);
     };
-  }, [hasUserInteracted, shouldLog]);
+  }, [hasUserInteracted, shouldLog, accessibleUrl]);
 
   const handlePlayPause = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !accessibleUrl) return;
 
     // Marquer que l'utilisateur a interagi
     setHasUserInteracted(true);
 
     if (shouldLog) {
-      console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError });
+      console.log("🎵 VOICE_PLAYER - Play/Pause clicked, current state:", { isPlaying, hasError, accessibleUrl });
     }
 
     try {
@@ -143,7 +197,6 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       setHasError(true);
       setIsPlaying(false);
       
-      // Toast d'erreur seulement en cas d'échec réel de lecture
       toast({
         title: "Erreur de lecture",
         description: "Impossible de lire l'enregistrement audio",
@@ -157,6 +210,18 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Affichage pendant le chargement de l'URL
+  if (isLoadingUrl) {
+    return (
+      <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <div className="animate-pulse w-8 h-8 bg-gray-300 rounded"></div>
+          <span className="text-sm text-gray-500">Chargement de l'audio...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (hasError && hasUserInteracted) {
     return (
@@ -184,7 +249,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
-          disabled={hasError}
+          disabled={hasError || !accessibleUrl}
         >
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           <span className="hidden sm:inline">{isPlaying ? 'Pause' : 'Écouter'}</span>
@@ -207,11 +272,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         </Button>
       )}
 
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        preload="metadata"
-      />
+      {accessibleUrl && (
+        <audio
+          ref={audioRef}
+          src={accessibleUrl}
+          preload="metadata"
+        />
+      )}
     </div>
   );
 };
