@@ -274,18 +274,18 @@ const DiaryEdit = () => {
       <Header />
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
             <Button 
               variant="outline"
               onClick={() => navigate(`/diary/${id}`)}
-              className="mr-4"
+              className="w-full sm:w-auto"
             >
               <ArrowLeft className="mr-2 h-4 w-4" /> Retour
             </Button>
-            <h1 className="text-3xl font-serif text-tranches-charcoal">Modifier l'entrée</h1>
+            <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Modifier l'entrée</h1>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
             {entry && (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -340,18 +340,18 @@ const DiaryEdit = () => {
                     </div>
                   )}
                   
-                  <div className="flex justify-end pt-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-4">
                     <Button 
                       type="button" 
                       variant="outline" 
-                      className="mr-2"
+                      className="w-full sm:w-auto order-2 sm:order-1"
                       onClick={() => navigate(`/diary/${id}`)}
                     >
                       Annuler
                     </Button>
                     <Button 
                       type="submit" 
-                      className="bg-tranches-sage hover:bg-tranches-sage/90"
+                      className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto order-1 sm:order-2"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
