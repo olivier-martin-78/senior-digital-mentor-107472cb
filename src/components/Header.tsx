@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -30,7 +31,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/SeniorDigital.png" alt="CaprIA" className="h-8 w-8" />
+            <img src="/SeniorDigital.png" alt="Logo" className="h-10 w-10" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -87,24 +88,6 @@ const Header = () => {
                 >
                   Souhaits
                 </Link>
-                
-                {/* Lien vers les abonnements avec badge si pas d'abonnement actif */}
-                <Link
-                  to="/subscription"
-                  className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
-                    isActivePath('/subscription')
-                      ? 'text-tranches-dustyblue'
-                      : 'text-tranches-charcoal hover:text-tranches-dustyblue'
-                  }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  <span>Abonnements</span>
-                  {!subscription?.subscribed && (
-                    <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">
-                      Nouveau
-                    </span>
-                  )}
-                </Link>
 
                 {(hasRole('professionnel') || hasRole('admin')) && (
                   <Link
@@ -119,6 +102,19 @@ const Header = () => {
                     <span>Planificateur</span>
                   </Link>
                 )}
+                
+                {/* Lien vers les abonnements sans badge */}
+                <Link
+                  to="/subscription"
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                    isActivePath('/subscription')
+                      ? 'text-tranches-dustyblue'
+                      : 'text-tranches-charcoal hover:text-tranches-dustyblue'
+                  }`}
+                >
+                  <Crown className="w-4 h-4" />
+                  <span>Abonnements</span>
+                </Link>
 
                 <div className="flex items-center space-x-2">
                   <Link to="/profile">
@@ -207,19 +203,6 @@ const Header = () => {
                   >
                     Souhaits
                   </Link>
-                  <Link
-                    to="/subscription"
-                    className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue px-2 py-1"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Crown className="w-4 h-4" />
-                    <span>Abonnements</span>
-                    {!subscription?.subscribed && (
-                      <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">
-                        Nouveau
-                      </span>
-                    )}
-                  </Link>
                   
                   {(hasRole('professionnel') || hasRole('admin')) && (
                     <Link
@@ -231,6 +214,15 @@ const Header = () => {
                       <span>Planificateur</span>
                     </Link>
                   )}
+                  
+                  <Link
+                    to="/subscription"
+                    className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue px-2 py-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Crown className="w-4 h-4" />
+                    <span>Abonnements</span>
+                  </Link>
                   
                   <div className="flex items-center space-x-2 px-2 py-2">
                     <Link to="/profile" onClick={() => setIsMenuOpen(false)}>

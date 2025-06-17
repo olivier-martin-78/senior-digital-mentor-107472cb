@@ -83,8 +83,8 @@ export const useSubscription = () => {
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de créer la session de paiement',
+        title: 'Service temporairement indisponible',
+        description: 'Les paiements ne sont pas encore configurés. Contactez le support.',
         variant: 'destructive',
       });
     } finally {
@@ -116,8 +116,8 @@ export const useSubscription = () => {
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'ouvrir le portail client',
+        title: 'Service temporairement indisponible',
+        description: 'La gestion des abonnements n\'est pas encore configurée.',
         variant: 'destructive',
       });
     }
