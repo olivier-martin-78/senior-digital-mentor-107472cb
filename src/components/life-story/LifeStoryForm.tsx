@@ -57,7 +57,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
     console.log('Mode lecture seule - Histoire avec chapitres:', storyWithChapters);
 
     // Créer un état local pour la navigation en mode lecture seule
-    const [activeTab, setActiveTab] = React.useState('chapter-1');
+    const [activeTab, setActiveTab] = React.useState('chapter-1'); // CORRECTION: Utiliser l'ID du chapitre
     const [openQuestions, setOpenQuestions] = React.useState<{ [key: string]: boolean }>({});
 
     const toggleQuestions = (chapterId: string) => {
@@ -102,48 +102,40 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
   }
 
   // Mode normal avec hook pour l'édition
-  const storyWithChapters = {
-    ...existingStory,
-    chapters: initialChapters,
-    // Si une histoire existe, préserver les réponses existantes sans filtrer les chapitres ou questions
-    ...(existingStory && {
-      chapters: initialChapters.map(initialChapter => {
-        // Chercher le chapitre correspondant dans l'histoire existante
-        const existingChapter = existingStory.chapters.find(ch => ch.id === initialChapter.id);
-        
-        // Préserver les réponses des questions existantes, mais garantir que TOUTES les questions
-        // du chapitre initial sont présentes
-        return {
-          ...initialChapter,
-          questions: initialChapter.questions.map(initialQuestion => {
-            // Chercher si cette question existe déjà dans les données de l'utilisateur
-            const existingQuestion = existingChapter?.questions.find(q => q.id === initialQuestion.id);
-            
-            // Si la question existe, préserver sa réponse et l'audio
-            if (existingQuestion) {
-              return {
-                ...initialQuestion,
-                answer: existingQuestion.answer || initialQuestion.answer,
-                audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
-                audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
-              };
-            }
-            
-            return initialQuestion;
-          }),
-        };
-      }),
-    }),
-  };
-
-  console.log('Histoire avec chapitres complets:', storyWithChapters);
-
   const lifeStoryHook = useLifeStory({ targetUserId });
   
   console.log('Chapitres dans LifeStoryForm:', lifeStoryHook.data?.chapters);
   
-  // Si nous avons une histoire existante, utiliser ses données
-  const displayData = existingStory ? storyWithChapters : lifeStoryHook.data;
+  // Si nous avons une histoire existante, utiliser ses données, sinon utiliser les données du hook
+  const displayData = existingStory ? {
+    ...existingStory,
+    chapters: initialChapters.map(initialChapter => {
+      // Chercher le chapitre correspondant dans l'histoire existante
+      const existingChapter = existingStory.chapters.find(ch => ch.id === initialChapter.id);
+      
+      // Préserver les réponses des questions existantes, mais garantir que TOUTES les questions
+      // du chapitre initial sont présentes
+      return {
+        ...initialChapter,
+        questions: initialChapter.questions.map(initialQuestion => {
+          // Chercher si cette question existe déjà dans les données de l'utilisateur
+          const existingQuestion = existingChapter?.questions.find(q => q.id === initialQuestion.id);
+          
+          // Si la question existe, préserver sa réponse et l'audio
+          if (existingQuestion) {
+            return {
+              ...initialQuestion,
+              answer: existingQuestion.answer || initialQuestion.answer,
+              audioUrl: existingQuestion.audioUrl || initialQuestion.audioUrl,
+              audioBlob: existingQuestion.audioBlob || initialQuestion.audioBlob,
+            };
+          }
+          
+          return initialQuestion;
+        }),
+      };
+    }),
+  } : lifeStoryHook.data;
   
   if (!displayData) {
     return (
@@ -153,8 +145,8 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
     );
   }
   
-  // Convert activeTab from number to string for component compatibility
-  const activeTabString = lifeStoryHook.activeTab.toString();
+  // CORRECTION: Convertir l'activeTab numérique en ID de chapitre
+  const activeTabString = displayData.chapters[lifeStoryHook.activeTab]?.id || 'chapter-1';
   
   // Convert openQuestions Set to object for component compatibility
   const openQuestionsObject: { [key: string]: boolean } = {};
@@ -162,11 +154,11 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
     openQuestionsObject[key] = true;
   });
   
-  // Wrapper function to convert string to number for setActiveTab
-  const handleSetActiveTab = (tab: string) => {
-    const tabIndex = parseInt(tab, 10);
-    if (!isNaN(tabIndex)) {
-      lifeStoryHook.setActiveTab(tabIndex);
+  // CORRECTION: Wrapper function to convert chapter ID to index for setActiveTab
+  const handleSetActiveTab = (chapterId: string) => {
+    const chapterIndex = displayData.chapters.findIndex(ch => ch.id === chapterId);
+    if (chapterIndex !== -1) {
+      lifeStoryHook.setActiveTab(chapterIndex);
     }
   };
   

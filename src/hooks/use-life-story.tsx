@@ -369,34 +369,37 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     });
   };
 
-  const handleQuestionFocus = (questionId: string) => {
+  // CORRECTION: handleQuestionFocus doit accepter chapterId et questionId
+  const handleQuestionFocus = (chapterId: string, questionId: string) => {
     setActiveQuestion(questionId);
   };
 
-  const updateAnswer = (questionId: string, answer: string) => {
+  // CORRECTION: updateAnswer doit accepter chapterId et questionId
+  const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
     if (!data) return;
 
-    console.log('📝 Mise à jour réponse:', { questionId, answer, dataUserId: data.user_id });
+    console.log('📝 Mise à jour réponse:', { chapterId, questionId, answer, dataUserId: data.user_id });
     
-    const updatedChapters = data.chapters.map(chapter => ({
-      ...chapter,
-      questions: chapter.questions.map(question =>
-        question.id === questionId ? { ...question, answer } : question
-      )
-    }));
+    const updatedChapters = data.chapters.map(chapter => 
+      chapter.id === chapterId ? {
+        ...chapter,
+        questions: chapter.questions.map(question =>
+          question.id === questionId ? { ...question, answer } : question
+        )
+      } : chapter
+    );
 
     setData({ ...data, chapters: updatedChapters });
-    
-    // SUPPRESSION DE LA SAUVEGARDE AUTOMATIQUE
-    // La sauvegarde ne se fera que lors du clic sur le bouton "Enregistrer"
   };
 
-  const handleAudioRecorded = (questionId: string, audioBlob: Blob, audioPath: string) => {
+  // CORRECTION: handleAudioRecorded doit accepter chapterId et questionId
+  const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioPath?: string) => {
     if (!data) return;
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1
-    if (questionId === 'question-1') {
+    if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🎤 RECORD - Question 1 Chapitre 1 - Audio enregistré (HOOK):', {
+        chapterId,
         questionId,
         audioPath,
         audioBlobSize: audioBlob.size,
@@ -406,41 +409,28 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       });
     }
 
-    // CORRECTION: Ne pas mettre à jour l'audioUrl ici car elle sera gérée par handleAudioUrlChange
-    // Juste garder une trace du blob pour compatibilité
-    const updatedChapters = data.chapters.map(chapter => ({
-      ...chapter,
-      questions: chapter.questions.map(question =>
-        question.id === questionId 
-          ? { ...question, audioBlob } // Garder seulement le blob
-          : question
-      )
-    }));
+    const updatedChapters = data.chapters.map(chapter => 
+      chapter.id === chapterId ? {
+        ...chapter,
+        questions: chapter.questions.map(question =>
+          question.id === questionId 
+            ? { ...question, audioBlob } 
+            : question
+        )
+      } : chapter
+    );
 
     setData({ ...data, chapters: updatedChapters });
-    
-    // LOG DÉTAILLÉ pour question 1 chapitre 1 après mise à jour
-    if (questionId === 'question-1') {
-      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
-      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
-      console.log('🎤 RECORD - Question 1 Chapitre 1 - État après mise à jour (HOOK):', {
-        questionId: updatedQuestion1?.id,
-        audioUrl: updatedQuestion1?.audioUrl,
-        hasAudioUrl: !!updatedQuestion1?.audioUrl,
-        audioBlobSize: updatedQuestion1?.audioBlob?.size
-      });
-    }
-    
-    // SUPPRESSION: Ne plus déclencher de sauvegarde automatique ici
-    // car l'URL sera mise à jour via handleAudioUrlChange
   };
 
-  const handleAudioDeleted = (questionId: string) => {
+  // CORRECTION: handleAudioDeleted doit accepter chapterId et questionId
+  const handleAudioDeleted = (chapterId: string, questionId: string) => {
     if (!data) return;
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1
-    if (questionId === 'question-1') {
+    if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🗑️ DELETE - Question 1 Chapitre 1 - Audio supprimé:', {
+        chapterId,
         questionId,
         dataUserId: data.user_id,
         effectiveUserId,
@@ -448,28 +438,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       });
     }
 
-    const updatedChapters = data.chapters.map(chapter => ({
-      ...chapter,
-      questions: chapter.questions.map(question =>
-        question.id === questionId 
-          ? { ...question, audioBlob: null, audioUrl: null } 
-          : question
-      )
-    }));
+    const updatedChapters = data.chapters.map(chapter => 
+      chapter.id === chapterId ? {
+        ...chapter,
+        questions: chapter.questions.map(question =>
+          question.id === questionId 
+            ? { ...question, audioBlob: null, audioUrl: null } 
+            : question
+        )
+      } : chapter
+    );
 
     setData({ ...data, chapters: updatedChapters });
-    
-    // LOG DÉTAILLÉ pour question 1 chapitre 1 après suppression
-    if (questionId === 'question-1') {
-      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
-      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
-      console.log('🗑️ DELETE - Question 1 Chapitre 1 - État après suppression:', {
-        questionId: updatedQuestion1?.id,
-        audioUrl: updatedQuestion1?.audioUrl,
-        hasAudioUrl: !!updatedQuestion1?.audioUrl,
-        audioBlob: updatedQuestion1?.audioBlob
-      });
-    }
     
     // CORRECTION: Sauvegarde automatique pour la suppression
     console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
@@ -480,12 +460,14 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }, 100);
   };
 
-  const handleAudioUrlChange = (questionId: string, audioPath: string | null) => {
+  // CORRECTION: handleAudioUrlChange doit accepter chapterId et questionId
+  const handleAudioUrlChange = (chapterId: string, questionId: string, audioPath: string | null) => {
     if (!data) return;
 
     // LOG DÉTAILLÉ pour question 1 chapitre 1
-    if (questionId === 'question-1') {
+    if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Changement chemin audio (HOOK):', {
+        chapterId,
         questionId,
         audioPath,
         audioPathType: typeof audioPath,
@@ -500,37 +482,18 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       ? audioPath.trim() 
       : null;
 
-    // LOG DÉTAILLÉ pour question 1 chapitre 1 après validation
-    if (questionId === 'question-1') {
-      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Validation chemin audio (HOOK):', {
-        questionId,
-        originalAudioPath: audioPath,
-        validAudioPath,
-        isValid: !!validAudioPath
-      });
-    }
-
-    const updatedChapters = data.chapters.map(chapter => ({
-      ...chapter,
-      questions: chapter.questions.map(question =>
-        question.id === questionId 
-          ? { ...question, audioUrl: validAudioPath } 
-          : question
-      )
-    }));
+    const updatedChapters = data.chapters.map(chapter => 
+      chapter.id === chapterId ? {
+        ...chapter,
+        questions: chapter.questions.map(question =>
+          question.id === questionId 
+            ? { ...question, audioUrl: validAudioPath } 
+            : question
+        )
+      } : chapter
+    );
 
     setData({ ...data, chapters: updatedChapters });
-    
-    // LOG DÉTAILLÉ pour question 1 chapitre 1 après mise à jour
-    if (questionId === 'question-1') {
-      const updatedChapter1 = updatedChapters.find(ch => ch.id === 'chapter-1');
-      const updatedQuestion1 = updatedChapter1?.questions.find(q => q.id === 'question-1');
-      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - État après mise à jour (HOOK):', {
-        questionId: updatedQuestion1?.id,
-        audioUrl: updatedQuestion1?.audioUrl,
-        hasAudioUrl: !!updatedQuestion1?.audioUrl
-      });
-    }
     
     // CORRECTION: Toujours sauvegarder les changements d'URL audio
     console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio (HOOK)');
