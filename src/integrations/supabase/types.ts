@@ -17,6 +17,7 @@ export type Database = {
           created_by: string
           id: string
           link: string
+          shared_globally: boolean | null
           sub_activity_tag_id: string | null
           thumbnail_url: string | null
           title: string
@@ -28,6 +29,7 @@ export type Database = {
           created_by: string
           id?: string
           link: string
+          shared_globally?: boolean | null
           sub_activity_tag_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -39,6 +41,7 @@ export type Database = {
           created_by?: string
           id?: string
           link?: string
+          shared_globally?: boolean | null
           sub_activity_tag_id?: string | null
           thumbnail_url?: string | null
           title?: string

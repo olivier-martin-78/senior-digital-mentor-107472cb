@@ -14,6 +14,7 @@ export interface Activity {
   created_at: string;
   created_by: string;
   sub_activity_tag_id?: string;
+  shared_globally?: boolean;
   activity_sub_tags?: {
     id: string;
     name: string;
@@ -46,9 +47,9 @@ export const useActivities = (activityType: string) => {
         .eq('activity_type', activityType)
         .order('created_at', { ascending: false });
 
-      // Si l'utilisateur n'est pas admin, ne montrer que ses propres activités
+      // Si l'utilisateur n'est pas admin, montrer ses propres activités + les activités partagées globalement
       if (!hasRole('admin')) {
-        query = query.eq('created_by', user.id);
+        query = query.or(`created_by.eq.${user.id},shared_globally.eq.true`);
       }
 
       const { data, error } = await query;

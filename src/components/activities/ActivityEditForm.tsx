@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from './ActivityThumbnailUploader';
 import SubActivitySelector from './SubActivitySelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ActivityEditFormProps {
   activity: Activity;
@@ -24,6 +27,7 @@ const activityTypes = [
 
 const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, onCancel }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     activity_type: activity.activity_type,
     title: activity.title,
@@ -31,7 +35,12 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
     thumbnail_url: activity.thumbnail_url || '',
     activity_date: activity.activity_date || '',
     sub_activity_tag_id: activity.sub_activity_tag_id || '',
+    shared_globally: activity.shared_globally || false,
   });
+
+  // Vérifier si l'utilisateur peut utiliser la fonction de partage global
+  const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
+                          ['meditation', 'games', 'exercises'].includes(activity.activity_type);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +51,7 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
+        shared_globally: canShareGlobally ? formData.shared_globally : false,
       };
 
       const { error } = await supabase
@@ -135,6 +145,24 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
               type="date"
             />
           </div>
+
+          {canShareGlobally && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="shared_globally"
+                checked={formData.shared_globally}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, shared_globally: checked as boolean })
+                }
+              />
+              <Label htmlFor="shared_globally" className="text-sm font-medium">
+                Partager avec tout le monde
+              </Label>
+              <p className="text-xs text-gray-500 ml-2">
+                Cette activité sera visible par tous les utilisateurs connectés
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button type="submit">Sauvegarder</Button>

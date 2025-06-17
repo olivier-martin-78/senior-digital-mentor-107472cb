@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Plus } from 'lucide-react';
@@ -40,7 +41,12 @@ const AdminActivities = () => {
     thumbnail_url: '',
     activity_date: '',
     sub_activity_tag_id: '',
+    shared_globally: false,
   });
+
+  // Vérifier si l'utilisateur peut utiliser la fonction de partage global
+  const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
+                          ['meditation', 'games', 'exercises'].includes(type || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +67,7 @@ const AdminActivities = () => {
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
+        shared_globally: canShareGlobally ? formData.shared_globally : false,
       };
 
       const { error } = await supabase
@@ -81,6 +88,7 @@ const AdminActivities = () => {
         thumbnail_url: '', 
         activity_date: '',
         sub_activity_tag_id: '',
+        shared_globally: false,
       });
       setShowForm(false);
       refetch();
@@ -243,6 +251,24 @@ const AdminActivities = () => {
                     />
                   </div>
 
+                  {canShareGlobally && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="shared_globally"
+                        checked={formData.shared_globally}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, shared_globally: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor="shared_globally" className="text-sm font-medium">
+                        Partager avec tout le monde
+                      </Label>
+                      <p className="text-xs text-gray-500 ml-2">
+                        Cette activité sera visible par tous les utilisateurs connectés
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button type="submit">Ajouter</Button>
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -272,6 +298,11 @@ const AdminActivities = () => {
                     onEdit={() => handleEditActivity(activity)}
                     subActivityName={activity.activity_sub_tags?.name}
                   />
+                  {activity.shared_globally && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                      Partagé
+                    </div>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
