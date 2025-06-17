@@ -42,6 +42,11 @@ const Wishes = () => {
     setSelectedAlbum(null);
   };
 
+  const handleAlbumsUpdate = () => {
+    // This would trigger a refetch of albums if needed
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -79,10 +84,10 @@ const Wishes = () => {
               />
             </div>
             <WishAlbumSelector
-              albums={albums}
-              selectedAlbum={selectedAlbum}
+              wishAlbums={albums}
+              selectedAlbumId={selectedAlbum || ''}
               onAlbumChange={setSelectedAlbum}
-              loading={albumsLoading}
+              onAlbumsUpdate={handleAlbumsUpdate}
             />
           </div>
           
@@ -111,7 +116,7 @@ const Wishes = () => {
         ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <WishCard key={post.id} post={post} />
+              <WishCard key={post.id} wish={post} />
             ))}
           </div>
         ) : (
