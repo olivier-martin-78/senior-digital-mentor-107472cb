@@ -9,6 +9,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 interface SubscriptionPlan {
   id: string;
@@ -17,7 +18,7 @@ interface SubscriptionPlan {
   currency: string;
   billing_interval: string;
   trial_period_days: number;
-  features: string[];
+  features: Json;
   is_active: boolean;
 }
 
@@ -87,6 +88,13 @@ const Subscription = () => {
     return subscription?.subscription_plan === planName && subscription?.subscribed;
   };
 
+  const getPlanFeatures = (features: Json): string[] => {
+    if (Array.isArray(features)) {
+      return features.filter((feature): feature is string => typeof feature === 'string');
+    }
+    return [];
+  };
+
   if (plansLoading) {
     return (
       <div className="min-h-screen bg-white">
@@ -152,7 +160,7 @@ const Subscription = () => {
               
               <CardContent className="space-y-4">
                 <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
+                  {getPlanFeatures(plan.features).map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <Check className="w-4 h-4 text-green-500 mr-3 flex-shrink-0" />
                       <span className="text-tranches-charcoal/80">{feature}</span>
