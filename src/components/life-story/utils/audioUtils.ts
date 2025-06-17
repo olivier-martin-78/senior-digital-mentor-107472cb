@@ -1,15 +1,41 @@
-
-export const validateAudioUrl = (url: string | null | undefined): boolean => {
-  if (!url || typeof url !== 'string') {
+export const validateAudioUrl = (audioUrl: string | null): boolean => {
+  if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim() === '') {
     return false;
   }
   
-  // Accepter les URLs Supabase Storage et les blob URLs
-  const isSupabaseUrl = url.includes('/storage/v1/object/public/');
-  const isBlobUrl = url.startsWith('blob:');
-  const isDataUrl = url.startsWith('data:audio/');
+  const trimmedUrl = audioUrl.trim();
   
-  return isSupabaseUrl || isBlobUrl || isDataUrl;
+  // Si c'est un chemin relatif (pas d'http/https), le considérer comme valide
+  // car il sera converti en URL complète par getAudioUrl
+  if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://') && !trimmedUrl.startsWith('blob:')) {
+    // C'est probablement un chemin de stockage Supabase relatif
+    return trimmedUrl.length > 0;
+  }
+  
+  // Pour les URLs complètes, vérifier qu'elles sont valides
+  try {
+    new URL(trimmedUrl);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const getAudioUrl = (audioPath: string | null): string | null => {
+  if (!validateAudioUrl(audioPath)) {
+    return null;
+  }
+  
+  const trimmedPath = audioPath!.trim();
+  
+  // Si c'est déjà une URL complète, la retourner telle quelle
+  if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://') || trimmedPath.startsWith('blob:')) {
+    return trimmedPath;
+  }
+  
+  // Sinon, construire l'URL complète pour Supabase Storage
+  const supabaseUrl = 'https://cvcebcisijjmmmwuedcv.supabase.co';
+  return `${supabaseUrl}/storage/v1/object/public/life-story-audio/${trimmedPath}`;
 };
 
 export const preloadAudio = async (url: string): Promise<boolean> => {

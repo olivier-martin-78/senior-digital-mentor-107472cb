@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Trash2, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { validateAudioUrl, handleExportAudio, formatTime } from './utils/audioUtils';
+import { validateAudioUrl, handleExportAudio, formatTime, getAudioUrl } from './utils/audioUtils';
 
 interface VoiceAnswerPlayerProps {
   audioUrl: string;
@@ -25,10 +25,15 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Convertir le chemin en URL complète
+  const fullAudioUrl = getAudioUrl(audioUrl);
+
   if (shouldLog) {
-    console.log('🎵 PLAYER - Question 1 Chapitre 1 - État du lecteur:', {
-      audioUrl,
+    console.log('🎵 PLAYER - État du lecteur:', {
+      originalAudioUrl: audioUrl,
+      fullAudioUrl,
       hasAudioUrl: !!audioUrl,
+      hasFullAudioUrl: !!fullAudioUrl,
       audioUrlType: typeof audioUrl,
       isPlaying,
       duration,
@@ -137,7 +142,8 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
 
   const handleExport = () => {
     try {
-      handleExportAudio(audioUrl);
+      // Utiliser l'URL complète pour l'export
+      handleExportAudio(fullAudioUrl || audioUrl);
       toast({
         title: "Export réussi",
         description: "L'enregistrement audio a été téléchargé",
@@ -152,9 +158,13 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     }
   };
 
-  if (!validateAudioUrl(audioUrl)) {
+  // Utiliser fullAudioUrl pour la validation
+  if (!fullAudioUrl) {
     if (shouldLog) {
-      console.log('🎵 PLAYER - URL audio invalide:', audioUrl);
+      console.log('🎵 PLAYER - URL audio invalide après conversion:', {
+        originalUrl: audioUrl,
+        convertedUrl: fullAudioUrl
+      });
     }
     return null;
   }
@@ -165,7 +175,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       
       <audio
         ref={audioRef}
-        src={audioUrl}
+        src={fullAudioUrl}
         preload="metadata"
         style={{ display: 'none' }}
       />
@@ -173,6 +183,9 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       {hasError ? (
         <div className="text-center py-4">
           <p className="text-red-500 text-sm">Impossible de charger l'enregistrement</p>
+          {shouldLog && (
+            <p className="text-xs text-gray-500 mt-1">URL: {fullAudioUrl}</p>
+          )}
         </div>
       ) : (
         <>
