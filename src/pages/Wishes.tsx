@@ -127,18 +127,22 @@ const Wishes = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">Souhaits</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Souhaits</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             {!isReader && (
-              <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+              <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto">
                 <a href="/wishes/new">
                   <Plus className="mr-2 h-5 w-5" />
                   Nouveau souhait
                 </a>
               </Button>
             )}
-            {!isReader && <InviteUserDialog />}
+            {!isReader && (
+              <div className="w-full sm:w-auto">
+                <InviteUserDialog />
+              </div>
+            )}
           </div>
         </div>
         
@@ -148,7 +152,7 @@ const Wishes = () => {
             {!isReader ? (
               <>
                 <p className="text-gray-500 mb-6">Commencez par créer votre premier souhait</p>
-                <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
+                <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto">
                   <a href="/wishes/new">
                     <Plus className="mr-2 h-5 w-5" />
                     Créer un souhait

@@ -171,8 +171,8 @@ const LifeStory = () => {
             className="mb-6"
           />
           
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-serif text-tranches-charcoal">Histoire de Vie</h1>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Histoire de Vie</h1>
             <div className="flex items-center gap-4">
               <InviteUserDialog />
             </div>
@@ -240,9 +240,9 @@ const LifeStory = () => {
           className="mb-6"
         />
 
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">{getPageTitle()}</h1>
             {(isViewingOthersStory || isReader) && (
               <div className="flex items-center mt-2 text-sm text-gray-600">
                 <Eye className="w-4 h-4 mr-2" />
@@ -250,15 +250,15 @@ const LifeStory = () => {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             {canSave && (
               <Button 
                 onClick={handleSave} 
                 disabled={lifeStoryData.isSaving}
-                className="bg-tranches-sage hover:bg-tranches-sage/90"
+                className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto"
               >
                 {lifeStoryData.isSaving ? (
-                  <span className="flex items-center">
+                  <span className="flex items-center justify-center">
                     <span className="animate-spin mr-2 h-4 w-4 border-2 border-t-transparent border-white rounded-full"></span>
                     Sauvegarde...
                   </span>
@@ -270,7 +270,11 @@ const LifeStory = () => {
                 )}
               </Button>
             )}
-            {!isReader && <InviteUserDialog />}
+            {!isReader && (
+              <div className="w-full sm:w-auto">
+                <InviteUserDialog />
+              </div>
+            )}
           </div>
         </div>
         
