@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, User, Calendar, FileText, Crown } from 'lucide-react';
+import { Menu, X, User, Calendar, FileText, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -87,6 +87,18 @@ const Header = () => {
                   }`}
                 >
                   Souhaits
+                </Link>
+                
+                <Link
+                  to="/activities/activities"
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                    isActivePath('/activities/activities')
+                      ? 'text-tranches-dustyblue'
+                      : 'text-tranches-charcoal hover:text-tranches-dustyblue'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Activités</span>
                 </Link>
 
                 {(hasRole('professionnel') || hasRole('admin')) && (
@@ -208,6 +220,15 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Souhaits
+                  </Link>
+                  
+                  <Link
+                    to="/activities/activities"
+                    className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue px-2 py-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Activités</span>
                   </Link>
                   
                   {(hasRole('professionnel') || hasRole('admin')) && (
