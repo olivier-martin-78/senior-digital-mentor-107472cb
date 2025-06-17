@@ -31,7 +31,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/SeniorDigital.png" alt="Logo" className="h-19 w-24" />
+            <img src="/SeniorDigital.png" alt="Logo" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -103,7 +103,6 @@ const Header = () => {
                   </Link>
                 )}
                 
-                {/* Lien vers les abonnements sans badge */}
                 <Link
                   to="/subscription"
                   className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
@@ -151,7 +150,14 @@ const Header = () => {
           </nav>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            {user && (
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="p-2">
+                  <User className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="sm"
