@@ -33,9 +33,9 @@ export const getAudioUrl = (audioPath: string | null): string | null => {
     return trimmedPath;
   }
   
-  // Sinon, construire l'URL complète pour Supabase Storage
+  // Sinon, construire l'URL complète pour Supabase Storage avec le bon nom de bucket
   const supabaseUrl = 'https://cvcebcisijjmmmwuedcv.supabase.co';
-  return `${supabaseUrl}/storage/v1/object/public/life-story-audio/${trimmedPath}`;
+  return `${supabaseUrl}/storage/v1/object/public/life-story-audios/${trimmedPath}`;
 };
 
 export const preloadAudio = async (url: string): Promise<boolean> => {
