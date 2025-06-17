@@ -363,16 +363,16 @@ const WishPost = () => {
               </div>
             )}
             
-            <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-              <h1 className="text-3xl font-serif text-tranches-charcoal">
+            <div className="flex flex-col gap-4 mb-4">
+              <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">
                 {sanitizeInput(wish.title)}
               </h1>
               
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
                 {canManagePublication && (
                   <Button
                     variant={wish.published ? "outline" : "default"}
-                    className={!wish.published ? "bg-tranches-sage hover:bg-tranches-sage/90" : ""}
+                    className={`w-full sm:w-auto ${!wish.published ? "bg-tranches-sage hover:bg-tranches-sage/90" : ""}`}
                     onClick={handlePublishToggle}
                     disabled={publishLoading}
                   >
@@ -380,7 +380,7 @@ const WishPost = () => {
                   </Button>
                 )}
                 {canEdit && (
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full sm:w-auto">
                     <Link to={`/wishes/edit/${wish.id}`}>
                       <Edit className="mr-2 h-4 w-4" />
                       Éditer
@@ -392,6 +392,7 @@ const WishPost = () => {
                     variant="destructive"
                     onClick={handleDelete}
                     disabled={deleteLoading}
+                    className="w-full sm:w-auto"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     {deleteLoading ? "Suppression..." : "Supprimer"}
