@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,9 +19,9 @@ interface ActivityEditFormProps {
 }
 
 const activityTypes = [
-  { value: 'meditation', label: 'Méditation' },
+  { value: 'meditation', label: 'Relaxation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'exercises', label: 'Exercices' },
+  { value: 'exercises', label: 'Gym douce' },
 ];
 
 const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, onCancel }) => {
@@ -104,6 +103,7 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
           </div>
 
           <SubActivitySelector
+            activityType={formData.activity_type}
             selectedSubTagId={formData.sub_activity_tag_id}
             onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
           />

@@ -8,24 +8,26 @@ import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { Plus, X } from 'lucide-react';
 
 interface SubActivitySelectorProps {
+  activityType?: string;
   selectedSubTagId?: string;
   onSubTagChange: (subTagId: string | null) => void;
 }
 
 const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
+  activityType,
   selectedSubTagId,
   onSubTagChange
 }) => {
-  const { subTags, loading, createSubTag } = useActivitySubTags();
+  const { subTags, loading, createSubTag } = useActivitySubTags(activityType);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [creating, setCreating] = useState(false);
 
   const handleCreateSubTag = async () => {
-    if (!newTagName.trim()) return;
+    if (!newTagName.trim() || !activityType) return;
 
     setCreating(true);
-    const newTag = await createSubTag(newTagName.trim());
+    const newTag = await createSubTag(newTagName.trim(), activityType);
     if (newTag) {
       onSubTagChange(newTag.id);
       setNewTagName('');
@@ -80,6 +82,7 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
             size="sm"
             onClick={handleShowCreateForm}
             className="flex items-center gap-1"
+            disabled={!activityType}
           >
             <Plus className="h-4 w-4" />
             Créer

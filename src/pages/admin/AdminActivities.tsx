@@ -19,12 +19,9 @@ import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
 
 const activityTypes = [
-  { value: 'meditation', label: 'Méditation' },
+  { value: 'meditation', label: 'Relaxation' },
   { value: 'games', label: 'Jeux' },
-  { value: 'connection', label: 'Connexion' },
-  { value: 'exercises', label: 'Exercices' },
-  { value: 'reading', label: 'Lecture' },
-  { value: 'writing', label: 'Écriture' },
+  { value: 'exercises', label: 'Gym douce' },
 ];
 
 const AdminActivities = () => {
@@ -209,6 +206,7 @@ const AdminActivities = () => {
                   </div>
 
                   <SubActivitySelector
+                    activityType={formData.activity_type}
                     selectedSubTagId={formData.sub_activity_tag_id}
                     onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
                   />
@@ -286,7 +284,7 @@ const AdminActivities = () => {
               const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
 
               return (
-                <div key={activity.id} className="relative">
+                <div key={activity.id} className="relative group">
                   <ActivityCard
                     title={activity.title}
                     link={activity.link}
@@ -299,7 +297,7 @@ const AdminActivities = () => {
                     subActivityName={activity.activity_sub_tags?.name}
                   />
                   {activity.shared_globally && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
                       Partagé
                     </div>
                   )}
@@ -307,7 +305,7 @@ const AdminActivities = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(activity.id)}
-                    className="absolute top-2 left-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-12 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
@@ -44,9 +46,14 @@ const ActivityPage = () => {
     thumbnail_url: '',
     activity_date: '',
     sub_activity_tag_id: '',
+    shared_globally: false,
   });
 
   const isReader = hasRole('reader');
+
+  // Vérifier si l'utilisateur peut utiliser la fonction de partage global
+  const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
+                          ['meditation', 'games', 'exercises'].includes(type || '');
 
   const getYouTubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -77,6 +84,7 @@ const ActivityPage = () => {
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
+        shared_globally: canShareGlobally ? formData.shared_globally : false,
       };
 
       const { error } = await supabase
@@ -97,6 +105,7 @@ const ActivityPage = () => {
         thumbnail_url: '', 
         activity_date: '',
         sub_activity_tag_id: '',
+        shared_globally: false,
       });
       setShowForm(false);
       refetch();
@@ -203,6 +212,7 @@ const ActivityPage = () => {
                   </div>
 
                   <SubActivitySelector
+                    activityType={formData.activity_type}
                     selectedSubTagId={formData.sub_activity_tag_id}
                     onSubTagChange={(subTagId) => setFormData({ ...formData, sub_activity_tag_id: subTagId || '' })}
                   />
@@ -245,6 +255,24 @@ const ActivityPage = () => {
                     />
                   </div>
 
+                  {canShareGlobally && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="shared_globally"
+                        checked={formData.shared_globally}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, shared_globally: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor="shared_globally" className="text-sm font-medium">
+                        Partager avec tout le monde
+                      </Label>
+                      <p className="text-xs text-gray-500 ml-2">
+                        Cette activité sera visible par tous les utilisateurs connectés
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button type="submit">Ajouter</Button>
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -274,18 +302,24 @@ const ActivityPage = () => {
                 const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
 
                 return (
-                  <ActivityCard
-                    key={activity.id}
-                    title={activity.title}
-                    link={activity.link}
-                    isYouTube={isYouTube}
-                    videoId={videoId || undefined}
-                    thumbnailUrl={activity.thumbnail_url}
-                    activityDate={activity.activity_date}
-                    subActivityName={activity.activity_sub_tags?.name}
-                    showEditButton={canEditActivity(activity)}
-                    onEdit={() => handleEditActivity(activity)}
-                  />
+                  <div key={activity.id} className="relative">
+                    <ActivityCard
+                      title={activity.title}
+                      link={activity.link}
+                      isYouTube={isYouTube}
+                      videoId={videoId || undefined}
+                      thumbnailUrl={activity.thumbnail_url}
+                      activityDate={activity.activity_date}
+                      subActivityName={activity.activity_sub_tags?.name}
+                      showEditButton={canEditActivity(activity)}
+                      onEdit={() => handleEditActivity(activity)}
+                    />
+                    {activity.shared_globally && (
+                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
+                        Partagé
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

@@ -9,22 +9,28 @@ export interface ActivitySubTag {
   name: string;
   created_by: string;
   created_at: string;
+  activity_type: string;
 }
 
-export const useActivitySubTags = () => {
+export const useActivitySubTags = (activityType?: string) => {
   const [subTags, setSubTags] = useState<ActivitySubTag[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
 
   const fetchSubTags = async () => {
-    if (!user) return;
+    if (!user || !activityType) {
+      setSubTags([]);
+      setLoading(false);
+      return;
+    }
     
     try {
       const { data, error } = await supabase
         .from('activity_sub_tags')
         .select('*')
         .eq('created_by', user.id)
+        .eq('activity_type', activityType)
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -41,13 +47,13 @@ export const useActivitySubTags = () => {
     }
   };
 
-  const createSubTag = async (name: string): Promise<ActivitySubTag | null> => {
+  const createSubTag = async (name: string, activityType: string): Promise<ActivitySubTag | null> => {
     if (!user) return null;
     
     try {
       const { data, error } = await supabase
         .from('activity_sub_tags')
-        .insert([{ name, created_by: user.id }])
+        .insert([{ name, created_by: user.id, activity_type: activityType }])
         .select()
         .single();
 
@@ -68,7 +74,7 @@ export const useActivitySubTags = () => {
 
   useEffect(() => {
     fetchSubTags();
-  }, [user]);
+  }, [user, activityType]);
 
   return { subTags, loading, refetch: fetchSubTags, createSubTag };
 };
