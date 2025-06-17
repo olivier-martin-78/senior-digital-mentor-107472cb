@@ -7,7 +7,7 @@ import { validateAudioUrl, handleExportAudio, formatTime } from './utils/audioUt
 
 interface VoiceAnswerPlayerProps {
   audioUrl: string;
-  onDelete: () => void;
+  onDelete?: () => void;
   readOnly?: boolean;
   shouldLog?: boolean;
 }
@@ -119,7 +119,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
   };
 
   const handleDelete = () => {
-    if (readOnly) return;
+    if (readOnly || !onDelete) return;
     
     const audio = audioRef.current;
     if (audio) {
@@ -227,7 +227,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
               Exporter
             </Button>
             
-            {!readOnly && (
+            {!readOnly && onDelete && (
               <Button
                 variant="ghost"
                 size="sm"
