@@ -29,8 +29,12 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
     chapterId: chapter.id,
     chapterTitle: chapter.title,
     isReadOnly,
-    questionsCount: chapter.questions?.length || 0
+    questionsCount: chapter.questions?.length || 0,
+    questions: chapter.questions
   });
+
+  // Vérification plus robuste des questions
+  const hasQuestions = Array.isArray(chapter.questions) && chapter.questions.length > 0;
 
   return (
     <Card>
@@ -46,7 +50,7 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {chapter.questions && chapter.questions.length > 0 ? (
+        {hasQuestions ? (
           chapter.questions.map(question => (
             <QuestionItem 
               key={question.id}
@@ -62,7 +66,12 @@ export const ChapterContent: React.FC<ChapterContentProps> = ({
             />
           ))
         ) : (
-          <p className="text-gray-600">Aucune question disponible pour ce chapitre.</p>
+          <div className="text-center py-8">
+            <p className="text-gray-600">Aucune question disponible pour ce chapitre.</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Questions trouvées: {chapter.questions?.length || 0}
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
