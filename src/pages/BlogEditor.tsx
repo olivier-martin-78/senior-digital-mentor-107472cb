@@ -65,15 +65,16 @@ const BlogEditor = () => {
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-serif text-tranches-charcoal">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">
             {isEditing ? 'Modifier l\'article' : 'Nouvel article'}
           </h1>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => navigate('/blog')}
               disabled={saving}
+              className="w-full sm:w-auto text-sm"
             >
               Annuler
             </Button>
@@ -81,12 +82,13 @@ const BlogEditor = () => {
               variant="outline"
               onClick={() => handleSave(false)}
               disabled={saving}
+              className="w-full sm:w-auto text-sm"
             >
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Enregistrer
             </Button>
             <Button
-              className="bg-tranches-sage hover:bg-tranches-sage/90"
+              className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto text-sm"
               onClick={() => handleSave(true)}
               disabled={saving}
             >
@@ -96,7 +98,7 @@ const BlogEditor = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           {/* Title */}
           <div className="mb-6">
             <Label htmlFor="title">Titre</Label>
@@ -105,7 +107,7 @@ const BlogEditor = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-xl mt-1"
+              className="text-lg sm:text-xl mt-1"
               placeholder="Titre de l'article"
             />
           </div>
@@ -142,7 +144,7 @@ const BlogEditor = () => {
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[300px] mt-1"
+              className="min-h-[250px] sm:min-h-[300px] mt-1"
               placeholder="Contenu de l'article..."
             />
           </div>
