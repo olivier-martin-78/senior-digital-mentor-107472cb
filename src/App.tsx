@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,6 +51,8 @@ import AdminActivities from "./pages/admin/AdminActivities";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfessionalScheduler from './pages/ProfessionalScheduler';
 
+import Subscription from "./pages/Subscription";
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -72,6 +73,9 @@ function App() {
                 <Route path="/ai-landing" element={<AILanding />} />
                 <Route path="/capria" element={<CaprIA />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Route pour la page d'abonnements - accessible à tous */}
+                <Route path="/subscription" element={<Subscription />} />
                 
                 {/* Protected routes */}
                 <Route path="/profile" element={<ProtectedRoute />}>
