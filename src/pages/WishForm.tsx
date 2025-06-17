@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -191,7 +190,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
       console.log('WishForm - URL de prévisualisation créée:', previewUrl);
       setCoverImage(previewUrl);
       
-      // Mettre à jour le formulaire avec le nom du fichier temporairement
+      // Mettre à jour le formulaire avec le nom du fichier temporaire
       form.setValue('thumbnail', file.name);
       console.log('WishForm - Valeur temporaire du formulaire mise à jour:', file.name);
       
@@ -854,20 +853,34 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                 )}
                 
                 <div className="pt-4 border-t">
-                  <Button 
-                    type="submit" 
-                    className="w-full md:w-auto bg-tranches-sage hover:bg-tranches-sage/90"
-                    disabled={isLoading || uploadingCoverImage}
-                  >
-                    {isLoading 
-                      ? 'Envoi en cours...' 
-                      : uploadingCoverImage
-                        ? 'Upload en cours...'
-                        : wishToEdit 
-                          ? 'Mettre à jour le souhait' 
-                          : 'Envoyer mon souhait'
-                    }
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button 
+                      type="submit" 
+                      className="w-full sm:w-auto bg-tranches-sage hover:bg-tranches-sage/90 order-2 sm:order-1"
+                      disabled={isLoading || uploadingCoverImage}
+                    >
+                      {isLoading 
+                        ? 'Envoi en cours...' 
+                        : uploadingCoverImage
+                          ? 'Upload en cours...'
+                          : wishToEdit 
+                            ? 'Mettre à jour le souhait' 
+                            : 'Envoyer mon souhait'
+                      }
+                    </Button>
+                    
+                    {wishToEdit && (
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigate(`/wishes/${wishToEdit.id}`)}
+                        className="w-full sm:w-auto order-1 sm:order-2"
+                        disabled={isLoading || uploadingCoverImage}
+                      >
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </form>
             </Form>
