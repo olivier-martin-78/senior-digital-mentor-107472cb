@@ -89,17 +89,43 @@ const Header = () => {
                   Souhaits
                 </Link>
                 
-                <Link
-                  to="/activities/activities"
-                  className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
-                    isActivePath('/activities/activities')
-                      ? 'text-tranches-dustyblue'
-                      : 'text-tranches-charcoal hover:text-tranches-dustyblue'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Activités</span>
-                </Link>
+                <div className="relative group">
+                  <Link
+                    to="/activities/activities"
+                    className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                      isActivePath('/activities/activities')
+                        ? 'text-tranches-dustyblue'
+                        : 'text-tranches-charcoal hover:text-tranches-dustyblue'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Activités</span>
+                  </Link>
+                  
+                  {/* Sous-menu */}
+                  <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="py-2">
+                      <Link
+                        to="/activities/meditation"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                      >
+                        Relaxation
+                      </Link>
+                      <Link
+                        to="/activities/games"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                      >
+                        Jeux
+                      </Link>
+                      <Link
+                        to="/activities/exercises"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                      >
+                        Gym douce
+                      </Link>
+                    </div>
+                  </div>
+                </div>
 
                 {(hasRole('professionnel') || hasRole('admin')) && (
                   <Link
@@ -230,6 +256,30 @@ const Header = () => {
                     <Sparkles className="w-4 h-4" />
                     <span>Activités</span>
                   </Link>
+                  
+                  <div className="pl-6 space-y-1">
+                    <Link
+                      to="/activities/meditation"
+                      className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Relaxation
+                    </Link>
+                    <Link
+                      to="/activities/games"
+                      className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Jeux
+                    </Link>
+                    <Link
+                      to="/activities/exercises"
+                      className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Gym douce
+                    </Link>
+                  </div>
                   
                   {(hasRole('professionnel') || hasRole('admin')) && (
                     <Link
