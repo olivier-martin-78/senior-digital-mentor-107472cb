@@ -58,18 +58,21 @@ export type Database = {
       }
       activity_sub_tags: {
         Row: {
+          activity_type: string
           created_at: string
           created_by: string
           id: string
           name: string
         }
         Insert: {
+          activity_type?: string
           created_at?: string
           created_by: string
           id?: string
           name: string
         }
         Update: {
+          activity_type?: string
           created_at?: string
           created_by?: string
           id?: string
