@@ -15,8 +15,7 @@ import {
   CheckCircle,
   ArrowRight,
   Sparkles,
-  Mail,
-  FileText
+  Mail
 } from 'lucide-react';
 import {
   Accordion,
@@ -84,22 +83,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
-      {/* Section pour les professionnels */}
-      {(hasRole('professionnel') || hasRole('admin')) && (
-        <section className="bg-tranches-sage/10 py-4">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-center">
-              <Button asChild className="bg-tranches-sage text-white hover:bg-tranches-sage/90">
-                <Link to="/intervention-report" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Créer un compte-rendu d'intervention
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
       
       {/* Hero Section ajoutée */}
       <HeroSection />
