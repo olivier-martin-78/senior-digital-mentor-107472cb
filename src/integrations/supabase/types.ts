@@ -981,6 +981,48 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          billing_interval: string
+          created_at: string | null
+          currency: string
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_amount: number
+          stripe_price_id: string | null
+          trial_period_days: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_interval?: string
+          created_at?: string | null
+          currency?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_amount: number
+          stripe_price_id?: string | null
+          trial_period_days?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_interval?: string
+          created_at?: string | null
+          currency?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_amount?: number
+          stripe_price_id?: string | null
+          trial_period_days?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_client_permissions: {
         Row: {
           client_id: string
@@ -1056,6 +1098,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_plan_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_plan_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_plan_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wish_albums: {
         Row: {
@@ -1241,6 +1339,14 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_subscription_plan: {
+        Args: { user_id_param: string }
+        Returns: string
+      }
+      has_active_subscription: {
+        Args: { user_id_param: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
