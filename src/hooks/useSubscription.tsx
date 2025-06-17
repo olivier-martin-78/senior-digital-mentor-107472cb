@@ -31,14 +31,26 @@ export const useSubscription = () => {
         },
       });
 
-      if (error) throw error;
-      setSubscription(data);
+      if (error) {
+        console.error('Error checking subscription:', error);
+        // Ne pas afficher de toast d'erreur, juste logger l'erreur
+        setSubscription({
+          subscribed: false,
+          subscription_plan: null,
+          current_period_end: null,
+          status: 'inactive'
+        });
+      } else {
+        setSubscription(data);
+      }
     } catch (error) {
       console.error('Error checking subscription:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de vérifier le statut d\'abonnement',
-        variant: 'destructive',
+      // Définir un état par défaut au lieu d'afficher un toast d'erreur
+      setSubscription({
+        subscribed: false,
+        subscription_plan: null,
+        current_period_end: null,
+        status: 'inactive'
       });
     } finally {
       setLoading(false);

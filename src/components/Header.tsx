@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -32,7 +31,6 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <img src="/SeniorDigital.png" alt="CaprIA" className="h-8 w-8" />
-            <span className="text-xl font-serif text-tranches-charcoal">CaprIA</span>
           </Link>
 
           {/* Desktop Navigation */}
