@@ -86,7 +86,7 @@ const App = () => (
               <Route path="/wishes/edit/:id" element={<WishEdit />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/scheduler" element={<ProfessionalScheduler />} />
-              <Route path="/intervention-report/:id" element={<InterventionReport />} />
+              <Route path="/intervention-report" element={<InterventionReport />} />
               <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
               
               {/* Activities Routes */}

@@ -1,3 +1,4 @@
+
 export const validateAudioUrl = (audioUrl: string | null): boolean => {
   if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim() === '') {
     return false;
@@ -72,16 +73,33 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
   });
 };
 
-export const handleExportAudio = (audioUrl: string) => {
+export const handleExportAudio = async (audioUrl: string) => {
   try {
+    // Télécharger le fichier audio depuis l'URL
+    const response = await fetch(audioUrl);
+    if (!response.ok) {
+      throw new Error('Impossible de télécharger le fichier audio');
+    }
+    
+    // Créer un blob à partir de la réponse
+    const blob = await response.blob();
+    
+    // Créer une URL temporaire pour le blob
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Créer un lien de téléchargement et le déclencher
     const link = document.createElement('a');
-    link.href = audioUrl;
+    link.href = blobUrl;
     link.download = `enregistrement_${new Date().toISOString().slice(0, 10)}.webm`;
     document.body.appendChild(link);
     link.click();
+    
+    // Nettoyer
     document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   } catch (error) {
     console.error('Erreur lors de l\'export audio:', error);
+    throw error;
   }
 };
 
