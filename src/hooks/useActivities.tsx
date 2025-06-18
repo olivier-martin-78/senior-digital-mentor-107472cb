@@ -28,13 +28,10 @@ export const useActivities = (activityType: string) => {
   const { user, hasRole } = useAuth();
 
   const fetchActivities = async () => {
-    if (!user) {
-      setActivities([]);
-      setLoading(false);
-      return;
-    }
-
     try {
+      setLoading(true);
+      console.log('🔍 Récupération des activités pour le type:', activityType);
+
       let query = supabase
         .from('activities')
         .select(`
@@ -47,14 +44,31 @@ export const useActivities = (activityType: string) => {
         .eq('activity_type', activityType)
         .order('created_at', { ascending: false });
 
-      // Si l'utilisateur n'est pas admin, montrer ses propres activités + les activités partagées globalement
-      if (!hasRole('admin')) {
+      // Si l'utilisateur est connecté et n'est pas admin
+      if (user && !hasRole('admin')) {
+        // Récupérer les activités de l'utilisateur ET les activités partagées globalement
         query = query.or(`created_by.eq.${user.id},shared_globally.eq.true`);
+      } else if (!user) {
+        // Si l'utilisateur n'est pas connecté, ne montrer que les activités partagées globalement
+        query = query.eq('shared_globally', true);
       }
+      // Si l'utilisateur est admin, il voit tout (pas de filtre supplémentaire)
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur lors du chargement des activités:', error);
+        throw error;
+      }
+
+      console.log('✅ Activités récupérées:', {
+        count: data?.length || 0,
+        type: activityType,
+        user: user?.id,
+        isAdmin: hasRole('admin'),
+        activities: data
+      });
+
       setActivities(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des activités:', error);
@@ -63,13 +77,17 @@ export const useActivities = (activityType: string) => {
         description: 'Impossible de charger les activités',
         variant: 'destructive',
       });
+      setActivities([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchActivities();
+    if (activityType) {
+      console.log('🔄 Changement de type d\'activité:', activityType);
+      fetchActivities();
+    }
   }, [activityType, user]);
 
   const canEditActivity = (activity: Activity) => {

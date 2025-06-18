@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import ActivityCard from '@/components/activities/ActivityCard';
@@ -48,6 +48,17 @@ const ActivityPage = () => {
     sub_activity_tag_id: '',
     shared_globally: false,
   });
+
+  // Réinitialiser le formulaire quand le type change
+  useEffect(() => {
+    console.log('🔄 Type d\'activité changé:', type);
+    setFormData(prev => ({
+      ...prev,
+      activity_type: type || '',
+    }));
+    setShowForm(false);
+    setEditingActivity(null);
+  }, [type]);
 
   const isReader = hasRole('reader');
 
@@ -132,6 +143,15 @@ const ActivityPage = () => {
   const handleCancelEdit = () => {
     setEditingActivity(null);
   };
+
+  console.log('🎯 ActivityPage - État actuel:', {
+    type,
+    activitiesCount: activities.length,
+    loading,
+    user: user?.id,
+    isReader,
+    canShareGlobally
+  });
 
   if (loading) {
     return (
