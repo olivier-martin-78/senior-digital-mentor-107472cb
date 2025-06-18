@@ -1,16 +1,29 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Sparkles, Brain, Gamepad2, Dumbbell } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
+import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';
 
 const ActivitiesOverview = () => {
   const { activities: meditationActivities, loading: meditationLoading } = useActivities('meditation');
   const { activities: gamesActivities, loading: gamesLoading } = useActivities('games');
   const { activities: exercisesActivities, loading: exercisesLoading } = useActivities('exercises');
+  
+  // Hooks pour les sous-activités
+  const { subTags: meditationSubTags } = useActivitySubTags('meditation');
+  const { subTags: gamesSubTags } = useActivitySubTags('games');
+  const { subTags: exercisesSubTags } = useActivitySubTags('exercises');
+
+  // États pour les filtres par sous-activité
+  const [meditationFilter, setMeditationFilter] = useState<string>('');
+  const [gamesFilter, setGamesFilter] = useState<string>('');
+  const [exercisesFilter, setExercisesFilter] = useState<string>('');
 
   const sections = [
     {
@@ -21,7 +34,10 @@ const ActivitiesOverview = () => {
       activities: meditationActivities,
       loading: meditationLoading,
       color: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-      iconColor: 'text-blue-600'
+      iconColor: 'text-blue-600',
+      subTags: meditationSubTags,
+      filter: meditationFilter,
+      setFilter: setMeditationFilter
     },
     {
       title: 'Jeux',
@@ -31,7 +47,10 @@ const ActivitiesOverview = () => {
       activities: gamesActivities,
       loading: gamesLoading,
       color: 'bg-green-50 border-green-200 hover:bg-green-100',
-      iconColor: 'text-green-600'
+      iconColor: 'text-green-600',
+      subTags: gamesSubTags,
+      filter: gamesFilter,
+      setFilter: setGamesFilter
     },
     {
       title: 'Gym douce',
@@ -41,7 +60,10 @@ const ActivitiesOverview = () => {
       activities: exercisesActivities,
       loading: exercisesLoading,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
-      iconColor: 'text-purple-600'
+      iconColor: 'text-purple-600',
+      subTags: exercisesSubTags,
+      filter: exercisesFilter,
+      setFilter: setExercisesFilter
     }
   ];
 
@@ -52,6 +74,12 @@ const ActivitiesOverview = () => {
 
   const isYouTubeUrl = (url: string) => {
     return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
+  // Fonction pour filtrer les activités selon la sous-activité sélectionnée
+  const filterActivitiesBySubTag = (activities: any[], filter: string) => {
+    if (!filter) return activities;
+    return activities.filter(activity => activity.sub_activity_tag_id === filter);
   };
 
   return (
@@ -70,6 +98,8 @@ const ActivitiesOverview = () => {
 
         {sections.map((section) => {
           const Icon = section.icon;
+          const filteredActivities = filterActivitiesBySubTag(section.activities, section.filter);
+          
           return (
             <div key={section.type} className="mb-12">
               <div className="flex items-center justify-between mb-6">
@@ -88,6 +118,27 @@ const ActivitiesOverview = () => {
                 </Link>
               </div>
 
+              {/* Filtre par sous-activité */}
+              <div className="mb-6">
+                <Label htmlFor={`${section.type}-filter`}>Filtrer par sous-activité</Label>
+                <Select
+                  value={section.filter || 'all'}
+                  onValueChange={(value) => section.setFilter(value === 'all' ? '' : value)}
+                >
+                  <SelectTrigger className="w-full max-w-md">
+                    <SelectValue placeholder="Toutes les sous-activités" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les sous-activités</SelectItem>
+                    {section.subTags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {section.loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[...Array(3)].map((_, index) => (
@@ -102,9 +153,9 @@ const ActivitiesOverview = () => {
                     </Card>
                   ))}
                 </div>
-              ) : section.activities.length > 0 ? (
+              ) : filteredActivities.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {section.activities.slice(0, 6).map((activity) => {
+                  {filteredActivities.slice(0, 6).map((activity) => {
                     const isYouTube = isYouTubeUrl(activity.link);
                     const videoId = isYouTube ? extractYouTubeId(activity.link) : undefined;
                     
@@ -126,10 +177,16 @@ const ActivitiesOverview = () => {
                 <Card className={`p-8 text-center ${section.color}`}>
                   <Icon className={`w-16 h-16 ${section.iconColor} mx-auto mb-4`} />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Aucune activité {section.title.toLowerCase()}
+                    {section.filter 
+                      ? "Aucune activité trouvée pour cette sous-activité"
+                      : `Aucune activité ${section.title.toLowerCase()}`
+                    }
                   </h3>
                   <p className="text-gray-600">
-                    Aucune activité n'est disponible dans cette catégorie pour le moment.
+                    {section.filter 
+                      ? "Essayez de sélectionner une autre sous-activité ou 'Toutes les sous-activités'."
+                      : "Aucune activité n'est disponible dans cette catégorie pour le moment."
+                    }
                   </p>
                 </Card>
               )}

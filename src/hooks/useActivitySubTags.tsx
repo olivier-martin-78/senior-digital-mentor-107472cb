@@ -19,17 +19,17 @@ export const useActivitySubTags = (activityType?: string) => {
   const { user } = useAuth();
 
   const fetchSubTags = async () => {
-    if (!user || !activityType) {
+    if (!activityType) {
       setSubTags([]);
       setLoading(false);
       return;
     }
     
     try {
+      // Charger TOUTES les sous-activités pour ce type, pas seulement celles de l'utilisateur connecté
       const { data, error } = await supabase
         .from('activity_sub_tags')
         .select('*')
-        .eq('created_by', user.id)
         .eq('activity_type', activityType)
         .order('name', { ascending: true });
 
@@ -74,7 +74,7 @@ export const useActivitySubTags = (activityType?: string) => {
 
   useEffect(() => {
     fetchSubTags();
-  }, [user, activityType]);
+  }, [activityType]);
 
   return { subTags, loading, refetch: fetchSubTags, createSubTag };
 };
