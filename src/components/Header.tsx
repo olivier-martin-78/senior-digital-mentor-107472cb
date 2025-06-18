@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, User, Calendar, FileText, Crown, Sparkles } from 'lucide-react';
+import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -25,6 +25,8 @@ const Header = () => {
   const isActivePath = (path: string) => {
     return location.pathname === path;
   };
+
+  const isReader = hasRole('reader');
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
@@ -139,6 +141,98 @@ const Header = () => {
                     <Calendar className="w-4 h-4" />
                     <span>Planificateur</span>
                   </Link>
+                )}
+
+                {/* Mes invités - visible pour tous les utilisateurs authentifiés sauf les readers */}
+                {!isReader && (
+                  <Link
+                    to="/my-invitation-groups"
+                    className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                      isActivePath('/my-invitation-groups')
+                        ? 'text-tranches-dustyblue'
+                        : 'text-tranches-charcoal hover:text-tranches-dustyblue'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Mes invités</span>
+                  </Link>
+                )}
+
+                {/* Menu Administration pour les admins */}
+                {hasRole('admin') && (
+                  <div className="relative group">
+                    <Link
+                      to="/admin/users"
+                      className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+                        location.pathname.startsWith('/admin')
+                          ? 'text-tranches-dustyblue'
+                          : 'text-tranches-charcoal hover:text-tranches-dustyblue'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Administration</span>
+                    </Link>
+                    
+                    {/* Sous-menu Administration */}
+                    <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <div className="py-2">
+                        <Link
+                          to="/admin/users"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Utilisateurs
+                        </Link>
+                        <Link
+                          to="/admin/posts"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Articles de blog
+                        </Link>
+                        <Link
+                          to="/admin/albums"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Albums
+                        </Link>
+                        <Link
+                          to="/admin/wish-albums"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Albums de souhaits
+                        </Link>
+                        <Link
+                          to="/admin/diary"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Journal
+                        </Link>
+                        <Link
+                          to="/admin/life-stories"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Récits de vie
+                        </Link>
+                        <Link
+                          to="/admin/activities"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Activités
+                        </Link>
+                        <Link
+                          to="/admin/permissions-diagnostic"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Diagnostic permissions
+                        </Link>
+                        <Link
+                          to="/admin/invitation-groups"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                        >
+                          Groupes d'invitation
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 
                 <Link
@@ -290,6 +384,93 @@ const Header = () => {
                       <Calendar className="w-4 h-4" />
                       <span>Planificateur</span>
                     </Link>
+                  )}
+
+                  {/* Mes invités - mobile */}
+                  {!isReader && (
+                    <Link
+                      to="/my-invitation-groups"
+                      className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue px-2 py-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Mes invités</span>
+                    </Link>
+                  )}
+
+                  {/* Administration mobile pour les admins */}
+                  {hasRole('admin') && (
+                    <>
+                      <div className="text-sm font-medium text-tranches-charcoal px-2 py-1 flex items-center space-x-1">
+                        <Settings className="w-4 h-4" />
+                        <span>Administration</span>
+                      </div>
+                      <div className="pl-6 space-y-1">
+                        <Link
+                          to="/admin/users"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Utilisateurs
+                        </Link>
+                        <Link
+                          to="/admin/posts"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Articles de blog
+                        </Link>
+                        <Link
+                          to="/admin/albums"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Albums
+                        </Link>
+                        <Link
+                          to="/admin/wish-albums"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Albums de souhaits
+                        </Link>
+                        <Link
+                          to="/admin/diary"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Journal
+                        </Link>
+                        <Link
+                          to="/admin/life-stories"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Récits de vie
+                        </Link>
+                        <Link
+                          to="/admin/activities"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Activités
+                        </Link>
+                        <Link
+                          to="/admin/permissions-diagnostic"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Diagnostic permissions
+                        </Link>
+                        <Link
+                          to="/admin/invitation-groups"
+                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Groupes d'invitation
+                        </Link>
+                      </div>
+                    </>
                   )}
                   
                   <Link
