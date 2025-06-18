@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -33,14 +32,14 @@ const activityTypes = [
 ];
 
 const ActivityPage = () => {
-  const { type } = useParams<{ type: string }>();
+  const { activityType } = useParams<{ activityType: string }>();
   const { hasRole, user } = useAuth();
-  const { activities, loading, refetch, canEditActivity } = useActivities(type || '');
+  const { activities, loading, refetch, canEditActivity } = useActivities(activityType || '');
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
-    activity_type: type || '',
+    activity_type: activityType || '',
     title: '',
     link: '',
     thumbnail_url: '',
@@ -51,20 +50,20 @@ const ActivityPage = () => {
 
   // Réinitialiser le formulaire quand le type change
   useEffect(() => {
-    console.log('🔄 Type d\'activité changé:', type);
+    console.log('🔄 Type d\'activité changé:', activityType);
     setFormData(prev => ({
       ...prev,
-      activity_type: type || '',
+      activity_type: activityType || '',
     }));
     setShowForm(false);
     setEditingActivity(null);
-  }, [type]);
+  }, [activityType]);
 
   const isReader = hasRole('reader');
 
   // Vérifier si l'utilisateur peut utiliser la fonction de partage global
   const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
-                          ['meditation', 'games', 'exercises'].includes(type || '');
+                          ['meditation', 'games', 'exercises'].includes(activityType || '');
 
   const getYouTubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -110,7 +109,7 @@ const ActivityPage = () => {
       });
 
       setFormData({ 
-        activity_type: type || '', 
+        activity_type: activityType || '', 
         title: '', 
         link: '', 
         thumbnail_url: '', 
@@ -145,7 +144,7 @@ const ActivityPage = () => {
   };
 
   console.log('🎯 ActivityPage - État actuel:', {
-    type,
+    activityType,
     activitiesCount: activities.length,
     loading,
     user: user?.id,
@@ -175,12 +174,12 @@ const ActivityPage = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              {activityTitles[type || ''] || 'Activités'}
+              {activityTitles[activityType || ''] || 'Activités'}
             </h1>
             <div className="flex gap-2">
               {hasRole('admin') && (
                 <Button asChild>
-                  <Link to={`/admin/activities/${type}`} className="flex items-center gap-2">
+                  <Link to={`/admin/activities/${activityType}`} className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
                     Gérer les activités
                   </Link>
