@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Star, Sparkles } from 'lucide-react';
+import { Check, Crown, Star, Sparkles, Clock, AlertCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAccountAccess } from '@/hooks/useAccountAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,6 +27,7 @@ const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { subscription, loading, createCheckout, checkSubscription } = useSubscription();
+  const { accountStatus, freeTrialEnd, hasAccess } = useAccountAccess();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
 
@@ -95,6 +97,22 @@ const Subscription = () => {
     return [];
   };
 
+  const getTimeRemaining = () => {
+    if (!freeTrialEnd) return null;
+    const end = new Date(freeTrialEnd);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+    
+    if (diff <= 0) return null;
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}min`;
+  };
+
+  const timeRemaining = getTimeRemaining();
+
   if (plansLoading) {
     return (
       <div className="min-h-screen bg-white">
@@ -120,6 +138,35 @@ const Subscription = () => {
           <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto">
             Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles
           </p>
+          
+          {/* Statut du compte */}
+          {accountStatus === 'trial' && timeRemaining && (
+            <Card className="max-w-md mx-auto mt-6 border-orange-200 bg-orange-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center text-orange-600 mb-2">
+                  <Clock className="w-5 h-5 mr-2" />
+                  <span className="font-semibold">Période d'essai gratuite</span>
+                </div>
+                <p className="text-sm text-orange-700">
+                  Temps restant: {timeRemaining}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {!hasAccess && accountStatus === 'restricted' && (
+            <Card className="max-w-md mx-auto mt-6 border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center text-red-600 mb-2">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <span className="font-semibold">Accès expiré</span>
+                </div>
+                <p className="text-sm text-red-700">
+                  Votre période d'essai a expiré. Choisissez un plan pour continuer.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">

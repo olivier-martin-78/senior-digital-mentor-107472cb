@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -363,6 +362,9 @@ export type Database = {
           updated_at: string
           user_id: string
           receive_contacts: boolean
+          free_trial_start: string | null
+          free_trial_end: string | null
+          account_status: string
         }
         Insert: {
           avatar_url?: string | null
@@ -374,6 +376,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           receive_contacts?: boolean
+          free_trial_start?: string | null
+          free_trial_end?: string | null
+          account_status?: string
         }
         Update: {
           avatar_url?: string | null
@@ -385,6 +390,9 @@ export type Database = {
           updated_at?: string
           user_id?: string
           receive_contacts?: boolean
+          free_trial_start?: string | null
+          free_trial_end?: string | null
+          account_status?: string
         }
         Relationships: [
           {
@@ -551,6 +559,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_app_access: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: boolean
+      }
+      init_free_trial: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: void
+      }
+      update_account_statuses: {
+        Args: {}
+        Returns: void
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "reader" | "professionnel" | "editor"
@@ -652,6 +676,9 @@ export interface Profile {
   avatar_url: string | null;
   created_at: string;
   receive_contacts: boolean;
+  free_trial_start?: string | null;
+  free_trial_end?: string | null;
+  account_status?: string;
 }
 
 // Types pour les blogs

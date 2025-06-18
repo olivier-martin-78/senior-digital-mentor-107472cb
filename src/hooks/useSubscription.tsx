@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useAccountAccess } from '@/hooks/useAccountAccess';
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -14,6 +15,7 @@ interface SubscriptionData {
 export const useSubscription = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
+  const { updateAccountStatuses } = useAccountAccess();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +35,6 @@ export const useSubscription = () => {
 
       if (error) {
         console.error('Error checking subscription:', error);
-        // Ne pas afficher de toast d'erreur, juste logger l'erreur
         setSubscription({
           subscribed: false,
           subscription_plan: null,
@@ -42,10 +43,11 @@ export const useSubscription = () => {
         });
       } else {
         setSubscription(data);
+        // Mettre à jour les statuts des comptes après vérification de l'abonnement
+        await updateAccountStatuses();
       }
     } catch (error) {
       console.error('Error checking subscription:', error);
-      // Définir un état par défaut au lieu d'afficher un toast d'erreur
       setSubscription({
         subscribed: false,
         subscription_plan: null,

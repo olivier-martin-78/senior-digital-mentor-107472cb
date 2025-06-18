@@ -959,26 +959,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
           email: string
+          free_trial_end: string | null
+          free_trial_start: string | null
           id: string
           receive_contacts: boolean
         }
         Insert: {
+          account_status?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email: string
+          free_trial_end?: string | null
+          free_trial_start?: string | null
           id: string
           receive_contacts?: boolean
         }
         Update: {
+          account_status?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
+          free_trial_end?: string | null
+          free_trial_start?: string | null
           id?: string
           receive_contacts?: boolean
         }
@@ -1358,6 +1367,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      init_free_trial: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1378,8 +1391,16 @@ export type Database = {
         Args: { invitation_id_param: string }
         Returns: undefined
       }
+      update_account_statuses: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       user_can_access_album: {
         Args: { album_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
+      user_has_app_access: {
+        Args: { user_id_param: string }
         Returns: boolean
       }
       users_in_same_group: {
