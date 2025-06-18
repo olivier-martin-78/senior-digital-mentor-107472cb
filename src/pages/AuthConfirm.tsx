@@ -13,100 +13,113 @@ const AuthConfirm = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    const confirmEmail = async () => {
-      try {
-        console.log('🔍 Début de la confirmation d\'email');
-        console.log('URL complète:', window.location.href);
-        console.log('Paramètres URL:', Object.fromEntries(searchParams.entries()));
+  const confirmEmailWithRetry = async (maxRetries = 3) => {
+    try {
+      console.log('🔍 Début de la confirmation d\'email - tentative', retryCount + 1);
+      console.log('URL complète:', window.location.href);
+      console.log('Paramètres URL:', Object.fromEntries(searchParams.entries()));
 
-        // Récupérer tous les paramètres possibles
-        const token = searchParams.get('token');
-        const tokenHash = searchParams.get('token_hash');
-        const type = searchParams.get('type');
+      // Récupérer tous les paramètres possibles
+      const token = searchParams.get('token');
+      const tokenHash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
 
-        console.log('Paramètres extraits:', { token, tokenHash, type });
+      console.log('Paramètres extraits:', { token, tokenHash, type });
 
-        // Vérifier si nous avons un token (soit token soit token_hash)
-        const confirmationToken = tokenHash || token;
-        
-        if (!confirmationToken) {
-          console.error('❌ Aucun token de confirmation trouvé');
-          setStatus('error');
-          setMessage('Token de confirmation manquant dans l\'URL');
-          return;
-        }
+      // Vérifier si nous avons un token (soit token soit token_hash)
+      const confirmationToken = tokenHash || token;
+      
+      if (!confirmationToken) {
+        console.error('❌ Aucun token de confirmation trouvé');
+        setStatus('error');
+        setMessage('Token de confirmation manquant dans l\'URL');
+        return;
+      }
 
-        console.log('✅ Token de confirmation trouvé:', confirmationToken.substring(0, 10) + '...');
+      console.log('✅ Token de confirmation trouvé:', confirmationToken.substring(0, 10) + '...');
 
-        // Utiliser verifyOtp avec le bon format selon le type de token
-        let confirmationResult;
-        
-        if (tokenHash) {
-          // Nouveau format avec token_hash
-          console.log('📝 Utilisation du nouveau format token_hash');
-          confirmationResult = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: 'email'
-          });
-        } else {
-          // Ancien format avec token simple
-          console.log('📝 Utilisation de l\'ancien format token');
-          confirmationResult = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'email'
-          });
-        }
+      // Attendre un délai progressif entre les tentatives
+      if (retryCount > 0) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`⏱️ Attente de ${delay}ms avant la tentative ${retryCount + 1}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
 
-        console.log('📋 Résultat de la vérification:', confirmationResult);
+      // Utiliser verifyOtp avec le bon format selon le type de token
+      let confirmationResult;
+      
+      if (tokenHash) {
+        // Nouveau format avec token_hash
+        console.log('📝 Utilisation du nouveau format token_hash');
+        confirmationResult = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'email'
+        });
+      } else {
+        // Ancien format avec token simple
+        console.log('📝 Utilisation de l\'ancien format token');
+        confirmationResult = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: type === 'signup' ? 'signup' : 'email'
+        });
+      }
 
-        if (confirmationResult?.error) {
-          console.error('❌ Erreur lors de la vérification:', confirmationResult.error);
+      console.log('📋 Résultat de la vérification:', confirmationResult);
+
+      if (confirmationResult?.error) {
+        // Vérifier si c'est une erreur de réseau retryable
+        if (confirmationResult.error.message?.includes('Load failed') || 
+            confirmationResult.error.message?.includes('fetch') ||
+            confirmationResult.error.message?.includes('network')) {
           
-          // Essayer une approche alternative si la première échoue
-          if (!tokenHash && token) {
-            console.log('🔄 Tentative avec approche alternative...');
-            try {
-              const alternativeResult = await supabase.auth.verifyOtp({
-                token_hash: token,
-                type: 'signup'
-              });
-              
-              if (alternativeResult?.error) {
-                throw new Error(alternativeResult.error.message);
-              }
-              
-              console.log('✅ Confirmation réussie avec approche alternative');
-              confirmationResult = alternativeResult;
-            } catch (altError) {
-              console.error('❌ Approche alternative échouée:', altError);
-              throw new Error(confirmationResult.error.message);
-            }
+          if (retryCount < maxRetries - 1) {
+            console.log(`🔄 Erreur réseau détectée, retry ${retryCount + 1}/${maxRetries}`);
+            setRetryCount(prev => prev + 1);
+            return confirmEmailWithRetry(maxRetries);
           } else {
-            throw new Error(confirmationResult.error.message);
+            throw new Error('Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.');
           }
         }
-
-        console.log('✅ Email confirmé avec succès:', confirmationResult?.data?.user?.email);
-
-        setStatus('success');
-        setMessage('Votre email a été confirmé avec succès !');
-
-        // Rediriger après 3 secondes
-        setTimeout(() => {
-          navigate('/');
-        }, 3000);
-
-      } catch (error) {
-        console.error('❌ Erreur globale lors de la confirmation:', error);
-        setStatus('error');
-        setMessage(`Erreur lors de la confirmation: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        
+        console.error('❌ Erreur lors de la vérification:', confirmationResult.error);
+        throw new Error(confirmationResult.error.message);
       }
-    };
 
-    confirmEmail();
+      console.log('✅ Email confirmé avec succès:', confirmationResult?.data?.user?.email);
+
+      setStatus('success');
+      setMessage('Votre email a été confirmé avec succès !');
+
+      // Rediriger après 3 secondes
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+
+    } catch (error) {
+      console.error('❌ Erreur globale lors de la confirmation:', error);
+      
+      if (retryCount < maxRetries - 1) {
+        console.log(`🔄 Retry global ${retryCount + 1}/${maxRetries}`);
+        setRetryCount(prev => prev + 1);
+        return confirmEmailWithRetry(maxRetries);
+      }
+      
+      setStatus('error');
+      setMessage(`Erreur lors de la confirmation: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
+  };
+
+  useEffect(() => {
+    confirmEmailWithRetry();
   }, [searchParams, navigate]);
+
+  const handleRetry = () => {
+    setStatus('loading');
+    setRetryCount(0);
+    confirmEmailWithRetry();
+  };
 
   const handleReturnToAuth = () => {
     navigate('/auth');
@@ -127,8 +140,13 @@ const AuthConfirm = () => {
           </CardHeader>
           <CardContent>
             {status === 'loading' && (
-              <div className="text-center">
+              <div className="text-center space-y-2">
                 <p>Confirmation de votre email en cours...</p>
+                {retryCount > 0 && (
+                  <p className="text-sm text-gray-600">
+                    Tentative {retryCount + 1}/3
+                  </p>
+                )}
               </div>
             )}
             
@@ -160,13 +178,21 @@ const AuthConfirm = () => {
                     {message}
                   </AlertDescription>
                 </Alert>
-                <Button 
-                  onClick={handleReturnToAuth}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Retour à la page de connexion
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={handleRetry}
+                    className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                  >
+                    Réessayer
+                  </Button>
+                  <Button 
+                    onClick={handleReturnToAuth}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Retour à la page de connexion
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
