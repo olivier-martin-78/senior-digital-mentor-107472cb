@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -462,6 +463,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   {allowedClients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.first_name} {client.last_name}
+                      {client.inactive && " (Inactif)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -480,10 +482,34 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                     <SelectItem key={intervenant.id} value={intervenant.id}>
                       {intervenant.first_name} {intervenant.last_name}
                       {intervenant.email === user?.email && " (Vous)"}
+                      {!intervenant.active && " (Inactif)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_time">Début *</Label>
+                <Input
+                  id="start_time"
+                  type="datetime-local"
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="end_time">Fin *</Label>
+                <Input
+                  id="end_time"
+                  type="datetime-local"
+                  value={formData.end_time}
+                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             {/* Afficher l'erreur de validation si elle existe */}

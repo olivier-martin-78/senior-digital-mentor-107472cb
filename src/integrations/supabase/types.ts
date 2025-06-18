@@ -415,6 +415,7 @@ export type Database = {
           first_name: string
           hourly_rate: number | null
           id: string
+          inactive: boolean
           last_name: string
           phone: string | null
           postal_code: string | null
@@ -431,6 +432,7 @@ export type Database = {
           first_name: string
           hourly_rate?: number | null
           id?: string
+          inactive?: boolean
           last_name: string
           phone?: string | null
           postal_code?: string | null
@@ -447,6 +449,7 @@ export type Database = {
           first_name?: string
           hourly_rate?: number | null
           id?: string
+          inactive?: boolean
           last_name?: string
           phone?: string | null
           postal_code?: string | null

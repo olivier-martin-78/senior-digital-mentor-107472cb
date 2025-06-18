@@ -1,4 +1,3 @@
-
 export interface Client {
   id: string;
   first_name: string;
@@ -11,6 +10,7 @@ export interface Client {
   color?: string;
   hourly_rate?: number;
   comment?: string;
+  inactive?: boolean;
   created_at: string;
   updated_at: string;
   created_by: string;
