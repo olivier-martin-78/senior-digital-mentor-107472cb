@@ -1,49 +1,19 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase, checkConnection } from '@/integrations/supabase/client';
+import { supabase, checkAuthConnection } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle, Wifi, WifiOff } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Header from '@/components/Header';
 
 const AuthConfirm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'connectivity-check'>('connectivity-check');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [retryCount, setRetryCount] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed'>('checking');
-
-  const checkConnectivityAndConfig = async () => {
-    console.log('🔍 Vérification de la connectivité et configuration Supabase...');
-    
-    try {
-      // Vérifier la configuration du client
-      console.log('📋 Configuration Supabase:', {
-        url: 'https://cvcebcisijjmmmwuedcv.supabase.co',
-        keyPrefix: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        storageAvailable: typeof localStorage !== 'undefined'
-      });
-
-      // Test de connectivité basique
-      const isConnected = await checkConnection();
-      console.log('🌐 Test de connectivité:', isConnected);
-      
-      if (isConnected) {
-        setConnectionStatus('connected');
-        return true;
-      } else {
-        setConnectionStatus('failed');
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors du test de connectivité:', error);
-      setConnectionStatus('failed');
-      return false;
-    }
-  };
 
   const confirmEmailWithRetry = async (maxRetries = 3) => {
     try {
@@ -75,13 +45,6 @@ const AuthConfirm = () => {
         const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
         console.log(`⏱️ Attente de ${delay}ms avant la tentative ${retryCount + 1}`);
         await new Promise(resolve => setTimeout(resolve, delay));
-      }
-
-      // Test de connectivité avant la tentative
-      console.log('🔍 Test de connectivité avant confirmation...');
-      const canConnect = await checkConnection();
-      if (!canConnect) {
-        throw new Error('Impossible de se connecter à Supabase. Vérifiez votre connexion internet.');
       }
 
       // Utiliser verifyOtp avec le bon format selon le type de token
@@ -123,7 +86,7 @@ const AuthConfirm = () => {
             setRetryCount(prev => prev + 1);
             return confirmEmailWithRetry(maxRetries);
           } else {
-            throw new Error('Problème de connexion persistant. Vérifiez votre connexion internet et les paramètres Supabase.');
+            throw new Error('Problème de connexion persistant. Vérifiez votre connexion internet.');
           }
         }
         
@@ -156,17 +119,16 @@ const AuthConfirm = () => {
 
   useEffect(() => {
     const initializeConfirmation = async () => {
-      // D'abord vérifier la connectivité
-      const canConnect = await checkConnectivityAndConfig();
+      // Test de connectivité spécifique au contexte d'authentification
+      console.log('🔍 Test de connectivité pour authentification...');
+      const canConnect = await checkAuthConnection();
       
       if (!canConnect) {
-        setStatus('error');
-        setMessage('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-        return;
+        console.log('⚠️ Test de connectivité échoué, mais on continue quand même...');
+        // On continue quand même car le test peut échouer pour d'autres raisons
       }
       
-      // Si la connectivité est OK, procéder à la confirmation
-      setStatus('loading');
+      // Procéder à la confirmation directement
       await confirmEmailWithRetry();
     };
 
@@ -174,48 +136,13 @@ const AuthConfirm = () => {
   }, [searchParams, navigate]);
 
   const handleRetry = async () => {
-    setStatus('connectivity-check');
-    setConnectionStatus('checking');
+    setStatus('loading');
     setRetryCount(0);
-    
-    const canConnect = await checkConnectivityAndConfig();
-    if (canConnect) {
-      setStatus('loading');
-      await confirmEmailWithRetry();
-    } else {
-      setStatus('error');
-      setMessage('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-    }
+    await confirmEmailWithRetry();
   };
 
   const handleReturnToAuth = () => {
     navigate('/auth');
-  };
-
-  const renderConnectionStatus = () => {
-    switch (connectionStatus) {
-      case 'checking':
-        return (
-          <div className="flex items-center gap-2 text-blue-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Vérification de la connexion...</span>
-          </div>
-        );
-      case 'connected':
-        return (
-          <div className="flex items-center gap-2 text-green-600">
-            <Wifi className="h-4 w-4" />
-            <span>Connexion établie</span>
-          </div>
-        );
-      case 'failed':
-        return (
-          <div className="flex items-center gap-2 text-red-600">
-            <WifiOff className="h-4 w-4" />
-            <span>Connexion échouée</span>
-          </div>
-        );
-    }
   };
 
   return (
@@ -225,7 +152,6 @@ const AuthConfirm = () => {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl font-serif text-center flex items-center justify-center gap-2">
-              {status === 'connectivity-check' && <Loader2 className="h-6 w-6 animate-spin" />}
               {status === 'loading' && <Loader2 className="h-6 w-6 animate-spin" />}
               {status === 'success' && <CheckCircle className="h-6 w-6 text-green-500" />}
               {status === 'error' && <XCircle className="h-6 w-6 text-red-500" />}
@@ -233,13 +159,6 @@ const AuthConfirm = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {status === 'connectivity-check' && (
-              <div className="text-center space-y-4">
-                <p>Vérification de la connexion...</p>
-                {renderConnectionStatus()}
-              </div>
-            )}
-
             {status === 'loading' && (
               <div className="text-center space-y-2">
                 <p>Confirmation de votre email en cours...</p>
@@ -248,7 +167,6 @@ const AuthConfirm = () => {
                     Tentative {retryCount + 1}/3
                   </p>
                 )}
-                {renderConnectionStatus()}
               </div>
             )}
             
@@ -280,7 +198,6 @@ const AuthConfirm = () => {
                     {message}
                   </AlertDescription>
                 </Alert>
-                {renderConnectionStatus()}
                 <div className="flex flex-col gap-2">
                   <Button 
                     onClick={handleRetry}
