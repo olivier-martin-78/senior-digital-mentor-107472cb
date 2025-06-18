@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,9 +54,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     console.log('🔍 APPOINTMENT_FORM - Chargement des données autorisées...');
     console.log('🔍 APPOINTMENT_FORM - Props reçues - Clients:', clients.length, 'Intervenants:', intervenants.length);
     
-    // 1. Charger les clients créés par l'utilisateur connecté
-    let authorizedClients: Client[] = [...clients];
-    console.log('🔍 APPOINTMENT_FORM - Clients créés par l\'utilisateur:', clients.length);
+    // 1. Filtrer les clients actifs (pas d'inactive = true)
+    const activeClients = clients.filter(client => !client.inactive);
+    console.log('🔍 APPOINTMENT_FORM - Clients actifs:', activeClients.length);
 
     // 2. Charger les clients autorisés via les permissions
     const { data: clientPermissions, error: clientError } = await supabase
@@ -69,33 +68,36 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       .eq('user_id', user.id);
 
     if (!clientError && clientPermissions) {
-      const permissionClients = clientPermissions.map(p => p.clients);
+      const permissionClients = clientPermissions
+        .map(p => p.clients)
+        .filter(client => !client.inactive); // Filtrer les clients inactifs des permissions aussi
+      
       // Fusionner en évitant les doublons
       permissionClients.forEach(permClient => {
-        if (!authorizedClients.find(c => c.id === permClient.id)) {
-          authorizedClients.push(permClient);
+        if (!activeClients.find(c => c.id === permClient.id)) {
+          activeClients.push(permClient);
         }
       });
-      console.log('🔍 APPOINTMENT_FORM - Clients via permissions:', permissionClients.length);
+      console.log('🔍 APPOINTMENT_FORM - Clients via permissions (actifs):', permissionClients.length);
     }
 
-    // 3. Si un rendez-vous existe et qu'il a un client assigné, l'ajouter aussi
+    // 3. Si un rendez-vous existe et qu'il a un client assigné, l'ajouter aussi (même s'il est inactif)
     if (appointment?.client_id && appointment.client) {
-      const existingClient = authorizedClients.find(c => c.id === appointment.client_id);
+      const existingClient = activeClients.find(c => c.id === appointment.client_id);
       if (!existingClient) {
-        authorizedClients.push(appointment.client);
+        activeClients.push(appointment.client);
         console.log('🔍 APPOINTMENT_FORM - Client du rendez-vous ajouté:', appointment.client);
       }
     }
 
-    console.log('🔍 APPOINTMENT_FORM - Total clients autorisés:', authorizedClients.length);
-    setAllowedClients(authorizedClients);
+    console.log('🔍 APPOINTMENT_FORM - Total clients autorisés et actifs:', activeClients.length);
+    setAllowedClients(activeClients);
 
-    // 4. Pour les intervenants, commencer par ceux passés en props
-    let authorizedIntervenants: Intervenant[] = [...intervenants];
-    console.log('🔍 APPOINTMENT_FORM - Intervenants créés par l\'utilisateur (props):', intervenants.length);
+    // 4. Filtrer les intervenants actifs
+    const activeIntervenants = intervenants.filter(intervenant => intervenant.active);
+    console.log('🔍 APPOINTMENT_FORM - Intervenants actifs (props):', activeIntervenants.length);
 
-    // 5. Charger les intervenants autorisés via les permissions
+    // 5. Charger les intervenants autorisés via les permissions (actifs seulement)
     const { data: intervenantPermissions, error: intervenantError } = await supabase
       .from('user_intervenant_permissions')
       .select(`
@@ -105,30 +107,33 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       .eq('user_id', user.id);
 
     if (!intervenantError && intervenantPermissions) {
-      const permissionIntervenants = intervenantPermissions.map(p => p.intervenants);
+      const permissionIntervenants = intervenantPermissions
+        .map(p => p.intervenants)
+        .filter(intervenant => intervenant.active); // Filtrer les intervenants inactifs
+      
       // Fusionner en évitant les doublons
       permissionIntervenants.forEach(permIntervenant => {
-        if (!authorizedIntervenants.find(i => i.id === permIntervenant.id)) {
-          authorizedIntervenants.push(permIntervenant);
+        if (!activeIntervenants.find(i => i.id === permIntervenant.id)) {
+          activeIntervenants.push(permIntervenant);
         }
       });
-      console.log('🔍 APPOINTMENT_FORM - Intervenants via permissions:', permissionIntervenants.length);
+      console.log('🔍 APPOINTMENT_FORM - Intervenants via permissions (actifs):', permissionIntervenants.length);
     } else if (intervenantError) {
       console.error('🔍 APPOINTMENT_FORM - Erreur permissions intervenants:', intervenantError);
     }
 
-    // 6. Si un rendez-vous existe et qu'il a un intervenant assigné, l'ajouter aussi
+    // 6. Si un rendez-vous existe et qu'il a un intervenant assigné, l'ajouter aussi (même s'il est inactif)
     if (appointment?.intervenant_id && appointment.intervenant) {
-      const existingIntervenant = authorizedIntervenants.find(i => i.id === appointment.intervenant_id);
+      const existingIntervenant = activeIntervenants.find(i => i.id === appointment.intervenant_id);
       if (!existingIntervenant) {
-        authorizedIntervenants.push(appointment.intervenant);
+        activeIntervenants.push(appointment.intervenant);
         console.log('🔍 APPOINTMENT_FORM - Intervenant du rendez-vous ajouté:', appointment.intervenant);
       }
     }
 
-    console.log('🔍 APPOINTMENT_FORM - Total intervenants autorisés:', authorizedIntervenants.length);
-    console.log('🔍 APPOINTMENT_FORM - Liste des intervenants autorisés:', authorizedIntervenants.map(i => `${i.first_name} ${i.last_name} (${i.id})`));
-    setAvailableIntervenants(authorizedIntervenants);
+    console.log('🔍 APPOINTMENT_FORM - Total intervenants autorisés et actifs:', activeIntervenants.length);
+    console.log('🔍 APPOINTMENT_FORM - Liste des intervenants autorisés:', activeIntervenants.map(i => `${i.first_name} ${i.last_name} (${i.id})`));
+    setAvailableIntervenants(activeIntervenants);
   };
 
   // Nouvelle fonction de validation des dates/heures
@@ -479,29 +484,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="start_time">Heure de début *</Label>
-                <Input
-                  id="start_time"
-                  type="datetime-local"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="end_time">Heure de fin *</Label>
-                <Input
-                  id="end_time"
-                  type="datetime-local"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  required
-                />
-              </div>
             </div>
 
             {/* Afficher l'erreur de validation si elle existe */}

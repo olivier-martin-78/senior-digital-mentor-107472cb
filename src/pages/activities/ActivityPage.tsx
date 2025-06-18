@@ -18,6 +18,7 @@ import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnail
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import { Activity } from '@/hooks/useActivities';
+import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 
 const activityTitles: Record<string, string> = {
   meditation: 'Relaxation',
@@ -35,9 +36,11 @@ const ActivityPage = () => {
   const { activityType } = useParams<{ activityType: string }>();
   const { hasRole, user } = useAuth();
   const { activities, loading, refetch, canEditActivity } = useActivities(activityType || '');
+  const { subTags } = useActivitySubTags(activityType);
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [selectedSubTagFilter, setSelectedSubTagFilter] = useState<string>('');
   const [formData, setFormData] = useState({
     activity_type: activityType || '',
     title: '',
@@ -57,6 +60,7 @@ const ActivityPage = () => {
     }));
     setShowForm(false);
     setEditingActivity(null);
+    setSelectedSubTagFilter('');
   }, [activityType]);
 
   const isReader = hasRole('reader');
@@ -64,6 +68,11 @@ const ActivityPage = () => {
   // Vérifier si l'utilisateur peut utiliser la fonction de partage global
   const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
                           ['meditation', 'games', 'exercises'].includes(activityType || '');
+
+  // Filtrer les activités selon la sous-activité sélectionnée
+  const filteredActivities = selectedSubTagFilter 
+    ? activities.filter(activity => activity.sub_activity_tag_id === selectedSubTagFilter)
+    : activities;
 
   const getYouTubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -146,10 +155,12 @@ const ActivityPage = () => {
   console.log('🎯 ActivityPage - État actuel:', {
     activityType,
     activitiesCount: activities.length,
+    filteredCount: filteredActivities.length,
     loading,
     user: user?.id,
     isReader,
-    canShareGlobally
+    canShareGlobally,
+    selectedSubTagFilter
   });
 
   if (loading) {
@@ -192,6 +203,27 @@ const ActivityPage = () => {
                 </Button>
               )}
             </div>
+          </div>
+
+          {/* Filtre par sous-activité */}
+          <div className="mb-6">
+            <Label htmlFor="sub-activity-filter">Filtrer par sous-activité</Label>
+            <Select
+              value={selectedSubTagFilter || 'all'}
+              onValueChange={(value) => setSelectedSubTagFilter(value === 'all' ? '' : value)}
+            >
+              <SelectTrigger className="w-full max-w-md">
+                <SelectValue placeholder="Toutes les sous-activités" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les sous-activités</SelectItem>
+                {subTags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {editingActivity && (
@@ -303,12 +335,15 @@ const ActivityPage = () => {
             </Card>
           )}
 
-          {activities.length === 0 && !showForm ? (
+          {filteredActivities.length === 0 && !showForm ? (
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">
-                Aucune activité disponible pour le moment.
+                {selectedSubTagFilter 
+                  ? "Aucune activité trouvée pour cette sous-activité."
+                  : "Aucune activité disponible pour le moment."
+                }
               </p>
-              {!isReader && (
+              {!isReader && !selectedSubTagFilter && (
                 <Button onClick={() => setShowForm(true)}>
                   Ajouter la première activité
                 </Button>
@@ -316,7 +351,7 @@ const ActivityPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activities.map((activity) => {
+              {filteredActivities.map((activity) => {
                 const isYouTube = isYouTubeUrl(activity.link);
                 const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
 
