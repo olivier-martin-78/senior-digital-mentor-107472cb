@@ -22,8 +22,8 @@ const AuthConfirm = () => {
     try {
       // Vérifier la configuration du client
       console.log('📋 Configuration Supabase:', {
-        url: supabase.supabaseUrl,
-        key: supabase.supabaseKey?.substring(0, 20) + '...',
+        url: 'https://cvcebcisijjmmmwuedcv.supabase.co',
+        keyPrefix: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         storageAvailable: typeof localStorage !== 'undefined'
       });
 
