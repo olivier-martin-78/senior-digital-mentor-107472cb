@@ -17,79 +17,89 @@ const AuthConfirm = () => {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        // Récupérer TOUS les paramètres de l'URL
-        const urlParams = Object.fromEntries(searchParams.entries());
-        console.log('TOUS les paramètres URL reçus:', urlParams);
+        console.log('🔍 Début de la confirmation d\'email');
         console.log('URL complète:', window.location.href);
+        console.log('Paramètres URL:', Object.fromEntries(searchParams.entries()));
 
         // Récupérer tous les paramètres possibles
         const token = searchParams.get('token');
         const tokenHash = searchParams.get('token_hash');
         const type = searchParams.get('type');
-        const redirectTo = searchParams.get('redirect_to');
 
-        console.log('Paramètres individuels:', { 
-          token, 
-          tokenHash, 
-          type, 
-          redirectTo
-        });
+        console.log('Paramètres extraits:', { token, tokenHash, type });
 
         // Vérifier si nous avons un token (soit token soit token_hash)
-        const confirmationToken = token || tokenHash;
+        const confirmationToken = tokenHash || token;
         
         if (!confirmationToken) {
-          console.error('AUCUN TOKEN TROUVÉ !');
-          console.error('URL actuelle:', window.location.href);
-          console.error('SearchParams:', Array.from(searchParams.entries()));
+          console.error('❌ Aucun token de confirmation trouvé');
           setStatus('error');
-          setMessage(`Token de confirmation manquant. URL reçue: ${window.location.href}`);
+          setMessage('Token de confirmation manquant dans l\'URL');
           return;
         }
 
-        console.log('Token trouvé:', confirmationToken);
-        console.log('Type de token:', tokenHash ? 'token_hash' : 'token');
+        console.log('✅ Token de confirmation trouvé:', confirmationToken.substring(0, 10) + '...');
 
-        // Essayer la vérification avec le token approprié
+        // Utiliser verifyOtp avec le bon format selon le type de token
         let confirmationResult;
         
         if (tokenHash) {
-          console.log('Utilisation de verifyOtp avec token_hash:', tokenHash);
+          // Nouveau format avec token_hash
+          console.log('📝 Utilisation du nouveau format token_hash');
           confirmationResult = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: 'email'
           });
-        } else if (token) {
-          console.log('Utilisation de verifyOtp avec token:', token);
+        } else {
+          // Ancien format avec token simple
+          console.log('📝 Utilisation de l\'ancien format token');
           confirmationResult = await supabase.auth.verifyOtp({
             token_hash: token,
             type: 'email'
           });
         }
 
-        console.log('Résultat de la confirmation:', confirmationResult);
+        console.log('📋 Résultat de la vérification:', confirmationResult);
 
         if (confirmationResult?.error) {
-          console.error('Erreur de confirmation:', confirmationResult.error);
-          throw new Error(confirmationResult.error.message);
+          console.error('❌ Erreur lors de la vérification:', confirmationResult.error);
+          
+          // Essayer une approche alternative si la première échoue
+          if (!tokenHash && token) {
+            console.log('🔄 Tentative avec approche alternative...');
+            try {
+              const alternativeResult = await supabase.auth.verifyOtp({
+                token_hash: token,
+                type: 'signup'
+              });
+              
+              if (alternativeResult?.error) {
+                throw new Error(alternativeResult.error.message);
+              }
+              
+              console.log('✅ Confirmation réussie avec approche alternative');
+              confirmationResult = alternativeResult;
+            } catch (altError) {
+              console.error('❌ Approche alternative échouée:', altError);
+              throw new Error(confirmationResult.error.message);
+            }
+          } else {
+            throw new Error(confirmationResult.error.message);
+          }
         }
 
-        console.log('Confirmation réussie:', confirmationResult?.data);
+        console.log('✅ Email confirmé avec succès:', confirmationResult?.data?.user?.email);
 
         setStatus('success');
         setMessage('Votre email a été confirmé avec succès !');
 
         // Rediriger après 3 secondes
         setTimeout(() => {
-          if (redirectTo) {
-            window.location.href = redirectTo;
-          } else {
-            navigate('/');
-          }
+          navigate('/');
         }, 3000);
 
       } catch (error) {
-        console.error('Erreur lors de la confirmation:', error);
+        console.error('❌ Erreur globale lors de la confirmation:', error);
         setStatus('error');
         setMessage(`Erreur lors de la confirmation: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
       }
@@ -134,10 +144,10 @@ const AuthConfirm = () => {
                   Vous allez être redirigé automatiquement dans quelques secondes...
                 </p>
                 <Button 
-                  onClick={handleReturnToAuth}
+                  onClick={() => navigate('/')}
                   className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
                 >
-                  Aller à la page de connexion
+                  Aller à l'application
                 </Button>
               </div>
             )}
