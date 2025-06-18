@@ -47,24 +47,31 @@ const AuthConfirm = () => {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
-      // Utiliser verifyOtp avec le bon format selon le type de token
+      // Utiliser verifyOtp avec les bons paramètres
       let confirmationResult;
       
       console.log('📝 Tentative de confirmation avec verifyOtp...');
       
       if (tokenHash) {
-        // Nouveau format avec token_hash
+        // Nouveau format avec token_hash - généralement pour la confirmation d'email
         console.log('📝 Utilisation du nouveau format token_hash');
         confirmationResult = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
           type: 'email'
         });
-      } else {
-        // Ancien format avec token simple
-        console.log('📝 Utilisation de l\'ancien format token');
+      } else if (type === 'signup') {
+        // Format signup - utiliser le token directement
+        console.log('📝 Utilisation du format signup');
         confirmationResult = await supabase.auth.verifyOtp({
           token_hash: token,
-          type: type === 'signup' ? 'signup' : 'email'
+          type: 'signup'
+        });
+      } else {
+        // Format par défaut pour email
+        console.log('📝 Utilisation du format email par défaut');
+        confirmationResult = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'email'
         });
       }
 
@@ -73,23 +80,20 @@ const AuthConfirm = () => {
       if (confirmationResult?.error) {
         console.error('❌ Erreur lors de la vérification:', confirmationResult.error);
         
-        // Analyser le type d'erreur
+        // Analyser le type d'erreur - ne retry que pour les vraies erreurs réseau
         const errorMessage = confirmationResult.error.message || '';
         
-        if (errorMessage.includes('Load failed') || 
-            errorMessage.includes('fetch') ||
-            errorMessage.includes('network') ||
-            errorMessage.includes('Failed to fetch')) {
+        if ((errorMessage.includes('Load failed') || 
+             errorMessage.includes('fetch') ||
+             errorMessage.includes('network')) && 
+            retryCount < maxRetries - 1) {
           
-          if (retryCount < maxRetries - 1) {
-            console.log(`🔄 Erreur réseau détectée, retry ${retryCount + 1}/${maxRetries}`);
-            setRetryCount(prev => prev + 1);
-            return confirmEmailWithRetry(maxRetries);
-          } else {
-            throw new Error('Problème de connexion persistant. Vérifiez votre connexion internet.');
-          }
+          console.log(`🔄 Erreur réseau détectée, retry ${retryCount + 1}/${maxRetries}`);
+          setRetryCount(prev => prev + 1);
+          return confirmEmailWithRetry(maxRetries);
         }
         
+        // Pour les autres erreurs, ne pas retry
         throw new Error(confirmationResult.error.message);
       }
 
@@ -106,7 +110,10 @@ const AuthConfirm = () => {
     } catch (error) {
       console.error('❌ Erreur globale lors de la confirmation:', error);
       
-      if (retryCount < maxRetries - 1) {
+      // Ne retry que pour les vraies erreurs réseau
+      if (error instanceof Error && 
+          error.message.includes('Load failed') && 
+          retryCount < maxRetries - 1) {
         console.log(`🔄 Retry global ${retryCount + 1}/${maxRetries}`);
         setRetryCount(prev => prev + 1);
         return confirmEmailWithRetry(maxRetries);
@@ -119,13 +126,12 @@ const AuthConfirm = () => {
 
   useEffect(() => {
     const initializeConfirmation = async () => {
-      // Test de connectivité spécifique au contexte d'authentification
+      // Test de connectivité optionnel
       console.log('🔍 Test de connectivité pour authentification...');
       const canConnect = await checkAuthConnection();
       
       if (!canConnect) {
         console.log('⚠️ Test de connectivité échoué, mais on continue quand même...');
-        // On continue quand même car le test peut échouer pour d'autres raisons
       }
       
       // Procéder à la confirmation directement
