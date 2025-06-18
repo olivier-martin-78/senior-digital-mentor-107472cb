@@ -99,10 +99,11 @@ const DiaryNew = () => {
         console.log("Média téléchargé avec succès:", media_url);
       }
 
-      // Format the entry data
+      // Format the entry data - utiliser toISOString().split('T')[0] pour obtenir la date locale
+      const localDate = new Date(data.entry_date.getTime() - data.entry_date.getTimezoneOffset() * 60000);
       const entryData = {
         user_id: user.id,
-        entry_date: data.entry_date.toISOString().split('T')[0],
+        entry_date: localDate.toISOString().split('T')[0],
         title: data.title,
         activities: data.activities || null,
         mood_rating: data.mood_rating,

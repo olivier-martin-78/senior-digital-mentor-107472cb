@@ -73,7 +73,10 @@ export const useActivities = (activityType: string) => {
   }, [activityType, user]);
 
   const canEditActivity = (activity: Activity) => {
-    return user && (hasRole('admin') || activity.created_by === user.id);
+    if (!user) return false;
+    
+    // L'utilisateur peut éditer ses propres activités ou si c'est un admin
+    return hasRole('admin') || activity.created_by === user.id;
   };
 
   return { activities, loading, refetch: fetchActivities, canEditActivity };

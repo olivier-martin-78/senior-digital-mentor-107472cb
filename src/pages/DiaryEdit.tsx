@@ -105,9 +105,12 @@ const DiaryEdit = () => {
           
           setEntry(entryData);
           
+          // Créer la date en ajoutant l'heure pour éviter les problèmes de fuseau horaire
+          const entryDate = entryData.entry_date ? new Date(entryData.entry_date + 'T12:00:00') : new Date();
+          
           // Set form values
           form.reset({
-            entry_date: entryData.entry_date ? parseISO(entryData.entry_date) : new Date(),
+            entry_date: entryDate,
             title: entryData.title || '',
             activities: entryData.activities || '',
             mood_rating: entryData.mood_rating || null,
@@ -201,9 +204,10 @@ const DiaryEdit = () => {
         media_type = mediaFile.type;
       }
       
-      // Format the entry data
+      // Format the entry data - utiliser toISOString().split('T')[0] pour obtenir la date locale
+      const localDate = new Date(data.entry_date.getTime() - data.entry_date.getTimezoneOffset() * 60000);
       const entryData = {
-        entry_date: data.entry_date.toISOString().split('T')[0],
+        entry_date: localDate.toISOString().split('T')[0],
         title: data.title,
         activities: data.activities || null,
         mood_rating: data.mood_rating,

@@ -17,7 +17,8 @@ const EntryHeader: React.FC<EntryHeaderProps> = ({
   moodRating,
   isLocked = false 
 }) => {
-  const formattedDate = format(parseISO(date), 'EEEE d MMMM yyyy', { locale: fr });
+  // Créer la date en ajoutant explicitement l'heure pour éviter les problèmes de fuseau horaire
+  const formattedDate = format(new Date(date + 'T12:00:00'), 'EEEE d MMMM yyyy', { locale: fr });
 
   return (
     <header className="mb-8">
