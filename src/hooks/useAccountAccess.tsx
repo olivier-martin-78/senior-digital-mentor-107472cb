@@ -52,9 +52,24 @@ export const useAccountAccess = () => {
         throw profileError;
       }
 
+      // Normaliser le statut du compte avec une valeur par défaut
+      const normalizeAccountStatus = (status: string | null): 'active' | 'trial' | 'expired' | 'restricted' => {
+        if (!status) return 'restricted';
+        
+        switch (status) {
+          case 'active':
+          case 'trial':
+          case 'expired':
+          case 'restricted':
+            return status;
+          default:
+            return 'restricted';
+        }
+      };
+
       setAccountStatus({
         hasAccess: hasAccess || false,
-        accountStatus: userProfile?.account_status || 'restricted',
+        accountStatus: normalizeAccountStatus(userProfile?.account_status),
         freeTrialEnd: userProfile?.free_trial_end,
         isLoading: false,
       });
