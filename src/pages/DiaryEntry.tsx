@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +36,7 @@ const DiaryEntryPage = () => {
           .from('diary_entries')
           .select(`
             *,
-            profiles:profiles!diary_entries_user_id_fkey(display_name, email)
+            profiles!diary_entries_user_id_fkey(display_name, email)
           `)
           .eq('id', id)
           .single();
