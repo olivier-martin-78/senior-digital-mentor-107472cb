@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -175,25 +176,25 @@ const InterventionReportView = () => {
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Rapport d'intervention
           </CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/scheduler')}>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
+              <span className="sm:inline">Retour</span>
             </Button>
-            <Button onClick={handleEdit}>
+            <Button onClick={handleEdit} className="w-full sm:w-auto">
               <Edit className="h-4 w-4 mr-2" />
-              Modifier
+              <span className="sm:inline">Modifier</span>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">
+                <Button variant="destructive" className="w-full sm:w-auto">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
+                  <span className="sm:inline">Supprimer</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
