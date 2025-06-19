@@ -19,12 +19,11 @@ export const useBlogData = (
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   
-  const { posts, loading: postsLoading, refetch: refetchPosts } = useBlogPosts(
+  const { posts, loading: postsLoading } = useBlogPosts(
     searchTerm, 
     albumId, 
     startDate, 
-    endDate, 
-    categoryId
+    endDate
   );
   const { albums, loading: albumsLoading } = useBlogAlbums();
 
@@ -67,8 +66,10 @@ export const useBlogData = (
   }, [user]);
 
   const refetch = () => {
-    refetchPosts();
+    // Pour le refetch des posts, on va forcer un re-render en mettant à jour une clé
+    // Ceci est une solution temporaire - idéalement useBlogPosts devrait exposer refetch
     fetchCategories();
+    window.location.reload(); // Solution simple pour forcer le rechargement
   };
 
   return {
