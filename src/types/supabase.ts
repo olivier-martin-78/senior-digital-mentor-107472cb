@@ -712,8 +712,8 @@ export interface BlogPost {
 export interface BlogCategory {
   id: string;
   name: string;
-  created_at: string;
   created_by: string;
+  created_at: string;
 }
 
 export interface BlogMedia {

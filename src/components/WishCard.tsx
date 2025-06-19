@@ -48,37 +48,22 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
       <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full ${
         isDraft ? 'bg-orange-50 border-orange-200 border-2' : ''
       }`}>
-        {/* Image de couverture */}
-        <div className="relative">
-          <AspectRatio ratio={16 / 9}>
-            <img
-              src={thumbnailUrl}
-              alt={`Couverture de ${wish.title}`}
-              className="w-full h-full object-cover rounded-t-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg';
-              }}
-            />
-          </AspectRatio>
+        <CardHeader className="pb-3">
+          {/* Informations d'auteur et date en haut */}
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+            <span className="font-medium">{authorName}</span>
+            <span>{createdDate}</span>
+          </div>
+
+          {/* Statut brouillon si applicable */}
           {isDraft && (
-            <div className="absolute top-2 right-2">
+            <div className="mb-3">
               <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
                 📝 Brouillon
               </Badge>
             </div>
           )}
-        </div>
 
-        {/* Informations d'auteur et date sous la vignette */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span className="font-medium">{authorName}</span>
-            <span>{createdDate}</span>
-          </div>
-        </div>
-
-        <CardHeader className="pb-3 pt-0">
           <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
             {wish.title}
           </CardTitle>
@@ -88,6 +73,22 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
             {wish.location && <span>• {wish.location}</span>}
           </div>
         </CardHeader>
+
+        {/* Image de couverture */}
+        <div className="px-4 mb-4">
+          <AspectRatio ratio={16 / 9}>
+            <img
+              src={thumbnailUrl}
+              alt={`Couverture de ${wish.title}`}
+              className="w-full h-full object-cover rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
+            />
+          </AspectRatio>
+        </div>
+
         <CardContent className="pt-0">
           <p className="text-gray-600 text-sm line-clamp-3 mb-3">
             {wish.content}

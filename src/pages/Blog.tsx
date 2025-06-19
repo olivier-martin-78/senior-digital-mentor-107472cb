@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
 import BlogFilters from '@/components/blog/BlogFilters';
+import BlogCategorySelector from '@/components/blog/BlogCategorySelector';
 import { useBlogData } from '@/hooks/useBlogData';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
@@ -17,6 +18,7 @@ const Blog = () => {
   const { 
     posts, 
     albums, 
+    categories,
     loading, 
     hasCreatePermission,
     refetch 
@@ -24,6 +26,7 @@ const Blog = () => {
 
   console.log('🎯 Blog.tsx - RENDU PAGE BLOG:', {
     albumsCount: albums.length,
+    categoriesCount: categories.length,
     postsCount: posts.length,
     hasCreatePermission,
     loading,
@@ -51,6 +54,10 @@ const Blog = () => {
     refetch();
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    toggleCategorySelection(categoryId);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -61,16 +68,24 @@ const Blog = () => {
           onAlbumCreated={handleAlbumCreated}
         />
         
-        <BlogFilters 
-          searchQuery={searchTerm}
-          setSearchQuery={setSearchTerm}
-          selectedAlbum={selectedAlbum}
-          setSelectedAlbum={setSelectedAlbum}
-          selectedCategories={selectedCategories}
-          toggleCategorySelection={toggleCategorySelection}
-          albums={albums}
-          categories={[]}
-        />
+        <div className="mb-6 space-y-4">
+          <BlogFilters 
+            searchQuery={searchTerm}
+            setSearchQuery={setSearchTerm}
+            selectedAlbum={selectedAlbum}
+            setSelectedAlbum={setSelectedAlbum}
+            selectedCategories={selectedCategories}
+            toggleCategorySelection={toggleCategorySelection}
+            albums={albums}
+            categories={categories}
+          />
+          
+          <BlogCategorySelector
+            categories={categories}
+            selectedCategories={selectedCategories}
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
         
         <DateRangeFilter
           startDate={startDate}
