@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -206,7 +207,7 @@ const MyInvitationGroups = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -216,7 +217,7 @@ const MyInvitationGroups = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
