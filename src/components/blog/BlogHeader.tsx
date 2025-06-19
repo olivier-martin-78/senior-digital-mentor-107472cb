@@ -6,7 +6,7 @@ import { BlogAlbum } from '@/types/supabase';
 import { Plus } from 'lucide-react';
 import AlbumCreator from './AlbumCreator';
 import InviteUserDialog from '@/components/InviteUserDialog';
-import { useAuth } from '@/contexts/AuthContext';
+import { useGroupPermissions } from '@/hooks/useGroupPermissions';
 
 interface BlogHeaderProps {
   albums: BlogAlbum[];
@@ -15,13 +15,13 @@ interface BlogHeaderProps {
 }
 
 const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, onAlbumCreated }) => {
-  const { hasRole } = useAuth();
-  const isReader = hasRole('reader');
+  const { isInvitedUser } = useGroupPermissions();
 
   console.log('🎯 BlogHeader - Rendu avec albums:', {
     albumsCount: albums.length,
     albumNames: albums.map(a => a.name),
     hasCreatePermission,
+    isInvitedUser,
     albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
   });
 
@@ -46,7 +46,7 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, on
           </>
         )}
         
-        {!isReader && <InviteUserDialog />}
+        {!isInvitedUser && <InviteUserDialog />}
       </div>
     </div>
   );

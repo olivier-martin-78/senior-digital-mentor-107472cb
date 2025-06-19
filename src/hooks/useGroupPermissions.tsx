@@ -7,10 +7,12 @@ export const useGroupPermissions = () => {
   const { user, getEffectiveUserId } = useAuth();
   const [authorizedUserIds, setAuthorizedUserIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInvitedUser, setIsInvitedUser] = useState(false);
 
   const fetchAuthorizedUsers = useCallback(async () => {
     if (!user) {
       setAuthorizedUserIds([]);
+      setIsInvitedUser(false);
       setLoading(false);
       return;
     }
@@ -24,7 +26,7 @@ export const useGroupPermissions = () => {
       // Initialiser avec l'utilisateur courant
       let authorizedUsers = [effectiveUserId];
 
-      // 1. Récupérer TOUS les groupes où l'utilisateur est membre OU créateur
+      // Vérifier si l'utilisateur est un invité (membre d'un groupe avec rôle 'guest')
       const { data: userGroupMemberships, error: userGroupsError } = await supabase
         .from('group_members')
         .select(`
@@ -41,6 +43,10 @@ export const useGroupPermissions = () => {
       if (userGroupsError) {
         console.error('❌ useGroupPermissions - Erreur récupération groupes comme membre:', userGroupsError);
       }
+
+      // Déterminer si l'utilisateur est invité (a le rôle 'guest' dans au moins un groupe)
+      const isGuest = userGroupMemberships?.some(membership => membership.role === 'guest') || false;
+      setIsInvitedUser(isGuest);
 
       // 2. Récupérer AUSSI les groupes créés par l'utilisateur
       const { data: createdGroups, error: createdGroupsError } = await supabase
@@ -127,13 +133,15 @@ export const useGroupPermissions = () => {
       console.log('🎯 useGroupPermissions - FINAL (BIDIRECTIONNEL):', {
         count: authorizedUsers.length,
         userIds: authorizedUsers,
-        currentUser: effectiveUserId
+        currentUser: effectiveUserId,
+        isInvitedUser: isGuest
       });
 
       setAuthorizedUserIds(authorizedUsers);
     } catch (error) {
       console.error('💥 useGroupPermissions - Erreur critique:', error);
       setAuthorizedUserIds([getEffectiveUserId()]);
+      setIsInvitedUser(false);
     } finally {
       setLoading(false);
     }
@@ -143,5 +151,5 @@ export const useGroupPermissions = () => {
     fetchAuthorizedUsers();
   }, [fetchAuthorizedUsers]);
 
-  return { authorizedUserIds, loading, refetch: fetchAuthorizedUsers };
+  return { authorizedUserIds, loading, isInvitedUser, refetch: fetchAuthorizedUsers };
 };

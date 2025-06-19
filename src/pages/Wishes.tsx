@@ -12,10 +12,12 @@ import { useWishPosts } from '@/hooks/wish/useWishPosts';
 import WishAlbumSelector from '@/components/WishAlbumSelector';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import InviteUserDialog from '@/components/InviteUserDialog';
+import { useGroupPermissions } from '@/hooks/useGroupPermissions';
 
 const Wishes = () => {
-  const { session, hasRole } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
+  const { isInvitedUser } = useGroupPermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
@@ -23,12 +25,9 @@ const Wishes = () => {
   
   const { albums, loading: albumsLoading } = useWishAlbums();
   const { posts, loading: postsLoading } = useWishPosts(searchTerm, selectedAlbum || '', startDate, endDate);
-  
-  const isReader = hasRole('reader');
 
-  console.log('📖 Wishes - Vérification rôle reader:', {
-    isReader,
-    hasReaderRole: hasRole('reader')
+  console.log('📖 Wishes - Vérification utilisateur invité:', {
+    isInvitedUser
   });
 
   if (!session) {
@@ -54,29 +53,18 @@ const Wishes = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Souhaits</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            {!isReader && (
-              <>
-                <div className="w-full sm:w-auto">
-                  <InviteUserDialog />
-                </div>
-                <Button 
-                  onClick={() => navigate('/wishes/new')}
-                  className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouveau souhait
-                </Button>
-              </>
+            {!isInvitedUser && (
+              <div className="w-full sm:w-auto">
+                <InviteUserDialog />
+              </div>
             )}
-            {isReader && (
-              <Button 
-                onClick={() => navigate('/wishes/new')}
-                className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nouveau souhait
-              </Button>
-            )}
+            <Button 
+              onClick={() => navigate('/wishes/new')}
+              className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouveau souhait
+            </Button>
           </div>
         </div>
 
@@ -137,7 +125,7 @@ const Wishes = () => {
                 ? 'Aucun souhait ne correspond à vos critères de recherche.'
                 : 'Commencez par créer votre premier souhait.'}
             </p>
-            {!isReader && !searchTerm && !selectedAlbum && !startDate && !endDate && (
+            {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && (
               <Button 
                 onClick={() => navigate('/wishes/new')}
                 className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90"

@@ -9,11 +9,13 @@ import InviteUserDialog from '@/components/InviteUserDialog';
 import { Button } from '@/components/ui/button';
 import { useDiaryEntries } from '@/hooks/diary/useDiaryEntries';
 import { useDiaryFilters } from '@/hooks/diary/useDiaryFilters';
+import { useGroupPermissions } from '@/hooks/useGroupPermissions';
 import { Plus } from 'lucide-react';
 
 const Diary = () => {
-  const { session, hasRole } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
+  const { isInvitedUser } = useGroupPermissions();
   
   const {
     searchTerm,
@@ -27,12 +29,9 @@ const Diary = () => {
 
   // Utiliser le hook exactement comme dans les autres sections
   const { entries, loading } = useDiaryEntries(searchTerm, startDate, endDate);
-  
-  const isReader = hasRole('reader');
 
-  console.log('📖 Diary - Vérification rôle reader:', {
-    isReader,
-    hasReaderRole: hasRole('reader')
+  console.log('📖 Diary - Vérification utilisateur invité:', {
+    isInvitedUser
   });
 
   if (!session) {
@@ -56,29 +55,18 @@ const Diary = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Mon Journal</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            {!isReader && (
-              <>
-                <div className="w-full sm:w-auto">
-                  <InviteUserDialog />
-                </div>
-                <Button 
-                  onClick={() => navigate('/diary/new')}
-                  className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle entrée
-                </Button>
-              </>
+            {!isInvitedUser && (
+              <div className="w-full sm:w-auto">
+                <InviteUserDialog />
+              </div>
             )}
-            {isReader && (
-              <Button 
-                onClick={() => navigate('/diary/new')}
-                className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle entrée
-              </Button>
-            )}
+            <Button 
+              onClick={() => navigate('/diary/new')}
+              className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle entrée
+            </Button>
           </div>
         </div>
         

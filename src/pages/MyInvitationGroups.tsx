@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +11,7 @@ import { toast } from '@/components/ui/sonner';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import GroupInvitationManagement from '@/components/GroupInvitationManagement';
 import { GroupInvitation } from '@/types/supabase';
+import { useGroupPermissions } from '@/hooks/useGroupPermissions';
 
 interface InvitationGroup {
   id: string;
@@ -32,28 +32,27 @@ interface GroupMember {
 }
 
 const MyInvitationGroups = () => {
-  const { user, session, hasRole } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
+  const { isInvitedUser } = useGroupPermissions();
   const [groups, setGroups] = useState<InvitationGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<InvitationGroup | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [groupInvitations, setGroupInvitations] = useState<GroupInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isReader = hasRole('reader');
-
   useEffect(() => {
     if (!session) {
       navigate('/');
       return;
     }
-    // Maintenant, les readers sont redirigés mais tous les autres utilisateurs peuvent accéder
-    if (isReader) {
+    // Maintenant, les utilisateurs invités sont redirigés mais tous les autres utilisateurs peuvent accéder
+    if (isInvitedUser) {
       navigate('/');
       return;
     }
     loadMyGroups();
-  }, [session, isReader, navigate, user]);
+  }, [session, isInvitedUser, navigate, user]);
 
   const loadMyGroups = async () => {
     try {
@@ -232,8 +231,8 @@ const MyInvitationGroups = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              {/* Afficher le bouton d'invitation seulement s'il n'y a pas encore de groupe et que l'utilisateur n'est pas reader */}
-              {groups.length === 0 && !isReader && <InviteUserDialog />}
+              {/* Afficher le bouton d'invitation seulement s'il n'y a pas encore de groupe et que l'utilisateur n'est pas invité */}
+              {groups.length === 0 && !isInvitedUser && <InviteUserDialog />}
             </div>
           </div>
         </div>
@@ -278,7 +277,7 @@ const MyInvitationGroups = () => {
                 <p className="text-gray-500 mb-4">
                   Commencez par inviter des personnes à voir votre contenu.
                 </p>
-                {!isReader && <InviteUserDialog />}
+                {!isInvitedUser && <InviteUserDialog />}
               </CardContent>
             </Card>
           )}
