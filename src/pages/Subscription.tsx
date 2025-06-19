@@ -199,7 +199,7 @@ const Subscription = () => {
                   </span>
                 </div>
                 {plan.trial_period_days > 0 && (
-                  <Badge variant="outline" className="mt-2">
+                  <Badge variant="outline" className="mt-2 bg-yellow-400 border-yellow-400 text-black">
                     {plan.trial_period_days} jours d'essai gratuit
                   </Badge>
                 )}
