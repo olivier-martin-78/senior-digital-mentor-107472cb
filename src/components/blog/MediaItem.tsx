@@ -27,7 +27,7 @@ const MediaItem: React.FC<MediaItemProps> = ({
   // Tenter la conversion si nécessaire
   useEffect(() => {
     if (shouldAttemptConversion && imageUrl !== '/placeholder.svg' && !hasTriedConversion) {
-      console.log('🎯 Tentative de conversion pour:', item.id);
+      console.log('🎯 Tentative de conversion serveur pour:', item.id);
       setHasTriedConversion(true);
       onConvert(imageUrl, item.id);
     }
@@ -47,7 +47,7 @@ const MediaItem: React.FC<MediaItemProps> = ({
                   <span className="text-2xl">📱</span>
                 </div>
                 <p className="text-sm font-medium">Format HEIC non supporté</p>
-                <p className="text-xs mb-3">Impossible de convertir ce fichier</p>
+                <p className="text-xs mb-3">Échec de la conversion serveur</p>
               </div>
               <div className="space-y-2">
                 <button 
@@ -71,8 +71,8 @@ const MediaItem: React.FC<MediaItemProps> = ({
             <div className="text-center text-gray-500">
               <div className="animate-spin h-10 w-10 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-3"></div>
               <p className="text-sm font-medium">Conversion en cours...</p>
-              <p className="text-xs">Adaptation du format HEIC</p>
-              <p className="text-xs text-gray-400 mt-1">Cela peut prendre jusqu'à 30 secondes</p>
+              <p className="text-xs">Traitement serveur du format HEIC</p>
+              <p className="text-xs text-gray-400 mt-1">Conversion plus rapide et fiable</p>
             </div>
           </div>
         ) : (
