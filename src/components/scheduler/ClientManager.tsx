@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { Client } from '@/types/appointments';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientForm from './ClientForm';
+import CaregiverManager from './CaregiverManager';
 
 interface ClientManagerProps {
   clients: Client[];
@@ -18,6 +19,7 @@ interface ClientManagerProps {
 const ClientManager: React.FC<ClientManagerProps> = ({ clients, onClientUpdate }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleEdit = (client: Client) => {
@@ -81,6 +83,10 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, onClientUpdate }
     setShowForm(false);
     setEditingClient(null);
     onClientUpdate();
+  };
+
+  const toggleClientExpansion = (clientId: string) => {
+    setExpandedClient(expandedClient === clientId ? null : clientId);
   };
 
   return (
@@ -147,6 +153,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, onClientUpdate }
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => toggleClientExpansion(client.id)}
+                    >
+                      <Users className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleEdit(client)}
                     >
                       <Edit className="h-4 w-4" />
@@ -162,6 +176,12 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, onClientUpdate }
                     </Button>
                   </div>
                 </div>
+                
+                {expandedClient === client.id && (
+                  <div className="mt-4 border-t pt-4">
+                    <CaregiverManager clientId={client.id} />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
