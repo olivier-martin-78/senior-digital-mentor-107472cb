@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, hasRole } = useAuth();
+  const { user, signOut, hasRole, profile } = useAuth();
   const { subscription } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +27,22 @@ const Header = () => {
   };
 
   const isReader = hasRole('reader');
+
+  // Helper function to get user initials
+  const getUserInitials = () => {
+    if (profile?.display_name) {
+      return profile.display_name
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
@@ -255,9 +272,15 @@ const Header = () => {
 
                 <div className="flex items-center space-x-2">
                   <Link to="/profile">
-                    <Button variant="ghost" size="sm" className="p-2">
-                      <User className="h-4 w-4" />
-                    </Button>
+                    <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-tranches-dustyblue transition-all">
+                      <AvatarImage 
+                        src={profile?.avatar_url} 
+                        alt={profile?.display_name || user?.email || 'User'} 
+                      />
+                      <AvatarFallback className="bg-tranches-dustyblue text-white text-sm">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Link>
                   <Button onClick={handleSignOut} variant="outline" size="sm">
                     Déconnexion
@@ -291,9 +314,15 @@ const Header = () => {
           <div className="md:hidden flex items-center space-x-2">
             {user && (
               <Link to="/profile">
-                <Button variant="ghost" size="sm" className="p-2">
-                  <User className="h-4 w-4" />
-                </Button>
+                <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-tranches-dustyblue transition-all">
+                  <AvatarImage 
+                    src={profile?.avatar_url} 
+                    alt={profile?.display_name || user?.email || 'User'} 
+                  />
+                  <AvatarFallback className="bg-tranches-dustyblue text-white text-sm">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
               </Link>
             )}
             <Button
