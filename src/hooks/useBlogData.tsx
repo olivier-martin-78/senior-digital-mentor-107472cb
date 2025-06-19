@@ -28,7 +28,8 @@ export const useBlogData = (
   );
   const { albums, loading: albumsLoading } = useBlogAlbums();
 
-  const hasCreatePermission = user && (hasRole('admin') || hasRole('editor'));
+  // Corriger la logique pour inclure le rôle "professionnel"
+  const hasCreatePermission = user && (hasRole('admin') || hasRole('editor') || hasRole('professionnel'));
 
   // Récupérer les catégories
   const fetchCategories = async () => {
