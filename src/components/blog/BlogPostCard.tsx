@@ -36,13 +36,15 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages })
 
   return (
     <Card className={`overflow-hidden flex flex-col h-full ${!post.published ? 'border-orange-300 bg-orange-50' : ''}`}>
-      <div className="relative w-full h-48 bg-gray-100 flex-shrink-0">
+      <div className="relative w-full h-48 bg-gray-100 flex-shrink-0 overflow-hidden">
         {post.album_id ? (
-          <AlbumThumbnail 
-            album={postAlbum || null}
-            title={post.title}
-            coverImage={post.cover_image}
-          />
+          <div className="w-full h-full">
+            <AlbumThumbnail 
+              album={postAlbum || null}
+              title={post.title}
+              coverImage={post.cover_image}
+            />
+          </div>
         ) : (
           <img 
             src={postImages[post.id] || '/placeholder.svg'} 
