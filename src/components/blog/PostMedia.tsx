@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
@@ -18,6 +17,8 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
   const [normalizedUrls, setNormalizedUrls] = useState<Record<string, string>>({});
   const [heicConvertedUrls, setHeicConvertedUrls] = useState<Record<string, string>>({});
   const [heicConversions, setHeicConversions] = useState<Set<string>>(new Set());
+  const [heicConversionAttempts, setHeicConversionAttempts] = useState<Set<string>>(new Set());
+  const [heicConversionFailures, setHeicConversionFailures] = useState<Set<string>>(new Set());
 
   // Normaliser les URLs au chargement
   React.useEffect(() => {
@@ -63,21 +64,44 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
 
   if (media.length === 0) return null;
 
-  // Fonction pour convertir HEIC en JPEG
+  // Fonction pour convertir HEIC en JPEG avec protection contre les boucles
   const convertHeicToJpeg = async (imageUrl: string, mediaId: string): Promise<string> => {
     try {
       console.log('📸 PostMedia - Tentative conversion HEIC pour:', mediaId);
       
+      // Vérifier si une conversion est déjà en cours ou a déjà échoué
       if (heicConversions.has(mediaId)) {
         console.log('📸 PostMedia - Conversion déjà en cours pour:', mediaId);
         return imageUrl;
       }
 
-      setHeicConversions(prev => new Set([...prev, mediaId]));
+      if (heicConversionFailures.has(mediaId)) {
+        console.log('📸 PostMedia - Conversion déjà échouée pour:', mediaId);
+        return '/placeholder.svg';
+      }
 
-      // Télécharger l'image
-      const response = await fetch(imageUrl);
+      // Marquer comme en cours de conversion
+      setHeicConversions(prev => new Set([...prev, mediaId]));
+      setHeicConversionAttempts(prev => new Set([...prev, mediaId]));
+
+      // Télécharger l'image avec timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondes max
+
+      const response = await fetch(imageUrl, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error('Fichier HEIC vide ou corrompu');
+      }
       
       // Convertir avec heic2any
       const convertedBlob = await heic2any({
@@ -96,6 +120,13 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
         ...prev,
         [mediaId]: convertedUrl
       }));
+
+      // Retirer des conversions en cours
+      setHeicConversions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
       
       return convertedUrl;
     } catch (error) {
@@ -103,11 +134,15 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
         mediaId,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+
+      // Marquer comme échec et retirer des conversions en cours
+      setHeicConversionFailures(prev => new Set([...prev, mediaId]));
       setHeicConversions(prev => {
         const newSet = new Set(prev);
         newSet.delete(mediaId);
         return newSet;
       });
+      
       return '/placeholder.svg';
     }
   };
@@ -166,19 +201,26 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
       normalizedUrl: normalizedUrls[mediaId]
     });
 
+    // Vérifier si c'est un fichier HEIC et si on n'a pas déjà tenté de le convertir
     const mediaItem = media.find(m => m.id === mediaId);
     const isHeicFile = mediaItem?.media_url?.toLowerCase().includes('.heic') || 
                       normalizedUrls[mediaId]?.toLowerCase().includes('.heic');
 
-    if (isHeicFile && !heicConvertedUrls[mediaId] && !heicConversions.has(mediaId)) {
+    if (isHeicFile && 
+        !heicConvertedUrls[mediaId] && 
+        !heicConversions.has(mediaId) && 
+        !heicConversionAttempts.has(mediaId) &&
+        !heicConversionFailures.has(mediaId)) {
+      
       console.log('📸 PostMedia - Détection fichier HEIC, tentative de conversion');
       const imageUrl = normalizedUrls[mediaId];
       if (imageUrl && imageUrl !== '/placeholder.svg') {
         await convertHeicToJpeg(imageUrl, mediaId);
-        return; // Ne pas marquer comme erreur tout de suite, laisser la conversion se faire
+        return; // Ne pas marquer comme erreur, laisser la conversion se faire
       }
     }
 
+    // Marquer comme erreur seulement si ce n'est pas un HEIC ou si la conversion a échoué
     setImageErrors(prev => new Set([...prev, mediaId]));
   };
 
@@ -276,6 +318,7 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
               const imageUrl = getImageUrl(item);
               const hasError = imageErrors.has(item.id);
               const isConverting = heicConversions.has(item.id);
+              const conversionFailed = heicConversionFailures.has(item.id);
               
               return (
                 <div 
@@ -286,11 +329,15 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
                 >
                   {item.media_type.startsWith('image/') ? (
                     <>
-                      {hasError && !isConverting ? (
+                      {(hasError || conversionFailed) && !isConverting ? (
                         <div className="flex items-center justify-center bg-gray-100 aspect-square">
                           <div className="text-center text-gray-500">
-                            <p className="text-sm font-medium">Image non disponible</p>
-                            <p className="text-xs">Format non supporté par ce navigateur</p>
+                            <p className="text-sm font-medium">
+                              {conversionFailed ? 'Conversion échouée' : 'Image non disponible'}
+                            </p>
+                            <p className="text-xs">
+                              {conversionFailed ? 'Impossible de convertir ce fichier HEIC' : 'Format non supporté par ce navigateur'}
+                            </p>
                           </div>
                         </div>
                       ) : isConverting ? (
