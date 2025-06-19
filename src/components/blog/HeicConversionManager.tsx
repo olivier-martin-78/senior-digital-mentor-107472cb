@@ -40,7 +40,7 @@ export const useHeicConversion = () => {
   const shouldAttemptConversion = useCallback((mediaId: string): boolean => {
     const state = conversionState.current;
     const attempts = state.attempts[mediaId] || 0;
-    return attempts < 3 && !state.converting.has(mediaId) && !state.failed.has(mediaId);
+    return attempts < 2 && !state.converting.has(mediaId) && !state.failed.has(mediaId);
   }, []);
 
   const convertHeicToJpeg = useCallback(async (imageUrl: string, mediaId: string): Promise<string> => {
@@ -55,7 +55,7 @@ export const useHeicConversion = () => {
     state.attempts[mediaId] = (state.attempts[mediaId] || 0) + 1;
     
     // Si trop de tentatives, marquer comme échoué
-    if (state.attempts[mediaId] > 3) {
+    if (state.attempts[mediaId] > 2) {
       state.failed.add(mediaId);
       triggerUpdate();
       return '/placeholder.svg';
@@ -68,49 +68,85 @@ export const useHeicConversion = () => {
       state.converting.add(mediaId);
       triggerUpdate();
 
-      // Télécharger avec timeout
+      // Télécharger avec timeout plus court
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Timeout de téléchargement pour:', mediaId);
+        controller.abort();
+      }, 8000);
 
-      const response = await fetch(imageUrl, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+      let response;
+      try {
+        response = await fetch(imageUrl, {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error('❌ Erreur de téléchargement:', { mediaId, error: fetchError });
+        throw new Error(`Échec du téléchargement: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`);
+      }
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const blob = await response.blob();
       
       if (blob.size === 0) {
-        throw new Error('Fichier vide');
+        throw new Error('Fichier vide reçu');
       }
 
-      // Convertir
-      const convertedBlob = await heic2any({
+      console.log('📥 Fichier téléchargé:', { mediaId, size: blob.size, type: blob.type });
+
+      // Convertir avec timeout
+      const conversionPromise = heic2any({
         blob,
         toType: 'image/jpeg',
         quality: 0.8
-      }) as Blob;
+      });
 
+      const conversionTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout de conversion')), 15000);
+      });
+
+      const convertedBlob = await Promise.race([conversionPromise, conversionTimeout]) as Blob;
       const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      
+      if (!finalBlob || finalBlob.size === 0) {
+        throw new Error('Conversion échouée - blob invalide');
+      }
+
       const convertedUrl = URL.createObjectURL(finalBlob);
       
       // Stocker le résultat
       state.converted[mediaId] = convertedUrl;
       state.converting.delete(mediaId);
       
-      console.log('✅ Conversion HEIC réussie:', { mediaId, convertedUrl });
+      console.log('✅ Conversion HEIC réussie:', { mediaId, convertedUrl, size: finalBlob.size });
       triggerUpdate();
       
       return convertedUrl;
     } catch (error) {
-      console.error('❌ Erreur conversion HEIC:', { mediaId, error: error instanceof Error ? error.message : 'Unknown' });
+      console.error('❌ Erreur conversion HEIC:', { 
+        mediaId, 
+        attempt: state.attempts[mediaId],
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       
       // Marquer comme échoué
       state.converting.delete(mediaId);
-      state.failed.add(mediaId);
+      
+      // Si c'est la dernière tentative, marquer comme définitivement échoué
+      if (state.attempts[mediaId] >= 2) {
+        state.failed.add(mediaId);
+        console.error('💀 Conversion HEIC définitivement échouée après', state.attempts[mediaId], 'tentatives:', mediaId);
+      }
+      
       triggerUpdate();
       
       return '/placeholder.svg';

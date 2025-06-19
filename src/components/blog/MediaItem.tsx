@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 
 interface MediaItemProps {
@@ -23,12 +23,16 @@ const MediaItem: React.FC<MediaItemProps> = ({
   onConvert,
   onImageError
 }) => {
+  const [hasTriedConversion, setHasTriedConversion] = useState(false);
+
   // Tenter la conversion si nécessaire
   useEffect(() => {
-    if (shouldAttemptConversion && imageUrl !== '/placeholder.svg') {
+    if (shouldAttemptConversion && imageUrl !== '/placeholder.svg' && !hasTriedConversion) {
+      console.log('🎯 Tentative de conversion pour:', item.id);
+      setHasTriedConversion(true);
       onConvert(imageUrl, item.id);
     }
-  }, [shouldAttemptConversion, imageUrl, item.id, onConvert]);
+  }, [shouldAttemptConversion, imageUrl, item.id, onConvert, hasTriedConversion]);
 
   if (item.media_type.startsWith('image/')) {
     return (
@@ -41,6 +45,16 @@ const MediaItem: React.FC<MediaItemProps> = ({
             <div className="text-center text-gray-500">
               <p className="text-sm font-medium">Format non supporté</p>
               <p className="text-xs">Impossible de convertir ce fichier HEIC</p>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHasTriedConversion(false);
+                  onConvert(imageUrl, item.id);
+                }}
+                className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+              >
+                Réessayer
+              </button>
             </div>
           </div>
         ) : isConverting ? (
@@ -56,7 +70,10 @@ const MediaItem: React.FC<MediaItemProps> = ({
             src={imageUrl}
             alt="Media du post"
             className="w-full aspect-square object-cover"
-            onError={() => onImageError(item.id)}
+            onError={() => {
+              console.log('❌ Erreur chargement image:', item.id, imageUrl);
+              onImageError(item.id);
+            }}
             onLoad={() => {
               console.log('✅ Image chargée:', { id: item.id, url: imageUrl });
             }}
