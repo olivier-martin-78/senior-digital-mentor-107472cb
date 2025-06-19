@@ -32,21 +32,39 @@ const DiaryEntryPage = () => {
 
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        
+        // First get the diary entry
+        const { data: entryData, error: entryError } = await supabase
           .from('diary_entries')
-          .select(`
-            *,
-            profiles!diary_entries_user_id_fkey(display_name, email)
-          `)
+          .select('*')
           .eq('id', id)
           .single();
 
-        if (error) {
-          throw error;
+        if (entryError) {
+          throw entryError;
         }
 
-        if (data) {
-          setEntry(data as DiaryEntryWithAuthor);
+        if (entryData) {
+          // Then get the profile data separately
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', entryData.user_id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            // Set entry with null profile if profile fetch fails
+            setEntry({
+              ...entryData,
+              profiles: null
+            } as DiaryEntryWithAuthor);
+          } else {
+            setEntry({
+              ...entryData,
+              profiles: profileData
+            } as DiaryEntryWithAuthor);
+          }
         }
       } catch (error: any) {
         console.error('Erreur lors de la récupération de l\'entrée:', error);
