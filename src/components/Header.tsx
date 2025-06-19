@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings } from 'lucide-react';
+import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -230,6 +229,13 @@ const Header = () => {
                         >
                           Groupes d'invitation
                         </Link>
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue flex items-center"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Déconnexion
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -469,6 +475,16 @@ const Header = () => {
                         >
                           Groupes d'invitation
                         </Link>
+                        <button
+                          onClick={() => {
+                            handleSignOut();
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full text-left block px-2 py-1 text-sm text-gray-600 hover:text-tranches-dustyblue flex items-center"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Déconnexion
+                        </button>
                       </div>
                     </>
                   )}
