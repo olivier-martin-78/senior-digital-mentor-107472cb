@@ -367,9 +367,16 @@ export const useBlogEditor = () => {
     const { processMultipleImageFiles } = await import('@/utils/imageUtils');
 
     try {
+      console.log('📤 Début du traitement des fichiers:', {
+        count: files.length,
+        fileNames: files.map(f => f.name)
+      });
+
       // Traiter tous les fichiers avec progression
       const processedFiles = await processMultipleImageFiles(files, (progress) => {
-        // Afficher le popup seulement s'il y a des fichiers HEIC à convertir
+        console.log('📊 Progression conversion:', progress);
+        
+        // Afficher le popup dès qu'il y a des fichiers à convertir
         if (progress.totalFiles > 0) {
           setHeicConversionProgress({
             isOpen: true,
@@ -378,12 +385,20 @@ export const useBlogEditor = () => {
         }
       });
 
-      // Fermer le popup après un délai si la conversion est terminée
-      if (heicConversionProgress.isComplete && heicConversionProgress.totalFiles > 0) {
-        setTimeout(() => {
-          setHeicConversionProgress(prev => ({ ...prev, isOpen: false }));
-        }, 2000);
-      }
+      // Fermer le popup après conversion avec un délai
+      setTimeout(() => {
+        setHeicConversionProgress(prev => {
+          if (prev.isComplete && prev.totalFiles > 0) {
+            return { ...prev, isOpen: false };
+          }
+          return prev;
+        });
+      }, 2000);
+
+      console.log('✅ Fichiers traités:', {
+        original: files.length,
+        processed: processedFiles.length
+      });
 
       // Continuer avec l'upload des fichiers traités
       for (let i = 0; i < processedFiles.length; i++) {
@@ -486,7 +501,7 @@ export const useBlogEditor = () => {
     }
 
     setUploadingFiles(false);
-  }, [id, post, toast, heicConversionProgress.isComplete, heicConversionProgress.totalFiles]);
+  }, [id, post, toast]);
 
   const deleteMedia = async (mediaItem: BlogMedia) => {
     try {

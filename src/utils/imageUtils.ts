@@ -1,3 +1,4 @@
+
 export const isHeicFile = (file: File): boolean => {
   const hasHeicType = file.type === 'image/heic' || file.type === 'image/heif';
   const hasHeicExtension = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
@@ -14,24 +15,34 @@ export const isHeicFile = (file: File): boolean => {
   return hasHeicType || hasHeicExtension;
 };
 
+// Détection si on est sur un appareil mobile (iPhone/iPad principalement)
+const isMobileDevice = (): boolean => {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
+
 // Nouvelle fonction pour détecter si la conversion est nécessaire
 export const needsHeicConversion = async (file: File): Promise<boolean> => {
   if (!isHeicFile(file)) {
     return false;
   }
 
-  // Sur Windows avec des navigateurs modernes, certains fichiers HEIC peuvent s'afficher sans conversion
-  // Tester si le navigateur peut afficher le fichier HEIC nativement
+  // Sur mobile (surtout iPhone), forcer la conversion car le support est incohérent
+  if (isMobileDevice()) {
+    console.log('📱 Appareil mobile détecté - conversion HEIC forcée pour:', file.name);
+    return true;
+  }
+
+  // Sur desktop, tester si le navigateur peut afficher le fichier HEIC nativement
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     
-    // Timeout pour éviter d'attendre trop longtemps
+    // Timeout plus court pour éviter d'attendre trop longtemps
     const timeout = setTimeout(() => {
       cleanup();
       console.log('⏱️ Timeout - conversion nécessaire pour:', file.name);
       resolve(true); // Si timeout, on assume qu'il faut convertir
-    }, 2000);
+    }, 1000); // Réduit de 2000ms à 1000ms
     
     const cleanup = () => {
       clearTimeout(timeout);
@@ -113,7 +124,8 @@ export const processImageFile = async (
     name: file.name,
     type: file.type,
     size: Math.round(file.size / 1024) + 'KB',
-    isHeicDetected: isHeicFile(file)
+    isHeicDetected: isHeicFile(file),
+    isMobile: isMobileDevice()
   });
   
   // Vérification de base
@@ -168,79 +180,94 @@ export const processMultipleImageFiles = async (
 ): Promise<File[]> => {
   const processedFiles: File[] = [];
   const errors: string[] = [];
-  let processedCount = 0;
 
   // Identifier les fichiers HEIC qui nécessitent une conversion
   const heicFiles: File[] = [];
   const regularFiles: File[] = [];
 
+  // Première passe: séparer les fichiers HEIC des autres
   for (const file of files) {
     if (isHeicFile(file)) {
-      const conversionNeeded = await needsHeicConversion(file);
-      if (conversionNeeded) {
-        heicFiles.push(file);
-      } else {
-        regularFiles.push(file);
-      }
+      heicFiles.push(file);
     } else {
       regularFiles.push(file);
     }
   }
 
-  const totalHeicFiles = heicFiles.length;
-  const totalFiles = files.length;
-
   console.log('📊 Analyse des fichiers:', {
-    total: totalFiles,
-    heicNeedingConversion: heicFiles.length,
-    regularFiles: regularFiles.length
+    total: files.length,
+    heicFiles: heicFiles.length,
+    regularFiles: regularFiles.length,
+    isMobile: isMobileDevice()
   });
 
-  // Traiter d'abord les fichiers réguliers (rapide)
-  for (const file of regularFiles) {
-    processedFiles.push(file);
-    processedCount++;
-    
-    if (onProgress) {
-      onProgress({
-        totalFiles: totalHeicFiles, // On ne compte que les HEIC dans la progression
-        processedFiles: 0, // Pas encore de HEIC traités
-        errors,
-        isComplete: false
-      });
-    }
+  // Évaluation rapide: sur mobile, tous les HEIC seront convertis
+  let totalFilesToConvert = heicFiles.length;
+  if (!isMobileDevice()) {
+    // Sur desktop, on doit tester chaque fichier HEIC
+    const conversionTests = await Promise.all(
+      heicFiles.map(file => needsHeicConversion(file))
+    );
+    totalFilesToConvert = conversionTests.filter(Boolean).length;
   }
 
-  // Traiter les fichiers HEIC nécessitant une conversion
-  for (let i = 0; i < heicFiles.length; i++) {
-    const file = heicFiles[i];
-    
-    if (onProgress) {
-      onProgress({
-        totalFiles: totalHeicFiles,
-        processedFiles: i,
-        currentFileName: file.name,
-        errors,
-        isComplete: false
-      });
-    }
+  console.log('🔄 Fichiers HEIC à convertir:', totalFilesToConvert);
 
-    try {
-      const convertedFile = await convertHeicToJpeg(file);
-      processedFiles.push(convertedFile);
-    } catch (error) {
-      console.error('❌ Erreur lors de la conversion de', file.name, ':', error);
-      errors.push(`${file.name}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-      // Ajouter le fichier original en cas d'échec
+  // Si pas de fichiers à convertir, retourner directement
+  if (totalFilesToConvert === 0) {
+    return files;
+  }
+
+  // Démarrer la progression si nécessaire
+  if (onProgress && totalFilesToConvert > 0) {
+    onProgress({
+      totalFiles: totalFilesToConvert,
+      processedFiles: 0,
+      errors,
+      isComplete: false
+    });
+  }
+
+  // Traiter d'abord les fichiers réguliers (rapide)
+  processedFiles.push(...regularFiles);
+
+  // Traiter les fichiers HEIC
+  let convertedCount = 0;
+  for (const file of heicFiles) {
+    const needsConversion = isMobileDevice() || await needsHeicConversion(file);
+    
+    if (needsConversion) {
+      if (onProgress) {
+        onProgress({
+          totalFiles: totalFilesToConvert,
+          processedFiles: convertedCount,
+          currentFileName: file.name,
+          errors,
+          isComplete: false
+        });
+      }
+
+      try {
+        const convertedFile = await convertHeicToJpeg(file);
+        processedFiles.push(convertedFile);
+        convertedCount++;
+      } catch (error) {
+        console.error('❌ Erreur lors de la conversion de', file.name, ':', error);
+        errors.push(`${file.name}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        // Ajouter le fichier original en cas d'échec
+        processedFiles.push(file);
+      }
+    } else {
+      // Fichier HEIC supporté nativement, pas de conversion
       processedFiles.push(file);
     }
   }
 
   // Finaliser la progression
-  if (onProgress) {
+  if (onProgress && totalFilesToConvert > 0) {
     onProgress({
-      totalFiles: totalHeicFiles,
-      processedFiles: heicFiles.length,
+      totalFiles: totalFilesToConvert,
+      processedFiles: convertedCount,
       errors,
       isComplete: true
     });
