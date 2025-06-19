@@ -29,8 +29,8 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
   const [newAlbumDescription, setNewAlbumDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  // MODIFIÉ: Permettre aux readers de créer des albums
-  const canCreateAlbum = hasRole('admin') || hasRole('editor') || hasRole('reader');
+  // Permettre aux users authentifiés de créer des albums
+  const canCreateAlbum = user && (hasRole('admin') || hasRole('editor') || hasRole('reader'));
 
   const handleCreateAlbum = async () => {
     if (!user || !newAlbumName.trim()) return;
@@ -38,9 +38,8 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
     try {
       setIsCreating(true);
       
-      console.log('WishAlbumSelector - Création avec nouvelles politiques RLS simplifiées');
+      console.log('WishAlbumSelector - Création nouvelle catégorie');
       
-      // Les nouvelles politiques RLS simplifiées permettent la création directe
       const { data, error } = await supabase
         .from('wish_albums')
         .insert([{
@@ -97,7 +96,7 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
         {canCreateAlbum && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title="Créer une nouvelle catégorie">
                 <Plus className="h-4 w-4" />
               </Button>
             </DialogTrigger>
@@ -112,6 +111,11 @@ export const WishAlbumSelector: React.FC<WishAlbumSelectorProps> = ({
                     value={newAlbumName}
                     onChange={(e) => setNewAlbumName(e.target.value)}
                     placeholder="Ex: Voyages, Apprentissage..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newAlbumName.trim()) {
+                        handleCreateAlbum();
+                      }
+                    }}
                   />
                 </div>
                 <div>

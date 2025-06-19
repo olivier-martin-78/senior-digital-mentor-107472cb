@@ -12,12 +12,19 @@ import EntryContent from '@/components/diary/EntryContent';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
 
+interface DiaryEntryWithAuthor extends DiaryEntry {
+  profiles: {
+    display_name?: string | null;
+    email: string;
+  };
+}
+
 const DiaryEntryPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
-  const [entry, setEntry] = useState<DiaryEntry | null>(null);
+  const [entry, setEntry] = useState<DiaryEntryWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +35,10 @@ const DiaryEntryPage = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('diary_entries')
-          .select('*')
+          .select(`
+            *,
+            profiles:user_id(display_name, email)
+          `)
           .eq('id', id)
           .single();
 
@@ -37,7 +47,7 @@ const DiaryEntryPage = () => {
         }
 
         if (data) {
-          setEntry(data as DiaryEntry);
+          setEntry(data as DiaryEntryWithAuthor);
         }
       } catch (error: any) {
         console.error('Erreur lors de la récupération de l\'entrée:', error);
@@ -114,6 +124,9 @@ const DiaryEntryPage = () => {
   // Afficher le bouton de notification de groupe seulement si l'utilisateur est l'auteur
   const canNotifyGroup = entry && user && entry.user_id === user.id;
 
+  // Déterminer le nom de l'auteur
+  const authorName = entry?.profiles?.display_name || entry?.profiles?.email || 'Utilisateur inconnu';
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -153,6 +166,8 @@ const DiaryEntryPage = () => {
             entryId={entry.id} 
             onDelete={handleDelete}
             canEdit={canEdit}
+            authorName={authorName}
+            createdAt={entry.created_at || undefined}
           />
           
           <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">

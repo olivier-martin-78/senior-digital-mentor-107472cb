@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface WishPost {
   id: string;
@@ -18,6 +20,11 @@ interface WishPost {
   published?: boolean;
   created_at: string;
   cover_image?: string;
+  profiles?: {
+    display_name?: string | null;
+    email?: string;
+  };
+  author_id?: string;
 }
 
 interface WishCardProps {
@@ -29,6 +36,12 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
   const thumbnailUrl = wish.cover_image 
     ? getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)
     : '/placeholder.svg';
+
+  // Déterminer le nom de l'auteur
+  const authorName = wish.profiles?.display_name || wish.profiles?.email || wish.first_name || 'Utilisateur';
+  
+  // Formater la date de création
+  const createdDate = format(new Date(wish.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr });
 
   return (
     <Link to={`/wishes/${wish.id}`}>
@@ -57,7 +70,15 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
           )}
         </div>
 
-        <CardHeader className="pb-3">
+        {/* Informations d'auteur et date sous la vignette */}
+        <div className="px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span className="font-medium">{authorName}</span>
+            <span>{createdDate}</span>
+          </div>
+        </div>
+
+        <CardHeader className="pb-3 pt-0">
           <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
             {wish.title}
           </CardTitle>

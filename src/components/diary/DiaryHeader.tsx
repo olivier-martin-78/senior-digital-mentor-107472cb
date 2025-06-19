@@ -14,14 +14,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface DiaryHeaderProps {
   entryId?: string;
   onDelete?: () => void;
   canEdit?: boolean;
+  authorName?: string;
+  createdAt?: string;
 }
 
-const DiaryHeader: React.FC<DiaryHeaderProps> = ({ entryId, onDelete, canEdit = true }) => {
+const DiaryHeader: React.FC<DiaryHeaderProps> = ({ 
+  entryId, 
+  onDelete, 
+  canEdit = true,
+  authorName,
+  createdAt
+}) => {
   const navigate = useNavigate();
 
   return (
@@ -67,6 +77,22 @@ const DiaryHeader: React.FC<DiaryHeaderProps> = ({ entryId, onDelete, canEdit = 
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          )}
+        </div>
+      )}
+      
+      {/* Informations d'auteur et de création sous les boutons */}
+      {(authorName || createdAt) && (
+        <div className="mt-4 sm:mt-2 text-sm text-gray-600 w-full sm:w-auto text-center sm:text-right">
+          {authorName && (
+            <div className="font-medium">
+              Créé par {authorName}
+            </div>
+          )}
+          {createdAt && (
+            <div className="text-xs text-gray-500 mt-1">
+              {format(new Date(createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+            </div>
           )}
         </div>
       )}
