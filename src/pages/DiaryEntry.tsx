@@ -16,7 +16,7 @@ interface DiaryEntryWithAuthor extends DiaryEntry {
   profiles: {
     display_name?: string | null;
     email: string;
-  };
+  } | null;
 }
 
 const DiaryEntryPage = () => {
@@ -37,7 +37,7 @@ const DiaryEntryPage = () => {
           .from('diary_entries')
           .select(`
             *,
-            profiles:user_id(display_name, email)
+            profiles:profiles!diary_entries_user_id_fkey(display_name, email)
           `)
           .eq('id', id)
           .single();
