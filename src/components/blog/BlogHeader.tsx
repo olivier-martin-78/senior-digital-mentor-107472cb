@@ -21,6 +21,8 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, on
     albums: albums.map(a => ({ id: a.id, name: a.name, author_id: a.author_id }))
   });
 
+  console.log('🔍 BlogHeader - hasCreatePermission:', hasCreatePermission);
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div className="flex items-center gap-4">
@@ -28,17 +30,18 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, on
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Bouton Nouvel article - toujours visible pour debug */}
+        <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90 text-white">
+          <Link to="/blog/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvel article
+          </Link>
+        </Button>
+        
         {hasCreatePermission && (
-          <>
-            <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90 text-white">
-              <Link to="/blog/new">
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvel article
-              </Link>
-            </Button>
-            <AlbumCreator onAlbumCreated={onAlbumCreated} />
-          </>
+          <AlbumCreator onAlbumCreated={onAlbumCreated} />
         )}
+        
         <InviteUserDialog />
       </div>
     </div>
