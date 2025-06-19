@@ -4,6 +4,7 @@ import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
 import MediaDownloader from './MediaDownloader';
 import { getThumbnailUrl, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
+import heic2any from 'heic2any';
 
 interface PostMediaProps {
   media: BlogMedia[];
@@ -15,6 +16,8 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [videoErrors, setVideoErrors] = useState<Set<string>>(new Set());
   const [normalizedUrls, setNormalizedUrls] = useState<Record<string, string>>({});
+  const [heicConvertedUrls, setHeicConvertedUrls] = useState<Record<string, string>>({});
+  const [heicConversions, setHeicConversions] = useState<Set<string>>(new Set());
 
   // Normaliser les URLs au chargement
   React.useEffect(() => {
@@ -59,6 +62,55 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
   }, [media]);
 
   if (media.length === 0) return null;
+
+  // Fonction pour convertir HEIC en JPEG
+  const convertHeicToJpeg = async (imageUrl: string, mediaId: string): Promise<string> => {
+    try {
+      console.log('📸 PostMedia - Tentative conversion HEIC pour:', mediaId);
+      
+      if (heicConversions.has(mediaId)) {
+        console.log('📸 PostMedia - Conversion déjà en cours pour:', mediaId);
+        return imageUrl;
+      }
+
+      setHeicConversions(prev => new Set([...prev, mediaId]));
+
+      // Télécharger l'image
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Convertir avec heic2any
+      const convertedBlob = await heic2any({
+        blob,
+        toType: 'image/jpeg',
+        quality: 0.8
+      }) as Blob;
+      
+      // Créer une URL temporaire
+      const convertedUrl = URL.createObjectURL(convertedBlob);
+      
+      console.log('✅ PostMedia - HEIC converti avec succès pour:', mediaId);
+      
+      // Stocker l'URL convertie
+      setHeicConvertedUrls(prev => ({
+        ...prev,
+        [mediaId]: convertedUrl
+      }));
+      
+      return convertedUrl;
+    } catch (error) {
+      console.error('❌ PostMedia - Erreur conversion HEIC:', {
+        mediaId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      setHeicConversions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+      return '/placeholder.svg';
+    }
+  };
 
   // Fonction pour organiser les médias en lignes de 1, 2 ou 3 éléments
   const organizeMediaInRows = (mediaArray: BlogMedia[]) => {
@@ -107,12 +159,26 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
     }
   };
 
-  const handleImageError = (mediaId: string) => {
+  const handleImageError = async (mediaId: string) => {
     console.error('❌ PostMedia - Erreur chargement image:', {
       mediaId,
       originalUrl: media.find(m => m.id === mediaId)?.media_url,
       normalizedUrl: normalizedUrls[mediaId]
     });
+
+    const mediaItem = media.find(m => m.id === mediaId);
+    const isHeicFile = mediaItem?.media_url?.toLowerCase().includes('.heic') || 
+                      normalizedUrls[mediaId]?.toLowerCase().includes('.heic');
+
+    if (isHeicFile && !heicConvertedUrls[mediaId] && !heicConversions.has(mediaId)) {
+      console.log('📸 PostMedia - Détection fichier HEIC, tentative de conversion');
+      const imageUrl = normalizedUrls[mediaId];
+      if (imageUrl && imageUrl !== '/placeholder.svg') {
+        await convertHeicToJpeg(imageUrl, mediaId);
+        return; // Ne pas marquer comme erreur tout de suite, laisser la conversion se faire
+      }
+    }
+
     setImageErrors(prev => new Set([...prev, mediaId]));
   };
 
@@ -126,10 +192,17 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
   };
 
   const getImageUrl = (item: BlogMedia): string => {
+    // Priorité 1: URL convertie depuis HEIC
+    if (heicConvertedUrls[item.id]) {
+      return heicConvertedUrls[item.id];
+    }
+
+    // Priorité 2: URL normalisée
     const normalizedUrl = normalizedUrls[item.id];
     if (normalizedUrl && normalizedUrl !== '/placeholder.svg') {
       return normalizedUrl;
     }
+    
     // Fallback vers l'URL originale si la normalisation n'est pas encore prête
     return item.media_url || '/placeholder.svg';
   };
@@ -202,6 +275,7 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
             {row.map((item, itemIndex) => {
               const imageUrl = getImageUrl(item);
               const hasError = imageErrors.has(item.id);
+              const isConverting = heicConversions.has(item.id);
               
               return (
                 <div 
@@ -212,11 +286,19 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
                 >
                   {item.media_type.startsWith('image/') ? (
                     <>
-                      {hasError ? (
+                      {hasError && !isConverting ? (
                         <div className="flex items-center justify-center bg-gray-100 aspect-square">
                           <div className="text-center text-gray-500">
                             <p className="text-sm font-medium">Image non disponible</p>
-                            <p className="text-xs">Essayez de recharger la page</p>
+                            <p className="text-xs">Format non supporté par ce navigateur</p>
+                          </div>
+                        </div>
+                      ) : isConverting ? (
+                        <div className="flex items-center justify-center bg-gray-100 aspect-square">
+                          <div className="text-center text-gray-500">
+                            <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-2"></div>
+                            <p className="text-sm font-medium">Conversion en cours...</p>
+                            <p className="text-xs">Adaptation du format pour votre navigateur</p>
                           </div>
                         </div>
                       ) : (
@@ -228,7 +310,8 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
                           onLoad={() => {
                             console.log('✅ PostMedia - Image chargée avec succès:', {
                               id: item.id,
-                              url: imageUrl
+                              url: imageUrl,
+                              isConverted: !!heicConvertedUrls[item.id]
                             });
                           }}
                         />
