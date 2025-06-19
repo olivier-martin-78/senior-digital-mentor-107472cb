@@ -55,11 +55,20 @@ const Wishes = () => {
           <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Souhaits</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {!isReader && (
-              <div className="w-full sm:w-auto">
-                <InviteUserDialog />
-              </div>
+              <>
+                <div className="w-full sm:w-auto">
+                  <InviteUserDialog />
+                </div>
+                <Button 
+                  onClick={() => navigate('/wishes/new')}
+                  className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouveau souhait
+                </Button>
+              </>
             )}
-            {!isReader && (
+            {isReader && (
               <Button 
                 onClick={() => navigate('/wishes/new')}
                 className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"

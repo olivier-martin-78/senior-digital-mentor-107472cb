@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -232,8 +231,8 @@ const MyInvitationGroups = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              {/* Afficher le bouton d'invitation seulement s'il n'y a pas encore de groupe */}
-              {groups.length === 0 && <InviteUserDialog />}
+              {/* Afficher le bouton d'invitation seulement s'il n'y a pas encore de groupe et que l'utilisateur n'est pas reader */}
+              {groups.length === 0 && !isReader && <InviteUserDialog />}
             </div>
           </div>
         </div>
@@ -278,7 +277,7 @@ const MyInvitationGroups = () => {
                 <p className="text-gray-500 mb-4">
                   Commencez par inviter des personnes à voir votre contenu.
                 </p>
-                <InviteUserDialog />
+                {!isReader && <InviteUserDialog />}
               </CardContent>
             </Card>
           )}
