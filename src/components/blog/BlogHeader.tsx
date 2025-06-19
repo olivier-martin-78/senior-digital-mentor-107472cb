@@ -30,7 +30,7 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({ albums, hasCreatePermission, on
       <div className="flex items-center gap-2">
         {hasCreatePermission && (
           <>
-            <Button asChild variant="outline">
+            <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
               <Link to="/blog/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvel article

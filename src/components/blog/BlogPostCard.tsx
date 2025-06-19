@@ -35,8 +35,8 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages })
   const postAlbum = albums.find(a => a.id === post.album_id);
 
   return (
-    <Card className={`overflow-hidden ${!post.published ? 'border-orange-300 bg-orange-50' : ''}`}>
-      <div className="relative w-full h-40 bg-gray-100">
+    <Card className={`overflow-hidden flex flex-col h-full ${!post.published ? 'border-orange-300 bg-orange-50' : ''}`}>
+      <div className="relative w-full h-48 bg-gray-100 flex-shrink-0">
         {post.album_id ? (
           <AlbumThumbnail 
             album={postAlbum || null}
@@ -59,36 +59,41 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, albums, postImages })
           </div>
         )}
       </div>
-      <CardHeader>
-        <CardTitle>
-          <Link to={`/blog/${post.id}`} className="hover:text-tranches-sage transition-colors">
-            {post.title}
-          </Link>
-        </CardTitle>
-        <CardDescription>
-          {post.profiles?.display_name || 'Utilisateur'} • {formatDate(post.created_at)}
-          {postAlbum && (
-            <span className="ml-2 text-tranches-sage">• Album: {postAlbum.name}</span>
-          )}
-          {!post.published && (
-            <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded">
-              Brouillon
-            </span>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="line-clamp-3 text-gray-600">
-          {post.content.substring(0, 150)}...
-        </p>
-      </CardContent>
-      <CardFooter>
-        <Button asChild variant="outline">
-          <Link to={`/blog/${post.id}`}>
-            {!post.published && canEdit ? 'Modifier/Publier' : 'Lire la suite'}
-          </Link>
-        </Button>
-      </CardFooter>
+      
+      <div className="flex flex-col flex-grow">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg leading-tight">
+            <Link to={`/blog/${post.id}`} className="hover:text-tranches-sage transition-colors">
+              {post.title}
+            </Link>
+          </CardTitle>
+          <CardDescription className="text-sm">
+            {post.profiles?.display_name || 'Utilisateur'} • {formatDate(post.created_at)}
+            {postAlbum && (
+              <span className="ml-2 text-tranches-sage">• Album: {postAlbum.name}</span>
+            )}
+            {!post.published && (
+              <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded">
+                Brouillon
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="flex-grow pb-3">
+          <p className="line-clamp-3 text-gray-600 text-sm">
+            {post.content.substring(0, 150)}...
+          </p>
+        </CardContent>
+        
+        <CardFooter className="pt-0 mt-auto">
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <Link to={`/blog/${post.id}`}>
+              {!post.published && canEdit ? 'Modifier/Publier' : 'Lire la suite'}
+            </Link>
+          </Button>
+        </CardFooter>
+      </div>
     </Card>
   );
 };
