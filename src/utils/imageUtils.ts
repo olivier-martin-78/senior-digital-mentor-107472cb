@@ -1,4 +1,3 @@
-
 export const isHeicFile = (file: File): boolean => {
   const hasHeicType = file.type === 'image/heic' || file.type === 'image/heif';
   const hasHeicExtension = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
@@ -13,6 +12,48 @@ export const isHeicFile = (file: File): boolean => {
   });
   
   return hasHeicType || hasHeicExtension;
+};
+
+// Nouvelle fonction pour détecter si la conversion est nécessaire
+export const needsHeicConversion = async (file: File): Promise<boolean> => {
+  if (!isHeicFile(file)) {
+    return false;
+  }
+
+  // Sur Windows avec des navigateurs modernes, certains fichiers HEIC peuvent s'afficher sans conversion
+  // Tester si le navigateur peut afficher le fichier HEIC nativement
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    // Timeout pour éviter d'attendre trop longtemps
+    const timeout = setTimeout(() => {
+      cleanup();
+      console.log('⏱️ Timeout - conversion nécessaire pour:', file.name);
+      resolve(true); // Si timeout, on assume qu'il faut convertir
+    }, 2000);
+    
+    const cleanup = () => {
+      clearTimeout(timeout);
+      URL.revokeObjectURL(url);
+      img.onload = null;
+      img.onerror = null;
+    };
+    
+    img.onload = () => {
+      cleanup();
+      console.log('✅ HEIC supporté nativement pour:', file.name);
+      resolve(false); // Le navigateur peut afficher le HEIC nativement
+    };
+    
+    img.onerror = () => {
+      cleanup();
+      console.log('❌ HEIC non supporté - conversion nécessaire pour:', file.name);
+      resolve(true); // Conversion nécessaire
+    };
+    
+    img.src = url;
+  });
 };
 
 export const convertHeicToJpeg = async (file: File): Promise<File> => {
@@ -56,7 +97,18 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
   }
 };
 
-export const processImageFile = async (file: File): Promise<File> => {
+export interface ConversionProgress {
+  totalFiles: number;
+  processedFiles: number;
+  currentFileName?: string;
+  errors: string[];
+  isComplete: boolean;
+}
+
+export const processImageFile = async (
+  file: File, 
+  onProgress?: (progress: ConversionProgress) => void
+): Promise<File> => {
   console.log('🔍 Traitement du fichier:', {
     name: file.name,
     type: file.type,
@@ -69,14 +121,132 @@ export const processImageFile = async (file: File): Promise<File> => {
     throw new Error('Aucun fichier sélectionné');
   }
   
-  // Pour les fichiers HEIC, tenter la conversion
+  // Pour les fichiers HEIC, vérifier si la conversion est nécessaire
   if (isHeicFile(file)) {
-    console.log('📱 Fichier HEIC détecté - conversion en cours...');
-    return await convertHeicToJpeg(file);
+    console.log('📱 Fichier HEIC détecté - vérification de la compatibilité...');
+    
+    const conversionNeeded = await needsHeicConversion(file);
+    
+    if (conversionNeeded) {
+      console.log('🔄 Conversion nécessaire pour:', file.name);
+      if (onProgress) {
+        onProgress({
+          totalFiles: 1,
+          processedFiles: 0,
+          currentFileName: file.name,
+          errors: [],
+          isComplete: false
+        });
+      }
+      
+      const convertedFile = await convertHeicToJpeg(file);
+      
+      if (onProgress) {
+        onProgress({
+          totalFiles: 1,
+          processedFiles: 1,
+          currentFileName: file.name,
+          errors: [],
+          isComplete: true
+        });
+      }
+      
+      return convertedFile;
+    } else {
+      console.log('✅ HEIC supporté nativement, aucune conversion nécessaire');
+    }
   }
   
   console.log('✅ Fichier standard, aucune conversion nécessaire');
   return file;
+};
+
+// Fonction pour traiter plusieurs fichiers avec progression
+export const processMultipleImageFiles = async (
+  files: File[],
+  onProgress?: (progress: ConversionProgress) => void
+): Promise<File[]> => {
+  const processedFiles: File[] = [];
+  const errors: string[] = [];
+  let processedCount = 0;
+
+  // Identifier les fichiers HEIC qui nécessitent une conversion
+  const heicFiles: File[] = [];
+  const regularFiles: File[] = [];
+
+  for (const file of files) {
+    if (isHeicFile(file)) {
+      const conversionNeeded = await needsHeicConversion(file);
+      if (conversionNeeded) {
+        heicFiles.push(file);
+      } else {
+        regularFiles.push(file);
+      }
+    } else {
+      regularFiles.push(file);
+    }
+  }
+
+  const totalHeicFiles = heicFiles.length;
+  const totalFiles = files.length;
+
+  console.log('📊 Analyse des fichiers:', {
+    total: totalFiles,
+    heicNeedingConversion: heicFiles.length,
+    regularFiles: regularFiles.length
+  });
+
+  // Traiter d'abord les fichiers réguliers (rapide)
+  for (const file of regularFiles) {
+    processedFiles.push(file);
+    processedCount++;
+    
+    if (onProgress) {
+      onProgress({
+        totalFiles: totalHeicFiles, // On ne compte que les HEIC dans la progression
+        processedFiles: 0, // Pas encore de HEIC traités
+        errors,
+        isComplete: false
+      });
+    }
+  }
+
+  // Traiter les fichiers HEIC nécessitant une conversion
+  for (let i = 0; i < heicFiles.length; i++) {
+    const file = heicFiles[i];
+    
+    if (onProgress) {
+      onProgress({
+        totalFiles: totalHeicFiles,
+        processedFiles: i,
+        currentFileName: file.name,
+        errors,
+        isComplete: false
+      });
+    }
+
+    try {
+      const convertedFile = await convertHeicToJpeg(file);
+      processedFiles.push(convertedFile);
+    } catch (error) {
+      console.error('❌ Erreur lors de la conversion de', file.name, ':', error);
+      errors.push(`${file.name}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      // Ajouter le fichier original en cas d'échec
+      processedFiles.push(file);
+    }
+  }
+
+  // Finaliser la progression
+  if (onProgress) {
+    onProgress({
+      totalFiles: totalHeicFiles,
+      processedFiles: heicFiles.length,
+      errors,
+      isComplete: true
+    });
+  }
+
+  return processedFiles;
 };
 
 // Nouvelle fonction pour remplacer un fichier HEIC dans Supabase

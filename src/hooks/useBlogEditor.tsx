@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +31,20 @@ export const useBlogEditor = () => {
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
+  const [heicConversionProgress, setHeicConversionProgress] = useState<{
+    isOpen: boolean;
+    totalFiles: number;
+    processedFiles: number;
+    currentFileName?: string;
+    errors: string[];
+    isComplete: boolean;
+  }>({
+    isOpen: false,
+    totalFiles: 0,
+    processedFiles: 0,
+    errors: [],
+    isComplete: false
+  });
 
   // Utiliser le même hook que la page blog pour les albums
   const { albums: allAlbums, loading: albumsLoading } = useBlogAlbums();
@@ -350,82 +363,108 @@ export const useBlogEditor = () => {
     const newErrors: string[] = [];
     const successfulUploads: BlogMedia[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const originalFile = files[i];
-      
-      try {
-        // Traiter le fichier (conversion HEIC si nécessaire)
-        const processedFile = await processImageFile(originalFile);
-        
-        const fileExt = processedFile.name.split('.').pop();
-        const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    // Importer la fonction de traitement multiple
+    const { processMultipleImageFiles } = await import('@/utils/imageUtils');
 
-        console.log('📤 Upload du fichier traité:', {
-          originalName: originalFile.name,
-          processedName: processedFile.name,
-          path: filePath
-        });
-
-        const { error: uploadError } = await supabase.storage
-          .from('blog-media')
-          .upload(filePath, processedFile);
-
-        if (uploadError) {
-          newErrors.push(`Erreur lors de l'upload de ${originalFile.name}: ${uploadError.message}`);
-          continue;
+    try {
+      // Traiter tous les fichiers avec progression
+      const processedFiles = await processMultipleImageFiles(files, (progress) => {
+        // Afficher le popup seulement s'il y a des fichiers HEIC à convertir
+        if (progress.totalFiles > 0) {
+          setHeicConversionProgress({
+            isOpen: true,
+            ...progress
+          });
         }
+      });
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('blog-media')
-          .getPublicUrl(filePath);
-
-        let thumbnailUrl: string | null = null;
-        if (isVideoFile(processedFile)) {
-          try {
-            const thumbnailFile = await generateVideoThumbnail(processedFile);
-            const thumbnailExt = thumbnailFile.name.split('.').pop();
-            const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
-            
-            const { error: thumbnailUploadError } = await supabase.storage
-              .from('blog-media')
-              .upload(thumbnailPath, thumbnailFile);
-
-            if (!thumbnailUploadError) {
-              const { data: { publicUrl: thumbnailPublicUrl } } = supabase.storage
-                .from('blog-media')
-                .getPublicUrl(thumbnailPath);
-              
-              thumbnailUrl = thumbnailPublicUrl;
-            }
-          } catch (thumbnailError) {
-            console.error('❌ Erreur lors de la génération de la vignette:', thumbnailError);
-          }
-        }
-
-        const { data: insertedMedia, error: dbError } = await supabase
-          .from('blog_media')
-          .insert({
-            post_id: id || post?.id,
-            media_url: publicUrl,
-            media_type: processedFile.type,
-            thumbnail_url: thumbnailUrl
-          })
-          .select()
-          .single();
-
-        if (dbError) {
-          newErrors.push(`Erreur lors de l'enregistrement de ${originalFile.name}: ${dbError.message}`);
-          continue;
-        }
-
-        if (insertedMedia) {
-          successfulUploads.push(insertedMedia as BlogMedia);
-        }
-
-      } catch (error: any) {
-        console.error('❌ Erreur lors du traitement de', originalFile.name, ':', error);
-        newErrors.push(`Erreur lors du traitement de ${originalFile.name}: ${error.message}`);
+      // Fermer le popup après un délai si la conversion est terminée
+      if (heicConversionProgress.isComplete && heicConversionProgress.totalFiles > 0) {
+        setTimeout(() => {
+          setHeicConversionProgress(prev => ({ ...prev, isOpen: false }));
+        }, 2000);
       }
+
+      // Continuer avec l'upload des fichiers traités
+      for (let i = 0; i < processedFiles.length; i++) {
+        const processedFile = processedFiles[i];
+        const originalFile = files[i];
+        
+        try {
+          const fileExt = processedFile.name.split('.').pop();
+          const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+
+          console.log('📤 Upload du fichier traité:', {
+            originalName: originalFile.name,
+            processedName: processedFile.name,
+            path: filePath
+          });
+
+          const { error: uploadError } = await supabase.storage
+            .from('blog-media')
+            .upload(filePath, processedFile);
+
+          if (uploadError) {
+            newErrors.push(`Erreur lors de l'upload de ${originalFile.name}: ${uploadError.message}`);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('blog-media')
+            .getPublicUrl(filePath);
+
+          let thumbnailUrl: string | null = null;
+          if (isVideoFile(processedFile)) {
+            try {
+              const thumbnailFile = await generateVideoThumbnail(processedFile);
+              const thumbnailExt = thumbnailFile.name.split('.').pop();
+              const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
+              
+              const { error: thumbnailUploadError } = await supabase.storage
+                .from('blog-media')
+                .upload(thumbnailPath, thumbnailFile);
+
+              if (!thumbnailUploadError) {
+                const { data: { publicUrl: thumbnailPublicUrl } } = supabase.storage
+                  .from('blog-media')
+                  .getPublicUrl(thumbnailPath);
+                
+                thumbnailUrl = thumbnailPublicUrl;
+              }
+            } catch (thumbnailError) {
+              console.error('❌ Erreur lors de la génération de la vignette:', thumbnailError);
+            }
+          }
+
+          const { data: insertedMedia, error: dbError } = await supabase
+            .from('blog_media')
+            .insert({
+              post_id: id || post?.id,
+              media_url: publicUrl,
+              media_type: processedFile.type,
+              thumbnail_url: thumbnailUrl
+            })
+            .select()
+            .single();
+
+          if (dbError) {
+            newErrors.push(`Erreur lors de l'enregistrement de ${originalFile.name}: ${dbError.message}`);
+            continue;
+          }
+
+          if (insertedMedia) {
+            successfulUploads.push(insertedMedia as BlogMedia);
+          }
+
+        } catch (error: any) {
+          console.error('❌ Erreur lors du traitement de', originalFile.name, ':', error);
+          newErrors.push(`Erreur lors du traitement de ${originalFile.name}: ${error.message}`);
+        }
+      }
+
+    } catch (error: any) {
+      console.error('❌ Erreur lors du traitement des fichiers:', error);
+      newErrors.push(`Erreur générale: ${error.message}`);
     }
 
     if (successfulUploads.length > 0) {
@@ -447,7 +486,7 @@ export const useBlogEditor = () => {
     }
 
     setUploadingFiles(false);
-  }, [id, post, toast]);
+  }, [id, post, toast, heicConversionProgress.isComplete, heicConversionProgress.totalFiles]);
 
   const deleteMedia = async (mediaItem: BlogMedia) => {
     try {
@@ -509,6 +548,8 @@ export const useBlogEditor = () => {
     setCoverImage,
     coverImageFile,
     setCoverImageFile,
-    uploadingCoverImage
+    uploadingCoverImage,
+    heicConversionProgress,
+    setHeicConversionProgress
   };
 };

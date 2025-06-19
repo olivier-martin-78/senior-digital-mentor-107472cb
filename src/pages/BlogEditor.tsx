@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -8,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useBlogEditor } from '@/hooks/useBlogEditor';
+import HeicConversionProgress from '@/components/blog/HeicConversionProgress';
 
 // Import all the components we extracted
 import CoverImageUploader from '@/components/blog/CoverImageUploader';
@@ -47,7 +47,9 @@ const BlogEditor = () => {
     setCoverImage,
     coverImageFile,
     setCoverImageFile,
-    uploadingCoverImage
+    uploadingCoverImage,
+    heicConversionProgress,
+    setHeicConversionProgress
   } = useBlogEditor();
 
   if (loading) {
@@ -178,6 +180,17 @@ const BlogEditor = () => {
           )}
         </div>
       </div>
+
+      {/* Popup de progression de conversion HEIC */}
+      <HeicConversionProgress
+        isOpen={heicConversionProgress.isOpen}
+        onClose={() => setHeicConversionProgress(prev => ({ ...prev, isOpen: false }))}
+        totalFiles={heicConversionProgress.totalFiles}
+        processedFiles={heicConversionProgress.processedFiles}
+        currentFileName={heicConversionProgress.currentFileName}
+        errors={heicConversionProgress.errors}
+        isComplete={heicConversionProgress.isComplete}
+      />
     </div>
   );
 };
