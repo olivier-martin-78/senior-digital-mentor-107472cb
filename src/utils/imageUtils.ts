@@ -78,3 +78,66 @@ export const processImageFile = async (file: File): Promise<File> => {
   console.log('✅ Fichier standard, aucune conversion nécessaire');
   return file;
 };
+
+// Nouvelle fonction pour remplacer un fichier HEIC dans Supabase
+export const replaceHeicInSupabase = async (
+  originalUrl: string, 
+  convertedFile: File,
+  bucket: string = 'blog-media'
+): Promise<string | null> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    // Extraire le chemin du fichier original depuis l'URL
+    const urlParts = originalUrl.split('/');
+    const originalPath = urlParts[urlParts.length - 1];
+    
+    console.log('🔄 Remplacement du fichier HEIC dans Supabase:', {
+      originalUrl,
+      originalPath,
+      convertedFileName: convertedFile.name,
+      bucket
+    });
+    
+    // Supprimer l'ancien fichier HEIC
+    const { error: deleteError } = await supabase.storage
+      .from(bucket)
+      .remove([originalPath]);
+    
+    if (deleteError) {
+      console.warn('⚠️ Erreur lors de la suppression du fichier original:', deleteError);
+    }
+    
+    // Créer le nouveau nom de fichier (remplacer .heic par .jpg)
+    const newPath = originalPath.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
+    
+    // Uploader le fichier converti avec le nouveau nom
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(newPath, convertedFile, {
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('❌ Erreur lors de l\'upload du fichier converti:', uploadError);
+      return null;
+    }
+    
+    // Obtenir la nouvelle URL publique
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(newPath);
+    
+    console.log('✅ Fichier HEIC remplacé avec succès:', {
+      originalPath,
+      newPath,
+      newUrl: publicUrl
+    });
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('❌ Erreur lors du remplacement du fichier HEIC:', error);
+    return null;
+  }
+};

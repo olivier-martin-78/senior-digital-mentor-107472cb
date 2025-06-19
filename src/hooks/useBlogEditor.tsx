@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
 import { useBlogAlbums } from '@/hooks/blog/useBlogAlbums';
+import { processImageFile } from '@/utils/imageUtils';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -349,17 +351,27 @@ export const useBlogEditor = () => {
     const successfulUploads: BlogMedia[] = [];
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-
+      const originalFile = files[i];
+      
       try {
+        // Traiter le fichier (conversion HEIC si nécessaire)
+        const processedFile = await processImageFile(originalFile);
+        
+        const fileExt = processedFile.name.split('.').pop();
+        const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+
+        console.log('📤 Upload du fichier traité:', {
+          originalName: originalFile.name,
+          processedName: processedFile.name,
+          path: filePath
+        });
+
         const { error: uploadError } = await supabase.storage
           .from('blog-media')
-          .upload(filePath, file);
+          .upload(filePath, processedFile);
 
         if (uploadError) {
-          newErrors.push(`Erreur lors de l'upload de ${file.name}: ${uploadError.message}`);
+          newErrors.push(`Erreur lors de l'upload de ${originalFile.name}: ${uploadError.message}`);
           continue;
         }
 
@@ -368,9 +380,9 @@ export const useBlogEditor = () => {
           .getPublicUrl(filePath);
 
         let thumbnailUrl: string | null = null;
-        if (isVideoFile(file)) {
+        if (isVideoFile(processedFile)) {
           try {
-            const thumbnailFile = await generateVideoThumbnail(file);
+            const thumbnailFile = await generateVideoThumbnail(processedFile);
             const thumbnailExt = thumbnailFile.name.split('.').pop();
             const thumbnailPath = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${thumbnailExt}`;
             
@@ -395,14 +407,14 @@ export const useBlogEditor = () => {
           .insert({
             post_id: id || post?.id,
             media_url: publicUrl,
-            media_type: file.type,
+            media_type: processedFile.type,
             thumbnail_url: thumbnailUrl
           })
           .select()
           .single();
 
         if (dbError) {
-          newErrors.push(`Erreur lors de l'enregistrement de ${file.name}: ${dbError.message}`);
+          newErrors.push(`Erreur lors de l'enregistrement de ${originalFile.name}: ${dbError.message}`);
           continue;
         }
 
@@ -411,7 +423,8 @@ export const useBlogEditor = () => {
         }
 
       } catch (error: any) {
-        newErrors.push(`Erreur lors du traitement de ${file.name}: ${error.message}`);
+        console.error('❌ Erreur lors du traitement de', originalFile.name, ':', error);
+        newErrors.push(`Erreur lors du traitement de ${originalFile.name}: ${error.message}`);
       }
     }
 
