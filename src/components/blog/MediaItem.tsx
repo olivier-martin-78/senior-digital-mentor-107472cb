@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 
@@ -42,27 +41,38 @@ const MediaItem: React.FC<MediaItemProps> = ({
       >
         {isConversionFailed ? (
           <div className="flex items-center justify-center bg-gray-100 aspect-square">
-            <div className="text-center text-gray-500">
-              <p className="text-sm font-medium">Format non supporté</p>
-              <p className="text-xs">Impossible de convertir ce fichier HEIC</p>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setHasTriedConversion(false);
-                  onConvert(imageUrl, item.id);
-                }}
-                className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-              >
-                Réessayer
-              </button>
+            <div className="text-center text-gray-500 p-4">
+              <div className="mb-3">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-2xl">📱</span>
+                </div>
+                <p className="text-sm font-medium">Format HEIC non supporté</p>
+                <p className="text-xs mb-3">Impossible de convertir ce fichier</p>
+              </div>
+              <div className="space-y-2">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHasTriedConversion(false);
+                    onConvert(imageUrl, item.id);
+                  }}
+                  className="block w-full px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                >
+                  Réessayer la conversion
+                </button>
+                <p className="text-xs text-gray-400">
+                  Conseil: Sur iPhone, activez "Plus compatible" dans Réglages → Appareil photo → Formats
+                </p>
+              </div>
             </div>
           </div>
         ) : isConverting ? (
           <div className="flex items-center justify-center bg-gray-100 aspect-square">
             <div className="text-center text-gray-500">
-              <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-2"></div>
+              <div className="animate-spin h-10 w-10 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-3"></div>
               <p className="text-sm font-medium">Conversion en cours...</p>
               <p className="text-xs">Adaptation du format HEIC</p>
+              <p className="text-xs text-gray-400 mt-1">Cela peut prendre jusqu'à 30 secondes</p>
             </div>
           </div>
         ) : (

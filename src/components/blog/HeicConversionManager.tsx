@@ -40,7 +40,7 @@ export const useHeicConversion = () => {
   const shouldAttemptConversion = useCallback((mediaId: string): boolean => {
     const state = conversionState.current;
     const attempts = state.attempts[mediaId] || 0;
-    return attempts < 2 && !state.converting.has(mediaId) && !state.failed.has(mediaId);
+    return attempts < 3 && !state.converting.has(mediaId) && !state.failed.has(mediaId);
   }, []);
 
   const convertHeicToJpeg = useCallback(async (imageUrl: string, mediaId: string): Promise<string> => {
@@ -55,7 +55,7 @@ export const useHeicConversion = () => {
     state.attempts[mediaId] = (state.attempts[mediaId] || 0) + 1;
     
     // Si trop de tentatives, marquer comme échoué
-    if (state.attempts[mediaId] > 2) {
+    if (state.attempts[mediaId] > 3) {
       state.failed.add(mediaId);
       triggerUpdate();
       return '/placeholder.svg';
@@ -68,12 +68,12 @@ export const useHeicConversion = () => {
       state.converting.add(mediaId);
       triggerUpdate();
 
-      // Télécharger avec timeout plus court
+      // Télécharger avec timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         console.log('⏰ Timeout de téléchargement pour:', mediaId);
         controller.abort();
-      }, 8000);
+      }, 10000);
 
       let response;
       try {
@@ -102,31 +102,71 @@ export const useHeicConversion = () => {
 
       console.log('📥 Fichier téléchargé:', { mediaId, size: blob.size, type: blob.type });
 
-      // Convertir avec timeout
-      const conversionPromise = heic2any({
-        blob,
-        toType: 'image/jpeg',
-        quality: 0.8
-      });
+      // Stratégies de conversion multiples avec timeouts plus longs
+      const conversionStrategies = [
+        // Stratégie 1: JPEG haute qualité
+        {
+          name: 'JPEG qualité 0.9',
+          params: { blob, toType: 'image/jpeg' as const, quality: 0.9 },
+          timeout: 30000
+        },
+        // Stratégie 2: JPEG qualité réduite
+        {
+          name: 'JPEG qualité 0.7',
+          params: { blob, toType: 'image/jpeg' as const, quality: 0.7 },
+          timeout: 25000
+        },
+        // Stratégie 3: PNG (pas de compression)
+        {
+          name: 'PNG sans compression',
+          params: { blob, toType: 'image/png' as const },
+          timeout: 35000
+        }
+      ];
 
-      const conversionTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout de conversion')), 15000);
-      });
+      let convertedBlob: Blob | null = null;
+      let usedStrategy = '';
 
-      const convertedBlob = await Promise.race([conversionPromise, conversionTimeout]) as Blob;
-      const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-      
-      if (!finalBlob || finalBlob.size === 0) {
-        throw new Error('Conversion échouée - blob invalide');
+      // Essayer chaque stratégie
+      for (const strategy of conversionStrategies) {
+        try {
+          console.log(`🔄 Tentative ${strategy.name} pour:`, mediaId);
+          
+          const conversionPromise = heic2any(strategy.params);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error(`Timeout ${strategy.name}`)), strategy.timeout);
+          });
+
+          const result = await Promise.race([conversionPromise, timeoutPromise]);
+          convertedBlob = Array.isArray(result) ? result[0] : result;
+          usedStrategy = strategy.name;
+          
+          if (convertedBlob && convertedBlob.size > 0) {
+            console.log(`✅ Conversion réussie avec ${strategy.name}:`, { mediaId, size: convertedBlob.size });
+            break;
+          }
+        } catch (strategyError) {
+          console.warn(`⚠️ Échec ${strategy.name} pour ${mediaId}:`, strategyError instanceof Error ? strategyError.message : 'Unknown error');
+          continue;
+        }
       }
 
-      const convertedUrl = URL.createObjectURL(finalBlob);
+      if (!convertedBlob || convertedBlob.size === 0) {
+        throw new Error('Toutes les stratégies de conversion ont échoué');
+      }
+
+      const convertedUrl = URL.createObjectURL(convertedBlob);
       
       // Stocker le résultat
       state.converted[mediaId] = convertedUrl;
       state.converting.delete(mediaId);
       
-      console.log('✅ Conversion HEIC réussie:', { mediaId, convertedUrl, size: finalBlob.size });
+      console.log('✅ Conversion HEIC réussie:', { 
+        mediaId, 
+        convertedUrl, 
+        size: convertedBlob.size, 
+        strategy: usedStrategy 
+      });
       triggerUpdate();
       
       return convertedUrl;
@@ -142,7 +182,7 @@ export const useHeicConversion = () => {
       state.converting.delete(mediaId);
       
       // Si c'est la dernière tentative, marquer comme définitivement échoué
-      if (state.attempts[mediaId] >= 2) {
+      if (state.attempts[mediaId] >= 3) {
         state.failed.add(mediaId);
         console.error('💀 Conversion HEIC définitivement échouée après', state.attempts[mediaId], 'tentatives:', mediaId);
       }
