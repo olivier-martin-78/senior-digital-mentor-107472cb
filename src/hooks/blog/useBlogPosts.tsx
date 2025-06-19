@@ -8,7 +8,8 @@ export const useBlogPosts = (
   searchTerm: string,
   selectedAlbum: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  selectedCategories?: string[]
 ) => {
   const { user, getEffectiveUserId } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
@@ -60,6 +61,16 @@ export const useBlogPosts = (
           query = query.lte('created_at', endDate);
         }
 
+        // TODO: Ajouter le filtrage par catégories quand la relation post_categories sera utilisée
+        // if (selectedCategories && selectedCategories.length > 0) {
+        //   query = query.in('id', 
+        //     supabase
+        //       .from('post_categories')
+        //       .select('post_id')
+        //       .in('category_id', selectedCategories)
+        //   );
+        // }
+
         const { data: allPosts, error } = await query;
 
         if (error) {
@@ -103,7 +114,7 @@ export const useBlogPosts = (
     };
 
     fetchPosts();
-  }, [user, searchTerm, selectedAlbum, startDate, endDate, getEffectiveUserId]);
+  }, [user, searchTerm, selectedAlbum, startDate, endDate, selectedCategories, getEffectiveUserId]);
 
   return { posts, loading };
 };

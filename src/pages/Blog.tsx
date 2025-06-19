@@ -22,7 +22,7 @@ const Blog = () => {
     loading, 
     hasCreatePermission,
     refetch 
-  } = useBlogData(searchTerm, selectedAlbum || '', startDate, endDate, null);
+  } = useBlogData(searchTerm, selectedAlbum || '', startDate, endDate, selectedCategories);
 
   console.log('🎯 Blog.tsx - RENDU PAGE BLOG:', {
     albumsCount: albums.length,
@@ -31,7 +31,8 @@ const Blog = () => {
     hasCreatePermission,
     loading,
     searchTerm,
-    selectedAlbum
+    selectedAlbum,
+    selectedCategories
   });
 
   const handleClearFilters = () => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BlogAlbum } from '@/types/supabase';
 import { getThumbnailUrl, ALBUM_THUMBNAILS_BUCKET, BLOG_MEDIA_BUCKET } from '@/utils/thumbnailtUtils';
@@ -64,7 +65,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
   // Toujours afficher l'image si thumbnailUrl est défini
   if (thumbnailUrl) {
     return (
-      <div className="w-full h-40 relative">
+      <div className="w-full h-60 relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -98,7 +99,7 @@ const AlbumThumbnail: React.FC<AlbumThumbnailProps> = ({ album, title, coverImag
   }
 
   return (
-    <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
+    <div className="w-full h-60 bg-gray-100 flex items-center justify-center">
       <div className="text-gray-400 text-center">
         <ImageIcon className="h-12 w-12 mx-auto mb-2" />
         <span className="text-sm">Aucune image</span>

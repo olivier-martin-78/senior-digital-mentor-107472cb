@@ -12,7 +12,7 @@ export const useBlogData = (
   albumId: string = '', 
   startDate: string = '', 
   endDate: string = '', 
-  categoryId: string | null = null
+  selectedCategories: string[] = []
 ) => {
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
@@ -23,7 +23,8 @@ export const useBlogData = (
     searchTerm, 
     albumId, 
     startDate, 
-    endDate
+    endDate,
+    selectedCategories
   );
   const { albums, loading: albumsLoading } = useBlogAlbums();
 
