@@ -2,19 +2,15 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Search } from 'lucide-react';
-import { BlogAlbum, BlogCategory } from '@/types/supabase';
+import { BlogAlbum } from '@/types/supabase';
 
 interface BlogFiltersProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedAlbum: string | null;
   setSelectedAlbum: (albumId: string | null) => void;
-  selectedCategories: string[];
-  toggleCategorySelection: (categoryId: string) => void;
   albums: BlogAlbum[];
-  categories: BlogCategory[];
 }
 
 const BlogFilters: React.FC<BlogFiltersProps> = ({
@@ -22,10 +18,7 @@ const BlogFilters: React.FC<BlogFiltersProps> = ({
   setSearchQuery,
   selectedAlbum,
   setSelectedAlbum,
-  selectedCategories,
-  toggleCategorySelection,
-  albums,
-  categories
+  albums
 }) => {
   return (
     <div className="mb-8 space-y-4">
@@ -51,23 +44,6 @@ const BlogFilters: React.FC<BlogFiltersProps> = ({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Categories filter */}
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm text-gray-500 pt-1">Filtrer par catégorie:</span>
-          {categories.map(category => (
-            <Badge 
-              key={category.id} 
-              variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => toggleCategorySelection(category.id)}
-            >
-              {category.name}
-            </Badge>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

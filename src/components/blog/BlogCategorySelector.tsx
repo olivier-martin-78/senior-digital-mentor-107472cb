@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { BlogCategory } from '@/types/supabase';
 
 interface BlogCategorySelectorProps {
@@ -16,10 +17,10 @@ const BlogCategorySelector: React.FC<BlogCategorySelectorProps> = ({
 }) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Catégories</label>
+      <label className="text-sm font-medium">Filtrer par catégories</label>
       <Select onValueChange={onCategoryChange}>
         <SelectTrigger>
-          <SelectValue placeholder="Sélectionner une catégorie" />
+          <SelectValue placeholder="Ajouter une catégorie" />
         </SelectTrigger>
         <SelectContent>
           {categories.map((category) => (
@@ -39,8 +40,9 @@ const BlogCategorySelector: React.FC<BlogCategorySelectorProps> = ({
           {selectedCategories.map((categoryId) => {
             const category = categories.find(c => c.id === categoryId);
             return category ? (
-              <span
+              <Badge
                 key={categoryId}
+                variant="default"
                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
               >
                 {category.name}
@@ -51,7 +53,7 @@ const BlogCategorySelector: React.FC<BlogCategorySelectorProps> = ({
                 >
                   ×
                 </button>
-              </span>
+              </Badge>
             ) : null;
           })}
         </div>

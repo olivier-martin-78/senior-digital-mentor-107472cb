@@ -27,15 +27,16 @@ export const useBlogPosts = (
       try {
         setLoading(true);
         
-        console.log('🔍 useBlogPosts - DÉBUT - Récupération simplifiée avec RLS');
+        console.log('🔍 useBlogPosts - Récupération avec filtres:', {
+          searchTerm,
+          selectedAlbum,
+          selectedCategories
+        });
 
         const effectiveUserId = getEffectiveUserId();
         console.log('👤 useBlogPosts - Utilisateur courant:', effectiveUserId);
 
-        // NOUVELLE APPROCHE SIMPLIFIÉE: Avec RLS permissif, on récupère TOUS les posts
-        // et on laisse la logique applicative faire le filtrage fin
-        
-        // 1. Récupérer TOUS les posts accessibles via RLS (utilisateurs authentifiés)
+        // Récupérer TOUS les posts accessibles via RLS
         let query = supabase
           .from('blog_posts')
           .select(`
@@ -61,16 +62,6 @@ export const useBlogPosts = (
           query = query.lte('created_at', endDate);
         }
 
-        // TODO: Ajouter le filtrage par catégories quand la relation post_categories sera utilisée
-        // if (selectedCategories && selectedCategories.length > 0) {
-        //   query = query.in('id', 
-        //     supabase
-        //       .from('post_categories')
-        //       .select('post_id')
-        //       .in('category_id', selectedCategories)
-        //   );
-        // }
-
         const { data: allPosts, error } = await query;
 
         if (error) {
@@ -78,9 +69,8 @@ export const useBlogPosts = (
           throw error;
         }
 
-        console.log('📝 useBlogPosts - Posts récupérés via RLS:', allPosts?.length || 0);
+        console.log('📝 useBlogPosts - Posts récupérés:', allPosts?.length || 0);
 
-        // 2. Maintenant filtrer côté client selon les permissions de groupe
         if (!allPosts || allPosts.length === 0) {
           setPosts([]);
           setLoading(false);
@@ -90,19 +80,31 @@ export const useBlogPosts = (
         // Récupérer les utilisateurs autorisés via les groupes
         const authorizedUserIds = await getAuthorizedUserIds(effectiveUserId);
         
-        console.log('🎯 useBlogPosts - Utilisateurs autorisés:', {
-          count: authorizedUserIds.length,
-          userIds: authorizedUserIds
-        });
-
         // Filtrer les posts selon les permissions
-        const filteredPosts = allPosts.filter(post => {
-          const isAuthorized = authorizedUserIds.includes(post.author_id);
-          console.log(`📋 Post "${post.title}" par ${post.author_id}: ${isAuthorized ? '✅ AUTORISÉ' : '❌ BLOQUÉ'}`);
-          return isAuthorized;
+        let filteredPosts = allPosts.filter(post => {
+          return authorizedUserIds.includes(post.author_id);
         });
 
-        console.log('🏁 useBlogPosts - Posts finaux après filtrage:', filteredPosts.length);
+        // Filtrer par catégories si des catégories sont sélectionnées
+        if (selectedCategories && selectedCategories.length > 0) {
+          console.log('🏷️ Filtrage par catégories:', selectedCategories);
+          
+          // Récupérer les associations post-catégories
+          const { data: postCategories } = await supabase
+            .from('post_categories')
+            .select('post_id, category_id')
+            .in('category_id', selectedCategories);
+
+          if (postCategories) {
+            const postIdsWithCategories = postCategories.map(pc => pc.post_id);
+            filteredPosts = filteredPosts.filter(post => 
+              postIdsWithCategories.includes(post.id)
+            );
+            console.log('🏷️ Posts après filtrage par catégories:', filteredPosts.length);
+          }
+        }
+
+        console.log('🏁 useBlogPosts - Posts finaux:', filteredPosts.length);
 
         setPosts(filteredPosts as PostWithAuthor[]);
       } catch (error) {

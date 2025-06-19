@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PostWithAuthor, BlogAlbum } from '@/types/supabase';
 import BlogPostCard from './BlogPostCard';
 import { Loader2 } from 'lucide-react';
@@ -20,36 +20,13 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
   albums,
   postImages,
   searchQuery,
-  selectedAlbum,
   selectedCategories
 }) => {
   console.log('🎯 BlogPostGrid - Props reçues:', {
     postsCount: posts.length,
     selectedCategories,
-    searchQuery,
-    selectedAlbum
+    searchQuery
   });
-
-  // Filtrer les posts côté client selon les catégories sélectionnées
-  const filteredPosts = React.useMemo(() => {
-    let filtered = posts;
-
-    // Filtrage par catégories sélectionnées
-    if (selectedCategories.length > 0) {
-      // Pour l'instant, nous n'avons pas la relation post-catégories implémentée
-      // Donc on garde tous les posts si des catégories sont sélectionnées
-      // TODO: Implémenter le filtrage par catégories quand la relation sera disponible
-      console.log('⚠️ Filtrage par catégories non implémenté - affichage de tous les posts');
-    }
-
-    console.log('🔍 Posts après filtrage:', {
-      original: posts.length,
-      filtered: filtered.length,
-      selectedCategories
-    });
-
-    return filtered;
-  }, [posts, selectedCategories]);
 
   if (loading) {
     return (
@@ -60,7 +37,7 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
     );
   }
 
-  if (filteredPosts.length === 0) {
+  if (posts.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500 text-lg">
@@ -77,7 +54,7 @@ const BlogPostGrid: React.FC<BlogPostGridProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredPosts.map((post) => (
+      {posts.map((post) => (
         <BlogPostCard
           key={post.id}
           post={post}

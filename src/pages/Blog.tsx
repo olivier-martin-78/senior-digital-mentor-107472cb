@@ -75,10 +75,7 @@ const Blog = () => {
             setSearchQuery={setSearchTerm}
             selectedAlbum={selectedAlbum}
             setSelectedAlbum={setSelectedAlbum}
-            selectedCategories={selectedCategories}
-            toggleCategorySelection={toggleCategorySelection}
             albums={albums}
-            categories={categories}
           />
           
           <BlogCategorySelector
