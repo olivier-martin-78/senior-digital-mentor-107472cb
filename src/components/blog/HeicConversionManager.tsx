@@ -1,6 +1,5 @@
 
 import { useRef, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface HeicConversionState {
   converting: Set<string>;
@@ -62,45 +61,53 @@ export const useHeicConversion = () => {
     }
 
     try {
-      console.log('🔄 Début conversion HEIC via serveur:', { mediaId, url: imageUrl, attempt: state.attempts[mediaId] });
+      console.log('🔄 Début conversion HEIC avec heic2any:', { mediaId, url: imageUrl, attempt: state.attempts[mediaId] });
       
       // Marquer comme en cours
       state.converting.add(mediaId);
       triggerUpdate();
 
-      // Utiliser l'Edge Function pour la conversion
-      const { data, error } = await supabase.functions.invoke('heic-converter', {
-        body: { 
-          imageUrl: imageUrl,
-          mediaId: mediaId,
-          outputFormat: 'jpeg',
-          quality: 0.8
-        }
+      // Télécharger le fichier HEIC
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Échec du téléchargement: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log('📥 Fichier HEIC téléchargé:', { mediaId, size: blob.size, type: blob.type });
+
+      // Dynamically import heic2any to avoid SSR issues
+      const { default: heic2any } = await import('heic2any');
+
+      // Convertir avec heic2any
+      const convertedBlob = await heic2any({
+        blob: blob,
+        toType: 'image/jpeg',
+        quality: 0.8
       });
 
-      if (error) {
-        console.error('❌ Erreur Edge Function:', error);
-        throw new Error(`Erreur serveur: ${error.message}`);
-      }
-
-      if (!data?.convertedUrl) {
-        throw new Error('URL convertie non reçue du serveur');
-      }
+      // heic2any peut retourner un blob ou un array de blobs
+      const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      
+      // Créer une URL temporaire pour l'image convertie
+      const convertedUrl = URL.createObjectURL(finalBlob as Blob);
 
       // Stocker le résultat
-      state.converted[mediaId] = data.convertedUrl;
+      state.converted[mediaId] = convertedUrl;
       state.converting.delete(mediaId);
       
-      console.log('✅ Conversion HEIC serveur réussie:', { 
+      console.log('✅ Conversion HEIC réussie avec heic2any:', { 
         mediaId, 
-        convertedUrl: data.convertedUrl
+        convertedUrl,
+        originalSize: blob.size,
+        convertedSize: (finalBlob as Blob).size
       });
       
       triggerUpdate();
-      return data.convertedUrl;
+      return convertedUrl;
 
     } catch (error) {
-      console.error('❌ Erreur conversion HEIC serveur:', { 
+      console.error('❌ Erreur conversion HEIC avec heic2any:', { 
         mediaId, 
         attempt: state.attempts[mediaId],
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -121,7 +128,7 @@ export const useHeicConversion = () => {
   }, [triggerUpdate]);
 
   const cleanup = useCallback(() => {
-    // Nettoyer les URLs temporaires (si elles sont des blob URLs)
+    // Nettoyer les URLs temporaires (blob URLs)
     Object.values(conversionState.current.converted).forEach(url => {
       if (url.startsWith('blob:')) {
         URL.revokeObjectURL(url);

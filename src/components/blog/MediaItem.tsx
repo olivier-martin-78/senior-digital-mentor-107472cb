@@ -27,7 +27,7 @@ const MediaItem: React.FC<MediaItemProps> = ({
   // Tenter la conversion si nécessaire
   useEffect(() => {
     if (shouldAttemptConversion && imageUrl !== '/placeholder.svg' && !hasTriedConversion) {
-      console.log('🎯 Tentative de conversion serveur pour:', item.id);
+      console.log('🎯 Tentative de conversion pour:', item.id);
       setHasTriedConversion(true);
       onConvert(imageUrl, item.id);
     }
@@ -46,8 +46,8 @@ const MediaItem: React.FC<MediaItemProps> = ({
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
                   <span className="text-2xl">📱</span>
                 </div>
-                <p className="text-sm font-medium">Format HEIC non supporté</p>
-                <p className="text-xs mb-3">Échec de la conversion serveur</p>
+                <p className="text-sm font-medium">Conversion HEIC échouée</p>
+                <p className="text-xs mb-3">La conversion automatique a échoué</p>
               </div>
               <div className="space-y-2">
                 <button 
@@ -61,7 +61,7 @@ const MediaItem: React.FC<MediaItemProps> = ({
                   Réessayer la conversion
                 </button>
                 <p className="text-xs text-gray-400">
-                  Conseil: Sur iPhone, activez "Plus compatible" dans Réglages → Appareil photo → Formats
+                  Alternative: Convertissez manuellement votre image en JPEG
                 </p>
               </div>
             </div>
@@ -70,9 +70,9 @@ const MediaItem: React.FC<MediaItemProps> = ({
           <div className="flex items-center justify-center bg-gray-100 aspect-square">
             <div className="text-center text-gray-500">
               <div className="animate-spin h-10 w-10 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-3"></div>
-              <p className="text-sm font-medium">Conversion en cours...</p>
-              <p className="text-xs">Traitement serveur du format HEIC</p>
-              <p className="text-xs text-gray-400 mt-1">Conversion plus rapide et fiable</p>
+              <p className="text-sm font-medium">Conversion HEIC en cours...</p>
+              <p className="text-xs">Conversion automatique en JPEG</p>
+              <p className="text-xs text-gray-400 mt-1">Veuillez patienter...</p>
             </div>
           </div>
         ) : (

@@ -16,17 +16,44 @@ export const isHeicFile = (file: File): boolean => {
 };
 
 export const convertHeicToJpeg = async (file: File): Promise<File> => {
-  // Cette fonction est maintenant gérée côté serveur
-  // Pour le moment, on retourne le fichier tel quel
-  console.log('⚠️ Conversion HEIC locale désactivée - utilisation du serveur');
+  console.log('🔄 Conversion HEIC locale avec heic2any pour:', file.name);
   
-  // En attendant l'implémentation serveur complète, on suggère à l'utilisateur
-  // de convertir le fichier avant l'upload
-  throw new Error(
-    'Les fichiers HEIC doivent être convertis avant l\'upload. ' +
-    'Sur iPhone, activez "Plus compatible" dans Réglages > Appareil photo > Formats ' +
-    'pour prendre des photos en JPEG.'
-  );
+  try {
+    // Dynamically import heic2any to avoid SSR issues
+    const { default: heic2any } = await import('heic2any');
+
+    // Convertir le fichier HEIC en JPEG
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.8
+    });
+
+    // heic2any peut retourner un blob ou un array de blobs
+    const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+    
+    // Créer un nouveau fichier avec le blob converti
+    const convertedFile = new File(
+      [finalBlob as Blob], 
+      file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'),
+      { type: 'image/jpeg' }
+    );
+
+    console.log('✅ Conversion HEIC locale réussie:', {
+      originalName: file.name,
+      convertedName: convertedFile.name,
+      originalSize: file.size,
+      convertedSize: convertedFile.size
+    });
+
+    return convertedFile;
+  } catch (error) {
+    console.error('❌ Erreur conversion HEIC locale:', error);
+    throw new Error(
+      'Impossible de convertir le fichier HEIC. ' +
+      'Veuillez convertir vos images en JPEG avant de les télécharger.'
+    );
+  }
 };
 
 export const processImageFile = async (file: File): Promise<File> => {
@@ -42,14 +69,10 @@ export const processImageFile = async (file: File): Promise<File> => {
     throw new Error('Aucun fichier sélectionné');
   }
   
-  // Pour les fichiers HEIC, suggérer la conversion avant upload
+  // Pour les fichiers HEIC, tenter la conversion
   if (isHeicFile(file)) {
-    console.log('📱 Fichier HEIC détecté - conversion requise avant upload');
-    throw new Error(
-      'Les fichiers HEIC ne sont pas supportés pour l\'upload. ' +
-      'Veuillez convertir vos images en JPEG avant de les télécharger. ' +
-      'Sur iPhone : Réglages > Appareil photo > Formats > "Plus compatible".'
-    );
+    console.log('📱 Fichier HEIC détecté - conversion en cours...');
+    return await convertHeicToJpeg(file);
   }
   
   console.log('✅ Fichier standard, aucune conversion nécessaire');
