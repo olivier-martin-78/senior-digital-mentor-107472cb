@@ -15,6 +15,7 @@ interface ActivityCardProps {
   showEditButton?: boolean;
   onEdit?: () => void;
   subActivityName?: string;
+  iframeCode?: string;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -26,7 +27,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   activityDate,
   showEditButton = false,
   onEdit,
-  subActivityName
+  subActivityName,
+  iframeCode
 }) => {
   const getDisplayImage = () => {
     if (thumbnailUrl) {
@@ -35,11 +37,41 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     if (isYouTube && videoId) {
       return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
     }
+    if (iframeCode) {
+      // Extraire l'URL de la source de l'iframe pour récupérer l'ID de la vidéo
+      const srcMatch = iframeCode.match(/src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)/);
+      if (srcMatch && srcMatch[1]) {
+        return `https://img.youtube.com/vi/${srcMatch[1]}/maxresdefault.jpg`;
+      }
+    }
     return '/placeholder.svg';
   };
 
   const handleClick = () => {
-    window.open(link, '_blank', 'noopener,noreferrer');
+    if (iframeCode) {
+      // Ouvrir dans une nouvelle fenêtre avec le code iframe
+      const newWindow = window.open('', '_blank', 'width=800,height=600');
+      if (newWindow) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${title}</title>
+              <style>
+                body { margin: 0; padding: 20px; background: #000; }
+                iframe { width: 100%; height: 500px; }
+              </style>
+            </head>
+            <body>
+              <h2 style="color: white; text-align: center;">${title}</h2>
+              ${iframeCode}
+            </body>
+          </html>
+        `);
+      }
+    } else {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -54,7 +86,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             target.src = '/placeholder.svg';
           }}
         />
-        {isYouTube && (
+        {(isYouTube || iframeCode) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-t-lg">
             <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
               <div className="w-0 h-0 border-l-8 border-l-white border-t-4 border-t-transparent border-b-4 border-b-transparent ml-1"></div>

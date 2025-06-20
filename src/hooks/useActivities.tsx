@@ -9,6 +9,7 @@ export interface Activity {
   activity_type: string;
   title: string;
   link: string;
+  iframe_code?: string;
   thumbnail_url?: string;
   activity_date?: string;
   created_at: string;
@@ -24,7 +25,7 @@ export interface Activity {
 export const useActivities = (activityType: string) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { toast } = useTo
   const { user, hasRole } = useAuth();
 
   const fetchActivities = async () => {

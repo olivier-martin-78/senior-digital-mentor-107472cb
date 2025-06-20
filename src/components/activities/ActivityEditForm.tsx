@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +33,8 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
     activity_type: activity.activity_type,
     title: activity.title,
     link: activity.link,
+    iframe_code: activity.iframe_code || '',
+    use_iframe: !!activity.iframe_code,
     thumbnail_url: activity.thumbnail_url || '',
     activity_date: activity.activity_date || '',
     sub_activity_tag_id: activity.sub_activity_tag_id || '',
@@ -51,6 +55,8 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
         shared_globally: canShareGlobally ? formData.shared_globally : false,
+        link: formData.use_iframe ? '' : formData.link,
+        iframe_code: formData.use_iframe ? formData.iframe_code : null,
       };
 
       const { error } = await supabase
@@ -119,17 +125,44 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
             />
           </div>
 
-          <div>
-            <Label htmlFor="link">Lien (Internet ou YouTube)</Label>
-            <Input
-              id="link"
-              value={formData.link}
-              onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-              placeholder="https://example.com ou https://youtube.com/watch?v=..."
-              type="url"
-              required
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="use_iframe"
+              checked={formData.use_iframe}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, use_iframe: checked as boolean })
+              }
             />
+            <Label htmlFor="use_iframe" className="text-sm font-medium">
+              Utiliser un code d'intégration YouTube (iframe)
+            </Label>
           </div>
+
+          {formData.use_iframe ? (
+            <div>
+              <Label htmlFor="iframe_code">Code d'intégration YouTube</Label>
+              <Textarea
+                id="iframe_code"
+                value={formData.iframe_code}
+                onChange={(e) => setFormData({ ...formData, iframe_code: e.target.value })}
+                placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
+                rows={4}
+                required
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="link">Lien (Internet ou YouTube)</Label>
+              <Input
+                id="link"
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                placeholder="https://example.com ou https://youtube.com/watch?v=..."
+                type="url"
+                required
+              />
+            </div>
+          )}
 
           <ActivityThumbnailUploader
             currentThumbnail={formData.thumbnail_url}
