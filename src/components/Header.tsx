@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -143,6 +142,12 @@ const Header = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
                       >
                         Jeux
+                      </Link>
+                      <Link
+                        to="/activities/opposites"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
+                      >
+                        Jeu des Contraires
                       </Link>
                       <Link
                         to="/activities/exercises"
@@ -425,6 +430,13 @@ const Header = () => {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Jeux
+                    </Link>
+                    <Link
+                      to="/activities/opposites"
+                      className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Jeu des Contraires
                     </Link>
                     <Link
                       to="/activities/exercises"
