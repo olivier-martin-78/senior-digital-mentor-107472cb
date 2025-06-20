@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,11 +21,13 @@ interface Word {
 
 interface Cell {
   letter: string;
+  correctLetter: string;
   isBlack: boolean;
   isArrow?: boolean;
   arrowDirection?: Direction;
   wordId?: number;
   isEditable: boolean;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 type Grid = Cell[][];
@@ -38,6 +40,9 @@ const CrosswordBoard = () => {
   const [selectedWord, setSelectedWord] = useState<number | null>(null);
   const [gridSize, setGridSize] = useState(9);
   const [showHint, setShowHint] = useState<number | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<{row: number, col: number} | null>(null);
+  const [currentDirection, setCurrentDirection] = useState<Direction>('horizontal');
+  const gridRefs = useRef<(React.RefObject<HTMLInputElement> | null)[][]>([]);
 
   const wordSets = {
     'très-facile': [
@@ -104,51 +109,91 @@ const CrosswordBoard = () => {
   };
 
   const createEmptyGrid = (size: number): Grid => {
-    return Array(size).fill(null).map(() =>
+    const newGrid = Array(size).fill(null).map(() =>
       Array(size).fill(null).map(() => ({
         letter: '',
+        correctLetter: '',
         isBlack: false,
         isEditable: false
       }))
     );
+
+    // Initialize refs for each cell
+    gridRefs.current = Array(size).fill(null).map(() =>
+      Array(size).fill(null).map(() => React.createRef<HTMLInputElement>())
+    );
+
+    return newGrid;
   };
 
-  const canPlaceWord = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number): boolean => {
-    // Vérifier si le mot sort de la grille
+  const generateFillerLetters = (size: number, placedWords: Word[]): string[][] => {
+    const fillerGrid = Array(size).fill(null).map(() => Array(size).fill(''));
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    
+    // Mark positions where words are placed
+    const wordPositions = new Set<string>();
+    placedWords.forEach(word => {
+      for (let i = 0; i < word.length; i++) {
+        const row = word.direction === 'horizontal' ? word.startRow : word.startRow + i;
+        const col = word.direction === 'horizontal' ? word.startCol + i : word.startCol;
+        wordPositions.add(`${row}-${col}`);
+        fillerGrid[row][col] = word.word[i];
+      }
+    });
+
+    // Fill remaining positions with random letters
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (!wordPositions.has(`${i}-${j}`)) {
+          fillerGrid[i][j] = alphabet[Math.floor(Math.random() * alphabet.length)];
+        }
+      }
+    }
+
+    return fillerGrid;
+  };
+
+  const canPlaceWord = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number, existingWords: Word[]): boolean => {
     if (direction === 'horizontal') {
       if (startCol + word.length > size) return false;
     } else {
       if (startRow + word.length > size) return false;
     }
 
-    // Vérifier chaque position du mot
+    // Check for intersections with existing words
     for (let i = 0; i < word.length; i++) {
       const row = direction === 'horizontal' ? startRow : startRow + i;
       const col = direction === 'horizontal' ? startCol + i : startCol;
 
       if (row >= size || col >= size) return false;
 
-      const cell = grid[row][col];
-      
-      // Si la case est noire, on ne peut pas placer le mot
-      if (cell.isBlack) return false;
-
-      // Si la case contient déjà une lettre, elle doit correspondre
-      if (cell.letter && cell.letter !== word[i]) return false;
+      // Check if this position intersects with any existing word
+      for (const existingWord of existingWords) {
+        for (let j = 0; j < existingWord.length; j++) {
+          const existingRow = existingWord.direction === 'horizontal' ? existingWord.startRow : existingWord.startRow + j;
+          const existingCol = existingWord.direction === 'horizontal' ? existingWord.startCol + j : existingWord.startCol;
+          
+          if (row === existingRow && col === existingCol) {
+            // There's an intersection - letters must match
+            if (word[i] !== existingWord.word[j]) {
+              return false;
+            }
+          }
+        }
+      }
     }
 
     return true;
   };
 
-  const placeWordsInGrid = (selectedWords: Word[], size: number): Grid => {
+  const placeWordsInGrid = (selectedWords: Word[], size: number): { grid: Grid, placedWords: Word[] } => {
     const newGrid = createEmptyGrid(size);
     const placedWords: Word[] = [];
     
-    // Essayer de placer chaque mot
     for (const word of selectedWords) {
       let placed = false;
       let attempts = 0;
-      const maxAttempts = 100;
+      const maxAttempts = 200;
 
       while (!placed && attempts < maxAttempts) {
         const isHorizontal = Math.random() > 0.5;
@@ -165,31 +210,13 @@ const CrosswordBoard = () => {
         const startRow = Math.floor(Math.random() * (maxStartRow + 1));
         const startCol = Math.floor(Math.random() * (maxStartCol + 1));
 
-        if (canPlaceWord(newGrid, word.word, startRow, startCol, direction, size)) {
-          // Placer le mot
+        if (canPlaceWord(newGrid, word.word, startRow, startCol, direction, size, placedWords)) {
           const placedWord: Word = {
             ...word,
             startRow,
             startCol,
             direction
           };
-
-          // Placer la flèche au début du mot
-          newGrid[startRow][startCol].isArrow = true;
-          newGrid[startRow][startCol].arrowDirection = direction;
-          newGrid[startRow][startCol].wordId = word.id;
-          newGrid[startRow][startCol].isBlack = false;
-
-          // Placer les lettres du mot
-          for (let i = 0; i < word.word.length; i++) {
-            const row = direction === 'horizontal' ? startRow : startRow + i;
-            const col = direction === 'horizontal' ? startCol + i : startCol;
-            
-            newGrid[row][col].letter = word.word[i];
-            newGrid[row][col].isBlack = false;
-            newGrid[row][col].isEditable = true;
-            newGrid[row][col].wordId = word.id;
-          }
 
           placedWords.push(placedWord);
           placed = true;
@@ -199,25 +226,39 @@ const CrosswordBoard = () => {
       }
     }
 
-    // Marquer quelques cases noires aléatoirement (éviter les cases avec des mots)
+    // Generate filler letters for the entire grid
+    const fillerGrid = generateFillerLetters(size, placedWords);
+
+    // Fill the grid with all letters (words + fillers)
     for (let i = 0; i < size; i++) {
       for (let j = 0; j < size; j++) {
-        if (!newGrid[i][j].isEditable && !newGrid[i][j].isArrow && Math.random() < 0.1) {
-          newGrid[i][j].isBlack = true;
+        newGrid[i][j].correctLetter = fillerGrid[i][j];
+        newGrid[i][j].isEditable = true;
+        
+        // Mark arrow positions and word associations
+        for (const word of placedWords) {
+          if (i === word.startRow && j === word.startCol) {
+            newGrid[i][j].isArrow = true;
+            newGrid[i][j].arrowDirection = word.direction;
+            newGrid[i][j].wordId = word.id;
+          }
+          
+          // Check if this cell is part of this word
+          for (let k = 0; k < word.length; k++) {
+            const wordRow = word.direction === 'horizontal' ? word.startRow : word.startRow + k;
+            const wordCol = word.direction === 'horizontal' ? word.startCol + k : word.startCol;
+            
+            if (i === wordRow && j === wordCol) {
+              if (!newGrid[i][j].wordId) {
+                newGrid[i][j].wordId = word.id;
+              }
+            }
+          }
         }
       }
     }
 
-    // Remettre les lettres à vide pour le jeu (garder seulement la structure)
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (newGrid[i][j].isEditable) {
-          newGrid[i][j].letter = '';
-        }
-      }
-    }
-
-    return newGrid;
+    return { grid: newGrid, placedWords };
   };
 
   const generateRandomWords = (difficulty: Difficulty): Word[] => {
@@ -243,34 +284,84 @@ const CrosswordBoard = () => {
     setGridSize(settings.size);
     
     const newWords = generateRandomWords(difficulty);
-    setWords(newWords);
+    const { grid: newGrid, placedWords } = placeWordsInGrid(newWords, settings.size);
     
-    const newGrid = placeWordsInGrid(newWords, settings.size);
+    setWords(placedWords);
     setGrid(newGrid);
     setGameState('playing');
     setSelectedWord(null);
     setShowHint(null);
+    setCurrentPosition(null);
   };
 
-  const updateCell = (row: number, col: number, value: string) => {
+  const moveToNextCell = (currentRow: number, currentCol: number, direction: Direction) => {
+    if (!selectedWord) return;
+
+    const word = words.find(w => w.id === selectedWord);
+    if (!word) return;
+
+    let nextRow = currentRow;
+    let nextCol = currentCol;
+
+    if (direction === 'horizontal') {
+      nextCol++;
+    } else {
+      nextRow++;
+    }
+
+    // Check if the next position is within the word bounds
+    const isWithinWord = direction === 'horizontal' 
+      ? nextCol <= word.startCol + word.length - 1
+      : nextRow <= word.startRow + word.length - 1;
+
+    if (isWithinWord && nextRow < gridSize && nextCol < gridSize) {
+      setCurrentPosition({ row: nextRow, col: nextCol });
+      setTimeout(() => {
+        const inputRef = gridRefs.current[nextRow][nextCol];
+        if (inputRef && inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 0);
+    }
+  };
+
+  const updateCell = (row: number, col: number, value: string, moveNext: boolean = true) => {
     if (!grid[row][col].isEditable || value.length > 1) return;
     
     const newGrid = [...grid];
     newGrid[row][col].letter = value.toUpperCase();
     setGrid(newGrid);
+    setCurrentPosition({ row, col });
+    
+    if (moveNext && value && selectedWord) {
+      const word = words.find(w => w.id === selectedWord);
+      if (word) {
+        moveToNextCell(row, col, word.direction);
+      }
+    }
+  };
+
+  const handleCellClick = (row: number, col: number) => {
+    const cell = grid[row][col];
+    if (cell.wordId) {
+      setSelectedWord(cell.wordId);
+      setCurrentPosition({ row, col });
+      const word = words.find(w => w.id === cell.wordId);
+      if (word) {
+        setCurrentDirection(word.direction);
+      }
+    }
   };
 
   const revealSolution = () => {
     const newGrid = [...grid];
-    words.forEach(word => {
-      for (let i = 0; i < word.length; i++) {
-        const row = word.direction === 'horizontal' ? word.startRow : word.startRow + i;
-        const col = word.direction === 'horizontal' ? word.startCol + i : word.startCol;
-        if (row < gridSize && col < gridSize && newGrid[row][col].isEditable) {
-          newGrid[row][col].letter = word.word[i];
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        if (newGrid[i][j].isEditable) {
+          newGrid[i][j].letter = newGrid[i][j].correctLetter;
         }
       }
-    });
+    }
     setGrid(newGrid);
     setGameState('completed');
   };
@@ -384,39 +475,43 @@ const CrosswordBoard = () => {
       return (
         <div
           key={`${row}-${col}`}
-          className="w-8 h-8 bg-gray-800 border border-gray-600"
+          className="w-16 h-16 bg-gray-800 border border-gray-600"
         />
       );
     }
 
     const isHighlighted = selectedWord === cell.wordId;
+    const isCurrent = currentPosition?.row === row && currentPosition?.col === col;
 
     return (
       <div
         key={`${row}-${col}`}
         className={`
-          w-8 h-8 border border-gray-400 relative flex items-center justify-center
+          w-16 h-16 border border-gray-400 relative flex items-center justify-center
           ${cell.isEditable ? 'bg-white' : 'bg-gray-100'}
           ${isHighlighted ? 'bg-yellow-200 border-yellow-400 border-2' : ''}
-          transition-all duration-200
+          ${isCurrent ? 'bg-blue-200 border-blue-500 border-2' : ''}
+          transition-all duration-200 cursor-pointer
         `}
-        onClick={() => cell.wordId && setSelectedWord(cell.wordId)}
+        onClick={() => handleCellClick(row, col)}
       >
         {cell.isArrow && (
-          <div className="absolute top-0 left-0 text-xs text-blue-600">
+          <div className="absolute top-1 left-1 text-xs text-blue-600">
             {cell.arrowDirection === 'horizontal' ? <ArrowRight className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
           </div>
         )}
         {cell.isEditable ? (
           <Input
+            ref={gridRefs.current[row] ? gridRefs.current[row][col] : null}
             type="text"
             value={cell.letter}
             onChange={(e) => updateCell(row, col, e.target.value)}
-            className="w-full h-full border-0 text-center text-sm font-bold p-0 bg-transparent focus:ring-0 focus:outline-none"
+            onFocus={() => setCurrentPosition({ row, col })}
+            className="w-full h-full border-0 text-center text-lg font-bold p-0 bg-transparent focus:ring-0 focus:outline-none"
             maxLength={1}
           />
         ) : (
-          <span className="text-sm font-bold">{cell.letter}</span>
+          <span className="text-lg font-bold">{cell.letter}</span>
         )}
       </div>
     );
@@ -508,7 +603,7 @@ const CrosswordBoard = () => {
                 </CardHeader>
                 <CardContent className="p-8 bg-gradient-to-br from-gray-50 to-white flex justify-center">
                   <div 
-                    className="grid gap-0 border-2 border-gray-800 bg-white rounded-lg overflow-hidden shadow-lg"
+                    className="grid gap-1 border-2 border-gray-800 bg-white rounded-lg overflow-hidden shadow-lg"
                     style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
                   >
                     {grid.map((row, rowIndex) =>
