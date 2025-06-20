@@ -113,43 +113,109 @@ const CrosswordBoard = () => {
     );
   };
 
+  const canPlaceWord = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number): boolean => {
+    // Vérifier si le mot sort de la grille
+    if (direction === 'horizontal') {
+      if (startCol + word.length > size) return false;
+    } else {
+      if (startRow + word.length > size) return false;
+    }
+
+    // Vérifier chaque position du mot
+    for (let i = 0; i < word.length; i++) {
+      const row = direction === 'horizontal' ? startRow : startRow + i;
+      const col = direction === 'horizontal' ? startCol + i : startCol;
+
+      if (row >= size || col >= size) return false;
+
+      const cell = grid[row][col];
+      
+      // Si la case est noire, on ne peut pas placer le mot
+      if (cell.isBlack) return false;
+
+      // Si la case contient déjà une lettre, elle doit correspondre
+      if (cell.letter && cell.letter !== word[i]) return false;
+    }
+
+    return true;
+  };
+
   const placeWordsInGrid = (selectedWords: Word[], size: number): Grid => {
     const newGrid = createEmptyGrid(size);
+    const placedWords: Word[] = [];
     
-    // Marquer les cases noires aléatoirement
+    // Essayer de placer chaque mot
+    for (const word of selectedWords) {
+      let placed = false;
+      let attempts = 0;
+      const maxAttempts = 100;
+
+      while (!placed && attempts < maxAttempts) {
+        const isHorizontal = Math.random() > 0.5;
+        const direction: Direction = isHorizontal ? 'horizontal' : 'vertical';
+        
+        const maxStartRow = direction === 'horizontal' ? size - 1 : size - word.word.length;
+        const maxStartCol = direction === 'horizontal' ? size - word.word.length : size - 1;
+        
+        if (maxStartRow < 0 || maxStartCol < 0) {
+          attempts++;
+          continue;
+        }
+
+        const startRow = Math.floor(Math.random() * (maxStartRow + 1));
+        const startCol = Math.floor(Math.random() * (maxStartCol + 1));
+
+        if (canPlaceWord(newGrid, word.word, startRow, startCol, direction, size)) {
+          // Placer le mot
+          const placedWord: Word = {
+            ...word,
+            startRow,
+            startCol,
+            direction
+          };
+
+          // Placer la flèche au début du mot
+          newGrid[startRow][startCol].isArrow = true;
+          newGrid[startRow][startCol].arrowDirection = direction;
+          newGrid[startRow][startCol].wordId = word.id;
+          newGrid[startRow][startCol].isBlack = false;
+
+          // Placer les lettres du mot
+          for (let i = 0; i < word.word.length; i++) {
+            const row = direction === 'horizontal' ? startRow : startRow + i;
+            const col = direction === 'horizontal' ? startCol + i : startCol;
+            
+            newGrid[row][col].letter = word.word[i];
+            newGrid[row][col].isBlack = false;
+            newGrid[row][col].isEditable = true;
+            newGrid[row][col].wordId = word.id;
+          }
+
+          placedWords.push(placedWord);
+          placed = true;
+        }
+        
+        attempts++;
+      }
+    }
+
+    // Marquer quelques cases noires aléatoirement (éviter les cases avec des mots)
     for (let i = 0; i < size; i++) {
       for (let j = 0; j < size; j++) {
-        if (Math.random() < 0.15) { // 15% de cases noires
+        if (!newGrid[i][j].isEditable && !newGrid[i][j].isArrow && Math.random() < 0.1) {
           newGrid[i][j].isBlack = true;
         }
       }
     }
 
-    // Placer les mots
-    selectedWords.forEach((word, index) => {
-      const { startRow, startCol, direction, word: wordText } = word;
-      
-      // Placer la flèche au début du mot
-      if (startRow >= 0 && startRow < size && startCol >= 0 && startCol < size) {
-        newGrid[startRow][startCol].isArrow = true;
-        newGrid[startRow][startCol].arrowDirection = direction;
-        newGrid[startRow][startCol].wordId = word.id;
-        newGrid[startRow][startCol].isBlack = false;
-      }
-
-      // Placer les lettres du mot
-      for (let i = 0; i < wordText.length; i++) {
-        const row = direction === 'horizontal' ? startRow : startRow + i;
-        const col = direction === 'horizontal' ? startCol + i : startCol;
-        
-        if (row >= 0 && row < size && col >= 0 && col < size) {
-          newGrid[row][col].letter = '';
-          newGrid[row][col].isBlack = false;
-          newGrid[row][col].isEditable = true;
-          newGrid[row][col].wordId = word.id;
+    // Remettre les lettres à vide pour le jeu (garder seulement la structure)
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (newGrid[i][j].isEditable) {
+          newGrid[i][j].letter = '';
         }
       }
-    });
+    }
 
     return newGrid;
   };
@@ -161,21 +227,15 @@ const CrosswordBoard = () => {
       .sort(() => Math.random() - 0.5)
       .slice(0, settings.wordsCount);
 
-    return selectedWords.map((wordData, index) => {
-      const isHorizontal = Math.random() > 0.5;
-      const maxStartRow = isHorizontal ? settings.size - 1 : settings.size - wordData.length;
-      const maxStartCol = isHorizontal ? settings.size - wordData.length : settings.size - 1;
-      
-      return {
-        id: index + 1,
-        word: wordData.word,
-        definition: wordData.definition,
-        startRow: Math.floor(Math.random() * Math.max(1, maxStartRow)),
-        startCol: Math.floor(Math.random() * Math.max(1, maxStartCol)),
-        direction: isHorizontal ? 'horizontal' : 'vertical',
-        length: wordData.length
-      };
-    });
+    return selectedWords.map((wordData, index) => ({
+      id: index + 1,
+      word: wordData.word,
+      definition: wordData.definition,
+      startRow: 0,
+      startCol: 0,
+      direction: 'horizontal',
+      length: wordData.length
+    }));
   };
 
   const generateNewGrid = () => {
