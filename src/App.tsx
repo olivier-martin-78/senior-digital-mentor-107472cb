@@ -54,9 +54,7 @@ function App() {
             <Route path="/life-story" element={<LifeStory />} />
             <Route path="/wishes" element={<Wishes />} />
             <Route path="/activities/activities" element={<Activities />} />
-            <Route path="/activities/meditation" element={<ActivityPage />} />
-            <Route path="/activities/games" element={<ActivityPage />} />
-            <Route path="/activities/exercises" element={<ActivityPage />} />
+            <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
