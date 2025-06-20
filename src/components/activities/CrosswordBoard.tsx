@@ -126,131 +126,119 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  const generateFillerLetters = (size: number, placedWords: Word[]): string[][] => {
-    const fillerGrid = Array(size).fill(null).map(() => Array(size).fill(''));
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    
-    // Mark positions where words are placed
-    const wordPositions = new Set<string>();
-    placedWords.forEach(word => {
-      for (let i = 0; i < word.length; i++) {
-        const row = word.direction === 'horizontal' ? word.startRow : word.startRow + i;
-        const col = word.direction === 'horizontal' ? word.startCol + i : word.startCol;
-        wordPositions.add(`${row}-${col}`);
-        fillerGrid[row][col] = word.word[i];
-      }
-    });
-
-    // Fill remaining positions with random letters
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (!wordPositions.has(`${i}-${j}`)) {
-          fillerGrid[i][j] = alphabet[Math.floor(Math.random() * alphabet.length)];
-        }
-      }
-    }
-
-    return fillerGrid;
-  };
-
-  const canPlaceWord = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number, existingWords: Word[]): boolean => {
+  const canPlaceWordAt = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number, existingWords: Word[]): boolean => {
     if (direction === 'horizontal') {
       if (startCol + word.length > size) return false;
     } else {
       if (startRow + word.length > size) return false;
     }
 
-    // Check for intersections with existing words
+    // Check each position of the word
     for (let i = 0; i < word.length; i++) {
       const row = direction === 'horizontal' ? startRow : startRow + i;
       const col = direction === 'horizontal' ? startCol + i : startCol;
 
       if (row >= size || col >= size) return false;
 
-      // Check if this position intersects with any existing word
-      for (const existingWord of existingWords) {
-        for (let j = 0; j < existingWord.length; j++) {
-          const existingRow = existingWord.direction === 'horizontal' ? existingWord.startRow : existingWord.startRow + j;
-          const existingCol = existingWord.direction === 'horizontal' ? existingWord.startCol + j : existingWord.startCol;
-          
-          if (row === existingRow && col === existingCol) {
-            // There's an intersection - letters must match
-            if (word[i] !== existingWord.word[j]) {
-              return false;
-            }
-          }
-        }
+      // Check if this position conflicts with existing words
+      const currentLetter = grid[row][col].correctLetter;
+      if (currentLetter && currentLetter !== word[i]) {
+        return false;
       }
     }
 
     return true;
   };
 
+  const findBestPlacement = (grid: Grid, word: string, size: number, existingWords: Word[]): { row: number, col: number, direction: Direction } | null => {
+    const placements = [];
+
+    // Try all possible positions and directions
+    for (let direction of ['horizontal', 'vertical'] as Direction[]) {
+      const maxRow = direction === 'horizontal' ? size : size - word.length + 1;
+      const maxCol = direction === 'horizontal' ? size - word.length + 1 : size;
+
+      for (let row = 0; row < maxRow; row++) {
+        for (let col = 0; col < maxCol; col++) {
+          if (canPlaceWordAt(grid, word, row, col, direction, size, existingWords)) {
+            // Calculate intersection score (higher is better)
+            let intersections = 0;
+            for (let i = 0; i < word.length; i++) {
+              const checkRow = direction === 'horizontal' ? row : row + i;
+              const checkCol = direction === 'horizontal' ? col + i : col;
+              if (grid[checkRow][checkCol].correctLetter === word[i]) {
+                intersections++;
+              }
+            }
+            
+            placements.push({ row, col, direction, intersections });
+          }
+        }
+      }
+    }
+
+    // Sort by number of intersections (prefer more intersections for better crossword structure)
+    placements.sort((a, b) => b.intersections - a.intersections);
+    
+    return placements.length > 0 ? placements[0] : null;
+  };
+
   const placeWordsInGrid = (selectedWords: Word[], size: number): { grid: Grid, placedWords: Word[] } => {
     const newGrid = createEmptyGrid(size);
     const placedWords: Word[] = [];
     
-    for (const word of selectedWords) {
-      let placed = false;
-      let attempts = 0;
-      const maxAttempts = 200;
+    // Sort words by length (place longer words first)
+    const sortedWords = [...selectedWords].sort((a, b) => b.word.length - a.word.length);
+    
+    for (const word of sortedWords) {
+      const placement = findBestPlacement(newGrid, word.word, size, placedWords);
+      
+      if (placement) {
+        const placedWord: Word = {
+          ...word,
+          startRow: placement.row,
+          startCol: placement.col,
+          direction: placement.direction
+        };
 
-      while (!placed && attempts < maxAttempts) {
-        const isHorizontal = Math.random() > 0.5;
-        const direction: Direction = isHorizontal ? 'horizontal' : 'vertical';
-        
-        const maxStartRow = direction === 'horizontal' ? size - 1 : size - word.word.length;
-        const maxStartCol = direction === 'horizontal' ? size - word.word.length : size - 1;
-        
-        if (maxStartRow < 0 || maxStartCol < 0) {
-          attempts++;
-          continue;
+        // Place the word in the grid
+        for (let i = 0; i < word.word.length; i++) {
+          const row = placement.direction === 'horizontal' ? placement.row : placement.row + i;
+          const col = placement.direction === 'horizontal' ? placement.col + i : placement.col;
+          newGrid[row][col].correctLetter = word.word[i];
         }
 
-        const startRow = Math.floor(Math.random() * (maxStartRow + 1));
-        const startCol = Math.floor(Math.random() * (maxStartCol + 1));
-
-        if (canPlaceWord(newGrid, word.word, startRow, startCol, direction, size, placedWords)) {
-          const placedWord: Word = {
-            ...word,
-            startRow,
-            startCol,
-            direction
-          };
-
-          placedWords.push(placedWord);
-          placed = true;
-        }
-        
-        attempts++;
+        placedWords.push(placedWord);
       }
     }
 
-    // Generate filler letters for the entire grid
-    const fillerGrid = generateFillerLetters(size, placedWords);
-
-    // Fill the grid with all letters (words + fillers)
+    // Fill non-word cells with black squares or random letters
     for (let i = 0; i < size; i++) {
       for (let j = 0; j < size; j++) {
-        newGrid[i][j].correctLetter = fillerGrid[i][j];
-        newGrid[i][j].isEditable = true;
-        
-        // Mark arrow positions and word associations
-        for (const word of placedWords) {
-          if (i === word.startRow && j === word.startCol) {
-            newGrid[i][j].isArrow = true;
-            newGrid[i][j].arrowDirection = word.direction;
-            newGrid[i][j].wordId = word.id;
-          }
+        if (!newGrid[i][j].correctLetter) {
+          // Create black cells to separate words
+          newGrid[i][j].isBlack = true;
+          newGrid[i][j].isEditable = false;
+        } else {
+          newGrid[i][j].isEditable = true;
           
-          // Check if this cell is part of this word
-          for (let k = 0; k < word.length; k++) {
-            const wordRow = word.direction === 'horizontal' ? word.startRow : word.startRow + k;
-            const wordCol = word.direction === 'horizontal' ? word.startCol + k : word.startCol;
+          // Mark arrow positions and word associations
+          for (const word of placedWords) {
+            if (i === word.startRow && j === word.startCol) {
+              newGrid[i][j].isArrow = true;
+              newGrid[i][j].arrowDirection = word.direction;
+              newGrid[i][j].wordId = word.id;
+            }
             
-            if (i === wordRow && j === wordCol) {
-              if (!newGrid[i][j].wordId) {
-                newGrid[i][j].wordId = word.id;
+            // Check if this cell is part of this word
+            for (let k = 0; k < word.length; k++) {
+              const wordRow = word.direction === 'horizontal' ? word.startRow : word.startRow + k;
+              const wordCol = word.direction === 'horizontal' ? word.startCol + k : word.startCol;
+              
+              if (i === wordRow && j === wordCol) {
+                if (!newGrid[i][j].wordId) {
+                  newGrid[i][j].wordId = word.id;
+                }
               }
             }
           }
@@ -279,19 +267,37 @@ const CrosswordBoard = () => {
     }));
   };
 
-  const generateNewGrid = () => {
-    const settings = getDifficultySettings(difficulty);
-    setGridSize(settings.size);
-    
-    const newWords = generateRandomWords(difficulty);
-    const { grid: newGrid, placedWords } = placeWordsInGrid(newWords, settings.size);
-    
-    setWords(placedWords);
-    setGrid(newGrid);
-    setGameState('playing');
-    setSelectedWord(null);
-    setShowHint(null);
-    setCurrentPosition(null);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, row: number, col: number) => {
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        moveToCell(row, col - 1);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        moveToCell(row, col + 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        moveToCell(row - 1, col);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        moveToCell(row + 1, col);
+        break;
+    }
+  };
+
+  const moveToCell = (newRow: number, newCol: number) => {
+    if (newRow >= 0 && newRow < gridSize && newCol >= 0 && newCol < gridSize && !grid[newRow][newCol].isBlack) {
+      setCurrentPosition({ row: newRow, col: newCol });
+      setTimeout(() => {
+        const inputRef = gridRefs.current[newRow][newCol];
+        if (inputRef && inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 0);
+    }
   };
 
   const moveToNextCell = (currentRow: number, currentCol: number, direction: Direction) => {
@@ -343,7 +349,7 @@ const CrosswordBoard = () => {
 
   const handleCellClick = (row: number, col: number) => {
     const cell = grid[row][col];
-    if (cell.wordId) {
+    if (cell.wordId && !cell.isBlack) {
       setSelectedWord(cell.wordId);
       setCurrentPosition({ row, col });
       const word = words.find(w => w.id === cell.wordId);
@@ -357,13 +363,28 @@ const CrosswordBoard = () => {
     const newGrid = [...grid];
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
-        if (newGrid[i][j].isEditable) {
+        if (newGrid[i][j].isEditable && !newGrid[i][j].isBlack) {
           newGrid[i][j].letter = newGrid[i][j].correctLetter;
         }
       }
     }
     setGrid(newGrid);
     setGameState('completed');
+  };
+
+  const generateNewGrid = () => {
+    const settings = getDifficultySettings(difficulty);
+    setGridSize(settings.size);
+    
+    const newWords = generateRandomWords(difficulty);
+    const { grid: newGrid, placedWords } = placeWordsInGrid(newWords, settings.size);
+    
+    setWords(placedWords);
+    setGrid(newGrid);
+    setGameState('playing');
+    setSelectedWord(null);
+    setShowHint(null);
+    setCurrentPosition(null);
   };
 
   const checkCompletion = () => {
@@ -507,6 +528,7 @@ const CrosswordBoard = () => {
             value={cell.letter}
             onChange={(e) => updateCell(row, col, e.target.value)}
             onFocus={() => setCurrentPosition({ row, col })}
+            onKeyDown={(e) => handleKeyDown(e, row, col)}
             className="w-full h-full border-0 text-center text-lg font-bold p-0 bg-transparent focus:ring-0 focus:outline-none"
             maxLength={1}
           />
@@ -521,7 +543,7 @@ const CrosswordBoard = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          {/* En-tête */}
+          {/* Header */}
           <div className="text-center mb-8 relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 rounded-3xl opacity-10 blur-3xl"></div>
             <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
@@ -538,7 +560,7 @@ const CrosswordBoard = () => {
             </div>
           </div>
 
-          {/* Contrôles */}
+          {/* Controls */}
           <Card className="mb-8 overflow-hidden shadow-xl border-0">
             <div className={`h-2 ${getDifficultyColor(difficulty)}`}></div>
             <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -592,7 +614,7 @@ const CrosswordBoard = () => {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Grille de mots croisés */}
+            {/* Crossword grid */}
             <div className="lg:col-span-2">
               <Card className="shadow-2xl border-0 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100">
@@ -614,7 +636,7 @@ const CrosswordBoard = () => {
               </Card>
             </div>
 
-            {/* Définitions */}
+            {/* Definitions */}
             <div>
               <Card className="shadow-2xl border-0 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100">
@@ -682,7 +704,7 @@ const CrosswordBoard = () => {
             </div>
           </div>
 
-          {/* Message de victoire */}
+          {/* Victory message */}
           {gameState === 'completed' && (
             <Card className="mt-8 bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 border-0 shadow-2xl animate-scale-in">
               <CardContent className="pt-8 pb-8">
