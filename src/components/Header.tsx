@@ -1,6 +1,15 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -173,90 +182,6 @@ const Header = () => {
                     <span>Mes invités</span>
                   </Link>
                 )}
-
-                {/* Menu Administration pour les admins */}
-                {hasRole('admin') && (
-                  <div className="relative group">
-                    <Link
-                      to="/admin/users"
-                      className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
-                        location.pathname.startsWith('/admin')
-                          ? 'text-tranches-dustyblue'
-                          : 'text-tranches-charcoal hover:text-tranches-dustyblue'
-                      }`}
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Administration</span>
-                    </Link>
-                    
-                    {/* Sous-menu Administration */}
-                    <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="py-2">
-                        <Link
-                          to="/admin/users"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Utilisateurs
-                        </Link>
-                        <Link
-                          to="/admin/posts"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Articles de blog
-                        </Link>
-                        <Link
-                          to="/admin/albums"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Albums
-                        </Link>
-                        <Link
-                          to="/admin/wish-albums"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Albums de souhaits
-                        </Link>
-                        <Link
-                          to="/admin/diary"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Journal
-                        </Link>
-                        <Link
-                          to="/admin/life-stories"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Récits de vie
-                        </Link>
-                        <Link
-                          to="/admin/activities"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Activités
-                        </Link>
-                        <Link
-                          to="/admin/permissions-diagnostic"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Diagnostic permissions
-                        </Link>
-                        <Link
-                          to="/admin/invitation-groups"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue"
-                        >
-                          Groupes d'invitation
-                        </Link>
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-tranches-dustyblue flex items-center"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Déconnexion
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 
                 <Link
                   to="/subscription"
@@ -271,20 +196,120 @@ const Header = () => {
                 </Link>
 
                 <div className="flex items-center space-x-2">
-                  <Link to="/profile">
-                    <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-tranches-dustyblue transition-all">
-                      <AvatarImage 
-                        src={profile?.avatar_url} 
-                        alt={profile?.display_name || user?.email || 'User'} 
-                      />
-                      <AvatarFallback className="bg-tranches-dustyblue text-white text-sm">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
-                  <Button onClick={handleSignOut} variant="outline" size="sm">
-                    Déconnexion
-                  </Button>
+                  {/* Avatar avec menu admin pour les administrateurs */}
+                  {hasRole('admin') ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-tranches-dustyblue transition-all">
+                          <AvatarImage 
+                            src={profile?.avatar_url} 
+                            alt={profile?.display_name || user?.email || 'User'} 
+                          />
+                          <AvatarFallback className="bg-tranches-dustyblue text-white text-sm">
+                            {getUserInitials()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuLabel className="flex items-center space-x-2">
+                          <User className="w-4 h-4" />
+                          <span>Mon compte</span>
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link to="/profile" className="flex items-center space-x-2">
+                            <User className="w-4 h-4" />
+                            <span>Profil</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <DropdownMenuLabel className="flex items-center space-x-2">
+                          <Settings className="w-4 h-4" />
+                          <span>Administration</span>
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/users" className="flex items-center space-x-2">
+                            <Users className="w-4 h-4" />
+                            <span>Utilisateurs</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/posts" className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4" />
+                            <span>Articles de blog</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/albums" className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4" />
+                            <span>Albums</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/wish-albums" className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4" />
+                            <span>Albums de souhaits</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/diary" className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4" />
+                            <span>Journal</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/life-stories" className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4" />
+                            <span>Récits de vie</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/activities" className="flex items-center space-x-2">
+                            <Sparkles className="w-4 h-4" />
+                            <span>Activités</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/permissions-diagnostic" className="flex items-center space-x-2">
+                            <Settings className="w-4 h-4" />
+                            <span>Diagnostic permissions</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/invitation-groups" className="flex items-center space-x-2">
+                            <Users className="w-4 h-4" />
+                            <span>Groupes d'invitation</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2 text-red-600">
+                          <LogOut className="w-4 h-4" />
+                          <span>Déconnexion</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Link to="/profile">
+                      <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-tranches-dustyblue transition-all">
+                        <AvatarImage 
+                          src={profile?.avatar_url} 
+                          alt={profile?.display_name || user?.email || 'User'} 
+                        />
+                        <AvatarFallback className="bg-tranches-dustyblue text-white text-sm">
+                          {getUserInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  )}
+                  
+                  {!hasRole('admin') && (
+                    <Button onClick={handleSignOut} variant="outline" size="sm">
+                      Déconnexion
+                    </Button>
+                  )}
                 </div>
               </>
             ) : (
@@ -431,91 +456,6 @@ const Header = () => {
                       <Users className="w-4 h-4" />
                       <span>Mes invités</span>
                     </Link>
-                  )}
-
-                  {/* Administration mobile pour les admins */}
-                  {hasRole('admin') && (
-                    <>
-                      <div className="text-sm font-medium text-tranches-charcoal px-2 py-1 flex items-center space-x-1">
-                        <Settings className="w-4 h-4" />
-                        <span>Administration</span>
-                      </div>
-                      <div className="pl-6 space-y-1">
-                        <Link
-                          to="/admin/users"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Utilisateurs
-                        </Link>
-                        <Link
-                          to="/admin/posts"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Articles de blog
-                        </Link>
-                        <Link
-                          to="/admin/albums"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Albums
-                        </Link>
-                        <Link
-                          to="/admin/wish-albums"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Albums de souhaits
-                        </Link>
-                        <Link
-                          to="/admin/diary"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Journal
-                        </Link>
-                        <Link
-                          to="/admin/life-stories"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Récits de vie
-                        </Link>
-                        <Link
-                          to="/admin/activities"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Activités
-                        </Link>
-                        <Link
-                          to="/admin/permissions-diagnostic"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Diagnostic permissions
-                        </Link>
-                        <Link
-                          to="/admin/invitation-groups"
-                          className="block text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Groupes d'invitation
-                        </Link>
-                        <button
-                          onClick={() => {
-                            handleSignOut();
-                            setIsMenuOpen(false);
-                          }}
-                          className="w-full text-left block px-2 py-1 text-sm text-gray-600 hover:text-tranches-dustyblue flex items-center"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Déconnexion
-                        </button>
-                      </div>
-                    </>
                   )}
                   
                   <Link
