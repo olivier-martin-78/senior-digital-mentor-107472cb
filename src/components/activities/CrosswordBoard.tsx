@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ interface Cell {
   wordId?: number;
   isEditable: boolean;
   inputRef?: React.RefObject<HTMLInputElement>;
+  wordIds?: number[];
 }
 
 type Grid = Cell[][];
@@ -99,12 +101,12 @@ const CrosswordBoard = () => {
 
   const getDifficultySettings = (diff: Difficulty) => {
     switch (diff) {
-      case 'très-facile': return { size: 7, wordsCount: 4 };
-      case 'facile': return { size: 9, wordsCount: 5 };
-      case 'moyen': return { size: 11, wordsCount: 6 };
-      case 'difficile': return { size: 13, wordsCount: 7 };
-      case 'expert': return { size: 15, wordsCount: 8 };
-      default: return { size: 9, wordsCount: 5 };
+      case 'très-facile': return { size: 9, wordsCount: 4 };
+      case 'facile': return { size: 11, wordsCount: 5 };
+      case 'moyen': return { size: 13, wordsCount: 6 };
+      case 'difficile': return { size: 15, wordsCount: 7 };
+      case 'expert': return { size: 17, wordsCount: 8 };
+      default: return { size: 11, wordsCount: 5 };
     }
   };
 
@@ -113,8 +115,9 @@ const CrosswordBoard = () => {
       Array(size).fill(null).map(() => ({
         letter: '',
         correctLetter: '',
-        isBlack: false,
-        isEditable: false
+        isBlack: true, // Commencer avec toutes les cases noires
+        isEditable: false,
+        wordIds: []
       }))
     );
 
@@ -126,23 +129,33 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  const canPlaceWordAt = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number, existingWords: Word[]): boolean => {
+  const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
+    const intersections = [];
+    for (let i = 0; i < word1.length; i++) {
+      for (let j = 0; j < word2.length; j++) {
+        if (word1[i] === word2[j]) {
+          intersections.push({ pos1: i, pos2: j });
+        }
+      }
+    }
+    return intersections;
+  };
+
+  const canPlaceWord = (grid: Grid, word: string, startRow: number, startCol: number, direction: Direction, size: number): boolean => {
+    // Vérifier les limites
     if (direction === 'horizontal') {
-      if (startCol + word.length > size) return false;
+      if (startCol + word.length > size || startRow >= size) return false;
     } else {
-      if (startRow + word.length > size) return false;
+      if (startRow + word.length > size || startCol >= size) return false;
     }
 
-    // Check each position of the word
+    // Vérifier chaque position du mot
     for (let i = 0; i < word.length; i++) {
       const row = direction === 'horizontal' ? startRow : startRow + i;
       const col = direction === 'horizontal' ? startCol + i : startCol;
 
-      if (row >= size || col >= size) return false;
-
-      // Check if this position conflicts with existing words
-      const currentLetter = grid[row][col].correctLetter;
-      if (currentLetter && currentLetter !== word[i]) {
+      // Si la case a déjà une lettre, elle doit correspondre
+      if (grid[row][col].correctLetter && grid[row][col].correctLetter !== word[i]) {
         return false;
       }
     }
@@ -150,100 +163,145 @@ const CrosswordBoard = () => {
     return true;
   };
 
-  const findBestPlacement = (grid: Grid, word: string, size: number, existingWords: Word[]): { row: number, col: number, direction: Direction } | null => {
-    const placements = [];
-
-    // Try all possible positions and directions
-    for (let direction of ['horizontal', 'vertical'] as Direction[]) {
-      const maxRow = direction === 'horizontal' ? size : size - word.length + 1;
-      const maxCol = direction === 'horizontal' ? size - word.length + 1 : size;
-
-      for (let row = 0; row < maxRow; row++) {
-        for (let col = 0; col < maxCol; col++) {
-          if (canPlaceWordAt(grid, word, row, col, direction, size, existingWords)) {
-            // Calculate intersection score (higher is better)
-            let intersections = 0;
-            for (let i = 0; i < word.length; i++) {
-              const checkRow = direction === 'horizontal' ? row : row + i;
-              const checkCol = direction === 'horizontal' ? col + i : col;
-              if (grid[checkRow][checkCol].correctLetter === word[i]) {
-                intersections++;
-              }
-            }
-            
-            placements.push({ row, col, direction, intersections });
-          }
-        }
-      }
-    }
-
-    // Sort by number of intersections (prefer more intersections for better crossword structure)
-    placements.sort((a, b) => b.intersections - a.intersections);
-    
-    return placements.length > 0 ? placements[0] : null;
-  };
-
   const placeWordsInGrid = (selectedWords: Word[], size: number): { grid: Grid, placedWords: Word[] } => {
     const newGrid = createEmptyGrid(size);
     const placedWords: Word[] = [];
-    
-    // Sort words by length (place longer words first)
-    const sortedWords = [...selectedWords].sort((a, b) => b.word.length - a.word.length);
-    
-    for (const word of sortedWords) {
-      const placement = findBestPlacement(newGrid, word.word, size, placedWords);
-      
-      if (placement) {
-        const placedWord: Word = {
-          ...word,
-          startRow: placement.row,
-          startCol: placement.col,
-          direction: placement.direction
-        };
 
-        // Place the word in the grid
-        for (let i = 0; i < word.word.length; i++) {
-          const row = placement.direction === 'horizontal' ? placement.row : placement.row + i;
-          const col = placement.direction === 'horizontal' ? placement.col + i : placement.col;
-          newGrid[row][col].correctLetter = word.word[i];
-        }
+    // Mélanger les mots
+    const shuffledWords = [...selectedWords].sort(() => Math.random() - 0.5);
 
-        placedWords.push(placedWord);
+    // Placer le premier mot au centre horizontalement
+    if (shuffledWords.length > 0) {
+      const firstWord = shuffledWords[0];
+      const startRow = Math.floor(size / 2);
+      const startCol = Math.floor((size - firstWord.word.length) / 2);
+
+      const placedWord: Word = {
+        ...firstWord,
+        startRow,
+        startCol,
+        direction: 'horizontal'
+      };
+
+      // Placer le mot dans la grille
+      for (let i = 0; i < firstWord.word.length; i++) {
+        newGrid[startRow][startCol + i].correctLetter = firstWord.word[i];
+        newGrid[startRow][startCol + i].isBlack = false;
+        newGrid[startRow][startCol + i].isEditable = true;
+        newGrid[startRow][startCol + i].wordIds = [firstWord.id];
       }
+
+      placedWords.push(placedWord);
     }
 
-    // Fill non-word cells with black squares or random letters
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (!newGrid[i][j].correctLetter) {
-          // Create black cells to separate words
-          newGrid[i][j].isBlack = true;
-          newGrid[i][j].isEditable = false;
-        } else {
-          newGrid[i][j].isEditable = true;
-          
-          // Mark arrow positions and word associations
-          for (const word of placedWords) {
-            if (i === word.startRow && j === word.startCol) {
-              newGrid[i][j].isArrow = true;
-              newGrid[i][j].arrowDirection = word.direction;
-              newGrid[i][j].wordId = word.id;
-            }
+    // Placer les autres mots en cherchant des intersections
+    for (let wordIndex = 1; wordIndex < shuffledWords.length; wordIndex++) {
+      const currentWord = shuffledWords[wordIndex];
+      let wordPlaced = false;
+
+      // Essayer de placer le mot en intersection avec les mots déjà placés
+      for (const placedWord of placedWords) {
+        if (wordPlaced) break;
+
+        const intersections = findIntersections(currentWord.word, placedWord.word);
+        
+        for (const intersection of intersections) {
+          if (wordPlaced) break;
+
+          // Calculer la position du nouveau mot
+          let newStartRow, newStartCol;
+          const newDirection: Direction = placedWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
+
+          if (placedWord.direction === 'horizontal') {
+            // Le mot placé est horizontal, le nouveau sera vertical
+            newStartRow = placedWord.startRow - intersection.pos1;
+            newStartCol = placedWord.startCol + intersection.pos2;
+          } else {
+            // Le mot placé est vertical, le nouveau sera horizontal
+            newStartRow = placedWord.startRow + intersection.pos2;
+            newStartCol = placedWord.startCol - intersection.pos1;
+          }
+
+          // Vérifier si on peut placer le mot à cette position
+          if (newStartRow >= 0 && newStartCol >= 0 && 
+              canPlaceWord(newGrid, currentWord.word, newStartRow, newStartCol, newDirection, size)) {
             
-            // Check if this cell is part of this word
-            for (let k = 0; k < word.length; k++) {
-              const wordRow = word.direction === 'horizontal' ? word.startRow : word.startRow + k;
-              const wordCol = word.direction === 'horizontal' ? word.startCol + k : word.startCol;
+            const newPlacedWord: Word = {
+              ...currentWord,
+              startRow: newStartRow,
+              startCol: newStartCol,
+              direction: newDirection
+            };
+
+            // Placer le mot dans la grille
+            for (let i = 0; i < currentWord.word.length; i++) {
+              const row = newDirection === 'horizontal' ? newStartRow : newStartRow + i;
+              const col = newDirection === 'horizontal' ? newStartCol + i : newStartCol;
               
-              if (i === wordRow && j === wordCol) {
-                if (!newGrid[i][j].wordId) {
-                  newGrid[i][j].wordId = word.id;
-                }
+              newGrid[row][col].correctLetter = currentWord.word[i];
+              newGrid[row][col].isBlack = false;
+              newGrid[row][col].isEditable = true;
+              
+              if (!newGrid[row][col].wordIds) {
+                newGrid[row][col].wordIds = [];
               }
+              newGrid[row][col].wordIds!.push(currentWord.id);
             }
+
+            placedWords.push(newPlacedWord);
+            wordPlaced = true;
           }
         }
       }
+
+      // Si on n'a pas pu placer le mot par intersection, essayer une placement libre
+      if (!wordPlaced) {
+        let attempts = 0;
+        while (!wordPlaced && attempts < 100) {
+          const direction: Direction = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+          const maxRow = direction === 'horizontal' ? size : size - currentWord.word.length;
+          const maxCol = direction === 'horizontal' ? size - currentWord.word.length : size;
+          
+          const startRow = Math.floor(Math.random() * maxRow);
+          const startCol = Math.floor(Math.random() * maxCol);
+
+          if (canPlaceWord(newGrid, currentWord.word, startRow, startCol, direction, size)) {
+            const newPlacedWord: Word = {
+              ...currentWord,
+              startRow,
+              startCol,
+              direction
+            };
+
+            // Placer le mot dans la grille
+            for (let i = 0; i < currentWord.word.length; i++) {
+              const row = direction === 'horizontal' ? startRow : startRow + i;
+              const col = direction === 'horizontal' ? startCol + i : startCol;
+              
+              newGrid[row][col].correctLetter = currentWord.word[i];
+              newGrid[row][col].isBlack = false;
+              newGrid[row][col].isEditable = true;
+              
+              if (!newGrid[row][col].wordIds) {
+                newGrid[row][col].wordIds = [];
+              }
+              newGrid[row][col].wordIds!.push(currentWord.id);
+            }
+
+            placedWords.push(newPlacedWord);
+            wordPlaced = true;
+          }
+          attempts++;
+        }
+      }
+    }
+
+    // Marquer les positions de départ des mots avec des flèches
+    for (const word of placedWords) {
+      const startCell = newGrid[word.startRow][word.startCol];
+      startCell.isArrow = true;
+      startCell.arrowDirection = word.direction;
+      startCell.wordId = word.id;
     }
 
     return { grid: newGrid, placedWords };
@@ -349,10 +407,11 @@ const CrosswordBoard = () => {
 
   const handleCellClick = (row: number, col: number) => {
     const cell = grid[row][col];
-    if (cell.wordId && !cell.isBlack) {
-      setSelectedWord(cell.wordId);
+    if (cell.wordIds && cell.wordIds.length > 0 && !cell.isBlack) {
+      // Si la cellule appartient à plusieurs mots, choisir le premier
+      setSelectedWord(cell.wordIds[0]);
       setCurrentPosition({ row, col });
-      const word = words.find(w => w.id === cell.wordId);
+      const word = words.find(w => w.id === cell.wordIds![0]);
       if (word) {
         setCurrentDirection(word.direction);
       }
@@ -410,6 +469,24 @@ const CrosswordBoard = () => {
   useEffect(() => {
     generateNewGrid();
   }, [difficulty]);
+
+  const generateRandomWords = (difficulty: Difficulty): Word[] => {
+    const settings = getDifficultySettings(difficulty);
+    const availableWords = wordSets[difficulty];
+    const selectedWords = availableWords
+      .sort(() => Math.random() - 0.5)
+      .slice(0, settings.wordsCount);
+
+    return selectedWords.map((wordData, index) => ({
+      id: index + 1,
+      word: wordData.word,
+      definition: wordData.definition,
+      startRow: 0,
+      startCol: 0,
+      direction: 'horizontal',
+      length: wordData.length
+    }));
+  };
 
   const getAdditionalHint = (word: string) => {
     const hints: { [key: string]: string } = {
@@ -501,7 +578,7 @@ const CrosswordBoard = () => {
       );
     }
 
-    const isHighlighted = selectedWord === cell.wordId;
+    const isHighlighted = selectedWord && cell.wordIds && cell.wordIds.includes(selectedWord);
     const isCurrent = currentPosition?.row === row && currentPosition?.col === col;
 
     return (
