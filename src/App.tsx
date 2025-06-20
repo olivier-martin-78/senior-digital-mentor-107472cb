@@ -28,6 +28,7 @@ import { Toaster } from '@/components/ui/toaster';
 import OppositesGame from './pages/activities/OppositesGame';
 import SudokuGame from './pages/activities/SudokuGame';
 import CrosswordGame from './pages/activities/CrosswordGame';
+import ResetPassword from './pages/ResetPassword';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/posts" element={<AdminPosts />} />
