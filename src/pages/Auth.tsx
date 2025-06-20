@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -77,19 +76,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Appeler la fonction Edge pour envoyer l'email de réinitialisation
-      const response = await fetch('/api/send-password-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email.trim() }),
+      // Utiliser la fonction Edge correctement
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: email.trim() }
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de l\'envoi de l\'email');
+      if (error) {
+        throw new Error(error.message || 'Erreur lors de l\'envoi de l\'email');
       }
 
       toast({
