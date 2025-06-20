@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -469,24 +468,6 @@ const CrosswordBoard = () => {
   useEffect(() => {
     generateNewGrid();
   }, [difficulty]);
-
-  const generateRandomWords = (difficulty: Difficulty): Word[] => {
-    const settings = getDifficultySettings(difficulty);
-    const availableWords = wordSets[difficulty];
-    const selectedWords = availableWords
-      .sort(() => Math.random() - 0.5)
-      .slice(0, settings.wordsCount);
-
-    return selectedWords.map((wordData, index) => ({
-      id: index + 1,
-      word: wordData.word,
-      definition: wordData.definition,
-      startRow: 0,
-      startCol: 0,
-      direction: 'horizontal',
-      length: wordData.length
-    }));
-  };
 
   const getAdditionalHint = (word: string) => {
     const hints: { [key: string]: string } = {
