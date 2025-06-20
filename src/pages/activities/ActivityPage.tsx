@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '@/components/Header';
-import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Gamepad2 } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +56,70 @@ const ActivityPage = () => {
   const filteredActivities = selectedSubTag 
     ? activities.filter(activity => activity.sub_activity_tag_id === selectedSubTag)
     : activities;
+
+  // Jeux intégrés pour la section jeux
+  const getIntegratedGames = () => {
+    if (type !== 'games') return [];
+    
+    return [
+      <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+        <Link to="/activities/opposites" className="block">
+          <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+            <div className="text-center text-white">
+              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+              <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+            </div>
+          </div>
+          <CardHeader>
+            <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+            </p>
+          </CardContent>
+        </Link>
+      </Card>,
+      
+      <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+        <Link to="/activities/sudoku" className="block">
+          <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+            <div className="text-center text-white">
+              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+              <h3 className="text-xl font-bold">Sudoku</h3>
+            </div>
+          </div>
+          <CardHeader>
+            <CardTitle className="text-lg">Sudoku</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+            </p>
+          </CardContent>
+        </Link>
+      </Card>,
+      
+      <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+        <Link to="/activities/crossword" className="block">
+          <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+            <div className="text-center text-white">
+              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+              <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+            </div>
+          </div>
+          <CardHeader>
+            <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
+            </p>
+          </CardContent>
+        </Link>
+      </Card>
+    ];
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,6 +434,9 @@ const ActivityPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Ajouter les jeux intégrés en premier dans la section Jeux */}
+            {getIntegratedGames()}
+            
             {filteredActivities.map((activity) => {
               const isYouTube = isYouTubeUrl(activity.link);
               const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
@@ -410,7 +476,7 @@ const ActivityPage = () => {
             })}
           </div>
 
-          {filteredActivities.length === 0 && (
+          {filteredActivities.length === 0 && type !== 'games' && (
             <div className="text-center py-12">
               <p className="text-gray-500">
                 {selectedSubTag 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -81,6 +82,66 @@ const ActivitiesOverview = () => {
     return activities.filter(activity => activity.sub_activity_tag_id === filter);
   };
 
+  // Jeux intégrés à afficher dans la section jeux
+  const getIntegratedGames = () => [
+    <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+      <Link to="/activities/opposites" className="block">
+        <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+          </div>
+        </div>
+        <CardHeader>
+          <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+          </p>
+        </CardContent>
+      </Link>
+    </Card>,
+    
+    <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+      <Link to="/activities/sudoku" className="block">
+        <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Sudoku</h3>
+          </div>
+        </div>
+        <CardHeader>
+          <CardTitle className="text-lg">Sudoku</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+          </p>
+        </CardContent>
+      </Link>
+    </Card>,
+    
+    <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+      <Link to="/activities/crossword" className="block">
+        <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+          </div>
+        </div>
+        <CardHeader>
+          <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
+          </p>
+        </CardContent>
+      </Link>
+    </Card>
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -152,9 +213,12 @@ const ActivitiesOverview = () => {
                     </Card>
                   ))}
                 </div>
-              ) : filteredActivities.length > 0 ? (
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredActivities.slice(0, 6).map((activity) => {
+                  {/* Ajouter les jeux intégrés en premier dans la section Jeux */}
+                  {section.type === 'games' && getIntegratedGames()}
+                  
+                  {filteredActivities.slice(0, section.type === 'games' ? 3 : 6).map((activity) => {
                     const isYouTube = isYouTubeUrl(activity.link);
                     const videoId = isYouTube ? extractYouTubeId(activity.link) : undefined;
                     
@@ -171,70 +235,10 @@ const ActivitiesOverview = () => {
                       />
                     );
                   })}
-                  
-                  {/* Ajouter les jeux personnalisés dans la section Jeux */}
-                  {section.type === 'games' && (
-                    <>
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-                        <Link to="/activities/opposites" className="block">
-                          <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                            <div className="text-center text-white">
-                              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                              <h3 className="text-xl font-bold">Jeu des Contraires</h3>
-                            </div>
-                          </div>
-                          <CardHeader>
-                            <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
-                            </p>
-                          </CardContent>
-                        </Link>
-                      </Card>
-                      
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-                        <Link to="/activities/sudoku" className="block">
-                          <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                            <div className="text-center text-white">
-                              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                              <h3 className="text-xl font-bold">Sudoku</h3>
-                            </div>
-                          </div>
-                          <CardHeader>
-                            <CardTitle className="text-lg">Sudoku</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
-                            </p>
-                          </CardContent>
-                        </Link>
-                      </Card>
-                      
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-                        <Link to="/activities/crossword" className="block">
-                          <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                            <div className="text-center text-white">
-                              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                              <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
-                            </div>
-                          </div>
-                          <CardHeader>
-                            <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
-                            </p>
-                          </CardContent>
-                        </Link>
-                      </Card>
-                    </>
-                  )}
                 </div>
-              ) : (
+              )}
+
+              {!section.loading && filteredActivities.length === 0 && section.type !== 'games' && (
                 <Card className={`p-8 text-center ${section.color}`}>
                   <Icon className={`w-16 h-16 ${section.iconColor} mx-auto mb-4`} />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
