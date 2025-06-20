@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CheckCircle, Lightbulb, Star, Puzzle, Trophy, ArrowRight, ArrowDown } from 'lucide-react';
+import { RefreshCw, CheckCircle, Lightbulb, Star, Puzzle, Trophy, ArrowRight, ArrowDown, HelpCircle, Eye } from 'lucide-react';
 
 type Difficulty = 'très-facile' | 'facile' | 'moyen' | 'difficile' | 'expert';
 type Direction = 'horizontal' | 'vertical';
@@ -38,6 +37,7 @@ const CrosswordBoard = () => {
   const [gameState, setGameState] = useState<'playing' | 'completed'>('playing');
   const [selectedWord, setSelectedWord] = useState<number | null>(null);
   const [gridSize, setGridSize] = useState(9);
+  const [showHint, setShowHint] = useState<number | null>(null);
 
   const wordSets = {
     'très-facile': [
@@ -189,6 +189,7 @@ const CrosswordBoard = () => {
     setGrid(newGrid);
     setGameState('playing');
     setSelectedWord(null);
+    setShowHint(null);
   };
 
   const updateCell = (row: number, col: number, value: string) => {
@@ -197,6 +198,21 @@ const CrosswordBoard = () => {
     const newGrid = [...grid];
     newGrid[row][col].letter = value.toUpperCase();
     setGrid(newGrid);
+  };
+
+  const revealSolution = () => {
+    const newGrid = [...grid];
+    words.forEach(word => {
+      for (let i = 0; i < word.length; i++) {
+        const row = word.direction === 'horizontal' ? word.startRow : word.startRow + i;
+        const col = word.direction === 'horizontal' ? word.startCol + i : word.startCol;
+        if (row < gridSize && col < gridSize && newGrid[row][col].isEditable) {
+          newGrid[row][col].letter = word.word[i];
+        }
+      }
+    });
+    setGrid(newGrid);
+    setGameState('completed');
   };
 
   const checkCompletion = () => {
@@ -222,6 +238,62 @@ const CrosswordBoard = () => {
   useEffect(() => {
     generateNewGrid();
   }, [difficulty]);
+
+  const getAdditionalHint = (word: string) => {
+    const hints: { [key: string]: string } = {
+      // Très facile
+      'CHAT': 'Animal qui ronronne et chasse les souris',
+      'EAU': 'Indispensable à la vie, H2O',
+      'PAIN': 'Se mange avec du beurre au petit-déjeuner',
+      'ROUGE': 'Couleur des tomates mûres',
+      'SOLEIL': 'Astre qui brille le jour',
+      'MAIN': 'Organe avec cinq doigts',
+      'BLEU': 'Couleur de l\'océan',
+      'LUNE': 'Visible la nuit dans le ciel',
+      
+      // Facile
+      'CHIEN': 'Animal de compagnie qui aboie',
+      'FLEUR': 'Rose, tulipe ou marguerite par exemple',
+      'LIVRE': 'Roman, dictionnaire ou manuel',
+      'TABLE': 'Meuble où l\'on mange',
+      'MONDE': 'Notre planète et ses habitants',
+      'TEMPS': 'Passé, présent, futur',
+      'VILLE': 'Paris, Lyon ou Marseille',
+      'NATURE': 'Forêts, montagnes et rivières',
+      
+      // Moyen
+      'ORDINATEUR': 'Machine pour naviguer sur internet',
+      'MUSIQUE': 'Mozart, Beethoven ou rock',
+      'HISTOIRE': 'Napoléon, Louis XIV, événements passés',
+      'CULTURE': 'Art, littérature et traditions',
+      'SCIENCE': 'Physique, chimie et biologie',
+      'VOYAGE': 'Partir en vacances loin de chez soi',
+      'FAMILLE': 'Parents, enfants, grands-parents',
+      'BONHEUR': 'Joie profonde et durable',
+      
+      // Difficile
+      'PHILOSOPHIE': 'Socrate, Platon, amour de la sagesse',
+      'METAPHORE': 'Comparaison sans "comme"',
+      'NOSTALGIE': 'Regret du temps qui passe',
+      'PARADOXE': 'Affirmation contradictoire mais vraie',
+      'EPISTEME': 'Savoir scientifique d\'Aristote',
+      'DIALECTE': 'Patois ou langue régionale',
+      'SYNECDOQUE': 'Dire "voile" pour "bateau"',
+      'EUPHEMISME': 'Dire "disparaître" pour "mourir"',
+      
+      // Expert
+      'EPIPHENOMENE': 'Phénomène secondaire sans cause',
+      'ESCHATOLOGIE': 'Étude de la fin des temps',
+      'HERMENEUTIQUE': 'Science de l\'interprétation',
+      'PHENOMENOLOGIE': 'Husserl et l\'étude de la conscience',
+      'EPISTEMOLOGIE': 'Philosophie de la connaissance',
+      'PSYCHANALYSE': 'Freud et l\'analyse de l\'inconscient',
+      'STRUCTURALISME': 'Lévi-Strauss et les structures',
+      'EXISTENTIALISME': 'Sartre et la liberté humaine'
+    };
+    
+    return hints[word] || 'Indice supplémentaire non disponible';
+  };
 
   const getDifficultyColor = (diff: Difficulty) => {
     switch (diff) {
@@ -257,13 +329,16 @@ const CrosswordBoard = () => {
       );
     }
 
+    const isHighlighted = selectedWord === cell.wordId;
+
     return (
       <div
         key={`${row}-${col}`}
         className={`
           w-8 h-8 border border-gray-400 relative flex items-center justify-center
           ${cell.isEditable ? 'bg-white' : 'bg-gray-100'}
-          ${selectedWord === cell.wordId ? 'bg-blue-100' : ''}
+          ${isHighlighted ? 'bg-yellow-200 border-yellow-400 border-2' : ''}
+          transition-all duration-200
         `}
         onClick={() => cell.wordId && setSelectedWord(cell.wordId)}
       >
@@ -348,6 +423,15 @@ const CrosswordBoard = () => {
                   <RefreshCw className="h-4 w-4" />
                   <span>Nouvelle grille</span>
                 </Button>
+
+                <Button 
+                  onClick={revealSolution} 
+                  variant="outline"
+                  className="flex items-center space-x-2 border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-50 transition-all duration-200"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>Révéler la solution</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -387,33 +471,54 @@ const CrosswordBoard = () => {
                 <CardContent className="p-4 bg-white max-h-96 overflow-y-auto">
                   <div className="space-y-3">
                     {words.map((word) => (
-                      <div
-                        key={word.id}
-                        className={`
-                          p-3 rounded-lg border cursor-pointer transition-all duration-200
-                          ${selectedWord === word.id 
-                            ? 'bg-blue-100 border-blue-300 shadow-md' 
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                          }
-                        `}
-                        onClick={() => setSelectedWord(word.id)}
-                      >
-                        <div className="flex items-center mb-2">
-                          <Badge variant="outline" className="mr-2">
-                            {word.id}
-                          </Badge>
-                          <div className="flex items-center text-xs text-gray-500">
-                            {word.direction === 'horizontal' ? (
-                              <ArrowRight className="w-3 h-3 mr-1" />
-                            ) : (
-                              <ArrowDown className="w-3 h-3 mr-1" />
-                            )}
-                            <span>{word.length} lettres</span>
+                      <div key={word.id}>
+                        <div
+                          className={`
+                            p-3 rounded-lg border cursor-pointer transition-all duration-200
+                            ${selectedWord === word.id 
+                              ? 'bg-yellow-100 border-yellow-300 shadow-md' 
+                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                            }
+                          `}
+                          onClick={() => setSelectedWord(selectedWord === word.id ? null : word.id)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="mr-2">
+                                {word.id}
+                              </Badge>
+                              <div className="flex items-center text-xs text-gray-500">
+                                {word.direction === 'horizontal' ? (
+                                  <ArrowRight className="w-3 h-3 mr-1" />
+                                ) : (
+                                  <ArrowDown className="w-3 h-3 mr-1" />
+                                )}
+                                <span>{word.length} lettres</span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowHint(showHint === word.id ? null : word.id);
+                              }}
+                              className="h-6 w-6 p-0"
+                            >
+                              <HelpCircle className="h-3 w-3" />
+                            </Button>
                           </div>
+                          <p className="text-sm font-medium text-gray-800 mb-2">
+                            {word.definition}
+                          </p>
+                          {showHint === word.id && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mt-2">
+                              <p className="text-xs text-blue-700 font-medium">
+                                💡 Indice supplémentaire : {getAdditionalHint(word.word)}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm font-medium text-gray-800">
-                          {word.definition}
-                        </p>
                       </div>
                     ))}
                   </div>
