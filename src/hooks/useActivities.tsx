@@ -25,7 +25,7 @@ export interface Activity {
 export const useActivities = (activityType: string) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useTo
+  const { toast } = useToast();
   const { user, hasRole } = useAuth();
 
   const fetchActivities = async () => {
