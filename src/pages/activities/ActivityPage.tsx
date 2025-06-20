@@ -190,6 +190,25 @@ const ActivityPage = () => {
                     </CardContent>
                   </Link>
                 </Card>
+                
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <Link to="/activities/crossword" className="block">
+                    <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+                      </div>
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">
+                        Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
               </>
             )}
           </div>
@@ -211,7 +230,7 @@ const ActivityPage = () => {
             
             {/* Montrer les jeux personnalisés même s'il n'y a pas d'autres activités de jeux */}
             {type === 'games' && !filter && (
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
                   <Link to="/activities/opposites" className="block">
                     <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
@@ -245,6 +264,25 @@ const ActivityPage = () => {
                     <CardContent>
                       <p className="text-sm text-gray-600">
                         Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <Link to="/activities/crossword" className="block">
+                    <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+                      </div>
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">
+                        Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
                       </p>
                     </CardContent>
                   </Link>

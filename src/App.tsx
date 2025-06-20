@@ -27,6 +27,7 @@ import PermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
 import { Toaster } from '@/components/ui/toaster';
 import OppositesGame from './pages/activities/OppositesGame';
 import SudokuGame from './pages/activities/SudokuGame';
+import CrosswordGame from './pages/activities/CrosswordGame';
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ function App() {
             <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
             <Route path="/activities/opposites" element={<OppositesGame />} />
             <Route path="/activities/sudoku" element={<SudokuGame />} />
+            <Route path="/activities/crossword" element={<CrosswordGame />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
