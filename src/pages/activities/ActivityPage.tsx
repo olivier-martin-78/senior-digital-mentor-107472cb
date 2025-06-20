@@ -134,8 +134,11 @@ const ActivityPage = () => {
     }
     
     try {
+      // Préparer les données à insérer, en excluant use_iframe qui n'existe pas en base
+      const { use_iframe, ...dataWithoutUseIframe } = formData;
+      
       const dataToInsert = {
-        ...formData,
+        ...dataWithoutUseIframe,
         created_by: user.id,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
