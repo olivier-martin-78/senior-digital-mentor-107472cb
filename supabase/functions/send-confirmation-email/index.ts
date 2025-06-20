@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Envoi de l'email de confirmation...");
 
     const emailResponse = await resend.emails.send({
-      from: "Senior Digital Mentor <contact@senior-digital-mentor.com>",
+      from: "Senior Digital Mentor <noreply@senior-digital-mentor.com>",
       to: [email],
       subject: "Confirmez votre inscription à Senior Digital Mentor",
       html: emailHtml,
