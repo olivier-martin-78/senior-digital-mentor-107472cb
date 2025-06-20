@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -151,26 +150,47 @@ const ActivityPage = () => {
               );
             })}
             
-            {/* Ajouter le jeu des contraires dans la section Jeux */}
+            {/* Ajouter les jeux personnalisés dans la section Jeux */}
             {type === 'games' && (
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-                <Link to="/activities/opposites" className="block">
-                  <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                    <div className="text-center text-white">
-                      <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+              <>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <Link to="/activities/opposites" className="block">
+                    <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+                      </div>
                     </div>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-600">
-                      Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
-                    </p>
-                  </CardContent>
-                </Link>
-              </Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">
+                        Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <Link to="/activities/sudoku" className="block">
+                    <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold">Sudoku</h3>
+                      </div>
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Sudoku</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">
+                        Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              </>
             )}
           </div>
         ) : (
@@ -189,10 +209,10 @@ const ActivityPage = () => {
               }
             </p>
             
-            {/* Montrer le jeu des contraires même s'il n'y a pas d'autres activités de jeux */}
+            {/* Montrer les jeux personnalisés même s'il n'y a pas d'autres activités de jeux */}
             {type === 'games' && !filter && (
-              <div className="mt-8">
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200 max-w-sm mx-auto">
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
                   <Link to="/activities/opposites" className="block">
                     <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
                       <div className="text-center text-white">
@@ -206,6 +226,25 @@ const ActivityPage = () => {
                     <CardContent>
                       <p className="text-sm text-gray-600">
                         Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <Link to="/activities/sudoku" className="block">
+                    <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold">Sudoku</h3>
+                      </div>
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Sudoku</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">
+                        Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
                       </p>
                     </CardContent>
                   </Link>

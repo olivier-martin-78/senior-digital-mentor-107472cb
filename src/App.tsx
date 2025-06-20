@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -27,6 +26,7 @@ import MyInvitationGroups from './pages/MyInvitationGroups';
 import PermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
 import { Toaster } from '@/components/ui/toaster';
 import OppositesGame from './pages/activities/OppositesGame';
+import SudokuGame from './pages/activities/SudokuGame';
 
 const queryClient = new QueryClient();
 
@@ -60,6 +60,7 @@ function App() {
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
             <Route path="/activities/opposites" element={<OppositesGame />} />
+            <Route path="/activities/sudoku" element={<SudokuGame />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
