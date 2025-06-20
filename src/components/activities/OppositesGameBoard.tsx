@@ -33,10 +33,14 @@ const OppositesGameBoard = () => {
   };
 
   const handleAnswerChange = (wordIndex: number, value: string) => {
-    const numValue = value === '' ? '' : parseInt(value);
-    if (value === '' || (!isNaN(numValue) && numValue > 0)) {
+    // Permettre une chaîne vide ou un nombre positif
+    if (value === '' || (!isNaN(Number(value)) && Number(value) > 0)) {
       updateAnswer(wordIndex, value);
     }
+  };
+
+  const handleDifficultyChange = (value: string) => {
+    setDifficulty(value as 'easy' | 'medium' | 'hard');
   };
 
   const renderGrid = () => {
@@ -111,7 +115,7 @@ const OppositesGameBoard = () => {
             <div className="flex items-center space-x-4 mb-4">
               <div className="flex items-center space-x-2">
                 <label className="text-sm font-medium">Difficulté :</label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
+                <Select value={difficulty} onValueChange={handleDifficultyChange}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>

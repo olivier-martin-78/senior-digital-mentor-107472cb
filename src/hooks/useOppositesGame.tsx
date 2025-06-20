@@ -29,8 +29,8 @@ const WORD_PAIRS: WordPair[] = [
   { word1: 'Dur', word2: 'Tendre' },
   { word1: 'Puant', word2: 'Parfumé' },
   { word1: 'Grave', word2: 'Aigu' },
-  { word1: 'Fin', word2: 'Grossier' },
-  { word1: 'Méchant', word2: 'Gentil' }
+  { word1: 'Fin', word2: 'Épais' },
+  { word1: 'Méchant', word2: 'Bienveillant' }
 ];
 
 export const useOppositesGame = () => {

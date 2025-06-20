@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
-import Home from './pages/Home';
+import Index from './pages/Index';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -18,22 +19,24 @@ import Blog from './pages/Blog';
 import Diary from './pages/Diary';
 import LifeStory from './pages/LifeStory';
 import Wishes from './pages/Wishes';
-import Activities from './pages/Activities';
-import Scheduler from './pages/Scheduler';
-import InvitationGroups from './pages/InvitationGroups';
+import Activities from './pages/activities/ActivitiesOverview';
+import Scheduler from './pages/ProfessionalScheduler';
+import InvitationGroups from './pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from './pages/MyInvitationGroups';
-import PermissionsDiagnostic from './pages/admin/PermissionsDiagnostic';
+import PermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
 import { Toaster } from '@/components/ui/toaster';
 import OppositesGame from './pages/activities/OppositesGame';
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <QueryClient>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
           <Toaster />
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<AdminUsers />} />
@@ -50,7 +53,7 @@ function App() {
             <Route path="/life-story" element={<LifeStory />} />
             <Route path="/wishes" element={<Wishes />} />
             <Route path="/activities/:type" element={<Activities />} />
-             <Route path="/scheduler" element={<Scheduler />} />
+            <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
@@ -58,7 +61,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    </QueryClient>
+    </QueryClientProvider>
   );
 }
 
