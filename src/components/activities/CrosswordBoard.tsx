@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +62,11 @@ const CrosswordBoard = () => {
     { word: 'AIR', clue: 'Gaz que l\'on respire', length: 3, level: 1 },
     { word: 'EAU', clue: 'Liquide H2O', length: 3, level: 1 },
     { word: 'FEU', clue: 'Combustion', length: 3, level: 1 },
+    { word: 'OR', clue: 'Métal précieux jaune', length: 2, level: 1 },
+    { word: 'LIT', clue: 'Meuble pour dormir', length: 3, level: 1 },
+    { word: 'NEZ', clue: 'Organe de l\'odorat', length: 3, level: 1 },
+    { word: 'DOS', clue: 'Partie arrière du corps', length: 3, level: 1 },
+    { word: 'COU', clue: 'Partie entre tête et corps', length: 3, level: 1 },
     
     // Niveau 2 - Mots de 3-4 lettres
     { word: 'CHAT', clue: 'Animal domestique qui miaule', length: 4, level: 2 },
@@ -75,6 +79,11 @@ const CrosswordBoard = () => {
     { word: 'PIED', clue: 'Extrémité de la jambe', length: 4, level: 2 },
     { word: 'TOIT', clue: 'Couverture d\'une maison', length: 4, level: 2 },
     { word: 'VOIX', clue: 'Son émis par la gorge', length: 4, level: 2 },
+    { word: 'BRAS', clue: 'Membre supérieur', length: 4, level: 2 },
+    { word: 'COIN', clue: 'Angle d\'un lieu', length: 4, level: 2 },
+    { word: 'ROSE', clue: 'Fleur parfumée', length: 4, level: 2 },
+    { word: 'FILS', clue: 'Descendant mâle', length: 4, level: 2 },
+    { word: 'PAIX', clue: 'Absence de guerre', length: 4, level: 2 },
     
     // Niveau 3 - Mots de 3-5 lettres
     { word: 'CHIEN', clue: 'Meilleur ami de l\'homme', length: 5, level: 3 },
@@ -87,6 +96,14 @@ const CrosswordBoard = () => {
     { word: 'ROUGE', clue: 'Couleur du sang', length: 5, level: 3 },
     { word: 'BLANC', clue: 'Couleur de la neige', length: 5, level: 3 },
     { word: 'VERT', clue: 'Couleur de l\'herbe', length: 4, level: 3 },
+    { word: 'BLEU', clue: 'Couleur du ciel', length: 4, level: 3 },
+    { word: 'GRAND', clue: 'De grande taille', length: 5, level: 3 },
+    { word: 'PETIT', clue: 'De petite taille', length: 5, level: 3 },
+    { word: 'COURT', clue: 'De faible longueur', length: 5, level: 3 },
+    { word: 'LONG', clue: 'De grande longueur', length: 4, level: 3 },
+    { word: 'BEAU', clue: 'Agréable à voir', length: 4, level: 3 },
+    { word: 'LAID', clue: 'Désagréable à voir', length: 4, level: 3 },
+    { word: 'RICHE', clue: 'Qui a beaucoup d\'argent', length: 5, level: 3 },
     
     // Niveau 4 - Mots de 4-6 lettres
     { word: 'MUSIQUE', clue: 'Art des sons organisés', length: 7, level: 4 },
@@ -99,6 +116,17 @@ const CrosswordBoard = () => {
     { word: 'AMOUR', clue: 'Sentiment d\'affection profonde', length: 5, level: 4 },
     { word: 'ESPOIR', clue: 'Sentiment d\'attente confiante', length: 6, level: 4 },
     { word: 'RÊVE', clue: 'Pensées pendant le sommeil', length: 4, level: 4 },
+    { word: 'ÉCOLE', clue: 'Établissement d\'enseignement', length: 5, level: 4 },
+    { word: 'TRAVAIL', clue: 'Activité professionnelle', length: 7, level: 4 },
+    { word: 'MAISON', clue: 'Lieu d\'habitation', length: 6, level: 4 },
+    { word: 'JARDIN', clue: 'Espace cultivé de verdure', length: 6, level: 4 },
+    { word: 'ENFANT', clue: 'Jeune être humain', length: 6, level: 4 },
+    { word: 'PARENT', clue: 'Père ou mère', length: 6, level: 4 },
+    { word: 'FRÈRE', clue: 'Fils des mêmes parents', length: 5, level: 4 },
+    { word: 'SŒUR', clue: 'Fille des mêmes parents', length: 4, level: 4 },
+    { word: 'ONCLE', clue: 'Frère du père ou de la mère', length: 5, level: 4 },
+    { word: 'TANTE', clue: 'Sœur du père ou de la mère', length: 5, level: 4 },
+    { word: 'COUSIN', clue: 'Fils de l\'oncle ou de la tante', length: 6, level: 4 },
     
     // Niveau 5 - Mots de 4-7 lettres
     { word: 'PARADOXE', clue: 'Contradiction apparente', length: 8, level: 5 },
@@ -110,7 +138,21 @@ const CrosswordBoard = () => {
     { word: 'BEAUTÉ', clue: 'Qualité de ce qui est beau', length: 6, level: 5 },
     { word: 'COURAGE', clue: 'Qualité de celui qui brave le danger', length: 7, level: 5 },
     { word: 'PASSION', clue: 'Émotion intense et durable', length: 7, level: 5 },
-    { word: 'ÉTERNITÉ', clue: 'Durée sans fin', length: 8, level: 5 }
+    { word: 'ÉTERNITÉ', clue: 'Durée sans fin', length: 8, level: 5 },
+    { word: 'LUMIÈRE', clue: 'Rayonnement visible', length: 7, level: 5 },
+    { word: 'OMBRE', clue: 'Zone non éclairée', length: 5, level: 5 },
+    { word: 'SILENCE', clue: 'Absence de bruit', length: 7, level: 5 },
+    { word: 'MÉMOIRE', clue: 'Faculté de se souvenir', length: 7, level: 5 },
+    { word: 'OUBLI', clue: 'Perte de mémoire', length: 5, level: 5 },
+    { word: 'DESTIN', clue: 'Sort fixé d\'avance', length: 6, level: 5 },
+    { word: 'HASARD', clue: 'Ce qui arrive par chance', length: 6, level: 5 },
+    { word: 'FORTUNE', clue: 'Grande richesse', length: 7, level: 5 },
+    { word: 'PAUVRETÉ', clue: 'État de celui qui est pauvre', length: 8, level: 5 },
+    { word: 'RICHESSE', clue: 'Abondance de biens', length: 8, level: 5 },
+    { word: 'GLOIRE', clue: 'Renommée éclatante', length: 6, level: 5 },
+    { word: 'HONNEUR', clue: 'Sentiment de dignité', length: 7, level: 5 },
+    { word: 'HONTE', clue: 'Sentiment de déshonneur', length: 5, level: 5 },
+    { word: 'FIERTÉ', clue: 'Sentiment de satisfaction', length: 6, level: 5 }
   ];
 
   const getGridSize = (level: Difficulty): number => {
@@ -178,7 +220,8 @@ const CrosswordBoard = () => {
   const generateGrid = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
-    const wordsToPlace = Math.min(6 + level * 2, availableWords.length);
+    // Tripler le nombre de mots à placer
+    const wordsToPlace = Math.min((6 + level * 2) * 3, availableWords.length);
     
     const selectedWords = availableWords
       .sort(() => Math.random() - 0.5)
