@@ -172,6 +172,28 @@ const ActivitiesOverview = () => {
                       />
                     );
                   })}
+                  
+                  {/* Ajouter le jeu des contraires dans la section Jeux */}
+                  {section.type === 'games' && (
+                    <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                      <Link to="/activities/opposites" className="block">
+                        <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                            <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+                          </div>
+                        </div>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-600">
+                            Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+                          </p>
+                        </CardContent>
+                      </Link>
+                    </Card>
+                  )}
                 </div>
               ) : (
                 <Card className={`p-8 text-center ${section.color}`}>

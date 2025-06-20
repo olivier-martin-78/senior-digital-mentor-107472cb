@@ -20,6 +20,7 @@ import Diary from './pages/Diary';
 import LifeStory from './pages/LifeStory';
 import Wishes from './pages/Wishes';
 import Activities from './pages/activities/ActivitiesOverview';
+import ActivityPage from './pages/activities/ActivityPage';
 import Scheduler from './pages/ProfessionalScheduler';
 import InvitationGroups from './pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from './pages/MyInvitationGroups';
@@ -52,7 +53,10 @@ function App() {
             <Route path="/diary" element={<Diary />} />
             <Route path="/life-story" element={<LifeStory />} />
             <Route path="/wishes" element={<Wishes />} />
-            <Route path="/activities/:type" element={<Activities />} />
+            <Route path="/activities/activities" element={<Activities />} />
+            <Route path="/activities/meditation" element={<ActivityPage />} />
+            <Route path="/activities/games" element={<ActivityPage />} />
+            <Route path="/activities/exercises" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
