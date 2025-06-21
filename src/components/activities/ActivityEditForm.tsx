@@ -49,8 +49,11 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
     e.preventDefault();
     
     try {
+      // Exclure use_iframe et préparer les données pour la base de données
+      const { use_iframe, ...formDataWithoutUseIframe } = formData;
+      
       const dataToUpdate = {
-        ...formData,
+        ...formDataWithoutUseIframe,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
