@@ -400,12 +400,26 @@ const CrosswordBoard = () => {
   };
 
   const getTargetWordCount = (level: Difficulty): number => {
-    const targets = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30 };
+    const targets = { 1: 8, 2: 12, 3: 16, 4: 20, 5: 25 };
     return targets[level];
   };
 
   const getWordsForLevel = (level: Difficulty): WordData[] => {
-    return wordsDatabase.filter(w => w.level === level);
+    // Pour éviter les grilles vides, on inclut aussi les mots des niveaux inférieurs
+    let availableWords = wordsDatabase.filter(w => w.level === level);
+    
+    // Si pas assez de mots pour le niveau, ajouter les niveaux inférieurs
+    if (availableWords.length < 50 && level > 1) {
+      const lowerLevelWords = wordsDatabase.filter(w => w.level === level - 1);
+      availableWords = [...availableWords, ...lowerLevelWords];
+      
+      if (availableWords.length < 100 && level > 2) {
+        const evenLowerWords = wordsDatabase.filter(w => w.level === level - 2);
+        availableWords = [...availableWords, ...evenLowerWords];
+      }
+    }
+    
+    return availableWords;
   };
 
   const createEmptyGrid = (size: number): Grid => {
@@ -487,30 +501,6 @@ const CrosswordBoard = () => {
       }
     }
 
-    // Vérification plus souple de l'adjacence pour permettre plus de mots
-    if (allowAdjacent) {
-      // Permettre les mots adjacents séparés par au moins 1 case
-      const checkRow = direction === 'horizontal' ? row - 1 : row;
-      const checkCol = direction === 'horizontal' ? col : col - 1;
-      
-      if (checkRow >= 0 && checkRow < size && checkCol >= 0 && checkCol < size) {
-        const beforeCell = grid[checkRow][checkCol];
-        if (beforeCell && beforeCell.correctLetter && !beforeCell.isBlack) {
-          // Vérifier s'il y a au moins une intersection
-          let hasIntersection = false;
-          for (let i = 0; i < word.length; i++) {
-            const currentRow = direction === 'horizontal' ? row : row + i;
-            const currentCol = direction === 'horizontal' ? col + i : col;
-            if (grid[currentRow][currentCol].correctLetter) {
-              hasIntersection = true;
-              break;
-            }
-          }
-          if (!hasIntersection) return false;
-        }
-      }
-    }
-
     return true;
   };
 
@@ -562,20 +552,21 @@ const CrosswordBoard = () => {
     const availableWords = getWordsForLevel(level);
     const targetWords = getTargetWordCount(level);
     
-    console.log(`🎯 Phase 1 enrichie - Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
+    console.log(`🎯 Génération optimisée - Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
     console.log(`📚 Mots disponibles: ${availableWords.length} pour le niveau ${level}`);
 
     let bestResult = { grid: createEmptyGrid(size), placedWords: [] as PlacedWord[] };
     let maxWordsPlaced = 0;
 
-    // Augmentation du nombre de tentatives avec la base enrichie
-    const maxAttempts = level >= 3 ? 20 : 15;
+    // Augmentation du nombre de tentatives
+    const maxAttempts = 25;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       console.log(`🚀 Tentative ${attempt + 1}/${maxAttempts}`);
       
-      // Trier les mots pour optimiser les intersections
-      const sortedWords = [...availableWords].sort((a, b) => {
+      // Mélanger et trier les mots pour optimiser les intersections
+      const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
+      const sortedWords = shuffledWords.sort((a, b) => {
         // Privilégier les mots courts avec beaucoup de voyelles communes
         const vowels = 'AEIOU';
         const aVowels = a.word.split('').filter(c => vowels.includes(c)).length;
@@ -583,12 +574,11 @@ const CrosswordBoard = () => {
         
         if (aVowels !== bVowels) return bVowels - aVowels;
         if (a.length !== b.length) return a.length - b.length;
-        return Math.random() - 0.5;
+        return 0;
       });
       
       const newGrid = createEmptyGrid(size);
       const placedWords: PlacedWord[] = [];
-      const gridStates: GridState[] = [];
 
       // Placer le premier mot au centre
       if (sortedWords.length > 0) {
@@ -608,21 +598,16 @@ const CrosswordBoard = () => {
             length: firstWord.length
           });
           
-          gridStates.push({
-            grid: copyGrid(newGrid),
-            placedWords: [...placedWords]
-          });
-          
           console.log(`✅ Premier mot placé: ${firstWord.word} (${firstWord.length} lettres)`);
         }
       }
 
-      // Placer les mots suivants avec backtracking intelligent
+      // Placer les mots suivants
       let wordIndex = 1;
-      let backtrackCount = 0;
-      const maxBacktrack = 8;
+      let consecutiveFailures = 0;
+      const maxConsecutiveFailures = 10;
 
-      while (wordIndex < sortedWords.length && placedWords.length < targetWords && backtrackCount < maxBacktrack) {
+      while (wordIndex < sortedWords.length && placedWords.length < targetWords && consecutiveFailures < maxConsecutiveFailures) {
         const currentWord = sortedWords[wordIndex];
         let wordPlaced = false;
         let bestPlacements: Array<{
@@ -633,7 +618,7 @@ const CrosswordBoard = () => {
           intersections: number;
         }> = [];
 
-        // Rechercher toutes les intersections possibles avec tous les mots placés
+        // Rechercher toutes les intersections possibles
         for (const existingWord of placedWords) {
           const intersections = findAllIntersections(existingWord.word, currentWord.word);
           
@@ -661,9 +646,9 @@ const CrosswordBoard = () => {
               }
               
               const densityScore = calculateGridDensity(newGrid);
-              const positionScore = Math.abs(newRow - size/2) + Math.abs(newCol - size/2);
-              const vowelBonus = currentWord.word.split('').filter(c => 'AEIOU'.includes(c)).length;
-              const totalScore = intersection.score + intersectionCount * 5 + densityScore * 3 + vowelBonus * 2 - positionScore * 0.1;
+              const centerDistance = Math.abs(newRow - size/2) + Math.abs(newCol - size/2);
+              const vowelBonus = currentWord.word.split('').filter(c => 'AEIOUAEIOUY'.includes(c)).length;
+              const totalScore = intersection.score + intersectionCount * 5 + densityScore * 3 + vowelBonus * 2 - centerDistance * 0.1;
 
               bestPlacements.push({
                 row: newRow,
@@ -693,45 +678,17 @@ const CrosswordBoard = () => {
             length: currentWord.length
           });
           
-          // Sauvegarder l'état pour le backtracking
-          if (placedWords.length % 3 === 0) {
-            gridStates.push({
-              grid: copyGrid(newGrid),
-              placedWords: [...placedWords]
-            });
-          }
-          
           console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} (score: ${bestPlacement.score.toFixed(1)}, intersections: ${bestPlacement.intersections})`);
           wordPlaced = true;
-        }
-
-        if (!wordPlaced) {
-          // Backtracking si on est bloqué
-          if (gridStates.length > 1 && backtrackCount < maxBacktrack) {
-            console.log(`🔄 Backtracking - retour à ${gridStates[gridStates.length - 2].placedWords.length} mots`);
-            const previousState = gridStates[gridStates.length - 2];
-            
-            // Restaurer l'état précédent
-            for (let i = 0; i < size; i++) {
-              for (let j = 0; j < size; j++) {
-                newGrid[i][j] = { ...previousState.grid[i][j], wordIds: [...(previousState.grid[i][j].wordIds || [])] };
-              }
-            }
-            
-            placedWords.length = 0;
-            placedWords.push(...previousState.placedWords.map(w => ({ ...w })));
-            
-            gridStates.pop();
-            backtrackCount++;
-            wordIndex = placedWords.length; // Reprendre après le dernier mot placé
-            continue;
-          }
+          consecutiveFailures = 0;
+        } else {
+          consecutiveFailures++;
         }
 
         wordIndex++;
       }
 
-      console.log(`📊 Tentative ${attempt + 1}: ${placedWords.length} mots placés (densité: ${(calculateGridDensity(newGrid) * 100).toFixed(1)}%) - Base: ${availableWords.length} mots`);
+      console.log(`📊 Tentative ${attempt + 1}: ${placedWords.length} mots placés (densité: ${(calculateGridDensity(newGrid) * 100).toFixed(1)}%)`);
 
       if (placedWords.length > maxWordsPlaced) {
         maxWordsPlaced = placedWords.length;
@@ -742,13 +699,13 @@ const CrosswordBoard = () => {
       }
 
       // Si on atteint l'objectif, on peut s'arrêter
-      if (placedWords.length >= targetWords * 0.85) {
-        console.log(`🎉 Objectif largement atteint: ${placedWords.length}/${targetWords} mots`);
+      if (placedWords.length >= targetWords * 0.8) {
+        console.log(`🎉 Objectif atteint: ${placedWords.length}/${targetWords} mots`);
         break;
       }
     }
 
-    console.log(`🏆 Résultat final Phase 1: ${bestResult.placedWords.length} mots (objectif: ${targetWords}) avec ${availableWords.length} mots disponibles`);
+    console.log(`🏆 Résultat final: ${bestResult.placedWords.length} mots (objectif: ${targetWords}) avec ${availableWords.length} mots disponibles`);
     return bestResult;
   };
 
