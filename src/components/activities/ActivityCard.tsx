@@ -34,16 +34,21 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     if (thumbnailUrl) {
       return thumbnailUrl;
     }
-    if (isYouTube && videoId) {
-      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-    }
+    
+    // Si on a un code iframe, extraire l'ID de la vidéo depuis le code
     if (iframeCode) {
-      // Extraire l'URL de la source de l'iframe pour récupérer l'ID de la vidéo
       const srcMatch = iframeCode.match(/src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)/);
       if (srcMatch && srcMatch[1]) {
         return `https://img.youtube.com/vi/${srcMatch[1]}/maxresdefault.jpg`;
       }
     }
+    
+    // Si on a un videoId directement fourni
+    if (isYouTube && videoId) {
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    }
+    
+    // Fallback sur l'image par défaut
     return '/placeholder.svg';
   };
 
@@ -82,8 +87,22 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           alt={title}
           className="w-full h-48 object-cover rounded-t-lg"
           onError={(e) => {
+            console.error('🖼️ IMAGE LOAD ERROR for activity:', {
+              title,
+              thumbnailUrl,
+              iframeCode: !!iframeCode,
+              videoId,
+              isYouTube,
+              finalUrl: getDisplayImage()
+            });
             const target = e.target as HTMLImageElement;
             target.src = '/placeholder.svg';
+          }}
+          onLoad={() => {
+            console.log('🖼️ SUCCESS image loaded for activity:', {
+              title,
+              url: getDisplayImage()
+            });
           }}
         />
         {(isYouTube || iframeCode) && (
