@@ -150,7 +150,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     
     const emailResponse = await resend.emails.send({
-      from: 'Tranches de Vie <contact@senior-digital-mentor.com>',
+      from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
       to: [email.trim()],
       subject: 'Réinitialisation de votre mot de passe',
       html: `
