@@ -37,6 +37,19 @@ interface Cell {
   wordIds?: number[];
 }
 
+interface GridState {
+  grid: Grid;
+  placedWords: PlacedWord[];
+}
+
+interface IntersectionPoint {
+  word1Index: number;
+  word2Index: number;
+  pos1: number;
+  pos2: number;
+  score: number;
+}
+
 type Grid = Cell[][];
 
 const CrosswordBoard = () => {
@@ -189,6 +202,11 @@ const CrosswordBoard = () => {
     return sizes[level];
   };
 
+  const getTargetWordCount = (level: Difficulty): number => {
+    const targets = { 1: 8, 2: 12, 3: 20, 4: 25, 5: 30 };
+    return targets[level];
+  };
+
   const getWordsForLevel = (level: Difficulty): WordData[] => {
     return wordsDatabase.filter(w => w.level === level);
   };
@@ -211,16 +229,31 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
-    const intersections = [];
+  const copyGrid = (grid: Grid): Grid => {
+    return grid.map(row => row.map(cell => ({ ...cell, wordIds: [...(cell.wordIds || [])] })));
+  };
+
+  const findAllIntersections = (word1: string, word2: string): IntersectionPoint[] => {
+    const intersections: IntersectionPoint[] = [];
     for (let i = 0; i < word1.length; i++) {
       for (let j = 0; j < word2.length; j++) {
         if (word1[i] === word2[j]) {
-          intersections.push({ pos1: i, pos2: j });
+          // Score basé sur la position (centre = meilleur score)
+          const centerScore1 = Math.abs(i - word1.length / 2);
+          const centerScore2 = Math.abs(j - word2.length / 2);
+          const score = 10 - (centerScore1 + centerScore2);
+          
+          intersections.push({
+            word1Index: i,
+            word2Index: j,
+            pos1: i,
+            pos2: j,
+            score: Math.max(1, score)
+          });
         }
       }
     }
-    return intersections;
+    return intersections.sort((a, b) => b.score - a.score);
   };
 
   const isValidPlacement = (
@@ -229,35 +262,55 @@ const CrosswordBoard = () => {
     row: number,
     col: number,
     direction: Direction,
-    size: number
+    size: number,
+    allowAdjacent: boolean = true
   ): boolean => {
-    // First check basic bounds
+    // Vérification des limites de base
     if (direction === 'horizontal') {
       if (col + word.length > size || row < 0 || row >= size || col < 0) return false;
     } else {
       if (row + word.length > size || col < 0 || col >= size || row < 0) return false;
     }
 
-    // Check each position of the word
+    // Vérifier chaque position du mot
     for (let i = 0; i < word.length; i++) {
       const currentRow = direction === 'horizontal' ? row : row + i;
       const currentCol = direction === 'horizontal' ? col + i : col;
       
-      // Double-check bounds for each cell (this was missing!)
       if (currentRow < 0 || currentRow >= size || currentCol < 0 || currentCol >= size) {
         return false;
       }
       
       const cell = grid[currentRow][currentCol];
-      
-      // If cell is undefined (shouldn't happen now, but safety check)
-      if (!cell) {
-        return false;
-      }
+      if (!cell) return false;
 
-      // If the cell has a different letter, placement is invalid
+      // Si la cellule a déjà une lettre différente
       if (cell.correctLetter && cell.correctLetter !== word[i]) {
         return false;
+      }
+    }
+
+    // Vérification plus souple de l'adjacence pour permettre plus de mots
+    if (allowAdjacent) {
+      // Permettre les mots adjacents séparés par au moins 1 case
+      const checkRow = direction === 'horizontal' ? row - 1 : row;
+      const checkCol = direction === 'horizontal' ? col : col - 1;
+      
+      if (checkRow >= 0 && checkRow < size && checkCol >= 0 && checkCol < size) {
+        const beforeCell = grid[checkRow][checkCol];
+        if (beforeCell && beforeCell.correctLetter && !beforeCell.isBlack) {
+          // Vérifier s'il y a au moins une intersection
+          let hasIntersection = false;
+          for (let i = 0; i < word.length; i++) {
+            const currentRow = direction === 'horizontal' ? row : row + i;
+            const currentCol = direction === 'horizontal' ? col + i : col;
+            if (grid[currentRow][currentCol].correctLetter) {
+              hasIntersection = true;
+              break;
+            }
+          }
+          if (!hasIntersection) return false;
+        }
       }
     }
 
@@ -283,35 +336,59 @@ const CrosswordBoard = () => {
       if (!grid[currentRow][currentCol].wordIds) {
         grid[currentRow][currentCol].wordIds = [];
       }
-      grid[currentRow][currentCol].wordIds!.push(wordId);
+      if (!grid[currentRow][currentCol].wordIds!.includes(wordId)) {
+        grid[currentRow][currentCol].wordIds!.push(wordId);
+      }
     }
 
-    // Mark the beginning of the word
+    // Marquer le début du mot
     grid[row][col].hasArrow = true;
     grid[row][col].arrowDirection = direction;
     grid[row][col].wordNumber = wordId;
   };
 
+  const calculateGridDensity = (grid: Grid): number => {
+    let filledCells = 0;
+    let totalCells = grid.length * grid[0].length;
+    
+    for (let i = 0; i < grid.length; i++) {
+      for (let j = 0; j < grid[0].length; j++) {
+        if (!grid[i][j].isBlack) filledCells++;
+      }
+    }
+    
+    return filledCells / totalCells;
+  };
+
   const generateCrosswordGrid = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
-    const targetWordCounts = { 1: 8, 2: 12, 3: 18, 4: 22, 5: 25 };
-    const targetWords = Math.min(targetWordCounts[level], availableWords.length);
+    const targetWords = getTargetWordCount(level);
     
-    console.log(`🎯 Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
+    console.log(`🎯 Algorithme amélioré - Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
 
     let bestResult = { grid: createEmptyGrid(size), placedWords: [] as PlacedWord[] };
     let maxWordsPlaced = 0;
 
-    // Try multiple attempts to get the best result
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
+    // Augmentation du nombre de tentatives pour les niveaux élevés
+    const maxAttempts = level >= 3 ? 15 : 10;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      console.log(`🚀 Tentative ${attempt + 1}/${maxAttempts}`);
+      
+      // Trier les mots par longueur (privilégier les mots courts au début)
+      const sortedWords = [...availableWords].sort((a, b) => {
+        if (a.length === b.length) return Math.random() - 0.5;
+        return a.length - b.length;
+      });
+      
       const newGrid = createEmptyGrid(size);
       const placedWords: PlacedWord[] = [];
+      const gridStates: GridState[] = [];
 
-      // Place first word horizontally in the middle
-      if (shuffledWords.length > 0) {
-        const firstWord = shuffledWords[0];
+      // Placer le premier mot au centre
+      if (sortedWords.length > 0) {
+        const firstWord = sortedWords[0];
         const startRow = Math.floor(size / 2);
         const startCol = Math.floor((size - firstWord.length) / 2);
 
@@ -326,24 +403,37 @@ const CrosswordBoard = () => {
             direction: 'horizontal',
             length: firstWord.length
           });
-          console.log(`✅ Premier mot placé: ${firstWord.word}`);
+          
+          gridStates.push({
+            grid: copyGrid(newGrid),
+            placedWords: [...placedWords]
+          });
+          
+          console.log(`✅ Premier mot placé: ${firstWord.word} (${firstWord.length} lettres)`);
         }
       }
 
-      // Try to place remaining words
-      for (let wordIndex = 1; wordIndex < shuffledWords.length && placedWords.length < targetWords; wordIndex++) {
-        const currentWord = shuffledWords[wordIndex];
+      // Placer les mots suivants avec backtracking intelligent
+      let wordIndex = 1;
+      let backtrackCount = 0;
+      const maxBacktrack = 5;
+
+      while (wordIndex < sortedWords.length && placedWords.length < targetWords && backtrackCount < maxBacktrack) {
+        const currentWord = sortedWords[wordIndex];
         let wordPlaced = false;
+        let bestPlacements: Array<{
+          row: number;
+          col: number;
+          direction: Direction;
+          score: number;
+          intersections: number;
+        }> = [];
 
-        // Try to intersect with each existing word
+        // Rechercher toutes les intersections possibles avec tous les mots placés
         for (const existingWord of placedWords) {
-          if (wordPlaced) break;
-
-          const intersections = findIntersections(existingWord.word, currentWord.word);
+          const intersections = findAllIntersections(existingWord.word, currentWord.word);
           
           for (const intersection of intersections) {
-            if (wordPlaced) break;
-
             const newDirection: Direction = existingWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
             
             let newRow, newCol;
@@ -355,40 +445,105 @@ const CrosswordBoard = () => {
               newCol = existingWord.startCol - intersection.pos2;
             }
 
-            if (isValidPlacement(newGrid, currentWord.word, newRow, newCol, newDirection, size)) {
-              placeWord(newGrid, currentWord.word, newRow, newCol, newDirection, placedWords.length + 1);
-              placedWords.push({
-                id: placedWords.length + 1,
-                word: currentWord.word,
-                clue: currentWord.clue,
-                startRow: newRow,
-                startCol: newCol,
+            if (isValidPlacement(newGrid, currentWord.word, newRow, newCol, newDirection, size, true)) {
+              // Calculer le score de ce placement
+              let intersectionCount = 0;
+              for (let i = 0; i < currentWord.word.length; i++) {
+                const checkRow = newDirection === 'horizontal' ? newRow : newRow + i;
+                const checkCol = newDirection === 'horizontal' ? newCol + i : newCol;
+                if (newGrid[checkRow][checkCol].correctLetter) {
+                  intersectionCount++;
+                }
+              }
+              
+              const densityScore = calculateGridDensity(newGrid);
+              const positionScore = Math.abs(newRow - size/2) + Math.abs(newCol - size/2);
+              const totalScore = intersection.score + intersectionCount * 3 + densityScore * 2 - positionScore * 0.1;
+
+              bestPlacements.push({
+                row: newRow,
+                col: newCol,
                 direction: newDirection,
-                length: currentWord.length
+                score: totalScore,
+                intersections: intersectionCount
               });
-              console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} en ${newDirection}`);
-              wordPlaced = true;
             }
           }
         }
+
+        // Trier les placements par score et essayer le meilleur
+        bestPlacements.sort((a, b) => b.score - a.score);
+        
+        if (bestPlacements.length > 0) {
+          const bestPlacement = bestPlacements[0];
+          
+          placeWord(newGrid, currentWord.word, bestPlacement.row, bestPlacement.col, bestPlacement.direction, placedWords.length + 1);
+          placedWords.push({
+            id: placedWords.length + 1,
+            word: currentWord.word,
+            clue: currentWord.clue,
+            startRow: bestPlacement.row,
+            startCol: bestPlacement.col,
+            direction: bestPlacement.direction,
+            length: currentWord.length
+          });
+          
+          // Sauvegarder l'état pour le backtracking
+          if (placedWords.length % 5 === 0) {
+            gridStates.push({
+              grid: copyGrid(newGrid),
+              placedWords: [...placedWords]
+            });
+          }
+          
+          console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} (score: ${bestPlacement.score.toFixed(1)}, intersections: ${bestPlacement.intersections})`);
+          wordPlaced = true;
+        }
+
+        if (!wordPlaced) {
+          // Backtracking si on est bloqué
+          if (gridStates.length > 1 && backtrackCount < maxBacktrack) {
+            console.log(`🔄 Backtracking - retour à ${gridStates[gridStates.length - 2].placedWords.length} mots`);
+            const previousState = gridStates[gridStates.length - 2];
+            
+            // Restaurer l'état précédent
+            for (let i = 0; i < size; i++) {
+              for (let j = 0; j < size; j++) {
+                newGrid[i][j] = { ...previousState.grid[i][j], wordIds: [...(previousState.grid[i][j].wordIds || [])] };
+              }
+            }
+            
+            placedWords.length = 0;
+            placedWords.push(...previousState.placedWords.map(w => ({ ...w })));
+            
+            gridStates.pop();
+            backtrackCount++;
+            wordIndex = placedWords.length; // Reprendre après le dernier mot placé
+            continue;
+          }
+        }
+
+        wordIndex++;
       }
+
+      console.log(`📊 Tentative ${attempt + 1}: ${placedWords.length} mots placés (densité: ${(calculateGridDensity(newGrid) * 100).toFixed(1)}%)`);
 
       if (placedWords.length > maxWordsPlaced) {
         maxWordsPlaced = placedWords.length;
         bestResult = { 
-          grid: newGrid.map(row => row.map(cell => ({ ...cell }))), 
+          grid: copyGrid(newGrid), 
           placedWords: [...placedWords] 
         };
       }
 
-      console.log(`Tentative ${attempt + 1}: ${placedWords.length} mots placés`);
-      
-      if (placedWords.length >= Math.floor(targetWords * 0.7)) {
+      // Si on atteint l'objectif, on peut s'arrêter
+      if (placedWords.length >= targetWords * 0.9) {
+        console.log(`🎉 Objectif quasiment atteint: ${placedWords.length}/${targetWords} mots`);
         break;
       }
     }
 
-    console.log(`🎉 Résultat final: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
+    console.log(`🏆 Résultat final: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
     return bestResult;
   };
 
