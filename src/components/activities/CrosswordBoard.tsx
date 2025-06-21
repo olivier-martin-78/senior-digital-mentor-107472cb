@@ -211,7 +211,6 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  // ALGORITHME SIMPLIFIÉ ET PLUS EFFICACE
   const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
     const intersections = [];
     for (let i = 0; i < word1.length; i++) {
@@ -232,20 +231,31 @@ const CrosswordBoard = () => {
     direction: Direction,
     size: number
   ): boolean => {
-    // Vérifier les limites de base
+    // First check basic bounds
     if (direction === 'horizontal') {
-      if (col + word.length > size || row < 0 || row >= size) return false;
+      if (col + word.length > size || row < 0 || row >= size || col < 0) return false;
     } else {
-      if (row + word.length > size || col < 0 || col >= size) return false;
+      if (row + word.length > size || col < 0 || col >= size || row < 0) return false;
     }
 
-    // Vérifier chaque position du mot
+    // Check each position of the word
     for (let i = 0; i < word.length; i++) {
       const currentRow = direction === 'horizontal' ? row : row + i;
       const currentCol = direction === 'horizontal' ? col + i : col;
+      
+      // Double-check bounds for each cell (this was missing!)
+      if (currentRow < 0 || currentRow >= size || currentCol < 0 || currentCol >= size) {
+        return false;
+      }
+      
       const cell = grid[currentRow][currentCol];
+      
+      // If cell is undefined (shouldn't happen now, but safety check)
+      if (!cell) {
+        return false;
+      }
 
-      // Si la cellule a déjà une lettre différente, c'est invalide
+      // If the cell has a different letter, placement is invalid
       if (cell.correctLetter && cell.correctLetter !== word[i]) {
         return false;
       }
@@ -276,7 +286,7 @@ const CrosswordBoard = () => {
       grid[currentRow][currentCol].wordIds!.push(wordId);
     }
 
-    // Marquer le début du mot
+    // Mark the beginning of the word
     grid[row][col].hasArrow = true;
     grid[row][col].arrowDirection = direction;
     grid[row][col].wordNumber = wordId;
@@ -285,9 +295,7 @@ const CrosswordBoard = () => {
   const generateCrosswordGrid = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
-    
-    // Objectifs réalistes mais ambitieux
-    const targetWordCounts = { 1: 6, 2: 10, 3: 15, 4: 20, 5: 25 };
+    const targetWordCounts = { 1: 8, 2: 12, 3: 18, 4: 22, 5: 25 };
     const targetWords = Math.min(targetWordCounts[level], availableWords.length);
     
     console.log(`🎯 Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
@@ -295,13 +303,13 @@ const CrosswordBoard = () => {
     let bestResult = { grid: createEmptyGrid(size), placedWords: [] as PlacedWord[] };
     let maxWordsPlaced = 0;
 
-    // Essayer plusieurs configurations
-    for (let attempt = 0; attempt < 5; attempt++) {
+    // Try multiple attempts to get the best result
+    for (let attempt = 0; attempt < 3; attempt++) {
       const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
       const newGrid = createEmptyGrid(size);
       const placedWords: PlacedWord[] = [];
 
-      // ÉTAPE 1: Placer le premier mot au centre
+      // Place first word horizontally in the middle
       if (shuffledWords.length > 0) {
         const firstWord = shuffledWords[0];
         const startRow = Math.floor(size / 2);
@@ -322,12 +330,12 @@ const CrosswordBoard = () => {
         }
       }
 
-      // ÉTAPE 2: Placer les mots suivants en cherchant des intersections
+      // Try to place remaining words
       for (let wordIndex = 1; wordIndex < shuffledWords.length && placedWords.length < targetWords; wordIndex++) {
         const currentWord = shuffledWords[wordIndex];
         let wordPlaced = false;
 
-        // Essayer de placer ce mot en intersection avec chaque mot déjà placé
+        // Try to intersect with each existing word
         for (const existingWord of placedWords) {
           if (wordPlaced) break;
 
@@ -336,21 +344,17 @@ const CrosswordBoard = () => {
           for (const intersection of intersections) {
             if (wordPlaced) break;
 
-            // Calculer la position du nouveau mot
             const newDirection: Direction = existingWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
             
             let newRow, newCol;
             if (existingWord.direction === 'horizontal') {
-              // Le mot existant est horizontal, le nouveau sera vertical
               newRow = existingWord.startRow - intersection.pos2;
               newCol = existingWord.startCol + intersection.pos1;
             } else {
-              // Le mot existant est vertical, le nouveau sera horizontal
               newRow = existingWord.startRow + intersection.pos1;
               newCol = existingWord.startCol - intersection.pos2;
             }
 
-            // Vérifier si le placement est valide
             if (isValidPlacement(newGrid, currentWord.word, newRow, newCol, newDirection, size)) {
               placeWord(newGrid, currentWord.word, newRow, newCol, newDirection, placedWords.length + 1);
               placedWords.push({
@@ -369,7 +373,6 @@ const CrosswordBoard = () => {
         }
       }
 
-      // Garder le meilleur résultat
       if (placedWords.length > maxWordsPlaced) {
         maxWordsPlaced = placedWords.length;
         bestResult = { 
@@ -380,7 +383,6 @@ const CrosswordBoard = () => {
 
       console.log(`Tentative ${attempt + 1}: ${placedWords.length} mots placés`);
       
-      // Si on a un bon résultat, on peut s'arrêter
       if (placedWords.length >= Math.floor(targetWords * 0.7)) {
         break;
       }
