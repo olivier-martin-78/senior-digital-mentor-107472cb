@@ -37,15 +37,6 @@ interface Cell {
   wordIds?: number[];
 }
 
-interface WordPlacement {
-  word: WordData;
-  row: number;
-  col: number;
-  direction: Direction;
-  score: number;
-  intersections: number;
-}
-
 type Grid = Cell[][];
 
 const CrosswordBoard = () => {
@@ -93,30 +84,6 @@ const CrosswordBoard = () => {
     { word: 'DUR', clue: 'Pas mou', length: 3, level: 1 },
     { word: 'PUR', clue: 'Sans mélange', length: 3, level: 1 },
     { word: 'BUT', clue: 'Objectif visé', length: 3, level: 1 },
-    { word: 'PUT', clue: 'Coup au golf', length: 3, level: 1 },
-    { word: 'CUT', clue: 'Action de couper', length: 3, level: 1 },
-    { word: 'HUT', clue: 'Petite cabane', length: 3, level: 1 },
-    { word: 'BAT', clue: 'Animal volant', length: 3, level: 1 },
-    { word: 'CAT', clue: 'Chat en anglais', length: 3, level: 1 },
-    { word: 'HAT', clue: 'Chapeau en anglais', length: 3, level: 1 },
-    { word: 'MAT', clue: 'Tapis de sport', length: 3, level: 1 },
-    { word: 'RAT', clue: 'Petit rongeur', length: 3, level: 1 },
-    { word: 'VAT', clue: 'Grande cuve', length: 3, level: 1 },
-    { word: 'BIT', clue: 'Unité informatique', length: 3, level: 1 },
-    { word: 'FIT', clue: 'En forme', length: 3, level: 1 },
-    { word: 'HIT', clue: 'Frapper en anglais', length: 3, level: 1 },
-    { word: 'KIT', clue: 'Ensemble d\'outils', length: 3, level: 1 },
-    { word: 'SIT', clue: 'S\'asseoir en anglais', length: 3, level: 1 },
-    { word: 'WIT', clue: 'Esprit vif', length: 3, level: 1 },
-    { word: 'BOT', clue: 'Robot automatisé', length: 3, level: 1 },
-    { word: 'COT', clue: 'Petit lit', length: 3, level: 1 },
-    { word: 'DOT', clue: 'Point minuscule', length: 3, level: 1 },
-    { word: 'HOT', clue: 'Chaud en anglais', length: 3, level: 1 },
-    { word: 'LOT', clue: 'Parcelle de terrain', length: 3, level: 1 },
-    { word: 'NOT', clue: 'Négation en anglais', length: 3, level: 1 },
-    { word: 'POT', clue: 'Récipient de cuisine', length: 3, level: 1 },
-    { word: 'ROT', clue: 'Pourriture', length: 3, level: 1 },
-    { word: 'TOT', clue: 'Petit enfant', length: 3, level: 1 },
     
     // Niveau 2 - Mots de 3-4 lettres (80+ mots)
     { word: 'CHAT', clue: 'Animal domestique qui miaule', length: 4, level: 2 },
@@ -140,64 +107,15 @@ const CrosswordBoard = () => {
     { word: 'DIRE', clue: 'Exprimer par la parole', length: 4, level: 2 },
     { word: 'LIRE', clue: 'Déchiffrer un texte', length: 4, level: 2 },
     { word: 'TIRE', clue: 'Action de tirer', length: 4, level: 2 },
-    { word: 'FIRE', clue: 'Feu en anglais', length: 4, level: 2 },
-    { word: 'WIRE', clue: 'Fil métallique', length: 4, level: 2 },
-    { word: 'HIRE', clue: 'Embaucher', length: 4, level: 2 },
     { word: 'CARE', clue: 'Soin, attention', length: 4, level: 2 },
     { word: 'DARE', clue: 'Oser', length: 4, level: 2 },
-    { word: 'FARE', clue: 'Prix du transport', length: 4, level: 2 },
-    { word: 'HARE', clue: 'Lièvre', length: 4, level: 2 },
-    { word: 'MARE', clue: 'Jument', length: 4, level: 2 },
     { word: 'RARE', clue: 'Peu commun', length: 4, level: 2 },
-    { word: 'WARE', clue: 'Marchandise', length: 4, level: 2 },
     { word: 'PACE', clue: 'Rythme', length: 4, level: 2 },
     { word: 'RACE', clue: 'Course', length: 4, level: 2 },
     { word: 'FACE', clue: 'Visage', length: 4, level: 2 },
-    { word: 'LACE', clue: 'Dentelle', length: 4, level: 2 },
-    { word: 'MACE', clue: 'Épice', length: 4, level: 2 },
-    { word: 'DICE', clue: 'Dés à jouer', length: 4, level: 2 },
     { word: 'NICE', clue: 'Agréable', length: 4, level: 2 },
     { word: 'RICE', clue: 'Riz', length: 4, level: 2 },
-    { word: 'VICE', clue: 'Défaut moral', length: 4, level: 2 },
     { word: 'MICE', clue: 'Souris (pluriel)', length: 4, level: 2 },
-    { word: 'SPICE', clue: 'Épice', length: 5, level: 2 },
-    { word: 'PRICE', clue: 'Prix', length: 5, level: 2 },
-    { word: 'TWICE', clue: 'Deux fois', length: 5, level: 2 },
-    { word: 'DANCE', clue: 'Mouvement rythmé', length: 5, level: 2 },
-    { word: 'LANCE', clue: 'Arme d\'hast', length: 5, level: 2 },
-    { word: 'PENCE', clue: 'Monnaie britannique', length: 5, level: 2 },
-    { word: 'FENCE', clue: 'Clôture', length: 5, level: 2 },
-    { word: 'HENCE', clue: 'Par conséquent', length: 5, level: 2 },
-    { word: 'SINCE', clue: 'Depuis', length: 5, level: 2 },
-    { word: 'PLACE', clue: 'Lieu', length: 5, level: 2 },
-    { word: 'GRACE', clue: 'Élégance', length: 5, level: 2 },
-    { word: 'SPACE', clue: 'Espace', length: 5, level: 2 },
-    { word: 'TRACE', clue: 'Marque laissée', length: 5, level: 2 },
-    { word: 'BRACE', clue: 'Support', length: 5, level: 2 },
-    { word: 'CHOSE', clue: 'Objet', length: 5, level: 2 },
-    { word: 'CLOSE', clue: 'Fermer', length: 5, level: 2 },
-    { word: 'THOSE', clue: 'Ceux-là', length: 5, level: 2 },
-    { word: 'WHOSE', clue: 'À qui', length: 5, level: 2 },
-    { word: 'PROSE', clue: 'Texte non versifié', length: 5, level: 2 },
-    { word: 'AROSE', clue: 'Se leva', length: 5, level: 2 },
-    { word: 'HORSE', clue: 'Cheval', length: 5, level: 2 },
-    { word: 'WORSE', clue: 'Pire', length: 5, level: 2 },
-    { word: 'NURSE', clue: 'Infirmière', length: 5, level: 2 },
-    { word: 'PURSE', clue: 'Sac à main', length: 5, level: 2 },
-    { word: 'CURSE', clue: 'Malédiction', length: 5, level: 2 },
-    { word: 'HOUSE', clue: 'Maison', length: 5, level: 2 },
-    { word: 'MOUSE', clue: 'Souris', length: 5, level: 2 },
-    { word: 'SPOUSE', clue: 'Conjoint', length: 6, level: 2 },
-    { word: 'ROUSE', clue: 'Réveiller', length: 5, level: 2 },
-    { word: 'DOUSE', clue: 'Tremper', length: 5, level: 2 },
-    { word: 'LOUSE', clue: 'Pou', length: 5, level: 2 },
-    { word: 'GROUSE', clue: 'Gelinotte', length: 6, level: 2 },
-    { word: 'BLOUSE', clue: 'Chemisier', length: 6, level: 2 },
-    { word: 'CLAUSE', clue: 'Article', length: 6, level: 2 },
-    { word: 'PAUSE', clue: 'Arrêt temporaire', length: 5, level: 2 },
-    { word: 'CAUSE', clue: 'Raison', length: 5, level: 2 },
-    { word: 'SAUCE', clue: 'Condiment liquide', length: 5, level: 2 },
-    { word: 'GAUGE', clue: 'Instrument de mesure', length: 5, level: 2 },
     
     // Niveau 3 - Mots de 3-5 lettres (100+ mots)
     { word: 'CHIEN', clue: 'Meilleur ami de l\'homme', length: 5, level: 3 },
@@ -427,163 +345,76 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  // NOUVEL ALGORITHME AMÉLIORÉ
-  const findAllIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number, letter: string}> => {
+  // NOUVEL ALGORITHME SIMPLIFIÉ ET EFFICACE
+  const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
     const intersections = [];
     for (let i = 0; i < word1.length; i++) {
       for (let j = 0; j < word2.length; j++) {
         if (word1[i] === word2[j]) {
-          intersections.push({ pos1: i, pos2: j, letter: word1[i] });
+          intersections.push({ pos1: i, pos2: j });
         }
       }
     }
     return intersections;
   };
 
-  const canPlaceWordAdvanced = (
-    grid: Grid, 
-    word: string, 
-    row: number, 
-    col: number, 
-    direction: Direction, 
-    size: number,
-    placedWords: PlacedWord[]
+  const isValidPlacement = (
+    grid: Grid,
+    word: string,
+    row: number,
+    col: number,
+    direction: Direction,
+    size: number
   ): boolean => {
-    // Vérifier les limites de base
+    // Vérifier les limites
     if (direction === 'horizontal') {
-      if (col + word.length > size || row >= size || row < 0 || col < 0) return false;
+      if (col + word.length > size || row < 0 || row >= size) return false;
     } else {
-      if (row + word.length > size || col >= size || row < 0 || col < 0) return false;
+      if (row + word.length > size || col < 0 || col >= size) return false;
     }
 
-    let requiredIntersections = 0;
-    let actualIntersections = 0;
-
-    // Vérifier chaque position du mot
+    // Vérifier chaque lettre
     for (let i = 0; i < word.length; i++) {
       const currentRow = direction === 'horizontal' ? row : row + i;
       const currentCol = direction === 'horizontal' ? col + i : col;
       const cell = grid[currentRow][currentCol];
 
-      // Si une lettre existe, elle doit correspondre (intersection)
-      if (cell.correctLetter) {
-        if (cell.correctLetter !== word[i]) {
-          return false;
-        }
-        actualIntersections++;
+      // Si la cellule a déjà une lettre, elle doit correspondre
+      if (cell.correctLetter && cell.correctLetter !== word[i]) {
+        return false;
       }
 
-      // Vérifier qu'il n'y a pas de conflit avec les mots adjacents
-      const adjacentChecks = [
-        [currentRow - 1, currentCol], // haut
-        [currentRow + 1, currentCol], // bas
-        [currentRow, currentCol - 1], // gauche  
-        [currentRow, currentCol + 1]  // droite
+      // Vérifier les cellules adjacentes (pas trop restrictif)
+      const adjacentPositions = [
+        [currentRow - 1, currentCol],
+        [currentRow + 1, currentCol],
+        [currentRow, currentCol - 1],
+        [currentRow, currentCol + 1]
       ];
 
-      for (const [adjRow, adjCol] of adjacentChecks) {
+      for (const [adjRow, adjCol] of adjacentPositions) {
         if (adjRow >= 0 && adjRow < size && adjCol >= 0 && adjCol < size) {
           const adjCell = grid[adjRow][adjCol];
           
-          // Si une cellule adjacente a une lettre
+          // Si la cellule adjacente a une lettre
           if (adjCell.correctLetter) {
-            const isInSameDirection = (direction === 'horizontal' && adjRow === currentRow) ||
-                                    (direction === 'vertical' && adjCol === currentCol);
+            // Vérifier si c'est dans la même direction (continuité autorisée)
+            const isContinuous = (direction === 'horizontal' && adjRow === currentRow) ||
+                               (direction === 'vertical' && adjCol === currentCol);
             
-            // Si c'est dans la même direction, c'est ok (continuité)
-            if (isInSameDirection) continue;
-            
-            // Sinon c'est une intersection, elle doit correspondre
-            if (adjCell.correctLetter !== word[i]) {
-              return false;
+            // Si ce n'est pas une continuité, c'est une intersection
+            if (!isContinuous) {
+              // L'intersection doit avoir la même lettre
+              if (adjCell.correctLetter !== word[i]) {
+                return false;
+              }
             }
           }
         }
       }
     }
 
-    // Pour les mots après le premier, exiger au moins une intersection
-    if (placedWords.length > 0 && actualIntersections === 0) {
-      return false;
-    }
-
     return true;
-  };
-
-  const scoreWordPlacement = (
-    grid: Grid,
-    word: WordData,
-    row: number,
-    col: number,
-    direction: Direction,
-    size: number,
-    placedWords: PlacedWord[]
-  ): number => {
-    let score = 0;
-    let intersections = 0;
-
-    // Calculer les intersections
-    for (let i = 0; i < word.length; i++) {
-      const currentRow = direction === 'horizontal' ? row : row + i;
-      const currentCol = direction === 'horizontal' ? col + i : col;
-      
-      if (grid[currentRow][currentCol].correctLetter === word.word[i]) {
-        intersections++;
-        score += 10; // Bonus pour intersection
-      }
-    }
-
-    // Bonus pour position centrale
-    const centerRow = Math.floor(size / 2);
-    const centerCol = Math.floor(size / 2);
-    const distanceFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
-    score += Math.max(0, 20 - distanceFromCenter);
-
-    // Bonus pour multiples intersections
-    if (intersections > 1) {
-      score += intersections * 15;
-    }
-
-    // Bonus pour la longueur du mot
-    score += word.length * 2;
-
-    // Malus pour les mots trop éloignés des autres
-    if (placedWords.length > 0 && intersections === 0) {
-      score -= 50;
-    }
-
-    return score;
-  };
-
-  const findBestPlacements = (
-    grid: Grid,
-    word: WordData,
-    size: number,
-    placedWords: PlacedWord[]
-  ): WordPlacement[] => {
-    const placements: WordPlacement[] = [];
-
-    // Essayer toutes les positions et directions
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
-        for (const direction of ['horizontal' as Direction, 'vertical' as Direction]) {
-          if (canPlaceWordAdvanced(grid, word.word, row, col, direction, size, placedWords)) {
-            const score = scoreWordPlacement(grid, word, row, col, direction, size, placedWords);
-            placements.push({
-              word,
-              row,
-              col,
-              direction,
-              score,
-              intersections: 0 // sera calculé plus tard si nécessaire
-            });
-          }
-        }
-      }
-    }
-
-    // Trier par score décroissant
-    return placements.sort((a, b) => b.score - a.score);
   };
 
   const placeWordOnGrid = (
@@ -614,119 +445,116 @@ const CrosswordBoard = () => {
     grid[row][col].wordNumber = wordId;
   };
 
-  const generateGridAdvanced = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
+  const generateCrosswordGrid = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
     
-    // Objectifs ambitieux de nombre de mots
-    const targetWordCounts = { 1: 10, 2: 15, 3: 22, 4: 30, 5: 40 };
+    // Objectifs réalistes
+    const targetWordCounts = { 1: 8, 2: 12, 3: 18, 4: 25, 5: 35 };
     const targetWords = Math.min(targetWordCounts[level], availableWords.length);
     
     console.log(`🎯 Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
 
-    // Trier les mots par longueur décroissante pour commencer par les plus longs
-    const sortedWords = availableWords
-      .sort(() => Math.random() - 0.5) // mélanger d'abord
-      .sort((a, b) => b.length - a.length) // puis trier par longueur
-      .slice(0, Math.min(targetWords * 2, availableWords.length)); // prendre plus de mots que nécessaire
+    // Mélanger et trier les mots
+    const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
+    
+    let newGrid = createEmptyGrid(size);
+    let placedWords: PlacedWord[] = [];
+    let bestResult = { grid: newGrid, placedWords: [] };
+    let maxWordsPlaced = 0;
 
-    const newGrid = createEmptyGrid(size);
-    const placedWords: PlacedWord[] = [];
+    // Essayer plusieurs configurations (jusqu'à 10 tentatives)
+    for (let attempt = 0; attempt < 10; attempt++) {
+      newGrid = createEmptyGrid(size);
+      placedWords = [];
 
-    // Placer le premier mot au centre
-    if (sortedWords.length > 0) {
-      const firstWord = sortedWords[0];
-      const startRow = Math.floor(size / 2);
-      const startCol = Math.floor((size - firstWord.length) / 2);
+      // Placer le premier mot au centre
+      if (shuffledWords.length > 0) {
+        const firstWord = shuffledWords[0];
+        const startRow = Math.floor(size / 2);
+        const startCol = Math.floor((size - firstWord.length) / 2);
 
-      const firstPlacedWord: PlacedWord = {
-        id: 1,
-        word: firstWord.word,
-        clue: firstWord.clue,
-        startRow,
-        startCol,
-        direction: 'horizontal',
-        length: firstWord.length
-      };
-
-      placeWordOnGrid(newGrid, firstWord.word, startRow, startCol, 'horizontal', 1);
-      placedWords.push(firstPlacedWord);
-      console.log(`✅ Premier mot placé: ${firstWord.word} (${firstWord.length} lettres)`);
-    }
-
-    // Placer les autres mots avec l'algorithme amélioré
-    let attempts = 0;
-    const maxAttempts = sortedWords.length * 10;
-
-    for (let wordIndex = 1; wordIndex < sortedWords.length && placedWords.length < targetWords && attempts < maxAttempts; wordIndex++) {
-      attempts++;
-      const currentWord = sortedWords[wordIndex];
-      
-      // Trouver les meilleurs emplacements
-      const bestPlacements = findBestPlacements(newGrid, currentWord, size, placedWords);
-      
-      if (bestPlacements.length > 0) {
-        // Prendre un des 3 meilleurs placements au hasard pour plus de variété
-        const topPlacements = bestPlacements.slice(0, Math.min(3, bestPlacements.length));
-        const chosenPlacement = topPlacements[Math.floor(Math.random() * topPlacements.length)];
-        
-        const newPlacedWord: PlacedWord = {
-          id: placedWords.length + 1,
-          word: currentWord.word,
-          clue: currentWord.clue,
-          startRow: chosenPlacement.row,
-          startCol: chosenPlacement.col,
-          direction: chosenPlacement.direction,
-          length: currentWord.length
-        };
-
-        placeWordOnGrid(newGrid, currentWord.word, chosenPlacement.row, chosenPlacement.col, chosenPlacement.direction, newPlacedWord.id);
-        placedWords.push(newPlacedWord);
-        
-        console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} (${currentWord.length} lettres, score: ${chosenPlacement.score})`);
-      } else {
-        console.log(`❌ Impossible de placer: ${currentWord.word}`);
-      }
-    }
-
-    // Si on n'a pas assez de mots, essayer avec des mots plus petits
-    if (placedWords.length < targetWords) {
-      console.log(`🔄 Tentative avec des mots plus petits... (${placedWords.length}/${targetWords})`);
-      
-      const smallerWords = availableWords
-        .filter(w => w.length >= 2 && w.length <= 4)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 50);
-
-      for (const word of smallerWords) {
-        if (placedWords.length >= targetWords) break;
-        
-        const placements = findBestPlacements(newGrid, word, size, placedWords);
-        if (placements.length > 0) {
-          const placement = placements[0];
-          const newPlacedWord: PlacedWord = {
-            id: placedWords.length + 1,
-            word: word.word,
-            clue: word.clue,
-            startRow: placement.row,
-            startCol: placement.col,
-            direction: placement.direction,
-            length: word.length
-          };
-
-          placeWordOnGrid(newGrid, word.word, placement.row, placement.col, placement.direction, newPlacedWord.id);
-          placedWords.push(newPlacedWord);
-          console.log(`✅ Petit mot ajouté: ${word.word}`);
+        if (isValidPlacement(newGrid, firstWord.word, startRow, startCol, 'horizontal', size)) {
+          placeWordOnGrid(newGrid, firstWord.word, startRow, startCol, 'horizontal', 1);
+          placedWords.push({
+            id: 1,
+            word: firstWord.word,
+            clue: firstWord.clue,
+            startRow,
+            startCol,
+            direction: 'horizontal',
+            length: firstWord.length
+          });
         }
       }
+
+      // Essayer de placer les autres mots
+      for (let wordIndex = 1; wordIndex < shuffledWords.length && placedWords.length < targetWords; wordIndex++) {
+        const currentWord = shuffledWords[wordIndex];
+        let placed = false;
+
+        // Essayer toutes les positions possibles
+        for (let row = 0; row < size && !placed; row++) {
+          for (let col = 0; col < size && !placed; col++) {
+            for (const direction of ['horizontal' as Direction, 'vertical' as Direction]) {
+              if (isValidPlacement(newGrid, currentWord.word, row, col, direction, size)) {
+                // Vérifier qu'il y a au moins une intersection avec un mot existant
+                let hasIntersection = placedWords.length === 0; // Premier mot n'a pas besoin d'intersection
+                
+                if (placedWords.length > 0) {
+                  for (let i = 0; i < currentWord.length; i++) {
+                    const checkRow = direction === 'horizontal' ? row : row + i;
+                    const checkCol = direction === 'horizontal' ? col + i : col;
+                    if (newGrid[checkRow][checkCol].correctLetter === currentWord.word[i]) {
+                      hasIntersection = true;
+                      break;
+                    }
+                  }
+                }
+
+                if (hasIntersection) {
+                  placeWordOnGrid(newGrid, currentWord.word, row, col, direction, placedWords.length + 1);
+                  placedWords.push({
+                    id: placedWords.length + 1,
+                    word: currentWord.word,
+                    clue: currentWord.clue,
+                    startRow: row,
+                    startCol: col,
+                    direction,
+                    length: currentWord.length
+                  });
+                  placed = true;
+                  console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} en ${direction}`);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Garder le meilleur résultat
+      if (placedWords.length > maxWordsPlaced) {
+        maxWordsPlaced = placedWords.length;
+        bestResult = { 
+          grid: newGrid.map(row => row.map(cell => ({ ...cell }))), 
+          placedWords: [...placedWords] 
+        };
+      }
+
+      console.log(`Tentative ${attempt + 1}: ${placedWords.length} mots placés`);
+      
+      // Si on a atteint l'objectif, on s'arrête
+      if (placedWords.length >= targetWords) {
+        break;
+      }
     }
 
-    console.log(`🎉 Grille générée: ${placedWords.length} mots placés (objectif: ${targetWords})`);
-    return { grid: newGrid, placedWords };
+    console.log(`🎉 Meilleur résultat: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
+    return bestResult;
   };
 
   const generateNewGame = () => {
-    const { grid: newGrid, placedWords } = generateGridAdvanced(difficulty);
+    const { grid: newGrid, placedWords } = generateCrosswordGrid(difficulty);
     setGrid(newGrid);
     setWords(placedWords);
     setGameCompleted(false);
