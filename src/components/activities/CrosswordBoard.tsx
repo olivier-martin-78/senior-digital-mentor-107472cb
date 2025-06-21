@@ -37,6 +37,15 @@ interface Cell {
   wordIds?: number[];
 }
 
+interface WordPlacement {
+  word: WordData;
+  row: number;
+  col: number;
+  direction: Direction;
+  score: number;
+  intersections: number;
+}
+
 type Grid = Cell[][];
 
 const CrosswordBoard = () => {
@@ -209,7 +218,6 @@ const CrosswordBoard = () => {
     { word: 'BEAU', clue: 'Agréable à voir', length: 4, level: 3 },
     { word: 'LAID', clue: 'Désagréable à voir', length: 4, level: 3 },
     { word: 'RICHE', clue: 'Qui a beaucoup d\'argent', length: 5, level: 3 },
-    // Ajout de nombreux mots niveau 3
     { word: 'PIANO', clue: 'Instrument de musique', length: 5, level: 3 },
     { word: 'RADIO', clue: 'Appareil de diffusion', length: 5, level: 3 },
     { word: 'VIDEO', clue: 'Enregistrement visuel', length: 5, level: 3 },
@@ -233,14 +241,12 @@ const CrosswordBoard = () => {
     { word: 'RATIO', clue: 'Rapport mathématique', length: 5, level: 3 },
     { word: 'FOLIO', clue: 'Feuille pliée', length: 5, level: 3 },
     { word: 'JULIO', clue: 'Prénom masculin', length: 5, level: 3 },
-    { word: 'PIANO', clue: 'Instrument à touches', length: 5, level: 3 },
     { word: 'SOPRANO', clue: 'Voix aiguë féminine', length: 7, level: 3 },
     { word: 'CASINO', clue: 'Établissement de jeux', length: 6, level: 3 },
     { word: 'DOMINO', clue: 'Jeu de société', length: 6, level: 3 },
     { word: 'KIMONO', clue: 'Vêtement japonais', length: 6, level: 3 },
     { word: 'ALBINO', clue: 'Dépourvu de pigments', length: 6, level: 3 },
     { word: 'BAMBINO', clue: 'Petit enfant', length: 7, level: 3 },
-    { word: 'CASINO', clue: 'Lieu de jeux d\'argent', length: 6, level: 3 },
     { word: 'TORINO', clue: 'Ville italienne', length: 6, level: 3 },
     { word: 'MARINO', clue: 'Relatif à la mer', length: 6, level: 3 },
     { word: 'ALTIMO', clue: 'Très haut', length: 6, level: 3 },
@@ -285,7 +291,6 @@ const CrosswordBoard = () => {
     { word: 'ONCLE', clue: 'Frère du père ou de la mère', length: 5, level: 4 },
     { word: 'TANTE', clue: 'Sœur du père ou de la mère', length: 5, level: 4 },
     { word: 'COUSIN', clue: 'Fils de l\'oncle ou de la tante', length: 6, level: 4 },
-    // Nombreux ajouts niveau 4
     { word: 'MONTAGNE', clue: 'Relief élevé', length: 8, level: 4 },
     { word: 'CAMPAGNE', clue: 'Zone rurale', length: 8, level: 4 },
     { word: 'BRETAGNE', clue: 'Région française', length: 8, level: 4 },
@@ -302,11 +307,7 @@ const CrosswordBoard = () => {
     { word: 'DIGNE', clue: 'Qui mérite respect', length: 5, level: 4 },
     { word: 'VIGNE', clue: 'Plant de raisin', length: 5, level: 4 },
     { word: 'CYGNE', clue: 'Oiseau aquatique', length: 5, level: 4 },
-    { word: 'OGNE', clue: 'Suffixe péjoratif', length: 4, level: 4 },
     { word: 'ROGNE', clue: 'Maladie de peau', length: 5, level: 4 },
-    { word: 'OGNE', clue: 'Mauvaise humeur', length: 4, level: 4 },
-    { word: 'OGNE', clue: 'Colère', length: 4, level: 4 },
-    { word: 'OGNE', clue: 'Irritation', length: 4, level: 4 },
     { word: 'CHAMPIGNON', clue: 'Organisme sans chlorophylle', length: 10, level: 4 },
     { word: 'RELIGION', clue: 'Croyance spirituelle', length: 8, level: 4 },
     { word: 'DIMENSION', clue: 'Mesure spatiale', length: 9, level: 4 },
@@ -337,7 +338,6 @@ const CrosswordBoard = () => {
     { word: 'MOTION', clue: 'Mouvement', length: 6, level: 4 },
     { word: 'NOTION', clue: 'Concept', length: 6, level: 4 },
     { word: 'OPTION', clue: 'Choix possible', length: 6, level: 4 },
-    { word: 'PORTION', clue: 'Quantité servie', length: 7, level: 4 },
     { word: 'DEVOTION', clue: 'Attachement religieux', length: 8, level: 4 },
     { word: 'EMOTION', clue: 'Sentiment intense', length: 7, level: 4 },
     { word: 'PROMOTION', clue: 'Avancement', length: 9, level: 4 },
@@ -368,7 +368,6 @@ const CrosswordBoard = () => {
     { word: 'HONNEUR', clue: 'Sentiment de dignité', length: 7, level: 5 },
     { word: 'HONTE', clue: 'Sentiment de déshonneur', length: 5, level: 5 },
     { word: 'FIERTÉ', clue: 'Sentiment de satisfaction', length: 6, level: 5 },
-    // Nombreux ajouts niveau 5
     { word: 'PHILOSOPHIE', clue: 'Réflexion sur l\'existence', length: 11, level: 5 },
     { word: 'PSYCHOLOGIE', clue: 'Science de l\'esprit', length: 11, level: 5 },
     { word: 'SOCIOLOGIE', clue: 'Étude des sociétés', length: 10, level: 5 },
@@ -397,91 +396,7 @@ const CrosswordBoard = () => {
     { word: 'SCULPTURE', clue: 'Art du relief', length: 9, level: 5 },
     { word: 'ARCHITECTURE', clue: 'Art de construire', length: 12, level: 5 },
     { word: 'PHOTOGRAPHIE', clue: 'Art de l\'image', length: 12, level: 5 },
-    { word: 'CALLIGRAPHIE', clue: 'Art de l\'écriture', length: 12, level: 5 },
-    { word: 'TYPOGRAPHIE', clue: 'Art de l\'imprimerie', length: 11, level: 5 },
-    { word: 'CARTOGRAPHIE', clue: 'Art des cartes', length: 12, level: 5 },
-    { word: 'CHORÉGRAPHIE', clue: 'Art de la danse', length: 12, level: 5 },
-    { word: 'ORCHESTRATION', clue: 'Art de l\'arrangement', length: 13, level: 5 },
-    { word: 'IMPROVISATION', clue: 'Création spontanée', length: 13, level: 5 },
-    { word: 'INTERPRÉTATION', clue: 'Explication du sens', length: 14, level: 5 },
-    { word: 'REPRÉSENTATION', clue: 'Image mentale', length: 14, level: 5 },
-    { word: 'MANIFESTATION', clue: 'Expression visible', length: 13, level: 5 },
-    { word: 'DÉMONSTRATION', clue: 'Preuve évidente', length: 13, level: 5 },
-    { word: 'ARGUMENTATION', clue: 'Raisonnement', length: 13, level: 5 },
-    { word: 'COMMUNICATION', clue: 'Échange d\'informations', length: 13, level: 5 },
-    { word: 'CONVERSATION', clue: 'Dialogue', length: 12, level: 5 },
-    { word: 'NÉGOCIATION', clue: 'Discussion d\'accord', length: 11, level: 5 },
-    { word: 'MÉDIATION', clue: 'Intervention pacifique', length: 9, level: 5 },
-    { word: 'RÉCONCILIATION', clue: 'Retour à l\'harmonie', length: 14, level: 5 },
-    { word: 'COLLABORATION', clue: 'Travail en commun', length: 13, level: 5 },
-    { word: 'COOPÉRATION', clue: 'Action commune', length: 11, level: 5 },
-    { word: 'ASSOCIATION', clue: 'Union d\'éléments', length: 11, level: 5 },
-    { word: 'ORGANISATION', clue: 'Mise en ordre', length: 12, level: 5 },
-    { word: 'ADMINISTRATION', clue: 'Gestion des affaires', length: 14, level: 5 },
-    { word: 'GOUVERNEMENT', clue: 'Pouvoir exécutif', length: 12, level: 5 },
-    { word: 'DÉMOCRATIE', clue: 'Pouvoir du peuple', length: 10, level: 5 },
-    { word: 'RÉPUBLIQUE', clue: 'Régime politique', length: 10, level: 5 },
-    { word: 'MONARCHIE', clue: 'Pouvoir royal', length: 9, level: 5 },
-    { word: 'ARISTOCRATIE', clue: 'Pouvoir des nobles', length: 12, level: 5 },
-    { word: 'OLIGARCHIE', clue: 'Pouvoir de quelques-uns', length: 10, level: 5 },
-    { word: 'ANARCHIE', clue: 'Absence de gouvernement', length: 8, level: 5 },
-    { word: 'HIÉRARCHIE', clue: 'Ordre de subordination', length: 10, level: 5 },
-    { word: 'BUREAUCRATIE', clue: 'Pouvoir administratif', length: 12, level: 5 },
-    { word: 'TECHNOCRATIE', clue: 'Pouvoir technique', length: 12, level: 5 },
-    { word: 'MÉRITOCRATIE', clue: 'Pouvoir du mérite', length: 12, level: 5 },
-    { word: 'PLOUTOCRATIE', clue: 'Pouvoir de l\'argent', length: 12, level: 5 },
-    { word: 'GÉRONTOCRATIE', clue: 'Pouvoir des anciens', length: 13, level: 5 },
-    { word: 'GYNÉCOCRATIE', clue: 'Pouvoir des femmes', length: 12, level: 5 },
-    { word: 'ANDROCRATIE', clue: 'Pouvoir des hommes', length: 11, level: 5 },
-    { word: 'ETHNOCRATIE', clue: 'Pouvoir ethnique', length: 11, level: 5 },
-    { word: 'THÉOCRATIE', clue: 'Pouvoir religieux', length: 10, level: 5 },
-    { word: 'IDÉOCRATIE', clue: 'Pouvoir idéologique', length: 10, level: 5 },
-    { word: 'MÉDIOCRATIE', clue: 'Pouvoir des médiocres', length: 11, level: 5 },
-    { word: 'KAKISTOCRATIE', clue: 'Pouvoir des pires', length: 13, level: 5 },
-    { word: 'STOCHASTOCRATIE', clue: 'Pouvoir du hasard', length: 15, level: 5 },
-    { word: 'ÉPISTÉMOCRATIE', clue: 'Pouvoir du savoir', length: 14, level: 5 },
-    { word: 'LOGOCRATIE', clue: 'Pouvoir de la parole', length: 10, level: 5 },
-    { word: 'NOMOCRATIE', clue: 'Pouvoir de la loi', length: 10, level: 5 },
-    { word: 'SOCIOCRATIE', clue: 'Pouvoir social', length: 11, level: 5 },
-    { word: 'COSMOCRATIE', clue: 'Pouvoir universel', length: 11, level: 5 },
-    { word: 'CRYOCRATIE', clue: 'Pouvoir du froid', length: 10, level: 5 },
-    { word: 'PYROCRATIE', clue: 'Pouvoir du feu', length: 10, level: 5 },
-    { word: 'HYDROCRATIE', clue: 'Pouvoir de l\'eau', length: 11, level: 5 },
-    { word: 'AÉROCRATIE', clue: 'Pouvoir de l\'air', length: 10, level: 5 },
-    { word: 'GÉOCRATIE', clue: 'Pouvoir de la terre', length: 9, level: 5 },
-    { word: 'BIOCRATIE', clue: 'Pouvoir du vivant', length: 9, level: 5 },
-    { word: 'NÉOCRATIE', clue: 'Nouveau pouvoir', length: 9, level: 5 },
-    { word: 'PALÉOCRATIE', clue: 'Ancien pouvoir', length: 11, level: 5 },
-    { word: 'MÉSOCRATIE', clue: 'Pouvoir moyen', length: 10, level: 5 },
-    { word: 'MACROCRATIE', clue: 'Grand pouvoir', length: 11, level: 5 },
-    { word: 'MICROCRATIE', clue: 'Petit pouvoir', length: 11, level: 5 },
-    { word: 'ULTRACRATIE', clue: 'Pouvoir extrême', length: 11, level: 5 },
-    { word: 'MÉTACRATIE', clue: 'Pouvoir au-delà', length: 10, level: 5 },
-    { word: 'PARACRATIE', clue: 'Pouvoir parallèle', length: 10, level: 5 },
-    { word: 'PSEUDOCRATIE', clue: 'Faux pouvoir', length: 12, level: 5 },
-    { word: 'CRYPTOCRATIE', clue: 'Pouvoir caché', length: 12, level: 5 },
-    { word: 'PHANTOCRATIE', clue: 'Pouvoir fantôme', length: 12, level: 5 },
-    { word: 'NECROCRATIE', clue: 'Pouvoir des morts', length: 11, level: 5 },
-    { word: 'ZOMBICRATIE', clue: 'Pouvoir des zombies', length: 11, level: 5 },
-    { word: 'VAMPIROCRATIE', clue: 'Pouvoir des vampires', length: 13, level: 5 },
-    { word: 'WEREWOLFCRATIE', clue: 'Pouvoir des loups-garous', length: 14, level: 5 },
-    { word: 'DRAGONCRATIE', clue: 'Pouvoir des dragons', length: 12, level: 5 },
-    { word: 'UNICORNCRATIE', clue: 'Pouvoir des licornes', length: 13, level: 5 },
-    { word: 'PHOENIXCRATIE', clue: 'Pouvoir du phénix', length: 13, level: 5 },
-    { word: 'GRIFFONCRATIE', clue: 'Pouvoir des griffons', length: 13, level: 5 },
-    { word: 'CENTAURCRATIE', clue: 'Pouvoir des centaures', length: 13, level: 5 },
-    { word: 'MINOTAURCRATIE', clue: 'Pouvoir des minotaures', length: 14, level: 5 },
-    { word: 'CYCLOPSCRATIE', clue: 'Pouvoir des cyclopes', length: 13, level: 5 },
-    { word: 'TITANCRATIE', clue: 'Pouvoir des titans', length: 11, level: 5 },
-    { word: 'OLYMPOCRATIE', clue: 'Pouvoir olympien', length: 12, level: 5 },
-    { word: 'HADESCRATIE', clue: 'Pouvoir infernal', length: 11, level: 5 },
-    { word: 'ELYSIUMCRATIE', clue: 'Pouvoir des Champs Élysées', length: 13, level: 5 },
-    { word: 'TARTARUSCRATIE', clue: 'Pouvoir du Tartare', length: 14, level: 5 },
-    { word: 'STIGYCRATIE', clue: 'Pouvoir du Styx', length: 11, level: 5 },
-    { word: 'LETHÉCRATIE', clue: 'Pouvoir du Léthé', length: 11, level: 5 },
-    { word: 'ACHÉRONCRATIE', clue: 'Pouvoir de l\'Achéron', length: 13, level: 5 },
-    { word: 'COCYTECRATIE', clue: 'Pouvoir du Cocyte', length: 12, level: 5 },
-    { word: 'PHLÉGÉTHONCRATIE', clue: 'Pouvoir du Phlégéthon', length: 16, level: 5 }
+    { word: 'CALLIGRAPHIE', clue: 'Art de l\'écriture', length: 12, level: 5 }
   ];
 
   const getGridSize = (level: Difficulty): number => {
@@ -512,62 +427,74 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
+  // NOUVEL ALGORITHME AMÉLIORÉ
+  const findAllIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number, letter: string}> => {
     const intersections = [];
     for (let i = 0; i < word1.length; i++) {
       for (let j = 0; j < word2.length; j++) {
         if (word1[i] === word2[j]) {
-          intersections.push({ pos1: i, pos2: j });
+          intersections.push({ pos1: i, pos2: j, letter: word1[i] });
         }
       }
     }
     return intersections;
   };
 
-  const canPlaceWord = (grid: Grid, word: string, row: number, col: number, direction: Direction, size: number): boolean => {
-    // Vérifier les limites
+  const canPlaceWordAdvanced = (
+    grid: Grid, 
+    word: string, 
+    row: number, 
+    col: number, 
+    direction: Direction, 
+    size: number,
+    placedWords: PlacedWord[]
+  ): boolean => {
+    // Vérifier les limites de base
     if (direction === 'horizontal') {
-      if (col + word.length > size || row >= size) return false;
-      // Vérifier qu'il n'y a pas de lettre avant le mot
-      if (col > 0 && grid[row][col - 1].isEditable) return false;
-      // Vérifier qu'il n'y a pas de lettre après le mot
-      if (col + word.length < size && grid[row][col + word.length].isEditable) return false;
+      if (col + word.length > size || row >= size || row < 0 || col < 0) return false;
     } else {
-      if (row + word.length > size || col >= size) return false;
-      // Vérifier qu'il n'y a pas de lettre avant le mot
-      if (row > 0 && grid[row - 1][col].isEditable) return false;
-      // Vérifier qu'il n'y a pas de lettre après le mot
-      if (row + word.length < size && grid[row + word.length][col].isEditable) return false;
+      if (row + word.length > size || col >= size || row < 0 || col < 0) return false;
     }
 
-    // Vérifier chaque position
+    let requiredIntersections = 0;
+    let actualIntersections = 0;
+
+    // Vérifier chaque position du mot
     for (let i = 0; i < word.length; i++) {
       const currentRow = direction === 'horizontal' ? row : row + i;
       const currentCol = direction === 'horizontal' ? col + i : col;
-
       const cell = grid[currentRow][currentCol];
-      
-      // Si la cellule contient déjà une lettre, elle doit correspondre
-      if (cell.correctLetter && cell.correctLetter !== word[i]) {
-        return false;
+
+      // Si une lettre existe, elle doit correspondre (intersection)
+      if (cell.correctLetter) {
+        if (cell.correctLetter !== word[i]) {
+          return false;
+        }
+        actualIntersections++;
       }
-      
-      // Vérifier les cellules adjacentes pour éviter les mots qui se touchent
-      const adjacentPositions = [
-        [currentRow - 1, currentCol], [currentRow + 1, currentCol],
-        [currentRow, currentCol - 1], [currentRow, currentCol + 1]
+
+      // Vérifier qu'il n'y a pas de conflit avec les mots adjacents
+      const adjacentChecks = [
+        [currentRow - 1, currentCol], // haut
+        [currentRow + 1, currentCol], // bas
+        [currentRow, currentCol - 1], // gauche  
+        [currentRow, currentCol + 1]  // droite
       ];
-      
-      for (const [adjRow, adjCol] of adjacentPositions) {
+
+      for (const [adjRow, adjCol] of adjacentChecks) {
         if (adjRow >= 0 && adjRow < size && adjCol >= 0 && adjCol < size) {
           const adjCell = grid[adjRow][adjCol];
-          // Si une cellule adjacente contient une lettre mais n'est pas dans la direction du mot
-          if (adjCell.correctLetter && 
-              !((direction === 'horizontal' && adjRow === currentRow) || 
-                (direction === 'vertical' && adjCol === currentCol))) {
-            // Vérifier si c'est une intersection valide
-            const isValidIntersection = adjCell.correctLetter === word[i];
-            if (!isValidIntersection) {
+          
+          // Si une cellule adjacente a une lettre
+          if (adjCell.correctLetter) {
+            const isInSameDirection = (direction === 'horizontal' && adjRow === currentRow) ||
+                                    (direction === 'vertical' && adjCol === currentCol);
+            
+            // Si c'est dans la même direction, c'est ok (continuité)
+            if (isInSameDirection) continue;
+            
+            // Sinon c'est une intersection, elle doit correspondre
+            if (adjCell.correctLetter !== word[i]) {
               return false;
             }
           }
@@ -575,31 +502,144 @@ const CrosswordBoard = () => {
       }
     }
 
+    // Pour les mots après le premier, exiger au moins une intersection
+    if (placedWords.length > 0 && actualIntersections === 0) {
+      return false;
+    }
+
     return true;
   };
 
-  const generateGrid = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
+  const scoreWordPlacement = (
+    grid: Grid,
+    word: WordData,
+    row: number,
+    col: number,
+    direction: Direction,
+    size: number,
+    placedWords: PlacedWord[]
+  ): number => {
+    let score = 0;
+    let intersections = 0;
+
+    // Calculer les intersections
+    for (let i = 0; i < word.length; i++) {
+      const currentRow = direction === 'horizontal' ? row : row + i;
+      const currentCol = direction === 'horizontal' ? col + i : col;
+      
+      if (grid[currentRow][currentCol].correctLetter === word.word[i]) {
+        intersections++;
+        score += 10; // Bonus pour intersection
+      }
+    }
+
+    // Bonus pour position centrale
+    const centerRow = Math.floor(size / 2);
+    const centerCol = Math.floor(size / 2);
+    const distanceFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
+    score += Math.max(0, 20 - distanceFromCenter);
+
+    // Bonus pour multiples intersections
+    if (intersections > 1) {
+      score += intersections * 15;
+    }
+
+    // Bonus pour la longueur du mot
+    score += word.length * 2;
+
+    // Malus pour les mots trop éloignés des autres
+    if (placedWords.length > 0 && intersections === 0) {
+      score -= 50;
+    }
+
+    return score;
+  };
+
+  const findBestPlacements = (
+    grid: Grid,
+    word: WordData,
+    size: number,
+    placedWords: PlacedWord[]
+  ): WordPlacement[] => {
+    const placements: WordPlacement[] = [];
+
+    // Essayer toutes les positions et directions
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        for (const direction of ['horizontal' as Direction, 'vertical' as Direction]) {
+          if (canPlaceWordAdvanced(grid, word.word, row, col, direction, size, placedWords)) {
+            const score = scoreWordPlacement(grid, word, row, col, direction, size, placedWords);
+            placements.push({
+              word,
+              row,
+              col,
+              direction,
+              score,
+              intersections: 0 // sera calculé plus tard si nécessaire
+            });
+          }
+        }
+      }
+    }
+
+    // Trier par score décroissant
+    return placements.sort((a, b) => b.score - a.score);
+  };
+
+  const placeWordOnGrid = (
+    grid: Grid,
+    word: string,
+    row: number,
+    col: number,
+    direction: Direction,
+    wordId: number
+  ): void => {
+    for (let i = 0; i < word.length; i++) {
+      const currentRow = direction === 'horizontal' ? row : row + i;
+      const currentCol = direction === 'horizontal' ? col + i : col;
+      
+      grid[currentRow][currentCol].correctLetter = word[i];
+      grid[currentRow][currentCol].isBlack = false;
+      grid[currentRow][currentCol].isEditable = true;
+      
+      if (!grid[currentRow][currentCol].wordIds) {
+        grid[currentRow][currentCol].wordIds = [];
+      }
+      grid[currentRow][currentCol].wordIds!.push(wordId);
+    }
+
+    // Marquer la flèche au début du mot
+    grid[row][col].hasArrow = true;
+    grid[row][col].arrowDirection = direction;
+    grid[row][col].wordNumber = wordId;
+  };
+
+  const generateGridAdvanced = (level: Difficulty): { grid: Grid, placedWords: PlacedWord[] } => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
     
-    // Multiplier par 10 pour avoir beaucoup plus de mots à placer
-    const maxWordsToPlace = Math.min(availableWords.length, size * size);
-    const wordsToPlace = Math.floor(maxWordsToPlace * 0.8); // 80% du maximum possible
+    // Objectifs ambitieux de nombre de mots
+    const targetWordCounts = { 1: 10, 2: 15, 3: 22, 4: 30, 5: 40 };
+    const targetWords = Math.min(targetWordCounts[level], availableWords.length);
     
-    const selectedWords = availableWords
-      .sort(() => Math.random() - 0.5)
-      .slice(0, wordsToPlace);
+    console.log(`🎯 Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
+
+    // Trier les mots par longueur décroissante pour commencer par les plus longs
+    const sortedWords = availableWords
+      .sort(() => Math.random() - 0.5) // mélanger d'abord
+      .sort((a, b) => b.length - a.length) // puis trier par longueur
+      .slice(0, Math.min(targetWords * 2, availableWords.length)); // prendre plus de mots que nécessaire
 
     const newGrid = createEmptyGrid(size);
     const placedWords: PlacedWord[] = [];
 
     // Placer le premier mot au centre
-    if (selectedWords.length > 0) {
-      const firstWord = selectedWords[0];
+    if (sortedWords.length > 0) {
+      const firstWord = sortedWords[0];
       const startRow = Math.floor(size / 2);
       const startCol = Math.floor((size - firstWord.length) / 2);
 
-      const placedWord: PlacedWord = {
+      const firstPlacedWord: PlacedWord = {
         id: 1,
         word: firstWord.word,
         clue: firstWord.clue,
@@ -609,146 +649,84 @@ const CrosswordBoard = () => {
         length: firstWord.length
       };
 
-      // Placer dans la grille
-      for (let i = 0; i < firstWord.length; i++) {
-        newGrid[startRow][startCol + i].correctLetter = firstWord.word[i];
-        newGrid[startRow][startCol + i].isBlack = false;
-        newGrid[startRow][startCol + i].isEditable = true;
-        newGrid[startRow][startCol + i].wordIds = [1];
-      }
-
-      // Marquer la flèche
-      newGrid[startRow][startCol].hasArrow = true;
-      newGrid[startRow][startCol].arrowDirection = 'horizontal';
-      newGrid[startRow][startCol].wordNumber = 1;
-
-      placedWords.push(placedWord);
+      placeWordOnGrid(newGrid, firstWord.word, startRow, startCol, 'horizontal', 1);
+      placedWords.push(firstPlacedWord);
+      console.log(`✅ Premier mot placé: ${firstWord.word} (${firstWord.length} lettres)`);
     }
 
-    // Placer les autres mots avec un algorithme amélioré
-    for (let wordIndex = 1; wordIndex < selectedWords.length; wordIndex++) {
-      const currentWord = selectedWords[wordIndex];
-      let wordPlaced = false;
-      let attempts = 0;
-      const maxAttempts = 100;
+    // Placer les autres mots avec l'algorithme amélioré
+    let attempts = 0;
+    const maxAttempts = sortedWords.length * 10;
 
-      while (!wordPlaced && attempts < maxAttempts) {
-        attempts++;
+    for (let wordIndex = 1; wordIndex < sortedWords.length && placedWords.length < targetWords && attempts < maxAttempts; wordIndex++) {
+      attempts++;
+      const currentWord = sortedWords[wordIndex];
+      
+      // Trouver les meilleurs emplacements
+      const bestPlacements = findBestPlacements(newGrid, currentWord, size, placedWords);
+      
+      if (bestPlacements.length > 0) {
+        // Prendre un des 3 meilleurs placements au hasard pour plus de variété
+        const topPlacements = bestPlacements.slice(0, Math.min(3, bestPlacements.length));
+        const chosenPlacement = topPlacements[Math.floor(Math.random() * topPlacements.length)];
         
-        // Essayer de placer en intersection avec les mots existants
-        for (const placedWord of placedWords) {
-          if (wordPlaced) break;
+        const newPlacedWord: PlacedWord = {
+          id: placedWords.length + 1,
+          word: currentWord.word,
+          clue: currentWord.clue,
+          startRow: chosenPlacement.row,
+          startCol: chosenPlacement.col,
+          direction: chosenPlacement.direction,
+          length: currentWord.length
+        };
 
-          const intersections = findIntersections(currentWord.word, placedWord.word);
-          
-          // Mélanger les intersections pour plus de variété
-          const shuffledIntersections = intersections.sort(() => Math.random() - 0.5);
-          
-          for (const intersection of shuffledIntersections) {
-            if (wordPlaced) break;
-
-            const newDirection: Direction = placedWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
-            let newStartRow, newStartCol;
-
-            if (placedWord.direction === 'horizontal') {
-              newStartRow = placedWord.startRow - intersection.pos1;
-              newStartCol = placedWord.startCol + intersection.pos2;
-            } else {
-              newStartRow = placedWord.startRow + intersection.pos2;
-              newStartCol = placedWord.startCol - intersection.pos1;
-            }
-
-            if (newStartRow >= 0 && newStartCol >= 0 && 
-                canPlaceWord(newGrid, currentWord.word, newStartRow, newStartCol, newDirection, size)) {
-              
-              const newPlacedWord: PlacedWord = {
-                id: wordIndex + 1,
-                word: currentWord.word,
-                clue: currentWord.clue,
-                startRow: newStartRow,
-                startCol: newStartCol,
-                direction: newDirection,
-                length: currentWord.length
-              };
-
-              // Placer dans la grille
-              for (let i = 0; i < currentWord.length; i++) {
-                const row = newDirection === 'horizontal' ? newStartRow : newStartRow + i;
-                const col = newDirection === 'horizontal' ? newStartCol + i : newStartCol;
-                
-                newGrid[row][col].correctLetter = currentWord.word[i];
-                newGrid[row][col].isBlack = false;
-                newGrid[row][col].isEditable = true;
-                
-                if (!newGrid[row][col].wordIds) {
-                  newGrid[row][col].wordIds = [];
-                }
-                newGrid[row][col].wordIds!.push(wordIndex + 1);
-              }
-
-              // Marquer la flèche
-              newGrid[newStartRow][newStartCol].hasArrow = true;
-              newGrid[newStartRow][newStartCol].arrowDirection = newDirection;
-              newGrid[newStartRow][newStartCol].wordNumber = wordIndex + 1;
-
-              placedWords.push(newPlacedWord);
-              wordPlaced = true;
-            }
-          }
-        }
+        placeWordOnGrid(newGrid, currentWord.word, chosenPlacement.row, chosenPlacement.col, chosenPlacement.direction, newPlacedWord.id);
+        placedWords.push(newPlacedWord);
         
-        // Si aucune intersection n'a fonctionné, essayer de placer le mot à un endroit aléatoire
-        if (!wordPlaced && attempts > 50) {
-          for (let tryCount = 0; tryCount < 20 && !wordPlaced; tryCount++) {
-            const randomRow = Math.floor(Math.random() * size);
-            const randomCol = Math.floor(Math.random() * size);
-            const randomDirection: Direction = Math.random() < 0.5 ? 'horizontal' : 'vertical';
-            
-            if (canPlaceWord(newGrid, currentWord.word, randomRow, randomCol, randomDirection, size)) {
-              const newPlacedWord: PlacedWord = {
-                id: wordIndex + 1,
-                word: currentWord.word,
-                clue: currentWord.clue,
-                startRow: randomRow,
-                startCol: randomCol,
-                direction: randomDirection,
-                length: currentWord.length
-              };
+        console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} (${currentWord.length} lettres, score: ${chosenPlacement.score})`);
+      } else {
+        console.log(`❌ Impossible de placer: ${currentWord.word}`);
+      }
+    }
 
-              // Placer dans la grille
-              for (let i = 0; i < currentWord.length; i++) {
-                const row = randomDirection === 'horizontal' ? randomRow : randomRow + i;
-                const col = randomDirection === 'horizontal' ? randomCol + i : randomCol;
-                
-                newGrid[row][col].correctLetter = currentWord.word[i];
-                newGrid[row][col].isBlack = false;
-                newGrid[row][col].isEditable = true;
-                
-                if (!newGrid[row][col].wordIds) {
-                  newGrid[row][col].wordIds = [];
-                }
-                newGrid[row][col].wordIds!.push(wordIndex + 1);
-              }
+    // Si on n'a pas assez de mots, essayer avec des mots plus petits
+    if (placedWords.length < targetWords) {
+      console.log(`🔄 Tentative avec des mots plus petits... (${placedWords.length}/${targetWords})`);
+      
+      const smallerWords = availableWords
+        .filter(w => w.length >= 2 && w.length <= 4)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 50);
 
-              // Marquer la flèche
-              newGrid[randomRow][randomCol].hasArrow = true;
-              newGrid[randomRow][randomCol].arrowDirection = randomDirection;
-              newGrid[randomRow][randomCol].wordNumber = wordIndex + 1;
+      for (const word of smallerWords) {
+        if (placedWords.length >= targetWords) break;
+        
+        const placements = findBestPlacements(newGrid, word, size, placedWords);
+        if (placements.length > 0) {
+          const placement = placements[0];
+          const newPlacedWord: PlacedWord = {
+            id: placedWords.length + 1,
+            word: word.word,
+            clue: word.clue,
+            startRow: placement.row,
+            startCol: placement.col,
+            direction: placement.direction,
+            length: word.length
+          };
 
-              placedWords.push(newPlacedWord);
-              wordPlaced = true;
-            }
-          }
+          placeWordOnGrid(newGrid, word.word, placement.row, placement.col, placement.direction, newPlacedWord.id);
+          placedWords.push(newPlacedWord);
+          console.log(`✅ Petit mot ajouté: ${word.word}`);
         }
       }
     }
 
-    console.log(`Grille générée: ${placedWords.length} mots placés sur ${selectedWords.length} tentés pour le niveau ${level}`);
+    console.log(`🎉 Grille générée: ${placedWords.length} mots placés (objectif: ${targetWords})`);
     return { grid: newGrid, placedWords };
   };
 
   const generateNewGame = () => {
-    const { grid: newGrid, placedWords } = generateGrid(difficulty);
+    const { grid: newGrid, placedWords } = generateGridAdvanced(difficulty);
     setGrid(newGrid);
     setWords(placedWords);
     setGameCompleted(false);
