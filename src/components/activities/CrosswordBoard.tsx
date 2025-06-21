@@ -49,7 +49,6 @@ const CrosswordBoard = () => {
   const [showSolution, setShowSolution] = useState(false);
   const gridRefs = useRef<(React.RefObject<HTMLInputElement> | null)[][]>([]);
 
-  // Base de données de mots considérablement élargie
   const wordsDatabase: WordData[] = [
     // Niveau 1 - Mots simples 2-3 lettres (50+ mots)
     { word: 'SOL', clue: 'Surface terrestre', length: 3, level: 1 },
@@ -143,49 +142,6 @@ const CrosswordBoard = () => {
     { word: 'PHOTO', clue: 'Image photographique', length: 5, level: 3 },
     { word: 'METRO', clue: 'Transport souterrain', length: 5, level: 3 },
     { word: 'RETRO', clue: 'Style d\'époque passée', length: 5, level: 3 },
-    { word: 'MACRO', clue: 'Très grand', length: 5, level: 3 },
-    { word: 'MICRO', clue: 'Très petit', length: 5, level: 3 },
-    { word: 'INTRO', clue: 'Début d\'une œuvre', length: 5, level: 3 },
-    { word: 'OUTRO', clue: 'Fin d\'une œuvre', length: 5, level: 3 },
-    { word: 'COMBO', clue: 'Combinaison', length: 5, level: 3 },
-    { word: 'JUMBO', clue: 'Très grand', length: 5, level: 3 },
-    { word: 'MAMBO', clue: 'Danse latine', length: 5, level: 3 },
-    { word: 'BINGO', clue: 'Jeu de hasard', length: 5, level: 3 },
-    { word: 'MANGO', clue: 'Fruit tropical', length: 5, level: 3 },
-    { word: 'TANGO', clue: 'Danse argentine', length: 5, level: 3 },
-    { word: 'CARGO', clue: 'Marchandises transportées', length: 5, level: 3 },
-    { word: 'LARGO', clue: 'Tempo musical lent', length: 5, level: 3 },
-    { word: 'PATIO', clue: 'Cour intérieure', length: 5, level: 3 },
-    { word: 'RATIO', clue: 'Rapport mathématique', length: 5, level: 3 },
-    { word: 'FOLIO', clue: 'Feuille pliée', length: 5, level: 3 },
-    { word: 'JULIO', clue: 'Prénom masculin', length: 5, level: 3 },
-    { word: 'SOPRANO', clue: 'Voix aiguë féminine', length: 7, level: 3 },
-    { word: 'CASINO', clue: 'Établissement de jeux', length: 6, level: 3 },
-    { word: 'DOMINO', clue: 'Jeu de société', length: 6, level: 3 },
-    { word: 'KIMONO', clue: 'Vêtement japonais', length: 6, level: 3 },
-    { word: 'ALBINO', clue: 'Dépourvu de pigments', length: 6, level: 3 },
-    { word: 'BAMBINO', clue: 'Petit enfant', length: 7, level: 3 },
-    { word: 'TORINO', clue: 'Ville italienne', length: 6, level: 3 },
-    { word: 'MARINO', clue: 'Relatif à la mer', length: 6, level: 3 },
-    { word: 'ALTIMO', clue: 'Très haut', length: 6, level: 3 },
-    { word: 'ULTIMO', clue: 'Le dernier', length: 6, level: 3 },
-    { word: 'PRIMO', clue: 'Le premier', length: 5, level: 3 },
-    { word: 'TERMO', clue: 'Relatif à la chaleur', length: 5, level: 3 },
-    { word: 'KARMA', clue: 'Loi de cause à effet', length: 5, level: 3 },
-    { word: 'DRAMA', clue: 'Pièce théâtrale', length: 5, level: 3 },
-    { word: 'COMMA', clue: 'Signe de ponctuation', length: 5, level: 3 },
-    { word: 'GAMMA', clue: 'Lettre grecque', length: 5, level: 3 },
-    { word: 'MAMMA', clue: 'Maman en italien', length: 5, level: 3 },
-    { word: 'LLAMA', clue: 'Animal des Andes', length: 5, level: 3 },
-    { word: 'PRIMA', clue: 'Première', length: 5, level: 3 },
-    { word: 'SIGMA', clue: 'Lettre grecque', length: 5, level: 3 },
-    { word: 'DOGMA', clue: 'Vérité indiscutable', length: 5, level: 3 },
-    { word: 'MAGMA', clue: 'Roche en fusion', length: 5, level: 3 },
-    { word: 'PLASMA', clue: 'État de la matière', length: 6, level: 3 },
-    { word: 'CINEMA', clue: 'Art du film', length: 6, level: 3 },
-    { word: 'SCHEMA', clue: 'Plan simplifié', length: 6, level: 3 },
-    { word: 'TRAUMA', clue: 'Choc psychologique', length: 6, level: 3 },
-    { word: 'PHARMA', clue: 'Industrie pharmaceutique', length: 6, level: 3 },
     
     // Niveau 4 - Mots de 4-6 lettres (120+ mots)
     { word: 'MUSIQUE', clue: 'Art des sons organisés', length: 7, level: 4 },
@@ -206,60 +162,6 @@ const CrosswordBoard = () => {
     { word: 'PARENT', clue: 'Père ou mère', length: 6, level: 4 },
     { word: 'FRÈRE', clue: 'Fils des mêmes parents', length: 5, level: 4 },
     { word: 'SŒUR', clue: 'Fille des mêmes parents', length: 4, level: 4 },
-    { word: 'ONCLE', clue: 'Frère du père ou de la mère', length: 5, level: 4 },
-    { word: 'TANTE', clue: 'Sœur du père ou de la mère', length: 5, level: 4 },
-    { word: 'COUSIN', clue: 'Fils de l\'oncle ou de la tante', length: 6, level: 4 },
-    { word: 'MONTAGNE', clue: 'Relief élevé', length: 8, level: 4 },
-    { word: 'CAMPAGNE', clue: 'Zone rurale', length: 8, level: 4 },
-    { word: 'BRETAGNE', clue: 'Région française', length: 8, level: 4 },
-    { word: 'ESPAGNE', clue: 'Pays ibérique', length: 7, level: 4 },
-    { word: 'ALLEMAGNE', clue: 'Pays européen', length: 9, level: 4 },
-    { word: 'COMPAGNE', clue: 'Partenaire féminine', length: 8, level: 4 },
-    { word: 'CHAMPAGNE', clue: 'Vin pétillant', length: 9, level: 4 },
-    { word: 'LASAGNE', clue: 'Plat italien', length: 7, level: 4 },
-    { word: 'BAIGNE', clue: 'Trempe dans l\'eau', length: 6, level: 4 },
-    { word: 'PEIGNE', clue: 'Objet pour cheveux', length: 6, level: 4 },
-    { word: 'RÈGNE', clue: 'Période de pouvoir', length: 5, level: 4 },
-    { word: 'SIGNE', clue: 'Marque distinctive', length: 5, level: 4 },
-    { word: 'LIGNE', clue: 'Trait continu', length: 5, level: 4 },
-    { word: 'DIGNE', clue: 'Qui mérite respect', length: 5, level: 4 },
-    { word: 'VIGNE', clue: 'Plant de raisin', length: 5, level: 4 },
-    { word: 'CYGNE', clue: 'Oiseau aquatique', length: 5, level: 4 },
-    { word: 'ROGNE', clue: 'Maladie de peau', length: 5, level: 4 },
-    { word: 'CHAMPIGNON', clue: 'Organisme sans chlorophylle', length: 10, level: 4 },
-    { word: 'RELIGION', clue: 'Croyance spirituelle', length: 8, level: 4 },
-    { word: 'DIMENSION', clue: 'Mesure spatiale', length: 9, level: 4 },
-    { word: 'ATTENTION', clue: 'Concentration mentale', length: 9, level: 4 },
-    { word: 'INTENTION', clue: 'But recherché', length: 9, level: 4 },
-    { word: 'EXTENSION', clue: 'Agrandissement', length: 9, level: 4 },
-    { word: 'TENSION', clue: 'Force d\'étirement', length: 7, level: 4 },
-    { word: 'PENSION', clue: 'Retraite', length: 7, level: 4 },
-    { word: 'MISSION', clue: 'Tâche à accomplir', length: 7, level: 4 },
-    { word: 'PASSION', clue: 'Émotion intense', length: 7, level: 4 },
-    { word: 'SESSION', clue: 'Période d\'activité', length: 7, level: 4 },
-    { word: 'VERSION', clue: 'Variante', length: 7, level: 4 },
-    { word: 'MANSION', clue: 'Grande demeure', length: 7, level: 4 },
-    { word: 'FASHION', clue: 'Mode vestimentaire', length: 7, level: 4 },
-    { word: 'CUSHION', clue: 'Coussin', length: 7, level: 4 },
-    { word: 'BASTION', clue: 'Fortification', length: 7, level: 4 },
-    { word: 'PORTION', clue: 'Part d\'un tout', length: 7, level: 4 },
-    { word: 'CAUTION', clue: 'Prudence', length: 7, level: 4 },
-    { word: 'AUCTION', clue: 'Vente aux enchères', length: 7, level: 4 },
-    { word: 'FICTION', clue: 'Œuvre imaginaire', length: 7, level: 4 },
-    { word: 'SECTION', clue: 'Partie d\'un ensemble', length: 7, level: 4 },
-    { word: 'FACTION', clue: 'Groupe opposé', length: 7, level: 4 },
-    { word: 'ACTION', clue: 'Fait d\'agir', length: 6, level: 4 },
-    { word: 'NATION', clue: 'Peuple organisé', length: 6, level: 4 },
-    { word: 'STATION', clue: 'Lieu d\'arrêt', length: 7, level: 4 },
-    { word: 'POTION', clue: 'Breuvage magique', length: 6, level: 4 },
-    { word: 'LOTION', clue: 'Produit de soin', length: 6, level: 4 },
-    { word: 'MOTION', clue: 'Mouvement', length: 6, level: 4 },
-    { word: 'NOTION', clue: 'Concept', length: 6, level: 4 },
-    { word: 'OPTION', clue: 'Choix possible', length: 6, level: 4 },
-    { word: 'DEVOTION', clue: 'Attachement religieux', length: 8, level: 4 },
-    { word: 'EMOTION', clue: 'Sentiment intense', length: 7, level: 4 },
-    { word: 'PROMOTION', clue: 'Avancement', length: 9, level: 4 },
-    { word: 'LOCOMOTION', clue: 'Capacité de se mouvoir', length: 10, level: 4 },
     
     // Niveau 5 - Mots de 4-7 lettres (150+ mots)
     { word: 'PARADOXE', clue: 'Contradiction apparente', length: 8, level: 5 },
@@ -279,42 +181,7 @@ const CrosswordBoard = () => {
     { word: 'OUBLI', clue: 'Perte de mémoire', length: 5, level: 5 },
     { word: 'DESTIN', clue: 'Sort fixé d\'avance', length: 6, level: 5 },
     { word: 'HASARD', clue: 'Ce qui arrive par chance', length: 6, level: 5 },
-    { word: 'FORTUNE', clue: 'Grande richesse', length: 7, level: 5 },
-    { word: 'PAUVRETÉ', clue: 'État de celui qui est pauvre', length: 8, level: 5 },
-    { word: 'RICHESSE', clue: 'Abondance de biens', length: 8, level: 5 },
-    { word: 'GLOIRE', clue: 'Renommée éclatante', length: 6, level: 5 },
-    { word: 'HONNEUR', clue: 'Sentiment de dignité', length: 7, level: 5 },
-    { word: 'HONTE', clue: 'Sentiment de déshonneur', length: 5, level: 5 },
-    { word: 'FIERTÉ', clue: 'Sentiment de satisfaction', length: 6, level: 5 },
-    { word: 'PHILOSOPHIE', clue: 'Réflexion sur l\'existence', length: 11, level: 5 },
-    { word: 'PSYCHOLOGIE', clue: 'Science de l\'esprit', length: 11, level: 5 },
-    { word: 'SOCIOLOGIE', clue: 'Étude des sociétés', length: 10, level: 5 },
-    { word: 'ANTHROPOLOGIE', clue: 'Science de l\'homme', length: 13, level: 5 },
-    { word: 'MÉTAPHYSIQUE', clue: 'Étude de l\'être', length: 12, level: 5 },
-    { word: 'PHYSIQUE', clue: 'Science de la matière', length: 8, level: 5 },
-    { word: 'CHIMIE', clue: 'Science des éléments', length: 6, level: 5 },
-    { word: 'BIOLOGIE', clue: 'Science du vivant', length: 8, level: 5 },
-    { word: 'GÉOLOGIE', clue: 'Science de la Terre', length: 8, level: 5 },
-    { word: 'ASTRONOMIE', clue: 'Science des astres', length: 10, level: 5 },
-    { word: 'MATHÉMATIQUES', clue: 'Science des nombres', length: 13, level: 5 },
-    { word: 'GÉOMÉTRIE', clue: 'Science des formes', length: 9, level: 5 },
-    { word: 'ALGÈBRE', clue: 'Branche des mathématiques', length: 7, level: 5 },
-    { word: 'TRIGONOMÉTRIE', clue: 'Calcul des triangles', length: 13, level: 5 },
-    { word: 'STATISTIQUE', clue: 'Science des données', length: 11, level: 5 },
-    { word: 'PROBABILITÉ', clue: 'Calcul des chances', length: 11, level: 5 },
-    { word: 'ÉCONOMIE', clue: 'Science des richesses', length: 8, level: 5 },
-    { word: 'POLITIQUE', clue: 'Art de gouverner', length: 9, level: 5 },
-    { word: 'HISTOIRE', clue: 'Science du passé', length: 8, level: 5 },
-    { word: 'GÉOGRAPHIE', clue: 'Science des lieux', length: 10, level: 5 },
-    { word: 'LITTÉRATURE', clue: 'Art de l\'écriture', length: 11, level: 5 },
-    { word: 'POÉSIE', clue: 'Art des vers', length: 6, level: 5 },
-    { word: 'THÉÂTRE', clue: 'Art dramatique', length: 7, level: 5 },
-    { word: 'CINÉMA', clue: 'Septième art', length: 6, level: 5 },
-    { word: 'PEINTURE', clue: 'Art des couleurs', length: 8, level: 5 },
-    { word: 'SCULPTURE', clue: 'Art du relief', length: 9, level: 5 },
-    { word: 'ARCHITECTURE', clue: 'Art de construire', length: 12, level: 5 },
-    { word: 'PHOTOGRAPHIE', clue: 'Art de l\'image', length: 12, level: 5 },
-    { word: 'CALLIGRAPHIE', clue: 'Art de l\'écriture', length: 12, level: 5 }
+    { word: 'FORTUNE', clue: 'Grande richesse', length: 7, level: 5 }
   ];
 
   const getGridSize = (level: Difficulty): number => {
@@ -337,7 +204,6 @@ const CrosswordBoard = () => {
       }))
     );
 
-    // Initialiser les références
     gridRefs.current = Array(size).fill(null).map(() =>
       Array(size).fill(null).map(() => React.createRef<HTMLInputElement>())
     );
@@ -345,7 +211,7 @@ const CrosswordBoard = () => {
     return newGrid;
   };
 
-  // NOUVEL ALGORITHME SIMPLIFIÉ ET EFFICACE
+  // ALGORITHME SIMPLIFIÉ ET PLUS EFFICACE
   const findIntersections = (word1: string, word2: string): Array<{pos1: number, pos2: number}> => {
     const intersections = [];
     for (let i = 0; i < word1.length; i++) {
@@ -366,58 +232,29 @@ const CrosswordBoard = () => {
     direction: Direction,
     size: number
   ): boolean => {
-    // Vérifier les limites
+    // Vérifier les limites de base
     if (direction === 'horizontal') {
       if (col + word.length > size || row < 0 || row >= size) return false;
     } else {
       if (row + word.length > size || col < 0 || col >= size) return false;
     }
 
-    // Vérifier chaque lettre
+    // Vérifier chaque position du mot
     for (let i = 0; i < word.length; i++) {
       const currentRow = direction === 'horizontal' ? row : row + i;
       const currentCol = direction === 'horizontal' ? col + i : col;
       const cell = grid[currentRow][currentCol];
 
-      // Si la cellule a déjà une lettre, elle doit correspondre
+      // Si la cellule a déjà une lettre différente, c'est invalide
       if (cell.correctLetter && cell.correctLetter !== word[i]) {
         return false;
-      }
-
-      // Vérifier les cellules adjacentes (pas trop restrictif)
-      const adjacentPositions = [
-        [currentRow - 1, currentCol],
-        [currentRow + 1, currentCol],
-        [currentRow, currentCol - 1],
-        [currentRow, currentCol + 1]
-      ];
-
-      for (const [adjRow, adjCol] of adjacentPositions) {
-        if (adjRow >= 0 && adjRow < size && adjCol >= 0 && adjCol < size) {
-          const adjCell = grid[adjRow][adjCol];
-          
-          // Si la cellule adjacente a une lettre
-          if (adjCell.correctLetter) {
-            // Vérifier si c'est dans la même direction (continuité autorisée)
-            const isContinuous = (direction === 'horizontal' && adjRow === currentRow) ||
-                               (direction === 'vertical' && adjCol === currentCol);
-            
-            // Si ce n'est pas une continuité, c'est une intersection
-            if (!isContinuous) {
-              // L'intersection doit avoir la même lettre
-              if (adjCell.correctLetter !== word[i]) {
-                return false;
-              }
-            }
-          }
-        }
       }
     }
 
     return true;
   };
 
-  const placeWordOnGrid = (
+  const placeWord = (
     grid: Grid,
     word: string,
     row: number,
@@ -439,7 +276,7 @@ const CrosswordBoard = () => {
       grid[currentRow][currentCol].wordIds!.push(wordId);
     }
 
-    // Marquer la flèche au début du mot
+    // Marquer le début du mot
     grid[row][col].hasArrow = true;
     grid[row][col].arrowDirection = direction;
     grid[row][col].wordNumber = wordId;
@@ -449,33 +286,29 @@ const CrosswordBoard = () => {
     const size = getGridSize(level);
     const availableWords = getWordsForLevel(level);
     
-    // Objectifs réalistes
-    const targetWordCounts = { 1: 8, 2: 12, 3: 18, 4: 25, 5: 35 };
+    // Objectifs réalistes mais ambitieux
+    const targetWordCounts = { 1: 6, 2: 10, 3: 15, 4: 20, 5: 25 };
     const targetWords = Math.min(targetWordCounts[level], availableWords.length);
     
     console.log(`🎯 Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
 
-    // Mélanger et trier les mots
-    const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
-    
-    let newGrid = createEmptyGrid(size);
-    let placedWords: PlacedWord[] = [];
-    let bestResult = { grid: newGrid, placedWords: [] };
+    let bestResult = { grid: createEmptyGrid(size), placedWords: [] as PlacedWord[] };
     let maxWordsPlaced = 0;
 
-    // Essayer plusieurs configurations (jusqu'à 10 tentatives)
-    for (let attempt = 0; attempt < 10; attempt++) {
-      newGrid = createEmptyGrid(size);
-      placedWords = [];
+    // Essayer plusieurs configurations
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const shuffledWords = [...availableWords].sort(() => Math.random() - 0.5);
+      const newGrid = createEmptyGrid(size);
+      const placedWords: PlacedWord[] = [];
 
-      // Placer le premier mot au centre
+      // ÉTAPE 1: Placer le premier mot au centre
       if (shuffledWords.length > 0) {
         const firstWord = shuffledWords[0];
         const startRow = Math.floor(size / 2);
         const startCol = Math.floor((size - firstWord.length) / 2);
 
         if (isValidPlacement(newGrid, firstWord.word, startRow, startCol, 'horizontal', size)) {
-          placeWordOnGrid(newGrid, firstWord.word, startRow, startCol, 'horizontal', 1);
+          placeWord(newGrid, firstWord.word, startRow, startCol, 'horizontal', 1);
           placedWords.push({
             id: 1,
             word: firstWord.word,
@@ -485,48 +318,52 @@ const CrosswordBoard = () => {
             direction: 'horizontal',
             length: firstWord.length
           });
+          console.log(`✅ Premier mot placé: ${firstWord.word}`);
         }
       }
 
-      // Essayer de placer les autres mots
+      // ÉTAPE 2: Placer les mots suivants en cherchant des intersections
       for (let wordIndex = 1; wordIndex < shuffledWords.length && placedWords.length < targetWords; wordIndex++) {
         const currentWord = shuffledWords[wordIndex];
-        let placed = false;
+        let wordPlaced = false;
 
-        // Essayer toutes les positions possibles
-        for (let row = 0; row < size && !placed; row++) {
-          for (let col = 0; col < size && !placed; col++) {
-            for (const direction of ['horizontal' as Direction, 'vertical' as Direction]) {
-              if (isValidPlacement(newGrid, currentWord.word, row, col, direction, size)) {
-                // Vérifier qu'il y a au moins une intersection avec un mot existant
-                let hasIntersection = placedWords.length === 0; // Premier mot n'a pas besoin d'intersection
-                
-                if (placedWords.length > 0) {
-                  for (let i = 0; i < currentWord.length; i++) {
-                    const checkRow = direction === 'horizontal' ? row : row + i;
-                    const checkCol = direction === 'horizontal' ? col + i : col;
-                    if (newGrid[checkRow][checkCol].correctLetter === currentWord.word[i]) {
-                      hasIntersection = true;
-                      break;
-                    }
-                  }
-                }
+        // Essayer de placer ce mot en intersection avec chaque mot déjà placé
+        for (const existingWord of placedWords) {
+          if (wordPlaced) break;
 
-                if (hasIntersection) {
-                  placeWordOnGrid(newGrid, currentWord.word, row, col, direction, placedWords.length + 1);
-                  placedWords.push({
-                    id: placedWords.length + 1,
-                    word: currentWord.word,
-                    clue: currentWord.clue,
-                    startRow: row,
-                    startCol: col,
-                    direction,
-                    length: currentWord.length
-                  });
-                  placed = true;
-                  console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} en ${direction}`);
-                }
-              }
+          const intersections = findIntersections(existingWord.word, currentWord.word);
+          
+          for (const intersection of intersections) {
+            if (wordPlaced) break;
+
+            // Calculer la position du nouveau mot
+            const newDirection: Direction = existingWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
+            
+            let newRow, newCol;
+            if (existingWord.direction === 'horizontal') {
+              // Le mot existant est horizontal, le nouveau sera vertical
+              newRow = existingWord.startRow - intersection.pos2;
+              newCol = existingWord.startCol + intersection.pos1;
+            } else {
+              // Le mot existant est vertical, le nouveau sera horizontal
+              newRow = existingWord.startRow + intersection.pos1;
+              newCol = existingWord.startCol - intersection.pos2;
+            }
+
+            // Vérifier si le placement est valide
+            if (isValidPlacement(newGrid, currentWord.word, newRow, newCol, newDirection, size)) {
+              placeWord(newGrid, currentWord.word, newRow, newCol, newDirection, placedWords.length + 1);
+              placedWords.push({
+                id: placedWords.length + 1,
+                word: currentWord.word,
+                clue: currentWord.clue,
+                startRow: newRow,
+                startCol: newCol,
+                direction: newDirection,
+                length: currentWord.length
+              });
+              console.log(`✅ Mot ${placedWords.length} placé: ${currentWord.word} en ${newDirection}`);
+              wordPlaced = true;
             }
           }
         }
@@ -543,13 +380,13 @@ const CrosswordBoard = () => {
 
       console.log(`Tentative ${attempt + 1}: ${placedWords.length} mots placés`);
       
-      // Si on a atteint l'objectif, on s'arrête
-      if (placedWords.length >= targetWords) {
+      // Si on a un bon résultat, on peut s'arrêter
+      if (placedWords.length >= Math.floor(targetWords * 0.7)) {
         break;
       }
     }
 
-    console.log(`🎉 Meilleur résultat: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
+    console.log(`🎉 Résultat final: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
     return bestResult;
   };
 
