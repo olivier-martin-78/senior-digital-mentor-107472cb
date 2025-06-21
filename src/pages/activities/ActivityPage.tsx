@@ -372,10 +372,12 @@ const ActivityPage = () => {
                     </div>
                   )}
 
-                  <ActivityThumbnailUploader
-                    currentThumbnail={formData.thumbnail_url}
-                    onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
-                  />
+                  {!formData.use_iframe && (
+                    <ActivityThumbnailUploader
+                      currentThumbnail={formData.thumbnail_url}
+                      onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
+                    />
+                  )}
 
                   <div>
                     <Label htmlFor="activity_date">Date de l'activité (optionnel)</Label>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -39,6 +40,8 @@ const AdminActivities = () => {
     activity_date: '',
     sub_activity_tag_id: '',
     shared_globally: false,
+    use_iframe: false,
+    iframe_code: '',
   });
 
   // Vérifier si l'utilisateur peut utiliser la fonction de partage global
@@ -58,13 +61,18 @@ const AdminActivities = () => {
     }
     
     try {
+      // Préparer les données à insérer, en excluant use_iframe qui n'existe pas en base
+      const { use_iframe, ...dataWithoutUseIframe } = formData;
+
       const dataToInsert = {
-        ...formData,
+        ...dataWithoutUseIframe,
         created_by: user.id,
         activity_date: formData.activity_date || null,
         thumbnail_url: formData.thumbnail_url || null,
         sub_activity_tag_id: formData.sub_activity_tag_id || null,
         shared_globally: canShareGlobally ? formData.shared_globally : false,
+        link: formData.use_iframe ? '' : formData.link,
+        iframe_code: formData.use_iframe ? formData.iframe_code : null,
       };
 
       const { error } = await supabase
@@ -86,6 +94,8 @@ const AdminActivities = () => {
         activity_date: '',
         sub_activity_tag_id: '',
         shared_globally: false,
+        use_iframe: false,
+        iframe_code: '',
       });
       setShowForm(false);
       refetch();
@@ -222,22 +232,50 @@ const AdminActivities = () => {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="link">Lien (Internet ou YouTube)</Label>
-                    <Input
-                      id="link"
-                      value={formData.link}
-                      onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                      placeholder="https://example.com ou https://youtube.com/watch?v=..."
-                      type="url"
-                      required
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="use_iframe"
+                      checked={formData.use_iframe}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, use_iframe: checked as boolean })
+                      }
                     />
+                    <Label htmlFor="use_iframe" className="text-sm font-medium">
+                      Utiliser un code d'intégration YouTube (iframe)
+                    </Label>
                   </div>
 
-                  <ActivityThumbnailUploader
-                    currentThumbnail={formData.thumbnail_url}
-                    onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
-                  />
+                  {formData.use_iframe ? (
+                    <div>
+                      <Label htmlFor="iframe_code">Code d'intégration YouTube</Label>
+                      <Input
+                        id="iframe_code"
+                        value={formData.iframe_code}
+                        onChange={(e) => setFormData({ ...formData, iframe_code: e.target.value })}
+                        placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <Label htmlFor="link">Lien (Internet ou YouTube)</Label>
+                      <Input
+                        id="link"
+                        value={formData.link}
+                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                        placeholder="https://example.com ou https://youtube.com/watch?v=..."
+                        type="url"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {!formData.use_iframe && (
+                    <ActivityThumbnailUploader
+                      currentThumbnail={formData.thumbnail_url}
+                      onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
+                    />
+                  )}
 
                   <div>
                     <Label htmlFor="activity_date">Date de l'activité (optionnel)</Label>
