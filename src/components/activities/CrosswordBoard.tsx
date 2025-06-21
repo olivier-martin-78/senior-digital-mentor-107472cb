@@ -133,7 +133,7 @@ const CrosswordBoard = () => {
     { word: 'PET', clue: 'Petit animal domestique', length: 3, level: 1 },
     { word: 'LET', clue: 'Permettre (anglais)', length: 3, level: 1 },
 
-    // Mots de 3 lettres avec voyelles multiples
+    // Mots avec voyelles multiples
     { word: 'OUI', clue: 'Affirmation', length: 3, level: 1 },
     { word: 'OIE', clue: 'Oiseau de basse-cour', length: 3, level: 1 },
     { word: 'EUE', clue: 'Participe passé d\'avoir', length: 3, level: 1 },
@@ -787,7 +787,7 @@ const CrosswordBoard = () => {
     const nextRow = direction === 'horizontal' ? currentRow : currentRow + 1;
     const nextCol = direction === 'horizontal' ? currentCol + 1 : currentCol;
 
-    if (nextRow < grid.length && nextCol < grid[0].length && 
+    if (nextRow >= 0 && nextRow < grid.length && nextCol >= 0 && nextCol < grid[0].length && 
         grid[nextRow][nextCol].isEditable) {
       setCurrentPosition({ row: nextRow, col: nextCol });
       setTimeout(() => {
