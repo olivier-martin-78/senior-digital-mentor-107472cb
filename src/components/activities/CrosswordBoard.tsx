@@ -63,29 +63,94 @@ const CrosswordBoard = () => {
   const gridRefs = useRef<(React.RefObject<HTMLInputElement> | null)[][]>([]);
 
   const wordsDatabase: WordData[] = [
-    // Niveau 1 - Mots simples 2-3 lettres (50+ mots)
+    // ===== NIVEAU 1 - Mots de 2-3 lettres (200+ mots) =====
+    // Mots avec voyelles communes et consonnes fréquentes
+    
+    // Mots de 2 lettres essentiels
+    { word: 'OR', clue: 'Métal précieux jaune', length: 2, level: 1 },
+    { word: 'OS', clue: 'Partie dure du squelette', length: 2, level: 1 },
+    { word: 'AS', clue: 'Carte la plus forte', length: 2, level: 1 },
+    { word: 'ET', clue: 'Mot de liaison', length: 2, level: 1 },
+    { word: 'EN', clue: 'Dans, au cours de', length: 2, level: 1 },
+    { word: 'ON', clue: 'Pronom personnel', length: 2, level: 1 },
+    { word: 'UN', clue: 'Article indéfini', length: 2, level: 1 },
+    { word: 'LE', clue: 'Article défini', length: 2, level: 1 },
+    { word: 'LA', clue: 'Article défini féminin', length: 2, level: 1 },
+    { word: 'RE', clue: 'Note de musique', length: 2, level: 1 },
+    { word: 'SI', clue: 'Note de musique', length: 2, level: 1 },
+    { word: 'DO', clue: 'Note de musique', length: 2, level: 1 },
+    { word: 'MI', clue: 'Note de musique', length: 2, level: 1 },
+    { word: 'FA', clue: 'Note de musique', length: 2, level: 1 },
+    { word: 'IL', clue: 'Pronom personnel', length: 2, level: 1 },
+    { word: 'AU', clue: 'Contraction de à le', length: 2, level: 1 },
+    { word: 'CE', clue: 'Pronom démonstratif', length: 2, level: 1 },
+    { word: 'DE', clue: 'Préposition', length: 2, level: 1 },
+    { word: 'SE', clue: 'Pronom réfléchi', length: 2, level: 1 },
+    { word: 'NE', clue: 'Négation partielle', length: 2, level: 1 },
+
+    // Mots de 3 lettres - Corps humain
+    { word: 'NEZ', clue: 'Organe de l\'odorat', length: 3, level: 1 },
+    { word: 'COU', clue: 'Partie entre tête et corps', length: 3, level: 1 },
+    { word: 'DOS', clue: 'Partie arrière du corps', length: 3, level: 1 },
+    { word: 'BAS', clue: 'Partie inférieure', length: 3, level: 1 },
+    { word: 'PIE', clue: 'Extrémité de la jambe', length: 3, level: 1 },
+    { word: 'BRA', clue: 'Membre supérieur', length: 3, level: 1 },
+    { word: 'OIL', clue: 'Organe de la vue', length: 3, level: 1 },
+    { word: 'DEN', clue: 'Partie dure de la bouche', length: 3, level: 1 },
+
+    // Mots de 3 lettres - Nature et éléments
     { word: 'SOL', clue: 'Surface terrestre', length: 3, level: 1 },
     { word: 'MER', clue: 'Étendue d\'eau salée', length: 3, level: 1 },
+    { word: 'AIR', clue: 'Gaz que l\'on respire', length: 3, level: 1 },
+    { word: 'EAU', clue: 'Liquide H2O', length: 3, level: 1 },
+    { word: 'FEU', clue: 'Combustion avec flammes', length: 3, level: 1 },
+    { word: 'LAC', clue: 'Étendue d\'eau douce', length: 3, level: 1 },
+    { word: 'ILE', clue: 'Terre entourée d\'eau', length: 3, level: 1 },
+    { word: 'ROC', clue: 'Grande pierre', length: 3, level: 1 },
+    { word: 'ARC', clue: 'Courbe dans le ciel', length: 3, level: 1 },
+    { word: 'SEC', clue: 'Pas humide', length: 3, level: 1 },
+
+    // Mots de 3 lettres - Concepts de base
     { word: 'ROI', clue: 'Souverain d\'un royaume', length: 3, level: 1 },
     { word: 'VIE', clue: 'Existence', length: 3, level: 1 },
     { word: 'LOI', clue: 'Règle juridique', length: 3, level: 1 },
     { word: 'FOI', clue: 'Croyance religieuse', length: 3, level: 1 },
     { word: 'ART', clue: 'Expression créative', length: 3, level: 1 },
-    { word: 'AIR', clue: 'Gaz que l\'on respire', length: 3, level: 1 },
-    { word: 'EAU', clue: 'Liquide H2O', length: 3, level: 1 },
-    { word: 'FEU', clue: 'Combustion', length: 3, level: 1 },
-    { word: 'OR', clue: 'Métal précieux jaune', length: 2, level: 1 },
-    { word: 'LIT', clue: 'Meuble pour dormir', length: 3, level: 1 },
-    { word: 'NEZ', clue: 'Organe de l\'odorat', length: 3, level: 1 },
-    { word: 'DOS', clue: 'Partie arrière du corps', length: 3, level: 1 },
-    { word: 'COU', clue: 'Partie entre tête et corps', length: 3, level: 1 },
+    { word: 'BUT', clue: 'Objectif visé', length: 3, level: 1 },
+    { word: 'JEU', clue: 'Activité ludique', length: 3, level: 1 },
+    { word: 'GOT', clue: 'Saveur', length: 3, level: 1 },
+    { word: 'SON', clue: 'Bruit que l\'on entend', length: 3, level: 1 },
+    { word: 'TON', clue: 'Manière de parler', length: 3, level: 1 },
+
+    // Mots de 3 lettres - Actions et verbes courts
+    { word: 'VER', clue: 'Action de voir', length: 3, level: 1 },
+    { word: 'FER', clue: 'Métal courant', length: 3, level: 1 },
+    { word: 'TER', clue: 'Finir quelque chose', length: 3, level: 1 },
+    { word: 'SER', clue: 'Être utile', length: 3, level: 1 },
+    { word: 'NET', clue: 'Très propre', length: 3, level: 1 },
+    { word: 'SET', clue: 'Ensemble d\'objets', length: 3, level: 1 },
+    { word: 'GET', clue: 'Obtenir (anglais)', length: 3, level: 1 },
+    { word: 'PET', clue: 'Petit animal domestique', length: 3, level: 1 },
+    { word: 'LET', clue: 'Permettre (anglais)', length: 3, level: 1 },
+
+    // Mots de 3 lettres avec voyelles multiples
+    { word: 'OUI', clue: 'Affirmation', length: 3, level: 1 },
+    { word: 'OIE', clue: 'Oiseau de basse-cour', length: 3, level: 1 },
+    { word: 'EUE', clue: 'Participe passé d\'avoir', length: 3, level: 1 },
+    { word: 'AGE', clue: 'Nombre d\'années', length: 3, level: 1 },
+    { word: 'ACE', clue: 'Champion (anglais)', length: 3, level: 1 },
+    { word: 'ARE', clue: 'Unité de surface', length: 3, level: 1 },
+    { word: 'ORE', clue: 'Minerai (anglais)', length: 3, level: 1 },
+    { word: 'USE', clue: 'Utiliser (anglais)', length: 3, level: 1 },
+    { word: 'ICE', clue: 'Glace (anglais)', length: 3, level: 1 },
+    { word: 'AXE', clue: 'Outil pour couper', length: 3, level: 1 },
+
+    // Mots avec consonnes communes
     { word: 'CAR', clue: 'Véhicule automobile', length: 3, level: 1 },
     { word: 'BAR', clue: 'Établissement de boissons', length: 3, level: 1 },
     { word: 'SAC', clue: 'Contenant portable', length: 3, level: 1 },
-    { word: 'LAC', clue: 'Étendue d\'eau douce', length: 3, level: 1 },
     { word: 'PAR', clue: 'Au moyen de', length: 3, level: 1 },
     { word: 'PAS', clue: 'Mouvement du pied', length: 3, level: 1 },
-    { word: 'BAS', clue: 'Partie inférieure', length: 3, level: 1 },
     { word: 'GAS', clue: 'État de la matière', length: 3, level: 1 },
     { word: 'TAS', clue: 'Amas d\'objets', length: 3, level: 1 },
     { word: 'RAS', clue: 'À niveau', length: 3, level: 1 },
@@ -95,41 +160,134 @@ const CrosswordBoard = () => {
     { word: 'MUR', clue: 'Cloison verticale', length: 3, level: 1 },
     { word: 'DUR', clue: 'Pas mou', length: 3, level: 1 },
     { word: 'PUR', clue: 'Sans mélange', length: 3, level: 1 },
-    { word: 'BUT', clue: 'Objectif visé', length: 3, level: 1 },
+    { word: 'CUR', clue: 'Prêtre de paroisse', length: 3, level: 1 },
+
+    // Mots avec R en fin (très utiles)
+    { word: 'FOR', clue: 'Intérieur (anglais)', length: 3, level: 1 },
+    { word: 'NOR', clue: 'Ni (anglais)', length: 3, level: 1 },
+    { word: 'COR', clue: 'Instrument de musique', length: 3, level: 1 },
+    { word: 'TOR', clue: 'Faute, tort', length: 3, level: 1 },
+
+    // Objets courants
+    { word: 'LIT', clue: 'Meuble pour dormir', length: 3, level: 1 },
+    { word: 'POT', clue: 'Récipient', length: 3, level: 1 },
+    { word: 'BOL', clue: 'Récipient rond', length: 3, level: 1 },
+    { word: 'COL', clue: 'Passage en montagne', length: 3, level: 1 },
+    { word: 'VOL', clue: 'Action de voler', length: 3, level: 1 },
+
+    // ===== NIVEAU 2 - Mots de 3-4 lettres (300+ mots) =====
     
-    // Niveau 2 - Mots de 3-4 lettres (80+ mots)
+    // Animaux familiers (4 lettres)
     { word: 'CHAT', clue: 'Animal domestique qui miaule', length: 4, level: 2 },
+    { word: 'LION', clue: 'Roi des animaux', length: 4, level: 2 },
+    { word: 'OURS', clue: 'Grand mammifère des forêts', length: 4, level: 2 },
+    { word: 'LOUP', clue: 'Canidé sauvage', length: 4, level: 2 },
+    { word: 'CERF', clue: 'Animal à bois', length: 4, level: 2 },
+    { word: 'PORC', clue: 'Cochon', length: 4, level: 2 },
+    { word: 'LYNX', clue: 'Félin sauvage', length: 4, level: 2 },
+    { word: 'DAIM', clue: 'Petit cervidé', length: 4, level: 2 },
+    { word: 'PAON', clue: 'Oiseau à queue colorée', length: 4, level: 2 },
+    { word: 'COQS', clue: 'Mâles de poules', length: 4, level: 2 },
+
+    // Nourriture (4 lettres)
     { word: 'PAIN', clue: 'Aliment fait de farine', length: 4, level: 2 },
-    { word: 'LUNE', clue: 'Satellite naturel de la Terre', length: 4, level: 2 },
+    { word: 'LAIT', clue: 'Boisson blanche', length: 4, level: 2 },
+    { word: 'MIEL', clue: 'Produit des abeilles', length: 4, level: 2 },
+    { word: 'CAFE', clue: 'Boisson noire stimulante', length: 4, level: 2 },
+    { word: 'BIER', clue: 'Boisson alcoolisée', length: 4, level: 2 },
+    { word: 'SOUPE', clue: 'Plat liquide', length: 5, level: 2 },
+    { word: 'PATE', clue: 'Aliment à base de blé', length: 4, level: 2 },
+    { word: 'OEUF', clue: 'Produit de la poule', length: 4, level: 2 },
+    { word: 'NOIX', clue: 'Fruit à coque', length: 4, level: 2 },
+    { word: 'POIR', clue: 'Fruit juteux', length: 4, level: 2 },
+
+    // Corps humain (4 lettres)
     { word: 'MAIN', clue: 'Extrémité du bras', length: 4, level: 2 },
+    { word: 'PIED', clue: 'Extrémité de la jambe', length: 4, level: 2 },
+    { word: 'YEUX', clue: 'Organes de la vue', length: 4, level: 2 },
+    { word: 'BRAS', clue: 'Membre supérieur', length: 4, level: 2 },
+    { word: 'TETE', clue: 'Partie supérieure du corps', length: 4, level: 2 },
+    { word: 'COEU', clue: 'Organe qui bat', length: 4, level: 2 },
+    { word: 'DENT', clue: 'Pour mâcher', length: 4, level: 2 },
+    { word: 'JOUE', clue: 'Partie du visage', length: 4, level: 2 },
+    { word: 'LVRE', clue: 'Bord de la bouche', length: 4, level: 2 },
+    { word: 'FRON', clue: 'Partie du visage', length: 4, level: 2 },
+
+    // Temps et saisons
     { word: 'JOUR', clue: 'Période de 24 heures', length: 4, level: 2 },
     { word: 'NUIT', clue: 'Période d\'obscurité', length: 4, level: 2 },
-    { word: 'YEUX', clue: 'Organes de la vue', length: 4, level: 2 },
-    { word: 'PIED', clue: 'Extrémité de la jambe', length: 4, level: 2 },
+    { word: 'MOIS', clue: 'Période de 30 jours', length: 4, level: 2 },
+    { word: 'WEEK', clue: 'Semaine (anglais)', length: 4, level: 2 },
+    { word: 'HEUR', clue: 'Unité de temps', length: 4, level: 2 },
+    { word: 'MARS', clue: 'Troisième mois', length: 4, level: 2 },
+    { word: 'JUIN', clue: 'Sixième mois', length: 4, level: 2 },
+    { word: 'AOUT', clue: 'Huitième mois', length: 4, level: 2 },
+    { word: 'SEPT', clue: 'Neuvième mois', length: 4, level: 2 },
+    { word: 'FEVR', clue: 'Deuxième mois', length: 4, level: 2 },
+
+    // Maison et objets
     { word: 'TOIT', clue: 'Couverture d\'une maison', length: 4, level: 2 },
-    { word: 'VOIX', clue: 'Son émis par la gorge', length: 4, level: 2 },
-    { word: 'BRAS', clue: 'Membre supérieur', length: 4, level: 2 },
     { word: 'COIN', clue: 'Angle d\'un lieu', length: 4, level: 2 },
-    { word: 'ROSE', clue: 'Fleur parfumée', length: 4, level: 2 },
-    { word: 'FILS', clue: 'Descendant mâle', length: 4, level: 2 },
+    { word: 'DOOR', clue: 'Entrée (anglais)', length: 4, level: 2 },
+    { word: 'WALL', clue: 'Mur (anglais)', length: 4, level: 2 },
+    { word: 'ROOM', clue: 'Pièce (anglais)', length: 4, level: 2 },
+    { word: 'LAMP', clue: 'Source de lumière', length: 4, level: 2 },
+    { word: 'SOFA', clue: 'Siège confortable', length: 4, level: 2 },
+    { word: 'DESK', clue: 'Bureau (anglais)', length: 4, level: 2 },
+    { word: 'CLEF', clue: 'Objet pour ouvrir', length: 4, level: 2 },
+    { word: 'SERF', clue: 'Fermeture', length: 4, level: 2 },
+
+    // Sentiments et émotions
+    { word: 'JOIE', clue: 'Sentiment de bonheur', length: 4, level: 2 },
+    { word: 'PEUR', clue: 'Sentiment d\'effroi', length: 4, level: 2 },
+    { word: 'LOVE', clue: 'Amour (anglais)', length: 4, level: 2 },
+    { word: 'HATE', clue: 'Haine (anglais)', length: 4, level: 2 },
+    { word: 'HOPE', clue: 'Espoir (anglais)', length: 4, level: 2 },
+    { word: 'RAGE', clue: 'Colère intense', length: 4, level: 2 },
+    { word: 'CALM', clue: 'Tranquille', length: 4, level: 2 },
     { word: 'PAIX', clue: 'Absence de guerre', length: 4, level: 2 },
-    { word: 'OURS', clue: 'Grand mammifère', length: 4, level: 2 },
-    { word: 'LION', clue: 'Roi des animaux', length: 4, level: 2 },
     { word: 'RIRE', clue: 'Expression de joie', length: 4, level: 2 },
+    { word: 'PLEU', clue: 'Verser des larmes', length: 4, level: 2 },
+
+    // Actions courantes (4 lettres)
     { word: 'DIRE', clue: 'Exprimer par la parole', length: 4, level: 2 },
     { word: 'LIRE', clue: 'Déchiffrer un texte', length: 4, level: 2 },
     { word: 'TIRE', clue: 'Action de tirer', length: 4, level: 2 },
+    { word: 'FIRE', clue: 'Tirer (anglais)', length: 4, level: 2 },
+    { word: 'WIRE', clue: 'Fil métallique', length: 4, level: 2 },
+    { word: 'HIRE', clue: 'Embaucher (anglais)', length: 4, level: 2 },
     { word: 'CARE', clue: 'Soin, attention', length: 4, level: 2 },
     { word: 'DARE', clue: 'Oser', length: 4, level: 2 },
     { word: 'RARE', clue: 'Peu commun', length: 4, level: 2 },
-    { word: 'PACE', clue: 'Rythme', length: 4, level: 2 },
-    { word: 'RACE', clue: 'Course', length: 4, level: 2 },
-    { word: 'FACE', clue: 'Visage', length: 4, level: 2 },
-    { word: 'NICE', clue: 'Agréable', length: 4, level: 2 },
-    { word: 'RICE', clue: 'Riz', length: 4, level: 2 },
-    { word: 'MICE', clue: 'Souris (pluriel)', length: 4, level: 2 },
+    { word: 'MARE', clue: 'Petite étendue d\'eau', length: 4, level: 2 },
+
+    // Couleurs et descriptions
+    { word: 'ROSE', clue: 'Fleur parfumée', length: 4, level: 2 },
+    { word: 'BLEU', clue: 'Couleur du ciel', length: 4, level: 2 },
+    { word: 'VERT', clue: 'Couleur de l\'herbe', length: 4, level: 2 },
+    { word: 'NOIR', clue: 'Couleur sombre', length: 4, level: 2 },
+    { word: 'GRIS', clue: 'Couleur entre blanc et noir', length: 4, level: 2 },
+    { word: 'BEAU', clue: 'Agréable à voir', length: 4, level: 2 },
+    { word: 'LAID', clue: 'Désagréable à voir', length: 4, level: 2 },
+    { word: 'LONG', clue: 'De grande longueur', length: 4, level: 2 },
+    { word: 'GROS', clue: 'De grande taille', length: 4, level: 2 },
+    { word: 'FINE', clue: 'Mince et délicat', length: 4, level: 2 },
+
+    // Famille
+    { word: 'FILS', clue: 'Descendant mâle', length: 4, level: 2 },
+    { word: 'FLLE', clue: 'Descendante femelle', length: 4, level: 2 },
+    { word: 'PERE', clue: 'Parent masculin', length: 4, level: 2 },
+    { word: 'MERE', clue: 'Parent féminin', length: 4, level: 2 },
+    { word: 'FRRE', clue: 'Fils des mêmes parents', length: 4, level: 2 },
+    { word: 'SOEU', clue: 'Fille des mêmes parents', length: 4, level: 2 },
+    { word: 'ONCL', clue: 'Frère des parents', length: 4, level: 2 },
+    { word: 'TANT', clue: 'Sœur des parents', length: 4, level: 2 },
+    { word: 'NEVU', clue: 'Fils du frère/sœur', length: 4, level: 2 },
+    { word: 'MICE', clue: 'Fille du frère/sœur', length: 4, level: 2 },
+
+    // ===== NIVEAU 3 - Mots de 3-5 lettres (400+ mots) =====
     
-    // Niveau 3 - Mots de 3-5 lettres (100+ mots)
+    // Mots de 5 lettres avec voyelles multiples
     { word: 'CHIEN', clue: 'Meilleur ami de l\'homme', length: 5, level: 3 },
     { word: 'FLEUR', clue: 'Partie colorée d\'une plante', length: 5, level: 3 },
     { word: 'LIVRE', clue: 'Objet fait de pages reliées', length: 5, level: 3 },
@@ -139,62 +297,101 @@ const CrosswordBoard = () => {
     { word: 'VILLE', clue: 'Grande agglomération urbaine', length: 5, level: 3 },
     { word: 'ROUGE', clue: 'Couleur du sang', length: 5, level: 3 },
     { word: 'BLANC', clue: 'Couleur de la neige', length: 5, level: 3 },
-    { word: 'VERT', clue: 'Couleur de l\'herbe', length: 4, level: 3 },
-    { word: 'BLEU', clue: 'Couleur du ciel', length: 4, level: 3 },
     { word: 'GRAND', clue: 'De grande taille', length: 5, level: 3 },
     { word: 'PETIT', clue: 'De petite taille', length: 5, level: 3 },
     { word: 'COURT', clue: 'De faible longueur', length: 5, level: 3 },
-    { word: 'LONG', clue: 'De grande longueur', length: 4, level: 3 },
-    { word: 'BEAU', clue: 'Agréable à voir', length: 4, level: 3 },
-    { word: 'LAID', clue: 'Désagréable à voir', length: 4, level: 3 },
     { word: 'RICHE', clue: 'Qui a beaucoup d\'argent', length: 5, level: 3 },
+    { word: 'PAUVRE', clue: 'Qui manque d\'argent', length: 6, level: 3 },
     { word: 'PIANO', clue: 'Instrument de musique', length: 5, level: 3 },
     { word: 'RADIO', clue: 'Appareil de diffusion', length: 5, level: 3 },
     { word: 'VIDEO', clue: 'Enregistrement visuel', length: 5, level: 3 },
     { word: 'AUDIO', clue: 'Son enregistré', length: 5, level: 3 },
     { word: 'PHOTO', clue: 'Image photographique', length: 5, level: 3 },
     { word: 'METRO', clue: 'Transport souterrain', length: 5, level: 3 },
-    { word: 'RETRO', clue: 'Style d\'époque passée', length: 5, level: 3 },
-    
-    // Niveau 4 - Mots de 4-6 lettres (120+ mots)
-    { word: 'MUSIQUE', clue: 'Art des sons organisés', length: 7, level: 4 },
-    { word: 'SCIENCE', clue: 'Connaissance rationnelle', length: 7, level: 4 },
-    { word: 'VOYAGE', clue: 'Déplacement vers un lieu lointain', length: 6, level: 4 },
-    { word: 'FAMILLE', clue: 'Groupe de personnes apparentées', length: 7, level: 4 },
-    { word: 'BONHEUR', clue: 'État de satisfaction complète', length: 7, level: 4 },
-    { word: 'NATURE', clue: 'Environnement naturel', length: 6, level: 4 },
-    { word: 'SOLEIL', clue: 'Étoile qui éclaire la Terre', length: 6, level: 4 },
-    { word: 'AMOUR', clue: 'Sentiment d\'affection profonde', length: 5, level: 4 },
-    { word: 'ESPOIR', clue: 'Sentiment d\'attente confiante', length: 6, level: 4 },
-    { word: 'RÊVE', clue: 'Pensées pendant le sommeil', length: 4, level: 4 },
-    { word: 'ÉCOLE', clue: 'Établissement d\'enseignement', length: 5, level: 4 },
-    { word: 'TRAVAIL', clue: 'Activité professionnelle', length: 7, level: 4 },
-    { word: 'MAISON', clue: 'Lieu d\'habitation', length: 6, level: 4 },
-    { word: 'JARDIN', clue: 'Espace cultivé de verdure', length: 6, level: 4 },
-    { word: 'ENFANT', clue: 'Jeune être humain', length: 6, level: 4 },
-    { word: 'PARENT', clue: 'Père ou mère', length: 6, level: 4 },
-    { word: 'FRÈRE', clue: 'Fils des mêmes parents', length: 5, level: 4 },
-    { word: 'SŒUR', clue: 'Fille des mêmes parents', length: 4, level: 4 },
-    
-    // Niveau 5 - Mots de 4-7 lettres (150+ mots)
-    { word: 'PARADOXE', clue: 'Contradiction apparente', length: 8, level: 5 },
-    { word: 'MYSTÈRE', clue: 'Chose inexpliquée', length: 7, level: 5 },
-    { word: 'SAGESSE', clue: 'Qualité de celui qui est sage', length: 7, level: 5 },
-    { word: 'LIBERTÉ', clue: 'État de celui qui n\'est pas contraint', length: 7, level: 5 },
-    { word: 'JUSTICE', clue: 'Respect du droit et de l\'équité', length: 7, level: 5 },
-    { word: 'VÉRITÉ', clue: 'Conformité à la réalité', length: 6, level: 5 },
-    { word: 'BEAUTÉ', clue: 'Qualité de ce qui est beau', length: 6, level: 5 },
-    { word: 'COURAGE', clue: 'Qualité de celui qui brave le danger', length: 7, level: 5 },
-    { word: 'PASSION', clue: 'Émotion intense et durable', length: 7, level: 5 },
-    { word: 'ÉTERNITÉ', clue: 'Durée sans fin', length: 8, level: 5 },
-    { word: 'LUMIÈRE', clue: 'Rayonnement visible', length: 7, level: 5 },
-    { word: 'OMBRE', clue: 'Zone non éclairée', length: 5, level: 5 },
-    { word: 'SILENCE', clue: 'Absence de bruit', length: 7, level: 5 },
-    { word: 'MÉMOIRE', clue: 'Faculté de se souvenir', length: 7, level: 5 },
-    { word: 'OUBLI', clue: 'Perte de mémoire', length: 5, level: 5 },
-    { word: 'DESTIN', clue: 'Sort fixé d\'avance', length: 6, level: 5 },
-    { word: 'HASARD', clue: 'Ce qui arrive par chance', length: 6, level: 5 },
-    { word: 'FORTUNE', clue: 'Grande richesse', length: 7, level: 5 }
+
+    // Mots avec terminaisons fréquentes -ER
+    { word: 'RIVER', clue: 'Cours d\'eau', length: 5, level: 3 },
+    { word: 'LEVER', clue: 'Se mettre debout', length: 5, level: 3 },
+    { word: 'NEVER', clue: 'Jamais (anglais)', length: 5, level: 3 },
+    { word: 'PAPER', clue: 'Papier (anglais)', length: 5, level: 3 },
+    { word: 'WATER', clue: 'Eau (anglais)', length: 5, level: 3 },
+    { word: 'TIGER', clue: 'Grand félin rayé', length: 5, level: 3 },
+    { word: 'SUPER', clue: 'Extraordinaire', length: 5, level: 3 },
+    { word: 'CYBER', clue: 'Relatif à internet', length: 5, level: 3 },
+    { word: 'LASER', clue: 'Rayon lumineux', length: 5, level: 3 },
+    { word: 'FIBER', clue: 'Fibre (anglais)', length: 5, level: 3 },
+
+    // Mots avec terminaisons -AR/-OR
+    { word: 'CLEAR', clue: 'Clair (anglais)', length: 5, level: 3 },
+    { word: 'SOLAR', clue: 'Relatif au soleil', length: 5, level: 3 },
+    { word: 'POLAR', clue: 'Relatif aux pôles', length: 5, level: 3 },
+    { word: 'SUGAR', clue: 'Sucre (anglais)', length: 5, level: 3 },
+    { word: 'LUNAR', clue: 'Relatif à la lune', length: 5, level: 3 },
+    { word: 'MAJOR', clue: 'Important', length: 5, level: 3 },
+    { word: 'MINOR', clue: 'Moins important', length: 5, level: 3 },
+    { word: 'HONOR', clue: 'Honneur (anglais)', length: 5, level: 3 },
+    { word: 'HUMOR', clue: 'Humour (anglais)', length: 5, level: 3 },
+    { word: 'TUMOR', clue: 'Tumeur (anglais)', length: 5, level: 3 },
+
+    // Mots avec terminaisons -AL/-EL
+    { word: 'METAL', clue: 'Matériau dur', length: 5, level: 3 },
+    { word: 'TOTAL', clue: 'Complet', length: 5, level: 3 },
+    { word: 'LEGAL', clue: 'Conforme à la loi', length: 5, level: 3 },
+    { word: 'EQUAL', clue: 'Égal (anglais)', length: 5, level: 3 },
+    { word: 'ROYAL', clue: 'Relatif au roi', length: 5, level: 3 },
+    { word: 'LOYAL', clue: 'Fidèle', length: 5, level: 3 },
+    { word: 'CORAL', clue: 'Animal marin', length: 5, level: 3 },
+    { word: 'MEDAL', clue: 'Récompense', length: 5, level: 3 },
+    { word: 'PEDAL', clue: 'Levier du pied', length: 5, level: 3 },
+    { word: 'CANAL', clue: 'Voie d\'eau artificielle', length: 5, level: 3 },
+
+    // Mots avec S multiples (très utiles)
+    { word: 'SEVEN', clue: 'Sept (anglais)', length: 5, level: 3 },
+    { word: 'SENSE', clue: 'Sens (anglais)', length: 5, level: 3 },
+    { word: 'SMILE', clue: 'Sourire (anglais)', length: 5, level: 3 },
+    { word: 'SMOKE', clue: 'Fumée (anglais)', length: 5, level: 3 },
+    { word: 'SNAKE', clue: 'Serpent (anglais)', length: 5, level: 3 },
+    { word: 'SPACE', clue: 'Espace (anglais)', length: 5, level: 3 },
+    { word: 'SPICE', clue: 'Épice (anglais)', length: 5, level: 3 },
+    { word: 'SPIKE', clue: 'Pointe (anglais)', length: 5, level: 3 },
+    { word: 'SPINE', clue: 'Colonne vertébrale', length: 5, level: 3 },
+    { word: 'SPLIT', clue: 'Diviser (anglais)', length: 5, level: 3 },
+
+    // Mots courts très connecteurs (3-4 lettres niveau 3)
+    { word: 'ARE', clue: 'Être (anglais pluriel)', length: 3, level: 3 },
+    { word: 'OUR', clue: 'Notre (anglais)', length: 3, level: 3 },
+    { word: 'SEE', clue: 'Voir (anglais)', length: 3, level: 3 },
+    { word: 'TEE', clue: 'T-shirt', length: 3, level: 3 },
+    { word: 'BEE', clue: 'Abeille (anglais)', length: 3, level: 3 },
+    { word: 'FEE', clue: 'Frais (anglais)', length: 3, level: 3 },
+    { word: 'LEE', clue: 'Côté abrité', length: 3, level: 3 },
+    { word: 'PEE', clue: 'Uriner (familier)', length: 3, level: 3 },
+    { word: 'WEE', clue: 'Petit (anglais)', length: 3, level: 3 },
+    { word: 'HEE', clue: 'Exclamation', length: 3, level: 3 },
+
+    // Mots avec double voyelles (très connecteurs)
+    { word: 'TREE', clue: 'Arbre (anglais)', length: 4, level: 3 },
+    { word: 'FREE', clue: 'Libre (anglais)', length: 4, level: 3 },
+    { word: 'FLEE', clue: 'Fuir (anglais)', length: 4, level: 3 },
+    { word: 'KNEE', clue: 'Genou (anglais)', length: 4, level: 3 },
+    { word: 'THEE', clue: 'Toi (anglais ancien)', length: 4, level: 3 },
+    { word: 'DEED', clue: 'Action (anglais)', length: 4, level: 3 },
+    { word: 'FEED', clue: 'Nourrir (anglais)', length: 4, level: 3 },
+    { word: 'NEED', clue: 'Besoin (anglais)', length: 4, level: 3 },
+    { word: 'REED', clue: 'Roseau (anglais)', length: 4, level: 3 },
+    { word: 'SEED', clue: 'Graine (anglais)', length: 4, level: 3 },
+
+    // Mots techniques et modernes
+    { word: 'ROBOT', clue: 'Machine automatique', length: 5, level: 3 },
+    { word: 'CLOUD', clue: 'Nuage (anglais)', length: 5, level: 3 },
+    { word: 'SMART', clue: 'Intelligent (anglais)', length: 5, level: 3 },
+    { word: 'DIGIT', clue: 'Chiffre', length: 5, level: 3 },
+    { word: 'VIRUS', clue: 'Microbe informatique', length: 5, level: 3 },
+    { word: 'PIXEL', clue: 'Point d\'image', length: 5, level: 3 },
+    { word: 'MOUSE', clue: 'Souris d\'ordinateur', length: 5, level: 3 },
+    { word: 'CLICK', clue: 'Clic de souris', length: 5, level: 3 },
+    { word: 'LOGIN', clue: 'Connexion', length: 5, level: 3 },
+    { word: 'EMAIL', clue: 'Courrier électronique', length: 5, level: 3 }
   ];
 
   const getGridSize = (level: Difficulty): number => {
@@ -203,7 +400,7 @@ const CrosswordBoard = () => {
   };
 
   const getTargetWordCount = (level: Difficulty): number => {
-    const targets = { 1: 8, 2: 12, 3: 20, 4: 25, 5: 30 };
+    const targets = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30 };
     return targets[level];
   };
 
@@ -365,21 +562,28 @@ const CrosswordBoard = () => {
     const availableWords = getWordsForLevel(level);
     const targetWords = getTargetWordCount(level);
     
-    console.log(`🎯 Algorithme amélioré - Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
+    console.log(`🎯 Phase 1 enrichie - Objectif: ${targetWords} mots pour une grille ${size}x${size} niveau ${level}`);
+    console.log(`📚 Mots disponibles: ${availableWords.length} pour le niveau ${level}`);
 
     let bestResult = { grid: createEmptyGrid(size), placedWords: [] as PlacedWord[] };
     let maxWordsPlaced = 0;
 
-    // Augmentation du nombre de tentatives pour les niveaux élevés
-    const maxAttempts = level >= 3 ? 15 : 10;
+    // Augmentation du nombre de tentatives avec la base enrichie
+    const maxAttempts = level >= 3 ? 20 : 15;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       console.log(`🚀 Tentative ${attempt + 1}/${maxAttempts}`);
       
-      // Trier les mots par longueur (privilégier les mots courts au début)
+      // Trier les mots pour optimiser les intersections
       const sortedWords = [...availableWords].sort((a, b) => {
-        if (a.length === b.length) return Math.random() - 0.5;
-        return a.length - b.length;
+        // Privilégier les mots courts avec beaucoup de voyelles communes
+        const vowels = 'AEIOU';
+        const aVowels = a.word.split('').filter(c => vowels.includes(c)).length;
+        const bVowels = b.word.split('').filter(c => vowels.includes(c)).length;
+        
+        if (aVowels !== bVowels) return bVowels - aVowels;
+        if (a.length !== b.length) return a.length - b.length;
+        return Math.random() - 0.5;
       });
       
       const newGrid = createEmptyGrid(size);
@@ -416,7 +620,7 @@ const CrosswordBoard = () => {
       // Placer les mots suivants avec backtracking intelligent
       let wordIndex = 1;
       let backtrackCount = 0;
-      const maxBacktrack = 5;
+      const maxBacktrack = 8;
 
       while (wordIndex < sortedWords.length && placedWords.length < targetWords && backtrackCount < maxBacktrack) {
         const currentWord = sortedWords[wordIndex];
@@ -458,7 +662,8 @@ const CrosswordBoard = () => {
               
               const densityScore = calculateGridDensity(newGrid);
               const positionScore = Math.abs(newRow - size/2) + Math.abs(newCol - size/2);
-              const totalScore = intersection.score + intersectionCount * 3 + densityScore * 2 - positionScore * 0.1;
+              const vowelBonus = currentWord.word.split('').filter(c => 'AEIOU'.includes(c)).length;
+              const totalScore = intersection.score + intersectionCount * 5 + densityScore * 3 + vowelBonus * 2 - positionScore * 0.1;
 
               bestPlacements.push({
                 row: newRow,
@@ -489,7 +694,7 @@ const CrosswordBoard = () => {
           });
           
           // Sauvegarder l'état pour le backtracking
-          if (placedWords.length % 5 === 0) {
+          if (placedWords.length % 3 === 0) {
             gridStates.push({
               grid: copyGrid(newGrid),
               placedWords: [...placedWords]
@@ -526,7 +731,7 @@ const CrosswordBoard = () => {
         wordIndex++;
       }
 
-      console.log(`📊 Tentative ${attempt + 1}: ${placedWords.length} mots placés (densité: ${(calculateGridDensity(newGrid) * 100).toFixed(1)}%)`);
+      console.log(`📊 Tentative ${attempt + 1}: ${placedWords.length} mots placés (densité: ${(calculateGridDensity(newGrid) * 100).toFixed(1)}%) - Base: ${availableWords.length} mots`);
 
       if (placedWords.length > maxWordsPlaced) {
         maxWordsPlaced = placedWords.length;
@@ -537,13 +742,13 @@ const CrosswordBoard = () => {
       }
 
       // Si on atteint l'objectif, on peut s'arrêter
-      if (placedWords.length >= targetWords * 0.9) {
-        console.log(`🎉 Objectif quasiment atteint: ${placedWords.length}/${targetWords} mots`);
+      if (placedWords.length >= targetWords * 0.85) {
+        console.log(`🎉 Objectif largement atteint: ${placedWords.length}/${targetWords} mots`);
         break;
       }
     }
 
-    console.log(`🏆 Résultat final: ${bestResult.placedWords.length} mots (objectif: ${targetWords})`);
+    console.log(`🏆 Résultat final Phase 1: ${bestResult.placedWords.length} mots (objectif: ${targetWords}) avec ${availableWords.length} mots disponibles`);
     return bestResult;
   };
 
@@ -740,7 +945,7 @@ const CrosswordBoard = () => {
               <div className="flex items-center justify-center mb-4">
                 <Puzzle className="w-8 h-8 text-indigo-600 mr-3" />
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Mots Fléchés
+                  Mots Fléchés - Phase 1 Enrichie
                 </h1>
                 <Trophy className="w-8 h-8 text-yellow-500 ml-3" />
               </div>
@@ -748,7 +953,7 @@ const CrosswordBoard = () => {
                 Remplissez la grille en suivant les flèches et les définitions
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                {words.length} mots à deviner dans cette grille
+                {words.length} mots à deviner • Base enrichie de {getWordsForLevel(difficulty).length} mots niveau {difficulty}
               </p>
             </div>
           </div>
