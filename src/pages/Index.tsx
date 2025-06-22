@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import Header from '@/components/Header';
+import PublicHeader from '@/components/PublicHeader';
 import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
@@ -80,7 +79,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <PublicHeader />
       
       {/* Hero Section ajoutée */}
       <HeroSection />

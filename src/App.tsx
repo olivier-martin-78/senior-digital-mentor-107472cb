@@ -48,65 +48,70 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Toaster />
-          <Routes>
-            {/* Public routes - accessible without authentication */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Semi-protected routes - require authentication but not full access */}
-            <Route element={<ProtectedRoute requiresFullAccess={false} />}>
-              <Route path="/subscription" element={<Subscription />} />
-            </Route>
+      <BrowserRouter>
+        <Toaster />
+        <Routes>
+          {/* Public routes - no AuthProvider, completely independent */}
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
+          {/* All other routes wrapped in AuthProvider */}
+          <Route path="/*" element={
+            <AuthProvider>
+              <Routes>
+                {/* Semi-protected routes - require authentication but not full access */}
+                <Route element={<ProtectedRoute requiresFullAccess={false} />}>
+                  <Route path="/subscription" element={<Subscription />} />
+                </Route>
 
-            {/* Fully protected routes - require authentication and account access */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/recent" element={<Recent />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/new" element={<BlogEditor />} />
-              <Route path="/blog/edit/:id" element={<BlogEditor />} />
-              <Route path="/blog/:id" element={<BlogPost />} />
-              <Route path="/diary" element={<Diary />} />
-              <Route path="/diary/new" element={<DiaryNew />} />
-              <Route path="/diary/edit/:id" element={<DiaryEdit />} />
-              <Route path="/diary/:id" element={<DiaryEntry />} />
-              <Route path="/life-story" element={<LifeStory />} />
-              <Route path="/wishes" element={<Wishes />} />
-              <Route path="/wishes/new" element={<WishNew />} />
-              <Route path="/wishes/edit/:id" element={<WishEdit />} />
-              <Route path="/wishes/:id" element={<WishPost />} />
-              <Route path="/activities/activities" element={<Activities />} />
-              <Route path="/activities/:type" element={<ActivityPage />} />
-              <Route path="/scheduler" element={<Scheduler />} />
-              <Route path="/intervention-report" element={<InterventionReport />} />
-              <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
-              <Route path="/activities/opposites" element={<OppositesGame />} />
-              <Route path="/activities/sudoku" element={<SudokuGame />} />
-              <Route path="/activities/crossword" element={<CrosswordGame />} />
-            </Route>
+                {/* Fully protected routes - require authentication and account access */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/recent" element={<Recent />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/new" element={<BlogEditor />} />
+                  <Route path="/blog/edit/:id" element={<BlogEditor />} />
+                  <Route path="/blog/:id" element={<BlogPost />} />
+                  <Route path="/diary" element={<Diary />} />
+                  <Route path="/diary/new" element={<DiaryNew />} />
+                  <Route path="/diary/edit/:id" element={<DiaryEdit />} />
+                  <Route path="/diary/:id" element={<DiaryEntry />} />
+                  <Route path="/life-story" element={<LifeStory />} />
+                  <Route path="/wishes" element={<Wishes />} />
+                  <Route path="/wishes/new" element={<WishNew />} />
+                  <Route path="/wishes/edit/:id" element={<WishEdit />} />
+                  <Route path="/wishes/:id" element={<WishPost />} />
+                  <Route path="/activities/activities" element={<Activities />} />
+                  <Route path="/activities/:type" element={<ActivityPage />} />
+                  <Route path="/scheduler" element={<Scheduler />} />
+                  <Route path="/intervention-report" element={<InterventionReport />} />
+                  <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
+                  <Route path="/activities/opposites" element={<OppositesGame />} />
+                  <Route path="/activities/sudoku" element={<SudokuGame />} />
+                  <Route path="/activities/crossword" element={<CrosswordGame />} />
+                </Route>
 
-            {/* Admin routes - require admin role */}
-            <Route element={<ProtectedRoute requiredRoles={['admin' as AppRole]} />}>
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/posts" element={<AdminPosts />} />
-              <Route path="/admin/albums" element={<AdminAlbums />} />
-              <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
-              <Route path="/admin/diary" element={<AdminDiary />} />
-              <Route path="/admin/life-stories" element={<AdminLifeStories />} />
-              <Route path="/admin/activities" element={<AdminActivities />} />
-              <Route path="/invitation-groups" element={<InvitationGroups />} />
-              <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
-            </Route>
+                {/* Admin routes - require admin role */}
+                <Route element={<ProtectedRoute requiredRoles={['admin' as AppRole]} />}>
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/posts" element={<AdminPosts />} />
+                  <Route path="/admin/albums" element={<AdminAlbums />} />
+                  <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
+                  <Route path="/admin/diary" element={<AdminDiary />} />
+                  <Route path="/admin/life-stories" element={<AdminLifeStories />} />
+                  <Route path="/admin/activities" element={<AdminActivities />} />
+                  <Route path="/invitation-groups" element={<InvitationGroups />} />
+                  <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
+                </Route>
 
-            {/* Error routes */}
-            <Route path="/unauthorized" element={<Unauthorized />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+                {/* Error routes */}
+                <Route path="/unauthorized" element={<Unauthorized />} />
+              </Routes>
+            </AuthProvider>
+          } />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
