@@ -26,6 +26,7 @@ import WishEdit from './pages/WishEdit';
 import Activities from './pages/activities/ActivitiesOverview';
 import ActivityPage from './pages/activities/ActivityPage';
 import Scheduler from './pages/ProfessionalScheduler';
+import InterventionReport from './pages/InterventionReport';
 import InvitationGroups from './pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from './pages/MyInvitationGroups';
 import PermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
@@ -68,6 +69,7 @@ function App() {
             <Route path="/activities/activities" element={<Activities />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
+            <Route path="/intervention-report" element={<InterventionReport />} />
             <Route path="/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,19 +20,34 @@ const InterventionReportView = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [report, setReport] = useState<any>(null);
-  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [appointment, setAppointment] = useState<any>(null);
+
+  console.log('🔍 InterventionReportView - Début du rendu:', {
+    reportId,
+    loading,
+    hasReport: !!report,
+    userId: user?.id
+  });
 
   useEffect(() => {
-    if (reportId) {
+    if (reportId && user) {
       loadReport();
+    } else {
+      console.log('❌ Paramètres manquants:', { reportId, hasUser: !!user });
+      setLoading(false);
     }
   }, [reportId, user]);
 
   const loadReport = async () => {
-    if (!reportId || !user) return;
+    if (!reportId || !user) {
+      console.log('❌ Paramètres manquants pour charger le rapport');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('📋 Chargement du rapport:', reportId);
       
       // Charger le rapport
       const { data: reportData, error: reportError } = await supabase
@@ -43,55 +57,54 @@ const InterventionReportView = () => {
         .single();
 
       if (reportError) {
-        console.error('Erreur lors du chargement du rapport:', reportError);
+        console.error('❌ Erreur lors du chargement du rapport:', reportError);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger le rapport d\'intervention',
           variant: 'destructive',
         });
-        navigate('/scheduler');
+        setLoading(false);
         return;
       }
 
-      console.log('🎵 INTERVENTION_VIEW - Rapport chargé:', {
-        reportId,
-        hasAudioUrl: !!reportData.audio_url,
-        audioUrl: reportData.audio_url,
-        audioUrlLength: reportData.audio_url?.length
+      console.log('✅ Rapport chargé:', {
+        reportId: reportData?.id,
+        hasAudioUrl: !!reportData?.audio_url,
+        appointmentId: reportData?.appointment_id
       });
 
       setReport(reportData);
 
       // Si le rapport a un appointment_id, charger le rendez-vous associé
-      if (reportData.appointment_id) {
+      if (reportData?.appointment_id) {
+        console.log('📅 Chargement du rendez-vous:', reportData.appointment_id);
+        
         const { data: appointmentData, error: appointmentError } = await supabase
           .from('appointments')
           .select(`
             *,
             clients:client_id (
-              *
+              first_name,
+              last_name,
+              address
             ),
             intervenants:intervenant_id (
-              *
+              first_name,
+              last_name
             )
           `)
           .eq('id', reportData.appointment_id)
           .single();
 
         if (appointmentData && !appointmentError) {
-          const transformedAppointment = {
-            ...appointmentData,
-            status: appointmentData.status as 'scheduled' | 'completed' | 'cancelled',
-            recurrence_type: appointmentData.recurrence_type ? (appointmentData.recurrence_type as 'weekly' | 'monthly') : undefined,
-            client: appointmentData.clients,
-            intervenant: appointmentData.intervenants,
-            caregivers: []
-          };
-          setAppointment(transformedAppointment);
+          console.log('✅ Rendez-vous chargé');
+          setAppointment(appointmentData);
+        } else {
+          console.log('⚠️ Erreur lors du chargement du rendez-vous:', appointmentError);
         }
       }
     } catch (error) {
-      console.error('Erreur inattendue:', error);
+      console.error('💥 Erreur inattendue:', error);
       toast({
         title: 'Erreur',
         description: 'Une erreur inattendue s\'est produite',
@@ -153,7 +166,9 @@ const InterventionReportView = () => {
     return array.length > 0 ? array.join(', ') : 'Aucun';
   };
 
+  // États de chargement et d'erreur
   if (loading) {
+    console.log('⏳ Affichage état de chargement');
     return (
       <div className="flex justify-center py-20">
         <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -161,7 +176,21 @@ const InterventionReportView = () => {
     );
   }
 
+  if (!reportId) {
+    console.log('❌ Aucun ID de rapport fourni');
+    return (
+      <div className="text-center py-20">
+        <p className="text-gray-500">Aucun rapport spécifié</p>
+        <Button variant="outline" onClick={() => navigate('/scheduler')} className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+      </div>
+    );
+  }
+
   if (!report) {
+    console.log('❌ Rapport non trouvé');
     return (
       <div className="text-center py-20">
         <p className="text-gray-500">Rapport introuvable</p>
@@ -172,6 +201,8 @@ const InterventionReportView = () => {
       </div>
     );
   }
+
+  console.log('✅ Rendu du rapport complet');
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -184,17 +215,17 @@ const InterventionReportView = () => {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="sm:inline">Retour</span>
+              Retour
             </Button>
             <Button onClick={handleEdit} className="w-full sm:w-auto">
               <Edit className="h-4 w-4 mr-2" />
-              <span className="sm:inline">Modifier</span>
+              Modifier
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="w-full sm:w-auto">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  <span className="sm:inline">Supprimer</span>
+                  Supprimer
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -244,11 +275,11 @@ const InterventionReportView = () => {
                 Rendez-vous associé
               </h3>
               <div className="bg-gray-50 p-3 rounded-md space-y-1">
-                <p><strong>Client :</strong> {appointment.client?.first_name} {appointment.client?.last_name}</p>
-                {appointment.client?.address && (
-                  <p><strong>Adresse :</strong> {appointment.client.address}</p>
+                <p><strong>Client :</strong> {appointment.clients?.first_name} {appointment.clients?.last_name}</p>
+                {appointment.clients?.address && (
+                  <p><strong>Adresse :</strong> {appointment.clients.address}</p>
                 )}
-                <p><strong>Intervenant :</strong> {appointment.intervenant?.first_name} {appointment.intervenant?.last_name}</p>
+                <p><strong>Intervenant :</strong> {appointment.intervenants?.first_name} {appointment.intervenants?.last_name}</p>
                 <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
                   {appointment.status === 'completed' ? 'Terminé' : 'Programmé'}
                 </Badge>
