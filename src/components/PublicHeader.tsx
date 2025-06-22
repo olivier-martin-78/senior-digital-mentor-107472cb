@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Menu, X, Crown } from 'lucide-react';
 
 const PublicHeader = () => {
@@ -24,26 +23,25 @@ const PublicHeader = () => {
               <span>Abonnements</span>
             </a>
             <a href="/auth">
-              <Button variant="outline" size="sm">
+              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
                 Connexion
-              </Button>
+              </button>
             </a>
             <a href="/auth">
-              <Button size="sm" className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90">
+              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-tranches-dustyblue text-primary-foreground hover:bg-tranches-dustyblue/90 h-9 px-3">
                 S'inscrire
-              </Button>
+              </button>
             </a>
           </nav>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -61,14 +59,14 @@ const PublicHeader = () => {
               </a>
               <div className="flex items-center space-x-2 px-2 py-2">
                 <a href="/auth" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" size="sm">
+                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
                     Connexion
-                  </Button>
+                  </button>
                 </a>
                 <a href="/auth" onClick={() => setIsMenuOpen(false)}>
-                  <Button size="sm" className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90">
+                  <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-tranches-dustyblue text-primary-foreground hover:bg-tranches-dustyblue/90 h-9 px-3">
                     S'inscrire
-                  </Button>
+                  </button>
                 </a>
               </div>
             </nav>

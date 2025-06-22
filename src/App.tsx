@@ -1,116 +1,35 @@
 
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Index from './pages/Index';
-import Auth from './pages/Auth';
-import Profile from './pages/Profile';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminPosts from './pages/admin/AdminPosts';
-import AdminAlbums from './pages/admin/AdminAlbums';
-import AdminWishAlbums from './pages/admin/AdminWishAlbums';
-import AdminDiary from './pages/admin/AdminDiary';
-import AdminLifeStories from './pages/admin/AdminLifeStories';
-import AdminActivities from './pages/admin/AdminActivities';
-import Subscription from './pages/Subscription';
-import Recent from './pages/Recent';
-import Blog from './pages/Blog';
-import BlogPost from './pages/BlogPost';
-import BlogEditor from './pages/BlogEditor';
-import Diary from './pages/Diary';
-import DiaryEntry from './pages/DiaryEntry';
-import DiaryNew from './pages/DiaryNew';
-import DiaryEdit from './pages/DiaryEdit';
-import LifeStory from './pages/LifeStory';
-import Wishes from './pages/Wishes';
-import WishPost from './pages/WishPost';
-import WishNew from './pages/WishNew';
-import WishEdit from './pages/WishEdit';
-import Activities from './pages/activities/ActivitiesOverview';
-import ActivityPage from './pages/activities/ActivityPage';
-import Scheduler from './pages/ProfessionalScheduler';
-import InterventionReport from './pages/InterventionReport';
-import InvitationGroups from './pages/admin/AdminInvitationGroups';
-import MyInvitationGroups from './pages/MyInvitationGroups';
-import PermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
-import { Toaster } from '@/components/ui/toaster';
-import OppositesGame from './pages/activities/OppositesGame';
-import SudokuGame from './pages/activities/SudokuGame';
-import CrosswordGame from './pages/activities/CrosswordGame';
-import ResetPassword from './pages/ResetPassword';
-import Unauthorized from './pages/Unauthorized';
-import { AppRole } from '@/types/supabase';
+import PublicApp from '@/components/PublicApp';
 
 const queryClient = new QueryClient();
+
+// Lazy load PrivateApp to avoid loading Supabase code for public routes
+const PrivateApp = lazy(() => import('@/components/PrivateApp'));
+
+// Component to handle route-based app selection
+const AppRouter: React.FC = () => {
+  const location = useLocation();
+  const isPublicRoute = ['/', '/auth', '/reset-password'].includes(location.pathname);
+
+  if (isPublicRoute) {
+    return <PublicApp />;
+  }
+
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
+      <PrivateApp />
+    </Suspense>
+  );
+};
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Toaster />
-        <Routes>
-          {/* Public routes - no AuthProvider, completely independent */}
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* All other routes wrapped in AuthProvider */}
-          <Route path="/*" element={
-            <AuthProvider>
-              <Routes>
-                {/* Semi-protected routes - require authentication but not full access */}
-                <Route element={<ProtectedRoute requiresFullAccess={false} />}>
-                  <Route path="/subscription" element={<Subscription />} />
-                </Route>
-
-                {/* Fully protected routes - require authentication and account access */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/recent" element={<Recent />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/blog/new" element={<BlogEditor />} />
-                  <Route path="/blog/edit/:id" element={<BlogEditor />} />
-                  <Route path="/blog/:id" element={<BlogPost />} />
-                  <Route path="/diary" element={<Diary />} />
-                  <Route path="/diary/new" element={<DiaryNew />} />
-                  <Route path="/diary/edit/:id" element={<DiaryEdit />} />
-                  <Route path="/diary/:id" element={<DiaryEntry />} />
-                  <Route path="/life-story" element={<LifeStory />} />
-                  <Route path="/wishes" element={<Wishes />} />
-                  <Route path="/wishes/new" element={<WishNew />} />
-                  <Route path="/wishes/edit/:id" element={<WishEdit />} />
-                  <Route path="/wishes/:id" element={<WishPost />} />
-                  <Route path="/activities/activities" element={<Activities />} />
-                  <Route path="/activities/:type" element={<ActivityPage />} />
-                  <Route path="/scheduler" element={<Scheduler />} />
-                  <Route path="/intervention-report" element={<InterventionReport />} />
-                  <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
-                  <Route path="/activities/opposites" element={<OppositesGame />} />
-                  <Route path="/activities/sudoku" element={<SudokuGame />} />
-                  <Route path="/activities/crossword" element={<CrosswordGame />} />
-                </Route>
-
-                {/* Admin routes - require admin role */}
-                <Route element={<ProtectedRoute requiredRoles={['admin' as AppRole]} />}>
-                  <Route path="/admin/users" element={<AdminUsers />} />
-                  <Route path="/admin/posts" element={<AdminPosts />} />
-                  <Route path="/admin/albums" element={<AdminAlbums />} />
-                  <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
-                  <Route path="/admin/diary" element={<AdminDiary />} />
-                  <Route path="/admin/life-stories" element={<AdminLifeStories />} />
-                  <Route path="/admin/activities" element={<AdminActivities />} />
-                  <Route path="/invitation-groups" element={<InvitationGroups />} />
-                  <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
-                </Route>
-
-                {/* Error routes */}
-                <Route path="/unauthorized" element={<Unauthorized />} />
-              </Routes>
-            </AuthProvider>
-          } />
-        </Routes>
+        <AppRouter />
       </BrowserRouter>
     </QueryClientProvider>
   );
