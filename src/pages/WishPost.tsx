@@ -315,84 +315,84 @@ const WishPost = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-          {/* Header avec vignette */}
-          <div className="mb-8">
-            {/* Vignette du souhait */}
-            {wish.cover_image && (
-              <div className="mb-6 max-w-2xl mx-auto">
-                <AspectRatio ratio={imageAspectRatio}>
-                  <img
-                    src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
-                    alt={`Vignette de ${sanitizeInput(wish.title)}`}
-                    className="w-full h-full object-contain rounded-lg shadow-md bg-gray-50"
-                    onLoad={handleImageLoad}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </AspectRatio>
-              </div>
+          {/* Header avec titre */}
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal mb-4">
+              {sanitizeInput(wish.title)}
+            </h1>
+            
+            {!wish.published && (
+              <Badge variant="destructive" className="mb-4">Brouillon</Badge>
             )}
-            
-            <div className="flex flex-col gap-4 mb-4">
-              <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">
-                {sanitizeInput(wish.title)}
-              </h1>
-              
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
-                {canManagePublication && (
-                  <Button
-                    variant={wish.published ? "outline" : "default"}
-                    className={`w-full sm:w-auto ${!wish.published ? "bg-tranches-sage hover:bg-tranches-sage/90" : ""}`}
-                    onClick={handlePublishToggle}
-                    disabled={publishLoading}
-                  >
-                    {publishLoading ? "En cours..." : wish.published ? "Mettre en brouillon" : "Publier"}
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button asChild variant="outline" className="w-full sm:w-auto">
-                    <Link to={`/wishes/edit/${wish.id}`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Éditer
-                    </Link>
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button 
-                    variant="destructive"
-                    onClick={handleDelete}
-                    disabled={deleteLoading}
-                    className="w-full sm:w-auto"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {deleteLoading ? "Suppression..." : "Supprimer"}
-                  </Button>
-                )}
-              </div>
+          </div>
+          
+          {/* Informations d'auteur et date de création */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-sm text-gray-500">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1" />
+              Auteur : {wish.profiles?.display_name || 'Utilisateur anonyme'}
             </div>
-            
-            <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-500">
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                {format(new Date(wish.created_at), 'EEEE d MMMM yyyy', { locale: fr })}
-              </div>
-              
-              {/* Affichage du nom de l'auteur */}
-              <div className="flex items-center">
-                <User className="h-4 w-4 mr-1" />
-                Auteur : {wish.profiles?.display_name || 'Utilisateur anonyme'}
-              </div>
-              
-              {wish.album && (
-                <Badge variant="outline">{sanitizeInput(wish.album.name)}</Badge>
-              )}
-              
-              {!wish.published && (
-                <Badge variant="destructive">Brouillon</Badge>
-              )}
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              {format(new Date(wish.created_at), 'EEEE d MMMM yyyy', { locale: fr })}
             </div>
+          </div>
+          
+          {/* Boutons de gestion */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-6 w-full sm:w-auto">
+            {canManagePublication && (
+              <Button
+                variant={wish.published ? "outline" : "default"}
+                className={`w-full sm:w-auto ${!wish.published ? "bg-tranches-sage hover:bg-tranches-sage/90" : ""}`}
+                onClick={handlePublishToggle}
+                disabled={publishLoading}
+              >
+                {publishLoading ? "En cours..." : wish.published ? "Mettre en brouillon" : "Publier"}
+              </Button>
+            )}
+            {canEdit && (
+              <Button asChild variant="outline" className="w-full sm:w-auto">
+                <Link to={`/wishes/edit/${wish.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Éditer
+                </Link>
+              </Button>
+            )}
+            {canDelete && (
+              <Button 
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteLoading}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {deleteLoading ? "Suppression..." : "Supprimer"}
+              </Button>
+            )}
+          </div>
+          
+          {/* Vignette du souhait */}
+          {wish.cover_image && (
+            <div className="mb-8 max-w-2xl mx-auto">
+              <AspectRatio ratio={imageAspectRatio}>
+                <img
+                  src={getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)}
+                  alt={`Vignette de ${sanitizeInput(wish.title)}`}
+                  className="w-full h-full object-contain rounded-lg shadow-md bg-gray-50"
+                  onLoad={handleImageLoad}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </AspectRatio>
+            </div>
+          )}
+          
+          <div className="flex flex-wrap items-center gap-3 mb-6 text-sm text-gray-500">
+            {wish.album && (
+              <Badge variant="outline">{sanitizeInput(wish.album.name)}</Badge>
+            )}
           </div>
           
           {/* Informations personnelles */}
