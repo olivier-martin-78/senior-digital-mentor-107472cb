@@ -21,9 +21,12 @@ import BlogPost from './pages/BlogPost';
 import BlogEditor from './pages/BlogEditor';
 import Diary from './pages/Diary';
 import DiaryEntry from './pages/DiaryEntry';
+import DiaryNew from './pages/DiaryNew';
+import DiaryEdit from './pages/DiaryEdit';
 import LifeStory from './pages/LifeStory';
 import Wishes from './pages/Wishes';
 import WishPost from './pages/WishPost';
+import WishNew from './pages/WishNew';
 import WishEdit from './pages/WishEdit';
 import Activities from './pages/activities/ActivitiesOverview';
 import ActivityPage from './pages/activities/ActivityPage';
@@ -68,11 +71,14 @@ function App() {
               <Route path="/blog/edit/:id" element={<BlogEditor />} />
               <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/diary" element={<Diary />} />
+              <Route path="/diary/new" element={<DiaryNew />} />
+              <Route path="/diary/edit/:id" element={<DiaryEdit />} />
               <Route path="/diary/:id" element={<DiaryEntry />} />
               <Route path="/life-story" element={<LifeStory />} />
               <Route path="/wishes" element={<Wishes />} />
-              <Route path="/wishes/:id" element={<WishPost />} />
+              <Route path="/wishes/new" element={<WishNew />} />
               <Route path="/wishes/edit/:id" element={<WishEdit />} />
+              <Route path="/wishes/:id" element={<WishPost />} />
               <Route path="/activities/activities" element={<Activities />} />
               <Route path="/activities/:type" element={<ActivityPage />} />
               <Route path="/scheduler" element={<Scheduler />} />

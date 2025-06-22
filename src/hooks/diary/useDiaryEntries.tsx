@@ -1,118 +1,109 @@
+
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { DiaryEntryWithAuthor } from '@/types/diary';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { DiaryEntry } from '@/types/diary';
+import { useToast } from '@/hooks/use-toast';
 import { useGroupPermissions } from '../useGroupPermissions';
 
-export const useDiaryEntries = (searchTerm: string, startDate: string, endDate: string) => {
+export const useDiaryEntries = (searchTerm: string = '', startDate: string = '', endDate: string = '', entryId?: string) => {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
+  const { toast } = useToast();
+  const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
-    if (!user) {
-      setEntries([]);
+    // Si nous cherchons une entrée spécifique avec l'ID "new", ne pas faire de requête
+    if (entryId === 'new') {
       setLoading(false);
       return;
     }
 
-    if (!permissionsLoading) {
-      fetchEntries();
-    }
-  }, [user, searchTerm, startDate, endDate, authorizedUserIds, permissionsLoading]);
-
-  const fetchEntries = async () => {
-    try {
-      setLoading(true);
-      
-      console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
-      console.log('🎯 useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
+    const fetchEntries = async () => {
+      if (!user || permissionsLoading) {
+        setEntries([]);
+        setLoading(false);
+        return;
+      }
 
       if (authorizedUserIds.length === 0) {
         console.log('⚠️ useDiaryEntries - Aucun utilisateur autorisé');
         setEntries([]);
+        setLoading(false);
         return;
       }
 
-      // Récupérer les entrées de journal
-      let query = supabase
-        .from('diary_entries')
-        .select('*')
-        .in('user_id', authorizedUserIds)
-        .order('entry_date', { ascending: false });
+      try {
+        setLoading(true);
+        
+        console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
+        console.log('✅ useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
 
-      if (startDate) {
-        query = query.gte('entry_date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('entry_date', endDate);
-      }
+        let query = supabase
+          .from('diary_entries')
+          .select('*')
+          .in('user_id', authorizedUserIds)
+          .order('entry_date', { ascending: false });
 
-      const { data: diaryData, error } = await query;
-      
-      if (error) {
-        console.error('❌ useDiaryEntries - Erreur récupération entries:', error);
-        throw error;
-      }
-      
-      if (diaryData && diaryData.length > 0) {
-        console.log('📓 useDiaryEntries - Entrées récupérées:', diaryData.length);
-
-        // Récupérer les profils des auteurs avec tous les champs requis
-        const userIds = [...new Set(diaryData.map(entry => entry.user_id))];
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, email, display_name, avatar_url, created_at, receive_contacts')
-          .in('id', userIds);
-
-        if (profilesError) {
-          console.error('❌ useDiaryEntries - Erreur récupération profils:', profilesError);
-          throw profilesError;
+        // Si nous cherchons une entrée spécifique
+        if (entryId && entryId !== 'new') {
+          query = query.eq('id', entryId);
         }
 
-        // Associer les profils aux entrées
-        const entriesWithAuthors: DiaryEntryWithAuthor[] = diaryData.map(entry => ({
-          ...entry,
-          profiles: profilesData?.find(profile => profile.id === entry.user_id) || {
-            id: entry.user_id,
-            email: 'Utilisateur inconnu',
-            display_name: null,
-            avatar_url: null,
-            created_at: new Date().toISOString(),
-            receive_contacts: false
-          }
-        }));
-
-        // Filtrage côté client pour le terme de recherche
-        let filteredEntries = entriesWithAuthors;
+        // Filtrer par terme de recherche
         if (searchTerm) {
-          const lowercaseSearch = searchTerm.toLowerCase();
-          filteredEntries = entriesWithAuthors.filter(entry => {
-            return (
-              entry.title?.toLowerCase().includes(lowercaseSearch) ||
-              entry.activities?.toLowerCase().includes(lowercaseSearch) ||
-              entry.reflections?.toLowerCase().includes(lowercaseSearch) ||
-              entry.tags?.some(tag => tag.toLowerCase().includes(lowercaseSearch)) ||
-              entry.profiles?.email?.toLowerCase().includes(lowercaseSearch) ||
-              entry.profiles?.display_name?.toLowerCase().includes(lowercaseSearch)
-            );
+          query = query.or(`title.ilike.%${searchTerm}%,activities.ilike.%${searchTerm}%`);
+        }
+
+        // Filtrer par plage de dates
+        if (startDate) {
+          query = query.gte('entry_date', startDate);
+        }
+        if (endDate) {
+          query = query.lte('entry_date', endDate);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        console.log('✅ useDiaryEntries - Entrées récupérées:', data?.length || 0);
+        setEntries(data as DiaryEntry[]);
+      } catch (error: any) {
+        console.error('❌ useDiaryEntries - Erreur lors du chargement des entrées:', error);
+        
+        // Si nous cherchons une entrée spécifique, afficher un message d'erreur spécifique
+        if (entryId) {
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de récupérer cette entrée du journal',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de charger les entrées du journal',
+            variant: 'destructive',
           });
         }
-
-        console.log('🏁 useDiaryEntries - Entrées filtrées finales:', filteredEntries.length);
-        setEntries(filteredEntries);
-      } else {
-        console.log('📓 useDiaryEntries - Aucune entrée trouvée');
         setEntries([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('💥 useDiaryEntries - Erreur critique:', error);
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  return { entries, loading };
+    if (!permissionsLoading) {
+      fetchEntries();
+    }
+  }, [searchTerm, startDate, endDate, entryId, authorizedUserIds, permissionsLoading, user, toast]);
+
+  return { entries, loading, refetch: () => {
+    if (entryId !== 'new') {
+      // Recharger les données si ce n'est pas une nouvelle entrée
+      setLoading(true);
+    }
+  }};
 };

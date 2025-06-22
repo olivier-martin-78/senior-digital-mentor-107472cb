@@ -25,7 +25,7 @@ export interface WishPost {
   };
 }
 
-export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '') => {
+export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '', wishId?: string) => {
   const [posts, setPosts] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -33,6 +33,12 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchPosts = async () => {
+    // Si nous cherchons un souhait spécifique avec l'ID "new", ne pas faire de requête
+    if (wishId === 'new') {
+      setLoading(false);
+      return;
+    }
+
     if (!user || permissionsLoading) {
       setPosts([]);
       setLoading(false);
@@ -60,6 +66,11 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
         `)
         .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
+
+      // Si nous cherchons un souhait spécifique
+      if (wishId && wishId !== 'new') {
+        query = query.eq('id', wishId);
+      }
 
       // Filtrer par terme de recherche
       if (searchTerm) {
@@ -89,11 +100,21 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
       setPosts(data as WishPost[]);
     } catch (error: any) {
       console.error('❌ useWishPosts - Erreur lors du chargement des souhaits:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les souhaits',
-        variant: 'destructive',
-      });
+      
+      // Si nous cherchons un souhait spécifique, afficher un message d'erreur spécifique
+      if (wishId) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de charger le souhait',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de charger les souhaits',
+          variant: 'destructive',
+        });
+      }
       setPosts([]);
     } finally {
       setLoading(false);
@@ -104,7 +125,7 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
     if (!permissionsLoading) {
       fetchPosts();
     }
-  }, [searchTerm, albumId, startDate, endDate, authorizedUserIds, permissionsLoading]);
+  }, [searchTerm, albumId, startDate, endDate, wishId, authorizedUserIds, permissionsLoading]);
 
   return { posts, loading, refetch: fetchPosts };
 };
