@@ -127,19 +127,26 @@ export const useSubscription = () => {
       } else {
         throw new Error('URL du portail client non reçue');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error opening customer portal:', error);
       
-      // Message d'erreur plus spécifique
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      
-      if (errorMessage.includes('No Stripe customer found')) {
+      // Gérer les différents types d'erreurs
+      if (error?.context?.response?.error === 'stripe_portal_not_configured') {
+        toast({
+          title: 'Configuration requise',
+          description: 'Le portail client Stripe doit être configuré. Veuillez contacter le support.',
+          variant: 'destructive',
+        });
+      } else if (error?.context?.response?.message?.includes('No Stripe customer found')) {
         toast({
           title: 'Aucun abonnement trouvé',
           description: 'Aucun abonnement actif n\'a été trouvé pour votre compte. Veuillez vous abonner d\'abord.',
           variant: 'destructive',
         });
       } else {
+        // Message d'erreur plus spécifique
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        
         toast({
           title: 'Erreur d\'accès au portail',
           description: `Impossible d'accéder à la gestion des abonnements: ${errorMessage}`,

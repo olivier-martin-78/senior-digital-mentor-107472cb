@@ -51,16 +51,33 @@ serve(async (req) => {
     logStep("Found Stripe customer", { customerId });
 
     const origin = req.headers.get("origin") || "https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/profile?tab=subscription`,
-    });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/profile?tab=subscription`,
+      });
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ url: portalSession.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (stripeError: any) {
+      // Gérer spécifiquement l'erreur de configuration du portail client
+      if (stripeError.message && stripeError.message.includes("No configuration provided")) {
+        logStep("Stripe portal configuration missing", { error: stripeError.message });
+        return new Response(JSON.stringify({ 
+          error: "stripe_portal_not_configured",
+          message: "Le portail client Stripe n'est pas encore configuré. Veuillez configurer le portail client dans votre tableau de bord Stripe.",
+          dashboard_url: "https://dashboard.stripe.com/settings/billing/portal"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      throw stripeError;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });
