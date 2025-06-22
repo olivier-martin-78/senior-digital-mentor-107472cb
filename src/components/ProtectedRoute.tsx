@@ -5,7 +5,12 @@ import { AppRole } from '@/types/supabase';
 import { useAccountAccess } from '@/hooks/useAccountAccess';
 import AccessRestrictedPage from '@/components/AccessRestrictedPage';
 
-const ProtectedRoute = ({ requiredRoles }: { requiredRoles?: AppRole[] }) => {
+interface ProtectedRouteProps {
+  requiredRoles?: AppRole[];
+  requiresFullAccess?: boolean;
+}
+
+const ProtectedRoute = ({ requiredRoles, requiresFullAccess = true }: ProtectedRouteProps) => {
   const { session, hasRole, isLoading, roles } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useAccountAccess();
 
@@ -33,8 +38,8 @@ const ProtectedRoute = ({ requiredRoles }: { requiredRoles?: AppRole[] }) => {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Check account access (subscription/trial)
-  if (!hasAccess) {
+  // Check account access only if full access is required
+  if (requiresFullAccess && !hasAccess) {
     return <AccessRestrictedPage><Outlet /></AccessRestrictedPage>;
   }
 

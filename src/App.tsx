@@ -36,6 +36,7 @@ import OppositesGame from './pages/activities/OppositesGame';
 import SudokuGame from './pages/activities/SudokuGame';
 import CrosswordGame from './pages/activities/CrosswordGame';
 import ResetPassword from './pages/ResetPassword';
+import Unauthorized from './pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 
 const queryClient = new QueryClient();
@@ -51,11 +52,15 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
-            {/* Protected routes - require authentication and account access */}
+            {/* Semi-protected routes - require authentication but not full access */}
+            <Route element={<ProtectedRoute requiresFullAccess={false} />}>
+              <Route path="/subscription" element={<Subscription />} />
+            </Route>
+
+            {/* Fully protected routes - require authentication and account access */}
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Index />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/subscription" element={<Subscription />} />
               <Route path="/recent" element={<Recent />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogPost />} />
@@ -87,6 +92,9 @@ function App() {
               <Route path="/invitation-groups" element={<InvitationGroups />} />
               <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             </Route>
+
+            {/* Error routes */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
