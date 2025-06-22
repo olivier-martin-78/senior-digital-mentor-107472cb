@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Header from '@/components/Header';
 import RecentItemCard from '@/components/recent/RecentItemCard';
 import RecentLoading from '@/components/recent/RecentLoading';
 import RecentEmpty from '@/components/recent/RecentEmpty';
@@ -15,7 +14,6 @@ const Recent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Activité récente</h1>
         
