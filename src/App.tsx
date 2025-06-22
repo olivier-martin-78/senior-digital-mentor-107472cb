@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
@@ -35,6 +36,7 @@ import OppositesGame from './pages/activities/OppositesGame';
 import SudokuGame from './pages/activities/SudokuGame';
 import CrosswordGame from './pages/activities/CrosswordGame';
 import ResetPassword from './pages/ResetPassword';
+import { AppRole } from '@/types/supabase';
 
 const queryClient = new QueryClient();
 
@@ -45,37 +47,46 @@ function App() {
         <BrowserRouter>
           <Toaster />
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Public routes - accessible without authentication */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/posts" element={<AdminPosts />} />
-            <Route path="/admin/albums" element={<AdminAlbums />} />
-            <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
-            <Route path="/admin/diary" element={<AdminDiary />} />
-            <Route path="/admin/life-stories" element={<AdminLifeStories />} />
-            <Route path="/admin/activities" element={<AdminActivities />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/recent" element={<Recent />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPost />} />
-            <Route path="/diary" element={<Diary />} />
-            <Route path="/diary/:id" element={<DiaryEntry />} />
-            <Route path="/life-story" element={<LifeStory />} />
-            <Route path="/wishes" element={<Wishes />} />
-            <Route path="/wishes/:id" element={<WishPost />} />
-            <Route path="/wishes/edit/:id" element={<WishEdit />} />
-            <Route path="/activities/activities" element={<Activities />} />
-            <Route path="/activities/:type" element={<ActivityPage />} />
-            <Route path="/scheduler" element={<Scheduler />} />
-            <Route path="/intervention-report" element={<InterventionReport />} />
-            <Route path="/invitation-groups" element={<InvitationGroups />} />
-            <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
-            <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
-            <Route path="/activities/opposites" element={<OppositesGame />} />
-            <Route path="/activities/sudoku" element={<SudokuGame />} />
-            <Route path="/activities/crossword" element={<CrosswordGame />} />
+            
+            {/* Protected routes - require authentication and account access */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="/recent" element={<Recent />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
+              <Route path="/diary" element={<Diary />} />
+              <Route path="/diary/:id" element={<DiaryEntry />} />
+              <Route path="/life-story" element={<LifeStory />} />
+              <Route path="/wishes" element={<Wishes />} />
+              <Route path="/wishes/:id" element={<WishPost />} />
+              <Route path="/wishes/edit/:id" element={<WishEdit />} />
+              <Route path="/activities/activities" element={<Activities />} />
+              <Route path="/activities/:type" element={<ActivityPage />} />
+              <Route path="/scheduler" element={<Scheduler />} />
+              <Route path="/intervention-report" element={<InterventionReport />} />
+              <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
+              <Route path="/activities/opposites" element={<OppositesGame />} />
+              <Route path="/activities/sudoku" element={<SudokuGame />} />
+              <Route path="/activities/crossword" element={<CrosswordGame />} />
+            </Route>
+
+            {/* Admin routes - require admin role */}
+            <Route element={<ProtectedRoute requiredRoles={['admin' as AppRole]} />}>
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/posts" element={<AdminPosts />} />
+              <Route path="/admin/albums" element={<AdminAlbums />} />
+              <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
+              <Route path="/admin/diary" element={<AdminDiary />} />
+              <Route path="/admin/life-stories" element={<AdminLifeStories />} />
+              <Route path="/admin/activities" element={<AdminActivities />} />
+              <Route path="/invitation-groups" element={<InvitationGroups />} />
+              <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </AuthProvider>
