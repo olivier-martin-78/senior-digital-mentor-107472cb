@@ -40,6 +40,8 @@ export const useAuthState = () => {
         } else {
           setProfile(null);
           setRoles([]);
+          // For anonymous users, we're not loading anymore
+          setIsLoading(false);
         }
       }
     );
@@ -52,12 +54,16 @@ export const useAuthState = () => {
       
       if (currentSession?.user) {
         fetchUserData(currentSession.user.id);
+      } else {
+        // No session found, user is anonymous - this is normal
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }).catch(error => {
-      console.error('Session check error:', error);
+      console.warn('Session check warning (non-fatal for anonymous users):', error);
+      // For anonymous access, this is expected
+      setSession(null);
+      setUser(null);
       setIsLoading(false);
-      setAuthError(error instanceof Error ? error : new Error('Failed to check authentication session'));
     });
 
     return () => subscription.unsubscribe();
@@ -79,6 +85,8 @@ export const useAuthState = () => {
       setRoles(userRoles);
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
