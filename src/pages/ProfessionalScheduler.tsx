@@ -33,6 +33,7 @@ const ProfessionalScheduler = () => {
   const [filterIntervenantId, setFilterIntervenantId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedClientForCaregivers, setSelectedClientForCaregivers] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -198,11 +199,23 @@ const ProfessionalScheduler = () => {
   };
 
   const handleOpenCaregiverManager = () => {
-    setIsCaregiverManagerOpen(true);
+    // For demo purposes, we'll use the first client if available
+    const firstClient = clients[0];
+    if (firstClient) {
+      setSelectedClientForCaregivers(firstClient.id);
+      setIsCaregiverManagerOpen(true);
+    } else {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez d\'abord créer un client pour gérer les aidants',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCloseCaregiverManager = () => {
     setIsCaregiverManagerOpen(false);
+    setSelectedClientForCaregivers(null);
     fetchData();
   };
 
@@ -340,17 +353,21 @@ const ProfessionalScheduler = () => {
         {isClientManagerOpen && (
           <ClientManager
             clients={clients}
+            onClientUpdate={handleCloseClientManager}
           />
         )}
 
         {isIntervenantManagerOpen && (
           <IntervenantManager
             intervenants={intervenants}
+            onIntervenantUpdate={handleCloseIntervenantManager}
           />
         )}
 
-        {isCaregiverManagerOpen && (
-          <CaregiverManager />
+        {isCaregiverManagerOpen && selectedClientForCaregivers && (
+          <CaregiverManager 
+            clientId={selectedClientForCaregivers}
+          />
         )}
       </div>
     </div>
