@@ -1,7 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { AppRole } from '@/types/supabase';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+// Use the correct AppRole type from Supabase database types
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface OptionalAuthResult {
   hasRole: (role: AppRole) => boolean;
