@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import { useBlogPost } from '@/hooks/useBlogPost';
@@ -172,8 +171,7 @@ const BlogPost = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
+      <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-16 flex justify-center">
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
         </div>
@@ -183,8 +181,7 @@ const BlogPost = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
+      <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-16 flex flex-col items-center">
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Article non trouvé</h1>
           <p className="mb-8 text-gray-600">L'article que vous recherchez n'existe pas ou a été supprimé.</p>
@@ -197,8 +194,7 @@ const BlogPost = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4 flex justify-between items-center">
           <Link to="/blog" className="text-tranches-sage hover:underline">
