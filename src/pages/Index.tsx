@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,19 +27,10 @@ import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 const Index = () => {
-  // Vérification sécurisée de l'authentification pour les utilisateurs connectés
-  let hasRole = (role: string): boolean => false;
-  
-  try {
-    const { useAuth } = await import('@/contexts/AuthContext');
-    const authContext = useAuth();
-    hasRole = authContext.hasRole;
-  } catch (error) {
-    // Si useAuth échoue, l'utilisateur n'est pas authentifié - c'est normal
-    console.log('Index - Utilisateur non authentifié, affichage de la page publique');
-  }
+  const { hasRole, isAuthenticated } = useOptionalAuth();
 
   const features = [
         {
