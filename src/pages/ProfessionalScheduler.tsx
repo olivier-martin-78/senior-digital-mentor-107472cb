@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -93,6 +92,7 @@ const ProfessionalScheduler = () => {
       const transformedAppointments: Appointment[] = (appointmentsData || []).map(appointment => ({
         ...appointment,
         status: appointment.status as 'scheduled' | 'completed' | 'cancelled',
+        recurrence_type: appointment.recurrence_type as 'weekly' | 'monthly' | undefined,
         caregivers: caregiversData?.filter(cg => cg.client_id === appointment.client_id) || []
       }));
 
@@ -260,7 +260,6 @@ const ProfessionalScheduler = () => {
                   appointments={filteredAppointments}
                   onAppointmentEdit={handleAppointmentEdit}
                   onAppointmentDelete={handleAppointmentDelete}
-                  loading={loading}
                 />
               </CardContent>
             </Card>
@@ -341,22 +340,17 @@ const ProfessionalScheduler = () => {
         {isClientManagerOpen && (
           <ClientManager
             clients={clients}
-            setClients={setClients}
           />
         )}
 
         {isIntervenantManagerOpen && (
           <IntervenantManager
             intervenants={intervenants}
-            setIntervenants={setIntervenants}
           />
         )}
 
         {isCaregiverManagerOpen && (
-          <CaregiverManager
-            caregivers={caregivers}
-            setCaregivers={setCaregivers}
-          />
+          <CaregiverManager />
         )}
       </div>
     </div>
