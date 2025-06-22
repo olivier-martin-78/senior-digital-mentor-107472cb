@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
 import WishCard from '@/components/WishCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +47,6 @@ const Wishes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">Souhaits</h1>

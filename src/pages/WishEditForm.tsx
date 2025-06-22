@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
 import { useToast } from '@/hooks/use-toast';
 import WishForm from './WishForm';
 import { WishPost } from '@/types/supabase';
@@ -80,7 +79,6 @@ const WishEditForm = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center py-20">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>

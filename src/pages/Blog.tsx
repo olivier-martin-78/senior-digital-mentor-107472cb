@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import Header from '@/components/Header';
 import BlogHeader from '@/components/blog/BlogHeader';
 import BlogPostGrid from '@/components/blog/BlogPostGrid';
 import BlogFilters from '@/components/blog/BlogFilters';
@@ -61,7 +60,6 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <BlogHeader 
           albums={albums}
