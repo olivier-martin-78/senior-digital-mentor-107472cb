@@ -6,9 +6,19 @@ import InterventionReportForm from '@/components/intervention/InterventionReport
 import InterventionReportView from '@/components/intervention/InterventionReportView';
 
 const InterventionReport = () => {
-  const { session } = useAuth();
+  const { session, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Afficher un loader pendant le chargement de l'authentification
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // Rediriger seulement après avoir vérifié que l'authentification est complètement chargée
   if (!session) {
     navigate('/auth');
     return null;
