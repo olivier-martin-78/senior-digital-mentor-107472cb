@@ -44,7 +44,7 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
           .from('diary_entries')
           .select(`
             *,
-            profiles!diary_entries_user_id_fkey(*)
+            profiles:user_id(*)
           `)
           .in('user_id', authorizedUserIds)
           .order('entry_date', { ascending: false });
@@ -74,7 +74,7 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
         }
 
         console.log('✅ useDiaryEntries - Entrées récupérées:', data?.length || 0);
-        setEntries(data as DiaryEntryWithAuthor[]);
+        setEntries(data || []);
       } catch (error: any) {
         console.error('❌ useDiaryEntries - Erreur lors du chargement des entrées:', error);
         
