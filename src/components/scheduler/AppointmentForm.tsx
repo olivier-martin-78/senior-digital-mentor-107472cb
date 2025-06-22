@@ -12,6 +12,7 @@ import { Calendar, Clock, User, X, FileText } from 'lucide-react';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import RecurringAppointmentForm from './RecurringAppointmentForm';
 import { addWeeks } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
@@ -29,6 +30,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onCancel
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [allowedClients, setAllowedClients] = useState<Client[]>([]);
   const [availableIntervenants, setAvailableIntervenants] = useState<Intervenant[]>([]);
   const [hasInterventionReport, setHasInterventionReport] = useState(false);
@@ -84,11 +86,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (!appointment) return;
 
     if (hasInterventionReport && interventionReportId) {
-      // Ouvrir le rapport existant en mode lecture
-      window.open(`/intervention-report?report_id=${interventionReportId}`, '_blank');
+      // Ouvrir le rapport existant en mode lecture dans l'onglet actuel
+      navigate(`/intervention-report?report_id=${interventionReportId}`);
     } else {
-      // Créer un nouveau rapport
-      window.open(`/intervention-report?appointment_id=${appointment.id}`, '_blank');
+      // Créer un nouveau rapport dans l'onglet actuel
+      navigate(`/intervention-report?appointment_id=${appointment.id}`);
     }
   };
 
