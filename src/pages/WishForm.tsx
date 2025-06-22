@@ -401,7 +401,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                     </span>
                     Informations sur le demandeur
                   </h2>
-                  <p className="text-sm text-gray-500">Ces informations sont facultatives mais permettent de personnaliser la relation.</p>
+                  <p className="text-sm text-gray-500">Ces informations permettent de personnaliser la relation.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
@@ -428,7 +428,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                             <Input placeholder="exemple@email.com" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Facultatif, mais utile pour vous recontacter
+                            Utile pour vous recontacter
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -444,44 +444,38 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                           <FormControl>
                             <Input placeholder="Votre âge" {...field} />
                           </FormControl>
-                          <FormDescription>Facultatif</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     
-                    <div className="md:col-span-2">
-                      <FormLabel className="text-base font-medium">Localisation (facultatif)</FormLabel>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        <FormField
-                          control={form.control}
-                          name="postalCode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Code postal</FormLabel>
-                              <FormControl>
-                                <Input placeholder="ex: 75001" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Ville</FormLabel>
-                              <FormControl>
-                                <Input placeholder="ex: Paris" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="postalCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Code postal</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ex: 75001" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ville</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ex: Paris" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </div>
                 
