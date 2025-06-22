@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -65,7 +64,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
@@ -76,6 +75,30 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
   
+  console.log('WishForm - État auth:', { user: !!user, authLoading });
+
+  // Show loading while authentication is being checked
+  if (authLoading) {
+    console.log('WishForm - Chargement de l\'authentification');
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not authenticated after loading is complete, redirect
+  if (!authLoading && !user) {
+    console.log('WishForm - Utilisateur non connecté, redirection');
+    navigate('/auth');
+    return null;
+  }
+
   const fetchWishAlbums = useCallback(async () => {
     try {
       const { data, error } = await supabase
