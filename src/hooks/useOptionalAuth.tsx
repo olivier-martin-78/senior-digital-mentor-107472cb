@@ -1,59 +1,101 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { Session, User } from '@supabase/supabase-js';
+import { Profile, AppRole } from '@/types/supabase';
 
-// Use the correct AppRole type from Supabase database types
-type AppRole = Database['public']['Enums']['app_role'];
-
-interface OptionalAuthResult {
-  hasRole: (role: AppRole) => boolean;
-  isAuthenticated: boolean;
-}
-
-export const useOptionalAuth = (): OptionalAuthResult => {
-  const [authResult, setAuthResult] = useState<OptionalAuthResult>({
-    hasRole: () => false,
-    isAuthenticated: false
-  });
+// Hook qui fonctionne même sans AuthProvider
+export const useOptionalAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const initAuth = async () => {
       try {
-        // Vérifier directement avec Supabase au lieu d'utiliser useAuth
-        const { data: { session } } = await supabase.auth.getSession();
+        // Import dynamique pour éviter les erreurs sur les routes publiques
+        const { supabase } = await import('@/integrations/supabase/client');
         
-        if (session?.user) {
-          // Récupérer les rôles de l'utilisateur
-          const { data: rolesData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id);
+        // Vérifier s'il y a une session existante
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
           
-          const userRoles = rolesData?.map(row => row.role) || [];
-          
-          setAuthResult({
-            hasRole: (role: AppRole) => userRoles.includes(role),
-            isAuthenticated: true
-          });
-        } else {
-          // Pas d'utilisateur connecté
-          setAuthResult({
-            hasRole: () => false,
-            isAuthenticated: false
-          });
+          // Récupérer le profil si connecté
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .single();
+            
+            if (profileData) {
+              setProfile(profileData);
+            }
+            
+            // Récupérer les rôles
+            const { data: rolesData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', currentSession.user.id);
+            
+            if (rolesData) {
+              setRoles(rolesData.map(r => r.role));
+            }
+          } catch (error) {
+            console.log('Erreur lors de la récupération du profil:', error);
+          }
         }
+        
+        // Écouter les changements d'auth
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            if (!session?.user) {
+              setProfile(null);
+              setRoles([]);
+            }
+          }
+        );
+        
+        setIsLoading(false);
+        
+        return () => subscription.unsubscribe();
       } catch (error) {
-        console.log('useOptionalAuth - Erreur lors de la vérification auth:', error);
-        setAuthResult({
-          hasRole: () => false,
-          isAuthenticated: false
-        });
+        console.log('Auth non disponible sur cette route');
+        setIsLoading(false);
       }
     };
 
-    checkAuth();
+    initAuth();
   }, []);
 
-  return authResult;
+  const hasRole = (role: AppRole): boolean => {
+    return roles.includes(role);
+  };
+
+  const signOut = async () => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  };
+
+  return {
+    user,
+    profile,
+    roles,
+    session,
+    isLoading,
+    hasRole,
+    signOut
+  };
 };

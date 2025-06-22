@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import HeaderWrapper from '@/components/HeaderWrapper';
 import PublicApp from '@/components/PublicApp';
 
 const queryClient = new QueryClient();
@@ -14,14 +15,17 @@ const AppRouter: React.FC = () => {
   const location = useLocation();
   const isPublicRoute = ['/', '/auth', '/reset-password'].includes(location.pathname);
 
-  if (isPublicRoute) {
-    return <PublicApp />;
-  }
-
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
-      <PrivateApp />
-    </Suspense>
+    <>
+      <HeaderWrapper />
+      {isPublicRoute ? (
+        <PublicApp />
+      ) : (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
+          <PrivateApp />
+        </Suspense>
+      )}
+    </>
   );
 };
 
