@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -15,9 +16,13 @@ import AdminActivities from './pages/admin/AdminActivities';
 import Subscription from './pages/Subscription';
 import Recent from './pages/Recent';
 import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import Diary from './pages/Diary';
+import DiaryEntry from './pages/DiaryEntry';
 import LifeStory from './pages/LifeStory';
 import Wishes from './pages/Wishes';
+import WishPost from './pages/WishPost';
+import WishEdit from './pages/WishEdit';
 import Activities from './pages/activities/ActivitiesOverview';
 import ActivityPage from './pages/activities/ActivityPage';
 import Scheduler from './pages/ProfessionalScheduler';
@@ -53,9 +58,13 @@ function App() {
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/recent" element={<Recent />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/diary" element={<Diary />} />
+            <Route path="/diary/:id" element={<DiaryEntry />} />
             <Route path="/life-story" element={<LifeStory />} />
             <Route path="/wishes" element={<Wishes />} />
+            <Route path="/wishes/:id" element={<WishPost />} />
+            <Route path="/wishes/edit/:id" element={<WishEdit />} />
             <Route path="/activities/activities" element={<Activities />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />

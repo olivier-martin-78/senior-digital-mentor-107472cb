@@ -34,7 +34,6 @@ const BlogPost = () => {
   
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [hasAlbumAccess, setHasAlbumAccess] = useState(false);
   const [notificationSent, setNotificationSent] = useState(false);
   
   const {
@@ -48,54 +47,12 @@ const BlogPost = () => {
     deleteComment
   } = useBlogPost(id as string);
 
-  // Vérifier l'accès à l'album si le post en fait partie
-  useEffect(() => {
-    const checkAlbumAccess = async () => {
-      if (!post || !post.album_id || !user) {
-        console.log('🔍 BlogPost - Pas d\'album ou pas d\'utilisateur:', {
-          postId: post?.id,
-          albumId: post?.album_id,
-          hasUser: !!user
-        });
-        setHasAlbumAccess(true); // Pas d'album = accès libre
-        return;
-      }
-
-      try {
-        const effectiveUserId = getEffectiveUserId();
-        
-        console.log('🔍 BlogPost - Vérification accès album:', {
-          postId: post.id,
-          albumId: post.album_id,
-          effectiveUserId,
-          userEmail: user.email
-        });
-
-        // Vérifier si l'utilisateur est propriétaire de l'album
-        const { data: albumData } = await supabase
-          .from('blog_albums')
-          .select('author_id')
-          .eq('id', post.album_id)
-          .single();
-
-        if (albumData && albumData.author_id === effectiveUserId) {
-          console.log('✅ BlogPost - Utilisateur propriétaire de l\'album');
-          setHasAlbumAccess(true);
-          return;
-        }
-
-        // Pour maintenant, donner accès à tous les utilisateurs connectés
-        // car nous n'avons plus de système de permissions d'album granulaire
-        setHasAlbumAccess(true);
-        
-      } catch (error) {
-        console.error('❌ BlogPost - Erreur lors de la vérification des permissions d\'album:', error);
-        setHasAlbumAccess(false);
-      }
-    };
-
-    checkAlbumAccess();
-  }, [post, user, getEffectiveUserId]);
+  console.log('🔍 BlogPost - Debug state:', {
+    id,
+    loading,
+    post: post ? { id: post.id, title: post.title } : null,
+    user: user ? user.id : null
+  });
 
   // Charger l'URL de l'image de couverture si elle existe
   useEffect(() => {
@@ -197,12 +154,8 @@ const BlogPost = () => {
   // Permissions de suppression : SEULEMENT auteur OU admin
   const canDeletePost = isAuthor || isAdmin;
 
-  // Vérification de visibilité : doit avoir accès à l'album
-  const canViewPost = hasAlbumAccess && (
-    post?.published || 
-    isAuthor || 
-    isAdmin
-  );
+  // Simplified access logic - if we have a post, show it
+  const canViewPost = !!post;
 
   console.log('🎯 BlogPost - Permissions:', {
     postId: post?.id,
@@ -214,8 +167,6 @@ const BlogPost = () => {
     canEditPost,
     canDeletePost,
     canViewPost,
-    hasAlbumAccess,
-    albumId: post?.album_id,
     published: post?.published
   });
 
@@ -237,34 +188,6 @@ const BlogPost = () => {
         <div className="container mx-auto px-4 py-16 flex flex-col items-center">
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Article non trouvé</h1>
           <p className="mb-8 text-gray-600">L'article que vous recherchez n'existe pas ou a été supprimé.</p>
-          <Button asChild>
-            <Link to="/blog">Retour au blog</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Vérifier si l'utilisateur peut voir ce post
-  if (!canViewPost) {
-    console.log('🚫 BlogPost - Accès refusé au post:', {
-      postId: post.id,
-      reason: !hasAlbumAccess ? 'Pas d\'accès album' : 'Post non publié',
-      albumId: post.album_id,
-      published: post.published
-    });
-    
-    return (
-      <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
-        <div className="container mx-auto px-4 py-16 flex flex-col items-center">
-          <h1 className="text-3xl font-serif text-tranches-charcoal mb-4">Accès refusé</h1>
-          <p className="mb-8 text-gray-600">
-            {post.album_id 
-              ? "Vous n'avez pas accès à cet album." 
-              : "Cet article n'est pas encore publié."
-            }
-          </p>
           <Button asChild>
             <Link to="/blog">Retour au blog</Link>
           </Button>

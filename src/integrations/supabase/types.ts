@@ -538,6 +538,21 @@ export type Database = {
         }
         Relationships: []
       }
+      dico: {
+        Row: {
+          Définitions: string
+          Mot: string
+        }
+        Insert: {
+          Définitions: string
+          Mot: string
+        }
+        Update: {
+          Définitions?: string
+          Mot?: string
+        }
+        Relationships: []
+      }
       group_invitation: {
         Row: {
           confirmation_date: string | null

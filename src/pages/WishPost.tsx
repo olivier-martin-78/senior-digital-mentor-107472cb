@@ -27,12 +27,25 @@ const WishPost = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(16/9);
 
+  console.log('🔍 WishPost - Debug state:', {
+    id,
+    loading,
+    wish: wish ? { id: wish.id, title: wish.title } : null,
+    user: user ? user.id : null
+  });
+
   useEffect(() => {
     const fetchWishPost = async () => {
-      if (!id) return;
+      if (!id) {
+        console.log('❌ WishPost - No ID provided');
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        console.log('🔍 WishPost - Fetching wish:', id);
+        
         const { data, error } = await supabase
           .from('wish_posts')
           .select(`
@@ -44,73 +57,20 @@ const WishPost = () => {
           .single();
           
         if (error) {
+          console.error('❌ WishPost - Error fetching wish:', error);
           throw error;
         }
         
         if (!data) {
+          console.log('❌ WishPost - No wish found');
           navigate('/wishes');
           return;
         }
         
-        // Vérification de l'accès pour les souhaits non publiés
-        if (!data.published && user) {
-          const isAuthor = user.id === data.author_id;
-          const isAdmin = hasRole('admin');
-          
-          // Si ce n'est ni l'auteur ni un admin, vérifier l'appartenance au même groupe
-          if (!isAuthor && !isAdmin) {
-            // Vérifier si l'utilisateur et l'auteur sont dans le même groupe
-            const { data: sameGroupCheck } = await supabase
-              .from('group_members')
-              .select(`
-                group_id,
-                group:group_id!inner(
-                  members:group_members!inner(user_id)
-                )
-              `)
-              .eq('user_id', user.id);
-            
-            const userGroups = sameGroupCheck?.map(gm => gm.group_id) || [];
-            
-            if (userGroups.length > 0) {
-              const { data: authorInSameGroup } = await supabase
-                .from('group_members')
-                .select('group_id')
-                .eq('user_id', data.author_id)
-                .in('group_id', userGroups);
-              
-              if (!authorInSameGroup || authorInSameGroup.length === 0) {
-                toast({
-                  title: "Accès refusé",
-                  description: "Vous n'avez pas accès à ce souhait.",
-                  variant: "destructive"
-                });
-                navigate('/wishes');
-                return;
-              }
-            } else {
-              toast({
-                title: "Accès refusé",
-                description: "Vous n'avez pas accès à ce souhait.",
-                variant: "destructive"
-              });
-              navigate('/wishes');
-              return;
-            }
-          }
-        } else if (!data.published && !user) {
-          toast({
-            title: "Accès refusé",
-            description: "Vous n'avez pas accès à ce souhait.",
-            variant: "destructive"
-          });
-          navigate('/wishes');
-          return;
-        }
-        
+        console.log('✅ WishPost - Wish found:', data.id);
         setWish(data as WishPostType);
       } catch (error) {
-        console.error('Error fetching wish post:', error);
+        console.error('💥 WishPost - Critical error:', error);
         toast({
           title: "Erreur",
           description: "Impossible de charger le souhait.",
@@ -292,7 +252,19 @@ const WishPost = () => {
   }
 
   if (!wish) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-serif text-tranches-charcoal mb-4">Souhait non trouvé</h2>
+            <Button asChild>
+              <Link to="/wishes">Retour aux souhaits</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const requestTypeText = wish.request_type === 'other' && wish.custom_request_type 

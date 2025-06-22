@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,12 +27,30 @@ const DiaryEntryPage = () => {
   const [entry, setEntry] = useState<DiaryEntryWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('🔍 DiaryEntry - Debug state:', {
+    id,
+    loading,
+    entry: entry ? { id: entry.id, title: entry.title } : null,
+    user: user ? user.id : null
+  });
+
   useEffect(() => {
     const fetchEntry = async () => {
-      if (!id || !user) return;
+      if (!id) {
+        console.log('❌ DiaryEntry - No ID provided');
+        setLoading(false);
+        return;
+      }
+
+      if (!user) {
+        console.log('❌ DiaryEntry - No user logged in');
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
+        console.log('🔍 DiaryEntry - Fetching entry:', id);
         
         // First get the diary entry
         const { data: entryData, error: entryError } = await supabase
@@ -41,8 +60,11 @@ const DiaryEntryPage = () => {
           .single();
 
         if (entryError) {
+          console.error('❌ DiaryEntry - Error fetching entry:', entryError);
           throw entryError;
         }
+
+        console.log('✅ DiaryEntry - Entry found:', entryData?.id);
 
         if (entryData) {
           // Then get the profile data separately
@@ -53,13 +75,14 @@ const DiaryEntryPage = () => {
             .single();
 
           if (profileError) {
-            console.error('Error fetching profile:', profileError);
+            console.error('⚠️ DiaryEntry - Error fetching profile:', profileError);
             // Set entry with null profile if profile fetch fails
             setEntry({
               ...entryData,
               profiles: null
             } as DiaryEntryWithAuthor);
           } else {
+            console.log('✅ DiaryEntry - Profile found:', profileData?.email);
             setEntry({
               ...entryData,
               profiles: profileData
@@ -67,7 +90,7 @@ const DiaryEntryPage = () => {
           }
         }
       } catch (error: any) {
-        console.error('Erreur lors de la récupération de l\'entrée:', error);
+        console.error('💥 DiaryEntry - Critical error:', error);
         toast({
           title: 'Erreur',
           description: "Impossible de récupérer cette entrée de journal.",
