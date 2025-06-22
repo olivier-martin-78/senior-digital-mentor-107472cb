@@ -44,7 +44,7 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
           .from('diary_entries')
           .select(`
             *,
-            profiles:user_id(*)
+            profiles!diary_entries_user_id_fkey(*)
           `)
           .in('user_id', authorizedUserIds)
           .order('entry_date', { ascending: false });
