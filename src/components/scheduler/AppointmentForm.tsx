@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, User, X } from 'lucide-react';
+import { Calendar, Clock, User, X, FileText } from 'lucide-react';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import RecurringAppointmentForm from './RecurringAppointmentForm';
 import { addWeeks } from 'date-fns';
@@ -32,6 +31,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const { user } = useAuth();
   const [allowedClients, setAllowedClients] = useState<Client[]>([]);
   const [availableIntervenants, setAvailableIntervenants] = useState<Intervenant[]>([]);
+  const [hasInterventionReport, setHasInterventionReport] = useState(false);
+  const [interventionReportId, setInterventionReportId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     client_id: appointment?.client_id || '',
     intervenant_id: appointment?.intervenant_id || '',
@@ -47,7 +48,49 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   useEffect(() => {
     loadAllowedData();
-  }, [user, clients, intervenants]);
+    if (appointment) {
+      checkInterventionReport();
+    }
+  }, [user, clients, intervenants, appointment]);
+
+  const checkInterventionReport = async () => {
+    if (!appointment) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('intervention_reports')
+        .select('id')
+        .eq('appointment_id', appointment.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erreur lors de la vérification du rapport:', error);
+        return;
+      }
+
+      if (data) {
+        setHasInterventionReport(true);
+        setInterventionReportId(data.id);
+      } else {
+        setHasInterventionReport(false);
+        setInterventionReportId(null);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du rapport:', error);
+    }
+  };
+
+  const handleInterventionReport = () => {
+    if (!appointment) return;
+
+    if (hasInterventionReport && interventionReportId) {
+      // Ouvrir le rapport existant en mode lecture
+      window.open(`/intervention-report?report_id=${interventionReportId}`, '_blank');
+    } else {
+      // Créer un nouveau rapport
+      window.open(`/intervention-report?appointment_id=${appointment.id}`, '_blank');
+    }
+  };
 
   const loadAllowedData = async () => {
     if (!user) return;
@@ -564,6 +607,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   </div>
                 )}
               </>
+            )}
+
+            {/* Bouton pour gérer le rapport d'intervention - affiché seulement en mode modification */}
+            {appointment && (
+              <div className="pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleInterventionReport}
+                  className="w-full flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  {hasInterventionReport ? 'Voir le rapport' : 'Créer un rapport'}
+                </Button>
+              </div>
             )}
 
             <div className="flex gap-2 pt-4">
