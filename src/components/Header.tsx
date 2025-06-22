@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -12,36 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings, LogOut } from 'lucide-react';
-
-// Optional auth hook - safely handles unauthenticated users
-const useOptionalAuth = () => {
-  try {
-    const { useAuth } = require('@/contexts/AuthContext');
-    return useAuth();
-  } catch (error) {
-    // Return default values if auth context is not available
-    return {
-      user: null,
-      profile: null,
-      signOut: () => Promise.resolve(),
-      hasRole: () => false,
-    };
-  }
-};
-
-const useOptionalSubscription = () => {
-  try {
-    const { useSubscription } = require('@/hooks/useSubscription');
-    return useSubscription();
-  } catch (error) {
-    return { subscription: null };
-  }
-};
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, hasRole, profile } = useOptionalAuth();
-  const { subscription } = useOptionalSubscription();
+  const { user, signOut, hasRole, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -251,6 +225,7 @@ const Header = () => {
                           <Settings className="w-4 h-4" />
                           <span>Administration</span>
                         </DropdownMenuLabel>
+                        
                         <DropdownMenuItem asChild>
                           <Link to="/admin/users" className="flex items-center space-x-2">
                             <Users className="w-4 h-4" />
