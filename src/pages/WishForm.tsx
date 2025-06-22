@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -476,10 +477,54 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                         </FormItem>
                       )}
                     />
+                    
+                    <FormField
+                      control={form.control}
+                      name="requestType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quel est le type de demande ?</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez le type de demande" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="personal">Un souhait personnel</SelectItem>
+                              <SelectItem value="experience">Une expérience que je rêve de vivre</SelectItem>
+                              <SelectItem value="service">Un service que j'aimerais recevoir</SelectItem>
+                              <SelectItem value="other">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {watchRequestType === 'other' && (
+                      <FormField
+                        control={form.control}
+                        name="customRequestType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Précisez le type de demande</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Précisez votre type de demande" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 </div>
                 
-                {/* Section 2: Nature de la demande avec vignette - RÉPLICATION EXACTE DU BLOG */}
+                {/* Section 2: Nature de la demande avec vignette */}
                 <div className="space-y-6">
                   <h2 className="text-xl font-medium text-tranches-charcoal flex items-center">
                     <span className="bg-tranches-sage/10 text-tranches-sage rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">
@@ -545,50 +590,6 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
                       </div>
                     </div>
                   </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="requestType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quel est le type de demande ?</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionnez le type de demande" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="personal">Un souhait personnel</SelectItem>
-                            <SelectItem value="experience">Une expérience que je rêve de vivre</SelectItem>
-                            <SelectItem value="service">Un service que j'aimerais recevoir</SelectItem>
-                            <SelectItem value="other">Autre</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {watchRequestType === 'other' && (
-                    <FormField
-                      control={form.control}
-                      name="customRequestType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Précisez le type de demande</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Précisez votre type de demande" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
                   
                   <FormField
                     control={form.control}
