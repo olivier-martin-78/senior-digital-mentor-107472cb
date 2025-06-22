@@ -53,6 +53,7 @@ function App() {
           <Toaster />
           <Routes>
             {/* Public routes - accessible without authentication */}
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
@@ -63,7 +64,6 @@ function App() {
 
             {/* Fully protected routes - require authentication and account access */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Index />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/recent" element={<Recent />} />
               <Route path="/blog" element={<Blog />} />
