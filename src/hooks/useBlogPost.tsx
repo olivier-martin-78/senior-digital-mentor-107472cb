@@ -18,6 +18,12 @@ export const useBlogPost = (postId: string) => {
 
   useEffect(() => {
     const fetchPostDetails = async () => {
+      // Ne pas essayer de charger un post si l'ID est "new" (création d'un nouvel article)
+      if (postId === 'new') {
+        setLoading(false);
+        return;
+      }
+
       try {
         console.log('🔍 useBlogPost - CORRECTION - Début récupération post:', postId);
         

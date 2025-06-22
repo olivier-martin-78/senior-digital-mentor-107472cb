@@ -18,6 +18,7 @@ import Subscription from './pages/Subscription';
 import Recent from './pages/Recent';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+import BlogEditor from './pages/BlogEditor';
 import Diary from './pages/Diary';
 import DiaryEntry from './pages/DiaryEntry';
 import LifeStory from './pages/LifeStory';
@@ -63,6 +64,8 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/recent" element={<Recent />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/new" element={<BlogEditor />} />
+              <Route path="/blog/edit/:id" element={<BlogEditor />} />
               <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/diary" element={<Diary />} />
               <Route path="/diary/:id" element={<DiaryEntry />} />
