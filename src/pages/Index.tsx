@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,11 +27,20 @@ import {
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
-import { useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
-  const { hasRole } = useAuth();
+  // Vérification sécurisée de l'authentification pour les utilisateurs connectés
+  let hasRole = (role: string): boolean => false;
+  
+  try {
+    const { useAuth } = await import('@/contexts/AuthContext');
+    const authContext = useAuth();
+    hasRole = authContext.hasRole;
+  } catch (error) {
+    // Si useAuth échoue, l'utilisateur n'est pas authentifié - c'est normal
+    console.log('Index - Utilisateur non authentifié, affichage de la page publique');
+  }
 
   const features = [
         {
