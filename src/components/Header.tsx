@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,11 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, Calendar, FileText, Crown, Sparkles, Users, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, hasRole, profile } = useAuth();
+  const { user, signOut, hasRole, profile } = useOptionalAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
