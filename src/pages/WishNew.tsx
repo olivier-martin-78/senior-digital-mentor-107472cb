@@ -1,13 +1,35 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import WishForm from './WishForm';
-import { Navigate } from 'react-router-dom';
 
 const WishNew = () => {
-  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  // Vérification sécurisée de l'authentification
+  let user = null;
+  let isLoading = true;
+  
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    isLoading = authContext.isLoading;
+  } catch (error) {
+    // Si useAuth échoue, cela signifie que nous ne sommes pas dans un AuthProvider
+    console.log('WishNew - Pas dans un AuthProvider, redirection vers /auth');
+    isLoading = false;
+  }
 
   console.log('WishNew - État auth:', { user: !!user, isLoading });
+
+  // Redirection si pas d'authentification
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('WishNew - Redirection vers /auth (utilisateur non connecté)');
+      navigate('/auth', { replace: true });
+    }
+  }, [user, isLoading, navigate]);
 
   // Show loading while authentication is being checked
   if (isLoading) {
@@ -19,10 +41,9 @@ const WishNew = () => {
     );
   }
 
-  // Redirect to auth if user is not authenticated
+  // Si pas d'utilisateur, ne rien rendre (la redirection va s'effectuer)
   if (!user) {
-    console.log('WishNew - Redirection vers /auth (utilisateur non connecté)');
-    return <Navigate to="/auth" replace />;
+    return null;
   }
 
   console.log('WishNew - Rendu du formulaire');
