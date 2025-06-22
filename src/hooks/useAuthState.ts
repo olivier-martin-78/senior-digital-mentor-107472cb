@@ -38,9 +38,9 @@ export const useAuthState = () => {
             fetchUserData(currentSession.user.id);
           }, 0);
         } else {
+          // For anonymous users, clear data and stop loading immediately
           setProfile(null);
           setRoles([]);
-          // For anonymous users, we're not loading anymore
           setIsLoading(false);
         }
       }
@@ -56,6 +56,8 @@ export const useAuthState = () => {
         fetchUserData(currentSession.user.id);
       } else {
         // No session found, user is anonymous - this is normal
+        setProfile(null);
+        setRoles([]);
         setIsLoading(false);
       }
     }).catch(error => {
@@ -63,6 +65,8 @@ export const useAuthState = () => {
       // For anonymous access, this is expected
       setSession(null);
       setUser(null);
+      setProfile(null);
+      setRoles([]);
       setIsLoading(false);
     });
 
