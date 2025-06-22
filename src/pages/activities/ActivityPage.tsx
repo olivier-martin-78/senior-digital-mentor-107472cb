@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Header from '@/components/Header';
 import { ArrowLeft, Plus, Edit, Trash2, Gamepad2 } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';

@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -144,7 +142,6 @@ const ActivitiesOverview = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">

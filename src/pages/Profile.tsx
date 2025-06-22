@@ -1,350 +1,300 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { PostWithAuthor } from '@/types/supabase';
-import Header from '@/components/Header';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
+import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X } from 'lucide-react';
 
 const Profile = () => {
-  const { user, profile, isLoading, hasRole, roles } = useAuth();
+  const { session, user, isLoading, updatePassword, hasRole, refreshSession } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const [displayName, setDisplayName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || '');
+  const [lastName, setLastName] = useState(user?.user_metadata?.last_name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!session && !isLoading) {
       navigate('/auth');
     }
-
-    if (profile) {
-      setDisplayName(profile.display_name || '');
-      setAvatarUrl(profile.avatar_url || '');
-    }
-  }, [user, profile, isLoading, navigate]);
+  }, [session, isLoading, navigate]);
 
   useEffect(() => {
     if (user) {
-      fetchUserPosts();
+      setFirstName(user.user_metadata?.first_name || '');
+      setLastName(user.user_metadata?.last_name || '');
+      setEmail(user.email || '');
     }
   }, [user]);
 
-  const fetchUserPosts = async () => {
+  const handleUpdateProfile = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select(`
-          *,
-          profiles:author_id(*)
-        `)
-        .eq('author_id', user?.id)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
 
       if (error) {
         throw error;
       }
 
-      setUserPosts(data as PostWithAuthor[]);
-    } catch (error) {
-      console.error('Error fetching user posts:', error);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
-
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setUploading(true);
-
-      if (!event.target.files || event.target.files.length === 0) {
-        return;
-      }
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user?.id}-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('blog-media')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('blog-media')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(publicUrl);
-      toast({
-        title: "Avatar uploadé",
-        description: "Votre avatar a été téléchargé. N'oubliez pas d'enregistrer les modifications."
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue lors du téléchargement de l'avatar.",
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const updateProfile = async () => {
-    try {
-      setSaving(true);
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          display_name: displayName,
-          avatar_url: avatarUrl
-        })
-        .eq('id', user?.id);
-
-      if (error) {
-        throw error;
+      // Mettre à jour l'email localement
+      if (email !== user?.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email: email });
+        if (emailError) {
+          throw emailError;
+        }
       }
 
       toast({
         title: "Profil mis à jour",
-        description: "Vos informations ont été enregistrées avec succès."
+        description: "Votre profil a été mis à jour avec succès.",
       });
+      setIsEditing(false);
+      refreshSession(); // Forcer le rafraîchissement de la session
     } catch (error: any) {
+      console.error("Erreur lors de la mise à jour du profil:", error);
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la mise à jour du profil.",
-        variant: "destructive"
+        description: "Impossible de mettre à jour le profil: " + error.message,
+        variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const getInitials = (name: string | undefined | null) => {
-    if (!name) {
-      return user?.email?.substring(0, 2).toUpperCase() || '??';
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas.",
+        variant: "destructive",
+      });
+      return;
     }
-    return name
-      .split(' ')
-      .map(part => part.charAt(0).toUpperCase())
-      .join('')
-      .substring(0, 2);
-  };
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrateur';
-      case 'editor':
-        return 'Éditeur';
-      case 'professionnel':
-        return 'Professionnel';
-      case 'reader':
-        return 'Lecteur';
-      default:
-        return role;
-    }
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'editor':
-        return 'bg-blue-100 text-blue-800';
-      case 'professionnel':
-        return 'bg-green-100 text-green-800';
-      case 'reader':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    setLoading(true);
+    try {
+      await updatePassword(newPassword);
+      toast({
+        title: "Mot de passe mis à jour",
+        description: "Votre mot de passe a été mis à jour avec succès.",
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour du mot de passe:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le mot de passe: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
-        <div className="container mx-auto px-4 py-16 flex justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">Mon Profil</h1>
+  if (!session) {
+    return null;
+  }
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile">Informations</TabsTrigger>
-            <TabsTrigger value="posts">Mes Articles</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informations du profil</CardTitle>
-                <CardDescription>
-                  Mettez à jour vos informations personnelles et votre avatar.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-                  <div className="flex flex-col items-center gap-2">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
-                      <AvatarFallback className="text-2xl">{getInitials(displayName)}</AvatarFallback>
-                    </Avatar>
-                    
-                    <Label htmlFor="avatar" className="cursor-pointer text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md transition-colors">
-                      {uploading ? 'Téléchargement...' : 'Changer l\'avatar'}
-                      <input 
-                        id="avatar" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={uploadAvatar}
-                        disabled={uploading}
-                      />
-                    </Label>
-                  </div>
-                  
-                  <div className="w-full space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        value={user?.email || ''} 
-                        disabled 
-                      />
-                      <p className="text-xs text-gray-500">L'email ne peut pas être modifié.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Nom d'affichage</Label>
-                      <Input 
-                        id="displayName" 
-                        value={displayName} 
-                        onChange={e => setDisplayName(e.target.value)} 
-                        placeholder="Votre nom public"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Rôle{roles.length > 1 ? 's' : ''}</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {roles.map((role) => (
-                          <span 
-                            key={role}
-                            className={`px-3 py-1 rounded-full text-sm ${getRoleColor(role)}`}
-                          >
-                            {getRoleDisplayName(role)}
-                          </span>
-                        ))}
-                        {roles.length === 0 && (
-                          <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-                            Aucun rôle assigné
-                          </span>
-                        )}
-                      </div>
-                    </div>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-2xl font-medium flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Mon Profil
+            </CardTitle>
+            <Button variant="ghost" onClick={() => setIsEditing(!isEditing)}>
+              {isEditing ? (
+                <>
+                  <X className="w-4 h-4 mr-2" />
+                  Annuler
+                </>
+              ) : (
+                <>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Modifier
+                </>
+              )}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Informations personnelles</h2>
+                <p className="text-muted-foreground">
+                  Gérez vos informations personnelles et votre adresse e-mail.
+                </p>
+              </div>
+              <Separator />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Nom</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+              {isEditing && (
+                <Button onClick={handleUpdateProfile} disabled={loading}>
+                  {loading ? (
+                    <>
+                      <div className="animate-spin mr-2 rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Mise à jour...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Mettre à jour le profil
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-2xl font-medium flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Sécurité
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Changer le mot de passe</h2>
+                <p className="text-muted-foreground">
+                  Modifiez votre mot de passe pour sécuriser votre compte.
+                </p>
+              </div>
+              <Separator />
+              <div>
+                <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleChangePassword} disabled={loading}>
+                {loading ? (
+                  <>
+                    <div className="animate-spin mr-2 rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Mise à jour...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Mettre à jour le mot de passe
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-2xl font-medium flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Abonnement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Détails de l'abonnement</h2>
+                <p className="text-muted-foreground">
+                  Consultez les détails de votre abonnement actuel.
+                </p>
+              </div>
+              <Separator />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Statut</Label>
+                  <div className="pt-2">
+                    <Badge variant="outline">
+                      {hasRole('admin') ? 'Administrateur' : hasRole('editor') ? 'Éditeur' : 'Lecteur'}
+                    </Badge>
                   </div>
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button 
-                  onClick={updateProfile}
-                  disabled={saving}
-                  className="bg-tranches-sage hover:bg-tranches-sage/90"
-                >
-                  {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="posts">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mes Articles</CardTitle>
-                <CardDescription>
-                  Gérez les articles que vous avez créés.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingPosts ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin h-6 w-6 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
-                  </div>
-                ) : userPosts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">Vous n'avez pas encore créé d'articles.</p>
-                    {(hasRole('admin') || hasRole('editor')) && (
-                      <Button asChild className="bg-tranches-sage hover:bg-tranches-sage/90">
-                        <Link to="/blog/new">Créer un article</Link>
-                      </Button>
+                <div>
+                  <Label>Date d'inscription</Label>
+                  <div className="pt-2">
+                    {user?.created_at ? (
+                      new Date(user.created_at).toLocaleDateString()
+                    ) : (
+                      'N/A'
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {userPosts.map(post => (
-                      <div key={post.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-lg font-medium">
-                              <Link to={`/blog/${post.id}`} className="hover:text-tranches-sage transition-colors">
-                                {post.title}
-                              </Link>
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {new Date(post.created_at).toLocaleDateString('fr-FR')}
-                              {!post.published && ' • Brouillon'}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button asChild variant="outline" size="sm">
-                              <Link to={`/blog/edit/${post.id}`}>Modifier</Link>
-                            </Button>
-                            <Button asChild variant="outline" size="sm">
-                              <Link to={`/blog/${post.id}`}>Voir</Link>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-              {(hasRole('admin') || hasRole('editor')) && userPosts.length > 0 && (
-                <CardFooter className="justify-center">
-                  <Button asChild variant="outline">
-                    <Link to="/blog/new">Créer un nouvel article</Link>
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </div>
+              </div>
+              <Button variant="secondary" onClick={() => navigate('/auth')}>
+                <Crown className="w-4 h-4 mr-2" />
+                Gérer l'abonnement
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
