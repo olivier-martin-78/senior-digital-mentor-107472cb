@@ -145,9 +145,12 @@ export const useSubscription = () => {
       console.log('Customer portal response:', data);
       
       if (data?.url) {
-        // Sur mobile (iPad inclus), rediriger directement, sinon ouvrir dans un nouvel onglet
+        // Sur mobile (iPad inclus), utiliser une méthode plus robuste
         if (isMobileDevice()) {
-          window.location.href = data.url;
+          // Utiliser setTimeout pour contourner les blocages de popup
+          setTimeout(() => {
+            window.location.replace(data.url);
+          }, 100);
         } else {
           window.open(data.url, '_blank');
         }
