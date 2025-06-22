@@ -39,6 +39,7 @@ export const useAuthState = () => {
           }, 0);
         } else {
           // For anonymous users, clear data and stop loading immediately
+          console.log('useAuthState - User signed out, clearing data');
           setProfile(null);
           setRoles([]);
           setIsLoading(false);
@@ -56,6 +57,7 @@ export const useAuthState = () => {
         fetchUserData(currentSession.user.id);
       } else {
         // No session found, user is anonymous - this is normal
+        console.log('useAuthState - No session found, setting loading to false');
         setProfile(null);
         setRoles([]);
         setIsLoading(false);
@@ -63,6 +65,7 @@ export const useAuthState = () => {
     }).catch(error => {
       console.warn('Session check warning (non-fatal for anonymous users):', error);
       // For anonymous access, this is expected
+      console.log('useAuthState - Session check failed, clearing state');
       setSession(null);
       setUser(null);
       setProfile(null);
@@ -90,6 +93,7 @@ export const useAuthState = () => {
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
     } finally {
+      console.log('useAuthState - Setting loading to false after fetchUserData');
       setIsLoading(false);
     }
   };
