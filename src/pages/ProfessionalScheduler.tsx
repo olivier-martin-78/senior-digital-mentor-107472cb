@@ -63,7 +63,7 @@ const ProfessionalScheduler = () => {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
-        .eq('professional_id', user?.id)
+        .eq('created_by', user?.id)
         .order('last_name', { ascending: true });
 
       if (clientsError) {
@@ -73,7 +73,7 @@ const ProfessionalScheduler = () => {
       const { data: intervenantsData, error: intervenantsError } = await supabase
         .from('intervenants')
         .select('*')
-        .eq('professional_id', user?.id)
+        .eq('created_by', user?.id)
         .order('last_name', { ascending: true });
 
       if (intervenantsError) {
@@ -89,9 +89,10 @@ const ProfessionalScheduler = () => {
         throw caregiversError;
       }
 
-      // Transform appointments data to match our types
-      const transformedAppointments = (appointmentsData || []).map(appointment => ({
+      // Transform appointments data to match our types with proper type casting
+      const transformedAppointments: Appointment[] = (appointmentsData || []).map(appointment => ({
         ...appointment,
+        status: appointment.status as 'scheduled' | 'completed' | 'cancelled',
         caregivers: caregiversData?.filter(cg => cg.client_id === appointment.client_id) || []
       }));
 
@@ -143,9 +144,34 @@ const ProfessionalScheduler = () => {
     setSelectedAppointment(null);
   };
 
-  const handleAppointmentClick = (appointment: Appointment) => {
+  const handleAppointmentEdit = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsAppointmentFormOpen(true);
+  };
+
+  const handleAppointmentDelete = async (appointmentId: string, deleteReport?: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Rendez-vous supprimé avec succès',
+      });
+      
+      fetchData();
+    } catch (error: any) {
+      console.error('Error deleting appointment:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer le rendez-vous',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSaveAppointment = () => {
@@ -214,6 +240,7 @@ const ProfessionalScheduler = () => {
               Exporter
             </TabsTrigger>
           </TabsList>
+          
           <TabsContent value="calendar" className="space-y-4">
             <Card>
               <CardHeader>
@@ -231,12 +258,14 @@ const ProfessionalScheduler = () => {
                 />
                 <AppointmentCalendar
                   appointments={filteredAppointments}
-                  onAppointmentClick={handleAppointmentClick}
+                  onAppointmentEdit={handleAppointmentEdit}
+                  onAppointmentDelete={handleAppointmentDelete}
                   loading={loading}
                 />
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="managers">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
@@ -285,6 +314,7 @@ const ProfessionalScheduler = () => {
               </Card>
             </div>
           </TabsContent>
+          
           <TabsContent value="export">
             <Card>
               <CardHeader>
@@ -292,7 +322,7 @@ const ProfessionalScheduler = () => {
                 <CardDescription>Exportez vos rendez-vous au format CSV.</CardDescription>
               </CardHeader>
               <CardContent>
-                <AppointmentExporter />
+                <AppointmentExporter professionalId={user?.id || ''} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -310,7 +340,6 @@ const ProfessionalScheduler = () => {
 
         {isClientManagerOpen && (
           <ClientManager
-            onClose={handleCloseClientManager}
             clients={clients}
             setClients={setClients}
           />
@@ -318,7 +347,6 @@ const ProfessionalScheduler = () => {
 
         {isIntervenantManagerOpen && (
           <IntervenantManager
-            onClose={handleCloseIntervenantManager}
             intervenants={intervenants}
             setIntervenants={setIntervenants}
           />
@@ -326,7 +354,6 @@ const ProfessionalScheduler = () => {
 
         {isCaregiverManagerOpen && (
           <CaregiverManager
-            onClose={handleCloseCaregiverManager}
             caregivers={caregivers}
             setCaregivers={setCaregivers}
           />
