@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,11 +28,8 @@ import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
-import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 const Index = () => {
-  const { hasRole, isAuthenticated } = useOptionalAuth();
-
   const features = [
         {
       icon: <Users className="w-8 h-8 text-blue-400" />,
