@@ -26,7 +26,7 @@ interface SubscriptionPlan {
 const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { subscription, loading, createCheckout, checkSubscription } = useSubscription();
+  const { subscription, loading, createCheckout, checkSubscription, openCustomerPortal } = useSubscription();
   const { accountStatus, freeTrialEnd, hasAccess } = useAccountAccess();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -251,9 +251,10 @@ const Subscription = () => {
                 <Button
                   variant="outline"
                   className="border-tranches-dustyblue text-tranches-dustyblue hover:bg-tranches-dustyblue/10"
-                  onClick={() => window.open('https://billing.stripe.com/p/login/test_00000000000000', '_blank')}
+                  onClick={openCustomerPortal}
+                  disabled={loading}
                 >
-                  Gérer l'abonnement
+                  {loading ? 'Chargement...' : 'Gérer l\'abonnement'}
                 </Button>
               </CardContent>
             </Card>
