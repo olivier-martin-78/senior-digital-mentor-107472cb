@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +18,11 @@ export const useSubscription = () => {
   const { updateAccountStatuses } = useAccountAccess();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to detect mobile devices
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
 
   const checkSubscription = async () => {
     if (!session) {
@@ -79,8 +85,12 @@ export const useSubscription = () => {
 
       if (error) throw error;
       
-      // Ouvrir Stripe Checkout dans un nouvel onglet
-      window.open(data.url, '_blank');
+      // Sur mobile, rediriger directement, sinon ouvrir dans un nouvel onglet
+      if (isMobileDevice()) {
+        window.location.href = data.url;
+      } else {
+        window.open(data.url, '_blank');
+      }
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
@@ -135,8 +145,12 @@ export const useSubscription = () => {
       console.log('Customer portal response:', data);
       
       if (data?.url) {
-        // Ouvrir le portail client Stripe dans un nouvel onglet
-        window.open(data.url, '_blank');
+        // Sur mobile (iPad inclus), rediriger directement, sinon ouvrir dans un nouvel onglet
+        if (isMobileDevice()) {
+          window.location.href = data.url;
+        } else {
+          window.open(data.url, '_blank');
+        }
       } else {
         throw new Error('URL du portail client non reçue');
       }
