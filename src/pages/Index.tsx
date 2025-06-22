@@ -25,8 +25,7 @@ import {
 } from "@/components/ui/accordion";
 import PublicHeader from '@/components/PublicHeader';
 import HeroSection from '@/components/HeroSection';
-import Footer from '@/components/Footer';
-import { Toaster } from '@/components/ui/toaster';
+import PublicFooter from '@/components/PublicFooter';
 
 const Index = () => {
   const features = [
@@ -358,8 +357,7 @@ const Index = () => {
       </section>
 
       {/* Footer ajouté depuis blog-landing */}
-      <Footer />
-      <Toaster />    
+      <PublicFooter />   
     </div>
   );
 };
