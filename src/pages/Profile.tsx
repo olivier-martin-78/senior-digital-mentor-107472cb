@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X } from 'lucide-react';
 
 const Profile = () => {
-  const { session, user, isLoading, updatePassword, hasRole, refreshSession } = useAuth();
+  const { session, user, isLoading, hasRole } = useAuth();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -64,7 +65,6 @@ const Profile = () => {
         description: "Votre profil a été mis à jour avec succès.",
       });
       setIsEditing(false);
-      refreshSession(); // Forcer le rafraîchissement de la session
     } catch (error: any) {
       console.error("Erreur lors de la mise à jour du profil:", error);
       toast({
@@ -89,7 +89,14 @@ const Profile = () => {
 
     setLoading(true);
     try {
-      await updatePassword(newPassword);
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Mot de passe mis à jour",
         description: "Votre mot de passe a été mis à jour avec succès.",

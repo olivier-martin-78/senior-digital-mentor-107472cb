@@ -237,7 +237,6 @@ const ActivityPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Header />
         <div className="pt-20 px-4">
           <div className="container mx-auto">
             <div className="animate-pulse space-y-4">
@@ -256,7 +255,6 @@ const ActivityPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <div className="pt-20 px-4">
         <div className="container mx-auto">
           <Link 

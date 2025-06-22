@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +32,6 @@ const ProfessionalScheduler = () => {
   const [isCaregiverManagerOpen, setIsCaregiverManagerOpen] = useState(false);
   const [filterClientId, setFilterClientId] = useState<string | null>(null);
   const [filterIntervenantId, setFilterIntervenantId] = useState<string | null>(null);
-  const [filterCaregiverId, setFilterCaregiverId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,8 +51,7 @@ const ProfessionalScheduler = () => {
         .select(`
           *,
           clients (*),
-          intervenants (*),
-          caregivers (*)
+          intervenants (*)
         `)
         .eq('professional_id', user?.id)
         .order('start_time', { ascending: true });
@@ -84,14 +83,19 @@ const ProfessionalScheduler = () => {
       const { data: caregiversData, error: caregiversError } = await supabase
         .from('caregivers')
         .select('*')
-        .eq('professional_id', user?.id)
         .order('last_name', { ascending: true });
 
       if (caregiversError) {
         throw caregiversError;
       }
 
-      setAppointments(appointmentsData || []);
+      // Transform appointments data to match our types
+      const transformedAppointments = (appointmentsData || []).map(appointment => ({
+        ...appointment,
+        caregivers: caregiversData?.filter(cg => cg.client_id === appointment.client_id) || []
+      }));
+
+      setAppointments(transformedAppointments);
       setClients(clientsData || []);
       setIntervenants(intervenantsData || []);
       setCaregivers(caregiversData || []);
@@ -118,16 +122,12 @@ const ProfessionalScheduler = () => {
       filtered = filtered.filter(appointment => appointment.intervenant_id === filterIntervenantId);
     }
 
-    if (filterCaregiverId) {
-      filtered = filtered.filter(appointment => appointment.caregiver_id === filterCaregiverId);
-    }
-
     if (filterStatus) {
       filtered = filtered.filter(appointment => appointment.status === filterStatus);
     }
 
     return filtered;
-  }, [appointments, filterClientId, filterIntervenantId, filterCaregiverId, filterStatus]);
+  }, [appointments, filterClientId, filterIntervenantId, filterStatus]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -183,7 +183,6 @@ const ProfessionalScheduler = () => {
   const handleClearFilters = () => {
     setFilterClientId(null);
     setFilterIntervenantId(null);
-    setFilterCaregiverId(null);
     setFilterStatus(null);
   };
 
@@ -225,21 +224,13 @@ const ProfessionalScheduler = () => {
                 <SchedulerFilters
                   clients={clients}
                   intervenants={intervenants}
-                  caregivers={caregivers}
-                  filterClientId={filterClientId}
-                  setFilterClientId={setFilterClientId}
-                  filterIntervenantId={filterIntervenantId}
-                  setFilterIntervenantId={setFilterIntervenantId}
-                  filterCaregiverId={filterCaregiverId}
-                  setFilterCaregiverId={setFilterCaregiverId}
-                  filterStatus={filterStatus}
-                  setFilterStatus={setFilterStatus}
-                  onClearFilters={handleClearFilters}
+                  selectedClientId={filterClientId}
+                  selectedIntervenantId={filterIntervenantId}
+                  onClientChange={setFilterClientId}
+                  onIntervenantChange={setFilterIntervenantId}
                 />
                 <AppointmentCalendar
                   appointments={filteredAppointments}
-                  selectedDate={selectedDate}
-                  onDateChange={handleDateChange}
                   onAppointmentClick={handleAppointmentClick}
                   loading={loading}
                 />
@@ -301,7 +292,7 @@ const ProfessionalScheduler = () => {
                 <CardDescription>Exportez vos rendez-vous au format CSV.</CardDescription>
               </CardHeader>
               <CardContent>
-                <AppointmentExporter appointments={appointments} />
+                <AppointmentExporter />
               </CardContent>
             </Card>
           </TabsContent>
@@ -319,7 +310,6 @@ const ProfessionalScheduler = () => {
 
         {isClientManagerOpen && (
           <ClientManager
-            isOpen={isClientManagerOpen}
             onClose={handleCloseClientManager}
             clients={clients}
             setClients={setClients}
@@ -328,7 +318,6 @@ const ProfessionalScheduler = () => {
 
         {isIntervenantManagerOpen && (
           <IntervenantManager
-            isOpen={isIntervenantManagerOpen}
             onClose={handleCloseIntervenantManager}
             intervenants={intervenants}
             setIntervenants={setIntervenants}
@@ -337,7 +326,6 @@ const ProfessionalScheduler = () => {
 
         {isCaregiverManagerOpen && (
           <CaregiverManager
-            isOpen={isCaregiverManagerOpen}
             onClose={handleCloseCaregiverManager}
             caregivers={caregivers}
             setCaregivers={setCaregivers}
