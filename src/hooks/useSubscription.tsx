@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -116,6 +115,20 @@ export const useSubscription = () => {
 
       if (error) {
         console.error('Customer portal error:', error);
+        
+        // Essayer de parser la réponse d'erreur pour obtenir plus de détails
+        let errorMessage = 'Erreur inconnue';
+        
+        if (error.message?.includes('non-2xx status code')) {
+          // C'est probablement notre erreur de configuration Stripe
+          toast({
+            title: 'Configuration requise',
+            description: 'Le portail client Stripe doit être configuré dans le tableau de bord Stripe. Veuillez contacter le support.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
         throw error;
       }
       
@@ -130,29 +143,12 @@ export const useSubscription = () => {
     } catch (error: any) {
       console.error('Error opening customer portal:', error);
       
-      // Gérer les différents types d'erreurs
-      if (error?.context?.response?.error === 'stripe_portal_not_configured') {
-        toast({
-          title: 'Configuration requise',
-          description: 'Le portail client Stripe doit être configuré. Veuillez contacter le support.',
-          variant: 'destructive',
-        });
-      } else if (error?.context?.response?.message?.includes('No Stripe customer found')) {
-        toast({
-          title: 'Aucun abonnement trouvé',
-          description: 'Aucun abonnement actif n\'a été trouvé pour votre compte. Veuillez vous abonner d\'abord.',
-          variant: 'destructive',
-        });
-      } else {
-        // Message d'erreur plus spécifique
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        
-        toast({
-          title: 'Erreur d\'accès au portail',
-          description: `Impossible d'accéder à la gestion des abonnements: ${errorMessage}`,
-          variant: 'destructive',
-        });
-      }
+      // Message d'erreur générique pour les autres cas
+      toast({
+        title: 'Erreur d\'accès au portail',
+        description: 'Impossible d\'accéder à la gestion des abonnements. Le portail client Stripe doit être configuré. Veuillez contacter le support.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
