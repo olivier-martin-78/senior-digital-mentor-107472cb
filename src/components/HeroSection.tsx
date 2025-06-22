@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
   return (
@@ -17,20 +16,19 @@ const HeroSection = () => {
       
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
         <div className="max-w-3xl">
-
           <p className="text-xl md:text-2xl text-white mb-8">
             Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-tranches-charcoal hover:bg-tranches-cream" asChild>
-              <Link to="/blog">
+              <a href="/auth">
                 Partager mes souvenirs<br/>et mes photos sur un blog
-              </Link>
+              </a>
             </Button>
             <Button size="lg" className="bg-tranches-charcoal text-white hover:bg-tranches-warmgray" asChild>
-              <Link to="/activities/activities">
+              <a href="/auth">
                 Laissez-vous surprendre par ce que l'IA<br/>peut apporter à votre quotidien.
-              </Link>
+              </a>
             </Button>
           </div>
         </div>

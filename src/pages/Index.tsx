@@ -29,7 +29,7 @@ import PublicFooter from '@/components/PublicFooter';
 
 const Index = () => {
   const features = [
-        {
+    {
       icon: <Users className="w-8 h-8 text-blue-400" />,
       title: "Lien social",
       description: "Blog, albums photo, souhaits partagés avec vos proches",
@@ -337,10 +337,10 @@ const Index = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-white text-tranches-dustyblue hover:bg-gray-100 text-lg px-8 py-4" asChild>
-                <Link to="/auth">
+                <a href="/auth">
                   Essayer 15 jours gratuitement
                   <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
+                </a>
               </Button>
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-4 bg-tranches-charcoal">
                 Programmer une démonstration
