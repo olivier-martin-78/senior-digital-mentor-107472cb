@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,7 +115,6 @@ const Subscription = () => {
   if (plansLoading) {
     return (
       <div className="min-h-screen bg-white">
-        <Header />
         <div className="container mx-auto px-4 py-12">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -128,8 +126,6 @@ const Subscription = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
-      
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-serif text-tranches-charcoal mb-6">

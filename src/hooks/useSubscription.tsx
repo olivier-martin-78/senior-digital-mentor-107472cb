@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,9 +18,10 @@ export const useSubscription = () => {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper function to detect mobile devices
+  // Helper function to detect mobile devices (including iPad)
   const isMobileDevice = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // Detect iPad
   };
 
   const checkSubscription = async () => {
@@ -145,12 +145,10 @@ export const useSubscription = () => {
       console.log('Customer portal response:', data);
       
       if (data?.url) {
-        // Sur mobile (iPad inclus), utiliser une méthode plus robuste
+        // Pour iPad et autres appareils mobiles, utiliser une redirection directe et immédiate
         if (isMobileDevice()) {
-          // Utiliser setTimeout pour contourner les blocages de popup
-          setTimeout(() => {
-            window.location.replace(data.url);
-          }, 100);
+          // Forcer la redirection immédiate sans délai
+          window.location.assign(data.url);
         } else {
           window.open(data.url, '_blank');
         }
