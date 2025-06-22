@@ -2,14 +2,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { DiaryEntry } from '@/types/diary';
+import { DiaryEntryWithAuthor } from '@/types/diary';
 import { useToast } from '@/hooks/use-toast';
 import { useGroupPermissions } from '../useGroupPermissions';
 
 export const useDiaryEntries = (searchTerm: string = '', startDate: string = '', endDate: string = '', entryId?: string) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
@@ -42,7 +42,10 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
 
         let query = supabase
           .from('diary_entries')
-          .select('*')
+          .select(`
+            *,
+            profiles:user_id(*)
+          `)
           .in('user_id', authorizedUserIds)
           .order('entry_date', { ascending: false });
 
@@ -71,7 +74,7 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
         }
 
         console.log('✅ useDiaryEntries - Entrées récupérées:', data?.length || 0);
-        setEntries(data as DiaryEntry[]);
+        setEntries(data as DiaryEntryWithAuthor[]);
       } catch (error: any) {
         console.error('❌ useDiaryEntries - Erreur lors du chargement des entrées:', error);
         
