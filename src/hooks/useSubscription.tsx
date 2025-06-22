@@ -105,23 +105,49 @@ export const useSubscription = () => {
     }
 
     try {
+      setLoading(true);
+      console.log('Opening customer portal for user:', user?.email);
+      
       const { data, error } = await supabase.functions.invoke('customer-portal', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Customer portal error:', error);
+        throw error;
+      }
       
-      // Ouvrir le portail client Stripe dans un nouvel onglet
-      window.open(data.url, '_blank');
+      console.log('Customer portal response:', data);
+      
+      if (data?.url) {
+        // Ouvrir le portail client Stripe dans un nouvel onglet
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('URL du portail client non reçue');
+      }
     } catch (error) {
       console.error('Error opening customer portal:', error);
-      toast({
-        title: 'Service temporairement indisponible',
-        description: 'La gestion des abonnements n\'est pas encore configurée.',
-        variant: 'destructive',
-      });
+      
+      // Message d'erreur plus spécifique
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      
+      if (errorMessage.includes('No Stripe customer found')) {
+        toast({
+          title: 'Aucun abonnement trouvé',
+          description: 'Aucun abonnement actif n\'a été trouvé pour votre compte. Veuillez vous abonner d\'abord.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erreur d\'accès au portail',
+          description: `Impossible d'accéder à la gestion des abonnements: ${errorMessage}`,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
