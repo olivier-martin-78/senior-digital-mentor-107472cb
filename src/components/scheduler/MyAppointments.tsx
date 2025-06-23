@@ -65,13 +65,16 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <User className="w-4 h-4 text-gray-500" />
                 <span className="font-medium">
-                  {appointment.client?.first_name} {appointment.client?.last_name}
+                  Client: {appointment.client?.first_name} {appointment.client?.last_name}
                 </span>
               </div>
 
               {appointment.intervenant && (
-                <div className="text-sm text-gray-600 mb-2">
-                  Intervenant: {appointment.intervenant.first_name} {appointment.intervenant.last_name}
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm text-gray-600">
+                    Intervenant: {appointment.intervenant.first_name} {appointment.intervenant.last_name}
+                  </span>
                 </div>
               )}
 
