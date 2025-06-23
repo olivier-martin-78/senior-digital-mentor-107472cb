@@ -10,11 +10,12 @@ import ClientManager from '@/components/scheduler/ClientManager';
 import IntervenantManager from '@/components/scheduler/IntervenantManager';
 import CaregiverManager from '@/components/scheduler/CaregiverManager';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
+import MyAppointments from '@/components/scheduler/MyAppointments';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Appointment, Client, Intervenant, Caregiver } from '@/types/appointments';
-import { CalendarDays, Users, UserCheck, Phone, Plus, Download } from 'lucide-react';
+import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock } from 'lucide-react';
 
 const ProfessionalScheduler = () => {
   const { user } = useAuth();
@@ -244,6 +245,10 @@ const ProfessionalScheduler = () => {
               <CalendarDays className="w-4 h-4 mr-2" />
               Calendrier
             </TabsTrigger>
+            <TabsTrigger value="my-appointments" className="data-[state=active]:bg-tranches-mauve/50">
+              <Clock className="w-4 h-4 mr-2" />
+              Mes rendez-vous
+            </TabsTrigger>
             <TabsTrigger value="managers" className="data-[state=active]:bg-tranches-mauve/50">
               <Users className="w-4 h-4 mr-2" />
               Gestion des contacts
@@ -276,6 +281,13 @@ const ProfessionalScheduler = () => {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="my-appointments">
+            <MyAppointments
+              appointments={filteredAppointments}
+              onAppointmentEdit={handleAppointmentEdit}
+            />
           </TabsContent>
           
           <TabsContent value="managers">
