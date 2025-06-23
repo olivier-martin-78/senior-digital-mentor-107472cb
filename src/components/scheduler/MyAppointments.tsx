@@ -40,12 +40,29 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({
     const endDateTime = formatDateTime(appointment.end_time);
     const hasReport = appointment.intervention_report_id !== null;
 
+    // Gérer les noms du client et de l'intervenant
+    const clientName = appointment.client 
+      ? `${appointment.client.first_name || ''} ${appointment.client.last_name || ''}`.trim()
+      : 'Client non spécifié';
+    
+    const intervenantName = appointment.intervenant 
+      ? `${appointment.intervenant.first_name || ''} ${appointment.intervenant.last_name || ''}`.trim()
+      : null;
+
+    console.log('Appointment data:', {
+      id: appointment.id,
+      client: appointment.client,
+      intervenant: appointment.intervenant,
+      clientName,
+      intervenantName
+    });
+
     return (
       <Card key={appointment.id} className="mb-4">
         <CardContent className="p-4">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <Calendar className="w-4 h-4" />
                   {startDateTime.date}
@@ -62,25 +79,27 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({
                 )}
               </div>
               
-              <div className="flex items-center gap-2 mb-2">
-                <User className="w-4 h-4 text-gray-500" />
-                <span className="font-medium">
-                  Client: {appointment.client?.first_name} {appointment.client?.last_name}
-                </span>
-              </div>
-
-              {appointment.intervenant && (
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm text-gray-600">
-                    Intervenant: {appointment.intervenant.first_name} {appointment.intervenant.last_name}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium text-gray-900">
+                    Client: {clientName}
                   </span>
                 </div>
-              )}
+
+                {intervenantName && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-gray-700">
+                      Intervenant: {intervenantName}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {appointment.notes && (
-                <div className="text-sm text-gray-600">
-                  Notes: {appointment.notes}
+                <div className="text-sm text-gray-600 mt-2">
+                  <strong>Notes:</strong> {appointment.notes}
                 </div>
               )}
             </div>
