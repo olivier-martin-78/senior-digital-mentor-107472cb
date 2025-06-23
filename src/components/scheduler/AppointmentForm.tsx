@@ -58,7 +58,19 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const checkInterventionReport = async () => {
     if (!appointment) return;
 
+    console.log('🔍 Vérification du rapport pour le RDV:', appointment.id);
+    console.log('🔍 intervention_report_id depuis appointment:', appointment.intervention_report_id);
+
     try {
+      // Première vérification : utiliser intervention_report_id si présent
+      if (appointment.intervention_report_id) {
+        console.log('📋 Rapport trouvé via intervention_report_id:', appointment.intervention_report_id);
+        setHasInterventionReport(true);
+        setInterventionReportId(appointment.intervention_report_id);
+        return;
+      }
+
+      // Deuxième vérification : chercher par appointment_id
       const { data, error } = await supabase
         .from('intervention_reports')
         .select('id')
@@ -66,19 +78,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         .maybeSingle();
 
       if (error) {
-        console.error('Erreur lors de la vérification du rapport:', error);
+        console.error('❌ Erreur lors de la vérification du rapport:', error);
         return;
       }
 
       if (data) {
+        console.log('📋 Rapport trouvé via recherche par appointment_id:', data.id);
         setHasInterventionReport(true);
         setInterventionReportId(data.id);
       } else {
+        console.log('❌ Aucun rapport trouvé pour ce rendez-vous');
         setHasInterventionReport(false);
         setInterventionReportId(null);
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification du rapport:', error);
+      console.error('❌ Erreur lors de la vérification du rapport:', error);
     }
   };
 
@@ -87,9 +101,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
     if (hasInterventionReport && interventionReportId) {
       // Ouvrir le rapport existant en mode lecture dans l'onglet actuel
+      console.log('📖 Ouverture du rapport existant:', interventionReportId);
       navigate(`/intervention-report?report_id=${interventionReportId}`);
     } else {
       // Créer un nouveau rapport dans l'onglet actuel
+      console.log('📝 Création d\'un nouveau rapport pour RDV:', appointment.id);
       navigate(`/intervention-report?appointment_id=${appointment.id}`);
     }
   };
@@ -623,6 +639,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   <FileText className="h-4 w-4" />
                   {hasInterventionReport ? 'Voir le rapport' : 'Créer un rapport'}
                 </Button>
+                {/* Debug info pour diagnostiquer */}
+                <div className="text-xs text-gray-500 mt-1">
+                  Debug: hasReport={hasInterventionReport ? 'oui' : 'non'}, reportId={interventionReportId || 'aucun'}
+                </div>
               </div>
             )}
 
