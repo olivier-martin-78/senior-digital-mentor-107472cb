@@ -11,14 +11,17 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X } from 'lucide-react';
+import { useDisplayNameValidation } from '@/hooks/useDisplayNameValidation';
 
 const Profile = () => {
-  const { session, user, isLoading, hasRole } = useAuth();
+  const { session, user, isLoading, hasRole, profile } = useAuth();
   const navigate = useNavigate();
+  const { checkDisplayNameUniqueness, isChecking } = useDisplayNameValidation();
 
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || '');
   const [lastName, setLastName] = useState(user?.user_metadata?.last_name || '');
+  const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,9 +41,24 @@ const Profile = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || '');
+    }
+  }, [profile]);
+
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
+      // Vérifier l'unicité du nom public si il a changé
+      if (displayName !== profile?.display_name) {
+        const isUnique = await checkDisplayNameUniqueness(displayName);
+        if (!isUnique) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data, error } = await supabase.auth.updateUser({
         data: {
           first_name: firstName,
@@ -50,6 +68,18 @@ const Profile = () => {
 
       if (error) {
         throw error;
+      }
+
+      // Mettre à jour le nom public dans la table profiles
+      if (displayName !== profile?.display_name) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ display_name: displayName || null })
+          .eq('id', user?.id);
+
+        if (profileError) {
+          throw profileError;
+        }
       }
 
       // Mettre à jour l'email localement
@@ -180,6 +210,19 @@ const Profile = () => {
                 </div>
               </div>
               <div>
+                <Label htmlFor="displayName">Nom public</Label>
+                <Input
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  disabled={!isEditing || isChecking}
+                  placeholder="Nom affiché publiquement (optionnel)"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ce nom sera visible par les autres utilisateurs
+                </p>
+              </div>
+              <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -190,8 +233,8 @@ const Profile = () => {
                 />
               </div>
               {isEditing && (
-                <Button onClick={handleUpdateProfile} disabled={loading}>
-                  {loading ? (
+                <Button onClick={handleUpdateProfile} disabled={loading || isChecking}>
+                  {loading || isChecking ? (
                     <>
                       <div className="animate-spin mr-2 rounded-full h-4 w-4 border-b-2 border-white"></div>
                       Mise à jour...
@@ -254,50 +297,6 @@ const Profile = () => {
                     Mettre à jour le mot de passe
                   </>
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-8">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-2xl font-medium flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Abonnement
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Détails de l'abonnement</h2>
-                <p className="text-muted-foreground">
-                  Consultez les détails de votre abonnement actuel.
-                </p>
-              </div>
-              <Separator />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Statut</Label>
-                  <div className="pt-2">
-                    <Badge variant="outline">
-                      {hasRole('admin') ? 'Administrateur' : hasRole('editor') ? 'Éditeur' : 'Lecteur'}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <Label>Date d'inscription</Label>
-                  <div className="pt-2">
-                    {user?.created_at ? (
-                      new Date(user.created_at).toLocaleDateString()
-                    ) : (
-                      'N/A'
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button variant="secondary" onClick={() => navigate('/auth')}>
-                <Crown className="w-4 h-4 mr-2" />
-                Gérer l'abonnement
               </Button>
             </div>
           </CardContent>
