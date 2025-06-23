@@ -29,6 +29,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
           notes,
           status,
           clients:client_id (
+            id,
             first_name,
             last_name,
             address,
@@ -168,6 +169,95 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
         XLSX.utils.book_append_sheet(workbook, cancelledWorksheet, 'RDV Annulés');
       }
 
+      // 4. NOUVEAU : Onglets par client pour les rendez-vous terminés
+      if (completedAppointments.length > 0) {
+        // Grouper les rendez-vous terminés par client
+        const appointmentsByClient = completedAppointments.reduce((acc, appointment) => {
+          const client = appointment.clients;
+          const clientKey = client?.id || 'unknown';
+          const clientName = `${client?.first_name || ''} ${client?.last_name || ''}`.trim() || 'Client inconnu';
+          
+          if (!acc[clientKey]) {
+            acc[clientKey] = {
+              name: clientName,
+              appointments: []
+            };
+          }
+          
+          acc[clientKey].appointments.push(appointment);
+          return acc;
+        }, {} as Record<string, { name: string; appointments: any[] }>);
+
+        // Créer un onglet par client
+        Object.entries(appointmentsByClient).forEach(([clientId, clientData]) => {
+          const clientAppointments = clientData.appointments;
+          
+          // Préparer les données du client avec calculs financiers
+          const clientDataForExport = clientAppointments.map(appointment => {
+            const client = appointment.clients;
+            const startTime = new Date(appointment.start_time);
+            const endTime = new Date(appointment.end_time);
+            
+            // Calculer le nombre d'heures
+            const durationMs = endTime.getTime() - startTime.getTime();
+            const durationHours = durationMs / (1000 * 60 * 60);
+            
+            // Prix horaire du client
+            const hourlyRate = client?.hourly_rate || 0;
+            
+            // Total en euros
+            const total = durationHours * hourlyRate;
+
+            return {
+              'Date': format(startTime, 'dd/MM/yyyy'),
+              'Heure début': format(startTime, 'HH:mm'),
+              'Heure fin': format(endTime, 'HH:mm'),
+              'Nombre d\'heures': Number(durationHours.toFixed(2)),
+              'Prix horaire (€)': hourlyRate,
+              'Total (€)': Number(total.toFixed(2)),
+              'Notes': appointment.notes || ''
+            };
+          });
+
+          // Calculer le total global pour ce client
+          const totalHours = clientDataForExport.reduce((sum, apt) => sum + apt['Nombre d\'heures'], 0);
+          const totalAmount = clientDataForExport.reduce((sum, apt) => sum + apt['Total (€)'], 0);
+
+          // Ajouter une ligne de total
+          clientDataForExport.push({
+            'Date': '',
+            'Heure début': '',
+            'Heure fin': '',
+            'Nombre d\'heures': Number(totalHours.toFixed(2)),
+            'Prix horaire (€)': '',
+            'Total (€)': Number(totalAmount.toFixed(2)),
+            'Notes': 'TOTAL MENSUEL'
+          });
+
+          // Créer la feuille de calcul
+          const clientWorksheet = XLSX.utils.json_to_sheet(clientDataForExport);
+          
+          // Définir la largeur des colonnes
+          const clientColumnWidths = [
+            { wch: 12 }, // Date
+            { wch: 12 }, // Heure début
+            { wch: 12 }, // Heure fin
+            { wch: 15 }, // Nombre d'heures
+            { wch: 15 }, // Prix horaire
+            { wch: 12 }, // Total
+            { wch: 30 }  // Notes
+          ];
+          clientWorksheet['!cols'] = clientColumnWidths;
+
+          // Nom de l'onglet (limité à 31 caractères pour Excel)
+          const sheetName = clientData.name.length > 31 
+            ? clientData.name.substring(0, 28) + '...' 
+            : clientData.name;
+          
+          XLSX.utils.book_append_sheet(workbook, clientWorksheet, sheetName);
+        });
+      }
+
       // Générer le fichier Excel avec encodage UTF-8
       const excelBuffer = XLSX.write(workbook, { 
         bookType: 'xlsx', 
@@ -211,9 +301,12 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
         return sum + total;
       }, 0);
 
+      // Compter le nombre de clients uniques
+      const uniqueClients = new Set(completedAppointments.map(apt => apt.clients?.id)).size;
+
       toast({
         title: 'Export réussi',
-        description: `${completedAppointments.length} RDV terminés, ${scheduledAppointments.length} programmés, ${cancelledAppointments.length} annulés (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
+        description: `${completedAppointments.length} RDV terminés, ${scheduledAppointments.length} programmés, ${cancelledAppointments.length} annulés + ${uniqueClients} onglets clients (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
       });
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
