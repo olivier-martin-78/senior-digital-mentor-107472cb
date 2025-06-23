@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -294,7 +293,7 @@ const ProfessionalScheduler = () => {
           </TabsContent>
           
           <TabsContent value="managers">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -321,21 +320,6 @@ const ProfessionalScheduler = () => {
                 <CardContent>
                   <Button onClick={handleOpenIntervenantManager} className="w-full">
                     Gérer les Intervenants
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Aidants
-                  </CardTitle>
-                  <CardDescription>Gérez vos aidants.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleOpenCaregiverManager} className="w-full">
-                    Gérer les Aidants
                   </Button>
                 </CardContent>
               </Card>
