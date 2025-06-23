@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -51,8 +52,8 @@ const ProfessionalScheduler = () => {
         .from('appointments')
         .select(`
           *,
-          clients (*),
-          intervenants (*)
+          client:clients!appointments_client_id_fkey (*),
+          intervenant:intervenants!appointments_intervenant_id_fkey (*)
         `)
         .eq('professional_id', user?.id)
         .order('start_time', { ascending: true });
@@ -97,6 +98,8 @@ const ProfessionalScheduler = () => {
         recurrence_type: appointment.recurrence_type as 'weekly' | 'monthly' | undefined,
         caregivers: caregiversData?.filter(cg => cg.client_id === appointment.client_id) || []
       }));
+
+      console.log('Fetched appointments with relations:', transformedAppointments);
 
       setAppointments(transformedAppointments);
       setClients(clientsData || []);

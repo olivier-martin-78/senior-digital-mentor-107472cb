@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Edit2, FileText, Calendar, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import AuxiliaryAvatar from './AuxiliaryAvatar';
 
 interface MyAppointmentsProps {
   appointments: Appointment[];
@@ -89,7 +90,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({
 
                 {intervenantName && (
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-500" />
+                    <AuxiliaryAvatar name={intervenantName} size="sm" />
                     <span className="text-sm text-gray-700">
                       Intervenant: {intervenantName}
                     </span>
