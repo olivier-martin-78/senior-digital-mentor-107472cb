@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -145,6 +144,23 @@ const Profile = () => {
     }
   };
 
+  // Fonction pour obtenir le label du rôle
+  const getRoleLabel = () => {
+    if (hasRole('admin')) return 'Administrateur';
+    if (hasRole('professionnel')) return 'Professionnel';
+    if (hasRole('editor')) return 'Éditeur';
+    if (hasRole('reader')) return 'Lecteur';
+    return 'Utilisateur';
+  };
+
+  // Fonction pour obtenir la couleur du badge selon le rôle
+  const getRoleBadgeVariant = () => {
+    if (hasRole('admin')) return 'destructive';
+    if (hasRole('professionnel')) return 'default';
+    if (hasRole('editor')) return 'secondary';
+    return 'outline';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -231,6 +247,17 @@ const Profile = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={!isEditing}
                 />
+              </div>
+              <div>
+                <Label htmlFor="role">Rôle</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant={getRoleBadgeVariant()}>
+                    {getRoleLabel()}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Votre rôle détermine vos permissions dans l'application
+                </p>
               </div>
               {isEditing && (
                 <Button onClick={handleUpdateProfile} disabled={loading || isChecking}>

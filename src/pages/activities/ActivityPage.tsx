@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit, Trash2, Gamepad2 } from 'lucide-react';
@@ -269,7 +270,7 @@ const ActivityPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">
               {currentActivityType?.label}
             </h1>
-            {(hasRole('admin') || type === 'meditation' || type === 'exercises') && (
+            {(hasRole('admin') || type === 'meditation' || type === 'exercises' || type === 'games') && (
               <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Ajouter une activité
