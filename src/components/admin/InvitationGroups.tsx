@@ -209,6 +209,13 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         console.log('Utilisateur actuel:', user?.id);
         console.log('Est admin?', hasRole('admin'));
 
+        if (!user) {
+          console.log('❌ Aucun utilisateur connecté - arrêt du chargement');
+          setGroups([]);
+          setLoading(false);
+          return;
+        }
+
         // Modifier la requête pour charger soit tous les groupes (admin) soit les groupes de l'utilisateur
         let query = supabase
           .from('invitation_groups')
@@ -217,72 +224,110 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
         // Si l'utilisateur n'est pas admin, filtrer par ses groupes
         if (!hasRole('admin')) {
-          query = query.eq('created_by', user?.id);
+          query = query.eq('created_by', user.id);
         }
 
+        console.log('🔄 Exécution de la requête invitation_groups...');
         const { data: groupsData, error } = await query;
 
         console.log('Requête invitation_groups - Données récupérées:', groupsData);
         console.log('Requête invitation_groups - Erreur:', error);
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erreur lors de la requête invitation_groups:', error);
+          throw error;
+        }
+
+        if (!groupsData || groupsData.length === 0) {
+          console.log('✅ Aucun groupe trouvé - affichage du message approprié');
+          setGroups([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log(`🔄 Traitement de ${groupsData.length} groupe(s)...`);
 
         // Récupérer les informations des créateurs et compter les membres + invitations en attente
         const groupsWithDetails = await Promise.all(
-          (groupsData || []).map(async (group) => {
-            console.log(`Traitement du groupe: ${group.name} (${group.id})`);
+          groupsData.map(async (group, index) => {
+            console.log(`📋 Traitement du groupe ${index + 1}/${groupsData.length}: ${group.name} (${group.id})`);
             
-            // NOUVEAU: Synchroniser les invitations confirmées avant de compter
-            await syncPendingConfirmedInvitations(group.id);
-            
-            // Récupérer les infos du créateur
-            const { data: creatorData, error: creatorError } = await supabase
-              .from('profiles')
-              .select('display_name, email')
-              .eq('id', group.created_by)
-              .single();
+            try {
+              // Synchroniser les invitations confirmées avant de compter
+              console.log(`🔄 Synchronisation pour ${group.name}...`);
+              await syncPendingConfirmedInvitations(group.id);
+              
+              // Récupérer les infos du créateur
+              console.log(`👤 Récupération créateur pour ${group.name}...`);
+              const { data: creatorData, error: creatorError } = await supabase
+                .from('profiles')
+                .select('display_name, email')
+                .eq('id', group.created_by)
+                .single();
 
-            console.log(`Créateur du groupe ${group.name}:`, creatorData, 'Erreur:', creatorError);
+              console.log(`Créateur du groupe ${group.name}:`, creatorData, 'Erreur:', creatorError);
 
-            // Compter les membres confirmés
-            const { count: membersCount, error: countError } = await supabase
-              .from('group_members')
-              .select('*', { count: 'exact', head: true })
-              .eq('group_id', group.id);
+              // Compter les membres confirmés
+              console.log(`📊 Comptage membres pour ${group.name}...`);
+              const { count: membersCount, error: countError } = await supabase
+                .from('group_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('group_id', group.id);
 
-            console.log(`Nombre de membres confirmés pour ${group.name}:`, membersCount, 'Erreur:', countError);
+              console.log(`Nombre de membres confirmés pour ${group.name}:`, membersCount, 'Erreur:', countError);
 
-            // Compter les invitations en attente (non utilisées)
-            const { count: pendingCount, error: pendingError } = await supabase
-              .from('invitations')
-              .select('*', { count: 'exact', head: true })
-              .eq('group_id', group.id)
-              .is('used_at', null);
+              // Compter les invitations en attente (non utilisées)
+              console.log(`📧 Comptage invitations en attente pour ${group.name}...`);
+              const { count: pendingCount, error: pendingError } = await supabase
+                .from('invitations')
+                .select('*', { count: 'exact', head: true })
+                .eq('group_id', group.id)
+                .is('used_at', null);
 
-            console.log(`Nombre d'invitations en attente pour ${group.name}:`, pendingCount, 'Erreur:', pendingError);
+              console.log(`Nombre d'invitations en attente pour ${group.name}:`, pendingCount, 'Erreur:', pendingError);
 
-            return {
-              id: group.id,
-              name: group.name,
-              created_by: group.created_by,
-              created_at: group.created_at,
-              member_count: membersCount || 0,
-              pending_invitations_count: pendingCount || 0,
-              creator_name: creatorData?.display_name || creatorData?.email || 'Utilisateur inconnu'
-            };
+              const groupDetails = {
+                id: group.id,
+                name: group.name,
+                created_by: group.created_by,
+                created_at: group.created_at,
+                member_count: membersCount || 0,
+                pending_invitations_count: pendingCount || 0,
+                creator_name: creatorData?.display_name || creatorData?.email || 'Utilisateur inconnu'
+              };
+
+              console.log(`✅ Groupe ${group.name} traité avec succès:`, groupDetails);
+              return groupDetails;
+
+            } catch (groupError) {
+              console.error(`❌ Erreur lors du traitement du groupe ${group.name}:`, groupError);
+              // Retourner un groupe avec des valeurs par défaut en cas d'erreur
+              return {
+                id: group.id,
+                name: group.name,
+                created_by: group.created_by,
+                created_at: group.created_at,
+                member_count: 0,
+                pending_invitations_count: 0,
+                creator_name: 'Erreur lors du chargement'
+              };
+            }
           })
         );
 
-        console.log('Groupes avec détails finaux:', groupsWithDetails);
+        console.log('✅ Tous les groupes traités:', groupsWithDetails);
         setGroups(groupsWithDetails);
+
       } catch (error: any) {
-        console.error('Erreur lors du chargement des groupes:', error);
+        console.error('💥 Erreur critique lors du chargement des groupes:', error);
         toast({
           title: "Erreur",
           description: "Impossible de charger les groupes d'invitation",
           variant: "destructive"
         });
+        setGroups([]);
       } finally {
+        console.log('🏁 Fin du chargement des groupes');
         setLoading(false);
       }
     };
@@ -530,6 +575,21 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         });
       }
     };
+
+    useImperativeHandle(ref, () => ({
+      loadGroups
+    }));
+
+    useEffect(() => {
+      console.log('🔄 useEffect: Initialisation du composant InvitationGroups');
+      if (user) {
+        console.log('✅ Utilisateur présent, chargement des groupes');
+        loadGroups();
+      } else {
+        console.log('❌ Aucun utilisateur, arrêt du chargement');
+        setLoading(false);
+      }
+    }, [user, hasRole]);
 
     // Supprimer la vérification de rôle admin - accessible à tous les utilisateurs authentifiés
     if (!user) {
