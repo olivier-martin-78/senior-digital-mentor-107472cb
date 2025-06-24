@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Client, Appointment, Intervenant } from '@/types/appointments';
 import { InterventionFormData } from '../types/FormData';
+import { InterventionReport } from '@/types/intervention';
 
 export const useInterventionForm = () => {
   const { user } = useAuth();
@@ -171,37 +172,38 @@ export const useInterventionForm = () => {
       }
 
       if (report) {
+        const typedReport = report as InterventionReport;
         setFormData({
-          appointment_id: report.appointment_id || '',
-          patient_name: report.patient_name || '',
-          auxiliary_name: report.auxiliary_name || '',
-          date: report.date || '',
-          start_time: report.start_time || '',
-          end_time: report.end_time || '',
-          activities: Array.isArray(report.activities) ? report.activities : [],
-          activities_other: report.activities_other || '',
-          physical_state: Array.isArray(report.physical_state) ? report.physical_state : [],
-          physical_state_other: report.physical_state_other || '',
-          pain_location: report.pain_location || '',
-          mental_state: Array.isArray(report.mental_state) ? report.mental_state : [],
-          mental_state_change: report.mental_state_change || '',
-          hygiene: Array.isArray(report.hygiene) ? report.hygiene : [],
-          hygiene_comments: report.hygiene_comments || '',
-          appetite: report.appetite || '',
-          appetite_comments: report.appetite_comments || '',
-          hydration: report.hydration || '',
-          observations: report.observations || '',
-          follow_up: Array.isArray(report.follow_up) ? report.follow_up : [],
-          follow_up_other: report.follow_up_other || '',
-          hourly_rate: report.hourly_rate?.toString() || '',
-          media_files: Array.isArray(report.media_files) ? report.media_files : [],
-          audio_url: report.audio_url || '',
-          client_rating: report.client_rating || 0,
-          client_comments: report.client_comments || '',
+          appointment_id: typedReport.appointment_id || '',
+          patient_name: typedReport.patient_name || '',
+          auxiliary_name: typedReport.auxiliary_name || '',
+          date: typedReport.date || '',
+          start_time: typedReport.start_time || '',
+          end_time: typedReport.end_time || '',
+          activities: Array.isArray(typedReport.activities) ? typedReport.activities : [],
+          activities_other: typedReport.activities_other || '',
+          physical_state: Array.isArray(typedReport.physical_state) ? typedReport.physical_state : [],
+          physical_state_other: typedReport.physical_state_other || '',
+          pain_location: typedReport.pain_location || '',
+          mental_state: Array.isArray(typedReport.mental_state) ? typedReport.mental_state : [],
+          mental_state_change: typedReport.mental_state_change || '',
+          hygiene: Array.isArray(typedReport.hygiene) ? typedReport.hygiene : [],
+          hygiene_comments: typedReport.hygiene_comments || '',
+          appetite: typedReport.appetite || '',
+          appetite_comments: typedReport.appetite_comments || '',
+          hydration: typedReport.hydration || '',
+          observations: typedReport.observations || '',
+          follow_up: Array.isArray(typedReport.follow_up) ? typedReport.follow_up : [],
+          follow_up_other: typedReport.follow_up_other || '',
+          hourly_rate: typedReport.hourly_rate?.toString() || '',
+          media_files: Array.isArray(typedReport.media_files) ? typedReport.media_files : [],
+          audio_url: typedReport.audio_url || '',
+          client_rating: typedReport.client_rating || 0,
+          client_comments: typedReport.client_comments || '',
         });
 
-        if (report.appointment_id && appointmentsList.length > 0) {
-          const foundAppointment = appointmentsList.find(apt => apt.id === report.appointment_id);
+        if (typedReport.appointment_id && appointmentsList.length > 0) {
+          const foundAppointment = appointmentsList.find(apt => apt.id === typedReport.appointment_id);
           if (foundAppointment) {
             setSelectedAppointment(foundAppointment);
           }

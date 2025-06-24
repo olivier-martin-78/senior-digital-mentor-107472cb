@@ -27,6 +27,7 @@ export interface InterventionReport {
   media_files?: any[];
   client_rating?: number;
   client_comments?: string;
+  hourly_rate?: number;
   created_at: string;
   updated_at: string;
 }
