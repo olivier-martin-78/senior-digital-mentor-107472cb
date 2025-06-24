@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -93,7 +94,6 @@ export const uploadInterventionAudio = async ({
     if (error) {
       console.error("🔧 AUDIO_UPLOAD - Upload error details:", {
         message: error.message,
-        statusCode: error.statusCode,
         error: error
       });
       
