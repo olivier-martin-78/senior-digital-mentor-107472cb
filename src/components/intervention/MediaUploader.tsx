@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Image, File } from 'lucide-react';
@@ -24,7 +25,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
   // Initialiser avec les médias existants au premier rendu
   useEffect(() => {
-    if (existingMediaFiles.length > 0) {
+    if (existingMediaFiles.length > 0 && mediaFiles.length === 0) {
+      console.log('📸 MediaUploader - Initialisation avec médias existants:', existingMediaFiles);
       setMediaFiles(existingMediaFiles);
     }
   }, [existingMediaFiles]);
@@ -167,7 +169,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               <button
                 type="button"
                 onClick={() => removeFile(mediaFile.id)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 z-10"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -177,8 +179,16 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   src={mediaFile.preview}
                   alt={mediaFile.file?.name || 'Media'}
                   className="w-full h-20 object-cover rounded mb-2"
+                  onError={(e) => {
+                    console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
+                    // Fallback vers une icône fichier
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              ) : (
+              ) : null}
+              
+              {(mediaFile.type !== 'image' || !mediaFile.preview) && (
                 <div className="w-full h-20 bg-gray-200 rounded mb-2 flex items-center justify-center">
                   <File className="w-8 h-8 text-gray-400" />
                 </div>

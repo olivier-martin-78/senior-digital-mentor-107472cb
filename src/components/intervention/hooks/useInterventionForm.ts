@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -173,6 +172,22 @@ export const useInterventionForm = () => {
 
       if (report) {
         const typedReport = report as InterventionReport;
+        
+        // Convertir les media_files en format MediaFile pour le MediaUploader
+        let convertedMediaFiles: any[] = [];
+        if (typedReport.media_files && Array.isArray(typedReport.media_files)) {
+          convertedMediaFiles = typedReport.media_files.map((mediaItem: any) => ({
+            id: mediaItem.id || `${Date.now()}-${Math.random()}`,
+            file: {
+              name: mediaItem.name || 'Media',
+              size: mediaItem.size || 0,
+              type: mediaItem.type || 'image/jpeg'
+            },
+            preview: mediaItem.url || mediaItem.preview,
+            type: mediaItem.type?.startsWith('image/') ? 'image' : 'document'
+          }));
+        }
+
         setFormData({
           appointment_id: typedReport.appointment_id || '',
           patient_name: typedReport.patient_name || '',
@@ -196,7 +211,7 @@ export const useInterventionForm = () => {
           follow_up: Array.isArray(typedReport.follow_up) ? typedReport.follow_up : [],
           follow_up_other: typedReport.follow_up_other || '',
           hourly_rate: typedReport.hourly_rate?.toString() || '',
-          media_files: Array.isArray(typedReport.media_files) ? typedReport.media_files : [],
+          media_files: convertedMediaFiles,
           audio_url: typedReport.audio_url || '',
           client_rating: typedReport.client_rating || 0,
           client_comments: typedReport.client_comments || '',
