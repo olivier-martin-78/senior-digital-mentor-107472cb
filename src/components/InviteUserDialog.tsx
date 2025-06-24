@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,21 +51,60 @@ const InviteUserDialog = () => {
     checkExistingGroup();
   }, [user]);
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
+  const checkEmailCanBeInvited = async (email: string): Promise<{ canInvite: boolean, reason?: string }> => {
     try {
-      // Vérifier dans la table profiles (qui reflète auth.users)
-      const { data: existingProfile, error } = await supabase
+      // 1. Vérifier si l'email existe dans profiles
+      const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('email')
+        .select('id, email')
         .eq('email', email.trim())
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erreur lors de la vérification de l\'email:', error);
-        throw error;
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Erreur lors de la vérification du profil:', profileError);
+        throw profileError;
       }
 
-      return !!existingProfile;
+      // Si l'email n'existe pas du tout, on peut l'inviter
+      if (!existingProfile) {
+        return { canInvite: true };
+      }
+
+      const userId = existingProfile.id;
+
+      // 2. Vérifier si cette personne est déjà membre d'un groupe d'invitation
+      const { data: groupMemberships, error: membershipError } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', userId);
+
+      if (membershipError) {
+        console.error('Erreur lors de la vérification des groupes membres:', membershipError);
+        throw membershipError;
+      }
+
+      // 3. Vérifier si cette personne a créé un groupe d'invitation
+      const { data: createdGroups, error: createdGroupsError } = await supabase
+        .from('invitation_groups')
+        .select('id')
+        .eq('created_by', userId);
+
+      if (createdGroupsError) {
+        console.error('Erreur lors de la vérification des groupes créés:', createdGroupsError);
+        throw createdGroupsError;
+      }
+
+      // Si la personne est membre d'un groupe OU a créé un groupe, elle ne peut pas être invitée
+      if ((groupMemberships && groupMemberships.length > 0) || (createdGroups && createdGroups.length > 0)) {
+        return { 
+          canInvite: false, 
+          reason: `Un compte existe déjà avec l'adresse email ${email}. Cette adresse email peut se connecter directement et est déjà membre d'un autre cercle familial ou amical. Elle ne peut appartenir à plus d'un cercle à la fois.`
+        };
+      }
+
+      // La personne a un compte mais n'est dans aucun groupe, on peut l'inviter
+      return { canInvite: true };
+
     } catch (error: any) {
       console.error('Erreur lors de la vérification de l\'email:', error);
       throw error;
@@ -90,13 +128,13 @@ const InviteUserDialog = () => {
     console.log('Données du formulaire:', formData);
 
     try {
-      // Vérifier si l'email existe déjà
-      const emailExists = await checkEmailExists(formData.email);
+      // Vérifier si l'email peut être invité
+      const { canInvite, reason } = await checkEmailCanBeInvited(formData.email);
       
-      if (emailExists) {
+      if (!canInvite) {
         toast({
           title: "Email déjà utilisé",
-          description: `Un compte existe déjà avec l'adresse email ${formData.email}. Cette adresse email peut se connecter directement et est déjà membre d'un autre cercle familial ou amical. Elle ne peut appartenir à plus d'un cercle à la fois.`,
+          description: reason,
           variant: "destructive"
         });
         return;
