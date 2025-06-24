@@ -5,6 +5,8 @@ import { uploadInterventionAudio, deleteInterventionAudio } from './audio/AudioU
 import RecordingControls from './audio/RecordingControls';
 import PlaybackControls from './audio/PlaybackControls';
 import AudioPlayer from './audio/AudioPlayer';
+import ExpiredAudioMessage from './audio/ExpiredAudioMessage';
+import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
 
 interface VoiceRecorderForInterventionProps {
   onAudioChange: (audioBlob: Blob | null) => void;
@@ -21,10 +23,11 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
 }) => {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(isUploading);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [permanentAudioUrl, setPermanentAudioUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showExpiredMessage, setShowExpiredMessage] = useState(false);
 
   console.log("🎯 VOICE_RECORDER - Render:", {
     hasExistingUrl: !!existingAudioUrl,
@@ -33,17 +36,42 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     permanentAudioUrl,
     disabled,
     reportId,
-    uploadError
+    uploadError,
+    showExpiredMessage
   });
 
-  // Initialiser l'URL permanente avec l'URL existante
+  // Validation et nettoyage de l'URL existante au chargement
   useEffect(() => {
-    if (existingAudioUrl && existingAudioUrl.trim() !== '' && !existingAudioUrl.startsWith('blob:')) {
-      console.log("🎯 VOICE_RECORDER - Initializing with permanent audio URL:", existingAudioUrl);
-      setPermanentAudioUrl(existingAudioUrl.trim());
-      setUploadError(null);
-    }
-  }, [existingAudioUrl]);
+    const validateExistingAudio = async () => {
+      if (existingAudioUrl && reportId) {
+        const cleanedUrl = await validateAndCleanAudioUrl(existingAudioUrl, reportId);
+        
+        if (cleanedUrl) {
+          console.log("🎯 VOICE_RECORDER - URL audio valide:", cleanedUrl);
+          setPermanentAudioUrl(cleanedUrl);
+          setShowExpiredMessage(false);
+          setUploadError(null);
+        } else if (existingAudioUrl) {
+          console.log("🎯 VOICE_RECORDER - URL audio expirée détectée");
+          setPermanentAudioUrl(null);
+          setShowExpiredMessage(true);
+          setUploadError(null);
+        }
+      } else if (existingAudioUrl && !reportId) {
+        // Cas sans reportId : vérifier si l'URL est expirée
+        if (isExpiredBlobUrl(existingAudioUrl)) {
+          console.log("🎯 VOICE_RECORDER - URL blob expirée sans reportId");
+          setShowExpiredMessage(true);
+          setPermanentAudioUrl(null);
+        } else {
+          setPermanentAudioUrl(existingAudioUrl);
+          setShowExpiredMessage(false);
+        }
+      }
+    };
+
+    validateExistingAudio();
+  }, [existingAudioUrl, reportId]);
 
   const {
     isRecording,
@@ -58,6 +86,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
       console.log("🎯 VOICE_RECORDER - Recording complete:", { blobSize: blob.size, url, reportId });
       
       if (blob.size > 0) {
+        // Masquer le message d'expiration lors d'un nouvel enregistrement
+        setShowExpiredMessage(false);
+        
         // Si on a un reportId, toujours uploader vers le stockage permanent
         if (reportId && user) {
           setUploadError(null);
@@ -76,11 +107,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             onError: (error) => {
               console.error("🎯 VOICE_RECORDER - Upload failed:", error);
               setUploadError(`Erreur d'upload: ${error}`);
-              // En cas d'échec, on ne notifie PAS le parent avec le blob pour éviter les URLs temporaires
             }
           });
         } else {
-          // Sans reportId, on ne peut pas sauvegarder de manière permanente
           console.log("🎯 VOICE_RECORDER - No reportId, cannot save permanently");
           setUploadError("Impossible de sauvegarder sans ID de rapport");
         }
@@ -95,6 +124,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     console.log("🎯 VOICE_RECORDER - Starting new recording");
     setPermanentAudioUrl(null);
     setUploadError(null);
+    setShowExpiredMessage(false);
     startRecording();
   }, [startRecording]);
 
@@ -120,6 +150,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     setPermanentAudioUrl(null);
     setIsPlaying(false);
     setUploadError(null);
+    setShowExpiredMessage(false);
     onAudioChange(null);
   }, [clearRecording, onAudioChange, reportId, permanentAudioUrl, user]);
 
@@ -129,9 +160,6 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     
     console.log("🎯 VOICE_RECORDER - Play/Pause clicked, current state:", isPlaying);
     setHasUserInteracted(true);
-    
-    // L'état sera mis à jour par les événements de l'AudioPlayer
-    // On inverse juste l'état local pour déclencher l'action
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
@@ -175,6 +203,14 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         />
       </div>
 
+      {/* Message d'expiration */}
+      {showExpiredMessage && !isRecording && !currentAudioUrl && (
+        <ExpiredAudioMessage 
+          onRecordNew={handleStartRecording}
+          isRecording={isRecording}
+        />
+      )}
+
       {uploadError && (
         <div className="flex items-center justify-center text-red-600 bg-red-50 p-2 rounded">
           <span className="text-sm">{uploadError}</span>
@@ -188,7 +224,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         </div>
       )}
 
-      {!reportId && (
+      {!reportId && !showExpiredMessage && (
         <div className="flex items-center justify-center text-orange-600 bg-orange-50 p-2 rounded">
           <span className="text-sm">⚠️ Sauvegarde temporaire uniquement - Enregistrez d'abord le rapport</span>
         </div>

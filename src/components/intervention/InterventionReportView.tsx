@@ -10,6 +10,7 @@ import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin } from
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
+import { validateAndCleanAudioUrl } from '@/utils/audioUrlCleanup';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -73,6 +74,15 @@ const InterventionReportView = () => {
         appointmentId: reportData?.appointment_id
       });
 
+      // Valider et nettoyer l'URL audio si nécessaire
+      if (reportData?.audio_url) {
+        const validatedAudioUrl = await validateAndCleanAudioUrl(reportData.audio_url, reportId);
+        if (validatedAudioUrl !== reportData.audio_url) {
+          // L'URL a été nettoyée, recharger le rapport
+          reportData.audio_url = validatedAudioUrl;
+        }
+      }
+
       setReport(reportData);
 
       // Si le rapport a un appointment_id, charger le rendez-vous associé
@@ -125,7 +135,6 @@ const InterventionReportView = () => {
     try {
       setDeleting(true);
 
-      // Supprimer le rapport
       const { error } = await supabase
         .from('intervention_reports')
         .delete()
@@ -133,7 +142,6 @@ const InterventionReportView = () => {
 
       if (error) throw error;
 
-      // Si un rendez-vous était associé, retirer l'association
       if (report?.appointment_id) {
         await supabase
           .from('appointments')
@@ -166,7 +174,6 @@ const InterventionReportView = () => {
     return array.length > 0 ? array.join(', ') : 'Aucun';
   };
 
-  // États de chargement et d'erreur
   if (loading) {
     console.log('⏳ Affichage état de chargement');
     return (
@@ -247,7 +254,6 @@ const InterventionReportView = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Informations de base */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <h3 className="font-semibold flex items-center gap-2">
@@ -267,7 +273,6 @@ const InterventionReportView = () => {
             </div>
           </div>
 
-          {/* Rendez-vous associé */}
           {appointment && (
             <div className="space-y-2">
               <h3 className="font-semibold flex items-center gap-2">
@@ -288,7 +293,6 @@ const InterventionReportView = () => {
           )}
         </div>
 
-        {/* Activités */}
         <div className="space-y-2">
           <h3 className="font-semibold">Activités réalisées</h3>
           <div className="bg-gray-50 p-3 rounded-md">
@@ -299,7 +303,6 @@ const InterventionReportView = () => {
           </div>
         </div>
 
-        {/* État physique */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <h3 className="font-semibold">État physique</h3>
@@ -325,7 +328,6 @@ const InterventionReportView = () => {
           </div>
         </div>
 
-        {/* Hygiène */}
         <div className="space-y-2">
           <h3 className="font-semibold">Hygiène</h3>
           <div className="bg-gray-50 p-3 rounded-md">
@@ -336,7 +338,6 @@ const InterventionReportView = () => {
           </div>
         </div>
 
-        {/* Appétit et hydratation */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <h3 className="font-semibold">Appétit</h3>
@@ -356,7 +357,6 @@ const InterventionReportView = () => {
           </div>
         </div>
 
-        {/* Observations */}
         {report.observations && (
           <div className="space-y-2">
             <h3 className="font-semibold">Observations générales</h3>
@@ -366,7 +366,6 @@ const InterventionReportView = () => {
           </div>
         )}
 
-        {/* Suivi */}
         <div className="space-y-2">
           <h3 className="font-semibold">Suivi nécessaire</h3>
           <div className="bg-gray-50 p-3 rounded-md">
@@ -377,7 +376,6 @@ const InterventionReportView = () => {
           </div>
         </div>
 
-        {/* Médias */}
         {report.media_files && report.media_files.length > 0 && (
           <div className="space-y-2">
             <h3 className="font-semibold">Photos et documents</h3>
@@ -404,7 +402,7 @@ const InterventionReportView = () => {
           </div>
         )}
 
-        {/* Audio */}
+        {/* Audio avec validation */}
         {report.audio_url && (
           <div className="space-y-2">
             <h3 className="font-semibold">Enregistrement audio</h3>
