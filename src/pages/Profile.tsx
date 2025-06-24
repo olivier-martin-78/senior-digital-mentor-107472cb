@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X } from 'lucide-react';
+import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X, Camera } from 'lucide-react';
 import { useDisplayNameValidation } from '@/hooks/useDisplayNameValidation';
 
 const Profile = () => {
@@ -25,6 +26,8 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!session && !isLoading) {
@@ -45,6 +48,57 @@ const Profile = () => {
       setDisplayName(profile.display_name || '');
     }
   }, [profile]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (data?.publicUrl) {
+        // Mettre à jour l'URL de l'avatar dans le profil
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: data.publicUrl })
+          .eq('id', user.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        setAvatarUrl(data.publicUrl);
+        toast({
+          title: "Photo de profil mise à jour",
+          description: "Votre photo de profil a été mise à jour avec succès.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Erreur lors de l'upload de l'avatar:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour la photo de profil: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleUpdateProfile = async () => {
     setLoading(true);
@@ -205,6 +259,39 @@ const Profile = () => {
                 </p>
               </div>
               <Separator />
+              
+              {/* Photo de profil */}
+              <div className="flex items-center gap-4">
+                <Avatar className="w-20 h-20">
+                  <AvatarImage src={avatarUrl} alt="Photo de profil" />
+                  <AvatarFallback className="text-lg">
+                    {firstName?.charAt(0)}{lastName?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="avatar">Photo de profil</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="avatar"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="w-auto"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('avatar')?.click()}
+                      disabled={uploadingAvatar}
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      {uploadingAvatar ? 'Upload...' : 'Modifier photo'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">Prénom</Label>
