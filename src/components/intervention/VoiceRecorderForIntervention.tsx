@@ -25,22 +25,22 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const [isUploading, setIsUploading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(null);
+  const [permanentAudioUrl, setPermanentAudioUrl] = useState<string | null>(null);
 
   console.log("🎯 VOICE_RECORDER - Render:", {
     hasExistingUrl: !!existingAudioUrl,
     existingAudioUrl,
-    hasLocalUrl: !!localAudioUrl,
-    localAudioUrl,
+    hasPermanentUrl: !!permanentAudioUrl,
+    permanentAudioUrl,
     disabled,
     reportId
   });
 
-  // CORRECTION: Initialiser l'URL locale avec l'URL existante dès le montage
+  // Initialiser l'URL permanente avec l'URL existante (qui doit être l'URL Supabase)
   useEffect(() => {
-    if (existingAudioUrl && existingAudioUrl.trim() !== '') {
-      console.log("🎯 VOICE_RECORDER - Initializing with existing audio URL:", existingAudioUrl);
-      setLocalAudioUrl(existingAudioUrl.trim());
+    if (existingAudioUrl && existingAudioUrl.trim() !== '' && !existingAudioUrl.startsWith('blob:')) {
+      console.log("🎯 VOICE_RECORDER - Initializing with permanent audio URL:", existingAudioUrl);
+      setPermanentAudioUrl(existingAudioUrl.trim());
     }
   }, [existingAudioUrl]);
 
@@ -57,9 +57,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
       console.log("🎯 VOICE_RECORDER - Recording complete:", { blobSize: blob.size, url, reportId });
       
       if (blob.size > 0) {
-        setLocalAudioUrl(url);
-        
-        // Si on a un reportId, uploader immédiatement
+        // Si on a un reportId, uploader immédiatement et sauvegarder l'URL permanente
         if (reportId && user) {
           setIsUploading(true);
           try {
@@ -89,7 +87,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             const publicUrl = urlData.publicUrl;
             console.log("🎯 VOICE_RECORDER - Public URL:", publicUrl);
 
-            // Mettre à jour le rapport avec l'URL audio
+            // Mettre à jour le rapport avec l'URL audio permanente
             const { error: updateError } = await supabase
               .from('intervention_reports')
               .update({ audio_url: publicUrl })
@@ -100,8 +98,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
               throw updateError;
             }
 
-            console.log("🎯 VOICE_RECORDER - Report updated with audio URL");
-            setLocalAudioUrl(publicUrl);
+            console.log("🎯 VOICE_RECORDER - Report updated with permanent audio URL");
+            // Utiliser l'URL permanente au lieu de l'URL blob temporaire
+            setPermanentAudioUrl(publicUrl);
             onAudioChange(blob);
 
             toast({
@@ -140,7 +139,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     e.stopPropagation();
     
     console.log("🎯 VOICE_RECORDER - Starting new recording");
-    setLocalAudioUrl(null);
+    setPermanentAudioUrl(null);
     startRecording();
   }, [startRecording]);
 
@@ -158,8 +157,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     
     console.log("🎯 VOICE_RECORDER - Clearing recording");
     
-    // Si on a un reportId et une URL audio, supprimer de Supabase
-    if (reportId && localAudioUrl && user) {
+    // Si on a un reportId et une URL audio permanente, supprimer de Supabase
+    if (reportId && permanentAudioUrl && user) {
       try {
         // Mettre à jour le rapport pour enlever l'URL audio
         const { error: updateError } = await supabase
@@ -173,9 +172,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           console.log("🎯 VOICE_RECORDER - Audio URL cleared from report");
         }
 
-        // Optionnel: supprimer le fichier du storage
-        if (localAudioUrl.includes('intervention-audios')) {
-          const urlParts = localAudioUrl.split('/');
+        // Supprimer le fichier du storage si c'est une URL Supabase
+        if (permanentAudioUrl.includes('intervention-audios')) {
+          const urlParts = permanentAudioUrl.split('/');
           const fileName = urlParts[urlParts.length - 1];
           const filePath = `interventions/${user.id}/${fileName}`;
           
@@ -195,11 +194,11 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }
     
     clearRecording();
-    setLocalAudioUrl(null);
+    setPermanentAudioUrl(null);
     setIsPlaying(false);
     
     onAudioChange(null);
-  }, [clearRecording, onAudioChange, reportId, localAudioUrl, user]);
+  }, [clearRecording, onAudioChange, reportId, permanentAudioUrl, user]);
 
   const handlePlayPause = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -235,8 +234,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }
   }, [isPlaying, hasUserInteracted]);
 
-  // CORRECTION: Utiliser l'URL locale d'abord, puis l'URL d'enregistrement, puis l'URL existante
-  const currentAudioUrl = localAudioUrl || audioUrl || existingAudioUrl;
+  // Utiliser l'URL permanente en priorité, puis l'URL d'enregistrement temporaire
+  const currentAudioUrl = permanentAudioUrl || audioUrl;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

@@ -39,7 +39,8 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
       duration,
       readOnly,
       hasError,
-      isLoading
+      isLoading,
+      isBlobUrl: audioUrl.startsWith('blob:')
     });
   }
 
@@ -107,7 +108,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         setHasError(true);
         toast({
           title: "Erreur de lecture",
-          description: "Impossible de lire l'enregistrement audio",
+          description: "Impossible de lire l'enregistrement audio. Le fichier pourrait être endommagé ou indisponible.",
           variant: "destructive",
         });
       });
@@ -169,6 +170,10 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     return null;
   }
 
+  // Vérifier si c'est une URL blob expirée
+  const isBlobUrl = audioUrl.startsWith('blob:');
+  const showBlobWarning = isBlobUrl && hasError;
+
   return (
     <div className="border rounded-md p-4 bg-gray-50">
       <div className="text-sm font-medium mb-3">Enregistrement vocal</div>
@@ -180,7 +185,23 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
         style={{ display: 'none' }}
       />
       
-      {hasError ? (
+      {showBlobWarning ? (
+        <div className="text-center py-4">
+          <p className="text-red-500 text-sm mb-2">Enregistrement temporaire expiré</p>
+          <p className="text-xs text-gray-500">L'enregistrement était temporaire et n'est plus disponible. Veuillez créer un nouvel enregistrement.</p>
+          {!readOnly && onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              className="mt-2 text-red-500 hover:text-red-700"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Supprimer
+            </Button>
+          )}
+        </div>
+      ) : hasError ? (
         <div className="text-center py-4">
           <p className="text-red-500 text-sm">Impossible de charger l'enregistrement</p>
           {shouldLog && (
@@ -235,6 +256,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
               size="sm"
               onClick={handleExport}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              disabled={isBlobUrl}
             >
               <Download className="w-4 h-4 mr-1" />
               Exporter
