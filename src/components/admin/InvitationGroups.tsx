@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,10 +57,18 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         console.log('Utilisateur actuel:', user?.id);
         console.log('Est admin?', hasRole('admin'));
 
-        const { data: groupsData, error } = await supabase
+        // Modifier la requête pour charger soit tous les groupes (admin) soit les groupes de l'utilisateur
+        let query = supabase
           .from('invitation_groups')
           .select('id, name, created_by, created_at')
           .order('created_at', { ascending: false });
+
+        // Si l'utilisateur n'est pas admin, filtrer par ses groupes
+        if (!hasRole('admin')) {
+          query = query.eq('created_by', user?.id);
+        }
+
+        const { data: groupsData, error } = await query;
 
         console.log('Requête invitation_groups - Données récupérées:', groupsData);
         console.log('Requête invitation_groups - Erreur:', error);
@@ -252,11 +261,12 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
       }
     };
 
-    if (!hasRole('admin')) {
+    // Supprimer la vérification de rôle admin - accessible à tous les utilisateurs authentifiés
+    if (!user) {
       return (
         <Card>
           <CardContent className="text-center py-8">
-            <p className="text-gray-500">Accès administrateur requis</p>
+            <p className="text-gray-500">Vous devez être connecté pour accéder à cette fonctionnalité</p>
           </CardContent>
         </Card>
       );
@@ -322,42 +332,45 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Membres du groupe : {selectedGroup.name}</span>
-                <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Ajouter un membre
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Ajouter un membre au groupe</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="memberEmail">Email de l'utilisateur</Label>
-                        <Input
-                          id="memberEmail"
-                          type="email"
-                          value={newMemberEmail}
-                          onChange={(e) => setNewMemberEmail(e.target.value)}
-                          placeholder="email@exemple.com"
-                        />
+                {/* Permettre l'ajout de membres seulement si l'utilisateur est le créateur du groupe ou admin */}
+                {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
+                  <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Ajouter un membre
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un membre au groupe</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="memberEmail">Email de l'utilisateur</Label>
+                          <Input
+                            id="memberEmail"
+                            type="email"
+                            value={newMemberEmail}
+                            onChange={(e) => setNewMemberEmail(e.target.value)}
+                            placeholder="email@exemple.com"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setAddMemberDialogOpen(false)}
+                          >
+                            Annuler
+                          </Button>
+                          <Button onClick={addMemberToGroup}>
+                            Ajouter
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setAddMemberDialogOpen(false)}
-                        >
-                          Annuler
-                        </Button>
-                        <Button onClick={addMemberToGroup}>
-                          Ajouter
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -381,14 +394,17 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
                           </span>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMemberFromGroup(member.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Permettre la suppression seulement si l'utilisateur est le créateur du groupe ou admin */}
+                      {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMemberFromGroup(member.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
