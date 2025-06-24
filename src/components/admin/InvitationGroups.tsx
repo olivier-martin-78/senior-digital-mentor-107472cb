@@ -107,7 +107,7 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
             console.log(`Nombre de membres confirmés pour ${group.name}:`, membersCount, 'Erreur:', countError);
 
-            // Compter les invitations en attente
+            // Compter les invitations en attente (non utilisées)
             const { count: pendingCount, error: pendingError } = await supabase
               .from('invitations')
               .select('*', { count: 'exact', head: true })
@@ -152,43 +152,55 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
     const loadGroupMembers = async (groupId: string) => {
       try {
-        // Charger les membres confirmés
+        console.log('=== DEBUG loadGroupMembers: Début du chargement des membres ===');
+        console.log('Group ID:', groupId);
+
+        // Charger les membres confirmés du groupe
         const { data: membersData, error: membersError } = await supabase
           .from('group_members')
-          .select('id, user_id, role, added_at')
+          .select(`
+            id, 
+            user_id, 
+            role, 
+            added_at,
+            profiles!inner(
+              display_name, 
+              email
+            )
+          `)
           .eq('group_id', groupId)
           .order('added_at', { ascending: false });
 
+        console.log('Membres récupérés:', membersData);
+        console.log('Erreur membres:', membersError);
+
         if (membersError) throw membersError;
 
-        // Récupérer les profils des membres
-        const membersWithProfiles = await Promise.all(
-          (membersData || []).map(async (member) => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('display_name, email')
-              .eq('id', member.user_id)
-              .single();
+        // Transformer les données pour correspondre à l'interface
+        const transformedMembers = (membersData || []).map(member => ({
+          id: member.id,
+          user_id: member.user_id,
+          role: member.role,
+          added_at: member.added_at,
+          profiles: {
+            display_name: member.profiles?.display_name || null,
+            email: member.profiles?.email || 'Email inconnu'
+          }
+        }));
 
-            return {
-              ...member,
-              profiles: {
-                display_name: profileData?.display_name || null,
-                email: profileData?.email || 'Email inconnu'
-              }
-            };
-          })
-        );
+        console.log('Membres transformés:', transformedMembers);
+        setGroupMembers(transformedMembers);
 
-        setGroupMembers(membersWithProfiles);
-
-        // Charger les invitations en attente
+        // Charger les invitations en attente (non utilisées)
         const { data: invitationsData, error: invitationsError } = await supabase
           .from('invitations')
           .select('id, email, first_name, last_name, created_at')
           .eq('group_id', groupId)
           .is('used_at', null)
           .order('created_at', { ascending: false });
+
+        console.log('Invitations en attente récupérées:', invitationsData);
+        console.log('Erreur invitations:', invitationsError);
 
         if (invitationsError) throw invitationsError;
 
@@ -198,6 +210,7 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
           status: 'pending'
         }));
 
+        console.log('Invitations en attente avec statut:', pendingInvitationsWithStatus);
         setPendingInvitations(pendingInvitationsWithStatus);
 
       } catch (error: any) {
