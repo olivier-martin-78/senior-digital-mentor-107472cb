@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Users } from 'lucide-react';
+import { Trash2, UserPlus, Users, Clock, Mail } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface InvitationGroup {
@@ -17,6 +16,7 @@ interface InvitationGroup {
   created_by: string;
   created_at: string;
   member_count: number;
+  pending_invitations_count: number;
   creator_name: string;
 }
 
@@ -29,6 +29,15 @@ interface GroupMember {
     display_name: string | null;
     email: string;
   };
+}
+
+interface PendingInvitation {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  created_at: string;
+  status: string;
 }
 
 interface InvitationGroupsProps {
@@ -46,6 +55,7 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
     const [groups, setGroups] = useState<InvitationGroup[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<InvitationGroup | null>(null);
     const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+    const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
     const [loading, setLoading] = useState(true);
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
@@ -75,7 +85,7 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
         if (error) throw error;
 
-        // Récupérer les informations des créateurs et compter les membres
+        // Récupérer les informations des créateurs et compter les membres + invitations en attente
         const groupsWithDetails = await Promise.all(
           (groupsData || []).map(async (group) => {
             console.log(`Traitement du groupe: ${group.name} (${group.id})`);
@@ -89,20 +99,30 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
             console.log(`Créateur du groupe ${group.name}:`, creatorData, 'Erreur:', creatorError);
 
-            // Compter les membres
-            const { count, error: countError } = await supabase
+            // Compter les membres confirmés
+            const { count: membersCount, error: countError } = await supabase
               .from('group_members')
               .select('*', { count: 'exact', head: true })
               .eq('group_id', group.id);
 
-            console.log(`Nombre de membres pour ${group.name}:`, count, 'Erreur:', countError);
+            console.log(`Nombre de membres confirmés pour ${group.name}:`, membersCount, 'Erreur:', countError);
+
+            // Compter les invitations en attente
+            const { count: pendingCount, error: pendingError } = await supabase
+              .from('invitations')
+              .select('*', { count: 'exact', head: true })
+              .eq('group_id', group.id)
+              .is('used_at', null);
+
+            console.log(`Nombre d'invitations en attente pour ${group.name}:`, pendingCount, 'Erreur:', pendingError);
 
             return {
               id: group.id,
               name: group.name,
               created_by: group.created_by,
               created_at: group.created_at,
-              member_count: count || 0,
+              member_count: membersCount || 0,
+              pending_invitations_count: pendingCount || 0,
               creator_name: creatorData?.display_name || creatorData?.email || 'Utilisateur inconnu'
             };
           })
@@ -132,13 +152,14 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
     const loadGroupMembers = async (groupId: string) => {
       try {
-        const { data: membersData, error } = await supabase
+        // Charger les membres confirmés
+        const { data: membersData, error: membersError } = await supabase
           .from('group_members')
           .select('id, user_id, role, added_at')
           .eq('group_id', groupId)
           .order('added_at', { ascending: false });
 
-        if (error) throw error;
+        if (membersError) throw membersError;
 
         // Récupérer les profils des membres
         const membersWithProfiles = await Promise.all(
@@ -160,6 +181,25 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         );
 
         setGroupMembers(membersWithProfiles);
+
+        // Charger les invitations en attente
+        const { data: invitationsData, error: invitationsError } = await supabase
+          .from('invitations')
+          .select('id, email, first_name, last_name, created_at')
+          .eq('group_id', groupId)
+          .is('used_at', null)
+          .order('created_at', { ascending: false });
+
+        if (invitationsError) throw invitationsError;
+
+        // Ajouter le statut pour les invitations en attente
+        const pendingInvitationsWithStatus = (invitationsData || []).map(invitation => ({
+          ...invitation,
+          status: 'pending'
+        }));
+
+        setPendingInvitations(pendingInvitationsWithStatus);
+
       } catch (error: any) {
         console.error('Erreur lors du chargement des membres:', error);
         toast({
@@ -261,6 +301,35 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
       }
     };
 
+    const removeInvitation = async (invitationId: string) => {
+      if (!selectedGroup) return;
+
+      try {
+        const { error } = await supabase
+          .from('invitations')
+          .delete()
+          .eq('id', invitationId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Invitation supprimée",
+          description: "L'invitation a été supprimée avec succès"
+        });
+
+        loadGroupMembers(selectedGroup.id);
+        loadGroups(); // Recharger pour mettre à jour le compteur
+        if (onDataChange) onDataChange();
+      } catch (error: any) {
+        console.error('Erreur lors de la suppression de l\'invitation:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer l'invitation",
+          variant: "destructive"
+        });
+      }
+    };
+
     // Supprimer la vérification de rôle admin - accessible à tous les utilisateurs authentifiés
     if (!user) {
       return (
@@ -298,10 +367,18 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span className="text-lg">{group.name}</span>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {group.member_count}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {group.member_count}
+                    </Badge>
+                    {group.pending_invitations_count > 0 && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {group.pending_invitations_count}
+                      </Badge>
+                    )}
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -311,6 +388,11 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(group.created_at).toLocaleDateString('fr-FR')}
                 </p>
+                {group.pending_invitations_count > 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    {group.pending_invitations_count} invitation(s) en attente
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -374,39 +456,92 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {groupMembers.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Aucun membre dans ce groupe</p>
+              {groupMembers.length === 0 && pendingInvitations.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Aucun membre ni invitation en attente dans ce groupe</p>
               ) : (
-                <div className="space-y-2">
-                  {groupMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">
-                          {member.profiles.display_name || member.profiles.email}
-                        </p>
-                        <p className="text-sm text-gray-500">{member.profiles.email}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                            {member.role === 'admin' ? 'Administrateur' : 'Invité'}
-                          </Badge>
-                          <span className="text-xs text-gray-400">
-                            Ajouté le {new Date(member.added_at).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
+                <div className="space-y-4">
+                  {/* Membres confirmés */}
+                  {groupMembers.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Membres actifs ({groupMembers.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {groupMembers.map((member) => (
+                          <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                            <div>
+                              <p className="font-medium">
+                                {member.profiles.display_name || member.profiles.email}
+                              </p>
+                              <p className="text-sm text-gray-500">{member.profiles.email}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                                  {member.role === 'admin' ? 'Administrateur' : 'Invité'}
+                                </Badge>
+                                <span className="text-xs text-gray-400">
+                                  Ajouté le {new Date(member.added_at).toLocaleDateString('fr-FR')}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Permettre la suppression seulement si l'utilisateur est le créateur du groupe ou admin */}
+                            {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMemberFromGroup(member.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      {/* Permettre la suppression seulement si l'utilisateur est le créateur du groupe ou admin */}
-                      {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMemberFromGroup(member.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
-                  ))}
+                  )}
+
+                  {/* Invitations en attente */}
+                  {pendingInvitations.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Invitations en attente ({pendingInvitations.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {pendingInvitations.map((invitation) => (
+                          <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg bg-orange-50">
+                            <div>
+                              <p className="font-medium">
+                                {invitation.first_name} {invitation.last_name}
+                              </p>
+                              <p className="text-sm text-gray-500">{invitation.email}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-orange-600 border-orange-300">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  En attente
+                                </Badge>
+                                <span className="text-xs text-gray-400">
+                                  Invité le {new Date(invitation.created_at).toLocaleDateString('fr-FR')}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Permettre la suppression seulement si l'utilisateur est le créateur du groupe ou admin */}
+                            {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeInvitation(invitation.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
