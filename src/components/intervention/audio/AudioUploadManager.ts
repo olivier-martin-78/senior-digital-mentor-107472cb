@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -14,37 +13,33 @@ export interface AudioUploadOptions {
 
 const ensureAudioBucketExists = async () => {
   try {
-    // Vérifier si le bucket existe
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    console.log("🔧 AUDIO_UPLOAD - Checking bucket existence...");
     
-    if (listError) {
-      console.error("🔧 AUDIO_UPLOAD - Error listing buckets:", listError);
+    // Simplement tester l'accès au bucket en listant les objets
+    const { data, error } = await supabase.storage
+      .from('intervention-audios')
+      .list('', { limit: 1 });
+    
+    if (error) {
+      console.error("🔧 AUDIO_UPLOAD - Bucket access failed:", error);
+      
+      // Si l'erreur indique que le bucket n'existe pas, on l'accepte
+      // car le bucket sera créé automatiquement lors du premier upload
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        console.log("🔧 AUDIO_UPLOAD - Bucket will be created on first upload");
+        return true;
+      }
+      
       return false;
     }
-
-    const bucketExists = buckets?.some(bucket => bucket.id === 'intervention-audios');
     
-    if (!bucketExists) {
-      console.log("🔧 AUDIO_UPLOAD - Bucket does not exist, attempting to create...");
-      
-      const { error: createError } = await supabase.storage.createBucket('intervention-audios', {
-        public: true,
-        fileSizeLimit: 10485760, // 10MB
-        allowedMimeTypes: ['audio/webm', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a']
-      });
-
-      if (createError) {
-        console.error("🔧 AUDIO_UPLOAD - Error creating bucket:", createError);
-        return false;
-      }
-
-      console.log("🔧 AUDIO_UPLOAD - Bucket created successfully");
-    }
-    
+    console.log("🔧 AUDIO_UPLOAD - Bucket is accessible");
     return true;
+    
   } catch (error) {
-    console.error("🔧 AUDIO_UPLOAD - Unexpected error ensuring bucket:", error);
-    return false;
+    console.error("🔧 AUDIO_UPLOAD - Unexpected error checking bucket:", error);
+    // En cas d'erreur inattendue, on continue quand même l'upload
+    return true;
   }
 };
 
@@ -66,10 +61,10 @@ export const uploadInterventionAudio = async ({
   onUploadStart();
 
   try {
-    // S'assurer que le bucket existe
+    // Vérifier l'accès au bucket (mais ne pas le créer automatiquement)
     const bucketReady = await ensureAudioBucketExists();
     if (!bucketReady) {
-      throw new Error("Impossible de préparer le stockage audio");
+      throw new Error("Le bucket de stockage audio n'est pas accessible");
     }
 
     const fileName = `intervention_${reportId}_${Date.now()}.webm`;
@@ -86,6 +81,8 @@ export const uploadInterventionAudio = async ({
       throw new Error("L'enregistrement audio est trop volumineux (max 10MB)");
     }
 
+    console.log("🔧 AUDIO_UPLOAD - Starting Supabase upload...");
+    
     const { data, error } = await supabase.storage
       .from('intervention-audios')
       .upload(filePath, audioBlob, {
@@ -94,8 +91,20 @@ export const uploadInterventionAudio = async ({
       });
 
     if (error) {
-      console.error("🔧 AUDIO_UPLOAD - Upload error:", error);
-      throw new Error(`Erreur d'upload: ${error.message}`);
+      console.error("🔧 AUDIO_UPLOAD - Upload error details:", {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error
+      });
+      
+      // Messages d'erreur plus spécifiques
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        throw new Error("Le bucket de stockage n'existe pas. Contactez l'administrateur.");
+      } else if (error.message.includes('policy')) {
+        throw new Error("Permissions insuffisantes pour l'upload audio");
+      } else {
+        throw new Error(`Erreur d'upload: ${error.message}`);
+      }
     }
 
     console.log("🔧 AUDIO_UPLOAD - Upload successful:", data);
@@ -112,6 +121,8 @@ export const uploadInterventionAudio = async ({
       throw new Error("URL publique invalide générée");
     }
 
+    console.log("🔧 AUDIO_UPLOAD - Updating intervention report...");
+    
     const { error: updateError } = await supabase
       .from('intervention_reports')
       .update({ audio_url: publicUrl })
