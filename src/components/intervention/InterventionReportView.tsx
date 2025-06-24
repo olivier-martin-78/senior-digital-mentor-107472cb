@@ -381,17 +381,19 @@ const InterventionReportView = () => {
         {report.media_files && report.media_files.length > 0 && (
           <div className="space-y-2">
             <h3 className="font-semibold">Photos et documents</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {report.media_files.map((media: any, index: number) => (
                 <div key={index} className="bg-gray-50 rounded-lg p-3">
                   {media.preview ? (
-                    <img
-                      src={media.preview}
-                      alt={media.name || `Media ${index + 1}`}
-                      className="w-full h-20 object-cover rounded mb-2"
-                    />
+                    <div className="w-full mb-2">
+                      <img
+                        src={media.preview}
+                        alt={media.name || `Media ${index + 1}`}
+                        className="w-full h-auto object-contain rounded max-h-64"
+                      />
+                    </div>
                   ) : (
-                    <div className="w-full h-20 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                    <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
                       <FileText className="w-8 h-8 text-gray-400" />
                     </div>
                   )}

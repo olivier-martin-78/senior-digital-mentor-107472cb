@@ -163,7 +163,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       {/* File list */}
       {mediaFiles.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {mediaFiles.map((mediaFile) => (
             <div key={mediaFile.id} className="relative bg-gray-50 rounded-lg p-3">
               <button
@@ -175,21 +175,29 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               </button>
               
               {mediaFile.type === 'image' && mediaFile.preview ? (
-                <img
-                  src={mediaFile.preview}
-                  alt={mediaFile.file?.name || 'Media'}
-                  className="w-full h-20 object-cover rounded mb-2"
-                  onError={(e) => {
-                    console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
-                    // Fallback vers une icône fichier
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
+                <div className="w-full mb-2">
+                  <img
+                    src={mediaFile.preview}
+                    alt={mediaFile.file?.name || 'Media'}
+                    className="w-full h-auto object-contain rounded max-h-48"
+                    onError={(e) => {
+                      console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
+                      // Fallback vers une icône fichier
+                      e.currentTarget.style.display = 'none';
+                      const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallbackDiv) {
+                        fallbackDiv.classList.remove('hidden');
+                      }
+                    }}
+                  />
+                  <div className="hidden w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                    <File className="w-8 h-8 text-gray-400" />
+                  </div>
+                </div>
               ) : null}
               
               {(mediaFile.type !== 'image' || !mediaFile.preview) && (
-                <div className="w-full h-20 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
                   <File className="w-8 h-8 text-gray-400" />
                 </div>
               )}
