@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -56,10 +56,12 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
     const [selectedGroup, setSelectedGroup] = useState<InvitationGroup | null>(null);
     const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
     const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    
+    const isLoadingRef = useRef(false);
 
     const syncPendingConfirmedInvitations = async (groupId: string) => {
       try {
@@ -214,14 +216,15 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
       }
     };
 
-    const loadGroups = async () => {
-      // Éviter les appels multiples simultanés
-      if (loading) {
+    const loadGroups = useCallback(async () => {
+      // Éviter les appels multiples simultanés avec une protection par ref
+      if (isLoadingRef.current) {
         console.log('⏭️ Chargement déjà en cours, abandon');
         return;
       }
 
       try {
+        isLoadingRef.current = true;
         setLoading(true);
         console.log('=== DEBUG InvitationGroups: Début du chargement des groupes ===');
         console.log('Utilisateur actuel:', user?.id);
@@ -347,8 +350,9 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
       } finally {
         console.log('🏁 Fin du chargement des groupes');
         setLoading(false);
+        isLoadingRef.current = false;
       }
-    };
+    }, [user, hasRole, toast]);
 
     const loadGroupMembers = async (groupId: string) => {
       try {
@@ -604,10 +608,9 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         console.log('✅ Utilisateur présent, chargement des groupes');
         loadGroups();
       } else {
-        console.log('❌ Aucun utilisateur, arrêt du chargement');
-        setLoading(false);
+        console.log('❌ Aucun utilisateur, pas de chargement');
       }
-    }, [user, hasRole]);
+    }, [user, loadGroups]);
 
     // Supprimer la vérification de rôle admin - accessible à tous les utilisateurs authentifiés
     if (!user) {
