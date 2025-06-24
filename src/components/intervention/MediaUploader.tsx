@@ -9,6 +9,7 @@ interface MediaFile {
   file: File;
   preview?: string;
   type: 'image' | 'document';
+  name?: string;
 }
 
 interface MediaUploaderProps {
@@ -27,7 +28,23 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   useEffect(() => {
     if (existingMediaFiles.length > 0 && mediaFiles.length === 0) {
       console.log('📸 MediaUploader - Initialisation avec médias existants:', existingMediaFiles);
-      setMediaFiles(existingMediaFiles);
+      
+      // Traiter les médias existants pour générer les previews manquantes
+      const processedMedia = existingMediaFiles.map(media => {
+        // Si c'est une image et qu'elle n'a pas de preview, essayer de la générer
+        if (media.type === 'image' && !media.preview && media.file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setMediaFiles(prev => prev.map(m => 
+              m.id === media.id ? { ...m, preview: e.target?.result as string } : m
+            ));
+          };
+          reader.readAsDataURL(media.file);
+        }
+        return media;
+      });
+      
+      setMediaFiles(processedMedia);
     }
   }, [existingMediaFiles]);
 
@@ -53,7 +70,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       const mediaFile: MediaFile = {
         id,
         file,
-        type
+        type,
+        name: file.name
       };
 
       if (type === 'image') {
@@ -122,19 +140,9 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             ? 'border-tranches-sage bg-tranches-sage/10' 
             : 'border-gray-300 hover:border-tranches-sage'
         }`}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          handleFileSelect(e.dataTransfer.files);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-        }}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
       >
         <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
         <p className="text-sm text-gray-600 mb-2">
@@ -174,36 +182,44 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 <X className="w-3 h-3" />
               </button>
               
-              {mediaFile.type === 'image' && mediaFile.preview ? (
+              {mediaFile.type === 'image' ? (
                 <div className="w-full mb-2">
-                  <img
-                    src={mediaFile.preview}
-                    alt={mediaFile.file?.name || 'Media'}
-                    className="w-full h-auto object-contain rounded max-h-48"
-                    onError={(e) => {
-                      console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
-                      // Fallback vers une icône fichier
-                      e.currentTarget.style.display = 'none';
-                      const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (fallbackDiv) {
-                        fallbackDiv.classList.remove('hidden');
-                      }
-                    }}
-                  />
+                  {mediaFile.preview ? (
+                    <img
+                      src={mediaFile.preview}
+                      alt={mediaFile.name || mediaFile.file?.name || 'Media'}
+                      className="w-full h-auto object-contain rounded max-h-48"
+                      onError={(e) => {
+                        console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
+                        // Afficher l'icône fichier en cas d'erreur
+                        e.currentTarget.style.display = 'none';
+                        const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fallbackDiv) {
+                          fallbackDiv.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                  ) : (
+                    // Cas où l'image n'a pas de preview (médias existants)
+                    <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded mb-2 flex items-center justify-center border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <Image className="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                        <span className="text-xs text-gray-500">Image chargée</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="hidden w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
                     <File className="w-8 h-8 text-gray-400" />
                   </div>
                 </div>
-              ) : null}
-              
-              {(mediaFile.type !== 'image' || !mediaFile.preview) && (
+              ) : (
                 <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
                   <File className="w-8 h-8 text-gray-400" />
                 </div>
               )}
               
-              <p className="text-xs text-gray-600 truncate" title={mediaFile.file?.name || 'Media'}>
-                {mediaFile.file?.name || 'Media'}
+              <p className="text-xs text-gray-600 truncate" title={mediaFile.name || mediaFile.file?.name || 'Media'}>
+                {mediaFile.name || mediaFile.file?.name || 'Media'}
               </p>
               {mediaFile.file && (
                 <p className="text-xs text-gray-400">
