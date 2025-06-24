@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Users, Clock, Mail } from 'lucide-react';
+import { Trash2, UserPlus, Users, Clock, Mail, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface InvitationGroup {
@@ -60,6 +59,148 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
     const [loading, setLoading] = useState(true);
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+
+    const syncPendingConfirmedInvitations = async (groupId: string) => {
+      try {
+        console.log('🔄 Synchronisation des invitations confirmées pour le groupe:', groupId);
+        
+        // Récupérer toutes les invitations non utilisées pour ce groupe
+        const { data: pendingInvitations, error: invitationsError } = await supabase
+          .from('invitations')
+          .select('id, email, first_name, last_name, created_at, invited_by')
+          .eq('group_id', groupId)
+          .is('used_at', null);
+
+        if (invitationsError) {
+          console.error('❌ Erreur récupération invitations:', invitationsError);
+          return;
+        }
+
+        if (!pendingInvitations || pendingInvitations.length === 0) {
+          console.log('✅ Aucune invitation en attente à synchroniser');
+          return;
+        }
+
+        console.log('📋 Invitations en attente à vérifier:', pendingInvitations.length);
+
+        let syncedCount = 0;
+
+        for (const invitation of pendingInvitations) {
+          console.log(`🔍 Vérification de l'invitation: ${invitation.email}`);
+
+          // Vérifier si un utilisateur confirmé existe avec cet email
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .eq('email', invitation.email)
+            .single();
+
+          if (userError && userError.code !== 'PGRST116') {
+            console.error(`❌ Erreur vérification utilisateur ${invitation.email}:`, userError);
+            continue;
+          }
+
+          if (!userData) {
+            console.log(`⏭️ Pas d'utilisateur confirmé pour ${invitation.email}`);
+            continue;
+          }
+
+          console.log(`✅ Utilisateur confirmé trouvé: ${userData.email} (${userData.id})`);
+
+          // Vérifier si l'utilisateur est déjà membre du groupe
+          const { data: existingMember, error: memberError } = await supabase
+            .from('group_members')
+            .select('id')
+            .eq('group_id', groupId)
+            .eq('user_id', userData.id)
+            .single();
+
+          if (memberError && memberError.code !== 'PGRST116') {
+            console.error(`❌ Erreur vérification membre existant:`, memberError);
+            continue;
+          }
+
+          if (existingMember) {
+            console.log(`⚠️ L'utilisateur ${invitation.email} est déjà membre du groupe`);
+            
+            // Marquer l'invitation comme utilisée puisque l'utilisateur est déjà membre
+            const { error: updateError } = await supabase
+              .from('invitations')
+              .update({ used_at: new Date().toISOString() })
+              .eq('id', invitation.id);
+
+            if (updateError) {
+              console.error(`❌ Erreur mise à jour invitation:`, updateError);
+            } else {
+              console.log(`✅ Invitation marquée comme utilisée pour ${invitation.email}`);
+              syncedCount++;
+            }
+            continue;
+          }
+
+          // Ajouter l'utilisateur au groupe avec le rôle 'guest'
+          const { error: addMemberError } = await supabase
+            .from('group_members')
+            .insert({
+              group_id: groupId,
+              user_id: userData.id,
+              role: 'guest'
+            });
+
+          if (addMemberError) {
+            console.error(`❌ Erreur ajout membre ${invitation.email}:`, addMemberError);
+            continue;
+          }
+
+          console.log(`✅ Utilisateur ${invitation.email} ajouté au groupe`);
+
+          // Marquer l'invitation comme utilisée
+          const { error: updateError } = await supabase
+            .from('invitations')
+            .update({ used_at: new Date().toISOString() })
+            .eq('id', invitation.id);
+
+          if (updateError) {
+            console.error(`❌ Erreur mise à jour invitation:`, updateError);
+          } else {
+            console.log(`✅ Invitation marquée comme utilisée pour ${invitation.email}`);
+          }
+
+          // Mettre à jour le rôle de l'utilisateur en 'reader'
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .update({ role: 'reader' })
+            .eq('user_id', userData.id);
+
+          if (roleError) {
+            console.error(`❌ Erreur mise à jour rôle:`, roleError);
+          } else {
+            console.log(`✅ Rôle mis à jour en 'reader' pour ${invitation.email}`);
+          }
+
+          syncedCount++;
+        }
+
+        if (syncedCount > 0) {
+          console.log(`🎉 Synchronisation terminée: ${syncedCount} invitation(s) synchronisée(s)`);
+          toast({
+            title: "Synchronisation réussie",
+            description: `${syncedCount} invitation(s) confirmée(s) ont été synchronisées`
+          });
+        } else {
+          console.log('✅ Aucune invitation à synchroniser');
+        }
+
+      } catch (error: any) {
+        console.error('💥 Erreur lors de la synchronisation:', error);
+        toast({
+          title: "Erreur de synchronisation",
+          description: "Impossible de synchroniser les invitations",
+          variant: "destructive"
+        });
+      }
+    };
 
     const loadGroups = async () => {
       try {
@@ -90,6 +231,9 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         const groupsWithDetails = await Promise.all(
           (groupsData || []).map(async (group) => {
             console.log(`Traitement du groupe: ${group.name} (${group.id})`);
+            
+            // NOUVEAU: Synchroniser les invitations confirmées avant de compter
+            await syncPendingConfirmedInvitations(group.id);
             
             // Récupérer les infos du créateur
             const { data: creatorData, error: creatorError } = await supabase
@@ -143,18 +287,13 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
       }
     };
 
-    useImperativeHandle(ref, () => ({
-      loadGroups
-    }));
-
-    useEffect(() => {
-      loadGroups();
-    }, []);
-
     const loadGroupMembers = async (groupId: string) => {
       try {
         console.log('=== DEBUG loadGroupMembers: Début du chargement des membres ===');
         console.log('Group ID:', groupId);
+
+        // NOUVEAU: Synchroniser les invitations confirmées avant de charger les membres
+        await syncPendingConfirmedInvitations(groupId);
 
         // Charger les membres du groupe d'abord
         const { data: membersData, error: membersError } = await supabase
@@ -213,12 +352,6 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
         if (invitationsError) throw invitationsError;
 
-        // NOUVEAU: Filtrer les invitations pour exclure celles dont l'email correspond à un membre confirmé
-        const memberEmails = membersData ? membersData.map(m => {
-          // Nous devons récupérer l'email du profil correspondant
-          return null; // Pour l'instant, on va faire une autre approche
-        }) : [];
-
         // Récupérer les emails des membres confirmés pour les filtrer des invitations en attente
         const confirmedEmails = new Set<string>();
         if (membersData && membersData.length > 0) {
@@ -259,6 +392,22 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
           description: "Impossible de charger les membres du groupe",
           variant: "destructive"
         });
+      }
+    };
+
+    const handleManualSync = async () => {
+      if (!selectedGroup) return;
+
+      setSyncing(true);
+      try {
+        await syncPendingConfirmedInvitations(selectedGroup.id);
+        await loadGroupMembers(selectedGroup.id);
+        await loadGroups(); // Recharger pour mettre à jour les compteurs
+        if (onDataChange) onDataChange();
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation manuelle:', error);
+      } finally {
+        setSyncing(false);
       }
     };
 
@@ -466,45 +615,58 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Membres du groupe : {selectedGroup.name}</span>
-                {/* Permettre l'ajout de membres seulement si l'utilisateur est le créateur du groupe ou admin */}
-                {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
-                  <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Ajouter un membre
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Ajouter un membre au groupe</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="memberEmail">Email de l'utilisateur</Label>
-                          <Input
-                            id="memberEmail"
-                            type="email"
-                            value={newMemberEmail}
-                            onChange={(e) => setNewMemberEmail(e.target.value)}
-                            placeholder="email@exemple.com"
-                          />
+                <div className="flex items-center gap-2">
+                  {/* Bouton de synchronisation manuelle */}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleManualSync}
+                    disabled={syncing}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                    {syncing ? 'Synchronisation...' : 'Synchroniser'}
+                  </Button>
+                  
+                  {/* Permettre l'ajout de membres seulement si l'utilisateur est le créateur du groupe ou admin */}
+                  {(selectedGroup.created_by === user?.id || hasRole('admin')) && (
+                    <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Ajouter un membre
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Ajouter un membre au groupe</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="memberEmail">Email de l'utilisateur</Label>
+                            <Input
+                              id="memberEmail"
+                              type="email"
+                              value={newMemberEmail}
+                              onChange={(e) => setNewMemberEmail(e.target.value)}
+                              placeholder="email@exemple.com"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setAddMemberDialogOpen(false)}
+                            >
+                              Annuler
+                            </Button>
+                            <Button onClick={addMemberToGroup}>
+                              Ajouter
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setAddMemberDialogOpen(false)}
-                          >
-                            Annuler
-                          </Button>
-                          <Button onClick={addMemberToGroup}>
-                            Ajouter
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
