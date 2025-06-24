@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,7 @@ const ActivitiesOverview = () => {
       title: 'Relaxation',
       type: 'meditation',
       icon: Brain,
-      description: 'Activités de méditation et de relaxation pour apaiser l\'esprit',
+      description: 'Activités de méditation, de yoga et de relaxation pour apaiser l\'esprit',
       activities: meditationActivities,
       loading: meditationLoading,
       color: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
