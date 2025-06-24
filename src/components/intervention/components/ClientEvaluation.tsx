@@ -33,7 +33,7 @@ export const ClientEvaluation: React.FC<ClientEvaluationProps> = ({
                   : 'text-gray-300 hover:text-gray-400'
               }`}
             >
-              ⭐
+              ★
             </button>
           ))}
           {clientRating > 0 && (

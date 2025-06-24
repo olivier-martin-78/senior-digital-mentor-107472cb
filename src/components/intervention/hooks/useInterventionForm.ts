@@ -278,13 +278,18 @@ export const useInterventionForm = () => {
         client_comments: formData.client_comments || null,
       };
 
+      console.log('Saving report data:', reportData);
+
       if (reportId) {
         const { error } = await supabase
           .from('intervention_reports')
           .update(reportData)
           .eq('id', reportId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
 
         toast({
           title: 'Succès',
@@ -297,7 +302,10 @@ export const useInterventionForm = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
 
         if (formData.appointment_id && newReport) {
           await supabase
@@ -320,7 +328,7 @@ export const useInterventionForm = () => {
       console.error('Error saving report:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder le rapport',
+        description: `Impossible de sauvegarder le rapport: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         variant: 'destructive',
       });
     } finally {
