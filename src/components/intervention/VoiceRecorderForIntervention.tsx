@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { useAuth } from '@/contexts/AuthContext';
@@ -128,17 +127,34 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     e.preventDefault();
     e.stopPropagation();
     
+    console.log("🎯 VOICE_RECORDER - Play/Pause clicked, current state:", isPlaying);
     setHasUserInteracted(true);
+    
+    // L'état sera mis à jour par les événements de l'AudioPlayer
+    // On inverse juste l'état local pour déclencher l'action
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
-  const handleAudioPlay = () => setIsPlaying(true);
-  const handleAudioPause = () => setIsPlaying(false);
-  const handleAudioEnded = () => setIsPlaying(false);
-  const handleAudioError = (e: any) => {
-    console.log("🎯 VOICE_RECORDER - Audio error:", e);
+  const handleAudioPlay = useCallback(() => {
+    console.log("🎯 VOICE_RECORDER - Audio started playing");
+    setIsPlaying(true);
+  }, []);
+  
+  const handleAudioPause = useCallback(() => {
+    console.log("🎯 VOICE_RECORDER - Audio paused");
+    setIsPlaying(false);
+  }, []);
+  
+  const handleAudioEnded = useCallback(() => {
+    console.log("🎯 VOICE_RECORDER - Audio ended");
+    setIsPlaying(false);
+  }, []);
+  
+  const handleAudioError = useCallback((e: any) => {
+    console.error("🎯 VOICE_RECORDER - Audio error:", e);
+    setIsPlaying(false);
     setUploadError("Erreur de lecture audio");
-  };
+  }, []);
 
   // Utiliser UNIQUEMENT l'URL permanente si elle existe, sinon rien
   const currentAudioUrl = permanentAudioUrl;
