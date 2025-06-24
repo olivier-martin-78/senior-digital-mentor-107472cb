@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +45,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   // Validation et nettoyage de l'URL existante au chargement
   useEffect(() => {
     const validateExistingAudio = async () => {
+      console.log("🎯 VOICE_RECORDER - Validation de l'URL existante:", existingAudioUrl);
+      
       if (existingAudioUrl && reportId) {
         const cleanedUrl = await validateAndCleanAudioUrl(existingAudioUrl, reportId);
         
@@ -65,9 +68,14 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           setShowExpiredMessage(true);
           setPermanentAudioUrl(null);
         } else {
+          console.log("🎯 VOICE_RECORDER - URL existante sans reportId (probablement valide)");
           setPermanentAudioUrl(existingAudioUrl);
           setShowExpiredMessage(false);
         }
+      } else {
+        console.log("🎯 VOICE_RECORDER - Pas d'URL existante");
+        setPermanentAudioUrl(null);
+        setShowExpiredMessage(false);
       }
     };
 
@@ -111,8 +119,10 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             }
           });
         } else {
-          console.log("🎯 VOICE_RECORDER - No reportId, cannot save permanently");
-          setUploadError("Impossible de sauvegarder sans ID de rapport");
+          console.log("🎯 VOICE_RECORDER - No reportId, storing temporarily");
+          setPermanentAudioUrl(url);
+          onAudioChange(blob);
+          setUploadError("Impossible de sauvegarder définitivement sans ID de rapport");
         }
       }
     }, [onAudioChange, reportId, user])
@@ -193,10 +203,18 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     setUploadError("Erreur de lecture audio");
   }, []);
 
-  // Utiliser UNIQUEMENT l'URL permanente si elle existe, sinon rien
-  const currentAudioUrl = permanentAudioUrl;
+  // Déterminer l'URL audio à utiliser (priorité : permanentAudioUrl > audioUrl from recording)
+  const currentAudioUrl = permanentAudioUrl || audioUrl;
+  const hasAudioToDisplay = !!(currentAudioUrl || showExpiredMessage);
 
-  console.log("🎯 VOICE_RECORDER - Current audio URL:", currentAudioUrl);
+  console.log("🎯 VOICE_RECORDER - Audio display logic:", {
+    currentAudioUrl,
+    hasAudioToDisplay,
+    showExpiredMessage,
+    isRecording,
+    permanentAudioUrl,
+    audioUrl
+  });
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">
@@ -233,7 +251,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         </div>
       )}
 
-      {!reportId && !showExpiredMessage && (
+      {!reportId && !showExpiredMessage && currentAudioUrl && (
         <div className="flex items-center justify-center text-orange-600 bg-orange-50 p-2 rounded">
           <span className="text-sm">⚠️ Sauvegarde temporaire uniquement - Enregistrez d'abord le rapport</span>
         </div>

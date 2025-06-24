@@ -6,11 +6,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin } from 'lucide-react';
+import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin, AlertCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
-import { validateAndCleanAudioUrl } from '@/utils/audioUrlCleanup';
+import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -22,12 +22,14 @@ const InterventionReportView = () => {
   const [deleting, setDeleting] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [appointment, setAppointment] = useState<any>(null);
+  const [audioStatus, setAudioStatus] = useState<'loading' | 'valid' | 'expired' | 'none'>('none');
 
   console.log('🔍 InterventionReportView - Début du rendu:', {
     reportId,
     loading,
     hasReport: !!report,
-    userId: user?.id
+    userId: user?.id,
+    audioStatus
   });
 
   useEffect(() => {
@@ -71,16 +73,23 @@ const InterventionReportView = () => {
       console.log('✅ Rapport chargé:', {
         reportId: reportData?.id,
         hasAudioUrl: !!reportData?.audio_url,
+        audioUrl: reportData?.audio_url,
         appointmentId: reportData?.appointment_id
       });
 
-      // Valider et nettoyer l'URL audio si nécessaire
-      if (reportData?.audio_url) {
+      // Analyser l'état de l'audio
+      if (!reportData?.audio_url) {
+        console.log('🎵 Aucune URL audio dans le rapport');
+        setAudioStatus('none');
+      } else if (isExpiredBlobUrl(reportData.audio_url)) {
+        console.log('🎵 URL audio expirée détectée:', reportData.audio_url);
+        setAudioStatus('expired');
+        // Nettoyer l'URL expirée
         const validatedAudioUrl = await validateAndCleanAudioUrl(reportData.audio_url, reportId);
-        if (validatedAudioUrl !== reportData.audio_url) {
-          // L'URL a été nettoyée, recharger le rapport
-          reportData.audio_url = validatedAudioUrl;
-        }
+        reportData.audio_url = validatedAudioUrl;
+      } else {
+        console.log('🎵 URL audio valide:', reportData.audio_url);
+        setAudioStatus('valid');
       }
 
       setReport(reportData);
@@ -209,7 +218,7 @@ const InterventionReportView = () => {
     );
   }
 
-  console.log('✅ Rendu du rapport complet');
+  console.log('✅ Rendu du rapport complet avec audioStatus:', audioStatus);
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -402,19 +411,49 @@ const InterventionReportView = () => {
           </div>
         )}
 
-        {/* Audio avec validation */}
-        {report.audio_url && (
-          <div className="space-y-2">
-            <h3 className="font-semibold">Enregistrement audio</h3>
-            <div className="bg-gray-50 p-3 rounded-md">
+        {/* Section audio améliorée */}
+        <div className="space-y-2">
+          <h3 className="font-semibold">Enregistrement audio</h3>
+          <div className="bg-gray-50 p-3 rounded-md">
+            {audioStatus === 'valid' && report.audio_url && (
               <VoiceAnswerPlayer
                 audioUrl={report.audio_url}
                 readOnly={true}
                 shouldLog={true}
               />
-            </div>
+            )}
+            
+            {audioStatus === 'expired' && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-orange-800 mb-1">
+                      Enregistrement audio expiré
+                    </h4>
+                    <p className="text-sm text-orange-700">
+                      L'enregistrement audio de ce rapport était temporaire et n'est plus disponible. 
+                      Vous pouvez modifier le rapport pour créer un nouvel enregistrement.
+                    </p>
+                    <Button
+                      onClick={handleEdit}
+                      size="sm"
+                      variant="outline"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-100 mt-2"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Modifier le rapport
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {audioStatus === 'none' && (
+              <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
+            )}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

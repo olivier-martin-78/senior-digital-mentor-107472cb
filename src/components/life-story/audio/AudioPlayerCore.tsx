@@ -1,220 +1,116 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
-import { validateAudioUrl, handleExportAudio, getAudioUrl } from '../utils/audioUtils';
-import AudioControls from './AudioControls';
-import AudioProgressBar from './AudioProgressBar';
-import AudioErrorDisplay from './AudioErrorDisplay';
+import React, { useRef, useEffect, useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 interface AudioPlayerCoreProps {
   audioUrl: string;
-  onDelete?: () => void;
-  readOnly?: boolean;
-  shouldLog?: boolean;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onEnded?: () => void;
+  onError?: (error: any) => void;
+  className?: string;
 }
 
 const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   audioUrl,
-  onDelete,
-  readOnly = false,
-  shouldLog = false,
+  onPlay,
+  onPause,
+  onEnded,
+  onError,
+  className = ""
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Convertir le chemin en URL complète
-  const fullAudioUrl = getAudioUrl(audioUrl);
-
-  if (shouldLog) {
-    console.log('🎵 PLAYER - État du lecteur:', {
-      originalAudioUrl: audioUrl,
-      fullAudioUrl,
-      hasAudioUrl: !!audioUrl,
-      hasFullAudioUrl: !!fullAudioUrl,
-      audioUrlType: typeof audioUrl,
-      isPlaying,
-      duration,
-      readOnly,
-      hasError,
-      isLoading,
-      isBlobUrl: audioUrl.startsWith('blob:')
-    });
-  }
+  console.log("🎵 AUDIO_PLAYER_CORE - Rendering with URL:", audioUrl);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const handleLoadedMetadata = () => {
-      if (shouldLog) {
-        console.log('🎵 PLAYER - Audio metadata loaded:', { duration: audio.duration });
-      }
-      setDuration(audio.duration);
-      setIsLoading(false);
-      setHasError(false);
+    setHasError(false);
+    setErrorMessage('');
+
+    const handlePlay = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Playing");
+      onPlay?.();
     };
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
+    const handlePause = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Paused");
+      onPause?.();
     };
 
     const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
+      console.log("🎵 AUDIO_PLAYER_CORE - Ended");
+      onEnded?.();
     };
 
-    const handleError = (error: any) => {
-      console.error('🎵 PLAYER - Erreur audio:', error);
+    const handleError = (e: Event) => {
+      console.error("🎵 AUDIO_PLAYER_CORE - Error:", e);
+      const errorMsg = 'Impossible de lire cet enregistrement audio';
       setHasError(true);
-      setIsLoading(false);
-      setIsPlaying(false);
+      setErrorMessage(errorMsg);
+      onError?.(e);
     };
 
-    const handleCanPlay = () => {
-      setIsLoading(false);
+    const handleLoadStart = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Load start");
       setHasError(false);
     };
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
-    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadstart', handleLoadStart);
+
+    // Forcer le chargement
+    audio.load();
 
     return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('loadstart', handleLoadStart);
     };
-  }, [audioUrl, shouldLog]);
+  }, [audioUrl, onPlay, onPause, onEnded, onError]);
 
-  const togglePlayPause = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play().then(() => {
-        setIsPlaying(true);
-      }).catch((error) => {
-        console.error('Erreur lecture:', error);
-        setHasError(true);
-        toast({
-          title: "Erreur de lecture",
-          description: "Impossible de lire l'enregistrement audio. Le fichier pourrait être endommagé ou indisponible.",
-          variant: "destructive",
-        });
-      });
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const newTime = parseFloat(e.target.value);
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
-  const handleDelete = () => {
-    if (readOnly || !onDelete) return;
-    
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      setIsPlaying(false);
-    }
-    
-    onDelete();
-    
-    toast({
-      title: "Enregistrement supprimé",
-      description: "L'enregistrement vocal a été supprimé avec succès",
-    });
-  };
-
-  const handleExport = () => {
-    try {
-      // Utiliser l'URL complète pour l'export
-      handleExportAudio(fullAudioUrl || audioUrl);
-      toast({
-        title: "Export réussi",
-        description: "L'enregistrement audio a été téléchargé",
-      });
-    } catch (error) {
-      console.error('Erreur export:', error);
-      toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter l'enregistrement",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Utiliser fullAudioUrl pour la validation
-  if (!fullAudioUrl) {
-    if (shouldLog) {
-      console.log('🎵 PLAYER - URL audio invalide après conversion:', {
-        originalUrl: audioUrl,
-        convertedUrl: fullAudioUrl
-      });
-    }
-    return null;
+  // Afficher un message d'erreur au lieu de masquer complètement le composant
+  if (hasError) {
+    return (
+      <div className={`bg-red-50 border border-red-200 rounded-lg p-3 ${className}`}>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm text-red-700">{errorMessage}</p>
+            <p className="text-xs text-red-600 mt-1">Vérifiez que le fichier audio est accessible</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Vérifier si c'est une URL blob expirée
-  const isBlobUrl = audioUrl.startsWith('blob:');
-  const showBlobWarning = isBlobUrl && hasError;
+  // Vérifier si l'URL semble valide
+  if (!audioUrl || audioUrl.trim() === '') {
+    console.log("🎵 AUDIO_PLAYER_CORE - No valid URL provided");
+    return (
+      <div className={`bg-gray-50 border border-gray-200 rounded-lg p-3 ${className}`}>
+        <p className="text-sm text-gray-500">Aucun enregistrement audio disponible</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <audio
-        ref={audioRef}
-        src={fullAudioUrl}
-        preload="metadata"
-        style={{ display: 'none' }}
-      />
-      
-      <AudioErrorDisplay
-        showBlobWarning={showBlobWarning}
-        hasError={hasError}
-        fullAudioUrl={fullAudioUrl}
-        readOnly={readOnly}
-        shouldLog={shouldLog}
-        onDelete={handleDelete}
-      />
-
-      {!showBlobWarning && !hasError && (
-        <>
-          <AudioControls
-            isPlaying={isPlaying}
-            isLoading={isLoading}
-            currentTime={currentTime}
-            duration={duration}
-            readOnly={readOnly}
-            isBlobUrl={isBlobUrl}
-            onPlayPause={togglePlayPause}
-            onExport={handleExport}
-            onDelete={handleDelete}
-          />
-          
-          <AudioProgressBar
-            currentTime={currentTime}
-            duration={duration}
-            onSeek={handleSeek}
-          />
-        </>
-      )}
-    </>
+    <audio
+      ref={audioRef}
+      src={audioUrl}
+      className={`w-full ${className}`}
+      controls
+      preload="metadata"
+    />
   );
 };
 
