@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Save, ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MediaUploader } from './MediaUploader';
-import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
+import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
 import { AppointmentSelector } from './components/AppointmentSelector';
 import { ClientEvaluation } from './components/ClientEvaluation';
 import { useInterventionForm } from './hooks/useInterventionForm';
@@ -105,8 +105,14 @@ const InterventionReportForm = () => {
     }));
   };
 
-  const handleAudioUpload = (audioBlob: Blob | null, audioUrl: string | null) => {
-    setFormData(prev => ({ ...prev, audio_url: audioUrl || '' }));
+  const handleAudioChange = (audioBlob: Blob | null) => {
+    console.log("📝 FORM - Audio change received:", { hasBlob: !!audioBlob });
+    // Ne pas mettre à jour l'URL ici - elle sera mise à jour automatiquement
+    // par VoiceRecorderForIntervention via la base de données
+    if (!audioBlob) {
+      // Seulement effacer l'URL si l'audio a été supprimé
+      setFormData(prev => ({ ...prev, audio_url: '' }));
+    }
   };
 
   if (loadingData) {
@@ -391,11 +397,14 @@ const InterventionReportForm = () => {
           {/* Média */}
           <div>
             <Label>Médias</Label>
-            <MediaUploader onMediaChange={handleMediaUpload} />
+            <MediaUploader 
+              onMediaChange={handleMediaUpload}
+              existingMediaFiles={formData.media_files}
+            />
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.media_files.map((file, index) => (
                 <Badge key={index} variant="secondary">
-                  {file.name}
+                  {file.file?.name || file.name || `Media ${index + 1}`}
                   <Button variant="ghost" size="icon" onClick={() => handleMediaRemove(file)}>
                     <X className="h-4 w-4" />
                   </Button>
@@ -406,12 +415,16 @@ const InterventionReportForm = () => {
 
           {/* Enregistrement audio */}
           <div>
-            <Label>Enregistrement audio</Label>
-            <SimpleInterventionAudioRecorder onAudioChange={handleAudioUpload} />
-            {formData.audio_url && (
-              <audio controls src={formData.audio_url} className="mt-2">
-                Your browser does not support the audio element.
-              </audio>
+            <Label>Enregistrement vocal</Label>
+            <VoiceRecorderForIntervention 
+              onAudioChange={handleAudioChange}
+              reportId={reportId || undefined}
+              existingAudioUrl={formData.audio_url}
+            />
+            {formData.audio_url && !formData.audio_url.startsWith('blob:') && (
+              <div className="mt-2 text-sm text-green-600">
+                ✅ Enregistrement sauvegardé de manière permanente
+              </div>
             )}
           </div>
 

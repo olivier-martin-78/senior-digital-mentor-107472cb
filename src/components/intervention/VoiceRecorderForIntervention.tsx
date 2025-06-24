@@ -25,6 +25,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const [isUploading, setIsUploading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [permanentAudioUrl, setPermanentAudioUrl] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   console.log("🎯 VOICE_RECORDER - Render:", {
     hasExistingUrl: !!existingAudioUrl,
@@ -32,7 +33,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     hasPermanentUrl: !!permanentAudioUrl,
     permanentAudioUrl,
     disabled,
-    reportId
+    reportId,
+    uploadError
   });
 
   // Initialiser l'URL permanente avec l'URL existante
@@ -40,6 +42,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     if (existingAudioUrl && existingAudioUrl.trim() !== '' && !existingAudioUrl.startsWith('blob:')) {
       console.log("🎯 VOICE_RECORDER - Initializing with permanent audio URL:", existingAudioUrl);
       setPermanentAudioUrl(existingAudioUrl.trim());
+      setUploadError(null);
     }
   }, [existingAudioUrl]);
 
@@ -56,7 +59,9 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
       console.log("🎯 VOICE_RECORDER - Recording complete:", { blobSize: blob.size, url, reportId });
       
       if (blob.size > 0) {
+        // Si on a un reportId, toujours uploader vers le stockage permanent
         if (reportId && user) {
+          setUploadError(null);
           await uploadInterventionAudio({
             audioBlob: blob,
             reportId,
@@ -64,16 +69,21 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             onUploadStart: () => setIsUploading(true),
             onUploadEnd: () => setIsUploading(false),
             onSuccess: (publicUrl) => {
+              console.log("🎯 VOICE_RECORDER - Upload successful, setting permanent URL:", publicUrl);
               setPermanentAudioUrl(publicUrl);
               onAudioChange(blob);
+              setUploadError(null);
             },
             onError: (error) => {
               console.error("🎯 VOICE_RECORDER - Upload failed:", error);
+              setUploadError(`Erreur d'upload: ${error}`);
+              // En cas d'échec, on ne notifie PAS le parent avec le blob pour éviter les URLs temporaires
             }
           });
         } else {
-          console.log("🎯 VOICE_RECORDER - No reportId, notifying parent");
-          onAudioChange(blob);
+          // Sans reportId, on ne peut pas sauvegarder de manière permanente
+          console.log("🎯 VOICE_RECORDER - No reportId, cannot save permanently");
+          setUploadError("Impossible de sauvegarder sans ID de rapport");
         }
       }
     }, [onAudioChange, reportId, user])
@@ -85,6 +95,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     
     console.log("🎯 VOICE_RECORDER - Starting new recording");
     setPermanentAudioUrl(null);
+    setUploadError(null);
     startRecording();
   }, [startRecording]);
 
@@ -109,6 +120,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     clearRecording();
     setPermanentAudioUrl(null);
     setIsPlaying(false);
+    setUploadError(null);
     onAudioChange(null);
   }, [clearRecording, onAudioChange, reportId, permanentAudioUrl, user]);
 
@@ -124,10 +136,12 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const handleAudioPause = () => setIsPlaying(false);
   const handleAudioEnded = () => setIsPlaying(false);
   const handleAudioError = (e: any) => {
-    console.log("🎯 VOICE_RECORDER - Audio error event (silent):", e);
+    console.log("🎯 VOICE_RECORDER - Audio error:", e);
+    setUploadError("Erreur de lecture audio");
   };
 
-  const currentAudioUrl = permanentAudioUrl || audioUrl;
+  // Utiliser UNIQUEMENT l'URL permanente si elle existe, sinon rien
+  const currentAudioUrl = permanentAudioUrl;
 
   console.log("🎯 VOICE_RECORDER - Current audio URL:", currentAudioUrl);
 
@@ -145,10 +159,22 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         />
       </div>
 
+      {uploadError && (
+        <div className="flex items-center justify-center text-red-600 bg-red-50 p-2 rounded">
+          <span className="text-sm">{uploadError}</span>
+        </div>
+      )}
+
       {isUploading && (
         <div className="flex items-center justify-center text-blue-600">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
           <span className="text-sm">Sauvegarde en cours...</span>
+        </div>
+      )}
+
+      {!reportId && (
+        <div className="flex items-center justify-center text-orange-600 bg-orange-50 p-2 rounded">
+          <span className="text-sm">⚠️ Sauvegarde temporaire uniquement - Enregistrez d'abord le rapport</span>
         </div>
       )}
 
