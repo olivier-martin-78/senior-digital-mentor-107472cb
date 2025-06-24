@@ -56,6 +56,8 @@ const InterventionReportForm = () => {
     hourly_rate: '',
     media_files: [] as any[],
     audio_url: '',
+    client_rating: 0,
+    client_comments: '',
   });
 
   useEffect(() => {
@@ -267,6 +269,8 @@ const InterventionReportForm = () => {
           hourly_rate: report.hourly_rate?.toString() || '',
           media_files: Array.isArray(report.media_files) ? report.media_files : [],
           audio_url: report.audio_url || '',
+          client_rating: report.client_rating || 0,
+          client_comments: report.client_comments || '',
         });
 
         // Si le rapport a un appointment_id, chercher le rendez-vous correspondant
@@ -399,6 +403,10 @@ const InterventionReportForm = () => {
     });
   };
 
+  const handleStarRating = (rating: number) => {
+    setFormData(prev => ({ ...prev, client_rating: rating }));
+  };
+
   const handleMediaUpload = (files: any[]) => {
     setFormData(prev => ({ ...prev, media_files: [...prev.media_files, ...files] }));
   };
@@ -435,6 +443,7 @@ const InterventionReportForm = () => {
         professional_id: user.id,
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
         appointment_id: formData.appointment_id || null,
+        client_rating: formData.client_rating || null,
       };
 
       if (reportId) {
@@ -740,16 +749,20 @@ const InterventionReportForm = () => {
             />
           </div>
 
-          {/* Appétit */}
+          {/* Appétit - Modifié avec sélecteur */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="appetite">Appétit</Label>
-              <Input
-                id="appetite"
-                value={formData.appetite}
-                onChange={(e) => setFormData({ ...formData, appetite: e.target.value })}
-                placeholder="Comment était l'appétit ?"
-              />
+              <Select value={formData.appetite} onValueChange={(value) => setFormData({ ...formData, appetite: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner l'état de l'appétit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bon">Bon</SelectItem>
+                  <SelectItem value="Moyen">Moyen</SelectItem>
+                  <SelectItem value="N'a pas mangé">N'a pas mangé</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="appetite_comments">Commentaires sur l'appétit</Label>
@@ -762,15 +775,19 @@ const InterventionReportForm = () => {
             </div>
           </div>
 
-          {/* Hydratation */}
+          {/* Hydratation - Modifié avec sélecteur */}
           <div>
             <Label htmlFor="hydration">Hydratation</Label>
-            <Input
-              id="hydration"
-              value={formData.hydration}
-              onChange={(e) => setFormData({ ...formData, hydration: e.target.value })}
-              placeholder="Comment s'est passée l'hydratation ?"
-            />
+            <Select value={formData.hydration} onValueChange={(value) => setFormData({ ...formData, hydration: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner l'état d'hydratation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Satisfaisante">Satisfaisante</SelectItem>
+                <SelectItem value="Insuffisante">Insuffisante</SelectItem>
+                <SelectItem value="Non observée">Non observée</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Observations */}
@@ -844,6 +861,43 @@ const InterventionReportForm = () => {
                 Your browser does not support the audio element.
               </audio>
             )}
+          </div>
+
+          {/* Evaluation de la prestation par le client */}
+          <div>
+            <Label>Evaluation de la prestation par le client</Label>
+            <div className="flex items-center gap-2 mt-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => handleStarRating(star)}
+                  className={`text-2xl transition-colors ${
+                    star <= formData.client_rating 
+                      ? 'text-yellow-500 hover:text-yellow-600' 
+                      : 'text-gray-300 hover:text-yellow-400'
+                  }`}
+                >
+                  ⭐
+                </button>
+              ))}
+              {formData.client_rating > 0 && (
+                <span className="text-sm text-gray-600 ml-2">
+                  {formData.client_rating}/5 étoile{formData.client_rating > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Commentaire du client */}
+          <div>
+            <Label htmlFor="client_comments">Commentaire du client</Label>
+            <Textarea
+              id="client_comments"
+              value={formData.client_comments}
+              onChange={(e) => setFormData({ ...formData, client_comments: e.target.value })}
+              placeholder="Commentaire ou retour du client sur la prestation..."
+            />
           </div>
 
           <div className="flex gap-2 pt-4">

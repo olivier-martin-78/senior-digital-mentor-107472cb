@@ -1,4 +1,3 @@
-
 export interface InterventionReport {
   id: string;
   appointment_id?: string;
@@ -25,6 +24,8 @@ export interface InterventionReport {
   follow_up_other?: string;
   audio_url?: string;
   media_files?: any[];
+  client_rating?: number;
+  client_comments?: string;
   created_at: string;
   updated_at: string;
 }
