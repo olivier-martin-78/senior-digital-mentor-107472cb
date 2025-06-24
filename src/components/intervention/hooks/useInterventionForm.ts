@@ -196,8 +196,8 @@ export const useInterventionForm = () => {
           hourly_rate: report.hourly_rate?.toString() || '',
           media_files: Array.isArray(report.media_files) ? report.media_files : [],
           audio_url: report.audio_url || '',
-          client_rating: (report as any).client_rating || 0,
-          client_comments: (report as any).client_comments || '',
+          client_rating: report.client_rating || 0,
+          client_comments: report.client_comments || '',
         });
 
         if (report.appointment_id && appointmentsList.length > 0) {
@@ -273,6 +273,7 @@ export const useInterventionForm = () => {
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
         appointment_id: formData.appointment_id || null,
         client_rating: formData.client_rating || null,
+        client_comments: formData.client_comments || null,
       };
 
       if (reportId) {

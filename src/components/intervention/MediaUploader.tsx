@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Image, File } from 'lucide-react';
@@ -20,15 +19,15 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   onMediaChange, 
   existingMediaFiles = [] 
 }) => {
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(existingMediaFiles);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Initialiser avec les médias existants seulement au premier rendu
+  // Initialiser avec les médias existants au premier rendu
   useEffect(() => {
-    if (existingMediaFiles.length > 0 && mediaFiles.length === 0) {
+    if (existingMediaFiles.length > 0) {
       setMediaFiles(existingMediaFiles);
     }
-  }, [existingMediaFiles.length]); // Dépendance sur la longueur seulement
+  }, [existingMediaFiles]);
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files) return;
@@ -121,9 +120,19 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             ? 'border-tranches-sage bg-tranches-sage/10' 
             : 'border-gray-300 hover:border-tranches-sage'
         }`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          handleFileSelect(e.dataTransfer.files);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+        }}
       >
         <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
         <p className="text-sm text-gray-600 mb-2">
@@ -166,7 +175,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               {mediaFile.type === 'image' && mediaFile.preview ? (
                 <img
                   src={mediaFile.preview}
-                  alt={mediaFile.file.name}
+                  alt={mediaFile.file?.name || 'Media'}
                   className="w-full h-20 object-cover rounded mb-2"
                 />
               ) : (
@@ -175,12 +184,14 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 </div>
               )}
               
-              <p className="text-xs text-gray-600 truncate" title={mediaFile.file.name}>
-                {mediaFile.file.name}
+              <p className="text-xs text-gray-600 truncate" title={mediaFile.file?.name || 'Media'}>
+                {mediaFile.file?.name || 'Media'}
               </p>
-              <p className="text-xs text-gray-400">
-                {(mediaFile.file.size / 1024 / 1024).toFixed(1)} MB
-              </p>
+              {mediaFile.file && (
+                <p className="text-xs text-gray-400">
+                  {(mediaFile.file.size / 1024 / 1024).toFixed(1)} MB
+                </p>
+              )}
             </div>
           ))}
         </div>
