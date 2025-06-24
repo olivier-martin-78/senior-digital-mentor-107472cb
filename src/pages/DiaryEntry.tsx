@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { DiaryEntry } from '@/types/diary';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
 import DiaryHeader from '@/components/diary/DiaryHeader';
 import EntryHeader from '@/components/diary/EntryHeader';
 import EntryContent from '@/components/diary/EntryContent';
@@ -170,7 +169,6 @@ const DiaryEntryPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="container mx-auto px-4 py-24 flex justify-center">
           <LoadingSpinner size="lg" />
         </div>
@@ -181,7 +179,6 @@ const DiaryEntryPage = () => {
   if (!entry) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="container mx-auto px-4 py-24">
           <div className="text-center">
             <h2 className="text-2xl font-serif text-tranches-charcoal">Entrée non trouvée</h2>
@@ -199,7 +196,6 @@ const DiaryEntryPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-3xl mx-auto">
           <DiaryHeader 
