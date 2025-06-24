@@ -1,8 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
-export interface AudioUploadOptions {
+interface UploadAudioParams {
   audioBlob: Blob;
   reportId: string;
   userId: string;
@@ -12,38 +11,6 @@ export interface AudioUploadOptions {
   onError: (error: string) => void;
 }
 
-const ensureAudioBucketExists = async () => {
-  try {
-    console.log("🔧 AUDIO_UPLOAD - Checking bucket existence...");
-    
-    // Simplement tester l'accès au bucket en listant les objets
-    const { data, error } = await supabase.storage
-      .from('intervention-audios')
-      .list('', { limit: 1 });
-    
-    if (error) {
-      console.error("🔧 AUDIO_UPLOAD - Bucket access failed:", error);
-      
-      // Si l'erreur indique que le bucket n'existe pas, on l'accepte
-      // car le bucket sera créé automatiquement lors du premier upload
-      if (error.message.includes('not found') || error.message.includes('does not exist')) {
-        console.log("🔧 AUDIO_UPLOAD - Bucket will be created on first upload");
-        return true;
-      }
-      
-      return false;
-    }
-    
-    console.log("🔧 AUDIO_UPLOAD - Bucket is accessible");
-    return true;
-    
-  } catch (error) {
-    console.error("🔧 AUDIO_UPLOAD - Unexpected error checking bucket:", error);
-    // En cas d'erreur inattendue, on continue quand même l'upload
-    return true;
-  }
-};
-
 export const uploadInterventionAudio = async ({
   audioBlob,
   reportId,
@@ -52,8 +19,8 @@ export const uploadInterventionAudio = async ({
   onUploadEnd,
   onSuccess,
   onError
-}: AudioUploadOptions) => {
-  console.log("🔧 AUDIO_UPLOAD - Starting upload:", {
+}: UploadAudioParams) => {
+  console.log("🔧 AUDIO_UPLOAD_MANAGER - Starting upload:", {
     blobSize: audioBlob.size,
     userId,
     reportId
@@ -62,99 +29,81 @@ export const uploadInterventionAudio = async ({
   onUploadStart();
 
   try {
-    // Vérifier l'accès au bucket (mais ne pas le créer automatiquement)
-    const bucketReady = await ensureAudioBucketExists();
-    if (!bucketReady) {
-      throw new Error("Le bucket de stockage audio n'est pas accessible");
-    }
-
+    // Créer un nom de fichier unique
     const fileName = `intervention_${reportId}_${Date.now()}.webm`;
     const filePath = `interventions/${userId}/${fileName}`;
-    
-    console.log("🔧 AUDIO_UPLOAD - Upload path:", filePath);
 
-    // Vérifier la taille du blob
-    if (audioBlob.size === 0) {
-      throw new Error("L'enregistrement audio est vide");
-    }
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Upload path:", filePath);
 
-    if (audioBlob.size > 10485760) { // 10MB
-      throw new Error("L'enregistrement audio est trop volumineux (max 10MB)");
-    }
-
-    console.log("🔧 AUDIO_UPLOAD - Starting Supabase upload...");
-    
-    const { data, error } = await supabase.storage
+    // Upload vers Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('intervention-audios')
       .upload(filePath, audioBlob, {
         contentType: 'audio/webm',
-        upsert: false
+        upsert: true
       });
 
-    if (error) {
-      console.error("🔧 AUDIO_UPLOAD - Upload error details:", {
-        message: error.message,
-        error: error
-      });
-      
-      // Messages d'erreur plus spécifiques
-      if (error.message.includes('not found') || error.message.includes('does not exist')) {
-        throw new Error("Le bucket de stockage n'existe pas. Contactez l'administrateur.");
-      } else if (error.message.includes('policy')) {
-        throw new Error("Permissions insuffisantes pour l'upload audio");
-      } else {
-        throw new Error(`Erreur d'upload: ${error.message}`);
-      }
+    if (uploadError) {
+      console.error("🔧 AUDIO_UPLOAD_MANAGER - Upload error:", uploadError);
+      throw uploadError;
     }
 
-    console.log("🔧 AUDIO_UPLOAD - Upload successful:", data);
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Upload successful:", uploadData);
 
+    // Récupérer l'URL publique
     const { data: urlData } = supabase.storage
       .from('intervention-audios')
       .getPublicUrl(filePath);
 
     const publicUrl = urlData.publicUrl;
-    console.log("🔧 AUDIO_UPLOAD - Public URL:", publicUrl);
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Public URL generated:", publicUrl);
 
-    // Vérifier que l'URL est valide
-    if (!publicUrl || publicUrl.includes('undefined')) {
-      throw new Error("URL publique invalide générée");
-    }
-
-    console.log("🔧 AUDIO_UPLOAD - Updating intervention report...");
-    
-    const { error: updateError } = await supabase
+    // Mettre à jour le rapport avec l'URL audio
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Updating report with audio URL...");
+    const { data: updateData, error: updateError } = await supabase
       .from('intervention_reports')
       .update({ audio_url: publicUrl })
-      .eq('id', reportId);
+      .eq('id', reportId)
+      .select('audio_url');
 
     if (updateError) {
-      console.error("🔧 AUDIO_UPLOAD - Update error:", updateError);
-      // Nettoyer le fichier uploadé en cas d'erreur
-      await supabase.storage
-        .from('intervention-audios')
-        .remove([filePath]);
-      throw new Error(`Erreur de mise à jour: ${updateError.message}`);
+      console.error("🔧 AUDIO_UPLOAD_MANAGER - Update error:", updateError);
+      throw updateError;
     }
 
-    console.log("🔧 AUDIO_UPLOAD - Report updated with permanent audio URL");
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Report updated successfully:", updateData);
+    
+    // Vérifier que la mise à jour a bien eu lieu
+    if (updateData && updateData.length > 0) {
+      console.log("🔧 AUDIO_UPLOAD_MANAGER - Verified audio_url in database:", updateData[0].audio_url);
+    } else {
+      console.warn("🔧 AUDIO_UPLOAD_MANAGER - No data returned from update, checking manually...");
+      
+      // Vérification manuelle
+      const { data: checkData, error: checkError } = await supabase
+        .from('intervention_reports')
+        .select('audio_url')
+        .eq('id', reportId)
+        .single();
+        
+      if (checkError) {
+        console.error("🔧 AUDIO_UPLOAD_MANAGER - Check error:", checkError);
+      } else {
+        console.log("🔧 AUDIO_UPLOAD_MANAGER - Manual check result:", checkData);
+      }
+    }
+
     onSuccess(publicUrl);
 
-    toast({
-      title: "Succès",
-      description: "Enregistrement sauvegardé de manière permanente",
-    });
-
   } catch (error) {
-    console.error("🔧 AUDIO_UPLOAD - Error during upload:", error);
-    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-    onError(errorMessage);
+    console.error("🔧 AUDIO_UPLOAD_MANAGER - Upload failed:", error);
     
-    toast({
-      title: "Erreur de sauvegarde",
-      description: `Impossible de sauvegarder l'enregistrement: ${errorMessage}`,
-      variant: "destructive",
-    });
+    let errorMessage = "Erreur lors de l'upload de l'audio";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    onError(errorMessage);
   } finally {
     onUploadEnd();
   }
@@ -165,53 +114,40 @@ export const deleteInterventionAudio = async (
   audioUrl: string,
   userId: string
 ) => {
-  try {
-    console.log("🔧 AUDIO_DELETE - Starting deletion:", { reportId, audioUrl });
+  console.log("🔧 AUDIO_UPLOAD_MANAGER - Deleting audio:", { reportId, audioUrl, userId });
 
-    // Mettre à jour le rapport pour enlever l'URL audio
+  try {
+    // Extraire le chemin du fichier depuis l'URL
+    const urlParts = audioUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    const filePath = `interventions/${userId}/${fileName}`;
+
+    console.log("🔧 AUDIO_UPLOAD_MANAGER - Delete path:", filePath);
+
+    // Supprimer le fichier du storage
+    const { error: deleteError } = await supabase.storage
+      .from('intervention-audios')
+      .remove([filePath]);
+
+    if (deleteError) {
+      console.error("🔧 AUDIO_UPLOAD_MANAGER - Delete error:", deleteError);
+    } else {
+      console.log("🔧 AUDIO_UPLOAD_MANAGER - File deleted successfully");
+    }
+
+    // Mettre à jour le rapport pour supprimer l'URL audio
     const { error: updateError } = await supabase
       .from('intervention_reports')
       .update({ audio_url: null })
       .eq('id', reportId);
 
     if (updateError) {
-      console.error("🔧 AUDIO_DELETE - Error clearing audio URL:", updateError);
+      console.error("🔧 AUDIO_UPLOAD_MANAGER - Update error:", updateError);
     } else {
-      console.log("🔧 AUDIO_DELETE - Audio URL cleared from report");
+      console.log("🔧 AUDIO_UPLOAD_MANAGER - Report updated, audio_url cleared");
     }
-
-    // Supprimer le fichier du storage si c'est une URL Supabase
-    if (audioUrl.includes('intervention-audios')) {
-      try {
-        const urlParts = audioUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        const filePath = `interventions/${userId}/${fileName}`;
-        
-        const { error: deleteError } = await supabase.storage
-          .from('intervention-audios')
-          .remove([filePath]);
-
-        if (deleteError) {
-          console.error("🔧 AUDIO_DELETE - Error deleting file:", deleteError);
-        } else {
-          console.log("🔧 AUDIO_DELETE - File deleted from storage");
-        }
-      } catch (error) {
-        console.error("🔧 AUDIO_DELETE - Error parsing URL for deletion:", error);
-      }
-    }
-
-    toast({
-      title: "Succès",
-      description: "Enregistrement supprimé",
-    });
 
   } catch (error) {
-    console.error("🔧 AUDIO_DELETE - Error during cleanup:", error);
-    toast({
-      title: "Erreur",
-      description: "Erreur lors de la suppression de l'enregistrement",
-      variant: "destructive",
-    });
+    console.error("🔧 AUDIO_UPLOAD_MANAGER - Delete failed:", error);
   }
 };

@@ -74,12 +74,13 @@ const InterventionReportView = () => {
         reportId: reportData?.id,
         hasAudioUrl: !!reportData?.audio_url,
         audioUrl: reportData?.audio_url,
+        audioUrlLength: reportData?.audio_url?.length || 0,
         appointmentId: reportData?.appointment_id
       });
 
-      // Analyser l'état de l'audio
-      if (!reportData?.audio_url) {
-        console.log('🎵 Aucune URL audio dans le rapport');
+      // Analyser l'état de l'audio avec plus de détails
+      if (!reportData?.audio_url || reportData.audio_url.trim() === '') {
+        console.log('🎵 Aucune URL audio dans le rapport (vide ou null)');
         setAudioStatus('none');
       } else if (isExpiredBlobUrl(reportData.audio_url)) {
         console.log('🎵 URL audio expirée détectée:', reportData.audio_url);
@@ -87,9 +88,27 @@ const InterventionReportView = () => {
         // Nettoyer l'URL expirée
         const validatedAudioUrl = await validateAndCleanAudioUrl(reportData.audio_url, reportId);
         reportData.audio_url = validatedAudioUrl;
+        if (!validatedAudioUrl) {
+          setAudioStatus('expired');
+        }
       } else {
-        console.log('🎵 URL audio valide:', reportData.audio_url);
-        setAudioStatus('valid');
+        console.log('🎵 URL audio détectée, validation en cours:', reportData.audio_url);
+        setAudioStatus('loading');
+        
+        // Vérifier si l'URL est accessible
+        try {
+          const response = await fetch(reportData.audio_url, { method: 'HEAD' });
+          if (response.ok) {
+            console.log('🎵 URL audio valide et accessible');
+            setAudioStatus('valid');
+          } else {
+            console.log('🎵 URL audio non accessible, status:', response.status);
+            setAudioStatus('expired');
+          }
+        } catch (error) {
+          console.log('🎵 Erreur lors de la vérification de l\'URL audio:', error);
+          setAudioStatus('expired');
+        }
       }
 
       setReport(reportData);
@@ -415,12 +434,22 @@ const InterventionReportView = () => {
         <div className="space-y-2">
           <h3 className="font-semibold">Enregistrement audio</h3>
           <div className="bg-gray-50 p-3 rounded-md">
+            {audioStatus === 'loading' && (
+              <div className="flex items-center justify-center text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                <span className="text-sm">Vérification de l'enregistrement audio...</span>
+              </div>
+            )}
+            
             {audioStatus === 'valid' && report.audio_url && (
-              <VoiceAnswerPlayer
-                audioUrl={report.audio_url}
-                readOnly={true}
-                shouldLog={true}
-              />
+              <div>
+                <p className="text-sm text-green-600 mb-2">✅ Enregistrement audio disponible</p>
+                <VoiceAnswerPlayer
+                  audioUrl={report.audio_url}
+                  readOnly={true}
+                  shouldLog={true}
+                />
+              </div>
             )}
             
             {audioStatus === 'expired' && (
