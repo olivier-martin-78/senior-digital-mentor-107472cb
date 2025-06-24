@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
 }) => {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isUploading, setIsUploading] = useState(isUploading);
+  const [isUploading, setIsUploading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [permanentAudioUrl, setPermanentAudioUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -128,6 +129,14 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     startRecording();
   }, [startRecording]);
 
+  const handleStartRecordingSimple = useCallback(() => {
+    console.log("🎯 VOICE_RECORDER - Starting new recording (simple)");
+    setPermanentAudioUrl(null);
+    setUploadError(null);
+    setShowExpiredMessage(false);
+    startRecording();
+  }, [startRecording]);
+
   const handleStopRecording = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -206,7 +215,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
       {/* Message d'expiration */}
       {showExpiredMessage && !isRecording && !currentAudioUrl && (
         <ExpiredAudioMessage 
-          onRecordNew={handleStartRecording}
+          onRecordNew={handleStartRecordingSimple}
           isRecording={isRecording}
         />
       )}
