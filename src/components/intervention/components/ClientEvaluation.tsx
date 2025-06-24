@@ -30,7 +30,7 @@ export const ClientEvaluation: React.FC<ClientEvaluationProps> = ({
               className={`text-2xl transition-colors ${
                 star <= clientRating 
                   ? 'text-yellow-500 hover:text-yellow-600' 
-                  : 'text-gray-300 hover:text-yellow-400'
+                  : 'text-gray-300 hover:text-gray-400'
               }`}
             >
               ⭐
