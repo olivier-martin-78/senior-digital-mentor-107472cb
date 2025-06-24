@@ -200,7 +200,7 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
           setGroupMembers(membersWithProfiles);
         }
 
-        // Charger les invitations en attente (non utilisées)
+        // Charger les invitations en attente (non utilisées ET non confirmées)
         const { data: invitationsData, error: invitationsError } = await supabase
           .from('invitations')
           .select('id, email, first_name, last_name, created_at')
@@ -213,13 +213,43 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
         if (invitationsError) throw invitationsError;
 
-        // Ajouter le statut pour les invitations en attente
-        const pendingInvitationsWithStatus = (invitationsData || []).map(invitation => ({
+        // NOUVEAU: Filtrer les invitations pour exclure celles dont l'email correspond à un membre confirmé
+        const memberEmails = membersData ? membersData.map(m => {
+          // Nous devons récupérer l'email du profil correspondant
+          return null; // Pour l'instant, on va faire une autre approche
+        }) : [];
+
+        // Récupérer les emails des membres confirmés pour les filtrer des invitations en attente
+        const confirmedEmails = new Set<string>();
+        if (membersData && membersData.length > 0) {
+          for (const member of membersData) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', member.user_id)
+              .single();
+            
+            if (profileData?.email) {
+              confirmedEmails.add(profileData.email);
+              console.log(`Email confirmé ajouté: ${profileData.email}`);
+            }
+          }
+        }
+
+        // Filtrer les invitations pour exclure les emails déjà confirmés
+        const filteredInvitations = (invitationsData || []).filter(invitation => {
+          const isAlreadyConfirmed = confirmedEmails.has(invitation.email);
+          console.log(`Invitation ${invitation.email} - Déjà confirmée: ${isAlreadyConfirmed}`);
+          return !isAlreadyConfirmed;
+        });
+
+        // Ajouter le statut pour les invitations en attente filtrées
+        const pendingInvitationsWithStatus = filteredInvitations.map(invitation => ({
           ...invitation,
           status: 'pending'
         }));
 
-        console.log('Invitations en attente avec statut:', pendingInvitationsWithStatus);
+        console.log('Invitations en attente filtrées:', pendingInvitationsWithStatus);
         setPendingInvitations(pendingInvitationsWithStatus);
 
       } catch (error: any) {
