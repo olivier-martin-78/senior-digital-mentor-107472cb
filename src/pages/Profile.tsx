@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { User, Settings, Shield, Mail, Calendar, Crown, Edit2, Check, X, Camera } from 'lucide-react';
 import { useDisplayNameValidation } from '@/hooks/useDisplayNameValidation';
+import { ALBUM_THUMBNAILS_BUCKET } from '@/utils/storageUtils';
 
 const Profile = () => {
   const { session, user, isLoading, hasRole, profile } = useAuth();
@@ -56,11 +58,12 @@ const Profile = () => {
     setUploadingAvatar(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `avatar-${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
 
+      // Utiliser le bucket album-thumbnails existant pour les avatars
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from(ALBUM_THUMBNAILS_BUCKET)
         .upload(filePath, file);
 
       if (uploadError) {
@@ -68,7 +71,7 @@ const Profile = () => {
       }
 
       const { data } = supabase.storage
-        .from('avatars')
+        .from(ALBUM_THUMBNAILS_BUCKET)
         .getPublicUrl(filePath);
 
       if (data?.publicUrl) {
