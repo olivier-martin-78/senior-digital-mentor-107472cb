@@ -236,26 +236,74 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
           return;
         }
 
-        // Modifier la requête pour charger soit tous les groupes (admin) soit les groupes de l'utilisateur
-        let query = supabase
-          .from('invitation_groups')
-          .select('id, name, created_by, created_at')
-          .order('created_at', { ascending: false });
+        let allGroupIds: string[] = [];
 
-        // Si l'utilisateur n'est pas admin, filtrer par ses groupes
-        if (!hasRole('admin')) {
-          query = query.eq('created_by', user.id);
+        // Si l'utilisateur est admin, charger tous les groupes
+        if (hasRole('admin')) {
+          console.log('🔄 Admin - Chargement de tous les groupes...');
+          const { data: allGroups, error: allGroupsError } = await supabase
+            .from('invitation_groups')
+            .select('id')
+            .order('created_at', { ascending: false });
+
+          if (allGroupsError) {
+            console.error('❌ Erreur chargement tous les groupes:', allGroupsError);
+            throw allGroupsError;
+          }
+
+          allGroupIds = allGroups?.map(g => g.id) || [];
+        } else {
+          // Charger les groupes créés par l'utilisateur
+          console.log('🔄 Chargement des groupes créés par l\'utilisateur...');
+          const { data: createdGroups, error: createdError } = await supabase
+            .from('invitation_groups')
+            .select('id')
+            .eq('created_by', user.id);
+
+          if (createdError) {
+            console.error('❌ Erreur chargement groupes créés:', createdError);
+          } else {
+            const createdGroupIds = createdGroups?.map(g => g.id) || [];
+            allGroupIds.push(...createdGroupIds);
+            console.log('✅ Groupes créés:', createdGroupIds.length);
+          }
+
+          // Charger les groupes où l'utilisateur est membre
+          console.log('🔄 Chargement des groupes où l\'utilisateur est membre...');
+          const { data: memberGroups, error: memberError } = await supabase
+            .from('group_members')
+            .select('group_id')
+            .eq('user_id', user.id);
+
+          if (memberError) {
+            console.error('❌ Erreur chargement groupes membres:', memberError);
+          } else {
+            const memberGroupIds = memberGroups?.map(gm => gm.group_id) || [];
+            allGroupIds.push(...memberGroupIds);
+            console.log('✅ Groupes où utilisateur est membre:', memberGroupIds.length);
+          }
         }
 
-        console.log('🔄 Exécution de la requête invitation_groups...');
-        const { data: groupsData, error } = await query;
+        // Supprimer les doublons
+        allGroupIds = [...new Set(allGroupIds)];
+        console.log('📋 Total groupes uniques à traiter:', allGroupIds.length);
 
-        console.log('Requête invitation_groups - Données récupérées:', groupsData);
-        console.log('Requête invitation_groups - Erreur:', error);
+        if (allGroupIds.length === 0) {
+          console.log('✅ Aucun groupe trouvé - affichage du message approprié');
+          setGroups([]);
+          return;
+        }
 
-        if (error) {
-          console.error('❌ Erreur lors de la requête invitation_groups:', error);
-          throw error;
+        // Récupérer les détails des groupes
+        const { data: groupsData, error: groupsDataError } = await supabase
+          .from('invitation_groups')
+          .select('id, name, created_by, created_at')
+          .in('id', allGroupIds)
+          .order('created_at', { ascending: false });
+
+        if (groupsDataError) {
+          console.error('❌ Erreur récupération détails groupes:', groupsDataError);
+          throw groupsDataError;
         }
 
         if (!groupsData || groupsData.length === 0) {
