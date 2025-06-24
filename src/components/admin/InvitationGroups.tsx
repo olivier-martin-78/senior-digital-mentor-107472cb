@@ -108,20 +108,19 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
 
           console.log(`✅ Utilisateur confirmé trouvé: ${userData.email} (${userData.id})`);
 
-          // Vérifier si l'utilisateur est déjà membre du groupe
-          const { data: existingMember, error: memberError } = await supabase
+          // Vérifier si l'utilisateur est déjà membre du groupe avec une requête qui ne génère pas d'erreur
+          const { data: existingMembers, error: memberError } = await supabase
             .from('group_members')
             .select('id')
             .eq('group_id', groupId)
-            .eq('user_id', userData.id)
-            .single();
+            .eq('user_id', userData.id);
 
-          if (memberError && memberError.code !== 'PGRST116') {
+          if (memberError) {
             console.error(`❌ Erreur vérification membre existant:`, memberError);
             continue;
           }
 
-          if (existingMember) {
+          if (existingMembers && existingMembers.length > 0) {
             console.log(`⚠️ L'utilisateur ${invitation.email} est déjà membre du groupe`);
             
             // Marquer l'invitation comme utilisée puisque l'utilisateur est déjà membre
@@ -149,6 +148,19 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
             });
 
           if (addMemberError) {
+            if (addMemberError.code === '23505') {
+              // Utilisateur déjà membre (contrainte unique violée)
+              console.log(`⚠️ L'utilisateur ${invitation.email} est déjà membre (contrainte unique)`);
+              
+              // Marquer l'invitation comme utilisée
+              await supabase
+                .from('invitations')
+                .update({ used_at: new Date().toISOString() })
+                .eq('id', invitation.id);
+              
+              syncedCount++;
+              continue;
+            }
             console.error(`❌ Erreur ajout membre ${invitation.email}:`, addMemberError);
             continue;
           }
@@ -203,6 +215,12 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
     };
 
     const loadGroups = async () => {
+      // Éviter les appels multiples simultanés
+      if (loading) {
+        console.log('⏭️ Chargement déjà en cours, abandon');
+        return;
+      }
+
       try {
         setLoading(true);
         console.log('=== DEBUG InvitationGroups: Début du chargement des groupes ===');
@@ -212,7 +230,6 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         if (!user) {
           console.log('❌ Aucun utilisateur connecté - arrêt du chargement');
           setGroups([]);
-          setLoading(false);
           return;
         }
 
@@ -241,7 +258,6 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
         if (!groupsData || groupsData.length === 0) {
           console.log('✅ Aucun groupe trouvé - affichage du message approprié');
           setGroups([]);
-          setLoading(false);
           return;
         }
 
@@ -253,9 +269,11 @@ const InvitationGroups = forwardRef<InvitationGroupsRef, InvitationGroupsProps>(
             console.log(`📋 Traitement du groupe ${index + 1}/${groupsData.length}: ${group.name} (${group.id})`);
             
             try {
-              // Synchroniser les invitations confirmées avant de compter
+              // Synchroniser les invitations confirmées avant de compter (sans attendre pour éviter le blocage)
               console.log(`🔄 Synchronisation pour ${group.name}...`);
-              await syncPendingConfirmedInvitations(group.id);
+              syncPendingConfirmedInvitations(group.id).catch(error => {
+                console.error(`❌ Erreur sync pour ${group.name}:`, error);
+              });
               
               // Récupérer les infos du créateur
               console.log(`👤 Récupération créateur pour ${group.name}...`);
