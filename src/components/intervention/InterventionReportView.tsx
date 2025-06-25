@@ -70,44 +70,70 @@ const InterventionReportView = () => {
         return;
       }
 
-      console.log('✅ Rapport chargé:', {
+      console.log('✅ Rapport chargé - Analyse détaillée de l\'audio:', {
         reportId: reportData?.id,
         hasAudioUrl: !!reportData?.audio_url,
         audioUrl: reportData?.audio_url,
         audioUrlLength: reportData?.audio_url?.length || 0,
+        audioUrlType: typeof reportData?.audio_url,
+        isEmptyString: reportData?.audio_url === '',
+        isNull: reportData?.audio_url === null,
+        isUndefined: reportData?.audio_url === undefined,
+        trimmedUrl: reportData?.audio_url?.trim?.(),
         appointmentId: reportData?.appointment_id
       });
 
       // Analyser l'état de l'audio avec plus de détails
       if (!reportData?.audio_url || reportData.audio_url.trim() === '') {
-        console.log('🎵 Aucune URL audio dans le rapport (vide ou null)');
+        console.log('🎵 Aucune URL audio dans le rapport (vide, null, ou undefined)');
         setAudioStatus('none');
-      } else if (isExpiredBlobUrl(reportData.audio_url)) {
-        console.log('🎵 URL audio expirée détectée:', reportData.audio_url);
-        setAudioStatus('expired');
-        // Nettoyer l'URL expirée
-        const validatedAudioUrl = await validateAndCleanAudioUrl(reportData.audio_url, reportId);
-        reportData.audio_url = validatedAudioUrl;
-        if (!validatedAudioUrl) {
-          setAudioStatus('expired');
-        }
       } else {
-        console.log('🎵 URL audio détectée, validation en cours:', reportData.audio_url);
-        setAudioStatus('loading');
+        const trimmedUrl = reportData.audio_url.trim();
+        console.log('🎵 URL audio détectée, analyse approfondie:', {
+          originalUrl: reportData.audio_url,
+          trimmedUrl,
+          urlLength: trimmedUrl.length,
+          startsWithHttp: trimmedUrl.startsWith('http'),
+          includesSupabase: trimmedUrl.includes('supabase'),
+          includesInterventionAudios: trimmedUrl.includes('intervention-audios')
+        });
         
-        // Vérifier si l'URL est accessible
-        try {
-          const response = await fetch(reportData.audio_url, { method: 'HEAD' });
-          if (response.ok) {
-            console.log('🎵 URL audio valide et accessible');
-            setAudioStatus('valid');
-          } else {
-            console.log('🎵 URL audio non accessible, status:', response.status);
+        if (isExpiredBlobUrl(trimmedUrl)) {
+          console.log('🎵 URL audio expirée détectée (blob:):', trimmedUrl);
+          setAudioStatus('expired');
+          // Nettoyer l'URL expirée
+          const validatedAudioUrl = await validateAndCleanAudioUrl(trimmedUrl, reportId);
+          reportData.audio_url = validatedAudioUrl;
+          if (!validatedAudioUrl) {
             setAudioStatus('expired');
           }
-        } catch (error) {
-          console.log('🎵 Erreur lors de la vérification de l\'URL audio:', error);
-          setAudioStatus('expired');
+        } else {
+          console.log('🎵 URL audio détectée, validation de l\'accessibilité:', trimmedUrl);
+          setAudioStatus('loading');
+          
+          // Vérifier si l'URL est accessible
+          try {
+            const response = await fetch(trimmedUrl, { method: 'HEAD' });
+            console.log('🎵 Réponse de validation URL:', {
+              status: response.status,
+              ok: response.ok,
+              headers: {
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length')
+              }
+            });
+            
+            if (response.ok) {
+              console.log('🎵 URL audio VALIDE et accessible');
+              setAudioStatus('valid');
+            } else {
+              console.log('🎵 URL audio NON accessible, status:', response.status);
+              setAudioStatus('expired');
+            }
+          } catch (error) {
+            console.log('🎵 Erreur lors de la vérification de l\'URL audio:', error);
+            setAudioStatus('expired');
+          }
         }
       }
 
@@ -237,7 +263,12 @@ const InterventionReportView = () => {
     );
   }
 
-  console.log('✅ Rendu du rapport complet avec audioStatus:', audioStatus);
+  console.log('✅ Rendu final du rapport avec audioStatus:', {
+    audioStatus,
+    hasAudioUrl: !!report.audio_url,
+    audioUrl: report.audio_url,
+    willShowPlayer: audioStatus === 'valid' && report.audio_url
+  });
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -430,7 +461,7 @@ const InterventionReportView = () => {
           </div>
         )}
 
-        {/* Section audio améliorée */}
+        {/* Section audio avec logs de débogage améliorés */}
         <div className="space-y-2">
           <h3 className="font-semibold">Enregistrement audio</h3>
           <div className="bg-gray-50 p-3 rounded-md">
@@ -449,6 +480,7 @@ const InterventionReportView = () => {
                   readOnly={true}
                   shouldLog={true}
                 />
+                <p className="text-xs text-gray-500 mt-2">URL: {report.audio_url}</p>
               </div>
             )}
             
@@ -479,7 +511,12 @@ const InterventionReportView = () => {
             )}
             
             {audioStatus === 'none' && (
-              <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
+              <div>
+                <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Debug: audio_url = "{report.audio_url}" (type: {typeof report.audio_url})
+                </p>
+              </div>
             )}
           </div>
         </div>
