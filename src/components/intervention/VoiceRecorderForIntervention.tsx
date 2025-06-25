@@ -26,6 +26,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
   const [isPlaying, setIsPlaying] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   console.log('🎯 VOICE_RECORDER_INIT - Initialisation:', {
     reportId,
@@ -68,13 +69,13 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         setAudioBlob(blob);
         onAudioChange(blob);
         
-        // Créer une URL temporaire pour la lecture
+        // Créer une URL temporaire pour la lecture locale immédiate
         const tempUrl = URL.createObjectURL(blob);
         setAudioUrl(tempUrl);
         
-        // Uploader immédiatement l'audio
+        // Uploader immédiatement l'audio vers Supabase si on a un reportId
         if (reportId) {
-          await uploadAudio(blob, reportId);
+          await uploadAudioToSupabase(blob, reportId);
         }
       };
 
@@ -101,19 +102,32 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }
   };
 
-  const uploadAudio = async (blob: Blob, reportId: string) => {
+  const uploadAudioToSupabase = async (blob: Blob, reportId: string) => {
     try {
-      console.log('🎯 VOICE_RECORDER_UPLOAD - Début upload:', {
+      setIsUploading(true);
+      console.log('🎯 VOICE_RECORDER_UPLOAD - Début upload vers Supabase:', {
         reportId,
         blobSize: blob.size,
         blobType: blob.type
       });
 
-      const fileName = `intervention-audio-${reportId}-${Date.now()}.webm`;
-      
+      // Obtenir l'ID utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Utilisateur non authentifié');
+      }
+
+      // Créer un nom de fichier unique avec l'ID du rapport
+      const timestamp = Date.now();
+      const fileName = `intervention_${reportId}_${timestamp}.webm`;
+      const filePath = `interventions/${user.id}/${fileName}`;
+
+      console.log('🎯 VOICE_RECORDER_UPLOAD - Chemin d\'upload:', filePath);
+
+      // Upload vers Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('intervention-audio')
-        .upload(fileName, blob, {
+        .from('intervention-audios')
+        .upload(filePath, blob, {
           contentType: 'audio/webm',
           upsert: true
         });
@@ -127,8 +141,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
 
       // Obtenir l'URL publique
       const { data: urlData } = supabase.storage
-        .from('intervention-audio')
-        .getPublicUrl(fileName);
+        .from('intervention-audios')
+        .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
       console.log('🎯 VOICE_RECORDER_UPLOAD - URL publique générée:', {
@@ -137,21 +151,35 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         publicUrlLength: publicUrl.length
       });
 
+      // CRUCIAL : Mettre à jour le rapport avec l'URL permanente
+      const { data: updateData, error: updateError } = await supabase
+        .from('intervention_reports')
+        .update({ audio_url: publicUrl })
+        .eq('id', reportId)
+        .select('audio_url');
+
+      if (updateError) {
+        console.error('❌ VOICE_RECORDER_UPLOAD - Erreur mise à jour rapport:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ VOICE_RECORDER_UPLOAD - Rapport mis à jour avec succès:', updateData);
+
       // Remplacer l'URL temporaire par l'URL permanente
       if (audioUrl && audioUrl.startsWith('blob:')) {
         URL.revokeObjectURL(audioUrl);
       }
       setAudioUrl(publicUrl);
       
-      // Notifier le parent du changement d'URL
+      // Notifier le parent du changement d'URL permanente
       if (onAudioUrlChange) {
-        console.log('🎯 VOICE_RECORDER_UPLOAD - Notification parent URL:', publicUrl);
+        console.log('🎯 VOICE_RECORDER_UPLOAD - Notification parent URL permanente:', publicUrl);
         onAudioUrlChange(publicUrl);
       }
 
       toast({
         title: 'Succès',
-        description: 'Enregistrement sauvegardé',
+        description: 'Enregistrement sauvegardé avec succès',
       });
 
     } catch (error) {
@@ -161,6 +189,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         description: 'Impossible de sauvegarder l\'enregistrement',
         variant: 'destructive',
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -202,8 +232,26 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     }
   };
 
-  const deleteAudio = () => {
+  const deleteAudio = async () => {
     console.log('🎯 VOICE_RECORDER_DELETE - Suppression audio');
+    
+    // Si on a un reportId, supprimer l'audio_url du rapport
+    if (reportId) {
+      try {
+        const { error } = await supabase
+          .from('intervention_reports')
+          .update({ audio_url: null })
+          .eq('id', reportId);
+
+        if (error) {
+          console.error('❌ VOICE_RECORDER_DELETE - Erreur suppression DB:', error);
+        } else {
+          console.log('✅ VOICE_RECORDER_DELETE - Audio supprimé de la DB');
+        }
+      } catch (error) {
+        console.error('❌ VOICE_RECORDER_DELETE - Erreur:', error);
+      }
+    }
     
     if (audioUrl && audioUrl.startsWith('blob:')) {
       URL.revokeObjectURL(audioUrl);
@@ -231,7 +279,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           <Button
             type="button"
             onClick={startRecording}
-            disabled={disabled}
+            disabled={disabled || isUploading}
             className="flex items-center gap-2"
           >
             <Mic className="h-4 w-4" />
@@ -257,6 +305,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             onClick={playAudio}
             variant="outline"
             className="flex items-center gap-2"
+            disabled={isUploading}
           >
             <Play className="h-4 w-4" />
             Écouter
@@ -282,6 +331,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             variant="destructive"
             size="sm"
             className="flex items-center gap-2"
+            disabled={isUploading}
           >
             <Trash2 className="h-4 w-4" />
             Supprimer
@@ -296,13 +346,22 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         </div>
       )}
 
-      {audioUrl && (
-        <div className="text-sm text-green-600">
-          Enregistrement disponible
+      {isUploading && (
+        <div className="text-sm text-blue-600 flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+          Sauvegarde en cours...
         </div>
       )}
 
-      {!audioUrl && !isRecording && (
+      {audioUrl && !isUploading && (
+        <div className="text-sm text-green-600">
+          {audioUrl.startsWith('blob:') ? 
+            'Enregistrement temporaire (non sauvegardé)' : 
+            'Enregistrement sauvegardé'}
+        </div>
+      )}
+
+      {!audioUrl && !isRecording && !isUploading && (
         <div className="text-sm text-gray-500">
           Aucun enregistrement
         </div>
