@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { getAudioUrl, validateAudioUrl } from '../utils/audioUtils';
 
 interface AudioPlayerCoreProps {
   audioUrl: string;
@@ -22,8 +23,12 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Traiter l'URL audio pour s'assurer qu'elle est valide et complète
+  const processedAudioUrl = getAudioUrl(audioUrl);
 
   console.log("🎵 AUDIO_PLAYER_CORE - Rendering with URL:", audioUrl);
+  console.log("🎵 AUDIO_PLAYER_CORE - Processed URL:", processedAudioUrl);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -76,7 +81,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadstart', handleLoadStart);
     };
-  }, [audioUrl, onPlay, onPause, onEnded, onError]);
+  }, [processedAudioUrl, onPlay, onPause, onEnded, onError]);
 
   // Afficher un message d'erreur au lieu de masquer complètement le composant
   if (hasError) {
@@ -87,6 +92,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
           <div className="flex-1">
             <p className="text-sm text-red-700">{errorMessage}</p>
             <p className="text-xs text-red-600 mt-1">Vérifiez que le fichier audio est accessible</p>
+            <p className="text-xs text-gray-500 mt-1">URL: {processedAudioUrl}</p>
           </div>
         </div>
       </div>
@@ -94,11 +100,14 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   }
 
   // Vérifier si l'URL semble valide
-  if (!audioUrl || audioUrl.trim() === '') {
+  if (!processedAudioUrl || !validateAudioUrl(processedAudioUrl)) {
     console.log("🎵 AUDIO_PLAYER_CORE - No valid URL provided");
     return (
       <div className={`bg-gray-50 border border-gray-200 rounded-lg p-3 ${className}`}>
         <p className="text-sm text-gray-500">Aucun enregistrement audio disponible</p>
+        {audioUrl && (
+          <p className="text-xs text-gray-400 mt-1">URL originale: {audioUrl}</p>
+        )}
       </div>
     );
   }
@@ -106,7 +115,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   return (
     <audio
       ref={audioRef}
-      src={audioUrl}
+      src={processedAudioUrl}
       className={`w-full ${className}`}
       controls
       preload="metadata"

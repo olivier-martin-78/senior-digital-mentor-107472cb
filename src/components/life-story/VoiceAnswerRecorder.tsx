@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import AudioRecorder from '@/components/life-story/AudioRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
+import { getAudioUrl } from './utils/audioUtils';
 
 interface VoiceAnswerRecorderProps {
   chapterId: string;
@@ -26,10 +27,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   
-  // Normaliser l'URL existante de manière plus stricte
-  const normalizedExistingUrl = (existingAudioUrl && typeof existingAudioUrl === 'string' && existingAudioUrl.trim() !== '') 
-    ? existingAudioUrl.trim() 
-    : null;
+  // Utiliser getAudioUrl pour convertir les chemins relatifs en URLs complètes
+  const processedAudioUrl = getAudioUrl(existingAudioUrl);
   
   // DEBUG: Log l'état initial avec plus de détails
   if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
@@ -38,8 +37,8 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
       questionId,
       existingAudioUrl,
       existingAudioUrlType: typeof existingAudioUrl,
-      normalizedExistingUrl,
-      hasValidAudio: !!normalizedExistingUrl,
+      processedAudioUrl,
+      hasValidAudio: !!processedAudioUrl,
       isUploading,
       isReadOnly,
       canRecord: !isReadOnly,
@@ -58,7 +57,7 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
         audioUrl, 
         audioUrlType: typeof audioUrl,
         preventAutoSave: !!preventAutoSave,
-        previousUrl: normalizedExistingUrl,
+        previousUrl: processedAudioUrl,
         timestamp: new Date().toISOString()
       });
     }
@@ -107,14 +106,14 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   };
 
   // Logique simplifiée pour l'affichage
-  const shouldShowPlayer = normalizedExistingUrl && !isUploading;
+  const shouldShowPlayer = processedAudioUrl && !isUploading;
   
   // LOG DÉTAILLÉ pour question 1 chapitre 1
   if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
     console.log('🎤 RECORDER - Question 1 Chapitre 1 - Décision d\'affichage:', {
       shouldShowPlayer,
-      hasNormalizedUrl: !!normalizedExistingUrl,
-      normalizedExistingUrl,
+      hasProcessedUrl: !!processedAudioUrl,
+      processedAudioUrl,
       isUploading,
       isReadOnly,
       canRecord
@@ -125,11 +124,11 @@ const VoiceAnswerRecorder: React.FC<VoiceAnswerRecorderProps> = ({
   if (shouldShowPlayer) {
     // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-      console.log('🎤 RECORDER - Question 1 Chapitre 1 - ✅ Affichage du lecteur avec URL:', normalizedExistingUrl);
+      console.log('🎤 RECORDER - Question 1 Chapitre 1 - ✅ Affichage du lecteur avec URL:', processedAudioUrl);
     }
     return (
       <VoiceAnswerPlayer
-        audioUrl={normalizedExistingUrl}
+        audioUrl={processedAudioUrl}
         onDelete={handleDeleteExistingAudio}
         readOnly={isReadOnly}
         shouldLog={shouldLog && chapterId === 'chapter-1' && questionId === 'question-1'}
