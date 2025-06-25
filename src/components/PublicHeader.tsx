@@ -16,7 +16,7 @@ const PublicHeader = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <a
-              href="/auth"
+              href="/subscription"
               className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue transition-colors"
             >
               <Crown className="w-4 h-4" />
@@ -50,7 +50,7 @@ const PublicHeader = () => {
           <div className="md:hidden py-4 border-t border-gray-100">
             <nav className="flex flex-col space-y-2">
               <a
-                href="/auth"
+                href="/subscription"
                 className="flex items-center space-x-1 text-sm font-medium text-tranches-charcoal hover:text-tranches-dustyblue px-2 py-1"
                 onClick={() => setIsMenuOpen(false)}
               >
