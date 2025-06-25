@@ -180,9 +180,9 @@ const ProfessionalModule = () => {
             </h2>
             <p className="text-lg text-tranches-charcoal">
               💳 Abonnement ensuite : 6,90 €/mois - Annulation possible à tout moment
-            </p>
+            </p><br/>
             <p className="text-xl text-tranches-charcoal mb-4">
-              🕐 Offre ambassadeur réservée aux 50 premiers professionnels : Gratuité à vie
+              🕐 Offre de lancement : Devenez ambassadeur CaprIA et profitez de l'application gratuitement à vie. Offre réservée aux 50 premiers ambassadeurs.
             </p>            
           </div>
         </div>
@@ -290,7 +290,7 @@ const ProfessionalModule = () => {
             
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-8 max-w-md mx-auto">
               <p className="text-lg mb-2">💖 CaprIA est gratuit pendant 65 jours</p>
-              <p className="text-sm opacity-90">⚠️ Seulement 50 accès disponibles</p>
+              <p className="text-sm opacity-90">⚠️ Seulement 50 accès ambassadeurs gratuits à vie</p>
             </div>
 
             <Button 
