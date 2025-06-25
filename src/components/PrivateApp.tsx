@@ -47,7 +47,7 @@ const PrivateApp: React.FC = () => {
         <Routes>
           {/* Semi-protected routes - require authentication but not full access */}
           <Route element={<ProtectedRoute requiresFullAccess={false} />}>
-            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/account/subscription" element={<Subscription />} />
           </Route>
 
           {/* Fully protected routes - require authentication and account access */}
