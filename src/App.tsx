@@ -13,7 +13,7 @@ const PrivateApp = lazy(() => import('@/components/PrivateApp'));
 // Component to handle route-based app selection
 const AppRouter: React.FC = () => {
   const location = useLocation();
-  const isPublicRoute = ['/', '/auth', '/reset-password'].includes(location.pathname);
+  const isPublicRoute = ['/', '/auth', '/reset-password', '/subscription'].includes(location.pathname);
 
   return (
     <>
