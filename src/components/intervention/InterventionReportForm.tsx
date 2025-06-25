@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { FileText } from 'lucide-react';
 import { Appointment } from '@/types/appointments';
-import AppointmentSelector from './AppointmentSelector';
+import { AppointmentSelector } from './components/AppointmentSelector';
 import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
 import { Slider } from "@/components/ui/slider"
 
@@ -102,6 +103,8 @@ const InterventionReportForm = () => {
     try {
       setLoading(true);
 
+      console.log('🎯 FORM_LOAD - Chargement du rapport:', reportId);
+
       const { data, error } = await supabase
         .from('intervention_reports')
         .select('*')
@@ -110,6 +113,14 @@ const InterventionReportForm = () => {
 
       if (error) throw error;
 
+      console.log('🎯 FORM_LOAD - Données du rapport chargées:', {
+        reportId,
+        hasAudioUrl: !!data.audio_url,
+        audioUrl: data.audio_url,
+        audioUrlType: typeof data.audio_url,
+        audioUrlLength: data.audio_url?.length || 0
+      });
+
       setFormData({
         patientName: data.patient_name || '',
         auxiliaryName: data.auxiliary_name || '',
@@ -117,20 +128,20 @@ const InterventionReportForm = () => {
         startTime: data.start_time || '',
         endTime: data.end_time || '',
         hourlyRate: data.hourly_rate || null,
-        activities: data.activities || [],
+        activities: Array.isArray(data.activities) ? data.activities : [],
         activitiesOther: data.activities_other || null,
-        physicalState: data.physical_state || [],
+        physicalState: Array.isArray(data.physical_state) ? data.physical_state : [],
         physicalStateOther: data.physical_state_other || null,
         painLocation: data.pain_location || null,
-        mentalState: data.mental_state || [],
+        mentalState: Array.isArray(data.mental_state) ? data.mental_state : [],
         mentalStateChange: data.mental_state_change || null,
-        hygiene: data.hygiene || [],
+        hygiene: Array.isArray(data.hygiene) ? data.hygiene : [],
         hygieneComments: data.hygiene_comments || null,
         appetite: data.appetite || null,
         appetiteComments: data.appetite_comments || null,
         hydration: data.hydration || null,
         observations: data.observations || null,
-        followUp: data.follow_up || [],
+        followUp: Array.isArray(data.follow_up) ? data.follow_up : [],
         followUpOther: data.follow_up_other || null,
         mediaFiles: data.media_files || [],
         audio_url: data.audio_url || null,
@@ -140,7 +151,7 @@ const InterventionReportForm = () => {
 
       setDate(data.date ? new Date(data.date) : undefined);
 
-      // Charger le rendez-vous associé si intervention_report_id est présent
+      // Charger le rendez-vous associé si appointment_id est présent
       if (data.appointment_id) {
         const { data: appointmentData, error: appointmentError } = await supabase
           .from('appointments')
@@ -149,7 +160,12 @@ const InterventionReportForm = () => {
           .single();
 
         if (appointmentData && !appointmentError) {
-          setSelectedAppointment(appointmentData);
+          // Ajouter la propriété caregivers manquante
+          const appointmentWithCaregivers: Appointment = {
+            ...appointmentData,
+            caregivers: [] // Valeur par défaut
+          };
+          setSelectedAppointment(appointmentWithCaregivers);
           setSelectedAppointmentId(appointmentData.id);
         } else {
           console.error('Erreur lors du chargement du rendez-vous associé:', appointmentError);
@@ -195,7 +211,7 @@ const InterventionReportForm = () => {
       const reportData = {
         patient_name: formData.patientName,
         auxiliary_name: formData.auxiliaryName,
-        date: formData.date,
+        date: formData.date ? formData.date.toISOString().split('T')[0] : null,
         start_time: formData.startTime,
         end_time: formData.endTime,
         hourly_rate: formData.hourlyRate || null,
