@@ -12,6 +12,7 @@ import AdminDiary from '@/pages/admin/AdminDiary';
 import AdminLifeStories from '@/pages/admin/AdminLifeStories';
 import AdminActivities from '@/pages/admin/AdminActivities';
 import Subscription from '@/pages/Subscription';
+import PublicSubscription from '@/pages/PublicSubscription';
 import Recent from '@/pages/Recent';
 import Blog from '@/pages/Blog';
 import BlogPost from '@/pages/BlogPost';
@@ -38,16 +39,28 @@ import CrosswordGame from '@/pages/activities/CrosswordGame';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 const PrivateApp: React.FC = () => {
+  const { user, isLoading } = useOptionalAuth();
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
+  }
+
   return (
     <AuthProvider>
       <Toaster />
       <div className="min-h-screen">
         <Routes>
+          {/* Public subscription route for non-authenticated users */}
+          {!user && <Route path="/subscription" element={<PublicSubscription />} />}
+          
           {/* Semi-protected routes - require authentication but not full access */}
           <Route element={<ProtectedRoute requiresFullAccess={false} />}>
             <Route path="/account/subscription" element={<Subscription />} />
+            <Route path="/subscription" element={<Subscription />} />
           </Route>
 
           {/* Fully protected routes - require authentication and account access */}
