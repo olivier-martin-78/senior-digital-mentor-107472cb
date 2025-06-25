@@ -178,12 +178,12 @@ const ProfessionalModule = () => {
             <h2 className="text-3xl font-serif text-tranches-charcoal mb-6">
               🎁 Offre exclusive : Testez CaprIA gratuitement pendant 65 jours
             </h2>
-            <p className="text-xl text-tranches-charcoal mb-4">
-              🕐 Offre réservée aux 50 premiers inscrits
-            </p>
             <p className="text-lg text-tranches-charcoal">
-              💳 Abonnement ensuite : 6,90 €/mois
+              💳 Abonnement ensuite : 6,90 €/mois - Annulation possible à tout moment
             </p>
+            <p className="text-xl text-tranches-charcoal mb-4">
+              🕐 Offre ambassadeur réservée aux 50 premiers professionnels : Gratuité à vie
+            </p>            
           </div>
         </div>
       </section>
