@@ -47,28 +47,24 @@ const ProfessionalModule = () => {
   const testimonials = [
     {
       title: "Le jour où j'ai failli tout lâcher…",
-      audience: "auxiliaire de vie en perte de motivation",
       text: "Je venais d'enchaîner une semaine difficile. Une collègue m'a parlé de CaprIA. J'ai essayé… et j'ai retrouvé du plaisir. J'ai même commencé à écrire dans le journal intime. Aujourd'hui, je me sens mieux accompagnée pour accompagner les autres.",
       cta: "Essayez CaprIA gratuitement pendant 65 jours. Ça change tout.",
       color: "from-purple-100 to-purple-50"
     },
     {
       title: "Je suis plus qu'une aide à domicile",
-      audience: "professionnel en quête de reconnaissance",
       text: "Avant CaprIA, j'étais celle qui 'vient le matin'. Maintenant, je suis celle qui fait sourire, celle qui relie les générations, celle qu'on remercie. Grâce à CaprIA, je propose plus que des services : je crée du lien.",
       cta: "Vous méritez vous aussi d'être reconnu(e).",
       color: "from-blue-100 to-blue-50"
     },
     {
       title: "Quand Robert a recommencé à marcher",
-      audience: "professionnel orienté bien-être physique",
       text: "10 minutes de gym douce, une fois, et quelque chose s'est réveillé. Trois semaines plus tard, Robert marchait chaque jour. CaprIA a été le déclencheur. Moi, je suis fière de lui – et de moi.",
       cta: "CaprIA, c'est du mouvement, pour les corps et les cœurs.",
       color: "from-green-100 to-green-50"
     },
     {
       title: "Et moi, dans tout ça ?",
-      audience: "aide à domicile en quête de sens personnel",
       text: "CaprIA, c'est aussi un espace pour moi. Quelques minutes pour souffler, écrire, respirer. J'ai découvert que pour mieux prendre soin, il faut aussi prendre soin de soi.",
       cta: "Testez gratuitement pendant 65 jours. Parce que vous aussi, vous comptez.",
       color: "from-pink-100 to-pink-50"
@@ -246,12 +242,9 @@ const ProfessionalModule = () => {
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-4 h-4 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
                     <div>
-                      <h3 className="text-2xl font-serif text-tranches-charcoal mb-2">
+                      <h3 className="text-2xl font-serif text-tranches-charcoal mb-4">
                         "{testimonial.title}"
                       </h3>
-                      <p className="text-sm text-tranches-charcoal/70 mb-4">
-                        Public : {testimonial.audience}
-                      </p>
                     </div>
                   </div>
                   
