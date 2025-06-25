@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
+import { AudioDiagnosticTool } from './AudioDiagnosticTool';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const InterventionReportView = () => {
   const [report, setReport] = useState<any>(null);
   const [appointment, setAppointment] = useState<any>(null);
   const [audioStatus, setAudioStatus] = useState<'loading' | 'valid' | 'expired' | 'none'>('none');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   console.log('🔍 InterventionReportView - Début du rendu:', {
     reportId,
@@ -87,6 +89,8 @@ const InterventionReportView = () => {
       if (!reportData?.audio_url || reportData.audio_url.trim() === '') {
         console.log('🎵 Aucune URL audio dans le rapport (vide, null, ou undefined)');
         setAudioStatus('none');
+        // Montrer l'outil de diagnostic si pas d'audio
+        setShowDiagnostic(true);
       } else {
         const trimmedUrl = reportData.audio_url.trim();
         console.log('🎵 URL audio détectée, analyse approfondie:', {
@@ -101,6 +105,7 @@ const InterventionReportView = () => {
         if (isExpiredBlobUrl(trimmedUrl)) {
           console.log('🎵 URL audio expirée détectée (blob:):', trimmedUrl);
           setAudioStatus('expired');
+          setShowDiagnostic(true);
           // Nettoyer l'URL expirée
           const validatedAudioUrl = await validateAndCleanAudioUrl(trimmedUrl, reportId);
           reportData.audio_url = validatedAudioUrl;
@@ -129,10 +134,12 @@ const InterventionReportView = () => {
             } else {
               console.log('🎵 URL audio NON accessible, status:', response.status);
               setAudioStatus('expired');
+              setShowDiagnostic(true);
             }
           } catch (error) {
             console.log('🎵 Erreur lors de la vérification de l\'URL audio:', error);
             setAudioStatus('expired');
+            setShowDiagnostic(true);
           }
         }
       }
@@ -267,261 +274,275 @@ const InterventionReportView = () => {
     audioStatus,
     hasAudioUrl: !!report.audio_url,
     audioUrl: report.audio_url,
-    willShowPlayer: audioStatus === 'valid' && report.audio_url
+    willShowPlayer: audioStatus === 'valid' && report.audio_url,
+    showDiagnostic
   });
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Rapport d'intervention
-          </CardTitle>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <Button onClick={handleEdit} className="w-full sm:w-auto">
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full sm:w-auto">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Supprimer le rapport</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? Cette action est irréversible.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                    {deleting ? 'Suppression...' : 'Supprimer'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+    <div className="space-y-6">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Rapport d'intervention
+            </CardTitle>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+              <Button onClick={handleEdit} className="w-full sm:w-auto">
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full sm:w-auto">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Supprimer le rapport</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Êtes-vous sûr de vouloir supprimer ce rapport d'intervention ? Cette action est irréversible.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+                      {deleting ? 'Suppression...' : 'Supprimer'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h3 className="font-semibold flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Informations générales
+              </h3>
+              <div className="bg-gray-50 p-3 rounded-md space-y-1">
+                <p><strong>Patient :</strong> {report.patient_name}</p>
+                <p><strong>Auxiliaire :</strong> {report.auxiliary_name}</p>
+                <p><strong>Date :</strong> {new Date(report.date).toLocaleDateString()}</p>
+                {report.start_time && report.end_time && (
+                  <p><strong>Horaires :</strong> {report.start_time} - {report.end_time}</p>
+                )}
+                {report.hourly_rate && (
+                  <p><strong>Taux horaire :</strong> {report.hourly_rate}€</p>
+                )}
+              </div>
+            </div>
+
+            {appointment && (
+              <div className="space-y-2">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Rendez-vous associé
+                </h3>
+                <div className="bg-gray-50 p-3 rounded-md space-y-1">
+                  <p><strong>Client :</strong> {appointment.clients?.first_name} {appointment.clients?.last_name}</p>
+                  {appointment.clients?.address && (
+                    <p><strong>Adresse :</strong> {appointment.clients.address}</p>
+                  )}
+                  <p><strong>Intervenant :</strong> {appointment.intervenants?.first_name} {appointment.intervenants?.last_name}</p>
+                  <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
+                    {appointment.status === 'completed' ? 'Terminé' : 'Programmé'}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Informations générales
-            </h3>
-            <div className="bg-gray-50 p-3 rounded-md space-y-1">
-              <p><strong>Patient :</strong> {report.patient_name}</p>
-              <p><strong>Auxiliaire :</strong> {report.auxiliary_name}</p>
-              <p><strong>Date :</strong> {new Date(report.date).toLocaleDateString()}</p>
-              {report.start_time && report.end_time && (
-                <p><strong>Horaires :</strong> {report.start_time} - {report.end_time}</p>
-              )}
-              {report.hourly_rate && (
-                <p><strong>Taux horaire :</strong> {report.hourly_rate}€</p>
+            <h3 className="font-semibold">Activités réalisées</h3>
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p>{formatArrayToText(report.activities)}</p>
+              {report.activities_other && (
+                <p className="mt-2"><strong>Autres :</strong> {report.activities_other}</p>
               )}
             </div>
           </div>
 
-          {appointment && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Rendez-vous associé
-              </h3>
-              <div className="bg-gray-50 p-3 rounded-md space-y-1">
-                <p><strong>Client :</strong> {appointment.clients?.first_name} {appointment.clients?.last_name}</p>
-                {appointment.clients?.address && (
-                  <p><strong>Adresse :</strong> {appointment.clients.address}</p>
+              <h3 className="font-semibold">État physique</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p>{formatArrayToText(report.physical_state)}</p>
+                {report.physical_state_other && (
+                  <p className="mt-2"><strong>Détails :</strong> {report.physical_state_other}</p>
                 )}
-                <p><strong>Intervenant :</strong> {appointment.intervenants?.first_name} {appointment.intervenants?.last_name}</p>
-                <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
-                  {appointment.status === 'completed' ? 'Terminé' : 'Programmé'}
-                </Badge>
+                {report.pain_location && (
+                  <p className="mt-2"><strong>Douleur :</strong> {report.pain_location}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold">État mental</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p>{formatArrayToText(report.mental_state)}</p>
+                {report.mental_state_change && (
+                  <p className="mt-2"><strong>Changements :</strong> {report.mental_state_change}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-semibold">Hygiène</h3>
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p>{formatArrayToText(report.hygiene)}</p>
+              {report.hygiene_comments && (
+                <p className="mt-2"><strong>Commentaires :</strong> {report.hygiene_comments}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h3 className="font-semibold">Appétit</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p>{report.appetite || 'Non renseigné'}</p>
+                {report.appetite_comments && (
+                  <p className="mt-2"><strong>Commentaires :</strong> {report.appetite_comments}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold">Hydratation</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p>{report.hydration || 'Non renseigné'}</p>
+              </div>
+            </div>
+          </div>
+
+          {report.observations && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Observations générales</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p>{report.observations}</p>
               </div>
             </div>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <h3 className="font-semibold">Activités réalisées</h3>
-          <div className="bg-gray-50 p-3 rounded-md">
-            <p>{formatArrayToText(report.activities)}</p>
-            {report.activities_other && (
-              <p className="mt-2"><strong>Autres :</strong> {report.activities_other}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h3 className="font-semibold">État physique</h3>
+            <h3 className="font-semibold">Suivi nécessaire</h3>
             <div className="bg-gray-50 p-3 rounded-md">
-              <p>{formatArrayToText(report.physical_state)}</p>
-              {report.physical_state_other && (
-                <p className="mt-2"><strong>Détails :</strong> {report.physical_state_other}</p>
-              )}
-              {report.pain_location && (
-                <p className="mt-2"><strong>Douleur :</strong> {report.pain_location}</p>
+              <p>{formatArrayToText(report.follow_up)}</p>
+              {report.follow_up_other && (
+                <p className="mt-2"><strong>Autres :</strong> {report.follow_up_other}</p>
               )}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="font-semibold">État mental</h3>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p>{formatArrayToText(report.mental_state)}</p>
-              {report.mental_state_change && (
-                <p className="mt-2"><strong>Changements :</strong> {report.mental_state_change}</p>
-              )}
+          {report.media_files && report.media_files.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Photos et documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {report.media_files.map((media: any, index: number) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3">
+                    {media.preview ? (
+                      <div className="w-full mb-2">
+                        <img
+                          src={media.preview}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-auto object-contain rounded max-h-64"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-600 truncate">{media.name || `Media ${index + 1}`}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="space-y-2">
-          <h3 className="font-semibold">Hygiène</h3>
-          <div className="bg-gray-50 p-3 rounded-md">
-            <p>{formatArrayToText(report.hygiene)}</p>
-            {report.hygiene_comments && (
-              <p className="mt-2"><strong>Commentaires :</strong> {report.hygiene_comments}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Section audio mise à jour */}
           <div className="space-y-2">
-            <h3 className="font-semibold">Appétit</h3>
+            <h3 className="font-semibold">Enregistrement audio</h3>
             <div className="bg-gray-50 p-3 rounded-md">
-              <p>{report.appetite || 'Non renseigné'}</p>
-              {report.appetite_comments && (
-                <p className="mt-2"><strong>Commentaires :</strong> {report.appetite_comments}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Hydratation</h3>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p>{report.hydration || 'Non renseigné'}</p>
-            </div>
-          </div>
-        </div>
-
-        {report.observations && (
-          <div className="space-y-2">
-            <h3 className="font-semibold">Observations générales</h3>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p>{report.observations}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <h3 className="font-semibold">Suivi nécessaire</h3>
-          <div className="bg-gray-50 p-3 rounded-md">
-            <p>{formatArrayToText(report.follow_up)}</p>
-            {report.follow_up_other && (
-              <p className="mt-2"><strong>Autres :</strong> {report.follow_up_other}</p>
-            )}
-          </div>
-        </div>
-
-        {report.media_files && report.media_files.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold">Photos et documents</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {report.media_files.map((media: any, index: number) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-3">
-                  {media.preview ? (
-                    <div className="w-full mb-2">
-                      <img
-                        src={media.preview}
-                        alt={media.name || `Media ${index + 1}`}
-                        className="w-full h-auto object-contain rounded max-h-64"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-600 truncate">{media.name || `Media ${index + 1}`}</p>
+              {audioStatus === 'loading' && (
+                <div className="flex items-center justify-center text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  <span className="text-sm">Vérification de l'enregistrement audio...</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Section audio avec logs de débogage améliorés */}
-        <div className="space-y-2">
-          <h3 className="font-semibold">Enregistrement audio</h3>
-          <div className="bg-gray-50 p-3 rounded-md">
-            {audioStatus === 'loading' && (
-              <div className="flex items-center justify-center text-blue-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                <span className="text-sm">Vérification de l'enregistrement audio...</span>
-              </div>
-            )}
-            
-            {audioStatus === 'valid' && report.audio_url && (
-              <div>
-                <p className="text-sm text-green-600 mb-2">✅ Enregistrement audio disponible</p>
-                <VoiceAnswerPlayer
-                  audioUrl={report.audio_url}
-                  readOnly={true}
-                  shouldLog={true}
-                />
-                <p className="text-xs text-gray-500 mt-2">URL: {report.audio_url}</p>
-              </div>
-            )}
-            
-            {audioStatus === 'expired' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-orange-800 mb-1">
-                      Enregistrement audio expiré
-                    </h4>
-                    <p className="text-sm text-orange-700">
-                      L'enregistrement audio de ce rapport était temporaire et n'est plus disponible. 
-                      Vous pouvez modifier le rapport pour créer un nouvel enregistrement.
-                    </p>
-                    <Button
-                      onClick={handleEdit}
-                      size="sm"
-                      variant="outline"
-                      className="border-orange-300 text-orange-700 hover:bg-orange-100 mt-2"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Modifier le rapport
-                    </Button>
+              )}
+              
+              {audioStatus === 'valid' && report.audio_url && (
+                <div>
+                  <p className="text-sm text-green-600 mb-2">✅ Enregistrement audio disponible</p>
+                  <VoiceAnswerPlayer
+                    audioUrl={report.audio_url}
+                    readOnly={true}
+                    shouldLog={true}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">URL: {report.audio_url}</p>
+                </div>
+              )}
+              
+              {audioStatus === 'expired' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-orange-800 mb-1">
+                        Enregistrement audio expiré
+                      </h4>
+                      <p className="text-sm text-orange-700">
+                        L'enregistrement audio de ce rapport était temporaire et n'est plus disponible. 
+                        Vous pouvez modifier le rapport pour créer un nouvel enregistrement.
+                      </p>
+                      <Button
+                        onClick={handleEdit}
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-300 text-orange-700 hover:bg-orange-100 mt-2"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Modifier le rapport
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {audioStatus === 'none' && (
-              <div>
-                <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Debug: audio_url = "{report.audio_url}" (type: {typeof report.audio_url})
-                </p>
-              </div>
-            )}
+              )}
+              
+              {audioStatus === 'none' && (
+                <div>
+                  <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Debug: audio_url = "{report.audio_url}" (type: {typeof report.audio_url})
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Outil de diagnostic audio */}
+      {showDiagnostic && reportId && (
+        <div className="max-w-4xl mx-auto">
+          <AudioDiagnosticTool
+            reportId={reportId}
+            currentAudioUrl={report?.audio_url}
+            onAudioStatusChange={setAudioStatus}
+          />
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
