@@ -44,32 +44,50 @@ serve(async (req: Request) => {
       throw new Error('Données JSON invalides');
     }
     
-    const { name, email, message, attachmentUrl } = parsedData;
+    const { firstName, lastName, email, message, thematiques, attachmentUrl } = parsedData;
     console.log('Données extraites:', { 
-      name: name ? '✓' : '✗', 
+      firstName: firstName ? '✓' : '✗', 
+      lastName: lastName ? '✓' : '✗', 
       email: email ? '✓' : '✗', 
       message: message ? '✓' : '✗', 
+      hasThematiques: thematiques && thematiques.length > 0 ? '✓' : '✗',
       hasAttachment: !!attachmentUrl 
     });
     
     // Validation des champs requis
-    if (!name || !email || !message) {
-      console.error('Champs manquants:', { name: !!name, email: !!email, message: !!message });
+    if (!firstName || !lastName || !email || !message) {
+      console.error('Champs manquants:', { firstName: !!firstName, lastName: !!lastName, email: !!email, message: !!message });
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Tous les champs sont requis (nom, email, message)' 
+          error: 'Tous les champs sont requis (prénom, nom, email, message)' 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
     
+    const fullName = `${firstName} ${lastName}`;
+    
     // Construire le contenu de l'email
-    const emailSubject = `Nouvelle demande de contact de ${name}`;
+    const emailSubject = `Nouvelle demande de contact de ${fullName}`;
     let emailContent = `
       <h1>Nouvelle demande de contact</h1>
-      <p><strong>Nom:</strong> ${name}</p>
+      <p><strong>Prénom:</strong> ${firstName}</p>
+      <p><strong>Nom:</strong> ${lastName}</p>
       <p><strong>Email:</strong> ${email}</p>
+    `;
+    
+    // Ajouter les thématiques si présentes
+    if (thematiques && thematiques.length > 0) {
+      emailContent += `
+        <p><strong>Thématiques sélectionnées:</strong></p>
+        <ul>
+          ${thematiques.map((theme: string) => `<li>${theme}</li>`).join('')}
+        </ul>
+      `;
+    }
+    
+    emailContent += `
       <p><strong>Message:</strong></p>
       <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
         ${message.replace(/\n/g, '<br/>')}
@@ -113,7 +131,7 @@ serve(async (req: Request) => {
       to: email,
       subject: 'Nous avons bien reçu votre message - Senior Digital Mentor',
       html: `
-        <h1>Bonjour ${name},</h1>
+        <h1>Bonjour ${firstName},</h1>
         <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
         <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
         <br>
