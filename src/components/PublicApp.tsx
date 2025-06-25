@@ -7,6 +7,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import PublicSubscription from '@/pages/PublicSubscription';
 
 const PublicApp: React.FC = () => {
+  console.log('PublicApp rendering');
   return (
     <Routes>
       <Route path="/" element={<Index />} />

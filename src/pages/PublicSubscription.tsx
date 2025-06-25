@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +18,7 @@ interface SubscriptionPlan {
 }
 
 const PublicSubscription = () => {
+  console.log('PublicSubscription component rendering');
   const navigate = useNavigate();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -27,6 +27,7 @@ const PublicSubscription = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
+        console.log('Fetching subscription plans...');
         // Import Supabase dynamically to avoid authentication issues
         const { supabase } = await import('@/integrations/supabase/client');
         
@@ -42,6 +43,7 @@ const PublicSubscription = () => {
           return;
         }
         
+        console.log('Plans fetched successfully:', data);
         setPlans(data || []);
         setError(null);
       } catch (error) {
