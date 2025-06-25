@@ -1,10 +1,12 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Calendar, FileText, Euro, Users, BookOpen, Camera, Heart, Brain, Activity, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ProfessionalModule = () => {
+  const navigate = useNavigate();
+
   const activities = [
     {
       icon: "📝",
@@ -76,6 +78,10 @@ const ProfessionalModule = () => {
     if (signupSection) {
       signupSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleTestCaprIA = () => {
+    navigate('/auth');
   };
 
   return (
@@ -172,14 +178,11 @@ const ProfessionalModule = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-serif text-tranches-charcoal mb-6">
-              🎁 Offre exclusive : Testez CaprIA gratuitement pendant 65 jours
+              🎁 Offre de lancement : Devenez ambassadeur CaprIA et profitez de l'application gratuitement à vie. Offre réservée aux 50 premiers ambassadeurs.
             </h2>
             <p className="text-lg text-tranches-charcoal">
-              💳 Abonnement ensuite : 6,90 €/mois - Annulation possible à tout moment
-            </p><br/>
-            <p className="text-xl text-tranches-charcoal mb-4">
-              🕐 Offre de lancement : Devenez ambassadeur CaprIA et profitez de l'application gratuitement à vie. Offre réservée aux 50 premiers ambassadeurs.
-            </p>            
+              💳 Abonnement : 6,90 €/mois au-delà de l'offre de lancement - Annulation possible à tout moment
+            </p>
           </div>
         </div>
       </section>
@@ -289,6 +292,7 @@ const ProfessionalModule = () => {
             <Button 
               size="lg" 
               className="bg-white text-tranches-charcoal hover:bg-gray-100 text-xl px-12 py-6 mb-12"
+              onClick={handleTestCaprIA}
             >
               🚀 Je teste CaprIA gratuitement
               <ArrowRight className="w-6 h-6 ml-3" />
