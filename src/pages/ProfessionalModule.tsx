@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Calendar, FileText, Euro, Users, BookOpen, Camera, Heart, Brain, Activity, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
 const ProfessionalModule = () => {
   const navigate = useNavigate();
@@ -323,20 +324,7 @@ const ProfessionalModule = () => {
         </div>
       </section>
 
-      {/* Final Section */}
-      <section className="py-12 md:py-16 bg-white text-center">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-serif text-tranches-charcoal mb-4 px-2">
-            🌼 CaprIA vous accompagne pour accompagner mieux
-          </h2>
-          <p className="text-base md:text-lg text-tranches-charcoal/80 mb-2 px-2">
-            Parce que votre métier mérite plus que des outils.
-          </p>
-          <p className="text-base md:text-lg text-tranches-charcoal/80 px-2">
-            Parce que VOUS méritez une application qui vous comprend.
-          </p>
-        </div>
-      </section>
+      <Footer />
     </div>
   );
 };
