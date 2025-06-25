@@ -100,6 +100,7 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
         
         // Si on a un reportId, toujours uploader vers le stockage permanent
         if (reportId && user) {
+          console.log("🎯 VOICE_RECORDER - Upload vers stockage permanent:", reportId);
           setUploadError(null);
           await uploadInterventionAudio({
             audioBlob: blob,
@@ -110,7 +111,20 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
             onSuccess: (publicUrl) => {
               console.log("🎯 VOICE_RECORDER - Upload successful, setting permanent URL:", publicUrl);
               setPermanentAudioUrl(publicUrl);
+              
+              // IMPORTANT: Notifier le parent avec l'URL ET le blob
+              console.log("🎯 VOICE_RECORDER - Notifying parent with blob and URL:", {
+                blobSize: blob.size,
+                publicUrl
+              });
               onAudioChange(blob);
+              
+              // Si le parent a une méthode pour gérer l'URL, l'appeler
+              if (typeof onAudioChange === 'function') {
+                // Le parent devrait également recevoir l'URL
+                console.log("🎯 VOICE_RECORDER - Parent notifié du changement audio");
+              }
+              
               setUploadError(null);
             },
             onError: (error) => {
@@ -162,6 +176,10 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     console.log("🎯 VOICE_RECORDER - Clearing recording");
     
     if (reportId && permanentAudioUrl && user) {
+      console.log("🎯 VOICE_RECORDER - Deleting permanent audio:", {
+        reportId,
+        permanentAudioUrl
+      });
       await deleteInterventionAudio(reportId, permanentAudioUrl, user.id);
     }
     
@@ -170,6 +188,8 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
     setIsPlaying(false);
     setUploadError(null);
     setShowExpiredMessage(false);
+    
+    console.log("🎯 VOICE_RECORDER - Notifying parent of audio removal");
     onAudioChange(null);
   }, [clearRecording, onAudioChange, reportId, permanentAudioUrl, user]);
 
@@ -228,6 +248,16 @@ const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> 
           onStartRecording={handleStartRecording}
           onStopRecording={handleStopRecording}
         />
+      </div>
+
+      {/* Debug info */}
+      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        <p>Debug VoiceRecorder:</p>
+        <p>• currentAudioUrl: "{currentAudioUrl}"</p>
+        <p>• permanentAudioUrl: "{permanentAudioUrl}"</p>
+        <p>• audioUrl: "{audioUrl}"</p>
+        <p>• showExpiredMessage: {showExpiredMessage.toString()}</p>
+        <p>• isUploading: {isUploading.toString()}</p>
       </div>
 
       {/* Message d'expiration */}
