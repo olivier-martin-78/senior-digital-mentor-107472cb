@@ -16,8 +16,6 @@ const AppRouter: React.FC = () => {
   // Ensure /subscription is treated as a public route
   const isPublicRoute = ['/', '/auth', '/reset-password', '/subscription'].includes(location.pathname);
 
-  console.log('Current route:', location.pathname, 'Is public route:', isPublicRoute);
-
   return (
     <>
       <HeaderWrapper />
