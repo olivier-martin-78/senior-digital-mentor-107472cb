@@ -44,11 +44,12 @@ serve(async (req: Request) => {
       throw new Error('Données JSON invalides');
     }
     
-    const { firstName, lastName, email, message, thematiques, attachmentUrl } = parsedData;
+    const { firstName, lastName, email, phone, message, thematiques, attachmentUrl } = parsedData;
     console.log('Données extraites:', { 
       firstName: firstName ? '✓' : '✗', 
       lastName: lastName ? '✓' : '✗', 
-      email: email ? '✓' : '✗', 
+      email: email ? '✓' : '✗',
+      phone: phone ? '✓' : '✗',
       message: message ? '✓' : '✗', 
       hasThematiques: thematiques && thematiques.length > 0 ? '✓' : '✗',
       hasAttachment: !!attachmentUrl 
@@ -76,6 +77,11 @@ serve(async (req: Request) => {
       <p><strong>Nom:</strong> ${lastName}</p>
       <p><strong>Email:</strong> ${email}</p>
     `;
+    
+    // Ajouter le téléphone si fourni
+    if (phone && phone.trim()) {
+      emailContent += `<p><strong>Téléphone:</strong> ${phone}</p>`;
+    }
     
     // Ajouter les thématiques si présentes
     if (thematiques && thematiques.length > 0) {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Mail, Phone, User, Upload, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -14,6 +13,7 @@ const Footer = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [thematiques, setThematiques] = useState<string[]>([]);
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -86,7 +86,8 @@ const Footer = () => {
       const emailData = { 
         firstName: firstName.trim(),
         lastName: lastName.trim(), 
-        email: email.trim(), 
+        email: email.trim(),
+        phone: phone.trim(),
         message: message.trim(),
         thematiques: thematiques,
         attachmentUrl 
@@ -114,6 +115,7 @@ const Footer = () => {
           setFirstName('');
           setLastName('');
           setEmail('');
+          setPhone('');
           setMessage('');
           setThematiques([]);
           setAttachment(null);
@@ -170,6 +172,7 @@ const Footer = () => {
           setFirstName('');
           setLastName('');
           setEmail('');
+          setPhone('');
           setMessage('');
           setThematiques([]);
           setAttachment(null);
@@ -245,6 +248,17 @@ const Footer = () => {
                   onChange={(e) => setEmail(e.target.value)} 
                   placeholder="Votre adresse email"
                   required 
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">N° de téléphone</Label>
+                <Input 
+                  id="phone" 
+                  type="text" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                  placeholder="Votre numéro de téléphone"
                 />
               </div>
               

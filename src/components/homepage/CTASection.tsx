@@ -19,7 +19,7 @@ const CTASection = () => {
             Commencez votre nouvelle vie dès aujourd'hui
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Rejoignez les dizaines de seniors joyeux qui ont déjà transformé leur quotidien avec CaprIA.
+            Rejoignez les dizaines de seniors heureux d'avoir transformé leur quotidien avec CaprIA.
           </p>
           
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 mb-8">
