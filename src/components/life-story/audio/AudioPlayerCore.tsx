@@ -23,6 +23,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   
   // Traiter l'URL audio pour s'assurer qu'elle est valide et complète
   const processedAudioUrl = getAudioUrl(audioUrl);
@@ -32,10 +33,27 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !processedAudioUrl) return;
 
     setHasError(false);
     setErrorMessage('');
+    setIsLoading(true);
+
+    const handleLoadStart = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Load start");
+      setHasError(false);
+      setIsLoading(true);
+    };
+
+    const handleCanPlay = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Can play");
+      setIsLoading(false);
+    };
+
+    const handleLoadedData = () => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Loaded data");
+      setIsLoading(false);
+    };
 
     const handlePlay = () => {
       console.log("🎵 AUDIO_PLAYER_CORE - Playing");
@@ -54,36 +72,42 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
 
     const handleError = (e: Event) => {
       console.error("🎵 AUDIO_PLAYER_CORE - Error:", e);
-      const errorMsg = 'Impossible de lire cet enregistrement audio';
-      setHasError(true);
-      setErrorMessage(errorMsg);
-      onError?.(e);
+      
+      // Attendre un peu avant d'afficher l'erreur pour laisser le temps au navigateur
+      setTimeout(() => {
+        const errorMsg = 'Impossible de lire cet enregistrement audio';
+        setHasError(true);
+        setErrorMessage(errorMsg);
+        setIsLoading(false);
+        onError?.(e);
+      }, 1000);
     };
 
-    const handleLoadStart = () => {
-      console.log("🎵 AUDIO_PLAYER_CORE - Load start");
-      setHasError(false);
-    };
-
+    // Ajouter les listeners
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadeddata', handleLoadedData);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
-    audio.addEventListener('loadstart', handleLoadStart);
 
-    // Forcer le chargement
-    audio.load();
+    // Définir l'URL et commencer le chargement
+    audio.src = processedAudioUrl;
+    audio.preload = 'metadata';
 
     return () => {
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('loadeddata', handleLoadedData);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-      audio.removeEventListener('loadstart', handleLoadStart);
     };
   }, [processedAudioUrl, onPlay, onPause, onEnded, onError]);
 
-  // Afficher un message d'erreur au lieu de masquer complètement le composant
+  // Afficher un message d'erreur seulement si l'erreur persiste
   if (hasError) {
     return (
       <div className={`bg-red-50 border border-red-200 rounded-lg p-3 ${className}`}>
@@ -113,13 +137,19 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   }
 
   return (
-    <audio
-      ref={audioRef}
-      src={processedAudioUrl}
-      className={`w-full ${className}`}
-      controls
-      preload="metadata"
-    />
+    <div className={`${className}`}>
+      {isLoading && (
+        <div className="text-center py-2">
+          <p className="text-sm text-gray-500">Chargement de l'audio...</p>
+        </div>
+      )}
+      <audio
+        ref={audioRef}
+        className="w-full"
+        controls
+        style={{ display: isLoading ? 'none' : 'block' }}
+      />
+    </div>
   );
 };
 
