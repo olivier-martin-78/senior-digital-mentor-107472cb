@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ProfessionalSection = () => {
   return (
@@ -16,9 +17,11 @@ const ProfessionalSection = () => {
             Un outil de coordination professionnel intégré : planification, comptes-rendus, 
             facturation. Simplifiez la communication et valorisez votre rôle auprès des familles. Proposez de nouvelles activités engageantes pendant vos interventions.
           </p>
-          <Button variant="outline" className="border-tranches-dustyblue text-tranches-charcoal">
-            En savoir plus sur le module pro
-          </Button>
+          <Link to="/module-pro">
+            <Button variant="outline" className="border-tranches-dustyblue text-tranches-charcoal">
+              En savoir plus sur le module pro
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
