@@ -159,13 +159,14 @@ const InterventionReportForm = () => {
           .single();
 
         if (appointmentData && !appointmentError) {
-          // Ajouter la propriété caregivers manquante et s'assurer que le status est du bon type
-          const appointmentWithCaregivers: Appointment = {
+          // Properly type cast the appointment data
+          const appointmentWithTyping: Appointment = {
             ...appointmentData,
-            caregivers: [], // Valeur par défaut
-            status: (appointmentData.status as 'scheduled' | 'completed' | 'cancelled') || 'scheduled'
+            caregivers: [], // Default empty array
+            status: (appointmentData.status as 'scheduled' | 'completed' | 'cancelled') || 'scheduled',
+            recurrence_type: appointmentData.recurrence_type as 'weekly' | 'monthly' | undefined
           };
-          setSelectedAppointment(appointmentWithCaregivers);
+          setSelectedAppointment(appointmentWithTyping);
           setSelectedAppointmentId(appointmentData.id);
         } else {
           console.error('Erreur lors du chargement du rendez-vous associé:', appointmentError);
