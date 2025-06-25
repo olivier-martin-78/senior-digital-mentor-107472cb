@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Star, Sparkles } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Check, Crown, Star, Sparkles, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Json } from '@/integrations/supabase/types';
 
@@ -23,20 +22,65 @@ const PublicSubscription = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
       try {
+        // Import Supabase dynamically to avoid authentication issues
+        const { supabase } = await import('@/integrations/supabase/client');
+        
         const { data, error } = await supabase
           .from('subscription_plans')
           .select('*')
           .eq('is_active', true)
           .order('price_amount', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching plans:', error);
+          setError('Impossible de charger les plans d\'abonnement');
+          return;
+        }
+        
         setPlans(data || []);
+        setError(null);
       } catch (error) {
         console.error('Error fetching plans:', error);
+        setError('Erreur de connexion');
+        // Set fallback plans if database access fails
+        setPlans([
+          {
+            id: 'fallback-senior',
+            name: 'Senior',
+            price_amount: 1990,
+            currency: 'eur',
+            billing_interval: 'month',
+            trial_period_days: 7,
+            features: [
+              'Accès complet aux fonctionnalités',
+              'Journal personnel illimité',
+              'Récits de vie interactifs',
+              'Support prioritaire'
+            ],
+            is_active: true
+          },
+          {
+            id: 'fallback-professionnel',
+            name: 'Professionnel',
+            price_amount: 4990,
+            currency: 'eur',
+            billing_interval: 'month',
+            trial_period_days: 14,
+            features: [
+              'Toutes les fonctionnalités Senior',
+              'Gestion des interventions',
+              'Rapports détaillés',
+              'Outils de planification',
+              'Support dédié'
+            ],
+            is_active: true
+          }
+        ]);
       } finally {
         setPlansLoading(false);
       }
@@ -96,6 +140,19 @@ const PublicSubscription = () => {
           <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto">
             Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles
           </p>
+          
+          {error && (
+            <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center justify-center text-orange-600 mb-2">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                <span className="font-semibold">Information</span>
+              </div>
+              <p className="text-sm text-orange-700">
+                Les plans ci-dessous sont affichés à titre indicatif
+              </p>
+            </div>
+          )}
+          
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-md mx-auto">
             <p className="text-blue-700 text-sm">
               Connectez-vous ou créez un compte pour souscrire à un plan d'abonnement
