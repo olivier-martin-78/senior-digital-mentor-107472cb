@@ -1,7 +1,7 @@
 
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
-import PublicFooter from '@/components/PublicFooter';
+import Footer from '@/components/Footer';
 import ProblemSolutionSection from '@/components/homepage/ProblemSolutionSection';
 import FeaturesSection from '@/components/homepage/FeaturesSection';
 import ActivitiesSection from '@/components/homepage/ActivitiesSection';
@@ -21,7 +21,7 @@ const Index = () => {
       <ProfessionalSection />
       <FAQSection />
       <CTASection />
-      <PublicFooter />   
+      <Footer />   
     </div>
   );
 };

@@ -5,21 +5,38 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const Footer = () => {
   const { toast } = useToast();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [thematiques, setThematiques] = useState<string[]>([]);
   const [attachment, setAttachment] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const thematiquesOptions = [
+    "Support à l'utilisation de CaprIA",
+    "Programmer une démonstration gratuite", 
+    "Bénéficier d'une formation gratuite"
+  ];
+
+  const handleThematiqueChange = (thematique: string, checked: boolean) => {
+    if (checked) {
+      setThematiques([...thematiques, thematique]);
+    } else {
+      setThematiques(thematiques.filter(t => t !== thematique));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !email.trim() || !message.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !message.trim()) {
       toast({
         title: "Champs requis",
         description: "Veuillez remplir tous les champs obligatoires.",
@@ -67,9 +84,11 @@ const Footer = () => {
       
       // Préparer les données pour l'envoi
       const emailData = { 
-        name: name.trim(), 
+        firstName: firstName.trim(),
+        lastName: lastName.trim(), 
         email: email.trim(), 
-        message: message.trim(), 
+        message: message.trim(),
+        thematiques: thematiques,
         attachmentUrl 
       };
       
@@ -92,9 +111,11 @@ const Footer = () => {
           });
           
           // Reset form
-          setName('');
+          setFirstName('');
+          setLastName('');
           setEmail('');
           setMessage('');
+          setThematiques([]);
           setAttachment(null);
           
           // Reset file input
@@ -146,9 +167,11 @@ const Footer = () => {
           });
           
           // Reset form
-          setName('');
+          setFirstName('');
+          setLastName('');
           setEmail('');
           setMessage('');
+          setThematiques([]);
           setAttachment(null);
           
           // Reset file input
@@ -187,16 +210,30 @@ const Footer = () => {
           <div className="w-full md:w-1/2 lg:w-2/5">
             <h4 className="text-lg font-serif text-tranches-charcoal mb-3">Contactez-nous</h4>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nom et prénom</Label>
-                <Input 
-                  id="name" 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  placeholder="Votre nom et prénom"
-                  required 
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <Input 
+                    id="firstName" 
+                    type="text" 
+                    value={firstName} 
+                    onChange={(e) => setFirstName(e.target.value)} 
+                    placeholder="Votre prénom"
+                    required 
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="lastName">Nom</Label>
+                  <Input 
+                    id="lastName" 
+                    type="text" 
+                    value={lastName} 
+                    onChange={(e) => setLastName(e.target.value)} 
+                    placeholder="Votre nom"
+                    required 
+                  />
+                </div>
               </div>
               
               <div>
@@ -212,7 +249,25 @@ const Footer = () => {
               </div>
               
               <div>
-                <Label htmlFor="message">Demande</Label>
+                <Label>Thématique</Label>
+                <div className="space-y-2 mt-2">
+                  {thematiquesOptions.map((option) => (
+                    <div key={option} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={option}
+                        checked={thematiques.includes(option)}
+                        onCheckedChange={(checked) => handleThematiqueChange(option, checked as boolean)}
+                      />
+                      <Label htmlFor={option} className="text-sm font-normal">
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="message">Votre message</Label>
                 <Textarea 
                   id="message" 
                   value={message} 
