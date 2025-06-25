@@ -31,7 +31,7 @@ const FAQSection = () => {
                 Proposez-vous des activités à domicile ?
               </AccordionTrigger>
               <AccordionContent>
-                Oui, nos activités sont organisée directement à domicile, en résidence seniors.
+                Oui, nos activités sont organisées directement à domicile ou en résidence seniors avec l'accompagnement de votre auxiliaire de vie ou aide à domicile que nous formons gratuitement.
               </AccordionContent>
             </AccordionItem>
 
@@ -49,7 +49,7 @@ const FAQSection = () => {
                 Combien cela coûte-t-il ?
               </AccordionTrigger>
               <AccordionContent>
-                Les tarifs varient selon la fréquence et la distance (individuel, à domicile ou en extérieur). Des forfaits mensuels d'au moins 2 heures consécutives sont proposés.
+                Après avoir créé votre compte vous bénéficiez d'une première période d'essai gratuite de 48 heures. Au-delà vous devez vous rendre sur la page « Abonnements », sélectionnez le plan « Senior » à 4.90 €/mois ou « Professionnel » à 6.90 €/mois et entrer vos informations de paiement. Vous profitez alors d'une seconde période gratuite de 15 jours ou de 65 jours pour le plan Professionnel. Vous pouvez durant cette deuxième période d'essai gratuite annuler votre abonnement pour ne pas être prélevé de votre première mensualité. Après la période d'essai vous pouvez à tout moment annuler votre abonnement. Pour cela cliquez depuis la page « Abonnements » sur le lien « Gérer mon abonnement »
               </AccordionContent>
             </AccordionItem>
 
@@ -58,7 +58,7 @@ const FAQSection = () => {
                 Est-ce que les familles peuvent participer ?
               </AccordionTrigger>
               <AccordionContent>
-                Absolument ! Certaines activités sont même conçues pour renforcer les liens familiaux et intergénérationnels. Et nous favorisons une communication régulière avec les proches.
+                Absolument ! Les personnes que vous invitez (via le bouton « Inviter une personne ») ont accès aux mêmes fonctionnalités que vous. Elles ont accès au contenu que vous publiez sans pouvoir le modifier. Elles peuvent interagir avec los articles de blog, créer du nouveau contenu dans le blog, le journal intime et les souhaits.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

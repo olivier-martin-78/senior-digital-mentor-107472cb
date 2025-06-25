@@ -7,7 +7,7 @@ const TestimonialsSection = () => {
   const testimonials = [
     {
       name: "Marie, 86 ans",
-      text: "Grâce à CaprIA, j'ai partagé l'histoire de ma vie au sein de mon cercle familial. J'ai reçu de nombreux messages remplis de gratitude, et des questions pour en savoir un peu plus sur certains faits marquants de mon parcours.",
+      text: "Avec CaprIA, j'ai partagé l'histoire de ma vie avec mes enfants et petits-enfants. On en a parlé ensuite car ils étaient curieux d'en savoir plus sur certains passages de ma vie.",
       rating: 5,
       image: "/lovable-uploads/efd23d12-e834-4877-95dc-3ef3f17a3949.png"
     },
@@ -19,7 +19,7 @@ const TestimonialsSection = () => {
     },
     {
       name: "Suzanne, 72 ans",
-      text: "Suzanne a invité sa petite-fille à découvrir son journal intime. Depuis, Suzanne est ravie de pouvoir échanger plus simplement et spontanément avec elle.",
+      text: "j'ai invité ma petite-fille Camille à découvrir mon journal intime. Je suis ravie de pouvoir échanger à présent plus simplement et spontanément avec elle.",
       rating: 5,
       image: "/lovable-uploads/2164fbcc-360e-4fdc-99c0-3aba13d45ce3.png"
     }

@@ -2,6 +2,13 @@
 import React from 'react';
 
 const HeroSection = () => {
+  const scrollToActivities = () => {
+    const activitiesSection = document.getElementById('activities-section');
+    if (activitiesSection) {
+      activitiesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <div 
@@ -19,16 +26,12 @@ const HeroSection = () => {
             Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/auth">
-              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-white text-tranches-charcoal hover:bg-tranches-cream text-lg px-8">
-                Partager mes souvenirs<br/>et mes photos sur un blog
-              </button>
-            </a>
-            <a href="/auth">
-              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-tranches-charcoal text-white hover:bg-tranches-warmgray text-lg px-8">
-                Laissez-vous surprendre par ce que l'IA<br/>peut apporter à votre quotidien.
-              </button>
-            </a>
+            <button 
+              onClick={scrollToActivities}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-white text-tranches-charcoal hover:bg-tranches-cream text-lg px-8"
+            >
+              Partager mes souvenirs<br/>et mes photos sur un blog
+            </button>
           </div>
         </div>
       </div>

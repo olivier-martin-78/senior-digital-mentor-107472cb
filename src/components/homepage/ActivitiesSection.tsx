@@ -1,10 +1,11 @@
 
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, MessageCircle, Camera, Star, Brain, Activity } from 'lucide-react';
 
 const ActivitiesSection = () => {
   return (
-    <section className="py-20 bg-tranches-beige">
+    <section id="activities-section" className="py-20 bg-tranches-beige">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-serif text-center text-tranches-charcoal mb-16">
           Découvrez toutes les activités CaprIA
