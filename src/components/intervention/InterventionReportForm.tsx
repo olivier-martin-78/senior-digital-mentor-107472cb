@@ -18,6 +18,8 @@ import { FileText } from 'lucide-react';
 import { Appointment } from '@/types/appointments';
 import { AppointmentSelector } from './components/AppointmentSelector';
 import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
+import MediaUploader from './MediaUploader';
+import MediaDisplayGrid from './MediaDisplayGrid';
 import { Slider } from "@/components/ui/slider"
 
 interface ReportFormData {
@@ -117,8 +119,20 @@ const InterventionReportForm = () => {
         hasAudioUrl: !!data.audio_url,
         audioUrl: data.audio_url,
         audioUrlType: typeof data.audio_url,
-        audioUrlLength: data.audio_url?.length || 0
+        audioUrlLength: data.audio_url?.length || 0,
+        hasMediaFiles: !!data.media_files,
+        mediaFilesCount: Array.isArray(data.media_files) ? data.media_files.length : 0
       });
+
+      // Transformer les media_files pour l'affichage
+      const transformedMediaFiles = Array.isArray(data.media_files) 
+        ? data.media_files.map((media: any, index: number) => ({
+            id: media.id || `media-${index}`,
+            name: media.name || `Media ${index + 1}`,
+            preview: media.preview,
+            type: media.preview ? 'image' : 'document'
+          }))
+        : [];
 
       setFormData({
         patientName: data.patient_name || '',
@@ -142,7 +156,7 @@ const InterventionReportForm = () => {
         observations: data.observations || null,
         followUp: Array.isArray(data.follow_up) ? data.follow_up : [],
         followUpOther: data.follow_up_other || null,
-        mediaFiles: Array.isArray(data.media_files) ? data.media_files : [],
+        mediaFiles: transformedMediaFiles,
         audio_url: data.audio_url || null,
         clientRating: data.client_rating || null,
         clientComments: data.client_comments || null,
@@ -182,6 +196,17 @@ const InterventionReportForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMediaChange = (mediaFiles: any[]) => {
+    setFormData(prev => ({ ...prev, mediaFiles }));
+  };
+
+  const handleRemoveMediaFile = (fileId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: prev.mediaFiles.filter(file => file.id !== fileId)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -918,8 +943,29 @@ const InterventionReportForm = () => {
               onChange={(e) => setFormData({ ...formData, clientComments: e.target.value })}
             />
           </div>
+
+          {/* Section médias avec nouveau composant d'affichage */}
+          <div className="space-y-2">
+            <Label className="text-base font-medium">Photos existantes</Label>
+            {formData.mediaFiles.length > 0 ? (
+              <MediaDisplayGrid
+                mediaFiles={formData.mediaFiles}
+                onRemoveFile={handleRemoveMediaFile}
+              />
+            ) : (
+              <p className="text-sm text-gray-500">Aucune photo disponible</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-base font-medium">Ajouter des médias</Label>
+            <MediaUploader
+              onMediaChange={handleMediaChange}
+              existingMediaFiles={formData.mediaFiles}
+            />
+          </div>
           
-          {/* Section audio avec debugging amélioré */}
+          {/* Section audio */}
           <div className="space-y-2">
             <Label className="text-base font-medium">Enregistrement vocal</Label>
             <VoiceRecorderForIntervention
@@ -929,13 +975,6 @@ const InterventionReportForm = () => {
               existingAudioUrl={formData.audio_url}
               disabled={isSaving}
             />
-            
-            {/* Debug info pour l'audio */}
-            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-              <p>Debug Audio:</p>
-              <p>• formData.audio_url: "{formData.audio_url}" (type: {typeof formData.audio_url})</p>
-              <p>• audioBlob: {audioBlob ? `${audioBlob.size} bytes` : 'null'}</p>
-            </div>
           </div>
 
           <Button disabled={isSaving} className="w-full">

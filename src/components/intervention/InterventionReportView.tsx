@@ -455,7 +455,8 @@ const InterventionReportView = () => {
                         <img
                           src={media.preview}
                           alt={media.name || `Media ${index + 1}`}
-                          className="w-full h-auto object-contain rounded max-h-64"
+                          className="w-full h-auto object-contain rounded"
+                          style={{ maxHeight: 'none' }}
                         />
                       </div>
                     ) : (
@@ -470,7 +471,7 @@ const InterventionReportView = () => {
             </div>
           )}
 
-          {/* Section audio mise à jour */}
+          {/* Section audio nettoyée sans debug */}
           <div className="space-y-2">
             <h3 className="font-semibold">Enregistrement audio</h3>
             <div className="bg-gray-50 p-3 rounded-md">
@@ -489,7 +490,6 @@ const InterventionReportView = () => {
                     readOnly={true}
                     shouldLog={true}
                   />
-                  <p className="text-xs text-gray-500 mt-2">URL: {report.audio_url}</p>
                 </div>
               )}
               
@@ -520,12 +520,7 @@ const InterventionReportView = () => {
               )}
               
               {audioStatus === 'none' && (
-                <div>
-                  <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Debug: audio_url = "{report.audio_url}" (type: {typeof report.audio_url})
-                  </p>
-                </div>
+                <p className="text-gray-500 text-sm">Aucun enregistrement audio</p>
               )}
             </div>
           </div>
