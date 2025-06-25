@@ -1,309 +1,311 @@
 
-
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
-import { useAuth } from '@/contexts/AuthContext';
-import { uploadInterventionAudio, deleteInterventionAudio } from './audio/AudioUploadManager';
-import RecordingControls from './audio/RecordingControls';
-import PlaybackControls from './audio/PlaybackControls';
-import AudioPlayer from './audio/AudioPlayer';
-import ExpiredAudioMessage from './audio/ExpiredAudioMessage';
-import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Mic, Square, Play, Pause, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface VoiceRecorderForInterventionProps {
-  onAudioChange: (audioBlob: Blob | null) => void;
-  reportId?: string;
+  onAudioChange: (blob: Blob | null) => void;
+  onAudioUrlChange?: (url: string | null) => void;
+  reportId?: string | null;
   existingAudioUrl?: string | null;
   disabled?: boolean;
 }
 
 const VoiceRecorderForIntervention: React.FC<VoiceRecorderForInterventionProps> = ({
   onAudioChange,
+  onAudioUrlChange,
   reportId,
   existingAudioUrl,
   disabled = false
 }) => {
-  const { user } = useAuth();
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [permanentAudioUrl, setPermanentAudioUrl] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [showExpiredMessage, setShowExpiredMessage] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
-  console.log("🎯 VOICE_RECORDER - Render:", {
-    hasExistingUrl: !!existingAudioUrl,
-    existingAudioUrl,
-    hasPermanentUrl: !!permanentAudioUrl,
-    permanentAudioUrl,
-    disabled,
+  console.log('🎯 VOICE_RECORDER_INIT - Initialisation:', {
     reportId,
-    uploadError,
-    showExpiredMessage
+    existingAudioUrl,
+    existingAudioUrlType: typeof existingAudioUrl,
+    existingAudioUrlLength: existingAudioUrl?.length || 0,
+    hasOnAudioUrlChange: !!onAudioUrlChange
   });
 
-  // Validation et nettoyage de l'URL existante au chargement
   useEffect(() => {
-    const validateExistingAudio = async () => {
-      console.log("🎯 VOICE_RECORDER - Validation de l'URL existante:", existingAudioUrl);
-      
-      if (existingAudioUrl && reportId) {
-        const cleanedUrl = await validateAndCleanAudioUrl(existingAudioUrl, reportId);
-        
-        if (cleanedUrl) {
-          console.log("🎯 VOICE_RECORDER - URL audio valide:", cleanedUrl);
-          setPermanentAudioUrl(cleanedUrl);
-          setShowExpiredMessage(false);
-          setUploadError(null);
-        } else if (existingAudioUrl) {
-          console.log("🎯 VOICE_RECORDER - URL audio expirée détectée");
-          setPermanentAudioUrl(null);
-          setShowExpiredMessage(true);
-          setUploadError(null);
-        }
-      } else if (existingAudioUrl && !reportId) {
-        // Cas sans reportId : vérifier si l'URL est expirée
-        if (isExpiredBlobUrl(existingAudioUrl)) {
-          console.log("🎯 VOICE_RECORDER - URL blob expirée sans reportId");
-          setShowExpiredMessage(true);
-          setPermanentAudioUrl(null);
-        } else {
-          console.log("🎯 VOICE_RECORDER - URL existante sans reportId (probablement valide)");
-          setPermanentAudioUrl(existingAudioUrl);
-          setShowExpiredMessage(false);
-        }
-      } else {
-        console.log("🎯 VOICE_RECORDER - Pas d'URL existante");
-        setPermanentAudioUrl(null);
-        setShowExpiredMessage(false);
-      }
-    };
-
-    validateExistingAudio();
-  }, [existingAudioUrl, reportId]);
-
-  const {
-    isRecording,
-    audioBlob,
-    audioUrl,
-    recordingTime,
-    startRecording,
-    stopRecording,
-    clearRecording
-  } = useVoiceRecorder({
-    onRecordingComplete: useCallback(async (blob: Blob, url: string) => {
-      console.log("🎯 VOICE_RECORDER - Recording complete:", { blobSize: blob.size, url, reportId });
-      
-      if (blob.size > 0) {
-        // Masquer le message d'expiration lors d'un nouvel enregistrement
-        setShowExpiredMessage(false);
-        
-        // Si on a un reportId, toujours uploader vers le stockage permanent
-        if (reportId && user) {
-          console.log("🎯 VOICE_RECORDER - Upload vers stockage permanent:", reportId);
-          setUploadError(null);
-          await uploadInterventionAudio({
-            audioBlob: blob,
-            reportId,
-            userId: user.id,
-            onUploadStart: () => setIsUploading(true),
-            onUploadEnd: () => setIsUploading(false),
-            onSuccess: (publicUrl) => {
-              console.log("🎯 VOICE_RECORDER - Upload successful, setting permanent URL:", publicUrl);
-              setPermanentAudioUrl(publicUrl);
-              
-              // IMPORTANT: Notifier le parent avec l'URL ET le blob
-              console.log("🎯 VOICE_RECORDER - Notifying parent with blob and URL:", {
-                blobSize: blob.size,
-                publicUrl
-              });
-              onAudioChange(blob);
-              
-              // Si le parent a une méthode pour gérer l'URL, l'appeler
-              if (typeof onAudioChange === 'function') {
-                // Le parent devrait également recevoir l'URL
-                console.log("🎯 VOICE_RECORDER - Parent notifié du changement audio");
-              }
-              
-              setUploadError(null);
-            },
-            onError: (error) => {
-              console.error("🎯 VOICE_RECORDER - Upload failed:", error);
-              setUploadError(`Erreur d'upload: ${error}`);
-            }
-          });
-        } else {
-          console.log("🎯 VOICE_RECORDER - No reportId, storing temporarily");
-          setPermanentAudioUrl(url);
-          onAudioChange(blob);
-          setUploadError("Impossible de sauvegarder définitivement sans ID de rapport");
-        }
-      }
-    }, [onAudioChange, reportId, user])
-  });
-
-  const handleStartRecording = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log("🎯 VOICE_RECORDER - Starting new recording");
-    setPermanentAudioUrl(null);
-    setUploadError(null);
-    setShowExpiredMessage(false);
-    startRecording();
-  }, [startRecording]);
-
-  const handleStartRecordingSimple = useCallback(() => {
-    console.log("🎯 VOICE_RECORDER - Starting new recording (simple)");
-    setPermanentAudioUrl(null);
-    setUploadError(null);
-    setShowExpiredMessage(false);
-    startRecording();
-  }, [startRecording]);
-
-  const handleStopRecording = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log("🎯 VOICE_RECORDER - Stopping recording");
-    stopRecording();
-  }, [stopRecording]);
-
-  const handleClearRecording = useCallback(async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log("🎯 VOICE_RECORDER - Clearing recording");
-    
-    if (reportId && permanentAudioUrl && user) {
-      console.log("🎯 VOICE_RECORDER - Deleting permanent audio:", {
-        reportId,
-        permanentAudioUrl
+    if (existingAudioUrl) {
+      console.log('🎯 VOICE_RECORDER_EXISTING - Audio existant détecté:', {
+        url: existingAudioUrl,
+        urlType: typeof existingAudioUrl,
+        urlLength: existingAudioUrl.length
       });
-      await deleteInterventionAudio(reportId, permanentAudioUrl, user.id);
+      setAudioUrl(existingAudioUrl);
+    }
+  }, [existingAudioUrl]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        console.log('🎯 VOICE_RECORDER_STOP - Enregistrement terminé:', {
+          blobSize: blob.size,
+          blobType: blob.type
+        });
+        
+        setAudioBlob(blob);
+        onAudioChange(blob);
+        
+        // Créer une URL temporaire pour la lecture
+        const tempUrl = URL.createObjectURL(blob);
+        setAudioUrl(tempUrl);
+        
+        // Uploader immédiatement l'audio
+        if (reportId) {
+          await uploadAudio(blob, reportId);
+        }
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error('❌ VOICE_RECORDER_START - Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'accéder au microphone',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      console.log('🎯 VOICE_RECORDER_STOPPING - Arrêt de l\'enregistrement');
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
+  const uploadAudio = async (blob: Blob, reportId: string) => {
+    try {
+      console.log('🎯 VOICE_RECORDER_UPLOAD - Début upload:', {
+        reportId,
+        blobSize: blob.size,
+        blobType: blob.type
+      });
+
+      const fileName = `intervention-audio-${reportId}-${Date.now()}.webm`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('intervention-audio')
+        .upload(fileName, blob, {
+          contentType: 'audio/webm',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('❌ VOICE_RECORDER_UPLOAD - Erreur upload:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('✅ VOICE_RECORDER_UPLOAD - Upload réussi:', uploadData);
+
+      // Obtenir l'URL publique
+      const { data: urlData } = supabase.storage
+        .from('intervention-audio')
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+      console.log('🎯 VOICE_RECORDER_UPLOAD - URL publique générée:', {
+        publicUrl,
+        publicUrlType: typeof publicUrl,
+        publicUrlLength: publicUrl.length
+      });
+
+      // Remplacer l'URL temporaire par l'URL permanente
+      if (audioUrl && audioUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      setAudioUrl(publicUrl);
+      
+      // Notifier le parent du changement d'URL
+      if (onAudioUrlChange) {
+        console.log('🎯 VOICE_RECORDER_UPLOAD - Notification parent URL:', publicUrl);
+        onAudioUrlChange(publicUrl);
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Enregistrement sauvegardé',
+      });
+
+    } catch (error) {
+      console.error('❌ VOICE_RECORDER_UPLOAD - Erreur générale:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder l\'enregistrement',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const playAudio = () => {
+    if (audioUrl) {
+      console.log('🎯 VOICE_RECORDER_PLAY - Lecture audio:', {
+        audioUrl,
+        audioUrlType: typeof audioUrl,
+        audioUrlLength: audioUrl.length
+      });
+      
+      const audio = new Audio(audioUrl);
+      audio.play();
+      setIsPlaying(true);
+      setAudioElement(audio);
+
+      audio.onended = () => {
+        setIsPlaying(false);
+        setAudioElement(null);
+      };
+
+      audio.onerror = (error) => {
+        console.error('❌ VOICE_RECORDER_PLAY - Erreur lecture:', error);
+        setIsPlaying(false);
+        setAudioElement(null);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de lire l\'enregistrement',
+          variant: 'destructive',
+        });
+      };
+    }
+  };
+
+  const pauseAudio = () => {
+    if (audioElement) {
+      audioElement.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const deleteAudio = () => {
+    console.log('🎯 VOICE_RECORDER_DELETE - Suppression audio');
+    
+    if (audioUrl && audioUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(audioUrl);
     }
     
-    clearRecording();
-    setPermanentAudioUrl(null);
-    setIsPlaying(false);
-    setUploadError(null);
-    setShowExpiredMessage(false);
+    if (audioElement) {
+      audioElement.pause();
+      setAudioElement(null);
+    }
     
-    console.log("🎯 VOICE_RECORDER - Notifying parent of audio removal");
+    setAudioUrl(null);
+    setAudioBlob(null);
+    setIsPlaying(false);
     onAudioChange(null);
-  }, [clearRecording, onAudioChange, reportId, permanentAudioUrl, user]);
-
-  const handlePlayPause = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     
-    console.log("🎯 VOICE_RECORDER - Play/Pause clicked, current state:", isPlaying);
-    setHasUserInteracted(true);
-    setIsPlaying(!isPlaying);
-  }, [isPlaying]);
-
-  const handleAudioPlay = useCallback(() => {
-    console.log("🎯 VOICE_RECORDER - Audio started playing");
-    setIsPlaying(true);
-  }, []);
-  
-  const handleAudioPause = useCallback(() => {
-    console.log("🎯 VOICE_RECORDER - Audio paused");
-    setIsPlaying(false);
-  }, []);
-  
-  const handleAudioEnded = useCallback(() => {
-    console.log("🎯 VOICE_RECORDER - Audio ended");
-    setIsPlaying(false);
-  }, []);
-  
-  const handleAudioError = useCallback((e: any) => {
-    console.error("🎯 VOICE_RECORDER - Audio error:", e);
-    setIsPlaying(false);
-    setUploadError("Erreur de lecture audio");
-  }, []);
-
-  // Déterminer l'URL audio à utiliser (priorité : permanentAudioUrl > audioUrl from recording)
-  const currentAudioUrl = permanentAudioUrl || audioUrl;
-  const hasAudioToDisplay = !!(currentAudioUrl || showExpiredMessage);
-
-  console.log("🎯 VOICE_RECORDER - Audio display logic:", {
-    currentAudioUrl,
-    hasAudioToDisplay,
-    showExpiredMessage,
-    isRecording,
-    permanentAudioUrl,
-    audioUrl
-  });
+    if (onAudioUrlChange) {
+      onAudioUrlChange(null);
+    }
+  };
 
   return (
-    <div className="border rounded-lg p-4 bg-white space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">Enregistrement vocal</h3>
-        
-        <RecordingControls
-          isRecording={isRecording}
-          recordingTime={recordingTime}
-          disabled={disabled || isUploading}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
-        />
+    <div className="space-y-4 p-4 border rounded-lg">
+      <div className="flex items-center gap-2">
+        {!isRecording && !audioUrl && (
+          <Button
+            type="button"
+            onClick={startRecording}
+            disabled={disabled}
+            className="flex items-center gap-2"
+          >
+            <Mic className="h-4 w-4" />
+            Enregistrer
+          </Button>
+        )}
+
+        {isRecording && (
+          <Button
+            type="button"
+            onClick={stopRecording}
+            variant="destructive"
+            className="flex items-center gap-2"
+          >
+            <Square className="h-4 w-4" />
+            Arrêter
+          </Button>
+        )}
+
+        {audioUrl && !isPlaying && (
+          <Button
+            type="button"
+            onClick={playAudio}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Play className="h-4 w-4" />
+            Écouter
+          </Button>
+        )}
+
+        {audioUrl && isPlaying && (
+          <Button
+            type="button"
+            onClick={pauseAudio}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Pause className="h-4 w-4" />
+            Pause
+          </Button>
+        )}
+
+        {audioUrl && (
+          <Button
+            type="button"
+            onClick={deleteAudio}
+            variant="destructive"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Supprimer
+          </Button>
+        )}
       </div>
 
-      {/* Debug info */}
-      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-        <p>Debug VoiceRecorder:</p>
-        <p>• currentAudioUrl: "{currentAudioUrl}"</p>
-        <p>• permanentAudioUrl: "{permanentAudioUrl}"</p>
-        <p>• audioUrl: "{audioUrl}"</p>
-        <p>• showExpiredMessage: {showExpiredMessage.toString()}</p>
-        <p>• isUploading: {isUploading.toString()}</p>
-      </div>
-
-      {/* Message d'expiration */}
-      {showExpiredMessage && !isRecording && !currentAudioUrl && (
-        <ExpiredAudioMessage 
-          onRecordNew={handleStartRecordingSimple}
-          isRecording={isRecording}
-        />
-      )}
-
-      {uploadError && (
-        <div className="flex items-center justify-center text-red-600 bg-red-50 p-2 rounded">
-          <span className="text-sm">{uploadError}</span>
+      {isRecording && (
+        <div className="text-sm text-red-600 flex items-center gap-2">
+          <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+          Enregistrement en cours...
         </div>
       )}
 
-      {isUploading && (
-        <div className="flex items-center justify-center text-blue-600">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-          <span className="text-sm">Sauvegarde en cours...</span>
+      {audioUrl && (
+        <div className="text-sm text-green-600">
+          Enregistrement disponible
         </div>
       )}
 
-      {!reportId && !showExpiredMessage && currentAudioUrl && (
-        <div className="flex items-center justify-center text-orange-600 bg-orange-50 p-2 rounded">
-          <span className="text-sm">⚠️ Sauvegarde temporaire uniquement - Enregistrez d'abord le rapport</span>
+      {!audioUrl && !isRecording && (
+        <div className="text-sm text-gray-500">
+          Aucun enregistrement
         </div>
-      )}
-
-      {currentAudioUrl && !isRecording && (
-        <PlaybackControls
-          isPlaying={isPlaying}
-          disabled={isUploading}
-          onPlayPause={handlePlayPause}
-          onDelete={handleClearRecording}
-        />
-      )}
-
-      {currentAudioUrl && (
-        <AudioPlayer
-          audioUrl={currentAudioUrl}
-          onPlay={handleAudioPlay}
-          onPause={handleAudioPause}
-          onEnded={handleAudioEnded}
-          onError={handleAudioError}
-        />
       )}
     </div>
   );

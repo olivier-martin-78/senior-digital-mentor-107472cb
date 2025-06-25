@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,7 +142,7 @@ const InterventionReportForm = () => {
         observations: data.observations || null,
         followUp: Array.isArray(data.follow_up) ? data.follow_up : [],
         followUpOther: data.follow_up_other || null,
-        mediaFiles: data.media_files || [],
+        mediaFiles: Array.isArray(data.media_files) ? data.media_files : [],
         audio_url: data.audio_url || null,
         clientRating: data.client_rating || null,
         clientComments: data.client_comments || null,
@@ -160,10 +159,11 @@ const InterventionReportForm = () => {
           .single();
 
         if (appointmentData && !appointmentError) {
-          // Ajouter la propriété caregivers manquante
+          // Ajouter la propriété caregivers manquante et s'assurer que le status est du bon type
           const appointmentWithCaregivers: Appointment = {
             ...appointmentData,
-            caregivers: [] // Valeur par défaut
+            caregivers: [], // Valeur par défaut
+            status: (appointmentData.status as 'scheduled' | 'completed' | 'cancelled') || 'scheduled'
           };
           setSelectedAppointment(appointmentWithCaregivers);
           setSelectedAppointmentId(appointmentData.id);
@@ -889,8 +889,8 @@ const InterventionReportForm = () => {
             <Label htmlFor="appointment">Rendez-vous</Label>
             <AppointmentSelector
               selectedAppointment={selectedAppointment}
-              setSelectedAppointment={setSelectedAppointment}
-              setSelectedAppointmentId={setSelectedAppointmentId}
+              selectedAppointmentId={selectedAppointmentId}
+              onAppointmentChange={(appointmentId) => setSelectedAppointmentId(appointmentId)}
             />
           </div>
 
@@ -923,6 +923,7 @@ const InterventionReportForm = () => {
             <Label className="text-base font-medium">Enregistrement vocal</Label>
             <VoiceRecorderForIntervention
               onAudioChange={handleAudioChange}
+              onAudioUrlChange={handleAudioUrlChange}
               reportId={reportId}
               existingAudioUrl={formData.audio_url}
               disabled={isSaving}
