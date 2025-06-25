@@ -21,6 +21,15 @@ import VoiceRecorderForIntervention from './VoiceRecorderForIntervention';
 import MediaUploader from './MediaUploader';
 import MediaDisplayGrid from './MediaDisplayGrid';
 import { Slider } from "@/components/ui/slider"
+import { BasicInfoSection } from './form-sections/BasicInfoSection';
+import { ActivitiesSection } from './form-sections/ActivitiesSection';
+import { PhysicalStateSection } from './form-sections/PhysicalStateSection';
+import { MentalStateSection } from './form-sections/MentalStateSection';
+import { HygieneSection } from './form-sections/HygieneSection';
+import { NutritionSection } from './form-sections/NutritionSection';
+import { FollowUpSection } from './form-sections/FollowUpSection';
+import { MediaSection } from './form-sections/MediaSection';
+import { ClientEvaluationSection } from './form-sections/ClientEvaluationSection';
 
 interface ReportFormData {
   patientName: string;
@@ -406,439 +415,37 @@ const InterventionReportForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="patientName">Nom du patient</Label>
-              <Input
-                type="text"
-                id="patientName"
-                value={formData.patientName}
-                onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="auxiliaryName">Nom de l'auxiliaire</Label>
-              <Input
-                type="text"
-                id="auxiliaryName"
-                value={formData.auxiliaryName}
-                onChange={(e) => setFormData({ ...formData, auxiliaryName: e.target.value })}
-              />
-            </div>
-          </div>
+          <BasicInfoSection 
+            formData={formData} 
+            setFormData={setFormData}
+            date={date}
+            setDate={setDate}
+          />
 
-          <div>
-            <Label>Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={'outline'}
-                  className={cn(
-                    'w-[240px] justify-start text-left font-normal',
-                    !date && 'text-muted-foreground'
-                  )}
-                >
-                  {date ? format(date, 'PPP') : <span>Choisir une date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  onDayClick={(date) => setFormData({ ...formData, date: date })}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <ActivitiesSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startTime">Heure de début</Label>
-              <Input
-                type="time"
-                id="startTime"
-                value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="endTime">Heure de fin</Label>
-              <Input
-                type="time"
-                id="endTime"
-                value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-              />
-            </div>
-          </div>
+          <PhysicalStateSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
-          <div>
-            <Label htmlFor="hourlyRate">Taux horaire (€)</Label>
-            <Input
-              type="number"
-              id="hourlyRate"
-              value={formData.hourlyRate || ''}
-              onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value ? parseFloat(e.target.value) : null })}
-            />
-          </div>
+          <MentalStateSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
-          <div>
-            <Label>Activités réalisées</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="activity1"
-                  checked={formData.activities.includes('Toilettage')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      activities: checked
-                        ? [...formData.activities, 'Toilettage']
-                        : formData.activities.filter((item) => item !== 'Toilettage'),
-                    })
-                  }
-                />
-                <Label htmlFor="activity1">Toilettage</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="activity2"
-                  checked={formData.activities.includes('Préparation des repas')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      activities: checked
-                        ? [...formData.activities, 'Préparation des repas']
-                        : formData.activities.filter((item) => item !== 'Préparation des repas'),
-                    })
-                  }
-                />
-                <Label htmlFor="activity2">Préparation des repas</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="activity3"
-                  checked={formData.activities.includes('Aide à la mobilité')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      activities: checked
-                        ? [...formData.activities, 'Aide à la mobilité']
-                        : formData.activities.filter((item) => item !== 'Aide à la mobilité'),
-                    })
-                  }
-                />
-                <Label htmlFor="activity3">Aide à la mobilité</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="activity4"
-                  checked={formData.activities.includes('Surveillance de la prise de médicaments')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      activities: checked
-                        ? [...formData.activities, 'Surveillance de la prise de médicaments']
-                        : formData.activities.filter((item) => item !== 'Surveillance de la prise de médicaments'),
-                    })
-                  }
-                />
-                <Label htmlFor="activity4">Surveillance de la prise de médicaments</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="activity5"
-                  checked={formData.activities.includes('Compagnie et conversation')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      activities: checked
-                        ? [...formData.activities, 'Compagnie et conversation']
-                        : formData.activities.filter((item) => item !== 'Compagnie et conversation'),
-                    })
-                  }
-                />
-                <Label htmlFor="activity5">Compagnie et conversation</Label>
-              </div>
-            </div>
-          </div>
+          <HygieneSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
-          <div>
-            <Label htmlFor="activitiesOther">Autres activités</Label>
-            <Textarea
-              id="activitiesOther"
-              placeholder="Précisez les autres activités réalisées"
-              value={formData.activitiesOther || ''}
-              onChange={(e) => setFormData({ ...formData, activitiesOther: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label>État physique</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="physicalState1"
-                  checked={formData.physicalState.includes('Stable')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      physicalState: checked
-                        ? [...formData.physicalState, 'Stable']
-                        : formData.physicalState.filter((item) => item !== 'Stable'),
-                    })
-                  }
-                />
-                <Label htmlFor="physicalState1">Stable</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="physicalState2"
-                  checked={formData.physicalState.includes('Fatigue')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      physicalState: checked
-                        ? [...formData.physicalState, 'Fatigue']
-                        : formData.physicalState.filter((item) => item !== 'Fatigue'),
-                    })
-                  }
-                />
-                <Label htmlFor="physicalState2">Fatigue</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="physicalState3"
-                  checked={formData.physicalState.includes('Douleur')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      physicalState: checked
-                        ? [...formData.physicalState, 'Douleur']
-                        : formData.physicalState.filter((item) => item !== 'Douleur'),
-                    })
-                  }
-                />
-                <Label htmlFor="physicalState3">Douleur</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="physicalState4"
-                  checked={formData.physicalState.includes('Difficulté respiratoire')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      physicalState: checked
-                        ? [...formData.physicalState, 'Difficulté respiratoire']
-                        : formData.physicalState.filter((item) => item !== 'Difficulté respiratoire'),
-                    })
-                  }
-                />
-                <Label htmlFor="physicalState4">Difficulté respiratoire</Label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="physicalStateOther">Autres détails état physique</Label>
-            <Textarea
-              id="physicalStateOther"
-              placeholder="Précisez l'état physique"
-              value={formData.physicalStateOther || ''}
-              onChange={(e) => setFormData({ ...formData, physicalStateOther: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="painLocation">Localisation de la douleur</Label>
-            <Input
-              type="text"
-              id="painLocation"
-              placeholder="Si douleur, précisez la localisation"
-              value={formData.painLocation || ''}
-              onChange={(e) => setFormData({ ...formData, painLocation: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label>État mental</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="mentalState1"
-                  checked={formData.mentalState.includes('Alerte')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      mentalState: checked
-                        ? [...formData.mentalState, 'Alerte']
-                        : formData.mentalState.filter((item) => item !== 'Alerte'),
-                    })
-                  }
-                />
-                <Label htmlFor="mentalState1">Alerte</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="mentalState2"
-                  checked={formData.mentalState.includes('Confus')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      mentalState: checked
-                        ? [...formData.mentalState, 'Confus']
-                        : formData.mentalState.filter((item) => item !== 'Confus'),
-                    })
-                  }
-                />
-                <Label htmlFor="mentalState2">Confus</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="mentalState3"
-                  checked={formData.mentalState.includes('Anxieux')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      mentalState: checked
-                        ? [...formData.mentalState, 'Anxieux']
-                        : formData.mentalState.filter((item) => item !== 'Anxieux'),
-                    })
-                  }
-                />
-                <Label htmlFor="mentalState3">Anxieux</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="mentalState4"
-                  checked={formData.mentalState.includes('Agité')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      mentalState: checked
-                        ? [...formData.mentalState, 'Agité']
-                        : formData.mentalState.filter((item) => item !== 'Agité'),
-                    })
-                  }
-                />
-                <Label htmlFor="mentalState4">Agité</Label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="mentalStateChange">Changements état mental</Label>
-            <Textarea
-              id="mentalStateChange"
-              placeholder="Décrivez les changements d'état mental"
-              value={formData.mentalStateChange || ''}
-              onChange={(e) => setFormData({ ...formData, mentalStateChange: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label>Hygiène</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hygiene1"
-                  checked={formData.hygiene.includes('Réalisée')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      hygiene: checked
-                        ? [...formData.hygiene, 'Réalisée']
-                        : formData.hygiene.filter((item) => item !== 'Réalisée'),
-                    })
-                  }
-                />
-                <Label htmlFor="hygiene1">Réalisée</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hygiene2"
-                  checked={formData.hygiene.includes('Partielle')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      hygiene: checked
-                        ? [...formData.hygiene, 'Partielle']
-                        : formData.hygiene.filter((item) => item !== 'Partielle'),
-                    })
-                  }
-                />
-                <Label htmlFor="hygiene2">Partielle</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hygiene3"
-                  checked={formData.hygiene.includes('Refusée')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      hygiene: checked
-                        ? [...formData.hygiene, 'Refusée']
-                        : formData.hygiene.filter((item) => item !== 'Refusée'),
-                    })
-                  }
-                />
-                <Label htmlFor="hygiene3">Refusée</Label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="hygieneComments">Commentaires hygiène</Label>
-            <Textarea
-              id="hygieneComments"
-              placeholder="Ajoutez des commentaires sur l'hygiène"
-              value={formData.hygieneComments || ''}
-              onChange={(e) => setFormData({ ...formData, hygieneComments: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="appetite">Appétit</Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, appetite: value })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner" defaultValue={formData.appetite || undefined} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bon">Bon</SelectItem>
-                  <SelectItem value="Moyen">Moyen</SelectItem>
-                  <SelectItem value="Faible">Faible</SelectItem>
-                  <SelectItem value="Nul">Nul</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="hydration">Hydratation</Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, hydration: value })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner" defaultValue={formData.hydration || undefined} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Normale">Normale</SelectItem>
-                  <SelectItem value="Faible">Faible</SelectItem>
-                  <SelectItem value="Nulle">Nulle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="appetiteComments">Commentaires appétit</Label>
-            <Textarea
-              id="appetiteComments"
-              placeholder="Ajoutez des commentaires sur l'appétit"
-              value={formData.appetiteComments || ''}
-              onChange={(e) => setFormData({ ...formData, appetiteComments: e.target.value })}
-            />
-          </div>
+          <NutritionSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
           <div>
             <Label htmlFor="observations">Observations générales</Label>
@@ -850,66 +457,10 @@ const InterventionReportForm = () => {
             />
           </div>
 
-          <div>
-            <Label>Suivi nécessaire</Label>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="followUp1"
-                  checked={formData.followUp.includes('Contact médecin traitant')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      followUp: checked
-                        ? [...formData.followUp, 'Contact médecin traitant']
-                        : formData.followUp.filter((item) => item !== 'Contact médecin traitant'),
-                    })
-                  }
-                />
-                <Label htmlFor="followUp1">Contact médecin traitant</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="followUp2"
-                  checked={formData.followUp.includes('Contact famille')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      followUp: checked
-                        ? [...formData.followUp, 'Contact famille']
-                        : formData.followUp.filter((item) => item !== 'Contact famille'),
-                    })
-                  }
-                />
-                <Label htmlFor="followUp2">Contact famille</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="followUp3"
-                  checked={formData.followUp.includes('Mise en place de matériel')}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      followUp: checked
-                        ? [...formData.followUp, 'Mise en place de matériel']
-                        : formData.followUp.filter((item) => item !== 'Mise en place de matériel'),
-                    })
-                  }
-                />
-                <Label htmlFor="followUp3">Mise en place de matériel</Label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="followUpOther">Autres suivis</Label>
-            <Textarea
-              id="followUpOther"
-              placeholder="Précisez les autres suivis nécessaires"
-              value={formData.followUpOther || ''}
-              onChange={(e) => setFormData({ ...formData, followUpOther: e.target.value })}
-            />
-          </div>
+          <FollowUpSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
           <div>
             <Label htmlFor="appointment">Rendez-vous</Label>
@@ -920,50 +471,16 @@ const InterventionReportForm = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="clientRating">Évaluation du client</Label>
-            <Slider
-              defaultValue={[formData.clientRating || 3]}
-              max={5}
-              min={1}
-              step={1}
-              onValueChange={(value) => setFormData({ ...formData, clientRating: value[0] })}
-            />
-            <p className="text-sm text-muted-foreground">
-              Note actuelle: {formData.clientRating} / 5
-            </p>
-          </div>
+          <ClientEvaluationSection 
+            formData={formData} 
+            setFormData={setFormData}
+          />
 
-          <div>
-            <Label htmlFor="clientComments">Commentaires du client</Label>
-            <Textarea
-              id="clientComments"
-              placeholder="Ajoutez des commentaires sur le client"
-              value={formData.clientComments || ''}
-              onChange={(e) => setFormData({ ...formData, clientComments: e.target.value })}
-            />
-          </div>
-
-          {/* Section médias avec nouveau composant d'affichage */}
-          <div className="space-y-2">
-            <Label className="text-base font-medium">Photos existantes</Label>
-            {formData.mediaFiles.length > 0 ? (
-              <MediaDisplayGrid
-                mediaFiles={formData.mediaFiles}
-                onRemoveFile={handleRemoveMediaFile}
-              />
-            ) : (
-              <p className="text-sm text-gray-500">Aucune photo disponible</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-base font-medium">Ajouter des médias</Label>
-            <MediaUploader
-              onMediaChange={handleMediaChange}
-              existingMediaFiles={formData.mediaFiles}
-            />
-          </div>
+          <MediaSection 
+            mediaFiles={formData.mediaFiles}
+            onMediaChange={handleMediaChange}
+            onRemoveFile={handleRemoveMediaFile}
+          />
           
           {/* Section audio */}
           <div className="space-y-2">
