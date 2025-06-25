@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 export const validateAudioUrl = (audioUrl: string | null): boolean => {
   if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim() === '') {
     return false;
@@ -34,9 +36,12 @@ export const getAudioUrl = (audioPath: string | null): string | null => {
     return trimmedPath;
   }
   
-  // Sinon, construire l'URL complète pour Supabase Storage avec le bon nom de bucket
-  const supabaseUrl = 'https://cvcebcisijjmmmwuedcv.supabase.co';
-  return `${supabaseUrl}/storage/v1/object/public/life-story-audios/${trimmedPath}`;
+  // Utiliser l'API Supabase pour générer l'URL publique correcte
+  const { data } = supabase.storage
+    .from('life-story-audios')
+    .getPublicUrl(trimmedPath);
+  
+  return data.publicUrl;
 };
 
 export const preloadAudio = async (url: string): Promise<boolean> => {
