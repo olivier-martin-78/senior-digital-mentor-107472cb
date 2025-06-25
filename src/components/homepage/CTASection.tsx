@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 const CTASection = () => {
+  const scrollToContactForm = () => {
+    const contactForm = document.querySelector('footer form');
+    if (contactForm) {
+      contactForm.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="py-20 bg-gradient-to-r from-tranches-dustyblue to-tranches-sage text-white">
       <div className="container mx-auto px-4 text-center">
@@ -34,7 +41,12 @@ const CTASection = () => {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </a>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-4 bg-tranches-charcoal">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white/10 text-lg px-8 py-4 bg-tranches-charcoal"
+              onClick={scrollToContactForm}
+            >
               Programmer une démonstration
             </Button>
           </div>
