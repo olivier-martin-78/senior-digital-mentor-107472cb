@@ -48,7 +48,7 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     setIsPlaying(false);
   }, [shouldLog]);
 
-  const handleExportAudio = useCallback(() => {
+  const handleExportAudio = useCallback(async () => {
     if (!audioUrl) {
       toast({
         title: "Erreur d'export",
@@ -59,17 +59,39 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     }
 
     try {
+      // Télécharger le fichier comme blob pour forcer le téléchargement
+      const response = await fetch(audioUrl);
+      if (!response.ok) {
+        throw new Error('Impossible de télécharger le fichier audio');
+      }
+      
+      const blob = await response.blob();
+      
+      // Créer une URL temporaire pour le blob
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Créer un élément de téléchargement
       const link = document.createElement('a');
-      link.href = audioUrl;
+      link.href = blobUrl;
       
       // Générer un nom de fichier avec timestamp
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
       const fileName = `histoire-de-vie-audio-${timestamp}.webm`;
       
       link.download = fileName;
+      
+      // Forcer le téléchargement en ajoutant des attributs spécifiques
+      link.style.display = 'none';
+      link.target = '_blank';
+      
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+      // Nettoyer
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
       
       toast({
         title: "Export réussi",
