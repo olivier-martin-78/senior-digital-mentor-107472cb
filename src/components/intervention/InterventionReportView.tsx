@@ -6,12 +6,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin, AlertCircle } from 'lucide-react';
+import { FileText, Edit, Trash2, ArrowLeft, Calendar, Clock, User, MapPin, AlertCircle, Download } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Appointment, Client, Intervenant } from '@/types/appointments';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
 import { AudioDiagnosticTool } from './AudioDiagnosticTool';
+import GroupNotificationButton from '@/components/GroupNotificationButton';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -231,6 +232,22 @@ const InterventionReportView = () => {
     }
   };
 
+  const handleExportAudio = () => {
+    if (report?.audio_url && audioStatus === 'valid') {
+      const link = document.createElement('a');
+      link.href = report.audio_url;
+      link.download = `rapport-audio-${report.patient_name}-${report.date}.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: 'Téléchargement lancé',
+        description: 'L\'enregistrement audio est en cours de téléchargement',
+      });
+    }
+  };
+
   const formatArrayToText = (array: string[] = []) => {
     return array.length > 0 ? array.join(', ') : 'Aucun';
   };
@@ -322,6 +339,15 @@ const InterventionReportView = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Bouton de notification des proches */}
+          <div className="flex justify-end">
+            <GroupNotificationButton
+              contentType="diary"
+              contentId={reportId}
+              title={`Rapport d'intervention - ${report.patient_name}`}
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <h3 className="font-semibold flex items-center gap-2">
@@ -352,7 +378,7 @@ const InterventionReportView = () => {
                   {appointment.clients?.address && (
                     <p><strong>Adresse :</strong> {appointment.clients.address}</p>
                   )}
-                  <p><strong>Intervenant :</strong> {appointment.intervenants?.first_name} {appointment.intervenants?.last_name}</p>
+                  <p><strong>Intervenant :</strong> {appointment.intervenants?.first_name} {appointment.intenants?.last_name}</p>
                   <Badge variant={appointment.status === 'completed' ? 'default' : 'secondary'}>
                     {appointment.status === 'completed' ? 'Terminé' : 'Programmé'}
                   </Badge>
@@ -471,9 +497,22 @@ const InterventionReportView = () => {
             </div>
           )}
 
-          {/* Section audio nettoyée sans debug */}
+          {/* Section audio avec bouton d'export */}
           <div className="space-y-2">
-            <h3 className="font-semibold">Enregistrement audio</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Enregistrement audio</h3>
+              {audioStatus === 'valid' && report.audio_url && (
+                <Button
+                  onClick={handleExportAudio}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Exporter
+                </Button>
+              )}
+            </div>
             <div className="bg-gray-50 p-3 rounded-md">
               {audioStatus === 'loading' && (
                 <div className="flex items-center justify-center text-blue-600">
