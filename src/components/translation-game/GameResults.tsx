@@ -55,7 +55,7 @@ export const GameResults = ({ score, totalQuestions, onResetGame }: GameResultsP
               <RotateCcw className="w-4 h-4 mr-2" />
               Rejouer
             </Button>
-            <Link to="/activities">
+            <Link to="/activities/activities">
               <Button variant="outline" className="w-full">
                 Retour aux activités
               </Button>
