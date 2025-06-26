@@ -7,71 +7,79 @@ export const uploadInterventionAudio = async (
   reportId: string,
   onSuccess: (publicUrl: string) => void,
   onError: (error: string) => void,
-  onUploadStart: () => void,
-  onUploadEnd: () => void
+  onUploadStart?: () => void,
+  onUploadEnd?: () => void
 ) => {
-  console.log("🔧 AUDIO_UTILS - Starting upload:", {
+  console.log('🔄 INTERVENTION_AUDIO_UTILS - Début upload:', {
     blobSize: audioBlob.size,
     userId,
     reportId
   });
 
-  onUploadStart();
+  if (onUploadStart) onUploadStart();
 
   try {
-    // CORRECTION: Utiliser le même format de nom que VoiceRecorderForIntervention
-    const fileName = `intervention_${reportId}_${Date.now()}.webm`;
-    const filePath = `interventions/${userId}/${fileName}`;
+    // Créer un nom de fichier unique
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `intervention-${reportId}-${timestamp}.webm`;
+    const filePath = `${userId}/${fileName}`;
 
-    console.log("🔧 AUDIO_UTILS - Upload path:", filePath);
+    console.log('🔄 INTERVENTION_AUDIO_UTILS - Upload vers:', filePath);
 
-    // Upload vers Supabase Storage
+    // Créer le bucket s'il n'existe pas
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const interventionBucketExists = buckets?.some(bucket => bucket.name === 'intervention-audios');
+
+    if (!interventionBucketExists) {
+      console.log('🔄 INTERVENTION_AUDIO_UTILS - Création du bucket intervention-audios');
+      const { error: bucketError } = await supabase.storage.createBucket('intervention-audios', {
+        public: true,
+        allowedMimeTypes: ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg'],
+        fileSizeLimit: 50 * 1024 * 1024 // 50MB
+      });
+
+      if (bucketError) {
+        console.error('❌ INTERVENTION_AUDIO_UTILS - Erreur création bucket:', bucketError);
+        throw new Error(`Erreur lors de la création du bucket: ${bucketError.message}`);
+      }
+    }
+
+    // Upload du fichier
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('intervention-audios')
       .upload(filePath, audioBlob, {
-        contentType: 'audio/webm',
-        upsert: true
+        cacheControl: '3600',
+        upsert: true,
+        contentType: audioBlob.type || 'audio/webm'
       });
 
     if (uploadError) {
-      console.error("🔧 AUDIO_UTILS - Upload error:", uploadError);
-      throw uploadError;
+      console.error('❌ INTERVENTION_AUDIO_UTILS - Erreur upload:', uploadError);
+      throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
     }
 
-    console.log("🔧 AUDIO_UTILS - Upload successful:", uploadData);
+    console.log('✅ INTERVENTION_AUDIO_UTILS - Upload réussi:', uploadData);
 
-    // Récupérer l'URL publique
-    const { data: urlData } = supabase.storage
+    // Obtenir l'URL publique
+    const { data: publicUrlData } = supabase.storage
       .from('intervention-audios')
       .getPublicUrl(filePath);
 
-    const publicUrl = urlData.publicUrl;
-    console.log("🔧 AUDIO_UTILS - Public URL:", publicUrl);
+    const publicUrl = publicUrlData.publicUrl;
+    console.log('✅ INTERVENTION_AUDIO_UTILS - URL publique générée:', publicUrl);
 
-    // Mettre à jour le rapport avec l'URL audio
-    const { error: updateError } = await supabase
-      .from('intervention_reports')
-      .update({ audio_url: publicUrl })
-      .eq('id', reportId);
-
-    if (updateError) {
-      console.error("🔧 AUDIO_UTILS - Update error:", updateError);
-      throw updateError;
+    if (onSuccess) {
+      onSuccess(publicUrl);
     }
-
-    console.log("🔧 AUDIO_UTILS - Report updated successfully");
-    onSuccess(publicUrl);
 
   } catch (error) {
-    console.error("🔧 AUDIO_UTILS - Upload failed:", error);
+    console.error('💥 INTERVENTION_AUDIO_UTILS - Erreur lors de l\'upload:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue lors de l\'upload';
     
-    let errorMessage = "Erreur lors de l'upload de l'audio";
-    if (error instanceof Error) {
-      errorMessage = error.message;
+    if (onError) {
+      onError(errorMessage);
     }
-    
-    onError(errorMessage);
   } finally {
-    onUploadEnd();
+    if (onUploadEnd) onUploadEnd();
   }
 };

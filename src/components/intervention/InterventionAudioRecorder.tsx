@@ -1,141 +1,207 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import DirectAudioRecorder from './DirectAudioRecorder';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import VoiceRecorder from '@/components/VoiceRecorder';
+import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
+import { toast } from '@/hooks/use-toast';
+import { Spinner } from '@/components/ui/spinner';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 
 interface InterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
-  onAudioUrlGenerated?: (url: string) => void;
-  onRecordingStatusChange?: (isRecording: boolean) => void;
+  onAudioUrlGenerated: (url: string) => void;
   existingAudioUrl?: string | null;
-  isReadOnly?: boolean;
   reportId?: string;
 }
 
 const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   onAudioRecorded,
   onAudioUrlGenerated,
-  onRecordingStatusChange,
   existingAudioUrl,
-  isReadOnly = false,
   reportId
 }) => {
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(existingAudioUrl || null);
+  const { user } = useAuth();
   
-  // Refs stables pour éviter les re-créations
-  const stableCallbacksRef = useRef({
-    onAudioRecorded,
-    onAudioUrlGenerated,
-    onRecordingStatusChange
-  });
-
-  // Mettre à jour les refs sans déclencher de re-render
-  useEffect(() => {
-    stableCallbacksRef.current = {
-      onAudioRecorded,
-      onAudioUrlGenerated,
-      onRecordingStatusChange
-    };
-  });
+  // Utiliser des refs pour éviter les uploads multiples
+  const isMounted = useRef(true);
+  const currentUploadRef = useRef<string | null>(null);
   
-  console.log("🎵 INTERVENTION - InterventionAudioRecorder rendu SIMPLIFIÉ:", {
+  console.log('🎤 INTERVENTION_AUDIO_RECORDER - Rendu avec:', {
+    isUploading,
+    uploadedAudioUrl,
     hasExistingUrl: !!existingAudioUrl,
-    existingAudioUrl,
-    currentAudioUrl: audioUrl,
-    isReadOnly,
     reportId
   });
-
-  // Initialisation stable de l'URL existante
-  useEffect(() => {
-    if (existingAudioUrl && existingAudioUrl.trim() !== '') {
-      console.log("🎵 INTERVENTION - Initialisation avec URL existante SIMPLIFIÉ:", existingAudioUrl);
-      setAudioUrl(existingAudioUrl.trim());
-    } else {
-      console.log("🎵 INTERVENTION - Pas d'URL existante SIMPLIFIÉ");
-      setAudioUrl(null);
-    }
-  }, [existingAudioUrl]);
-
-  // Callbacks stables
-  const stableHandleAudioRecorded = useCallback((blob: Blob) => {
-    console.log('🎤 INTERVENTION - Audio enregistré SIMPLIFIÉ:', blob?.size);
-    if (stableCallbacksRef.current.onAudioRecorded) {
-      stableCallbacksRef.current.onAudioRecorded(blob);
-    }
-  }, []);
-
-  const stableHandleAudioUrlGenerated = useCallback((url: string) => {
-    console.log('🎵 INTERVENTION - URL audio générée SIMPLIFIÉ:', url);
-    
-    if (!url || url.trim() === '') {
-      console.log('🎵 INTERVENTION - URL vide, suppression SIMPLIFIÉ');
-      setAudioUrl(null);
-    } else {
-      console.log('🎵 INTERVENTION - Nouvelle URL audio SIMPLIFIÉ:', url);
-      setAudioUrl(url);
-    }
-    
-    if (stableCallbacksRef.current.onAudioUrlGenerated) {
-      stableCallbacksRef.current.onAudioUrlGenerated(url);
-    }
-  }, []);
-
-  const stableHandleDeleteAudio = useCallback(() => {
-    console.log('🗑️ INTERVENTION - Suppression audio SIMPLIFIÉ');
-    setAudioUrl(null);
-    
-    // Notifier le parent avec un blob vide
-    if (stableCallbacksRef.current.onAudioRecorded) {
-      const emptyBlob = new Blob([], { type: 'audio/webm' });
-      stableCallbacksRef.current.onAudioRecorded(emptyBlob);
-    }
-    
-    if (stableCallbacksRef.current.onAudioUrlGenerated) {
-      stableCallbacksRef.current.onAudioUrlGenerated('');
-    }
-  }, []);
-
-  // Logique d'affichage simplifiée et stable
-  const currentUrl = audioUrl || existingAudioUrl;
-  const hasValidAudioUrl = !!(currentUrl && currentUrl.trim() !== '');
   
-  console.log('🎵 INTERVENTION - Logique affichage SIMPLIFIÉ:', {
-    hasValidAudioUrl,
-    audioUrl,
-    existingAudioUrl,
-    currentUrl,
-    isReadOnly
-  });
-
-  // Si on a une URL audio valide, afficher le lecteur
-  if (hasValidAudioUrl) {
-    console.log('🎵 INTERVENTION - Affichage lecteur avec URL SIMPLIFIÉ:', currentUrl);
+  // Effet de nettoyage lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  // Gestion de l'enregistrement audio
+  const handleAudioChange = async (newAudioBlob: Blob | null) => {
+    console.log("🎤 INTERVENTION_AUDIO_RECORDER - handleAudioChange:", { 
+      hasBlob: !!newAudioBlob, 
+      blobSize: newAudioBlob?.size,
+      isUploading,
+      currentUpload: currentUploadRef.current,
+    });
     
+    // Si pas de blob, audio supprimé
+    if (!newAudioBlob || newAudioBlob.size === 0) {
+      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Audio supprimé ou vide");
+      setUploadedAudioUrl(null);
+      setIsUploading(false);
+      currentUploadRef.current = null;
+      onAudioUrlGenerated('');
+      return;
+    }
+    
+    // Si pas d'utilisateur, ne rien faire
+    if (!user?.id) {
+      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Pas d'utilisateur connecté");
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour enregistrer un audio",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Vérifier si un upload est déjà en cours
+    const uploadKey = `intervention-${reportId || 'new'}`;
+    if (isUploading || currentUploadRef.current === uploadKey) {
+      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
+      return;
+    }
+    
+    try {
+      console.log(`🎤 INTERVENTION_AUDIO_RECORDER - Début upload, taille: ${newAudioBlob.size} octets`);
+      setIsUploading(true);
+      currentUploadRef.current = uploadKey;
+      
+      // Appeler onAudioRecorded immédiatement pour signaler qu'un enregistrement est disponible
+      onAudioRecorded(newAudioBlob);
+      
+      // Si on a un reportId, uploader vers Supabase, sinon créer une URL temporaire
+      if (reportId) {
+        console.log('🎤 INTERVENTION_AUDIO_RECORDER - Upload vers Supabase pour rapport:', reportId);
+        
+        uploadInterventionAudio(
+          newAudioBlob,
+          user.id,
+          reportId,
+          // Callback de succès
+          (publicUrl: string) => {
+            if (isMounted.current && currentUploadRef.current === uploadKey) {
+              console.log(`🎤 INTERVENTION_AUDIO_RECORDER - ✅ Upload réussi, URL:`, publicUrl);
+              setUploadedAudioUrl(publicUrl);
+              setIsUploading(false);
+              currentUploadRef.current = null;
+              onAudioUrlGenerated(publicUrl);
+              
+              toast({
+                title: "Enregistrement sauvegardé",
+                description: "Votre enregistrement vocal a été sauvegardé avec succès",
+              });
+            }
+          },
+          // Callback d'erreur
+          (errorMessage: string) => {
+            if (isMounted.current && currentUploadRef.current === uploadKey) {
+              console.error(`🎤 INTERVENTION_AUDIO_RECORDER - ❌ Erreur upload:`, errorMessage);
+              setIsUploading(false);
+              currentUploadRef.current = null;
+              
+              // Créer une URL temporaire en fallback
+              const tempUrl = URL.createObjectURL(newAudioBlob);
+              setUploadedAudioUrl(tempUrl);
+              onAudioUrlGenerated(tempUrl);
+              
+              toast({
+                title: "Enregistrement temporaire",
+                description: "L'enregistrement est sauvé localement. Sauvegardez le rapport pour le conserver.",
+                variant: "default",
+              });
+            }
+          },
+          // Callback de début d'upload
+          () => {
+            console.log(`🎤 INTERVENTION_AUDIO_RECORDER - 📤 Début téléchargement`);
+          },
+          // Callback de fin d'upload
+          () => {
+            if (isMounted.current && currentUploadRef.current === uploadKey) {
+              console.log(`🎤 INTERVENTION_AUDIO_RECORDER - 📥 Fin téléchargement`);
+              setIsUploading(false);
+              currentUploadRef.current = null;
+            }
+          }
+        );
+      } else {
+        // Pas de reportId, créer une URL temporaire
+        console.log('🎤 INTERVENTION_AUDIO_RECORDER - Création URL temporaire (nouveau rapport)');
+        const tempUrl = URL.createObjectURL(newAudioBlob);
+        setUploadedAudioUrl(tempUrl);
+        setIsUploading(false);
+        currentUploadRef.current = null;
+        onAudioUrlGenerated(tempUrl);
+        
+        toast({
+          title: "Enregistrement prêt",
+          description: "Votre enregistrement sera sauvegardé avec le rapport",
+        });
+      }
+    } catch (error) {
+      if (isMounted.current && currentUploadRef.current === uploadKey) {
+        console.error(`🎤 INTERVENTION_AUDIO_RECORDER - 💥 Erreur non gérée:`, error);
+        setIsUploading(false);
+        currentUploadRef.current = null;
+        
+        toast({
+          title: "Erreur inattendue",
+          description: "Une erreur est survenue lors de l'enregistrement audio",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDeleteExistingAudio = () => {
+    console.log('🎤 INTERVENTION_AUDIO_RECORDER - Suppression manuelle de l\'audio existant');
+    setUploadedAudioUrl(null);
+    onAudioUrlGenerated('');
+  };
+
+  // Si un audio existe et qu'on n'est pas en train d'uploader, afficher le lecteur
+  if (uploadedAudioUrl && !isUploading) {
+    console.log('🎤 INTERVENTION_AUDIO_RECORDER - ✅ Affichage du lecteur avec URL:', uploadedAudioUrl);
     return (
       <VoiceAnswerPlayer
-        audioUrl={currentUrl!}
-        onDelete={isReadOnly ? undefined : stableHandleDeleteAudio}
-        readOnly={isReadOnly}
+        audioUrl={uploadedAudioUrl}
+        onDelete={handleDeleteExistingAudio}
+        readOnly={false}
+        shouldLog={true}
       />
     );
   }
 
-  // Si en mode lecture seule sans audio, ne rien afficher
-  if (isReadOnly) {
-    console.log('🎵 INTERVENTION - Mode lecture seule sans audio SIMPLIFIÉ');
-    return null;
-  }
-
-  // Sinon, afficher l'enregistreur direct
-  console.log('🎙️ INTERVENTION - Affichage enregistreur direct SIMPLIFIÉ avec reportId:', reportId);
+  console.log('🎤 INTERVENTION_AUDIO_RECORDER - Affichage de l\'enregistreur');
   return (
-    <DirectAudioRecorder
-      onAudioRecorded={stableHandleAudioRecorded}
-      onAudioUrlGenerated={stableHandleAudioUrlGenerated}
-      onRecordingStatusChange={stableCallbacksRef.current.onRecordingStatusChange}
-      reportId={reportId}
-    />
+    <div className={`transition-all ${isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+      <VoiceRecorder onAudioChange={handleAudioChange} />
+      
+      {isUploading && (
+        <div className="flex items-center justify-center py-2 mt-2 bg-gray-100 rounded-md">
+          <Spinner className="h-5 w-5 border-gray-500 mr-2" />
+          <span className="text-sm text-gray-700">Sauvegarde en cours...</span>
+        </div>
+      )}
+    </div>
   );
 };
 
