@@ -3,108 +3,65 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { InterventionFormData } from '../types/FormData';
 
 interface ActivitiesSectionProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: InterventionFormData;
+  setFormData: (data: InterventionFormData | ((prev: InterventionFormData) => InterventionFormData)) => void;
 }
 
 export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
   formData,
   setFormData
 }) => {
+  const activitiesOptions = [
+    'Aide à la toilette',
+    'Aide aux repas',
+    'Aide à la mobilité',
+    'Accompagnement sorties',
+    'Activités ludiques',
+    'Lecture',
+    'Conversation',
+    'Exercices physiques',
+    'Aide administrative',
+    'Ménage léger'
+  ];
+
+  const handleActivityChange = (option: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      activities: checked 
+        ? [...(prev.activities || []), option]
+        : (prev.activities || []).filter(item => item !== option)
+    }));
+  };
+
   return (
-    <>
-      <div>
-        <Label>Activités réalisées</Label>
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center space-x-2">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Activités réalisées</h3>
+      
+      <div className="grid grid-cols-2 gap-4">
+        {activitiesOptions.map((option) => (
+          <div key={option} className="flex items-center space-x-2">
             <Checkbox
-              id="activity1"
-              checked={formData.activities.includes('Toilette')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  activities: checked
-                    ? [...formData.activities, 'Toilette']
-                    : formData.activities.filter((item) => item !== 'Toilette'),
-                })
-              }
+              id={`activity_${option}`}
+              checked={(formData.activities || []).includes(option)}
+              onCheckedChange={(checked) => handleActivityChange(option, checked as boolean)}
             />
-            <Label htmlFor="activity1">Toilette</Label>
+            <Label htmlFor={`activity_${option}`}>{option}</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="activity2"
-              checked={formData.activities.includes('Préparation des repas')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  activities: checked
-                    ? [...formData.activities, 'Préparation des repas']
-                    : formData.activities.filter((item) => item !== 'Préparation des repas'),
-                })
-              }
-            />
-            <Label htmlFor="activity2">Préparation des repas</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="activity3"
-              checked={formData.activities.includes('Aide à la mobilité')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  activities: checked
-                    ? [...formData.activities, 'Aide à la mobilité']
-                    : formData.activities.filter((item) => item !== 'Aide à la mobilité'),
-                })
-              }
-            />
-            <Label htmlFor="activity3">Aide à la mobilité</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="activity4"
-              checked={formData.activities.includes('Surveillance de la prise de médicaments')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  activities: checked
-                    ? [...formData.activities, 'Surveillance de la prise de médicaments']
-                    : formData.activities.filter((item) => item !== 'Surveillance de la prise de médicaments'),
-                })
-              }
-            />
-            <Label htmlFor="activity4">Surveillance de la prise de médicaments</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="activity5"
-              checked={formData.activities.includes('Compagnie et conversation')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  activities: checked
-                    ? [...formData.activities, 'Compagnie et conversation']
-                    : formData.activities.filter((item) => item !== 'Compagnie et conversation'),
-                })
-              }
-            />
-            <Label htmlFor="activity5">Compagnie et conversation</Label>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div>
-        <Label htmlFor="activitiesOther">Autres activités</Label>
+        <Label htmlFor="activities_other">Autres activités</Label>
         <Textarea
-          id="activitiesOther"
-          placeholder="Précisez les autres activités réalisées"
-          value={formData.activitiesOther || ''}
-          onChange={(e) => setFormData({ ...formData, activitiesOther: e.target.value })}
+          id="activities_other"
+          placeholder="Décrivez d'autres activités réalisées"
+          value={formData.activities_other || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, activities_other: e.target.value }))}
         />
       </div>
-    </>
+    </div>
   );
 };

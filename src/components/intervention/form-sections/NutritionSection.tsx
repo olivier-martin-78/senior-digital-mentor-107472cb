@@ -3,10 +3,11 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { InterventionFormData } from '../types/FormData';
 
 interface NutritionSectionProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: InterventionFormData;
+  setFormData: (data: InterventionFormData | ((prev: InterventionFormData) => InterventionFormData)) => void;
 }
 
 export const NutritionSection: React.FC<NutritionSectionProps> = ({
@@ -14,47 +15,55 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   setFormData
 }) => {
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Nutrition et hydratation</h3>
+      
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="appetite">Appétit</Label>
-          <Select onValueChange={(value) => setFormData({ ...formData, appetite: value })}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sélectionner" defaultValue={formData.appetite || undefined} />
+          <Select 
+            value={formData.appetite || ''} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, appetite: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner l'appétit" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Bon">Bon</SelectItem>
               <SelectItem value="Moyen">Moyen</SelectItem>
               <SelectItem value="Faible">Faible</SelectItem>
-              <SelectItem value="Nul">Nul</SelectItem>
+              <SelectItem value="Aucun">Aucun</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
           <Label htmlFor="hydration">Hydratation</Label>
-          <Select onValueChange={(value) => setFormData({ ...formData, hydration: value })}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sélectionner" defaultValue={formData.hydration || undefined} />
+          <Select 
+            value={formData.hydration || ''} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, hydration: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner l'hydratation" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Normale">Normale</SelectItem>
-              <SelectItem value="Faible">Faible</SelectItem>
-              <SelectItem value="Nulle">Nulle</SelectItem>
+              <SelectItem value="Correcte">Correcte</SelectItem>
+              <SelectItem value="Insuffisante">Insuffisante</SelectItem>
+              <SelectItem value="Refus">Refus</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div>
-        <Label htmlFor="appetiteComments">Commentaires appétit</Label>
+        <Label htmlFor="appetite_comments">Commentaires sur l'alimentation</Label>
         <Textarea
-          id="appetiteComments"
-          placeholder="Ajoutez des commentaires sur l'appétit"
-          value={formData.appetiteComments || ''}
-          onChange={(e) => setFormData({ ...formData, appetiteComments: e.target.value })}
+          id="appetite_comments"
+          placeholder="Ajoutez des commentaires sur l'alimentation et l'hydratation"
+          value={formData.appetite_comments || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, appetite_comments: e.target.value }))}
         />
       </div>
-    </>
+    </div>
   );
 };

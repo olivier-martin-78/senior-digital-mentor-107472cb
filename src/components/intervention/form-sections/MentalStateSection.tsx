@@ -3,93 +3,63 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { InterventionFormData } from '../types/FormData';
 
 interface MentalStateSectionProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: InterventionFormData;
+  setFormData: (data: InterventionFormData | ((prev: InterventionFormData) => InterventionFormData)) => void;
 }
 
 export const MentalStateSection: React.FC<MentalStateSectionProps> = ({
   formData,
   setFormData
 }) => {
+  const mentalStateOptions = [
+    'Calme',
+    'Agité(e)',
+    'Confus(e)',
+    'Anxieux(se)',
+    'Déprimé(e)',
+    'Euphorique',
+    'Agressif(ve)',
+    'Coopératif(ve)'
+  ];
+
+  const handleMentalStateChange = (option: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      mental_state: checked 
+        ? [...(prev.mental_state || []), option]
+        : (prev.mental_state || []).filter(item => item !== option)
+    }));
+  };
+
   return (
-    <>
-      <div>
-        <Label>État mental</Label>
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center space-x-2">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">État mental</h3>
+      
+      <div className="grid grid-cols-2 gap-4">
+        {mentalStateOptions.map((option) => (
+          <div key={option} className="flex items-center space-x-2">
             <Checkbox
-              id="mentalState1"
-              checked={formData.mentalState.includes('Alerte')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  mentalState: checked
-                    ? [...formData.mentalState, 'Alerte']
-                    : formData.mentalState.filter((item) => item !== 'Alerte'),
-                })
-              }
+              id={`mental_state_${option}`}
+              checked={(formData.mental_state || []).includes(option)}
+              onCheckedChange={(checked) => handleMentalStateChange(option, checked as boolean)}
             />
-            <Label htmlFor="mentalState1">Alerte</Label>
+            <Label htmlFor={`mental_state_${option}`}>{option}</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="mentalState2"
-              checked={formData.mentalState.includes('Confus')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  mentalState: checked
-                    ? [...formData.mentalState, 'Confus']
-                    : formData.mentalState.filter((item) => item !== 'Confus'),
-                })
-              }
-            />
-            <Label htmlFor="mentalState2">Confus</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="mentalState3"
-              checked={formData.mentalState.includes('Anxieux')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  mentalState: checked
-                    ? [...formData.mentalState, 'Anxieux']
-                    : formData.mentalState.filter((item) => item !== 'Anxieux'),
-                })
-              }
-            />
-            <Label htmlFor="mentalState3">Anxieux</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="mentalState4"
-              checked={formData.mentalState.includes('Agité')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  mentalState: checked
-                    ? [...formData.mentalState, 'Agité']
-                    : formData.mentalState.filter((item) => item !== 'Agité'),
-                })
-              }
-            />
-            <Label htmlFor="mentalState4">Agité</Label>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div>
-        <Label htmlFor="mentalStateChange">Changements état mental</Label>
+        <Label htmlFor="mental_state_change">Changements observés</Label>
         <Textarea
-          id="mentalStateChange"
-          placeholder="Décrivez les changements d'état mental"
-          value={formData.mentalStateChange || ''}
-          onChange={(e) => setFormData({ ...formData, mentalStateChange: e.target.value })}
+          id="mental_state_change"
+          placeholder="Décrivez les changements observés dans l'état mental"
+          value={formData.mental_state_change || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, mental_state_change: e.target.value }))}
         />
       </div>
-    </>
+    </div>
   );
 };

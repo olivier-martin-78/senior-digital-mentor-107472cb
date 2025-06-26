@@ -3,78 +3,63 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { InterventionFormData } from '../types/FormData';
 
 interface FollowUpSectionProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: InterventionFormData;
+  setFormData: (data: InterventionFormData | ((prev: InterventionFormData) => InterventionFormData)) => void;
 }
 
 export const FollowUpSection: React.FC<FollowUpSectionProps> = ({
   formData,
   setFormData
 }) => {
+  const followUpOptions = [
+    'Surveillance médicale',
+    'Kinésithérapie',
+    'Suivi psychologique',
+    'Adaptation du matériel',
+    'Contact famille',
+    'Contact médecin',
+    'Réévaluation des besoins',
+    'Formation aidant'
+  ];
+
+  const handleFollowUpChange = (option: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      follow_up: checked 
+        ? [...(prev.follow_up || []), option]
+        : (prev.follow_up || []).filter(item => item !== option)
+    }));
+  };
+
   return (
-    <>
-      <div>
-        <Label>Suivi nécessaire</Label>
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center space-x-2">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Suivi à prévoir</h3>
+      
+      <div className="grid grid-cols-2 gap-4">
+        {followUpOptions.map((option) => (
+          <div key={option} className="flex items-center space-x-2">
             <Checkbox
-              id="followUp1"
-              checked={formData.followUp.includes('Contact médecin traitant')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  followUp: checked
-                    ? [...formData.followUp, 'Contact médecin traitant']
-                    : formData.followUp.filter((item) => item !== 'Contact médecin traitant'),
-                })
-              }
+              id={`follow_up_${option}`}
+              checked={(formData.follow_up || []).includes(option)}
+              onCheckedChange={(checked) => handleFollowUpChange(option, checked as boolean)}
             />
-            <Label htmlFor="followUp1">Contact médecin traitant</Label>
+            <Label htmlFor={`follow_up_${option}`}>{option}</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="followUp2"
-              checked={formData.followUp.includes('Contact famille')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  followUp: checked
-                    ? [...formData.followUp, 'Contact famille']
-                    : formData.followUp.filter((item) => item !== 'Contact famille'),
-                })
-              }
-            />
-            <Label htmlFor="followUp2">Contact famille</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="followUp3"
-              checked={formData.followUp.includes('Mise en place de matériel')}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  followUp: checked
-                    ? [...formData.followUp, 'Mise en place de matériel']
-                    : formData.followUp.filter((item) => item !== 'Mise en place de matériel'),
-                })
-              }
-            />
-            <Label htmlFor="followUp3">Mise en place de matériel</Label>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div>
-        <Label htmlFor="followUpOther">Autres suivis</Label>
+        <Label htmlFor="follow_up_other">Autres actions de suivi</Label>
         <Textarea
-          id="followUpOther"
-          placeholder="Précisez les autres suivis nécessaires"
-          value={formData.followUpOther || ''}
-          onChange={(e) => setFormData({ ...formData, followUpOther: e.target.value })}
+          id="follow_up_other"
+          placeholder="Décrivez d'autres actions de suivi nécessaires"
+          value={formData.follow_up_other || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, follow_up_other: e.target.value }))}
         />
       </div>
-    </>
+    </div>
   );
 };
