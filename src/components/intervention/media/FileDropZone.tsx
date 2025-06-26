@@ -43,7 +43,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileSelect, disabl
         Glissez-déposez vos fichiers ici ou cliquez pour sélectionner
       </p>
       <p className="text-xs text-gray-500 mb-3">
-        Images et documents acceptés (max 10MB par fichier)
+        Images et documents acceptés (max 500MB par fichier)
       </p>
       <input
         type="file"

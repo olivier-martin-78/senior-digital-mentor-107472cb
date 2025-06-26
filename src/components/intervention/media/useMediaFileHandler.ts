@@ -1,7 +1,7 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { MediaFile } from './types';
+import { MAX_FILE_SIZE } from '@/utils/videoCompressionUtils';
 
 interface UseMediaFileHandlerProps {
   onMediaChange: (files: MediaFile[]) => void;
@@ -42,10 +42,11 @@ export const useMediaFileHandler = ({ onMediaChange, existingMediaFiles = [] }: 
     let pendingImageFiles: MediaFile[] = [];
 
     Array.from(files).forEach((file) => {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      if (file.size > MAX_FILE_SIZE) { // Utiliser la constante partagée
+        const maxSizeMB = Math.round(MAX_FILE_SIZE / (1024 * 1024));
         toast({
           title: "Fichier trop volumineux",
-          description: `${file.name} dépasse la limite de 10MB`,
+          description: `${file.name} dépasse la limite de ${maxSizeMB}MB`,
           variant: "destructive",
         });
         return;

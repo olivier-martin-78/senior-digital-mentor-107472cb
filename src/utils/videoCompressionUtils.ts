@@ -3,8 +3,8 @@
  * Utilitaires pour la compression vidéo et la validation de fichiers
  */
 
-// Taille maximale en octets (100 MB)
-export const MAX_FILE_SIZE = 100 * 1024 * 1024;
+// Taille maximale en octets (500 MB)
+export const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
 // Formats vidéo supportés
 export const SUPPORTED_VIDEO_FORMATS = [
