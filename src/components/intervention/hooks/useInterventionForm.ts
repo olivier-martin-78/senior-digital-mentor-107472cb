@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Client, Appointment, Intervenant } from '@/types/appointments';
 import { InterventionFormData } from '../types/FormData';
 import { InterventionReport } from '@/types/intervention';
+import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 
 export const useInterventionForm = () => {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export const useInterventionForm = () => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [showAppointmentSelector, setShowAppointmentSelector] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
 
   const [formData, setFormData] = useState<InterventionFormData>({
     appointment_id: appointmentId || '',
@@ -268,6 +271,52 @@ export const useInterventionForm = () => {
     }
   };
 
+  const handleAudioRecorded = (blob: Blob) => {
+    console.log('🎤 Audio enregistré dans useInterventionForm:', blob.size);
+    setAudioBlob(blob);
+    
+    // Créer une URL temporaire pour la prévisualisation
+    const tempUrl = URL.createObjectURL(blob);
+    setFormData(prev => ({
+      ...prev,
+      audio_url: tempUrl
+    }));
+  };
+
+  const handleAudioUrlGenerated = (url: string) => {
+    console.log('🎵 URL audio générée dans useInterventionForm:', url);
+    setFormData(prev => ({
+      ...prev,
+      audio_url: url
+    }));
+  };
+
+  const uploadAudioIfNeeded = async (savedReportId: string): Promise<string | null> => {
+    if (!audioBlob || !user) {
+      return formData.audio_url || null;
+    }
+
+    console.log('🔄 Upload de l\'audio pour le rapport:', savedReportId);
+    
+    return new Promise((resolve) => {
+      uploadInterventionAudio(
+        audioBlob,
+        user.id,
+        savedReportId,
+        (publicUrl: string) => {
+          console.log('✅ Audio uploadé avec succès:', publicUrl);
+          resolve(publicUrl);
+        },
+        (error: string) => {
+          console.error('❌ Erreur upload audio:', error);
+          resolve(null);
+        },
+        () => setIsUploadingAudio(true),
+        () => setIsUploadingAudio(false)
+      );
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -308,7 +357,7 @@ export const useInterventionForm = () => {
         observations: formData.observations || null,
         follow_up: formData.follow_up,
         follow_up_other: formData.follow_up_other || null,
-        audio_url: formData.audio_url || null,
+        audio_url: null, // On va l'uploader après
         media_files: formData.media_files || null,
         client_rating: formData.client_rating || null,
         client_comments: formData.client_comments || null,
@@ -318,9 +367,15 @@ export const useInterventionForm = () => {
       console.log('Saving report data:', reportData);
 
       if (reportId) {
+        // Mise à jour d'un rapport existant
+        const finalAudioUrl = await uploadAudioIfNeeded(reportId);
+        
         const { error } = await supabase
           .from('intervention_reports')
-          .update(reportData)
+          .update({
+            ...reportData,
+            audio_url: finalAudioUrl
+          })
           .eq('id', reportId);
 
         if (error) {
@@ -333,6 +388,7 @@ export const useInterventionForm = () => {
           description: 'Rapport mis à jour avec succès',
         });
       } else {
+        // Création d'un nouveau rapport
         const { data: newReport, error } = await supabase
           .from('intervention_reports')
           .insert([reportData])
@@ -342,6 +398,17 @@ export const useInterventionForm = () => {
         if (error) {
           console.error('Insert error:', error);
           throw error;
+        }
+
+        // Upload de l'audio après création du rapport
+        const finalAudioUrl = await uploadAudioIfNeeded(newReport.id);
+        
+        // Mettre à jour le rapport avec l'URL audio
+        if (finalAudioUrl) {
+          await supabase
+            .from('intervention_reports')
+            .update({ audio_url: finalAudioUrl })
+            .eq('id', newReport.id);
         }
 
         if (formData.appointment_id && newReport) {
@@ -385,12 +452,14 @@ export const useInterventionForm = () => {
     allIntervenants,
     selectedAppointment,
     setSelectedAppointment,
-    loading,
+    loading: loading || isUploadingAudio,
     loadingData,
     showAppointmentSelector,
     setShowAppointmentSelector,
     reportId,
     handleAppointmentChange,
     handleSubmit,
+    handleAudioRecorded,
+    handleAudioUrlGenerated,
   };
 };
