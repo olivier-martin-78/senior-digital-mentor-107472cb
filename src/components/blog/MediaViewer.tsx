@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import { Dialog, DialogContent, VisuallyHidden, DialogTitle } from '@/components/ui/dialog';
@@ -228,47 +229,47 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           <DialogTitle>Visualisation des médias</DialogTitle>
         </VisuallyHidden>
         
-        {/* Bouton fermer avec positionnement fixe et z-index élevé */}
+        {/* Bouton fermer avec positionnement amélioré pour mobile */}
         <Button
           variant="ghost"
           size="icon"
-          className="fixed top-4 right-4 z-[9999] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
+          className="fixed top-2 right-2 z-[9999] text-white hover:bg-white/20 bg-black/70 rounded-full w-12 h-12 flex items-center justify-center shadow-lg border-2 border-white/20 md:top-4 md:right-4 md:w-10 md:h-10"
           onClick={onClose}
         >
-          <X className="h-5 w-5" />
+          <X className="h-6 w-6 md:h-5 md:w-5" />
         </Button>
 
-        {/* Compteur avec positionnement fixe */}
-        <div className="fixed top-4 left-4 z-[9998] text-white bg-black/50 px-3 py-1 rounded-full shadow-lg">
-          {currentIndex + 1} / {media.length}
+        {/* Compteur avec positionnement amélioré pour mobile */}
+        <div className="fixed top-2 left-2 z-[9998] text-white bg-black/70 px-3 py-2 rounded-full shadow-lg border border-white/20 md:top-4 md:left-4">
+          <span className="text-sm font-medium">{currentIndex + 1} / {media.length}</span>
         </div>
 
-        {/* Boutons de navigation (desktop) avec z-index élevé */}
+        {/* Boutons de navigation avec amélioration pour mobile */}
         {media.length > 1 && (
           <>
             <Button
               variant="ghost"
               size="icon"
-              className="fixed left-4 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 hidden md:flex items-center justify-center shadow-lg"
+              className="fixed left-2 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/70 rounded-full w-12 h-12 flex items-center justify-center shadow-lg border border-white/20 md:left-4 md:w-10 md:h-10"
               onClick={() => onNavigate('prev')}
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-7 w-7 md:h-6 md:w-6" />
             </Button>
             
             <Button
               variant="ghost"
               size="icon"
-              className="fixed right-4 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 hidden md:flex items-center justify-center shadow-lg"
+              className="fixed right-2 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/70 rounded-full w-12 h-12 flex items-center justify-center shadow-lg border border-white/20 md:right-4 md:w-10 md:h-10"
               onClick={() => onNavigate('next')}
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-7 w-7 md:h-6 md:w-6" />
             </Button>
           </>
         )}
 
         {/* Contenu média */}
         <div 
-          className="flex items-center justify-center w-full h-full md:p-8"
+          className="flex items-center justify-center w-full h-full p-4 md:p-8"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -379,7 +380,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
 
         {/* Indicateurs de swipe pour mobile */}
         {media.length > 1 && (
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9996] text-white text-sm bg-black/50 px-3 py-1 rounded-full md:hidden shadow-lg">
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9996] text-white text-sm bg-black/70 px-3 py-2 rounded-full md:hidden shadow-lg border border-white/20">
             Glissez pour naviguer
           </div>
         )}

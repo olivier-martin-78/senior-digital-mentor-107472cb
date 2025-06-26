@@ -68,8 +68,9 @@ const MediaItem: React.FC<MediaItemProps> = ({
   };
 
   return (
-    <div className="relative group bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-      <div className="aspect-square relative" onClick={handleClick}>
+    <div className="relative group bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex-1">
+      {/* Utilisation d'un aspect-ratio fixe pour uniformiser les hauteurs */}
+      <div className="aspect-square relative w-full" onClick={handleClick}>
         {media.media_type.startsWith('image/') ? (
           <img
             src={media.media_url}
@@ -99,15 +100,15 @@ const MediaItem: React.FC<MediaItemProps> = ({
               </div>
             )}
             
-            {/* Icône play réduite */}
+            {/* Icône play réduite - encore plus petite */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="bg-white/90 rounded-full p-2 shadow-lg">
-                <Play className="w-4 h-4 text-gray-800 fill-current" />
+              <div className="bg-white/90 rounded-full p-1.5 shadow-lg">
+                <Play className="w-3 h-3 text-gray-800 fill-current" />
               </div>
             </div>
             
             {/* Indicateur vidéo permanent en bas à droite */}
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
               Vidéo
             </div>
           </div>

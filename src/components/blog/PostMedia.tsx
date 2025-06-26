@@ -140,19 +140,14 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
         <MediaDownloader media={media} postTitle={postTitle} />
 
         {mediaRows.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex w-full">
-            {row.map((item) => {
-              const imageUrl = getImageUrl(item);
-              const hasError = imageErrors.has(item.id);
-              
-              return (
-                <MediaItem
-                  key={item.id}
-                  media={item}
-                  onClick={() => handleMediaClick(item)}
-                />
-              );
-            })}
+          <div key={rowIndex} className="flex gap-2 mb-2 w-full">
+            {row.map((item) => (
+              <MediaItem
+                key={item.id}
+                media={item}
+                onClick={() => handleMediaClick(item)}
+              />
+            ))}
           </div>
         ))}
       </div>
