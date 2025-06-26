@@ -51,6 +51,13 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     loadingTimeoutRef.current = setTimeout(() => {
       console.log("🎵 AUDIO_PLAYER_CORE - Loading timeout reached, showing player");
       setIsLoading(false);
+      
+      // Sur iOS, forcer un rechargement léger pour éliminer la spinning wheel
+      if (isIOS && audio) {
+        const currentTime = audio.currentTime;
+        audio.load(); // Recharge l'élément audio
+        audio.currentTime = currentTime; // Restaure la position
+      }
     }, timeoutDuration);
 
     const handleLoadStart = () => {
@@ -123,8 +130,18 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     // Définir l'URL et commencer le chargement
     audio.src = processedAudioUrl;
     
-    // Sur iOS, réduire le preload car il peut bloquer
-    audio.preload = isIOS ? 'none' : 'metadata';
+    // Sur iOS, utiliser preload='auto' après le timeout pour forcer le rechargement
+    if (isIOS) {
+      audio.preload = 'none';
+      // Après un délai, passer en preload auto pour éliminer la spinning wheel
+      setTimeout(() => {
+        if (audio && !audio.error) {
+          audio.preload = 'auto';
+        }
+      }, timeoutDuration + 500);
+    } else {
+      audio.preload = 'metadata';
+    }
 
     return () => {
       if (loadingTimeoutRef.current) {
@@ -181,7 +198,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
             {isIOS ? "Préparation de l'audio..." : "Chargement de l'audio..."}
           </p>
           {isIOS && (
-            <p className="text-xs text-gray-400 mt-1">Appuyez sur lecture si l'audio n'apparaît pas</p>
+            <p className="text-xs text-gray-400 mt-1">L'audio sera disponible dans un instant</p>
           )}
         </div>
       )}
