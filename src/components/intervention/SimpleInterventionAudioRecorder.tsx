@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
@@ -36,26 +36,24 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     startRecording,
     stopRecording,
     clearRecording
-  } = useVoiceRecorder({
-    onRecordingComplete: useCallback((blob: Blob, url: string) => {
-      console.log("🎯 SIMPLE_AUDIO - Recording complete:", { blobSize: blob.size, url });
+  } = useVoiceRecorder();
+
+  // Gérer les changements d'audioBlob et audioUrl
+  useEffect(() => {
+    if (audioBlob && audioUrl && audioBlob.size > 0) {
+      console.log("🎯 SIMPLE_AUDIO - Recording complete:", { blobSize: audioBlob.size, url: audioUrl });
       
-      if (blob.size > 0) {
-        setLocalAudioUrl(url);
-        
-        // Notifier le parent immédiatement
-        console.log("🎯 SIMPLE_AUDIO - Notifying parent with blob:", blob.size);
-        onAudioChange(blob, url);
-      } else {
-        console.log("🎯 SIMPLE_AUDIO - Empty blob received");
-        toast({
-          title: "Erreur d'enregistrement",
-          description: "L'enregistrement est vide. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      }
-    }, [onAudioChange])
-  });
+      setLocalAudioUrl(audioUrl);
+      
+      // Notifier le parent immédiatement
+      console.log("🎯 SIMPLE_AUDIO - Notifying parent with blob:", audioBlob.size);
+      onAudioChange(audioBlob, audioUrl);
+    } else if (!audioBlob && !audioUrl) {
+      // L'enregistrement a été supprimé
+      setLocalAudioUrl(null);
+      onAudioChange(null, null);
+    }
+  }, [audioBlob, audioUrl, onAudioChange]);
 
   // CORRECTION: Simplifier le démarrage d'enregistrement
   const handleStartRecording = useCallback((e: React.MouseEvent) => {
