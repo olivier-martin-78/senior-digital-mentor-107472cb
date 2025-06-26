@@ -50,7 +50,8 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       });
       
       // Mettre à jour les données locales pour corriger l'incohérence
-      setData(prev => prev ? { ...prev, user_id: effectiveUserId } : null);
+      const correctedData = { ...data, user_id: effectiveUserId };
+      setData(correctedData);
     }
 
     try {
@@ -161,13 +162,14 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       
       // Mettre à jour les données locales avec l'ID retourné et s'assurer de la cohérence
       if (savedData && savedData.id) {
-        setData(prevData => ({
-          ...prevData!,
+        const updatedData: LifeStory = {
+          ...data,
           id: savedData.id,
           user_id: effectiveUserId, // S'assurer que l'user_id est cohérent
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
-        }));
+        };
+        setData(updatedData);
       }
       
       setLastSaved(new Date());
