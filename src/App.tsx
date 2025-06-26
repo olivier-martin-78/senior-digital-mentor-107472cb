@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import PrivateApp from '@/components/PrivateApp';
 import PublicApp from '@/components/PublicApp';
+import HeaderWrapper from '@/components/HeaderWrapper';
 
 function AppContent() {
   const { user, isLoading } = useOptionalAuth();
@@ -23,7 +24,12 @@ function AppContent() {
     );
   }
 
-  return user ? <PrivateApp /> : <PublicApp />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <HeaderWrapper />
+      {user ? <PrivateApp /> : <PublicApp />}
+    </div>
+  );
 }
 
 function App() {
@@ -31,7 +37,7 @@ function App() {
     <Router>
       <ToastProvider>
         <SidebarProvider>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 w-full">
             <AppContent />
             <Toaster />
           </div>
