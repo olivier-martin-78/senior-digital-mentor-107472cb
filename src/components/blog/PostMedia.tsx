@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import MediaViewer from './MediaViewer';
@@ -149,14 +148,8 @@ const PostMedia: React.FC<PostMediaProps> = ({ media, postTitle = 'Article' }) =
               return (
                 <MediaItem
                   key={item.id}
-                  item={item}
-                  imageUrl={imageUrl}
+                  media={item}
                   onClick={() => handleMediaClick(item)}
-                  isConverting={isConverting(item.id)}
-                  isConversionFailed={isConversionFailed(item.id) || hasError}
-                  shouldAttemptConversion={shouldAttemptConversion(item.id) && isHeicFile(imageUrl) && !hasError}
-                  onConvert={handleConversion}
-                  onImageError={handleImageError}
                 />
               );
             })}
