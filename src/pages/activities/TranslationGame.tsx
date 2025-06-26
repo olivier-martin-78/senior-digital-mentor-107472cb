@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,12 +43,17 @@ const TranslationGame = () => {
 
   const fetchWords = async () => {
     try {
+      console.log('🎮 Début du chargement des mots depuis Supabase...');
+      
       const { data, error } = await supabase
         .from('game_franglais')
         .select('Francais, Anglais');
 
+      console.log('🎮 Réponse Supabase:', { data, error });
+      console.log('🎮 Nombre de mots récupérés:', data?.length || 0);
+
       if (error) {
-        console.error('Erreur lors du chargement des mots:', error);
+        console.error('❌ Erreur lors du chargement des mots:', error);
         toast({
           title: "Erreur",
           description: "Impossible de charger les mots du jeu",
@@ -58,9 +62,25 @@ const TranslationGame = () => {
         return;
       }
 
-      setGameWords(data || []);
+      if (!data || data.length === 0) {
+        console.error('❌ Aucune donnée récupérée');
+        toast({
+          title: "Erreur",
+          description: "Aucun mot trouvé dans la base de données",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ Mots chargés avec succès:', data.length);
+      setGameWords(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des mots:', error);
+      console.error('❌ Erreur lors du chargement des mots:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur technique lors du chargement",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -87,15 +107,21 @@ const TranslationGame = () => {
   };
 
   const startGame = (mode: 'fr-to-en' | 'en-to-fr') => {
+    console.log('🎮 Tentative de démarrage du jeu...');
+    console.log('🎮 Nombre de mots disponibles:', gameWords.length);
+    console.log('🎮 Mots requis:', TOTAL_QUESTIONS);
+
     if (gameWords.length < TOTAL_QUESTIONS) {
+      console.error('❌ Pas assez de mots pour jouer');
       toast({
         title: "Pas assez de mots",
-        description: `Il faut au moins ${TOTAL_QUESTIONS} mots pour jouer`,
+        description: `Il faut au moins ${TOTAL_QUESTIONS} mots pour jouer. Actuellement: ${gameWords.length} mots`,
         variant: "destructive",
       });
       return;
     }
 
+    console.log('✅ Démarrage du jeu en mode:', mode);
     setGameMode(mode);
     setGameStarted(true);
     setScore(0);
@@ -107,7 +133,9 @@ const TranslationGame = () => {
 
     // Sélectionner 20 mots aléatoirement
     const shuffled = [...gameWords].sort(() => Math.random() - 0.5);
-    setCurrentQuestions(shuffled.slice(0, TOTAL_QUESTIONS));
+    const selectedWords = shuffled.slice(0, TOTAL_QUESTIONS);
+    console.log('🎮 Mots sélectionnés pour la partie:', selectedWords.length);
+    setCurrentQuestions(selectedWords);
   };
 
   const getCurrentWord = () => {
@@ -201,6 +229,15 @@ const TranslationGame = () => {
             </div>
           )}
         </div>
+
+        {/* Debug info - temporary */}
+        {!gameStarted && !gameFinished && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              🔧 Debug: {gameWords.length} mots chargés depuis la base de données
+            </p>
+          </div>
+        )}
 
         {/* Écran de sélection du mode */}
         {!gameStarted && !gameFinished && (
