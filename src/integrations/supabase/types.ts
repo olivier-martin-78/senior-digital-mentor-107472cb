@@ -687,6 +687,7 @@ export type Database = {
           client_rating: number | null
           created_at: string
           date: string
+          email_notification_sent: boolean | null
           end_time: string
           follow_up: string[] | null
           follow_up_other: string | null
@@ -719,6 +720,7 @@ export type Database = {
           client_rating?: number | null
           created_at?: string
           date: string
+          email_notification_sent?: boolean | null
           end_time: string
           follow_up?: string[] | null
           follow_up_other?: string | null
@@ -751,6 +753,7 @@ export type Database = {
           client_rating?: number | null
           created_at?: string
           date?: string
+          email_notification_sent?: boolean | null
           end_time?: string
           follow_up?: string[] | null
           follow_up_other?: string | null

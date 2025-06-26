@@ -12,7 +12,7 @@ import { Appointment, Client, Intervenant } from '@/types/appointments';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 import { validateAndCleanAudioUrl, isExpiredBlobUrl } from '@/utils/audioUrlCleanup';
 import { AudioDiagnosticTool } from './AudioDiagnosticTool';
-import GroupNotificationButton from '@/components/GroupNotificationButton';
+import InterventionNotificationButton from './InterventionNotificationButton';
 
 const InterventionReportView = () => {
   const { user } = useAuth();
@@ -382,12 +382,12 @@ const InterventionReportView = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Bouton de notification des proches */}
+          {/* Bouton de notification des proches aidants */}
           <div className="flex justify-end">
-            <GroupNotificationButton
-              contentType="diary"
-              contentId={reportId}
+            <InterventionNotificationButton
+              reportId={reportId}
               title={`Rapport d'intervention - ${report.patient_name}`}
+              alreadySent={report.email_notification_sent}
             />
           </div>
 
