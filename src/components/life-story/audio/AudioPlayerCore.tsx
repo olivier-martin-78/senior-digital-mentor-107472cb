@@ -24,12 +24,17 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Traiter l'URL audio pour s'assurer qu'elle est valide et complète
   const processedAudioUrl = getAudioUrl(audioUrl);
 
   console.log("🎵 AUDIO_PLAYER_CORE - Rendering with URL:", audioUrl);
   console.log("🎵 AUDIO_PLAYER_CORE - Processed URL:", processedAudioUrl);
+
+  // Détecter iOS/iPadOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -38,6 +43,15 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     setHasError(false);
     setErrorMessage('');
     setIsLoading(true);
+
+    // Sur iOS, timeout plus court car les événements peuvent ne jamais se déclencher
+    const timeoutDuration = isIOS ? 3000 : 8000;
+    
+    // Timeout pour arrêter le loading sur iOS
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.log("🎵 AUDIO_PLAYER_CORE - Loading timeout reached, showing player");
+      setIsLoading(false);
+    }, timeoutDuration);
 
     const handleLoadStart = () => {
       console.log("🎵 AUDIO_PLAYER_CORE - Load start");
@@ -48,11 +62,19 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     const handleCanPlay = () => {
       console.log("🎵 AUDIO_PLAYER_CORE - Can play");
       setIsLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     };
 
     const handleLoadedData = () => {
       console.log("🎵 AUDIO_PLAYER_CORE - Loaded data");
       setIsLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     };
 
     const handlePlay = () => {
@@ -73,14 +95,20 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     const handleError = (e: Event) => {
       console.error("🎵 AUDIO_PLAYER_CORE - Error:", e);
       
-      // Attendre un peu avant d'afficher l'erreur pour laisser le temps au navigateur
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      
+      // Sur iOS, attendre un peu avant d'afficher l'erreur car l'audio peut marcher malgré l'erreur
+      const errorDelay = isIOS ? 2000 : 1000;
       setTimeout(() => {
         const errorMsg = 'Impossible de lire cet enregistrement audio';
         setHasError(true);
         setErrorMessage(errorMsg);
         setIsLoading(false);
         onError?.(e);
-      }, 1000);
+      }, errorDelay);
     };
 
     // Ajouter les listeners
@@ -94,9 +122,16 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
 
     // Définir l'URL et commencer le chargement
     audio.src = processedAudioUrl;
-    audio.preload = 'metadata';
+    
+    // Sur iOS, réduire le preload car il peut bloquer
+    audio.preload = isIOS ? 'none' : 'metadata';
 
     return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('loadeddata', handleLoadedData);
@@ -104,8 +139,10 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.pause();
+      audio.src = '';
     };
-  }, [processedAudioUrl, onPlay, onPause, onEnded, onError]);
+  }, [processedAudioUrl, onPlay, onPause, onEnded, onError, isIOS]);
 
   // Afficher un message d'erreur seulement si l'erreur persiste
   if (hasError) {
@@ -140,7 +177,12 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     <div className={`${className}`}>
       {isLoading && (
         <div className="text-center py-2">
-          <p className="text-sm text-gray-500">Chargement de l'audio...</p>
+          <p className="text-sm text-gray-500">
+            {isIOS ? "Préparation de l'audio..." : "Chargement de l'audio..."}
+          </p>
+          {isIOS && (
+            <p className="text-xs text-gray-400 mt-1">Appuyez sur lecture si l'audio n'apparaît pas</p>
+          )}
         </div>
       )}
       <audio
