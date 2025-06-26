@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInterventionForm } from './hooks/useInterventionForm';
 import { BasicInfoSection } from './form-sections/BasicInfoSection';
@@ -27,6 +27,7 @@ const InterventionReportForm: React.FC = () => {
     reportId,
     handleAudioRecorded,
     handleAudioUrlGenerated,
+    isRecording, // NOUVEAU: Récupérer l'état d'enregistrement
   } = useInterventionForm();
 
   const handleMediaChange = (mediaFiles: any[]) => {
@@ -55,8 +56,15 @@ const InterventionReportForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               {reportId ? 'Modifier le rapport d\'intervention' : 'Nouveau rapport d\'intervention'}
+              {/* NOUVEAU: Indicateur visuel pendant l'enregistrement */}
+              {isRecording && (
+                <div className="flex items-center text-red-500">
+                  <Mic className="w-4 h-4 animate-pulse mr-1" />
+                  <span className="text-sm">Enregistrement...</span>
+                </div>
+              )}
             </CardTitle>
-            <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto" disabled={isRecording}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
@@ -121,7 +129,19 @@ const InterventionReportForm: React.FC = () => {
             />
 
             <div className="flex justify-end space-x-4">
-              <Button type="submit" disabled={loading} className="flex items-center gap-2">
+              {/* NOUVEAU: Message d'avertissement pendant l'enregistrement */}
+              {isRecording && (
+                <div className="flex items-center text-amber-600 text-sm mr-4">
+                  <Mic className="w-4 h-4 mr-1" />
+                  Arrêtez l'enregistrement avant de sauvegarder
+                </div>
+              )}
+              
+              <Button 
+                type="submit" 
+                disabled={loading || isRecording} 
+                className="flex items-center gap-2"
+              >
                 <Save className="h-4 w-4" />
                 {loading ? 'Sauvegarde...' : reportId ? 'Mettre à jour' : 'Créer le rapport'}
               </Button>

@@ -3,9 +3,13 @@ import { useState } from 'react';
 import { useInterventionData } from './useInterventionData';
 import { useInterventionAudio } from './useInterventionAudio';
 import { useInterventionSubmit } from './useInterventionSubmit';
+import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 
 export const useInterventionForm = () => {
   const [loading, setLoading] = useState(false);
+  
+  // Ajouter le hook d'enregistrement vocal pour surveiller l'état
+  const { isRecording } = useVoiceRecorder();
   
   const {
     formData,
@@ -47,7 +51,8 @@ export const useInterventionForm = () => {
       formData,
       reportId,
       (reportId: string) => uploadAudioIfNeeded(reportId, formData.audio_url),
-      setLoading
+      setLoading,
+      isRecording // NOUVEAU: Passer l'état d'enregistrement
     );
   };
 
@@ -68,5 +73,6 @@ export const useInterventionForm = () => {
     handleSubmit,
     handleAudioRecorded,
     handleAudioUrlGenerated,
+    isRecording, // NOUVEAU: Exposer l'état d'enregistrement
   };
 };

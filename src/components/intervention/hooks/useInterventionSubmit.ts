@@ -19,9 +19,21 @@ export const useInterventionSubmit = () => {
     formData: InterventionFormData,
     reportId: string | null,
     uploadAudioIfNeeded: (reportId: string, audioUrl: string) => Promise<string | null>,
-    setLoading: (loading: boolean) => void
+    setLoading: (loading: boolean) => void,
+    isRecording?: boolean // Nouveau paramètre pour vérifier si on enregistre
   ) => {
     e.preventDefault();
+    
+    // NOUVEAU: Empêcher la soumission pendant l'enregistrement
+    if (isRecording) {
+      console.log('⚠️ Enregistrement en cours, soumission différée');
+      toast({
+        title: 'Enregistrement en cours',
+        description: 'Veuillez arrêter l\'enregistrement avant de sauvegarder',
+        variant: 'default',
+      });
+      return;
+    }
     
     // Éviter les soumissions multiples
     if (isSubmitting.current || navigationPending.current) {
@@ -146,14 +158,14 @@ export const useInterventionSubmit = () => {
         });
       }
 
-      // Navigation sécurisée après sauvegarde complète
+      // MODIFIÉ: Navigation sécurisée seulement après sauvegarde complète
       navigationPending.current = true;
-      console.log('🔄 Navigation vers le planificateur');
+      console.log('🔄 Navigation vers le planificateur dans 1 seconde');
       
-      // Attendre un petit délai pour s'assurer que tout est sauvegardé
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      navigate('/scheduler');
+      // Attendre un délai pour s'assurer que tout est sauvegardé
+      setTimeout(() => {
+        navigate('/scheduler');
+      }, 1000);
       
     } catch (error) {
       console.error('💥 Erreur lors de la sauvegarde:', error);
@@ -165,7 +177,7 @@ export const useInterventionSubmit = () => {
     } finally {
       setLoading(false);
       isSubmitting.current = false;
-      navigationPending.current = false;
+      // Ne pas réinitialiser navigationPending ici pour éviter les doubles navigations
     }
   };
 
