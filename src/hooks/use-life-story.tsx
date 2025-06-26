@@ -493,27 +493,44 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       } : chapter
     );
 
+    // CORRECTION: Mettre à jour l'état local immédiatement
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Sauvegarde automatique immédiate quand URL audio change
-    console.log('💾 Déclenchement sauvegarde automatique IMMÉDIATE pour changement URL audio (HOOK)');
-    
-    // Utiliser un délai très court pour éviter les appels multiples rapides
-    setTimeout(() => {
-      if (!isSaving) {
-        console.log('✅ Exécution de la sauvegarde automatique pour URL audio');
-        saveNow();
-      } else {
-        console.log('⏳ Sauvegarde déjà en cours, report de la sauvegarde automatique');
-        // Si une sauvegarde est en cours, reporter à plus tard
-        setTimeout(() => {
-          if (!isSaving) {
-            console.log('✅ Exécution différée de la sauvegarde automatique pour URL audio');
-            saveNow();
-          }
-        }, 1000);
-      }
-    }, 50);
+    // CORRECTION: Sauvegarde automatique IMMÉDIATE avec gestion des conflits
+    if (validAudioPath) {
+      console.log('💾 NOUVEAU AUDIO - Déclenchement sauvegarde IMMÉDIATE pour nouvel enregistrement audio');
+      
+      // Utiliser un délai très court pour permettre à l'état de se stabiliser
+      setTimeout(() => {
+        if (!isSaving) {
+          console.log('✅ Exécution de la sauvegarde automatique pour nouvel audio');
+          saveNow();
+        } else {
+          console.log('⏳ Sauvegarde déjà en cours, programmation d\'une sauvegarde différée');
+          // Si une sauvegarde est en cours, programmer une sauvegarde différée
+          const retrySave = () => {
+            setTimeout(() => {
+              if (!isSaving) {
+                console.log('✅ Exécution différée de la sauvegarde automatique pour nouvel audio');
+                saveNow();
+              } else {
+                // Réessayer encore une fois
+                retrySave();
+              }
+            }, 500);
+          };
+          retrySave();
+        }
+      }, 200); // Délai légèrement plus long pour la stabilisation de l'état
+    } else {
+      // Pour la suppression d'audio, sauvegarde normale
+      console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
+      setTimeout(() => {
+        if (!isSaving) {
+          saveNow();
+        }
+      }, 100);
+    }
   };
 
   // Calculer le progrès

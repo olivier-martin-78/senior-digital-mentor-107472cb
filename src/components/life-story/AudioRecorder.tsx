@@ -127,8 +127,14 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
             currentUploadRef.current = null;
-            // Permettre la sauvegarde automatique
-            onAudioUrlChange(chapterId, questionId, publicUrl, false);
+            
+            // CORRECTION: Forcer la sauvegarde automatique ET attendre un peu pour s'assurer que l'état est stable
+            setTimeout(() => {
+              if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
+                console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Transmission URL au hook avec sauvegarde forcée');
+              }
+              onAudioUrlChange(chapterId, questionId, publicUrl, false);
+            }, 100);
             
             if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
               console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Toast de succès affiché');
