@@ -11,12 +11,11 @@ import IntervenantManager from '@/components/scheduler/IntervenantManager';
 import CaregiverManager from '@/components/scheduler/CaregiverManager';
 import AppointmentExporter from '@/components/scheduler/AppointmentExporter';
 import MyAppointments from '@/components/scheduler/MyAppointments';
-import ActionMenu from '@/components/scheduler/ActionMenu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Appointment, Client, Intervenant, Caregiver } from '@/types/appointments';
-import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock, Menu } from 'lucide-react';
+import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock } from 'lucide-react';
 
 const ProfessionalScheduler = () => {
   const { user } = useAuth();
@@ -231,63 +230,42 @@ const ProfessionalScheduler = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {/* Header optimisé pour mobile */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif text-tranches-charcoal">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">
             Planificateur Professionnel
           </h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Bouton principal pour créer un rendez-vous */}
-            <Button 
-              onClick={handleOpenAppointmentForm} 
-              className="bg-tranches-sage hover:bg-tranches-sage/90 flex-1 sm:flex-none"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Nouveau Rendez-vous</span>
-              <span className="sm:hidden">Nouveau RDV</span>
-            </Button>
-            
-            {/* Menu d'actions pour mobile */}
-            <div className="sm:hidden">
-              <ActionMenu professionalId={user?.id || ''} />
-            </div>
-          </div>
+          <Button onClick={handleOpenAppointmentForm} className="bg-tranches-sage hover:bg-tranches-sage/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau Rendez-vous
+          </Button>
         </div>
 
         <Tabs defaultValue="calendar" className="w-full space-y-4">
-          {/* TabsList optimisé pour mobile avec scroll horizontal */}
-          <div className="overflow-x-auto">
-            <TabsList className="flex w-max min-w-full">
-              <TabsTrigger value="calendar" className="data-[state=active]:bg-tranches-mauve/50 flex-shrink-0">
-                <CalendarDays className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Calendrier</span>
-                <span className="sm:hidden">Cal.</span>
-              </TabsTrigger>
-              <TabsTrigger value="my-appointments" className="data-[state=active]:bg-tranches-mauve/50 flex-shrink-0">
-                <Clock className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Mes rendez-vous</span>
-                <span className="sm:hidden">RDV</span>
-              </TabsTrigger>
-              <TabsTrigger value="managers" className="data-[state=active]:bg-tranches-mauve/50 flex-shrink-0">
-                <Users className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Gestion des contacts</span>
-                <span className="sm:hidden">Contacts</span>
-              </TabsTrigger>
-              <TabsTrigger value="export" className="data-[state=active]:bg-tranches-mauve/50 flex-shrink-0">
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Exporter</span>
-                <span className="sm:hidden">Export</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList>
+            <TabsTrigger value="calendar" className="data-[state=active]:bg-tranches-mauve/50">
+              <CalendarDays className="w-4 h-4 mr-2" />
+              Calendrier
+            </TabsTrigger>
+            <TabsTrigger value="my-appointments" className="data-[state=active]:bg-tranches-mauve/50">
+              <Clock className="w-4 h-4 mr-2" />
+              Mes rendez-vous
+            </TabsTrigger>
+            <TabsTrigger value="managers" className="data-[state=active]:bg-tranches-mauve/50">
+              <Users className="w-4 h-4 mr-2" />
+              Gestion des contacts
+            </TabsTrigger>
+            <TabsTrigger value="export" className="data-[state=active]:bg-tranches-mauve/50">
+              <Download className="w-4 h-4 mr-2" />
+              Exporter
+            </TabsTrigger>
+          </TabsList>
           
           <TabsContent value="calendar" className="space-y-4">
             <Card>
-              <CardHeader className="pb-2 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">Calendrier des Rendez-vous</CardTitle>
-                <CardDescription className="text-sm">Visualisez et gérez vos rendez-vous.</CardDescription>
+              <CardHeader>
+                <CardTitle>Calendrier des Rendez-vous</CardTitle>
+                <CardDescription>Visualisez et gérez vos rendez-vous.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <SchedulerFilters
@@ -298,13 +276,11 @@ const ProfessionalScheduler = () => {
                   onClientChange={setFilterClientId}
                   onIntervenantChange={setFilterIntervenantId}
                 />
-                <div className="overflow-hidden">
-                  <AppointmentCalendar
-                    appointments={filteredAppointments}
-                    onAppointmentEdit={handleAppointmentEdit}
-                    onAppointmentDelete={handleAppointmentDelete}
-                  />
-                </div>
+                <AppointmentCalendar
+                  appointments={filteredAppointments}
+                  onAppointmentEdit={handleAppointmentEdit}
+                  onAppointmentDelete={handleAppointmentDelete}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -317,32 +293,32 @@ const ProfessionalScheduler = () => {
           </TabsContent>
           
           <TabsContent value="managers">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
-                <CardHeader className="pb-2 sm:pb-6">
-                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
                     <UserCheck className="w-4 h-4" />
                     Clients
                   </CardTitle>
-                  <CardDescription className="text-sm">Gérez vos clients.</CardDescription>
+                  <CardDescription>Gérez vos clients.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={handleOpenClientManager} className="w-full" size="sm">
+                  <Button onClick={handleOpenClientManager} className="w-full">
                     Gérer les Clients
                   </Button>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="pb-2 sm:pb-6">
-                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
                     <Phone className="w-4 h-4" />
                     Intervenants
                   </CardTitle>
-                  <CardDescription className="text-sm">Gérez vos intervenants.</CardDescription>
+                  <CardDescription>Gérez vos intervenants.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={handleOpenIntervenantManager} className="w-full" size="sm">
+                  <Button onClick={handleOpenIntervenantManager} className="w-full">
                     Gérer les Intervenants
                   </Button>
                 </CardContent>
@@ -352,9 +328,9 @@ const ProfessionalScheduler = () => {
           
           <TabsContent value="export">
             <Card>
-              <CardHeader className="pb-2 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">Exporter les Rendez-vous</CardTitle>
-                <CardDescription className="text-sm">Exportez vos rendez-vous au format CSV.</CardDescription>
+              <CardHeader>
+                <CardTitle>Exporter les Rendez-vous</CardTitle>
+                <CardDescription>Exportez vos rendez-vous au format CSV.</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentExporter professionalId={user?.id || ''} />
@@ -363,43 +339,34 @@ const ProfessionalScheduler = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Modals et formulaires - responsive */}
         {isAppointmentFormOpen && (
-          <div className="fixed inset-0 z-50 p-2 sm:p-4">
-            <AppointmentForm
-              appointment={selectedAppointment}
-              clients={clients}
-              intervenants={intervenants}
-              onSave={handleSaveAppointment}
-              onCancel={handleCloseAppointmentForm}
-            />
-          </div>
+          <AppointmentForm
+            appointment={selectedAppointment}
+            clients={clients}
+            intervenants={intervenants}
+            onSave={handleSaveAppointment}
+            onCancel={handleCloseAppointmentForm}
+          />
         )}
 
         {isClientManagerOpen && (
-          <div className="fixed inset-0 z-50 p-2 sm:p-4">
-            <ClientManager
-              clients={clients}
-              onClientUpdate={handleCloseClientManager}
-            />
-          </div>
+          <ClientManager
+            clients={clients}
+            onClientUpdate={handleCloseClientManager}
+          />
         )}
 
         {isIntervenantManagerOpen && (
-          <div className="fixed inset-0 z-50 p-2 sm:p-4">
-            <IntervenantManager
-              intervenants={intervenants}
-              onIntervenantUpdate={handleCloseIntervenantManager}
-            />
-          </div>
+          <IntervenantManager
+            intervenants={intervenants}
+            onIntervenantUpdate={handleCloseIntervenantManager}
+          />
         )}
 
         {isCaregiverManagerOpen && selectedClientForCaregivers && (
-          <div className="fixed inset-0 z-50 p-2 sm:p-4">
-            <CaregiverManager 
-              clientId={selectedClientForCaregivers}
-            />
-          </div>
+          <CaregiverManager 
+            clientId={selectedClientForCaregivers}
+          />
         )}
       </div>
     </div>
