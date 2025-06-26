@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
@@ -23,7 +23,16 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   } = useVoiceRecorder();
   
   const [audioLoaded, setAudioLoaded] = React.useState(false);
-  const [hasNotifiedParent, setHasNotifiedParent] = React.useState(false);
+  const hasNotifiedRef = useRef(false);
+  const lastBlobRef = useRef<Blob | null>(null);
+  
+  console.log('VoiceRecorder - État actuel:', { 
+    isRecording, 
+    hasBlob: !!audioBlob, 
+    hasUrl: !!audioUrl,
+    blobSize: audioBlob?.size,
+    hasNotified: hasNotifiedRef.current
+  });
   
   // Formater le temps d'enregistrement
   const formatTime = (seconds: number) => {
@@ -58,56 +67,55 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
   
-  // Gérer la suppression de l'audio (action explicite de l'utilisateur)
+  // Gérer la suppression de l'audio
   const handleClearRecording = () => {
-    console.log("VoiceRecorder - Suppression explicite de l'enregistrement par l'utilisateur");
+    console.log("VoiceRecorder - Suppression explicite de l'enregistrement");
     clearRecording();
     setAudioLoaded(false);
-    setHasNotifiedParent(false);
+    hasNotifiedRef.current = false;
+    lastBlobRef.current = null;
     onAudioChange(null);
   };
   
-  // Notifier le parent quand l'audio change (avec protection contre la boucle)
+  // Notifier le parent seulement quand nécessaire
   useEffect(() => {
-    console.log("VoiceRecorder - État audio changé:", { 
-      hasBlob: !!audioBlob, 
-      hasUrl: !!audioUrl, 
-      blobSize: audioBlob?.size,
-      isRecording,
-      hasNotifiedParent
-    });
-    
-    // Seulement notifier si nous avons un blob valide ET que l'enregistrement est terminé ET qu'on n'a pas déjà notifié
-    if (audioBlob && audioBlob.size > 0 && !isRecording && !hasNotifiedParent) {
-      console.log("VoiceRecorder - Envoi du blob au parent:", audioBlob.size, "octets");
-      onAudioChange(audioBlob);
-      setHasNotifiedParent(true);
-    } else if (!audioBlob && !isRecording && hasNotifiedParent) {
-      // Si pas de blob et enregistrement terminé, notifier la suppression
-      console.log("VoiceRecorder - Pas d'audio, notification de suppression");
-      onAudioChange(null);
-      setHasNotifiedParent(false);
+    // Éviter les notifications multiples et pendant l'enregistrement
+    if (isRecording) {
+      return;
     }
-  }, [audioBlob, audioUrl, isRecording, hasNotifiedParent, onAudioChange]);
+    
+    // Si on a un nouveau blob différent du précédent
+    if (audioBlob && audioBlob !== lastBlobRef.current && !hasNotifiedRef.current) {
+      console.log("VoiceRecorder - Nouveau blob détecté, notification au parent:", audioBlob.size, "octets");
+      lastBlobRef.current = audioBlob;
+      hasNotifiedRef.current = true;
+      onAudioChange(audioBlob);
+    }
+    // Si on n'a plus de blob et qu'on avait notifié avant
+    else if (!audioBlob && hasNotifiedRef.current) {
+      console.log("VoiceRecorder - Blob supprimé, notification au parent");
+      lastBlobRef.current = null;
+      hasNotifiedRef.current = false;
+      onAudioChange(null);
+    }
+  }, [audioBlob, isRecording, onAudioChange]);
   
   // Reset du flag quand on démarre un nouvel enregistrement
   useEffect(() => {
     if (isRecording) {
-      setHasNotifiedParent(false);
+      hasNotifiedRef.current = false;
     }
   }, [isRecording]);
   
-  // Gérer le chargement audio - ne pas afficher d'erreur sur iPhone
+  // Gérer le chargement audio
   const handleAudioLoaded = () => {
     console.log("Audio chargé avec succès");
     setAudioLoaded(true);
   };
   
-  // Gérer l'erreur audio - silencieux sur les appareils mobiles où l'audio fonctionne malgré l'erreur
   const handleAudioError = (error: any) => {
-    console.log("Événement d'erreur audio détecté (peut être normal sur certains appareils):", error);
-    // Ne pas afficher de toast d'erreur car l'audio peut fonctionner malgré cet événement
-    // Cela évite les faux positifs sur iPhone et autres appareils mobiles
+    console.log("Événement d'erreur audio détecté:", error);
+    // Silencieux pour éviter les faux positifs
   };
   
   return (

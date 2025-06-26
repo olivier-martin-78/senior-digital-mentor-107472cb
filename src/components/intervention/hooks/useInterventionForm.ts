@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -24,6 +24,10 @@ export const useInterventionForm = () => {
   const [showAppointmentSelector, setShowAppointmentSelector] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+
+  // Refs pour éviter les soumissions multiples
+  const isSubmitting = useRef(false);
+  const navigationPending = useRef(false);
 
   const [formData, setFormData] = useState<InterventionFormData>({
     appointment_id: appointmentId || '',
@@ -319,6 +323,13 @@ export const useInterventionForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Éviter les soumissions multiples
+    if (isSubmitting.current || navigationPending.current) {
+      console.log('⚠️ Soumission déjà en cours, ignorer');
+      return;
+    }
+    
     if (!user) return;
 
     if (!formData.patient_name || !formData.auxiliary_name || !formData.date) {
@@ -331,7 +342,10 @@ export const useInterventionForm = () => {
     }
 
     try {
+      isSubmitting.current = true;
       setLoading(true);
+      
+      console.log('📝 Début sauvegarde du rapport');
 
       // Mapper les données du formulaire vers les colonnes de la base de données
       const reportData = {
@@ -364,10 +378,11 @@ export const useInterventionForm = () => {
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       };
 
-      console.log('Saving report data:', reportData);
+      console.log('💾 Sauvegarde des données du rapport');
 
       if (reportId) {
         // Mise à jour d'un rapport existant
+        console.log('📝 Mise à jour du rapport existant');
         const finalAudioUrl = await uploadAudioIfNeeded(reportId);
         
         const { error } = await supabase
@@ -379,16 +394,18 @@ export const useInterventionForm = () => {
           .eq('id', reportId);
 
         if (error) {
-          console.error('Update error:', error);
+          console.error('❌ Erreur de mise à jour:', error);
           throw error;
         }
 
+        console.log('✅ Rapport mis à jour avec succès');
         toast({
           title: 'Succès',
           description: 'Rapport mis à jour avec succès',
         });
       } else {
         // Création d'un nouveau rapport
+        console.log('📝 Création d\'un nouveau rapport');
         const { data: newReport, error } = await supabase
           .from('intervention_reports')
           .insert([reportData])
@@ -396,9 +413,11 @@ export const useInterventionForm = () => {
           .single();
 
         if (error) {
-          console.error('Insert error:', error);
+          console.error('❌ Erreur de création:', error);
           throw error;
         }
+
+        console.log('✅ Nouveau rapport créé:', newReport.id);
 
         // Upload de l'audio après création du rapport
         const finalAudioUrl = await uploadAudioIfNeeded(newReport.id);
@@ -411,6 +430,7 @@ export const useInterventionForm = () => {
             .eq('id', newReport.id);
         }
 
+        // Mettre à jour le rendez-vous si associé
         if (formData.appointment_id && newReport) {
           await supabase
             .from('appointments')
@@ -427,12 +447,13 @@ export const useInterventionForm = () => {
         });
       }
 
-      // Attendre un délai avant de naviguer pour éviter la fermeture prématurée
-      setTimeout(() => {
-        navigate('/scheduler');
-      }, 1000);
+      // Navigation sécurisée après sauvegarde complète
+      navigationPending.current = true;
+      console.log('🔄 Navigation vers le planificateur');
+      navigate('/scheduler');
+      
     } catch (error) {
-      console.error('Error saving report:', error);
+      console.error('💥 Erreur lors de la sauvegarde:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de sauvegarder le rapport: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
@@ -440,6 +461,8 @@ export const useInterventionForm = () => {
       });
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
+      navigationPending.current = false;
     }
   };
 

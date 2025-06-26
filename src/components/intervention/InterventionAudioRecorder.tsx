@@ -24,46 +24,60 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(existingAudioUrl || null);
   const { user } = useAuth();
   
-  // Utiliser des refs pour éviter les uploads multiples
+  // Refs pour éviter les uploads multiples et les actions concurrentes
   const isMounted = useRef(true);
-  const currentUploadRef = useRef<string | null>(null);
+  const isProcessing = useRef(false);
+  const currentBlobRef = useRef<Blob | null>(null);
   
-  console.log('🎤 INTERVENTION_AUDIO_RECORDER - Rendu avec:', {
+  console.log('🎤 InterventionAudioRecorder - Rendu:', {
     isUploading,
     uploadedAudioUrl,
     hasExistingUrl: !!existingAudioUrl,
-    reportId
+    reportId,
+    isProcessing: isProcessing.current
   });
   
-  // Effet de nettoyage lors du démontage du composant
+  // Effet de nettoyage
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
   
-  // Gestion de l'enregistrement audio
+  // Gestion de l'enregistrement audio avec protection contre les actions concurrentes
   const handleAudioChange = async (newAudioBlob: Blob | null) => {
-    console.log("🎤 INTERVENTION_AUDIO_RECORDER - handleAudioChange:", { 
+    console.log('🎤 handleAudioChange - Début:', { 
       hasBlob: !!newAudioBlob, 
       blobSize: newAudioBlob?.size,
-      isUploading,
-      currentUpload: currentUploadRef.current,
+      isProcessing: isProcessing.current,
+      isUploading
     });
     
-    // Si pas de blob, audio supprimé
+    // Éviter les traitements concurrents
+    if (isProcessing.current) {
+      console.log('🎤 Traitement déjà en cours, ignorer');
+      return;
+    }
+    
+    // Audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
-      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Audio supprimé ou vide");
+      console.log('🎤 Audio supprimé');
       setUploadedAudioUrl(null);
       setIsUploading(false);
-      currentUploadRef.current = null;
+      currentBlobRef.current = null;
       onAudioUrlGenerated('');
       return;
     }
     
-    // Si pas d'utilisateur, ne rien faire
+    // Même blob, pas de traitement nécessaire
+    if (currentBlobRef.current === newAudioBlob) {
+      console.log('🎤 Même blob, pas de traitement nécessaire');
+      return;
+    }
+    
+    // Pas d'utilisateur connecté
     if (!user?.id) {
-      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Pas d'utilisateur connecté");
+      console.log('🎤 Pas d\'utilisateur connecté');
       toast({
         title: "Erreur",
         description: "Vous devez être connecté pour enregistrer un audio",
@@ -72,36 +86,30 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
       return;
     }
     
-    // Vérifier si un upload est déjà en cours
-    const uploadKey = `intervention-${reportId || 'new'}`;
-    if (isUploading || currentUploadRef.current === uploadKey) {
-      console.log("🎤 INTERVENTION_AUDIO_RECORDER - Upload déjà en cours:", { uploadKey, isUploading, currentUpload: currentUploadRef.current });
-      return;
-    }
-    
     try {
-      console.log(`🎤 INTERVENTION_AUDIO_RECORDER - Début upload, taille: ${newAudioBlob.size} octets`);
-      setIsUploading(true);
-      currentUploadRef.current = uploadKey;
+      isProcessing.current = true;
+      currentBlobRef.current = newAudioBlob;
       
-      // Appeler onAudioRecorded immédiatement pour signaler qu'un enregistrement est disponible
+      console.log('🎤 Début traitement audio:', newAudioBlob.size, 'octets');
+      
+      // Notifier immédiatement qu'on a un enregistrement
       onAudioRecorded(newAudioBlob);
       
-      // Si on a un reportId, uploader vers Supabase, sinon créer une URL temporaire
+      // Si on a un reportId, uploader vers Supabase
       if (reportId) {
-        console.log('🎤 INTERVENTION_AUDIO_RECORDER - Upload vers Supabase pour rapport:', reportId);
+        console.log('🎤 Upload vers Supabase pour rapport:', reportId);
+        setIsUploading(true);
         
         uploadInterventionAudio(
           newAudioBlob,
           user.id,
           reportId,
-          // Callback de succès
+          // Succès
           (publicUrl: string) => {
-            if (isMounted.current && currentUploadRef.current === uploadKey) {
-              console.log(`🎤 INTERVENTION_AUDIO_RECORDER - ✅ Upload réussi, URL:`, publicUrl);
+            if (isMounted.current) {
+              console.log('🎤 ✅ Upload réussi:', publicUrl);
               setUploadedAudioUrl(publicUrl);
               setIsUploading(false);
-              currentUploadRef.current = null;
               onAudioUrlGenerated(publicUrl);
               
               toast({
@@ -110,14 +118,13 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
               });
             }
           },
-          // Callback d'erreur
+          // Erreur
           (errorMessage: string) => {
-            if (isMounted.current && currentUploadRef.current === uploadKey) {
-              console.error(`🎤 INTERVENTION_AUDIO_RECORDER - ❌ Erreur upload:`, errorMessage);
+            if (isMounted.current) {
+              console.error('🎤 ❌ Erreur upload:', errorMessage);
               setIsUploading(false);
-              currentUploadRef.current = null;
               
-              // Créer une URL temporaire en fallback
+              // Fallback : URL temporaire
               const tempUrl = URL.createObjectURL(newAudioBlob);
               setUploadedAudioUrl(tempUrl);
               onAudioUrlGenerated(tempUrl);
@@ -129,26 +136,23 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
               });
             }
           },
-          // Callback de début d'upload
+          // Début upload
           () => {
-            console.log(`🎤 INTERVENTION_AUDIO_RECORDER - 📤 Début téléchargement`);
+            console.log('🎤 📤 Début upload');
           },
-          // Callback de fin d'upload
+          // Fin upload
           () => {
-            if (isMounted.current && currentUploadRef.current === uploadKey) {
-              console.log(`🎤 INTERVENTION_AUDIO_RECORDER - 📥 Fin téléchargement`);
+            if (isMounted.current) {
+              console.log('🎤 📥 Fin upload');
               setIsUploading(false);
-              currentUploadRef.current = null;
             }
           }
         );
       } else {
-        // Pas de reportId, créer une URL temporaire
-        console.log('🎤 INTERVENTION_AUDIO_RECORDER - Création URL temporaire (nouveau rapport)');
+        // Pas de reportId : URL temporaire
+        console.log('🎤 Création URL temporaire');
         const tempUrl = URL.createObjectURL(newAudioBlob);
         setUploadedAudioUrl(tempUrl);
-        setIsUploading(false);
-        currentUploadRef.current = null;
         onAudioUrlGenerated(tempUrl);
         
         toast({
@@ -157,10 +161,9 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
         });
       }
     } catch (error) {
-      if (isMounted.current && currentUploadRef.current === uploadKey) {
-        console.error(`🎤 INTERVENTION_AUDIO_RECORDER - 💥 Erreur non gérée:`, error);
+      if (isMounted.current) {
+        console.error('🎤 💥 Erreur inattendue:', error);
         setIsUploading(false);
-        currentUploadRef.current = null;
         
         toast({
           title: "Erreur inattendue",
@@ -168,18 +171,21 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
           variant: "destructive",
         });
       }
+    } finally {
+      isProcessing.current = false;
     }
   };
 
   const handleDeleteExistingAudio = () => {
-    console.log('🎤 INTERVENTION_AUDIO_RECORDER - Suppression manuelle de l\'audio existant');
+    console.log('🎤 Suppression manuelle de l\'audio');
     setUploadedAudioUrl(null);
+    currentBlobRef.current = null;
     onAudioUrlGenerated('');
   };
 
-  // Si un audio existe et qu'on n'est pas en train d'uploader, afficher le lecteur
+  // Afficher le lecteur si on a de l'audio et qu'on n'est pas en train d'uploader
   if (uploadedAudioUrl && !isUploading) {
-    console.log('🎤 INTERVENTION_AUDIO_RECORDER - ✅ Affichage du lecteur avec URL:', uploadedAudioUrl);
+    console.log('🎤 ✅ Affichage du lecteur');
     return (
       <VoiceAnswerPlayer
         audioUrl={uploadedAudioUrl}
@@ -190,7 +196,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
     );
   }
 
-  console.log('🎤 INTERVENTION_AUDIO_RECORDER - Affichage de l\'enregistreur');
+  console.log('🎤 Affichage de l\'enregistreur');
   return (
     <div className={`transition-all ${isUploading ? "opacity-60 pointer-events-none" : ""}`}>
       <VoiceRecorder onAudioChange={handleAudioChange} />
