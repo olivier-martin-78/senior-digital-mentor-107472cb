@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Save, User, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -174,9 +172,8 @@ const AdminLifeStoryEdit: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-24">
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center">
           <Button
             variant="ghost"

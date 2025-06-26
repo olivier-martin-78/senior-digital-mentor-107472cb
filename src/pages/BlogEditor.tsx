@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,7 +55,6 @@ const BlogEditor = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-16 flex justify-center">
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
         </div>
@@ -65,7 +64,6 @@ const BlogEditor = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-serif text-tranches-charcoal">
