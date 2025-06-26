@@ -1,8 +1,8 @@
 
 import React from 'react';
-import VoiceRecorder from '@/components/VoiceRecorder';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
 import AudioUploadProgress from './audio/AudioUploadProgress';
+import VoiceRecorderSimple from './audio/VoiceRecorderSimple';
 import { useAudioProcessor } from './audio/AudioProcessor';
 
 interface InterventionAudioRecorderProps {
@@ -33,7 +33,7 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   });
 
   const handleDeleteExistingAudio = () => {
-    console.log('🎤 Suppression manuelle de l\'audio');
+    console.log('🎤 InterventionAudioRecorder - Suppression manuelle de l\'audio');
     audioState.clearAudio();
     onAudioUrlGenerated('');
   };
@@ -43,21 +43,24 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
 
   // Afficher le lecteur si on a de l'audio et qu'on n'est pas en train d'uploader
   if (currentAudioUrl && !audioState.isUploading) {
-    console.log('🎤 ✅ Affichage du lecteur');
+    console.log('🎤 InterventionAudioRecorder - ✅ Affichage du lecteur');
     return (
-      <VoiceAnswerPlayer
-        audioUrl={currentAudioUrl}
-        onDelete={handleDeleteExistingAudio}
-        readOnly={false}
-        shouldLog={true}
-      />
+      <div className="space-y-4">
+        <VoiceAnswerPlayer
+          audioUrl={currentAudioUrl}
+          onDelete={handleDeleteExistingAudio}
+          readOnly={false}
+          shouldLog={true}
+        />
+        <AudioUploadProgress isUploading={audioState.isUploading} />
+      </div>
     );
   }
 
-  console.log('🎤 Affichage de l\'enregistreur');
+  console.log('🎤 InterventionAudioRecorder - Affichage de l\'enregistreur');
   return (
     <div className={`transition-all ${audioState.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
-      <VoiceRecorder onAudioChange={processAudio} />
+      <VoiceRecorderSimple onAudioChange={processAudio} />
       <AudioUploadProgress isUploading={audioState.isUploading} />
     </div>
   );

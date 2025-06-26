@@ -17,7 +17,7 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
   const audioState = useAudioState();
 
   const processAudio = useCallback(async (newAudioBlob: Blob | null) => {
-    console.log('🎤 handleAudioChange - Début:', { 
+    console.log('🎤 AudioProcessor - handleAudioChange - Début:', { 
       hasBlob: !!newAudioBlob, 
       blobSize: newAudioBlob?.size,
       isProcessing: audioState.isProcessing,
@@ -26,13 +26,13 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
     
     // Éviter les traitements concurrents
     if (!audioState.canProcess()) {
-      console.log('🎤 Traitement déjà en cours, ignorer');
+      console.log('🎤 AudioProcessor - Traitement déjà en cours, ignorer');
       return;
     }
     
     // Audio supprimé
     if (!newAudioBlob || newAudioBlob.size === 0) {
-      console.log('🎤 Audio supprimé');
+      console.log('🎤 AudioProcessor - Audio supprimé');
       audioState.clearAudio();
       audioState.setUploading(false);
       onAudioUrlGenerated('');
@@ -41,13 +41,24 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
     
     // Même blob, pas de traitement nécessaire
     if (audioState.currentBlob === newAudioBlob) {
-      console.log('🎤 Même blob, pas de traitement nécessaire');
+      console.log('🎤 AudioProcessor - Même blob, pas de traitement nécessaire');
+      return;
+    }
+    
+    // Vérifier la taille minimale du blob
+    if (newAudioBlob.size < 1000) { // Moins de 1KB
+      console.log('🎤 AudioProcessor - Blob trop petit:', newAudioBlob.size, 'octets');
+      toast({
+        title: "Enregistrement trop court",
+        description: "Veuillez enregistrer pendant au moins 2 secondes et parler plus fort",
+        variant: "destructive",
+      });
       return;
     }
     
     // Pas d'utilisateur connecté
     if (!user?.id) {
-      console.log('🎤 Pas d\'utilisateur connecté');
+      console.log('🎤 AudioProcessor - Pas d\'utilisateur connecté');
       toast({
         title: "Erreur",
         description: "Vous devez être connecté pour enregistrer un audio",
@@ -60,14 +71,14 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
       audioState.startProcessing();
       audioState.setCurrentBlob(newAudioBlob);
       
-      console.log('🎤 Début traitement audio:', newAudioBlob.size, 'octets');
+      console.log('🎤 AudioProcessor - Début traitement audio:', newAudioBlob.size, 'octets');
       
       // Notifier immédiatement qu'on a un enregistrement
       onAudioRecorded(newAudioBlob);
       
       // Si on a un reportId, uploader vers Supabase
       if (reportId) {
-        console.log('🎤 Upload vers Supabase pour rapport:', reportId);
+        console.log('🎤 AudioProcessor - Upload vers Supabase pour rapport:', reportId);
         
         uploadAudio({
           audioBlob: newAudioBlob,
@@ -76,19 +87,31 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
           onUploadSuccess: (publicUrl: string) => {
             audioState.setAudioUrl(publicUrl);
             onAudioUrlGenerated(publicUrl);
+            
+            toast({
+              title: "Enregistrement sauvegardé",
+              description: "Votre enregistrement vocal a été sauvegardé avec succès",
+            });
           },
           onUploadError: (errorMessage: string) => {
+            console.error('🎤 AudioProcessor - Erreur upload:', errorMessage);
             // Fallback : URL temporaire
             const tempUrl = URL.createObjectURL(newAudioBlob);
             audioState.setAudioUrl(tempUrl);
             onAudioUrlGenerated(tempUrl);
+            
+            toast({
+              title: "Enregistrement temporaire",
+              description: "L'enregistrement est sauvé localement. Sauvegardez le rapport pour le conserver.",
+              variant: "default",
+            });
           },
           onUploadStart: () => audioState.setUploading(true),
           onUploadEnd: () => audioState.setUploading(false)
         });
       } else {
         // Pas de reportId : URL temporaire
-        console.log('🎤 Création URL temporaire');
+        console.log('🎤 AudioProcessor - Création URL temporaire');
         const tempUrl = URL.createObjectURL(newAudioBlob);
         audioState.setAudioUrl(tempUrl);
         onAudioUrlGenerated(tempUrl);
@@ -100,7 +123,7 @@ export const useAudioProcessor = ({ onAudioRecorded, onAudioUrlGenerated, report
       }
     } catch (error) {
       if (audioState.isMounted) {
-        console.error('🎤 💥 Erreur inattendue:', error);
+        console.error('🎤 AudioProcessor - 💥 Erreur inattendue:', error);
         audioState.setUploading(false);
         
         toast({
