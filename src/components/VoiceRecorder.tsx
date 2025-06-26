@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Download } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
-import { toast } from '@/hooks/use-toast';
 
 interface VoiceRecorderProps {
   onAudioChange: (audioBlob: Blob | null) => void;
@@ -43,17 +42,9 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         downloadLink.click();
         document.body.removeChild(downloadLink);
         
-        toast({
-          title: "Export réussi",
-          description: "L'enregistrement audio a été téléchargé sur votre appareil",
-        });
+        // Pas de toast ici pour éviter la confusion - l'export est silencieux
       } catch (error) {
         console.error("Erreur lors de l'export audio:", error);
-        toast({
-          title: "Erreur d'export",
-          description: "Impossible d'exporter l'enregistrement audio",
-          variant: "destructive",
-        });
       }
     }
   };

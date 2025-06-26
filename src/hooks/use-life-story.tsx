@@ -495,13 +495,25 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Toujours sauvegarder les changements d'URL audio
-    console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio (HOOK)');
+    // CORRECTION: Sauvegarde automatique immédiate quand URL audio change
+    console.log('💾 Déclenchement sauvegarde automatique IMMÉDIATE pour changement URL audio (HOOK)');
+    
+    // Utiliser un délai très court pour éviter les appels multiples rapides
     setTimeout(() => {
       if (!isSaving) {
+        console.log('✅ Exécution de la sauvegarde automatique pour URL audio');
         saveNow();
+      } else {
+        console.log('⏳ Sauvegarde déjà en cours, report de la sauvegarde automatique');
+        // Si une sauvegarde est en cours, reporter à plus tard
+        setTimeout(() => {
+          if (!isSaving) {
+            console.log('✅ Exécution différée de la sauvegarde automatique pour URL audio');
+            saveNow();
+          }
+        }, 1000);
       }
-    }, 100);
+    }, 50);
   };
 
   // Calculer le progrès
