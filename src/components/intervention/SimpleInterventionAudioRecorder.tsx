@@ -46,6 +46,10 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     clearRecording
   } = useSimpleAudioRecorder();
 
+  // Utiliser l'URL uploadée, l'URL existante ou l'URL locale
+  const currentAudioUrl = uploadedAudioUrl || existingAudioUrl || audioUrl;
+  const hasAudio = !!(currentAudioUrl && (audioBlob?.size > 0 || existingAudioUrl));
+
   // Notifier le parent de l'état d'enregistrement
   useEffect(() => {
     if (onRecordingStateChange) {
@@ -270,10 +274,6 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
-  // Utiliser l'URL uploadée, l'URL existante ou l'URL locale
-  const currentAudioUrl = uploadedAudioUrl || existingAudioUrl || audioUrl;
-  const hasAudio = !!(currentAudioUrl && (audioBlob?.size > 0 || existingAudioUrl));
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">
