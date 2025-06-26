@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useState } from 'react';
 import { BlogMedia } from '@/types/supabase';
 import { Dialog, DialogContent, VisuallyHidden, DialogTitle } from '@/components/ui/dialog';
@@ -24,7 +23,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   const [manualPlayMode, setManualPlayMode] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [isQuickTimeVideo, setIsQuickTimeVideo] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   // Détecter si c'est une vidéo QuickTime/iPhone
   const isQuickTime = currentMedia.media_type === 'video/quicktime' || 
@@ -86,7 +84,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     setManualPlayMode(false);
     setIsVideoLoading(false);
     setIsQuickTimeVideo(isQuickTime);
-    setHasUserInteracted(false);
 
     console.log('🎬 MEDIA_VIEWER - Initialisation vidéo:', {
       mediaType: currentMedia.media_type,
@@ -135,7 +132,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     setVideoError(false);
     setManualPlayMode(false);
     setVideoRetryCount(0);
-    setHasUserInteracted(true);
   };
 
   const handleVideoCanPlay = () => {
@@ -152,10 +148,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   const handleVideoLoadedData = () => {
     console.log('🎬 MEDIA_VIEWER - Données vidéo chargées');
     setIsVideoLoading(false);
-  };
-
-  const handleVideoClick = () => {
-    setHasUserInteracted(true);
   };
 
   const handleDownload = async () => {
@@ -236,40 +228,40 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           <DialogTitle>Visualisation des médias</DialogTitle>
         </VisuallyHidden>
         
-        {/* Bouton fermer */}
+        {/* Bouton fermer avec positionnement fixe et z-index élevé */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+          className="fixed top-4 right-4 z-[9999] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
           onClick={onClose}
         >
-          <X className="h-6 w-6" />
+          <X className="h-5 w-5" />
         </Button>
 
-        {/* Compteur */}
-        <div className="absolute top-4 left-4 z-50 text-white bg-black/50 px-3 py-1 rounded">
+        {/* Compteur avec positionnement fixe */}
+        <div className="fixed top-4 left-4 z-[9998] text-white bg-black/50 px-3 py-1 rounded-full shadow-lg">
           {currentIndex + 1} / {media.length}
         </div>
 
-        {/* Boutons de navigation (desktop) */}
+        {/* Boutons de navigation (desktop) avec z-index élevé */}
         {media.length > 1 && (
           <>
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 hidden md:flex"
+              className="fixed left-4 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 hidden md:flex items-center justify-center shadow-lg"
               onClick={() => onNavigate('prev')}
             >
-              <ChevronLeft className="h-8 w-8" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
             
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 hidden md:flex"
+              className="fixed right-4 top-1/2 -translate-y-1/2 z-[9997] text-white hover:bg-white/20 bg-black/50 rounded-full w-10 h-10 hidden md:flex items-center justify-center shadow-lg"
               onClick={() => onNavigate('next')}
             >
-              <ChevronRight className="h-8 w-8" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
           </>
         )}
@@ -299,7 +291,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   src={currentMedia.media_url}
                   controls
                   autoPlay={videoRetryCount === 0}
-                  muted={!hasUserInteracted}
+                  muted={false}
                   playsInline
                   preload="metadata"
                   className="w-full h-auto max-h-full object-contain md:max-w-full md:w-auto"
@@ -311,7 +303,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                   onCanPlay={handleVideoCanPlay}
                   onLoadStart={handleVideoLoadStart}
                   onLoadedData={handleVideoLoadedData}
-                  onClick={handleVideoClick}
                 />
               ) : manualPlayMode && isQuickTime && !isMobile ? (
                 <QuickTimeInterface />
@@ -388,7 +379,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
 
         {/* Indicateurs de swipe pour mobile */}
         {media.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 text-white text-sm bg-black/50 px-3 py-1 rounded md:hidden">
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9996] text-white text-sm bg-black/50 px-3 py-1 rounded-full md:hidden shadow-lg">
             Glissez pour naviguer
           </div>
         )}

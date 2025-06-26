@@ -1,134 +1,135 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, X } from 'lucide-react';
 import { BlogMedia } from '@/types/supabase';
+import { Button } from '@/components/ui/button';
 
 interface MediaItemProps {
-  item: BlogMedia;
-  imageUrl: string;
-  onClick: () => void;
-  isConverting: boolean;
-  isConversionFailed: boolean;
-  shouldAttemptConversion: boolean;
-  onConvert: (url: string, mediaId: string) => void;
-  onImageError: (mediaId: string) => void;
+  media: BlogMedia;
+  onDelete?: (media: BlogMedia) => void;
+  onClick?: () => void;
+  showDeleteButton?: boolean;
 }
 
 const MediaItem: React.FC<MediaItemProps> = ({
-  item,
-  imageUrl,
+  media,
+  onDelete,
   onClick,
-  isConverting,
-  isConversionFailed,
-  shouldAttemptConversion,
-  onConvert,
-  onImageError
+  showDeleteButton = false
 }) => {
-  const [hasTriedConversion, setHasTriedConversion] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState(false);
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Tenter la conversion si nécessaire
+  // Générer une vignette pour les vidéos
   useEffect(() => {
-    if (shouldAttemptConversion && imageUrl !== '/placeholder.svg' && !hasTriedConversion) {
-      console.log('🎯 Tentative de conversion pour:', item.id);
-      setHasTriedConversion(true);
-      onConvert(imageUrl, item.id);
+    if (media.media_type.startsWith('video/') && !media.thumbnail_url && !videoThumbnail) {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        video.currentTime = 1; // Aller à 1 seconde
+      };
+      
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0);
+          const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setVideoThumbnail(thumbnailUrl);
+        }
+      };
+      
+      video.onerror = () => {
+        console.log('Erreur lors de la génération de la vignette vidéo');
+        setThumbnailError(true);
+      };
+      
+      video.src = media.media_url;
     }
-  }, [shouldAttemptConversion, imageUrl, item.id, onConvert, hasTriedConversion]);
+  }, [media, videoThumbnail]);
 
-  if (item.media_type.startsWith('image/')) {
-    return (
-      <div 
-        className="flex-1 border-2 border-white cursor-pointer hover:opacity-90 transition-opacity relative"
-        onClick={onClick}
-      >
-        {isConversionFailed ? (
-          <div className="flex items-center justify-center bg-gray-100 aspect-square">
-            <div className="text-center text-gray-500 p-4">
-              <div className="mb-3">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-2xl">📱</span>
-                </div>
-                <p className="text-sm font-medium">Conversion HEIC échouée</p>
-                <p className="text-xs mb-3">La conversion automatique a échoué</p>
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(media);
+    }
+  };
+
+  return (
+    <div className="relative group bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+      <div className="aspect-square relative" onClick={handleClick}>
+        {media.media_type.startsWith('image/') ? (
+          <img
+            src={media.media_url}
+            alt="Media"
+            className="w-full h-full object-cover"
+            onError={() => setThumbnailError(true)}
+          />
+        ) : media.media_type.startsWith('video/') ? (
+          <div className="relative w-full h-full">
+            {/* Utiliser la vignette générée ou celle stockée */}
+            {(media.thumbnail_url || videoThumbnail) && !thumbnailError ? (
+              <img
+                src={media.thumbnail_url || videoThumbnail || ''}
+                alt="Vignette vidéo"
+                className="w-full h-full object-cover"
+                onError={() => setThumbnailError(true)}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  src={media.media_url}
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                  muted
+                />
               </div>
-              <div className="space-y-2">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHasTriedConversion(false);
-                    onConvert(imageUrl, item.id);
-                  }}
-                  className="block w-full px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
-                >
-                  Réessayer la conversion
-                </button>
-                <p className="text-xs text-gray-400">
-                  Alternative: Convertissez manuellement votre image en JPEG
-                </p>
+            )}
+            
+            {/* Icône play réduite */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-white/90 rounded-full p-2 shadow-lg">
+                <Play className="w-4 h-4 text-gray-800 fill-current" />
               </div>
             </div>
-          </div>
-        ) : isConverting ? (
-          <div className="flex items-center justify-center bg-gray-100 aspect-square">
-            <div className="text-center text-gray-500">
-              <div className="animate-spin h-10 w-10 border-4 border-tranches-sage border-t-transparent rounded-full mx-auto mb-3"></div>
-              <p className="text-sm font-medium">Conversion HEIC en cours...</p>
-              <p className="text-xs">Conversion automatique en JPEG</p>
-              <p className="text-xs text-gray-400 mt-1">Veuillez patienter...</p>
+            
+            {/* Indicateur vidéo permanent en bas à droite */}
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              Vidéo
             </div>
           </div>
         ) : (
-          <img
-            src={imageUrl}
-            alt="Media du post"
-            className="w-full aspect-square object-cover"
-            onError={() => {
-              console.log('❌ Erreur chargement image:', item.id, imageUrl);
-              onImageError(item.id);
-            }}
-            onLoad={() => {
-              console.log('✅ Image chargée:', { id: item.id, url: imageUrl });
-            }}
-          />
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <p className="text-gray-500 text-sm text-center p-2">
+              Fichier non prévisualisable
+            </p>
+          </div>
         )}
       </div>
-    );
-  }
-
-  if (item.media_type.startsWith('video/')) {
-    return (
-      <div 
-        className="flex-1 border-2 border-white cursor-pointer hover:opacity-90 transition-opacity relative"
-        onClick={onClick}
-      >
-        <div className="relative bg-gray-900">
-          <video
-            src={imageUrl}
-            className="w-full aspect-square object-cover"
-            muted
-            playsInline
-            preload="metadata"
-            onError={() => onImageError(item.id)}
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-            <div className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
-              <div className="w-0 h-0 border-l-[12px] border-l-black border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
-            </div>
-          </div>
-          <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
-            📹 Vidéo
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div 
-      className="flex-1 border-2 border-white cursor-pointer hover:opacity-90 transition-opacity relative"
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-center bg-gray-100 aspect-square">
-        <p className="text-gray-500">Fichier non prévisualisable</p>
-      </div>
+      
+      {showDeleteButton && onDelete && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 };
