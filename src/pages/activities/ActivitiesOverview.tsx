@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Brain, Gamepad2, Dumbbell } from 'lucide-react';
+import { Sparkles, Brain, Gamepad2, Dumbbell, Languages } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';
@@ -138,6 +138,25 @@ const ActivitiesOverview = () => {
           </p>
         </CardContent>
       </Link>
+    </Card>,
+    
+    <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+      <Link to="/activities/translation" className="block">
+        <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Languages className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Jeu de Traduction</h3>
+          </div>
+        </div>
+        <CardHeader>
+          <CardTitle className="text-lg">Jeu de Traduction</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Traduisez 20 mots entre le français et l'anglais. Deux modes disponibles avec historique des scores.
+          </p>
+        </CardContent>
+      </Link>
     </Card>
   ];
 
@@ -216,7 +235,7 @@ const ActivitiesOverview = () => {
                   {/* Ajouter les jeux intégrés en premier dans la section Jeux */}
                   {section.type === 'games' && getIntegratedGames()}
                   
-                  {filteredActivities.slice(0, section.type === 'games' ? 3 : 6).map((activity) => {
+                  {filteredActivities.slice(0, section.type === 'games' ? 2 : 6).map((activity) => {
                     const isYouTube = isYouTubeUrl(activity.link);
                     const videoId = isYouTube ? extractYouTubeId(activity.link) : undefined;
                     

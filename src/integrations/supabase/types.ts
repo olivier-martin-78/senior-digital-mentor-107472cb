@@ -538,7 +538,7 @@ export type Database = {
         }
         Relationships: []
       }
-      "game-franglais": {
+      game_franglais: {
         Row: {
           Anglais: string
           Francais: string
