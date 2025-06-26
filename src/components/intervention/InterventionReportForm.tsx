@@ -29,6 +29,17 @@ const InterventionReportForm: React.FC = () => {
     handleAudioUrlGenerated,
   } = useInterventionForm();
 
+  const handleMediaChange = (mediaFiles: any[]) => {
+    setFormData(prev => ({ ...prev, media_files: mediaFiles }));
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      media_files: (prev.media_files || []).filter((file: any) => file.id !== fileId)
+    }));
+  };
+
   if (loadingData) {
     return (
       <div className="flex justify-center py-20">
@@ -99,8 +110,9 @@ const InterventionReportForm: React.FC = () => {
             </div>
             
             <MediaSection 
-              formData={formData} 
-              setFormData={setFormData}
+              mediaFiles={formData.media_files || []}
+              onMediaChange={handleMediaChange}
+              onRemoveFile={handleRemoveFile}
             />
             
             <ClientEvaluationSection 
