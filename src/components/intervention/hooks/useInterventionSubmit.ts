@@ -20,29 +20,36 @@ export const useInterventionSubmit = () => {
     reportId: string | null,
     uploadAudioIfNeeded: (reportId: string, audioUrl: string) => Promise<string | null>,
     setLoading: (loading: boolean) => void,
-    isRecording?: boolean // Paramètre pour vérifier si on enregistre
+    isRecording?: boolean
   ) => {
     e.preventDefault();
     
+    console.log('📝 SUBMIT_HOOK - Tentative de soumission:', {
+      isRecording,
+      reportId,
+      hasAudioUrl: !!formData.audio_url,
+      audioUrl: formData.audio_url
+    });
+    
     // CRITIQUE: Empêcher absolument la soumission pendant l'enregistrement
     if (isRecording) {
-      console.log('🚫 SOUMISSION BLOQUÉE - Enregistrement en cours');
+      console.log('🚫 SUBMIT_HOOK - Soumission bloquée - enregistrement en cours');
       toast({
         title: 'Enregistrement en cours',
         description: 'Veuillez arrêter l\'enregistrement avant de sauvegarder le rapport',
         variant: 'destructive',
       });
-      return false; // Retourner false pour indiquer l'échec
+      return false;
     }
     
     // Éviter les soumissions multiples
     if (isSubmitting.current || navigationPending.current) {
-      console.log('⚠️ Soumission déjà en cours, ignorer');
+      console.log('⚠️ SUBMIT_HOOK - Soumission déjà en cours, ignorer');
       return false;
     }
     
     if (!user) {
-      console.log('❌ Utilisateur non connecté');
+      console.log('❌ SUBMIT_HOOK - Utilisateur non connecté');
       return false;
     }
 
@@ -59,7 +66,7 @@ export const useInterventionSubmit = () => {
       isSubmitting.current = true;
       setLoading(true);
       
-      console.log('📝 Début sauvegarde du rapport - SANS enregistrement actif');
+      console.log('📝 SUBMIT_HOOK - Début sauvegarde du rapport');
 
       // Mapper les données du formulaire vers les colonnes de la base de données
       const reportData = {
@@ -92,34 +99,45 @@ export const useInterventionSubmit = () => {
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       };
 
-      console.log('💾 Sauvegarde des données du rapport');
+      console.log('💾 SUBMIT_HOOK - Sauvegarde des données du rapport');
 
       if (reportId) {
         // Mise à jour d'un rapport existant
-        console.log('📝 Mise à jour du rapport existant');
+        console.log('📝 SUBMIT_HOOK - Mise à jour du rapport existant');
+        
+        // CRITIQUE: Upload de l'audio AVANT la mise à jour
+        console.log('🎵 SUBMIT_HOOK - Upload audio avant mise à jour...');
         const finalAudioUrl = await uploadAudioIfNeeded(reportId, formData.audio_url);
+        console.log('🎵 SUBMIT_HOOK - Résultat upload audio:', finalAudioUrl);
+        
+        const updateData = {
+          ...reportData,
+          audio_url: finalAudioUrl
+        };
+        
+        console.log('💾 SUBMIT_HOOK - Données à sauvegarder:', {
+          ...updateData,
+          audio_url: finalAudioUrl ? 'URL_PRÉSENTE' : 'NULL'
+        });
         
         const { error } = await supabase
           .from('intervention_reports')
-          .update({
-            ...reportData,
-            audio_url: finalAudioUrl
-          })
+          .update(updateData)
           .eq('id', reportId);
 
         if (error) {
-          console.error('❌ Erreur de mise à jour:', error);
+          console.error('❌ SUBMIT_HOOK - Erreur de mise à jour:', error);
           throw error;
         }
 
-        console.log('✅ Rapport mis à jour avec succès');
+        console.log('✅ SUBMIT_HOOK - Rapport mis à jour avec succès');
         toast({
           title: 'Succès',
           description: 'Rapport mis à jour avec succès',
         });
       } else {
         // Création d'un nouveau rapport
-        console.log('📝 Création d\'un nouveau rapport');
+        console.log('📝 SUBMIT_HOOK - Création d\'un nouveau rapport');
         const { data: newReport, error } = await supabase
           .from('intervention_reports')
           .insert([reportData])
@@ -127,21 +145,30 @@ export const useInterventionSubmit = () => {
           .single();
 
         if (error) {
-          console.error('❌ Erreur de création:', error);
+          console.error('❌ SUBMIT_HOOK - Erreur de création:', error);
           throw error;
         }
 
-        console.log('✅ Nouveau rapport créé:', newReport.id);
+        console.log('✅ SUBMIT_HOOK - Nouveau rapport créé:', newReport.id);
 
         // Upload de l'audio après création du rapport
+        console.log('🎵 SUBMIT_HOOK - Upload audio après création...');
         const finalAudioUrl = await uploadAudioIfNeeded(newReport.id, formData.audio_url);
+        console.log('🎵 SUBMIT_HOOK - Résultat upload audio:', finalAudioUrl);
         
         // Mettre à jour le rapport avec l'URL audio
         if (finalAudioUrl) {
-          await supabase
+          console.log('💾 SUBMIT_HOOK - Mise à jour du rapport avec URL audio');
+          const { error: updateError } = await supabase
             .from('intervention_reports')
             .update({ audio_url: finalAudioUrl })
             .eq('id', newReport.id);
+          
+          if (updateError) {
+            console.error('❌ SUBMIT_HOOK - Erreur mise à jour audio URL:', updateError);
+          } else {
+            console.log('✅ SUBMIT_HOOK - URL audio mise à jour avec succès');
+          }
         }
 
         // Mettre à jour le rendez-vous si associé
@@ -163,17 +190,17 @@ export const useInterventionSubmit = () => {
 
       // Navigation sécurisée - SEULEMENT après sauvegarde complète
       navigationPending.current = true;
-      console.log('🔄 Navigation vers le planificateur - SÉCURISÉE');
+      console.log('🔄 SUBMIT_HOOK - Navigation vers le planificateur');
       
       // Délai pour s'assurer que tout est sauvegardé
       setTimeout(() => {
         navigate('/scheduler');
       }, 500);
       
-      return true; // Succès
+      return true;
       
     } catch (error) {
-      console.error('💥 Erreur lors de la sauvegarde:', error);
+      console.error('💥 SUBMIT_HOOK - Erreur lors de la sauvegarde:', error);
       toast({
         title: 'Erreur',
         description: `Impossible de sauvegarder le rapport: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
@@ -183,7 +210,6 @@ export const useInterventionSubmit = () => {
     } finally {
       setLoading(false);
       isSubmitting.current = false;
-      // Ne pas réinitialiser navigationPending ici pour éviter les doubles navigations
     }
   };
 

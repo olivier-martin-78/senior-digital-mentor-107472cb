@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { X, Image, File } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Image, File, RefreshCw } from 'lucide-react';
 import { MediaFile } from './types';
 
 interface MediaFileItemProps {
@@ -9,6 +9,39 @@ interface MediaFileItemProps {
 }
 
 export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemove }) => {
+  const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  console.log('📸 MEDIA_ITEM - Rendu:', {
+    id: mediaFile.id,
+    name: mediaFile.name,
+    type: mediaFile.type,
+    hasPreview: !!mediaFile.preview,
+    hasFile: !!mediaFile.file,
+    fileSize: mediaFile.file?.size,
+    imageError,
+    retryCount
+  });
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error('❌ MEDIA_ITEM - Erreur de chargement d\'image:', mediaFile.preview);
+    setImageError(true);
+  };
+
+  const handleRetry = () => {
+    console.log('🔄 MEDIA_ITEM - Tentative de rechargement');
+    setImageError(false);
+    setRetryCount(prev => prev + 1);
+  };
+
+  const getFileSize = () => {
+    if (!mediaFile.file) return 'Taille inconnue';
+    const sizeInMB = mediaFile.file.size / 1024 / 1024;
+    return sizeInMB > 0.1 ? `${sizeInMB.toFixed(1)} MB` : `${Math.round(mediaFile.file.size / 1024)} KB`;
+  };
+
+  const fileName = mediaFile.name || mediaFile.file?.name || 'Media';
+
   return (
     <div className="relative bg-gray-50 rounded-lg p-3">
       <button
@@ -21,33 +54,37 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
       
       {mediaFile.type === 'image' ? (
         <div className="w-full mb-2">
-          {mediaFile.preview ? (
+          {mediaFile.preview && !imageError ? (
             <img
+              key={retryCount} // Force re-render on retry
               src={mediaFile.preview}
-              alt={mediaFile.name || mediaFile.file?.name || 'Media'}
+              alt={fileName}
               className="w-full h-auto object-contain rounded max-h-48"
-              onError={(e) => {
-                console.error('❌ Erreur de chargement d\'image:', mediaFile.preview);
-                // Afficher l'icône fichier en cas d'erreur
-                e.currentTarget.style.display = 'none';
-                const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
-                if (fallbackDiv) {
-                  fallbackDiv.classList.remove('hidden');
-                }
+              onError={handleImageError}
+              onLoad={() => {
+                console.log('✅ MEDIA_ITEM - Image chargée avec succès');
+                setImageError(false);
               }}
             />
           ) : (
-            // Cas où l'image n'a pas de preview (médias existants)
-            <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded mb-2 flex items-center justify-center border-2 border-dashed border-gray-300">
+            <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded mb-2 flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
               <div className="text-center">
                 <Image className="w-8 h-8 text-gray-400 mx-auto mb-1" />
-                <span className="text-xs text-gray-500">Image chargée</span>
+                <span className="text-xs text-gray-500 mb-2">
+                  {imageError ? 'Erreur de chargement' : 'Preview en cours...'}
+                </span>
+                {imageError && (
+                  <button
+                    onClick={handleRetry}
+                    className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Réessayer
+                  </button>
+                )}
               </div>
             </div>
           )}
-          <div className="hidden w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
-            <File className="w-8 h-8 text-gray-400" />
-          </div>
         </div>
       ) : (
         <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
@@ -55,14 +92,12 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
         </div>
       )}
       
-      <p className="text-xs text-gray-600 truncate" title={mediaFile.name || mediaFile.file?.name || 'Media'}>
-        {mediaFile.name || mediaFile.file?.name || 'Media'}
+      <p className="text-xs text-gray-600 truncate" title={fileName}>
+        {fileName}
       </p>
-      {mediaFile.file && (
-        <p className="text-xs text-gray-400">
-          {(mediaFile.file.size / 1024 / 1024).toFixed(1)} MB
-        </p>
-      )}
+      <p className="text-xs text-gray-400">
+        {getFileSize()}
+      </p>
     </div>
   );
 };
