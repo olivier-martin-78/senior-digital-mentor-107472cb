@@ -427,7 +427,10 @@ export const useInterventionForm = () => {
         });
       }
 
-      navigate('/scheduler');
+      // Attendre un délai avant de naviguer pour éviter la fermeture prématurée
+      setTimeout(() => {
+        navigate('/scheduler');
+      }, 1000);
     } catch (error) {
       console.error('Error saving report:', error);
       toast({

@@ -524,6 +524,43 @@ const InterventionReportView = () => {
               )}
             </div>
           </div>
+
+          {/* Section d'évaluation du client */}
+          {(report.client_rating || report.client_comments) && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Évaluation du client</h3>
+              <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                {report.client_rating && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Note de satisfaction :</p>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className={`text-lg ${
+                            star <= report.client_rating 
+                              ? 'text-yellow-500' 
+                              : 'text-gray-300'
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                      <span className="text-sm text-gray-600 ml-2">
+                        {report.client_rating}/5 étoile{report.client_rating > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {report.client_comments && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Commentaire du client :</p>
+                    <p className="text-sm">{report.client_comments}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
