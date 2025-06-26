@@ -284,13 +284,35 @@ export const useInterventionForm = () => {
     try {
       setLoading(true);
 
+      // Mapper les données du formulaire vers les colonnes de la base de données
       const reportData = {
-        ...formData,
-        professional_id: user.id,
-        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
         appointment_id: formData.appointment_id || null,
+        professional_id: user.id,
+        date: formData.date,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
+        auxiliary_name: formData.auxiliary_name,
+        patient_name: formData.patient_name,
+        physical_state: formData.physical_state,
+        physical_state_other: formData.physical_state_other || null,
+        pain_location: formData.pain_location || null,
+        mental_state: formData.mental_state,
+        mental_state_change: formData.mental_state_change || null,
+        appetite: formData.appetite,
+        hydration: formData.hydration,
+        appetite_comments: formData.appetite_comments || null,
+        hygiene: formData.hygiene,
+        hygiene_comments: formData.hygiene_comments || null,
+        activities: formData.activities,
+        activities_other: formData.activities_other || null,
+        observations: formData.observations || null,
+        follow_up: formData.follow_up,
+        follow_up_other: formData.follow_up_other || null,
+        audio_url: formData.audio_url || null,
+        media_files: formData.media_files || null,
         client_rating: formData.client_rating || null,
         client_comments: formData.client_comments || null,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       };
 
       console.log('Saving report data:', reportData);
