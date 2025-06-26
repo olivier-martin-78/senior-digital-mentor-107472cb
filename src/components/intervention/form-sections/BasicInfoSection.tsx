@@ -2,104 +2,115 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { InterventionFormData } from '../types/FormData';
 
 interface BasicInfoSectionProps {
-  formData: any;
-  setFormData: (data: any) => void;
-  date: Date | undefined;
-  setDate: (date: Date | undefined) => void;
+  formData: InterventionFormData;
+  setFormData: (data: InterventionFormData | ((prev: InterventionFormData) => InterventionFormData)) => void;
 }
 
 export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   formData,
-  setFormData,
-  date,
-  setDate
+  setFormData
 }) => {
+  const handleDateChange = (date: Date | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      date: date ? date.toISOString().split('T')[0] : ''
+    }));
+  };
+
+  const selectedDate = formData.date ? new Date(formData.date) : undefined;
+
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Informations de base</h3>
+      
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="patientName">Nom du patient</Label>
+          <Label htmlFor="patient_name">Nom du patient *</Label>
           <Input
-            type="text"
-            id="patientName"
-            value={formData.patientName}
-            onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+            id="patient_name"
+            value={formData.patient_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, patient_name: e.target.value }))}
+            required
           />
         </div>
         <div>
-          <Label htmlFor="auxiliaryName">Nom de l'auxiliaire</Label>
+          <Label htmlFor="auxiliary_name">Nom de l'auxiliaire *</Label>
           <Input
-            type="text"
-            id="auxiliaryName"
-            value={formData.auxiliaryName}
-            onChange={(e) => setFormData({ ...formData, auxiliaryName: e.target.value })}
+            id="auxiliary_name"
+            value={formData.auxiliary_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, auxiliary_name: e.target.value }))}
+            required
           />
         </div>
       </div>
 
       <div>
-        <Label>Date</Label>
+        <Label>Date *</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant={'outline'}
+              variant="outline"
               className={cn(
-                'w-[240px] justify-start text-left font-normal',
-                !date && 'text-muted-foreground'
+                "w-full justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
               )}
             >
-              {date ? format(date, 'PPP') : <span>Choisir une date</span>}
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Sélectionner une date"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center" side="bottom">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={date}
-              onSelect={setDate}
-              onDayClick={(date) => setFormData({ ...formData, date: date })}
+              selected={selectedDate}
+              onSelect={handleDateChange}
               initialFocus
             />
           </PopoverContent>
         </Popover>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="startTime">Heure de début</Label>
+          <Label htmlFor="start_time">Heure de début *</Label>
           <Input
+            id="start_time"
             type="time"
-            id="startTime"
-            value={formData.startTime}
-            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+            value={formData.start_time}
+            onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+            required
           />
         </div>
         <div>
-          <Label htmlFor="endTime">Heure de fin</Label>
+          <Label htmlFor="end_time">Heure de fin *</Label>
           <Input
+            id="end_time"
             type="time"
-            id="endTime"
-            value={formData.endTime}
-            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+            value={formData.end_time}
+            onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="hourly_rate">Taux horaire (€)</Label>
+          <Input
+            id="hourly_rate"
+            type="number"
+            step="0.01"
+            value={formData.hourly_rate}
+            onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
           />
         </div>
       </div>
-
-      <div>
-        <Label htmlFor="hourlyRate">Taux horaire (€)</Label>
-        <Input
-          type="number"
-          id="hourlyRate"
-          value={formData.hourlyRate || ''}
-          onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value ? parseFloat(e.target.value) : null })}
-        />
-      </div>
-    </>
+    </div>
   );
 };

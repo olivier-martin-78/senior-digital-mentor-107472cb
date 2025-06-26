@@ -538,18 +538,21 @@ export type Database = {
         }
         Relationships: []
       }
-      dico: {
+      "game-franglais": {
         Row: {
-          Définitions: string
-          Mot: string
+          Anglais: string
+          Francais: string
+          id: string
         }
         Insert: {
-          Définitions: string
-          Mot: string
+          Anglais: string
+          Francais: string
+          id?: string
         }
         Update: {
-          Définitions?: string
-          Mot?: string
+          Anglais?: string
+          Francais?: string
+          id?: string
         }
         Relationships: []
       }
