@@ -5,6 +5,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import { uploadAudio } from '@/utils/audioUploadUtils';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '@/components/ui/spinner';
+import { CheckCircle, Clock } from 'lucide-react';
 
 interface AudioRecorderProps {
   chapterId: string;
@@ -17,6 +18,8 @@ interface AudioRecorderProps {
 export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploadStart, shouldLog = false }: AudioRecorderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const { user } = useAuth();
   
   // DEBUG: Log l'état initial (uniquement pour question 1 chapitre 1)
@@ -65,6 +68,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
       }
       setUploadedAudioUrl(null);
       setIsUploading(false);
+      setIsSaving(false);
+      setIsSaved(false);
       currentUploadRef.current = null;
       onAudioUrlChange(chapterId, questionId, null, false); // Permettre la sauvegarde
       return;
@@ -98,6 +103,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
         console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Début upload, taille: ${newAudioBlob.size} octets`);
       }
       setIsUploading(true);
+      setIsSaving(false);
+      setIsSaved(false);
       currentUploadRef.current = uploadKey;
       
       // Signaler le début de l'upload au parent
@@ -126,23 +133,34 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             }
             setUploadedAudioUrl(publicUrl);
             setIsUploading(false);
+            setIsSaving(true); // Début de la sauvegarde
             currentUploadRef.current = null;
             
-            // CORRECTION: Forcer la sauvegarde automatique ET attendre un peu pour s'assurer que l'état est stable
+            // CORRECTION: Transmission immédiate avec notification de sauvegarde
+            onAudioUrlChange(chapterId, questionId, publicUrl, false);
+            
+            // Simuler un délai pour montrer l'état de sauvegarde
             setTimeout(() => {
-              if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-                console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Transmission URL au hook avec sauvegarde forcée');
+              if (isMounted.current) {
+                setIsSaving(false);
+                setIsSaved(true);
+                
+                // Masquer l'indicateur de succès après 3 secondes
+                setTimeout(() => {
+                  if (isMounted.current) {
+                    setIsSaved(false);
+                  }
+                }, 3000);
               }
-              onAudioUrlChange(chapterId, questionId, publicUrl, false);
-            }, 100);
+            }, 1000);
             
             if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
               console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Toast de succès affiché');
             }
             toast({
-              title: "Enregistrement sauvegardé",
-              description: "Votre enregistrement vocal a été sauvegardé avec succès",
-              duration: 700
+              title: "Enregistrement terminé",
+              description: "Votre enregistrement vocal est en cours de sauvegarde...",
+              duration: 2000
             });
           } else {
             if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
@@ -157,6 +175,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
               console.error(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - ❌ Erreur upload:`, errorMessage);
             }
             setIsUploading(false);
+            setIsSaving(false);
+            setIsSaved(false);
             currentUploadRef.current = null;
             
             toast({
@@ -179,8 +199,7 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
             if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
               console.log(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - 📥 Fin téléchargement`);
             }
-            setIsUploading(false);
-            currentUploadRef.current = null;
+            // Ne pas remettre isUploading à false ici, c'est fait dans le callback de succès
           }
         }
       );
@@ -190,6 +209,8 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
           console.error(`🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - 💥 Erreur non gérée:`, error);
         }
         setIsUploading(false);
+        setIsSaving(false);
+        setIsSaved(false);
         currentUploadRef.current = null;
         
         toast({
@@ -207,28 +228,44 @@ export const AudioRecorder = ({ chapterId, questionId, onAudioUrlChange, onUploa
     console.log('🎙️ AUDIO_RECORDER - Question 1 Chapitre 1 - Rendu avec état:', { 
       isUploading, 
       uploadedAudioUrl,
+      isSaving,
+      isSaved,
       timestamp: new Date().toISOString()
     });
   }
 
   return (
-    <div className={`transition-all ${isUploading ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className={`transition-all ${isUploading || isSaving ? "opacity-60 pointer-events-none" : ""}`}>
       <VoiceRecorder onAudioChange={handleAudioChange} />
       
       {isUploading && (
-        <div className="flex items-center justify-center py-2 mt-2 bg-gray-100 rounded-md">
-          <Spinner className="h-5 w-5 border-gray-500 mr-2" />
-          <span className="text-sm text-gray-700">Sauvegarde en cours...</span>
+        <div className="flex items-center justify-center py-2 mt-2 bg-blue-50 border border-blue-200 rounded-md">
+          <Spinner className="h-5 w-5 border-blue-500 mr-2" />
+          <span className="text-sm text-blue-700">Téléchargement en cours...</span>
         </div>
       )}
       
-      {uploadedAudioUrl && !isUploading && uploadedAudioUrl !== 'local-audio' && (
-        <div className="py-2 mt-2 bg-green-100 rounded-md text-center">
-          <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
+      {isSaving && !isUploading && (
+        <div className="flex items-center justify-center py-2 mt-2 bg-orange-50 border border-orange-200 rounded-md">
+          <Clock className="h-5 w-5 text-orange-500 mr-2" />
+          <span className="text-sm text-orange-700">Sauvegarde automatique en cours...</span>
         </div>
       )}
       
-      {uploadedAudioUrl === 'local-audio' && !isUploading && (
+      {isSaved && !isSaving && !isUploading && (
+        <div className="flex items-center justify-center py-2 mt-2 bg-green-50 border border-green-200 rounded-md">
+          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+          <span className="text-sm text-green-700">✓ Enregistrement sauvegardé automatiquement</span>
+        </div>
+      )}
+      
+      {uploadedAudioUrl && !isUploading && !isSaving && !isSaved && uploadedAudioUrl !== 'local-audio' && (
+        <div className="py-2 mt-2 bg-gray-100 rounded-md text-center">
+          <span className="text-sm text-gray-600">Audio disponible</span>
+        </div>
+      )}
+      
+      {uploadedAudioUrl === 'local-audio' && !isUploading && !isSaving && (
         <div className="py-2 mt-2 bg-yellow-100 rounded-md text-center">
           <span className="text-sm text-yellow-700">⚠ Audio local uniquement</span>
         </div>

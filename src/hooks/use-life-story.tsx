@@ -18,6 +18,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
   const [openQuestions, setOpenQuestions] = useState<Set<string>>(new Set());
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [pendingSave, setPendingSave] = useState(false);
 
   // CORRECTION CRITIQUE: Déterminer l'utilisateur cible de manière cohérente
   const effectiveUserId = targetUserId || user?.id;
@@ -226,6 +227,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     try {
       setIsSaving(true);
+      setPendingSave(false);
       console.log('💾 Sauvegarde de l\'histoire de vie pour user_id:', {
         effectiveUserId,
         currentDataUserId: data.user_id
@@ -342,16 +344,26 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       
       setLastSaved(new Date());
       toast({
-        title: 'Succès',
-        description: 'Histoire de vie sauvegardée !',
+        title: 'Sauvegarde réussie',
+        description: 'Votre histoire de vie a été sauvegardée automatiquement !',
+        duration: 2000
       });
     } catch (error: any) {
       console.error('❌ Erreur sauvegarde:', error);
+      setPendingSave(true); // Marquer qu'une sauvegarde est en attente
       toast({
-        title: 'Erreur',
-        description: `Impossible de sauvegarder l'histoire de vie : ${error.message}`,
+        title: 'Erreur de sauvegarde',
+        description: `Impossible de sauvegarder: ${error.message}. Réessai automatique en cours...`,
         variant: 'destructive',
       });
+      
+      // Réessayer la sauvegarde après un délai
+      setTimeout(() => {
+        if (!isSaving && pendingSave) {
+          console.log('🔄 Nouvelle tentative de sauvegarde automatique');
+          saveNow();
+        }
+      }, 3000);
     } finally {
       setIsSaving(false);
     }
@@ -496,38 +508,43 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     // CORRECTION: Mettre à jour l'état local immédiatement
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Sauvegarde automatique IMMÉDIATE avec gestion des conflits
+    // SAUVEGARDE AUTOMATIQUE IMMÉDIATE pour les nouveaux audios
     if (validAudioPath) {
-      console.log('💾 NOUVEAU AUDIO - Déclenchement sauvegarde IMMÉDIATE pour nouvel enregistrement audio');
+      console.log('💾 NOUVEAU AUDIO - Sauvegarde automatique IMMÉDIATE pour:', { chapterId, questionId });
       
-      // Utiliser un délai très court pour permettre à l'état de se stabiliser
+      // Sauvegarde immédiate sans délai pour les nouveaux audios
       setTimeout(() => {
         if (!isSaving) {
-          console.log('✅ Exécution de la sauvegarde automatique pour nouvel audio');
+          console.log('✅ Exécution immédiate de la sauvegarde automatique pour nouvel audio');
           saveNow();
         } else {
-          console.log('⏳ Sauvegarde déjà en cours, programmation d\'une sauvegarde différée');
-          // Si une sauvegarde est en cours, programmer une sauvegarde différée
-          const retrySave = () => {
+          console.log('⏳ Sauvegarde en cours, programmation d\'une sauvegarde différée');
+          // Marquer qu'une sauvegarde est en attente
+          setPendingSave(true);
+          
+          // Vérifier périodiquement si on peut sauvegarder
+          const checkAndSave = () => {
             setTimeout(() => {
-              if (!isSaving) {
+              if (!isSaving && pendingSave) {
                 console.log('✅ Exécution différée de la sauvegarde automatique pour nouvel audio');
                 saveNow();
-              } else {
-                // Réessayer encore une fois
-                retrySave();
+              } else if (isSaving) {
+                // Réessayer si encore en cours de sauvegarde
+                checkAndSave();
               }
             }, 500);
           };
-          retrySave();
+          checkAndSave();
         }
-      }, 200); // Délai légèrement plus long pour la stabilisation de l'état
+      }, 50); // Délai très court pour la stabilisation
     } else {
       // Pour la suppression d'audio, sauvegarde normale
       console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
       setTimeout(() => {
         if (!isSaving) {
           saveNow();
+        } else {
+          setPendingSave(true);
         }
       }, 100);
     }
@@ -564,6 +581,20 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       setIsLoading(false);
     }
   }, [effectiveUserId, user?.id]); // DÉPENDANCES CRITIQUES
+
+  // Effet pour sauvegarder automatiquement les changements en attente
+  useEffect(() => {
+    if (pendingSave && !isSaving && !isLoading) {
+      console.log('🔄 Traitement d\'une sauvegarde en attente');
+      const timer = setTimeout(() => {
+        if (pendingSave && !isSaving) {
+          saveNow();
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pendingSave, isSaving, isLoading]);
 
   return {
     data,
