@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { initialChapters } from '@/components/life-story/initialChapters';
 
 interface UseLifeStoryProps {
-  targetUserId?: string;
+  targetUserId?: string | null;
 }
 
 export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
@@ -60,7 +60,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           matchesRequest: storyData.user_id === userId
         });
         
-        // VALIDATION CRITIQUE: Vérifier que les données correspondent bien à l'utilisateur demandé
         if (storyData.user_id !== userId) {
           console.error('❌ ERREUR CRITIQUE: les données chargées ne correspondent pas à l\'utilisateur demandé', {
             expected: userId,
@@ -84,7 +83,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           parsedChapters = initialChapters;
         }
 
-        // CORRECTION: Meilleure gestion des chemins audio lors du chargement
+        // Meilleure gestion des chemins audio lors du chargement
         const mergedChapters = initialChapters.map(initialChapter => {
           const existingChapter = parsedChapters.find(ch => ch.id === initialChapter.id);
           
@@ -93,14 +92,12 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
               const existingQuestion = existingChapter.questions?.find(q => q.id === initialQuestion.id);
               
               if (existingQuestion) {
-                // CORRECTION: Validation stricte des chemins audio
                 let validAudioUrl = null;
                 if (existingQuestion.audioUrl && 
                     typeof existingQuestion.audioUrl === 'string' && 
                     existingQuestion.audioUrl.trim() !== '') {
                   validAudioUrl = existingQuestion.audioUrl.trim();
                   
-                  // LOG DÉTAILLÉ pour question 1 chapitre 1
                   if (initialChapter.id === 'chapter-1' && initialQuestion.id === 'question-1') {
                     console.log('🎵 LOAD - Question 1 Chapitre 1 - Audio trouvé:', {
                       questionId: initialQuestion.id,
@@ -114,7 +111,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
                     });
                   }
                 } else {
-                  // LOG DÉTAILLÉ pour question 1 chapitre 1
                   if (initialChapter.id === 'chapter-1' && initialQuestion.id === 'question-1') {
                     console.log('🎵 LOAD - Question 1 Chapitre 1 - Pas d\'audio valide:', {
                       questionId: initialQuestion.id,
@@ -199,7 +195,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       return;
     }
     
-    // Vérifier les permissions avant la sauvegarde
     const isAdmin = hasRole('admin');
     const isOwnStory = effectiveUserId === user.id;
     
@@ -213,14 +208,12 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       return;
     }
 
-    // CORRECTION CRITIQUE: S'assurer que data.user_id correspond à effectiveUserId
     if (data.user_id !== effectiveUserId) {
       console.warn('⚠️ CORRECTION de l\'user_id incohérent:', {
         currentDataUserId: data.user_id,
         expectedUserId: effectiveUserId
       });
       
-      // Mettre à jour les données locales pour corriger l'incohérence
       setData(prev => prev ? { ...prev, user_id: effectiveUserId } : null);
     }
 
@@ -231,7 +224,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         currentDataUserId: data.user_id
       });
 
-      // LOG DÉTAILLÉ pour question 1 chapitre 1 avant sauvegarde
       const chapter1 = data.chapters.find(ch => ch.id === 'chapter-1');
       const question1 = chapter1?.questions.find(q => q.id === 'question-1');
       if (question1) {
@@ -245,16 +237,13 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         });
       }
 
-      // Préparer les données pour la sauvegarde - PRÉSERVER les chemins audio existants
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions.map(question => {
-          // CORRECTION: Sauvegarder le chemin relatif au lieu de l'URL complète
           const normalizedAudioPath = question.audioUrl && question.audioUrl.trim() !== '' 
             ? question.audioUrl 
             : null;
           
-          // LOG DÉTAILLÉ pour question 1 chapitre 1
           if (chapter.id === 'chapter-1' && question.id === 'question-1') {
             console.log('🎵 SAVE - Question 1 Chapitre 1 - Normalisation audio:', {
               questionId: question.id,
@@ -268,12 +257,11 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
             id: question.id,
             text: question.text,
             answer: question.answer || '',
-            audioUrl: normalizedAudioPath, // Maintenant c'est un chemin relatif
+            audioUrl: normalizedAudioPath,
           };
         })
       }));
 
-      // LOG DÉTAILLÉ pour question 1 chapitre 1 dans les données finales
       const chapter1ToSave = chaptersToSave.find(ch => ch.id === 'chapter-1');
       const question1ToSave = chapter1ToSave?.questions.find(q => q.id === 'question-1');
       if (question1ToSave) {
@@ -286,7 +274,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       }
 
       const dataToSave = {
-        user_id: effectiveUserId, // UTILISER effectiveUserId de manière cohérente
+        user_id: effectiveUserId,
         title: data.title,
         chapters: JSON.stringify(chaptersToSave),
         updated_at: new Date().toISOString(),
@@ -320,7 +308,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         expectedUserId: effectiveUserId
       });
       
-      // VALIDATION POST-SAUVEGARDE: Vérifier la cohérence
       if (savedData?.user_id !== effectiveUserId) {
         console.error('❌ ERREUR CRITIQUE: user_id incohérent après sauvegarde:', {
           saved: savedData?.user_id,
@@ -329,12 +316,11 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         throw new Error('Incohérence des données après sauvegarde');
       }
       
-      // Mettre à jour les données locales avec l'ID retourné et s'assurer de la cohérence
       if (savedData && savedData.id) {
         setData(prevData => ({
           ...prevData!,
           id: savedData.id,
-          user_id: effectiveUserId, // S'assurer que l'user_id est cohérent
+          user_id: effectiveUserId,
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
         }));
@@ -369,12 +355,10 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     });
   };
 
-  // CORRECTION: handleQuestionFocus doit accepter chapterId et questionId
   const handleQuestionFocus = (chapterId: string, questionId: string) => {
     setActiveQuestion(questionId);
   };
 
-  // CORRECTION: updateAnswer doit accepter chapterId et questionId
   const updateAnswer = (chapterId: string, questionId: string, answer: string) => {
     if (!data) return;
 
@@ -392,11 +376,9 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     setData({ ...data, chapters: updatedChapters });
   };
 
-  // CORRECTION: handleAudioRecorded doit accepter chapterId et questionId
   const handleAudioRecorded = (chapterId: string, questionId: string, audioBlob: Blob, audioPath?: string) => {
     if (!data) return;
 
-    // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🎤 RECORD - Question 1 Chapitre 1 - Audio enregistré (HOOK):', {
         chapterId,
@@ -423,11 +405,9 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     setData({ ...data, chapters: updatedChapters });
   };
 
-  // CORRECTION: handleAudioDeleted doit accepter chapterId et questionId
   const handleAudioDeleted = (chapterId: string, questionId: string) => {
     if (!data) return;
 
-    // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🗑️ DELETE - Question 1 Chapitre 1 - Audio supprimé:', {
         chapterId,
@@ -451,7 +431,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Sauvegarde automatique pour la suppression
     console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
     setTimeout(() => {
       if (!isSaving) {
@@ -460,11 +439,9 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }, 100);
   };
 
-  // CORRECTION: handleAudioUrlChange doit accepter chapterId et questionId
   const handleAudioUrlChange = (chapterId: string, questionId: string, audioPath: string | null) => {
     if (!data) return;
 
-    // LOG DÉTAILLÉ pour question 1 chapitre 1
     if (chapterId === 'chapter-1' && questionId === 'question-1') {
       console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Changement chemin audio (HOOK):', {
         chapterId,
@@ -477,7 +454,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       });
     }
 
-    // CORRECTION: Validation stricte du chemin audio
     const validAudioPath = (audioPath && typeof audioPath === 'string' && audioPath.trim() !== '') 
       ? audioPath.trim() 
       : null;
@@ -495,7 +471,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Toujours sauvegarder les changements d'URL audio
     console.log('💾 Déclenchement sauvegarde automatique pour changement URL audio (HOOK)');
     setTimeout(() => {
       if (!isSaving) {
@@ -504,7 +479,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     }, 100);
   };
 
-  // Calculer le progrès
   const progress = data ? (() => {
     const totalQuestions = data.chapters.reduce((sum, chapter) => sum + chapter.questions.length, 0);
     const answeredQuestions = data.chapters.reduce((sum, chapter) => 
@@ -513,7 +487,6 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     return { totalQuestions, answeredQuestions };
   })() : { totalQuestions: 0, answeredQuestions: 0 };
 
-  // EFFET PRINCIPAL: Charger l'histoire quand effectiveUserId change
   useEffect(() => {
     console.log('🔄 useEffect déclenché:', {
       effectiveUserId,
@@ -534,7 +507,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
       setData(null);
       setIsLoading(false);
     }
-  }, [effectiveUserId, user?.id]); // DÉPENDANCES CRITIQUES
+  }, [effectiveUserId, user?.id]);
 
   return {
     data,

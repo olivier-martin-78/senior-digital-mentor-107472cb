@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LifeStory } from '@/types/lifeStory';
 import { useLifeStory } from '@/hooks/use-life-story';
@@ -10,15 +9,14 @@ import { initialChapters } from './initialChapters';
 interface LifeStoryFormProps {
   existingStory?: LifeStory;
   isReadOnly?: boolean;
+  targetUserId?: string | null;
 }
 
 export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({ 
   existingStory,
-  isReadOnly = false 
+  isReadOnly = false,
+  targetUserId 
 }) => {
-  // Déterminer l'utilisateur cible depuis l'histoire existante
-  const targetUserId = existingStory?.user_id;
-
   // En mode lecture seule (admin), utiliser directement les données existantes sans hook
   if (isReadOnly && existingStory) {
     // Mélanger les chapitres initiaux avec les données existantes pour préserver les réponses
@@ -101,7 +99,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
     );
   }
 
-  // Mode normal avec hook pour l'édition
+  // Mode normal avec hook pour l'édition - passer targetUserId au hook
   const lifeStoryHook = useLifeStory({ targetUserId });
   
   console.log('Chapitres dans LifeStoryForm:', lifeStoryHook.data?.chapters);
