@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,8 @@ const InterventionReportForm: React.FC = () => {
     reportId,
     handleAudioRecorded,
     handleAudioUrlGenerated,
-    isRecording, // État d'enregistrement pour les protections
+    isRecording,
+    setIsRecording,
   } = useInterventionForm();
 
   const handleMediaChange = (mediaFiles: any[]) => {
@@ -50,6 +52,11 @@ const InterventionReportForm: React.FC = () => {
     }
     
     await handleSubmit(e);
+  };
+
+  const handleRecordingStateChange = (recordingState: boolean) => {
+    console.log('🎤 FORM_COMPONENT - État enregistrement changé:', recordingState);
+    setIsRecording(recordingState);
   };
 
   if (loadingData) {
@@ -146,6 +153,7 @@ const InterventionReportForm: React.FC = () => {
                   onAudioUrlGenerated={handleAudioUrlGenerated}
                   existingAudioUrl={formData.audio_url}
                   reportId={reportId || undefined}
+                  onRecordingStateChange={handleRecordingStateChange}
                 />
               </div>
             </div>

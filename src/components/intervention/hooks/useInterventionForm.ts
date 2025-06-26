@@ -3,13 +3,10 @@ import { useState } from 'react';
 import { useInterventionData } from './useInterventionData';
 import { useInterventionAudio } from './useInterventionAudio';
 import { useInterventionSubmit } from './useInterventionSubmit';
-import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 
 export const useInterventionForm = () => {
   const [loading, setLoading] = useState(false);
-  
-  // Surveiller l'état d'enregistrement pour empêcher la soumission
-  const { isRecording } = useVoiceRecorder();
+  const [isRecording, setIsRecording] = useState(false);
   
   const {
     formData,
@@ -36,23 +33,23 @@ export const useInterventionForm = () => {
 
   const { handleSubmit: baseHandleSubmit } = useInterventionSubmit();
 
-  // Wrapper functions to pass setFormData
+  // Wrapper functions to pass setFormData and track recording state
   const handleAudioRecorded = (blob: Blob) => {
-    console.log('🎤 FORM - Audio enregistré, taille:', blob.size);
+    console.log('🎤 FORM_HOOK - Audio enregistré, taille:', blob.size);
     baseHandleAudioRecorded(blob, setFormData);
   };
 
   const handleAudioUrlGenerated = (url: string) => {
-    console.log('🎵 FORM - URL audio générée:', url);
+    console.log('🎵 FORM_HOOK - URL audio générée:', url);
     baseHandleAudioUrlGenerated(url, setFormData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('📝 FORM - Tentative de soumission, isRecording:', isRecording);
+    console.log('📝 FORM_HOOK - Tentative de soumission, isRecording:', isRecording);
     
     // CRITIQUE: Bloquer absolument si on enregistre
     if (isRecording) {
-      console.log('🚫 FORM - Soumission bloquée - enregistrement en cours');
+      console.log('🚫 FORM_HOOK - Soumission bloquée - enregistrement en cours');
       e.preventDefault();
       return false;
     }
@@ -63,7 +60,7 @@ export const useInterventionForm = () => {
       reportId,
       (reportId: string) => uploadAudioIfNeeded(reportId, formData.audio_url),
       setLoading,
-      isRecording // Passer l'état d'enregistrement
+      isRecording
     );
     
     return result;
@@ -86,6 +83,7 @@ export const useInterventionForm = () => {
     handleSubmit,
     handleAudioRecorded,
     handleAudioUrlGenerated,
-    isRecording, // Exposer l'état d'enregistrement
+    isRecording,
+    setIsRecording, // Exposer pour que les composants audio puissent mettre à jour l'état
   };
 };

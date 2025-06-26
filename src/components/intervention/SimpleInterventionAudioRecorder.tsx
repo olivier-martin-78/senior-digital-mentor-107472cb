@@ -10,13 +10,17 @@ import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 interface SimpleInterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
   onAudioUrlGenerated?: (url: string) => void;
+  existingAudioUrl?: string | null;
   reportId?: string;
+  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
 const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderProps> = ({
   onAudioRecorded,
   onAudioUrlGenerated,
-  reportId
+  existingAudioUrl,
+  reportId,
+  onRecordingStateChange
 }) => {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,7 +33,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     hasUser: !!user,
     reportId,
     isUploading,
-    uploadedAudioUrl,
+    uploadedAudioUrl: uploadedAudioUrl || existingAudioUrl,
     hasProcessed: hasProcessedRef.current
   });
 
@@ -42,6 +46,13 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     stopRecording,
     clearRecording
   } = useSimpleAudioRecorder();
+
+  // Notifier le parent de l'état d'enregistrement
+  useEffect(() => {
+    if (onRecordingStateChange) {
+      onRecordingStateChange(isRecording);
+    }
+  }, [isRecording, onRecordingStateChange]);
 
   // CRITIQUE: Traitement du blob audio quand il est disponible
   useEffect(() => {
@@ -219,9 +230,9 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Utiliser l'URL uploadée ou l'URL locale
-  const currentAudioUrl = uploadedAudioUrl || audioUrl;
-  const hasAudio = !!(currentAudioUrl && audioBlob && audioBlob.size > 0);
+  // Utiliser l'URL uploadée, l'URL existante ou l'URL locale
+  const currentAudioUrl = uploadedAudioUrl || existingAudioUrl || audioUrl;
+  const hasAudio = !!(currentAudioUrl && (audioBlob?.size > 0 || existingAudioUrl));
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">
@@ -295,13 +306,13 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       </div>
 
       {/* Messages d'état */}
-      {uploadedAudioUrl && !isUploading && (
+      {(uploadedAudioUrl || existingAudioUrl) && !isUploading && (
         <div className="py-2 bg-green-50 rounded-md text-center">
           <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
         </div>
       )}
       
-      {!reportId && hasAudio && !isUploading && (
+      {!reportId && hasAudio && !isUploading && !existingAudioUrl && (
         <div className="py-2 bg-yellow-50 rounded-md text-center">
           <span className="text-sm text-yellow-700">⚠ Audio sera sauvegardé avec le rapport</span>
         </div>
