@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import Index from '@/pages/Index';
 import Profile from '@/pages/Profile';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminPosts from '@/pages/admin/AdminPosts';
@@ -36,6 +37,7 @@ import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
+import TranslationGame from '@/pages/activities/TranslationGame';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
@@ -54,6 +56,9 @@ const PrivateApp: React.FC = () => {
       <Toaster />
       <div className="min-h-screen">
         <Routes>
+          {/* Page d'accueil pour les utilisateurs connectés */}
+          <Route path="/" element={<Index />} />
+          
           {/* Public subscription route for non-authenticated users */}
           {!user && <Route path="/subscription" element={<PublicSubscription />} />}
           
@@ -88,6 +93,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/opposites" element={<OppositesGame />} />
             <Route path="/activities/sudoku" element={<SudokuGame />} />
             <Route path="/activities/crossword" element={<CrosswordGame />} />
+            <Route path="/activities/translation" element={<TranslationGame />} />
           </Route>
 
           {/* Admin routes - require admin role */}
