@@ -36,24 +36,6 @@ export const uploadInterventionAudio = async (
 
     console.log('🔄 AUDIO_UTILS - Upload vers:', filePath);
 
-    // Vérifier/créer le bucket
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const interventionBucketExists = buckets?.some(bucket => bucket.name === 'intervention-audios');
-
-    if (!interventionBucketExists) {
-      console.log('🔄 AUDIO_UTILS - Création du bucket intervention-audios');
-      const { error: bucketError } = await supabase.storage.createBucket('intervention-audios', {
-        public: true,
-        allowedMimeTypes: ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg'],
-        fileSizeLimit: 50 * 1024 * 1024 // 50MB
-      });
-
-      if (bucketError) {
-        console.error('❌ AUDIO_UTILS - Erreur création bucket:', bucketError);
-        throw new Error(`Erreur lors de la création du bucket: ${bucketError.message}`);
-      }
-    }
-
     // Upload du fichier avec retry
     let uploadAttempt = 0;
     const maxRetries = 3;
