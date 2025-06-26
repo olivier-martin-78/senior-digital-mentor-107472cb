@@ -20,7 +20,7 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
       
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-16">
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-20">
         <div className="max-w-3xl">
           <p className="text-xl md:text-2xl text-white mb-8">
             Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
