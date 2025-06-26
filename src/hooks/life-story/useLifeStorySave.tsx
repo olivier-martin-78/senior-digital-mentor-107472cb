@@ -42,7 +42,7 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       return;
     }
 
-    // S'assurer que data.user_id correspond à effectiveUserId
+    // CORRECTION CRITIQUE: S'assurer que data.user_id correspond à effectiveUserId
     if (data.user_id !== effectiveUserId) {
       console.warn('⚠️ CORRECTION de l\'user_id incohérent:', {
         currentDataUserId: data.user_id,
@@ -50,7 +50,7 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       });
       
       // Mettre à jour les données locales pour corriger l'incohérence
-      setData({ ...data, user_id: effectiveUserId });
+      setData(prev => prev ? { ...prev, user_id: effectiveUserId } : null);
     }
 
     try {
@@ -75,45 +75,22 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
         });
       }
 
-      // Préparer les données pour la sauvegarde - S'assurer que seuls les chemins relatifs sont sauvegardés
+      // Préparer les données pour la sauvegarde - PRÉSERVER les chemins audio existants
       const chaptersToSave = data.chapters.map(chapter => ({
         ...chapter,
         questions: chapter.questions.map(question => {
-          // CORRECTION: S'assurer que seuls les chemins relatifs sont sauvegardés
-          let relativePath: string | null = null;
-          
-          if (question.audioUrl && question.audioUrl.trim() !== '') {
-            const trimmedUrl = question.audioUrl.trim();
-            
-            // Si c'est déjà un chemin relatif, l'utiliser tel quel
-            if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
-              relativePath = trimmedUrl;
-            } else {
-              // Extraire le chemin relatif d'une URL complète
-              try {
-                const url = new URL(trimmedUrl);
-                const pathParts = url.pathname.split('/');
-                const bucketIndex = pathParts.findIndex(part => part === 'life-story-audios');
-                if (bucketIndex !== -1 && bucketIndex + 1 < pathParts.length) {
-                  relativePath = pathParts.slice(bucketIndex + 1).join('/');
-                } else {
-                  // Fallback: prendre juste le nom du fichier
-                  relativePath = pathParts[pathParts.length - 1] || null;
-                }
-              } catch (error) {
-                console.warn('Erreur extraction chemin relatif lors de la sauvegarde:', error);
-                relativePath = trimmedUrl;
-              }
-            }
-          }
+          // CORRECTION: Sauvegarder le chemin relatif au lieu de l'URL complète
+          const normalizedAudioPath = question.audioUrl && question.audioUrl.trim() !== '' 
+            ? question.audioUrl 
+            : null;
           
           // LOG DÉTAILLÉ pour question 1 chapitre 1
           if (chapter.id === 'chapter-1' && question.id === 'question-1') {
             console.log('🎵 SAVE - Question 1 Chapitre 1 - Normalisation audio:', {
               questionId: question.id,
               originalAudioUrl: question.audioUrl,
-              extractedRelativePath: relativePath,
-              willSaveAudio: !!relativePath
+              normalizedAudioPath,
+              willSaveAudio: !!normalizedAudioPath
             });
           }
           
@@ -121,7 +98,7 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
             id: question.id,
             text: question.text,
             answer: question.answer || '',
-            audioUrl: relativePath, // Sauvegarder uniquement le chemin relatif
+            audioUrl: normalizedAudioPath, // Maintenant c'est un chemin relatif
           };
         })
       }));
@@ -139,7 +116,7 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       }
 
       const dataToSave = {
-        user_id: effectiveUserId,
+        user_id: effectiveUserId, // UTILISER effectiveUserId de manière cohérente
         title: data.title,
         chapters: JSON.stringify(chaptersToSave),
         updated_at: new Date().toISOString(),
@@ -184,13 +161,13 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       
       // Mettre à jour les données locales avec l'ID retourné et s'assurer de la cohérence
       if (savedData && savedData.id) {
-        setData({
-          ...data,
+        setData(prevData => ({
+          ...prevData!,
           id: savedData.id,
-          user_id: effectiveUserId,
+          user_id: effectiveUserId, // S'assurer que l'user_id est cohérent
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
-        });
+        }));
       }
       
       setLastSaved(new Date());
@@ -201,7 +178,7 @@ export const useLifeStorySave = ({ data, setData, effectiveUserId, hasRole }: Us
       });
     } catch (error: any) {
       console.error('❌ Erreur sauvegarde:', error);
-      setPendingSave(true);
+      setPendingSave(true); // Marquer qu'une sauvegarde est en attente
       toast({
         title: 'Erreur de sauvegarde',
         description: `Impossible de sauvegarder: ${error.message}. Réessai automatique en cours...`,
