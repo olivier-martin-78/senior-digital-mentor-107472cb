@@ -107,21 +107,22 @@ const AudioRecorderCore: React.FC<AudioRecorderCoreProps> = ({
         user.id,
         chapterId,
         questionId,
-        (publicUrl) => {
+        (relativePath) => {
           if (isMounted.current && currentUploadRef.current === uploadKey) {
             if (shouldLog && chapterId === 'chapter-1' && questionId === 'question-1') {
-              console.log(`🎙️ AUDIO_RECORDER_CORE - Question 1 Chapitre 1 - ✅ Upload réussi, URL:`, {
-                publicUrl,
-                urlType: typeof publicUrl,
-                urlLength: publicUrl?.length
+              console.log(`🎙️ AUDIO_RECORDER_CORE - Question 1 Chapitre 1 - ✅ Upload réussi, chemin relatif:`, {
+                relativePath,
+                pathType: typeof relativePath,
+                pathLength: relativePath?.length
               });
             }
-            onAudioUrlUpdate(publicUrl);
+            
+            // CORRECTION: Transmettre le chemin relatif au lieu de l'URL complète
+            onAudioUrlChange(chapterId, questionId, relativePath, false);
+            onAudioUrlUpdate(relativePath);
             onUploadStateChange(false);
             onSavingStateChange(true);
             currentUploadRef.current = null;
-
-            onAudioUrlChange(chapterId, questionId, publicUrl, false);
 
             setTimeout(() => {
               if (isMounted.current) {

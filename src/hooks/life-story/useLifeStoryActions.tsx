@@ -10,6 +10,39 @@ interface UseLifeStoryActionsProps {
   effectiveUserId?: string;
 }
 
+// Fonction utilitaire pour extraire le chemin relatif d'une URL complète
+const extractRelativePath = (audioUrl: string | null): string | null => {
+  if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim() === '') {
+    return null;
+  }
+  
+  const trimmed = audioUrl.trim();
+  
+  // Si c'est déjà un chemin relatif (pas d'http/https), le retourner tel quel
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  
+  // Extraire le chemin relatif depuis une URL complète
+  try {
+    const url = new URL(trimmed);
+    const pathParts = url.pathname.split('/');
+    
+    // Chercher le bucket name dans le chemin
+    const bucketIndex = pathParts.findIndex(part => part === 'life-story-audios');
+    if (bucketIndex !== -1 && bucketIndex + 1 < pathParts.length) {
+      // Retourner tout ce qui vient après le nom du bucket
+      return pathParts.slice(bucketIndex + 1).join('/');
+    }
+    
+    // Fallback: prendre juste le nom du fichier
+    return pathParts[pathParts.length - 1] || null;
+  } catch (error) {
+    console.warn('Erreur lors de l\'extraction du chemin relatif:', error);
+    return trimmed;
+  }
+};
+
 export const useLifeStoryActions = ({ 
   data, 
   setData, 
@@ -93,7 +126,7 @@ export const useLifeStoryActions = ({
 
     setData({ ...data, chapters: updatedChapters });
     
-    // CORRECTION: Sauvegarde automatique pour la suppression
+    // Sauvegarde automatique pour la suppression
     console.log('💾 Déclenchement sauvegarde automatique pour suppression audio');
     setTimeout(() => {
       if (!isSaving) {
@@ -118,27 +151,33 @@ export const useLifeStoryActions = ({
       });
     }
 
-    // CORRECTION: Validation stricte du chemin audio
-    const validAudioPath = (audioPath && typeof audioPath === 'string' && audioPath.trim() !== '') 
-      ? audioPath.trim() 
-      : null;
+    // CORRECTION: Extraire le chemin relatif et validation stricte
+    const validRelativePath = extractRelativePath(audioPath);
+    
+    if (chapterId === 'chapter-1' && questionId === 'question-1') {
+      console.log('🔄 URL_CHANGE - Question 1 Chapitre 1 - Chemin relatif extrait:', {
+        originalPath: audioPath,
+        extractedPath: validRelativePath,
+        isValidPath: !!validRelativePath
+      });
+    }
 
     const updatedChapters = data.chapters.map(chapter => 
       chapter.id === chapterId ? {
         ...chapter,
         questions: chapter.questions.map(question =>
           question.id === questionId 
-            ? { ...question, audioUrl: validAudioPath } 
+            ? { ...question, audioUrl: validRelativePath } 
             : question
         )
       } : chapter
     );
 
-    // CORRECTION: Mettre à jour l'état local immédiatement
+    // Mettre à jour l'état local immédiatement
     setData({ ...data, chapters: updatedChapters });
     
     // SAUVEGARDE AUTOMATIQUE IMMÉDIATE pour les nouveaux audios
-    if (validAudioPath) {
+    if (validRelativePath) {
       console.log('💾 NOUVEAU AUDIO - Sauvegarde automatique IMMÉDIATE pour:', { chapterId, questionId });
       
       // Sauvegarde immédiate sans délai pour les nouveaux audios
