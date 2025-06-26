@@ -1,7 +1,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Trash2 } from 'lucide-react';
+import { Play, Pause, Trash2, Download } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import AudioPlayerCore from './audio/AudioPlayerCore';
 
 interface VoiceAnswerPlayerProps {
@@ -47,19 +48,69 @@ const VoiceAnswerPlayer: React.FC<VoiceAnswerPlayerProps> = ({
     setIsPlaying(false);
   }, [shouldLog]);
 
+  const handleExportAudio = useCallback(() => {
+    if (!audioUrl) {
+      toast({
+        title: "Erreur d'export",
+        description: "Aucun enregistrement audio disponible pour l'export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      
+      // Générer un nom de fichier avec timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const fileName = `histoire-de-vie-audio-${timestamp}.webm`;
+      
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Export réussi",
+        description: "L'enregistrement audio a été téléchargé avec succès",
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'export audio:", error);
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter l'enregistrement audio",
+        variant: "destructive",
+      });
+    }
+  }, [audioUrl]);
+
   return (
     <div className="space-y-3">
-      {!readOnly && onDelete && (
-        <div className="flex justify-end">
-          <Button
-            onClick={onDelete}
-            variant="outline"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
+      {!readOnly && (onDelete || audioUrl) && (
+        <div className="flex justify-end gap-2">
+          {audioUrl && (
+            <Button
+              onClick={handleExportAudio}
+              variant="outline"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exporter
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              onClick={onDelete}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Supprimer
+            </Button>
+          )}
         </div>
       )}
       

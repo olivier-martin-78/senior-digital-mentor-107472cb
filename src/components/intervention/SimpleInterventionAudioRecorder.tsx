@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash2, Play, Pause } from 'lucide-react';
+import { Mic, Square, Trash2, Play, Pause, Download } from 'lucide-react';
 import { useSimpleAudioRecorder } from '@/hooks/use-simple-audio-recorder';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -224,6 +223,48 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     }
   }, [isPlaying]);
 
+  const handleExportAudio = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!currentAudioUrl) {
+      toast({
+        title: "Erreur d'export",
+        description: "Aucun enregistrement audio disponible pour l'export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = currentAudioUrl;
+      
+      // Générer un nom de fichier avec timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const fileName = reportId 
+        ? `rapport-intervention-${reportId}-${timestamp}.webm`
+        : `enregistrement-intervention-${timestamp}.webm`;
+      
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Export réussi",
+        description: "L'enregistrement audio a été téléchargé avec succès",
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'export audio:", error);
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter l'enregistrement audio",
+        variant: "destructive",
+      });
+    }
+  }, [currentAudioUrl, reportId]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -290,6 +331,16 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               {isPlaying ? 'Pause' : 'Écouter'}
+            </Button>
+            
+            <Button
+              type="button"
+              onClick={handleExportAudio}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Exporter
             </Button>
             
             <Button
