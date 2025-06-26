@@ -1,6 +1,5 @@
 
 import React from 'react';
-import HeaderWrapper from '@/components/HeaderWrapper';
 import HeroSection from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 import ProblemSolutionSection from '@/components/homepage/ProblemSolutionSection';
@@ -14,7 +13,6 @@ import CTASection from '@/components/homepage/CTASection';
 const Index = () => {
   return (
     <div className="min-h-screen bg-white">
-      <HeaderWrapper />
       <HeroSection />
       <ProblemSolutionSection />
       <FeaturesSection />
