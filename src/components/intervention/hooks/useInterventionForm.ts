@@ -8,7 +8,7 @@ import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
 export const useInterventionForm = () => {
   const [loading, setLoading] = useState(false);
   
-  // Ajouter le hook d'enregistrement vocal pour surveiller l'état
+  // Surveiller l'état d'enregistrement pour empêcher la soumission
   const { isRecording } = useVoiceRecorder();
   
   const {
@@ -38,22 +38,35 @@ export const useInterventionForm = () => {
 
   // Wrapper functions to pass setFormData
   const handleAudioRecorded = (blob: Blob) => {
+    console.log('🎤 FORM - Audio enregistré, taille:', blob.size);
     baseHandleAudioRecorded(blob, setFormData);
   };
 
   const handleAudioUrlGenerated = (url: string) => {
+    console.log('🎵 FORM - URL audio générée:', url);
     baseHandleAudioUrlGenerated(url, setFormData);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    return baseHandleSubmit(
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log('📝 FORM - Tentative de soumission, isRecording:', isRecording);
+    
+    // CRITIQUE: Bloquer absolument si on enregistre
+    if (isRecording) {
+      console.log('🚫 FORM - Soumission bloquée - enregistrement en cours');
+      e.preventDefault();
+      return false;
+    }
+    
+    const result = await baseHandleSubmit(
       e,
       formData,
       reportId,
       (reportId: string) => uploadAudioIfNeeded(reportId, formData.audio_url),
       setLoading,
-      isRecording // NOUVEAU: Passer l'état d'enregistrement
+      isRecording // Passer l'état d'enregistrement
     );
+    
+    return result;
   };
 
   return {
@@ -73,6 +86,6 @@ export const useInterventionForm = () => {
     handleSubmit,
     handleAudioRecorded,
     handleAudioUrlGenerated,
-    isRecording, // NOUVEAU: Exposer l'état d'enregistrement
+    isRecording, // Exposer l'état d'enregistrement
   };
 };

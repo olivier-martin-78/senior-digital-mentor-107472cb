@@ -2,30 +2,35 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Trash2, Play, Pause } from 'lucide-react';
-import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
+import { useSimpleAudioRecorder } from '@/hooks/use-simple-audio-recorder';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
 
 interface SimpleInterventionAudioRecorderProps {
-  onAudioChange: (audioBlob: Blob | null, audioUrl: string | null) => void;
-  existingAudioUrl?: string | null;
-  disabled?: boolean;
+  onAudioRecorded: (blob: Blob) => void;
+  onAudioUrlGenerated?: (url: string) => void;
+  reportId?: string;
 }
 
 const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderProps> = ({
-  onAudioChange,
-  existingAudioUrl,
-  disabled = false
+  onAudioRecorded,
+  onAudioUrlGenerated,
+  reportId
 }) => {
+  const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  
-  // États locaux pour éviter les re-renders du parent
-  const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(existingAudioUrl || null);
+  const hasProcessedRef = useRef(false);
 
-  console.log("🎯 SIMPLE_AUDIO - Render:", {
-    hasExistingUrl: !!existingAudioUrl,
-    hasLocalUrl: !!localAudioUrl,
-    disabled
+  console.log("🎯 SIMPLE_INTERVENTION - Render:", {
+    hasUser: !!user,
+    reportId,
+    isUploading,
+    uploadedAudioUrl,
+    hasProcessed: hasProcessedRef.current
   });
 
   const {
@@ -36,60 +41,166 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     startRecording,
     stopRecording,
     clearRecording
-  } = useVoiceRecorder();
+  } = useSimpleAudioRecorder();
 
-  // Gérer les changements d'audioBlob et audioUrl
+  // CRITIQUE: Traitement du blob audio quand il est disponible
   useEffect(() => {
-    if (audioBlob && audioUrl && audioBlob.size > 0) {
-      console.log("🎯 SIMPLE_AUDIO - Recording complete:", { blobSize: audioBlob.size, url: audioUrl });
+    if (audioBlob && audioBlob.size > 0 && !hasProcessedRef.current) {
+      console.log("🎯 SIMPLE_INTERVENTION - Nouveau blob détecté:", audioBlob.size, "octets");
       
-      setLocalAudioUrl(audioUrl);
+      hasProcessedRef.current = true;
       
-      // Notifier le parent immédiatement
-      console.log("🎯 SIMPLE_AUDIO - Notifying parent with blob:", audioBlob.size);
-      onAudioChange(audioBlob, audioUrl);
-    } else if (!audioBlob && !audioUrl) {
-      // L'enregistrement a été supprimé
-      setLocalAudioUrl(null);
-      onAudioChange(null, null);
+      // Notifier IMMÉDIATEMENT le parent
+      onAudioRecorded(audioBlob);
+      
+      // Si on a un reportId, uploader vers Supabase
+      if (reportId && user?.id) {
+        console.log("🎯 SIMPLE_INTERVENTION - Upload vers Supabase");
+        handleUpload(audioBlob);
+      } else {
+        console.log("🎯 SIMPLE_INTERVENTION - Pas d'upload (pas de reportId ou user)");
+        // Créer une URL temporaire pour la prévisualisation
+        const tempUrl = URL.createObjectURL(audioBlob);
+        if (onAudioUrlGenerated) {
+          onAudioUrlGenerated(tempUrl);
+        }
+      }
     }
-  }, [audioBlob, audioUrl, onAudioChange]);
+  }, [audioBlob, reportId, user?.id, onAudioRecorded, onAudioUrlGenerated]);
 
-  // CORRECTION: Simplifier le démarrage d'enregistrement
-  const handleStartRecording = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); // Empêcher la soumission du formulaire
-    e.stopPropagation(); // Empêcher la propagation de l'événement
-    
-    console.log("🎯 SIMPLE_AUDIO - Starting new recording");
-    setLocalAudioUrl(null);
-    startRecording();
-  }, [startRecording]);
+  // Reset du flag quand on démarre un nouvel enregistrement
+  useEffect(() => {
+    if (isRecording && hasProcessedRef.current) {
+      console.log("🔄 SIMPLE_INTERVENTION - Reset du flag pour nouvel enregistrement");
+      hasProcessedRef.current = false;
+      setUploadedAudioUrl(null);
+    }
+  }, [isRecording]);
 
-  // CORRECTION: Simplifier l'arrêt d'enregistrement  
-  const handleStopRecording = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); // Empêcher la soumission du formulaire
-    e.stopPropagation(); // Empêcher la propagation de l'événement
+  const handleUpload = async (blob: Blob) => {
+    if (!user?.id || !reportId || isUploading) {
+      return;
+    }
+
+    try {
+      console.log(`🎯 SIMPLE_INTERVENTION - Début upload, taille: ${blob.size} octets`);
+      
+      await uploadInterventionAudio(
+        blob,
+        user.id,
+        reportId,
+        // Callback de succès
+        (publicUrl) => {
+          console.log(`🎯 SIMPLE_INTERVENTION - ✅ Upload réussi:`, publicUrl);
+          setUploadedAudioUrl(publicUrl);
+          
+          if (onAudioUrlGenerated) {
+            onAudioUrlGenerated(publicUrl);
+          }
+          
+          toast({
+            title: "Enregistrement sauvegardé",
+            description: "Votre enregistrement vocal a été sauvegardé avec succès",
+            duration: 2000
+          });
+        },
+        // Callback d'erreur
+        (errorMessage) => {
+          console.error(`🎯 SIMPLE_INTERVENTION - ❌ Erreur upload:`, errorMessage);
+          
+          // Fallback : URL temporaire
+          const tempUrl = URL.createObjectURL(blob);
+          if (onAudioUrlGenerated) {
+            onAudioUrlGenerated(tempUrl);
+          }
+          
+          toast({
+            title: "Enregistrement temporaire",
+            description: "L'enregistrement est sauvé localement. Il sera uploadé lors de la sauvegarde du rapport.",
+            variant: "default",
+          });
+        },
+        // Callback de début d'upload
+        () => {
+          console.log(`🎯 SIMPLE_INTERVENTION - 📤 Début upload`);
+          setIsUploading(true);
+        },
+        // Callback de fin d'upload
+        () => {
+          console.log(`🎯 SIMPLE_INTERVENTION - 📥 Fin upload`);
+          setIsUploading(false);
+        }
+      );
+    } catch (error) {
+      console.error(`🎯 SIMPLE_INTERVENTION - 💥 Erreur non gérée:`, error);
+      setIsUploading(false);
+    }
+  };
+
+  const handleStartRecording = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    console.log("🎯 SIMPLE_AUDIO - Stopping recording");
-    stopRecording();
+    console.log("🎯 SIMPLE_INTERVENTION - Début enregistrement demandé");
+    
+    if (!user?.id) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour enregistrer un audio",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Reset des états
+    setUploadedAudioUrl(null);
+    hasProcessedRef.current = false;
+    
+    try {
+      await startRecording();
+      console.log("🎯 SIMPLE_INTERVENTION - Enregistrement démarré avec succès");
+    } catch (error) {
+      console.error("🎯 SIMPLE_INTERVENTION - Erreur démarrage:", error);
+    }
+  }, [startRecording, user?.id]);
+
+  const handleStopRecording = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🎯 SIMPLE_INTERVENTION - Arrêt enregistrement demandé");
+    
+    try {
+      await stopRecording();
+      console.log("🎯 SIMPLE_INTERVENTION - Enregistrement arrêté avec succès");
+    } catch (error) {
+      console.error("🎯 SIMPLE_INTERVENTION - Erreur arrêt:", error);
+    }
   }, [stopRecording]);
 
   const handleClearRecording = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); // Empêcher la soumission du formulaire
-    e.stopPropagation(); // Empêcher la propagation de l'événement
+    e.preventDefault();
+    e.stopPropagation();
     
-    console.log("🎯 SIMPLE_AUDIO - Clearing recording");
+    console.log("🎯 SIMPLE_INTERVENTION - Suppression enregistrement");
+    
     clearRecording();
-    setLocalAudioUrl(null);
+    setUploadedAudioUrl(null);
+    hasProcessedRef.current = false;
     setIsPlaying(false);
     
-    // Notifier le parent de la suppression
-    onAudioChange(null, null);
-  }, [clearRecording, onAudioChange]);
+    // Notifier le parent avec un blob vide
+    const emptyBlob = new Blob([], { type: 'audio/webm' });
+    onAudioRecorded(emptyBlob);
+    
+    if (onAudioUrlGenerated) {
+      onAudioUrlGenerated('');
+    }
+  }, [clearRecording, onAudioRecorded, onAudioUrlGenerated]);
 
   const handlePlayPause = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); // Empêcher la soumission du formulaire
-    e.stopPropagation(); // Empêcher la propagation de l'événement
+    e.preventDefault();
+    e.stopPropagation();
     
     if (!audioRef.current) return;
 
@@ -102,14 +213,15 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     }
   }, [isPlaying]);
 
-  // Utiliser l'URL locale ou l'URL existante
-  const currentAudioUrl = localAudioUrl || audioUrl || existingAudioUrl;
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Utiliser l'URL uploadée ou l'URL locale
+  const currentAudioUrl = uploadedAudioUrl || audioUrl;
+  const hasAudio = !!(currentAudioUrl && audioBlob && audioBlob.size > 0);
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">
@@ -124,13 +236,20 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
         )}
       </div>
 
+      {/* États de chargement */}
+      {isUploading && (
+        <div className="flex items-center justify-center py-2 bg-blue-50 rounded-md">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+          <span className="text-sm text-blue-700">Sauvegarde en cours...</span>
+        </div>
+      )}
+
       {/* Contrôles d'enregistrement */}
       <div className="flex items-center gap-2">
-        {!isRecording && !currentAudioUrl && (
+        {!isRecording && !hasAudio && (
           <Button
             type="button"
             onClick={handleStartRecording}
-            disabled={disabled}
             className="flex items-center gap-2"
           >
             <Mic className="w-4 h-4" />
@@ -150,7 +269,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
           </Button>
         )}
 
-        {currentAudioUrl && !isRecording && (
+        {hasAudio && !isRecording && (
           <>
             <Button
               type="button"
@@ -174,6 +293,19 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
           </>
         )}
       </div>
+
+      {/* Messages d'état */}
+      {uploadedAudioUrl && !isUploading && (
+        <div className="py-2 bg-green-50 rounded-md text-center">
+          <span className="text-sm text-green-700">✓ Audio sauvegardé avec succès</span>
+        </div>
+      )}
+      
+      {!reportId && hasAudio && !isUploading && (
+        <div className="py-2 bg-yellow-50 rounded-md text-center">
+          <span className="text-sm text-yellow-700">⚠ Audio sera sauvegardé avec le rapport</span>
+        </div>
+      )}
 
       {/* Lecteur audio caché */}
       {currentAudioUrl && (

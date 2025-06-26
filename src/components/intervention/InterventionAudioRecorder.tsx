@@ -1,9 +1,7 @@
 
 import React from 'react';
 import VoiceAnswerPlayer from '@/components/life-story/VoiceAnswerPlayer';
-import AudioUploadProgress from './audio/AudioUploadProgress';
-import VoiceRecorderSimple from './audio/VoiceRecorderSimple';
-import { useAudioProcessor } from './audio/AudioProcessor';
+import SimpleInterventionAudioRecorder from './SimpleInterventionAudioRecorder';
 
 interface InterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
@@ -18,51 +16,37 @@ const InterventionAudioRecorder: React.FC<InterventionAudioRecorderProps> = ({
   existingAudioUrl,
   reportId
 }) => {
-  const { processAudio, audioState } = useAudioProcessor({
-    onAudioRecorded,
-    onAudioUrlGenerated,
-    reportId
-  });
-  
-  console.log('🎤 InterventionAudioRecorder - Rendu:', {
-    isUploading: audioState.isUploading,
-    uploadedAudioUrl: audioState.uploadedAudioUrl,
+  console.log('🎤 NEW_InterventionAudioRecorder - Rendu:', {
     hasExistingUrl: !!existingAudioUrl,
-    reportId,
-    isProcessing: audioState.isProcessing
+    reportId
   });
 
   const handleDeleteExistingAudio = () => {
-    console.log('🎤 InterventionAudioRecorder - Suppression manuelle de l\'audio');
-    audioState.clearAudio();
+    console.log('🗑️ NEW_InterventionAudioRecorder - Suppression audio existant');
     onAudioUrlGenerated('');
   };
 
-  // Utiliser l'URL existante ou l'URL uploadée
-  const currentAudioUrl = audioState.uploadedAudioUrl || existingAudioUrl;
-
-  // Afficher le lecteur si on a de l'audio et qu'on n'est pas en train d'uploader
-  if (currentAudioUrl && !audioState.isUploading) {
-    console.log('🎤 InterventionAudioRecorder - ✅ Affichage du lecteur');
+  // Si on a de l'audio existant, afficher le lecteur
+  if (existingAudioUrl) {
+    console.log('🎤 NEW_InterventionAudioRecorder - Affichage du lecteur pour audio existant');
     return (
-      <div className="space-y-4">
-        <VoiceAnswerPlayer
-          audioUrl={currentAudioUrl}
-          onDelete={handleDeleteExistingAudio}
-          readOnly={false}
-          shouldLog={true}
-        />
-        <AudioUploadProgress isUploading={audioState.isUploading} />
-      </div>
+      <VoiceAnswerPlayer
+        audioUrl={existingAudioUrl}
+        onDelete={handleDeleteExistingAudio}
+        readOnly={false}
+        shouldLog={true}
+      />
     );
   }
 
-  console.log('🎤 InterventionAudioRecorder - Affichage de l\'enregistreur');
+  // Sinon afficher l'enregistreur
+  console.log('🎤 NEW_InterventionAudioRecorder - Affichage de l\'enregistreur');
   return (
-    <div className={`transition-all ${audioState.isUploading ? "opacity-60 pointer-events-none" : ""}`}>
-      <VoiceRecorderSimple onAudioChange={processAudio} />
-      <AudioUploadProgress isUploading={audioState.isUploading} />
-    </div>
+    <SimpleInterventionAudioRecorder
+      onAudioRecorded={onAudioRecorded}
+      onAudioUrlGenerated={onAudioUrlGenerated}
+      reportId={reportId}
+    />
   );
 };
 

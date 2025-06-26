@@ -20,28 +20,31 @@ export const useInterventionSubmit = () => {
     reportId: string | null,
     uploadAudioIfNeeded: (reportId: string, audioUrl: string) => Promise<string | null>,
     setLoading: (loading: boolean) => void,
-    isRecording?: boolean // Nouveau paramètre pour vérifier si on enregistre
+    isRecording?: boolean // Paramètre pour vérifier si on enregistre
   ) => {
     e.preventDefault();
     
-    // NOUVEAU: Empêcher la soumission pendant l'enregistrement
+    // CRITIQUE: Empêcher absolument la soumission pendant l'enregistrement
     if (isRecording) {
-      console.log('⚠️ Enregistrement en cours, soumission différée');
+      console.log('🚫 SOUMISSION BLOQUÉE - Enregistrement en cours');
       toast({
         title: 'Enregistrement en cours',
-        description: 'Veuillez arrêter l\'enregistrement avant de sauvegarder',
-        variant: 'default',
+        description: 'Veuillez arrêter l\'enregistrement avant de sauvegarder le rapport',
+        variant: 'destructive',
       });
-      return;
+      return false; // Retourner false pour indiquer l'échec
     }
     
     // Éviter les soumissions multiples
     if (isSubmitting.current || navigationPending.current) {
       console.log('⚠️ Soumission déjà en cours, ignorer');
-      return;
+      return false;
     }
     
-    if (!user) return;
+    if (!user) {
+      console.log('❌ Utilisateur non connecté');
+      return false;
+    }
 
     if (!formData.patient_name || !formData.auxiliary_name || !formData.date) {
       toast({
@@ -49,14 +52,14 @@ export const useInterventionSubmit = () => {
         description: 'Veuillez remplir tous les champs obligatoires',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     try {
       isSubmitting.current = true;
       setLoading(true);
       
-      console.log('📝 Début sauvegarde du rapport');
+      console.log('📝 Début sauvegarde du rapport - SANS enregistrement actif');
 
       // Mapper les données du formulaire vers les colonnes de la base de données
       const reportData = {
@@ -158,14 +161,16 @@ export const useInterventionSubmit = () => {
         });
       }
 
-      // MODIFIÉ: Navigation sécurisée seulement après sauvegarde complète
+      // Navigation sécurisée - SEULEMENT après sauvegarde complète
       navigationPending.current = true;
-      console.log('🔄 Navigation vers le planificateur dans 1 seconde');
+      console.log('🔄 Navigation vers le planificateur - SÉCURISÉE');
       
-      // Attendre un délai pour s'assurer que tout est sauvegardé
+      // Délai pour s'assurer que tout est sauvegardé
       setTimeout(() => {
         navigate('/scheduler');
-      }, 1000);
+      }, 500);
+      
+      return true; // Succès
       
     } catch (error) {
       console.error('💥 Erreur lors de la sauvegarde:', error);
@@ -174,6 +179,7 @@ export const useInterventionSubmit = () => {
         description: `Impossible de sauvegarder le rapport: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         variant: 'destructive',
       });
+      return false;
     } finally {
       setLoading(false);
       isSubmitting.current = false;

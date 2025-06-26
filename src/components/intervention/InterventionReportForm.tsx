@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Mic } from 'lucide-react';
+import { ArrowLeft, Save, Mic, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInterventionForm } from './hooks/useInterventionForm';
 import { BasicInfoSection } from './form-sections/BasicInfoSection';
@@ -27,7 +26,7 @@ const InterventionReportForm: React.FC = () => {
     reportId,
     handleAudioRecorded,
     handleAudioUrlGenerated,
-    isRecording, // NOUVEAU: Récupérer l'état d'enregistrement
+    isRecording, // État d'enregistrement pour les protections
   } = useInterventionForm();
 
   const handleMediaChange = (mediaFiles: any[]) => {
@@ -39,6 +38,18 @@ const InterventionReportForm: React.FC = () => {
       ...prev,
       media_files: (prev.media_files || []).filter((file: any) => file.id !== fileId)
     }));
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Double protection contre la soumission pendant l'enregistrement
+    if (isRecording) {
+      console.log('🚫 FORM_COMPONENT - Soumission bloquée par protection du composant');
+      return;
+    }
+    
+    await handleSubmit(e);
   };
 
   if (loadingData) {
@@ -56,22 +67,42 @@ const InterventionReportForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               {reportId ? 'Modifier le rapport d\'intervention' : 'Nouveau rapport d\'intervention'}
-              {/* NOUVEAU: Indicateur visuel pendant l'enregistrement */}
               {isRecording && (
                 <div className="flex items-center text-red-500">
                   <Mic className="w-4 h-4 animate-pulse mr-1" />
-                  <span className="text-sm">Enregistrement...</span>
+                  <span className="text-sm font-medium">Enregistrement...</span>
                 </div>
               )}
             </CardTitle>
-            <Button variant="outline" onClick={() => navigate('/scheduler')} className="w-full sm:w-auto" disabled={isRecording}>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/scheduler')} 
+              className="w-full sm:w-auto" 
+              disabled={isRecording || loading}
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Alerte pendant l'enregistrement */}
+          {isRecording && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-3 text-red-800">
+                <AlertTriangle className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Enregistrement audio en cours</p>
+                  <p className="text-sm text-red-600">
+                    Veuillez arrêter l'enregistrement avant de sauvegarder ou naviguer.
+                    Toutes les actions sont temporairement désactivées.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleFormSubmit} className="space-y-8">
             <BasicInfoSection 
               formData={formData} 
               setFormData={setFormData}
@@ -109,12 +140,14 @@ const InterventionReportForm: React.FC = () => {
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Enregistrement audio</h3>
-              <InterventionAudioRecorder
-                onAudioRecorded={handleAudioRecorded}
-                onAudioUrlGenerated={handleAudioUrlGenerated}
-                existingAudioUrl={formData.audio_url}
-                reportId={reportId || undefined}
-              />
+              <div className={isRecording ? "ring-2 ring-red-300 rounded-lg" : ""}>
+                <InterventionAudioRecorder
+                  onAudioRecorded={handleAudioRecorded}
+                  onAudioUrlGenerated={handleAudioUrlGenerated}
+                  existingAudioUrl={formData.audio_url}
+                  reportId={reportId || undefined}
+                />
+              </div>
             </div>
             
             <MediaSection 
@@ -128,19 +161,11 @@ const InterventionReportForm: React.FC = () => {
               setFormData={setFormData}
             />
 
-            <div className="flex justify-end space-x-4">
-              {/* NOUVEAU: Message d'avertissement pendant l'enregistrement */}
-              {isRecording && (
-                <div className="flex items-center text-amber-600 text-sm mr-4">
-                  <Mic className="w-4 h-4 mr-1" />
-                  Arrêtez l'enregistrement avant de sauvegarder
-                </div>
-              )}
-              
+            <div className="flex justify-end space-x-4">              
               <Button 
                 type="submit" 
                 disabled={loading || isRecording} 
-                className="flex items-center gap-2"
+                className={`flex items-center gap-2 ${isRecording ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Save className="h-4 w-4" />
                 {loading ? 'Sauvegarde...' : reportId ? 'Mettre à jour' : 'Créer le rapport'}
