@@ -6,7 +6,7 @@ import { ArrowLeft, Save, Mic, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInterventionForm } from './hooks/useInterventionForm';
 import { BasicInfoSection } from './form-sections/BasicInfoSection';
-import { LastReportsSelector } from './form-sections/LastReportsSelector';
+import LastReportsSelector from './form-sections/LastReportsSelector';
 import { ActivitiesSection } from './form-sections/ActivitiesSection';
 import { PhysicalStateSection } from './form-sections/PhysicalStateSection';
 import { MentalStateSection } from './form-sections/MentalStateSection';

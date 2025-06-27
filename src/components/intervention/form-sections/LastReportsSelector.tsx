@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label';
 import { Clock, Copy } from 'lucide-react';
 import { useLastReports } from '../hooks/useLastReports';
 import { InterventionFormData } from '../types/FormData';
-import { InterventionReport } from '@/types/intervention';
 import { toast } from '@/hooks/use-toast';
 
 interface LastReportsSelectorProps {
@@ -22,31 +21,8 @@ const LastReportsSelector: React.FC<LastReportsSelectorProps> = ({
   const handleReportSelection = async (reportId: string) => {
     if (reportId === 'none') return;
 
-    const fullReport = await loadFullReport(reportId);
-    if (!fullReport) return;
-
-    // Convertir le rapport en données de formulaire, en excluant audio et médias
-    const reportData: Partial<InterventionFormData> = {
-      // Ne pas copier appointment_id, patient_name, auxiliary_name, date, start_time, end_time
-      // car ce sont des données spécifiques à la nouvelle intervention
-      activities: Array.isArray(fullReport.activities) ? fullReport.activities : [],
-      activities_other: fullReport.activities_other || '',
-      physical_state: Array.isArray(fullReport.physical_state) ? fullReport.physical_state : [],
-      physical_state_other: fullReport.physical_state_other || '',
-      pain_location: fullReport.pain_location || '',
-      mental_state: Array.isArray(fullReport.mental_state) ? fullReport.mental_state : [],
-      mental_state_change: fullReport.mental_state_change || '',
-      hygiene: Array.isArray(fullReport.hygiene) ? fullReport.hygiene : [],
-      hygiene_comments: fullReport.hygiene_comments || '',
-      appetite: fullReport.appetite || '',
-      appetite_comments: fullReport.appetite_comments || '',
-      hydration: fullReport.hydration || '',
-      observations: fullReport.observations || '',
-      follow_up: Array.isArray(fullReport.follow_up) ? fullReport.follow_up : [],
-      follow_up_other: fullReport.follow_up_other || '',
-      hourly_rate: fullReport.hourly_rate?.toString() || '',
-      // Ne pas copier audio_url, media_files, client_rating, client_comments
-    };
+    const reportData = await loadFullReport(reportId);
+    if (!reportData) return;
 
     onReportSelected(reportData);
     
