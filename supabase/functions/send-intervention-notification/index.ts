@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { Resend } from "npm:resend@2.0.0";
@@ -13,6 +14,134 @@ interface InterventionNotificationRequest {
   reportId: string;
   title: string;
 }
+
+// Fonction pour générer le contenu HTML du PDF
+const generatePDFContent = (report: any, clientName: string) => {
+  const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Rapport d'intervention - ${clientName}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px; }
+        .section { margin: 20px 0; }
+        .section-title { color: #2563eb; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .info-item { background: #f8f9fa; padding: 15px; border-radius: 5px; }
+        .label { font-weight: bold; color: #374151; }
+        .observations { background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; }
+        ul { padding-left: 20px; }
+        li { margin: 5px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Rapport d'intervention</h1>
+        <p><strong>Patient :</strong> ${report.patient_name}</p>
+        <p><strong>Date :</strong> ${reportDate}</p>
+        <p><strong>Auxiliaire :</strong> ${report.auxiliary_name}</p>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">Horaires :</div>
+          ${report.start_time && report.end_time ? `${report.start_time} - ${report.end_time}` : 'Non spécifié'}
+        </div>
+        <div class="info-item">
+          <div class="label">Tarif horaire :</div>
+          ${report.hourly_rate ? `${report.hourly_rate}€/h` : 'Non spécifié'}
+        </div>
+      </div>
+
+      ${report.activities && report.activities.length > 0 ? `
+      <div class="section">
+        <div class="section-title">Activités réalisées</div>
+        <ul>
+          ${report.activities.map((activity: string) => `<li>${activity}</li>`).join('')}
+        </ul>
+        ${report.activities_other ? `<p><strong>Autres :</strong> ${report.activities_other}</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${report.physical_state && report.physical_state.length > 0 ? `
+      <div class="section">
+        <div class="section-title">État physique</div>
+        <ul>
+          ${report.physical_state.map((state: string) => `<li>${state}</li>`).join('')}
+        </ul>
+        ${report.physical_state_other ? `<p><strong>Autres :</strong> ${report.physical_state_other}</p>` : ''}
+        ${report.pain_location ? `<p><strong>Douleur :</strong> ${report.pain_location}</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${report.mental_state && report.mental_state.length > 0 ? `
+      <div class="section">
+        <div class="section-title">État mental</div>
+        <ul>
+          ${report.mental_state.map((state: string) => `<li>${state}</li>`).join('')}
+        </ul>
+        ${report.mental_state_change ? `<p><strong>Changements :</strong> ${report.mental_state_change}</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${report.hygiene && report.hygiene.length > 0 ? `
+      <div class="section">
+        <div class="section-title">Hygiène</div>
+        <ul>
+          ${report.hygiene.map((item: string) => `<li>${item}</li>`).join('')}
+        </ul>
+        ${report.hygiene_comments ? `<p><strong>Commentaires :</strong> ${report.hygiene_comments}</p>` : ''}
+      </div>
+      ` : ''}
+
+      <div class="info-grid">
+        ${report.appetite ? `
+        <div class="info-item">
+          <div class="label">Appétit :</div>
+          ${report.appetite}
+          ${report.appetite_comments ? `<br><em>${report.appetite_comments}</em>` : ''}
+        </div>
+        ` : ''}
+        ${report.hydration ? `
+        <div class="info-item">
+          <div class="label">Hydratation :</div>
+          ${report.hydration}
+        </div>
+        ` : ''}
+      </div>
+
+      ${report.follow_up && report.follow_up.length > 0 ? `
+      <div class="section">
+        <div class="section-title">Suivi nécessaire</div>
+        <ul>
+          ${report.follow_up.map((item: string) => `<li>${item}</li>`).join('')}
+        </ul>
+        ${report.follow_up_other ? `<p><strong>Autres :</strong> ${report.follow_up_other}</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${report.observations ? `
+      <div class="observations">
+        <div class="section-title">Observations générales</div>
+        <p>${report.observations}</p>
+      </div>
+      ` : ''}
+
+      ${report.client_rating || report.client_comments ? `
+      <div class="section">
+        <div class="section-title">Évaluation du client</div>
+        ${report.client_rating ? `<p><strong>Note :</strong> ${report.client_rating}/5 ⭐</p>` : ''}
+        ${report.client_comments ? `<p><strong>Commentaires :</strong> ${report.client_comments}</p>` : ''}
+      </div>
+      ` : ''}
+    </body>
+    </html>
+  `;
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -91,9 +220,15 @@ const handler = async (req: Request): Promise<Response> => {
       relationship: c.relationship_type
     })));
 
-    // 3. Envoyer les emails aux proches aidants
+    // 3. Générer le contenu PDF
+    const clientName = `${report.appointments?.clients?.first_name} ${report.appointments?.clients?.last_name}`;
+    const pdfContent = generatePDFContent(report, clientName);
+    
+    // 4. URL du rapport pour consultation en ligne
+    const reportUrl = `https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com/intervention-report?report_id=${reportId}`;
+
+    // 5. Envoyer les emails aux proches aidants
     const emailPromises = caregivers.map(async (caregiver) => {
-      const clientName = `${report.appointments?.clients?.first_name} ${report.appointments?.clients?.last_name}`;
       const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
       
       return resend.emails.send({
@@ -123,17 +258,33 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             ` : ''}
             
+            <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <h3 style="margin-top: 0; color: #0277bd;">Consulter le rapport complet</h3>
+              <p style="margin-bottom: 15px;">Cliquez sur le lien ci-dessous pour consulter le rapport détaillé en ligne :</p>
+              <a href="${reportUrl}" 
+                 style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                📋 Voir le rapport complet
+              </a>
+            </div>
+            
             <p>Vous recevez ce message en tant que proche aidant de ${clientName}.</p>
             
             <p>Cordialement,<br>L'équipe Senior Digital Mentor</p>
           </div>
         `,
+        attachments: [
+          {
+            filename: `rapport-intervention-${clientName.replace(/\s+/g, '-')}-${reportDate.replace(/\//g, '-')}.html`,
+            content: Buffer.from(pdfContent).toString('base64'),
+            content_type: 'text/html'
+          }
+        ]
       });
     });
 
     const emailResults = await Promise.allSettled(emailPromises);
     
-    // 4. Vérifier les résultats d'envoi
+    // 6. Vérifier les résultats d'envoi
     const successCount = emailResults.filter(result => result.status === 'fulfilled').length;
     const failureCount = emailResults.filter(result => result.status === 'rejected').length;
 
@@ -143,7 +294,7 @@ const handler = async (req: Request): Promise<Response> => {
       failures: failureCount 
     });
 
-    // 5. Marquer le rapport comme notifié si au moins un email a été envoyé
+    // 7. Marquer le rapport comme notifié si au moins un email a été envoyé
     if (successCount > 0) {
       await supabase
         .from('intervention_reports')
@@ -153,7 +304,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('✅ Rapport marqué comme notifié');
     }
 
-    // 6. Retourner le résultat
+    // 8. Retourner le résultat
     return new Response(
       JSON.stringify({
         success: true,
