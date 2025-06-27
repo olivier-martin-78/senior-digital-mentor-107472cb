@@ -8,7 +8,13 @@ export class EmailSender {
   private resend;
 
   constructor() {
-    this.resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    const apiKey = Deno.env.get("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error('❌ RESEND_API_KEY manquante');
+      throw new Error('Configuration email manquante');
+    }
+    console.log('✅ Resend API configurée');
+    this.resend = new Resend(apiKey);
   }
 
   async sendNotifications(
@@ -17,15 +23,28 @@ export class EmailSender {
     clientName: string,
     reportUrl: string
   ): Promise<{ successCount: number; failureCount: number }> {
+    
+    console.log('📧 Début envoi notifications:', {
+      reportId: report.id,
+      clientName,
+      caregiversCount: caregivers.length
+    });
+
     const pdfContent = generatePDFContent(report, clientName);
     const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
 
-    const emailPromises = caregivers.map(async (caregiver) => {
+    const emailPromises = caregivers.map(async (caregiver, index) => {
       const caregiverName = `${caregiver.first_name} ${caregiver.last_name}`;
       const emailHTML = generateEmailHTML(report, clientName, caregiverName, reportUrl);
 
+      console.log(`📧 Envoi email ${index + 1}/${caregivers.length} vers:`, {
+        name: caregiverName,
+        email: caregiver.email,
+        relationship: caregiver.relationship_type
+      });
+
       try {
-        return await this.resend.emails.send({
+        const result = await this.resend.emails.send({
           from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
           to: [caregiver.email],
           subject: `Nouveau rapport d'intervention - ${clientName}`,
@@ -38,8 +57,16 @@ export class EmailSender {
             }
           ]
         });
+
+        console.log(`✅ Email ${index + 1} envoyé avec succès:`, {
+          id: result.data?.id,
+          to: caregiver.email
+        });
+
+        return result;
       } catch (error) {
-        console.error('❌ Erreur envoi email pour:', caregiver.email, error);
+        console.error(`❌ Erreur envoi email ${index + 1} pour:`, caregiver.email);
+        console.error('❌ Détails erreur:', error);
         throw error;
       }
     });
@@ -52,8 +79,14 @@ export class EmailSender {
     // Afficher les erreurs d'envoi
     emailResults.forEach((result, index) => {
       if (result.status === 'rejected') {
-        console.error(`❌ Erreur email ${index + 1}:`, result.reason);
+        console.error(`❌ Échec email ${index + 1}:`, result.reason);
       }
+    });
+
+    console.log('📧 Résumé envoi:', {
+      total: caregivers.length,
+      success: successCount,
+      failures: failureCount
     });
 
     return { successCount, failureCount };

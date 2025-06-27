@@ -17,33 +17,57 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { reportId, title }: InterventionNotificationRequest = await req.json();
 
-    console.log('📧 Envoi notification rapport intervention:', { reportId, title });
+    console.log('📧 === DÉBUT NOTIFICATION INTERVENTION ===');
+    console.log('📧 Paramètres reçus:', { reportId, title });
 
     const dataFetcher = new DataFetcher();
     const emailSender = new EmailSender();
 
     // 1. Récupérer le rapport d'intervention avec les informations du rendez-vous et du client
+    console.log('🔍 Étape 1: Récupération du rapport');
     const report = await dataFetcher.fetchReport(reportId);
     if (!report) {
+      console.error('❌ Rapport introuvable');
       throw new Error('Rapport d\'intervention introuvable');
     }
 
-    const clientName = `${report.appointments?.clients?.first_name} ${report.appointments?.clients?.last_name}`;
-    console.log('✅ Rapport récupéré:', {
-      reportId: report.id,
-      clientId: report.appointments?.clients?.id,
-      clientName
+    // Analyser la structure des données
+    console.log('📊 Analyse structure rapport:', {
+      hasAppointments: !!report.appointments,
+      appointmentId: report.appointment_id,
+      appointmentsData: report.appointments
     });
 
+    // Déterminer l'ID du client
+    let clientId: string | undefined;
+    let clientName: string;
+
+    if (report.appointments?.clients) {
+      clientId = report.appointments.clients.id;
+      clientName = `${report.appointments.clients.first_name} ${report.appointments.clients.last_name}`;
+    } else {
+      console.error('❌ Données client manquantes dans le rapport');
+      console.log('🔍 Structure complète du rapport:', JSON.stringify(report, null, 2));
+      throw new Error('Informations client manquantes dans le rapport');
+    }
+
+    console.log('✅ Client identifié:', { clientId, clientName });
+
     // 2. Récupérer les proches aidants du client
-    const caregivers = await dataFetcher.fetchCaregivers(report.appointments?.clients?.id || '');
+    console.log('🔍 Étape 2: Récupération des proches aidants');
+    const caregivers = await dataFetcher.fetchCaregivers(clientId);
 
     if (!caregivers || caregivers.length === 0) {
       console.log('⚠️ Aucun proche aidant avec email trouvé pour le client');
       return new Response(
         JSON.stringify({ 
           message: 'Aucun proche aidant avec email trouvé pour ce client',
-          success: false 
+          success: false,
+          details: {
+            clientId,
+            clientName,
+            caregiversFound: 0
+          }
         }),
         {
           status: 200,
@@ -52,16 +76,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('✅ Proches aidants trouvés:', caregivers.map(c => ({ 
-      name: `${c.first_name} ${c.last_name}`, 
-      email: c.email,
-      relationship: c.relationship_type
-    })));
+    console.log('✅ Proches aidants trouvés:', caregivers.length);
 
     // 3. URL du rapport pour consultation en ligne
     const reportUrl = `https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com/intervention-report?report_id=${reportId}`;
+    console.log('🔗 URL du rapport:', reportUrl);
 
     // 4. Envoyer les emails aux proches aidants
+    console.log('📧 Étape 3: Envoi des emails');
     const { successCount, failureCount } = await emailSender.sendNotifications(
       report,
       caregivers,
@@ -81,6 +103,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('✅ Rapport marqué comme notifié');
     }
 
+    console.log('📧 === FIN NOTIFICATION INTERVENTION ===');
+
     // 6. Retourner le résultat
     return new Response(
       JSON.stringify({
@@ -99,7 +123,11 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("❌ Erreur fonction send-intervention-notification:", error);
+    console.error("❌ === ERREUR CRITIQUE NOTIFICATION ===");
+    console.error("❌ Message:", error.message);
+    console.error("❌ Stack:", error.stack);
+    console.error("❌ === FIN ERREUR ===");
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
