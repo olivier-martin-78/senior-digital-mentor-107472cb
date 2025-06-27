@@ -1065,6 +1065,36 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_game_sessions: {
+        Row: {
+          created_at: string
+          game_mode: string
+          id: string
+          score: number
+          total_questions: number
+          user_id: string
+          words_used: Json | null
+        }
+        Insert: {
+          created_at?: string
+          game_mode: string
+          id?: string
+          score: number
+          total_questions: number
+          user_id: string
+          words_used?: Json | null
+        }
+        Update: {
+          created_at?: string
+          game_mode?: string
+          id?: string
+          score?: number
+          total_questions?: number
+          user_id?: string
+          words_used?: Json | null
+        }
+        Relationships: []
+      }
       user_client_permissions: {
         Row: {
           client_id: string

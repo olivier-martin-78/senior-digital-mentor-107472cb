@@ -1,12 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { GameWord, GameSession, GameMode } from '@/types/translationGame';
+import { saveGameSessionToSupabase, loadGameHistoryFromSupabase } from '@/utils/translationGameStorage';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TOTAL_QUESTIONS = 20;
 
 export const useTranslationGame = () => {
+  const { user } = useAuth();
   const [gameWords, setGameWords] = useState<GameWord[]>([]);
   const [currentQuestions, setCurrentQuestions] = useState<GameWord[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -24,7 +26,7 @@ export const useTranslationGame = () => {
   useEffect(() => {
     fetchWords();
     loadGameHistory();
-  }, []);
+  }, [user]);
 
   const fetchWords = async () => {
     try {
@@ -71,22 +73,58 @@ export const useTranslationGame = () => {
     }
   };
 
-  const loadGameHistory = () => {
-    const history = localStorage.getItem('translation-game-history');
-    if (history) {
-      setGameHistory(JSON.parse(history));
+  const loadGameHistory = async () => {
+    if (!user) {
+      console.log('🎮 Pas d\'utilisateur, chargement depuis localStorage');
+      const history = localStorage.getItem('translation-game-history');
+      if (history) {
+        setGameHistory(JSON.parse(history));
+      }
+      return;
+    }
+
+    try {
+      console.log('🎮 Chargement historique depuis Supabase pour utilisateur connecté');
+      const sessions = await loadGameHistoryFromSupabase();
+      setGameHistory(sessions);
+    } catch (error) {
+      console.error('❌ Erreur chargement historique Supabase, fallback localStorage');
+      const history = localStorage.getItem('translation-game-history');
+      if (history) {
+        setGameHistory(JSON.parse(history));
+      }
     }
   };
 
-  const saveGameSession = (finalScore: number) => {
+  const saveGameSession = async (finalScore: number) => {
     const newSession: GameSession = {
       score: finalScore,
       total: TOTAL_QUESTIONS,
       mode: gameMode!,
       date: new Date().toISOString(),
-      words: currentQuestions, // Sauvegarder les mots utilisés
+      words: currentQuestions,
     };
 
+    let savedToSupabase = false;
+
+    // Essayer de sauvegarder dans Supabase si utilisateur connecté
+    if (user) {
+      try {
+        savedToSupabase = await saveGameSessionToSupabase(newSession);
+        if (savedToSupabase) {
+          console.log('✅ Session sauvegardée dans Supabase');
+          // Recharger l'historique depuis Supabase
+          const updatedHistory = await loadGameHistoryFromSupabase();
+          setGameHistory(updatedHistory);
+          return; // Sortir ici si succès Supabase
+        }
+      } catch (error) {
+        console.error('❌ Erreur sauvegarde Supabase:', error);
+      }
+    }
+
+    // Fallback localStorage si pas d'utilisateur ou erreur Supabase
+    console.log('📝 Sauvegarde dans localStorage (fallback)');
     const updatedHistory = [newSession, ...gameHistory.slice(0, 4)];
     setGameHistory(updatedHistory);
     localStorage.setItem('translation-game-history', JSON.stringify(updatedHistory));
@@ -124,7 +162,6 @@ export const useTranslationGame = () => {
     setCurrentQuestions(selectedWords);
   };
 
-  // Nouvelle fonction pour rejouer avec des mots spécifiques
   const replayWithWords = (mode: 'fr-to-en' | 'en-to-fr', words: GameWord[]) => {
     console.log('🎮 Rejouer avec des mots spécifiques:', words.length);
     
@@ -205,7 +242,7 @@ export const useTranslationGame = () => {
     TOTAL_QUESTIONS,
     setUserAnswer,
     startGame,
-    replayWithWords, // Nouvelle fonction exportée
+    replayWithWords,
     getCurrentWord,
     getCorrectAnswer,
     checkAnswer,
