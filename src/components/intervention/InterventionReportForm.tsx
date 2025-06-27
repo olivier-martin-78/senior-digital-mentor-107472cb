@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Mic, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInterventionForm } from './hooks/useInterventionForm';
 import { BasicInfoSection } from './form-sections/BasicInfoSection';
+import { LastReportsSelector } from './form-sections/LastReportsSelector';
 import { ActivitiesSection } from './form-sections/ActivitiesSection';
 import { PhysicalStateSection } from './form-sections/PhysicalStateSection';
 import { MentalStateSection } from './form-sections/MentalStateSection';
@@ -15,6 +16,7 @@ import { FollowUpSection } from './form-sections/FollowUpSection';
 import { MediaSection } from './form-sections/MediaSection';
 import { ClientEvaluationSection } from './form-sections/ClientEvaluationSection';
 import InterventionAudioRecorder from './InterventionAudioRecorder';
+import { InterventionFormData } from './types/FormData';
 
 const InterventionReportForm: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +59,13 @@ const InterventionReportForm: React.FC = () => {
   const handleRecordingStateChange = (recordingState: boolean) => {
     console.log('🎤 FORM_COMPONENT - État enregistrement changé:', recordingState);
     setIsRecording(recordingState);
+  };
+
+  const handleReportCopy = (reportData: Partial<InterventionFormData>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...reportData,
+    }));
   };
 
   if (loadingData) {
@@ -114,6 +123,14 @@ const InterventionReportForm: React.FC = () => {
               formData={formData} 
               setFormData={setFormData}
             />
+            
+            {/* Sélecteur de rapports précédents - uniquement si on a un nom de patient */}
+            {formData.patient_name && !reportId && (
+              <LastReportsSelector
+                clientName={formData.patient_name}
+                onReportSelected={handleReportCopy}
+              />
+            )}
             
             <ActivitiesSection 
               formData={formData} 
