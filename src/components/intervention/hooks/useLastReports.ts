@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { InterventionFormData } from '@/types/intervention';
+import { InterventionFormData } from '../types/FormData';
 import { toast } from '@/hooks/use-toast';
 
 interface LastReport {
