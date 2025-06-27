@@ -10,5 +10,5 @@ export const detectDevice = () => {
 };
 
 export const getTimeoutDuration = (isIPad: boolean, isIOS: boolean): number => {
-  return isIPad ? 2000 : (isIOS ? 3000 : 8000);
+  return isIPad ? 1500 : (isIOS ? 3000 : 8000);
 };
