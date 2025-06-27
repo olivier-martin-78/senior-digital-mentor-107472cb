@@ -6,10 +6,18 @@ export const saveGameSessionToSupabase = async (session: GameSession): Promise<b
   try {
     console.log('🎮 Sauvegarde de la session dans Supabase:', session);
     
+    // Get the current user ID properly
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('❌ Aucun utilisateur connecté');
+      return false;
+    }
+    
     const { error } = await supabase
       .from('translation_game_sessions')
       .insert({
-        user_id: supabase.auth.getUser().then(({ data }) => data.user?.id || ''),
+        user_id: user.id,
         score: session.score,
         total_questions: session.total,
         game_mode: session.mode,
@@ -56,8 +64,8 @@ export const loadGameHistoryFromSupabase = async (): Promise<GameSession[]> => {
       date: session.created_at,
       words: session.words_used ? 
         (typeof session.words_used === 'string' ? 
-          JSON.parse(session.words_used) : 
-          session.words_used as GameWord[]) : 
+          JSON.parse(session.words_used) as GameWord[] : 
+          session.words_used as unknown as GameWord[]) : 
         undefined
     }));
 
