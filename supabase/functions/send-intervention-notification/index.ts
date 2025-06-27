@@ -78,17 +78,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('✅ Proches aidants trouvés:', caregivers.length);
 
-    // 3. URL du rapport pour consultation en ligne
-    const reportUrl = `https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com/intervention-report?report_id=${reportId}`;
-    console.log('🔗 URL du rapport:', reportUrl);
-
-    // 4. Envoyer les emails aux proches aidants
+    // 3. Envoyer les emails aux proches aidants (sans URL du rapport)
     console.log('📧 Étape 3: Envoi des emails');
     const { successCount, failureCount } = await emailSender.sendNotifications(
       report,
       caregivers,
-      clientName,
-      reportUrl
+      clientName
     );
 
     console.log('📧 Résultats envoi emails:', { 
@@ -97,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
       failures: failureCount 
     });
 
-    // 5. Marquer le rapport comme notifié si au moins un email a été envoyé
+    // 4. Marquer le rapport comme notifié si au moins un email a été envoyé
     if (successCount > 0) {
       await dataFetcher.markReportAsNotified(reportId);
       console.log('✅ Rapport marqué comme notifié');
@@ -105,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('📧 === FIN NOTIFICATION INTERVENTION ===');
 
-    // 6. Retourner le résultat
+    // 5. Retourner le résultat
     return new Response(
       JSON.stringify({
         success: true,

@@ -29,6 +29,9 @@ export interface ReportData {
   observations?: string;
   client_rating?: number;
   client_comments?: string;
+  media_files?: any[];
+  audio_url?: string;
+  audio_is_public?: boolean;
   appointments?: {
     clients?: {
       id: string;

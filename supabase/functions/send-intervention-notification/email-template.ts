@@ -5,9 +5,37 @@ export const generateEmailHTML = (
   report: ReportData,
   clientName: string,
   caregiverName: string,
-  reportUrl: string
+  mediaFiles?: any[],
+  audioUrl?: string
 ): string => {
   const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
+  
+  // Générer la section des médias si ils existent
+  const mediaSection = mediaFiles && mediaFiles.length > 0 ? `
+    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #0c4a6e;">📷 Photos et médias</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+        ${mediaFiles.map(media => `
+          <div style="text-align: center;">
+            <img src="${media.url}" alt="Média du rapport" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid #e0e7ff;">
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">${media.name || 'Image'}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Générer la section audio si elle existe
+  const audioSection = audioUrl ? `
+    <div style="background-color: #fef7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #c2410c;">🎵 Enregistrement audio</h3>
+      <p style="margin-bottom: 15px;">Un enregistrement audio a été ajouté à ce rapport :</p>
+      <a href="${audioUrl}" 
+         style="display: inline-block; background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        🎧 Écouter l'enregistrement
+      </a>
+    </div>
+  ` : '';
   
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -32,14 +60,9 @@ export const generateEmailHTML = (
         </div>
       ` : ''}
       
-      <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-        <h3 style="margin-top: 0; color: #0277bd;">Consulter le rapport complet</h3>
-        <p style="margin-bottom: 15px;">Cliquez sur le lien ci-dessous pour consulter le rapport détaillé en ligne :</p>
-        <a href="${reportUrl}" 
-           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-          📋 Voir le rapport complet
-        </a>
-      </div>
+      ${mediaSection}
+      
+      ${audioSection}
       
       <p>Vous recevez ce message en tant que proche aidant de ${clientName}.</p>
       
