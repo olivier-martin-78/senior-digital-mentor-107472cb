@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { Resend } from "npm:resend@2.0.0";
@@ -98,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
       const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
       
       return resend.emails.send({
-        from: "Tranches de Vie <noreply@tranchesdevie.fr>",
+        from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
         to: [caregiver.email],
         subject: `Nouveau rapport d'intervention - ${clientName}`,
         html: `
@@ -126,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Vous recevez ce message en tant que proche aidant de ${clientName}.</p>
             
-            <p>Cordialement,<br>L'équipe Tranches de Vie</p>
+            <p>Cordialement,<br>L'équipe Senior Digital Mentor</p>
           </div>
         `,
       });
