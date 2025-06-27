@@ -44,6 +44,11 @@ export class EmailSender {
       });
 
       try {
+        // Utiliser TextEncoder au lieu de Buffer pour Deno
+        const encoder = new TextEncoder();
+        const pdfBytes = encoder.encode(pdfContent);
+        const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
+
         const result = await this.resend.emails.send({
           from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
           to: [caregiver.email],
@@ -52,7 +57,7 @@ export class EmailSender {
           attachments: [
             {
               filename: `rapport-intervention-${clientName.replace(/\s+/g, '-')}-${reportDate.replace(/\//g, '-')}.html`,
-              content: Buffer.from(pdfContent).toString('base64'),
+              content: pdfBase64,
               content_type: 'text/html'
             }
           ]
