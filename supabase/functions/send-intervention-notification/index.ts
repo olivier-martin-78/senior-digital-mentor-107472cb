@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('intervention_reports')
       .select(`
         *,
-        appointments (
+        appointments!intervention_reports_appointment_id_fkey (
           id,
           client_id,
           clients (
