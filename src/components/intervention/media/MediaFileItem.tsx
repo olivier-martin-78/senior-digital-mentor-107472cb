@@ -54,6 +54,9 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
 
   const imageUrl = getImageUrl();
 
+  // Déterminer si on doit afficher comme une image (même pour les documents avec preview)
+  const shouldDisplayAsImage = imageUrl && (mediaFile.type === 'image' || mediaFile.preview);
+
   return (
     <div className="relative bg-gray-50 rounded-lg p-3">
       <button
@@ -64,9 +67,9 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
         <X className="w-3 h-3" />
       </button>
       
-      {mediaFile.type === 'image' ? (
+      {shouldDisplayAsImage ? (
         <div className="w-full mb-2">
-          {imageUrl && !imageError ? (
+          {!imageError ? (
             <img
               key={retryCount} // Force re-render on retry
               src={imageUrl}
@@ -83,17 +86,15 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
               <div className="text-center">
                 <Image className="w-8 h-8 text-gray-400 mx-auto mb-1" />
                 <span className="text-xs text-gray-500 mb-2">
-                  {imageError ? 'Erreur de chargement' : 'Preview en cours...'}
+                  Erreur de chargement
                 </span>
-                {imageError && imageUrl && (
-                  <button
-                    onClick={handleRetry}
-                    className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Réessayer
-                  </button>
-                )}
+                <button
+                  onClick={handleRetry}
+                  className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Réessayer
+                </button>
               </div>
             </div>
           )}
