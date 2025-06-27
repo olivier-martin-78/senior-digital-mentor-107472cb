@@ -66,16 +66,15 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     setShowIPadFallback(false);
 
     const timeoutDuration = getTimeoutDuration(isIPad, isIOS);
-    const isWebM = processedAudioUrl.includes('.webm');
     
     // Timeout pour arrêter le loading
     loadingTimeoutRef.current = setTimeout(() => {
       console.log("🎵 AUDIO_PLAYER_CORE - Loading timeout reached, showing player");
       setIsLoading(false);
       
-      // Sur iPad avec WebM, si on arrive au timeout sans succès, activer le fallback
-      if (isIPad && isWebM && (!audio.duration || audio.error)) {
-        console.log("🎵 AUDIO_PLAYER_CORE - iPad WebM timeout, activating fallback");
+      // Sur iPad, si on arrive au timeout sans succès, on prépare le fallback
+      if (isIPad && !audio.duration && audio.error) {
+        console.log("🎵 AUDIO_PLAYER_CORE - iPad timeout with error, preparing fallback");
         setShowIPadFallback(true);
       }
     }, timeoutDuration);
