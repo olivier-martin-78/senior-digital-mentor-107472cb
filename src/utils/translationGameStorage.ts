@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { GameSession } from '@/types/translationGame';
+import { GameSession, GameWord } from '@/types/translationGame';
 
 export const saveGameSessionToSupabase = async (session: GameSession): Promise<boolean> => {
   try {
@@ -9,10 +9,11 @@ export const saveGameSessionToSupabase = async (session: GameSession): Promise<b
     const { error } = await supabase
       .from('translation_game_sessions')
       .insert({
+        user_id: supabase.auth.getUser().then(({ data }) => data.user?.id || ''),
         score: session.score,
         total_questions: session.total,
         game_mode: session.mode,
-        words_used: session.words || null
+        words_used: session.words ? JSON.stringify(session.words) : null
       });
 
     if (error) {
@@ -53,7 +54,11 @@ export const loadGameHistoryFromSupabase = async (): Promise<GameSession[]> => {
       total: session.total_questions,
       mode: session.game_mode as 'fr-to-en' | 'en-to-fr',
       date: session.created_at,
-      words: session.words_used || undefined
+      words: session.words_used ? 
+        (typeof session.words_used === 'string' ? 
+          JSON.parse(session.words_used) : 
+          session.words_used as GameWord[]) : 
+        undefined
     }));
 
     console.log('✅ Historique chargé:', sessions.length, 'sessions');
