@@ -84,6 +84,7 @@ export const useTranslationGame = () => {
       total: TOTAL_QUESTIONS,
       mode: gameMode!,
       date: new Date().toISOString(),
+      words: currentQuestions, // Sauvegarder les mots utilisés
     };
 
     const updatedHistory = [newSession, ...gameHistory.slice(0, 4)];
@@ -121,6 +122,21 @@ export const useTranslationGame = () => {
     const selectedWords = shuffled.slice(0, TOTAL_QUESTIONS);
     console.log('🎮 Mots sélectionnés pour la partie:', selectedWords.length);
     setCurrentQuestions(selectedWords);
+  };
+
+  // Nouvelle fonction pour rejouer avec des mots spécifiques
+  const replayWithWords = (mode: 'fr-to-en' | 'en-to-fr', words: GameWord[]) => {
+    console.log('🎮 Rejouer avec des mots spécifiques:', words.length);
+    
+    setGameMode(mode);
+    setGameStarted(true);
+    setScore(0);
+    setCurrentQuestionIndex(0);
+    setUserAnswer('');
+    setShowResult(false);
+    setIsCorrect(null);
+    setGameFinished(false);
+    setCurrentQuestions(words);
   };
 
   const getCurrentWord = () => {
@@ -189,6 +205,7 @@ export const useTranslationGame = () => {
     TOTAL_QUESTIONS,
     setUserAnswer,
     startGame,
+    replayWithWords, // Nouvelle fonction exportée
     getCurrentWord,
     getCorrectAnswer,
     checkAnswer,

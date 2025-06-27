@@ -24,6 +24,7 @@ const TranslationGame = () => {
     TOTAL_QUESTIONS,
     setUserAnswer,
     startGame,
+    replayWithWords, // Nouvelle fonction
     getCurrentWord,
     getCorrectAnswer,
     checkAnswer,
@@ -63,6 +64,7 @@ const TranslationGame = () => {
             gameWords={gameWords}
             gameHistory={gameHistory}
             onStartGame={startGame}
+            onReplayGame={replayWithWords} // Passer la fonction de rejeu
             totalQuestions={TOTAL_QUESTIONS}
           />
         )}
