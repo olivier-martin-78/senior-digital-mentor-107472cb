@@ -29,26 +29,26 @@ export class EmailSender {
       caregiversCount: caregivers.length
     });
 
-    const pdfContent = generatePDFContent(report, clientName);
-    const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
-
     // Récupérer les médias publics si ils existent
-    let mediaFiles: any[] = [];
-    let audioUrl: string | undefined;
+    let publicMediaFiles: any[] = [];
+    let publicAudioUrl: string | undefined;
 
     // TODO: Récupérer les médias du rapport depuis la base de données
     // et vérifier s'ils sont accessibles publiquement
     if (report.media_files && report.media_files.length > 0) {
-      mediaFiles = report.media_files.filter((media: any) => media.is_public);
+      publicMediaFiles = report.media_files.filter((media: any) => media.is_public);
     }
 
     if (report.audio_url && report.audio_is_public) {
-      audioUrl = report.audio_url;
+      publicAudioUrl = report.audio_url;
     }
+
+    const pdfContent = generatePDFContent(report, clientName, publicMediaFiles, publicAudioUrl);
+    const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
 
     const emailPromises = caregivers.map(async (caregiver, index) => {
       const caregiverName = `${caregiver.first_name} ${caregiver.last_name}`;
-      const emailHTML = generateEmailHTML(report, clientName, caregiverName, mediaFiles, audioUrl);
+      const emailHTML = generateEmailHTML(report, clientName, caregiverName, publicMediaFiles, publicAudioUrl);
 
       console.log(`📧 Envoi email ${index + 1}/${caregivers.length} vers:`, {
         name: caregiverName,

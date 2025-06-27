@@ -21,8 +21,42 @@ const generateList = (items: any[], otherText?: string): string => {
   return listHtml;
 };
 
-export const generatePDFContent = (report: ReportData, clientName: string): string => {
+export const generatePDFContent = (
+  report: ReportData, 
+  clientName: string, 
+  mediaFiles?: any[], 
+  audioUrl?: string
+): string => {
   const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
+  
+  // Générer la section des médias publics si ils existent
+  const mediaSection = mediaFiles && mediaFiles.length > 0 ? `
+    <div class="section">
+      <div class="section-title">📷 Photos et médias</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+        ${mediaFiles.map(media => `
+          <div style="text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px;">
+            <img src="${media.url}" alt="Média du rapport" style="max-width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px;">
+            <p style="margin: 0; font-size: 12px; color: #6b7280;">${media.name || 'Image'}</p>
+            <a href="${media.url}" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: none;">Ouvrir l'image</a>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Générer la section audio public si elle existe
+  const audioSection = audioUrl ? `
+    <div class="section">
+      <div class="section-title">🎵 Enregistrement audio</div>
+      <div style="background: #fef7ed; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0 0 10px 0;">Un enregistrement audio est disponible pour ce rapport :</p>
+        <a href="${audioUrl}" target="_blank" style="display: inline-block; background-color: #ea580c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+          🎧 Écouter l'enregistrement
+        </a>
+      </div>
+    </div>
+  ` : '';
   
   return `
     <!DOCTYPE html>
@@ -122,6 +156,10 @@ export const generatePDFContent = (report: ReportData, clientName: string): stri
         <p>${report.observations}</p>
       </div>
       ` : ''}
+
+      ${mediaSection}
+
+      ${audioSection}
 
       ${report.client_rating || report.client_comments ? `
       <div class="section">
