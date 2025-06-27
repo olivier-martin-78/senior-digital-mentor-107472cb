@@ -1,10 +1,12 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Trash2, Play, Pause, Download } from 'lucide-react';
-import { useSimpleAudioRecorder } from '@/hooks/use-simple-audio-recorder';
+import { Mic, Square, Trash2, Download } from 'lucide-react';
+import { useInterventionAudioRecorder } from '@/hooks/use-intervention-audio-recorder';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadInterventionAudio } from '@/utils/interventionAudioUtils';
+import AudioPlayerCore from '@/components/life-story/audio/AudioPlayerCore';
 
 interface SimpleInterventionAudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
@@ -22,10 +24,8 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
   onRecordingStateChange
 }) => {
   const { user } = useAuth();
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const hasProcessedRef = useRef(false);
 
   console.log("🎯 SIMPLE_INTERVENTION - Render:", {
@@ -43,8 +43,9 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     recordingTime,
     startRecording,
     stopRecording,
-    clearRecording
-  } = useSimpleAudioRecorder();
+    clearRecording,
+    isSupported
+  } = useInterventionAudioRecorder();
 
   // Utiliser l'URL uploadée, l'URL existante ou l'URL locale
   const currentAudioUrl = uploadedAudioUrl || existingAudioUrl || audioUrl;
@@ -166,6 +167,15 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       return;
     }
     
+    if (!isSupported) {
+      toast({
+        title: "Erreur",
+        description: "L'enregistrement audio n'est pas supporté sur cet appareil",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Reset des états
     setUploadedAudioUrl(null);
     hasProcessedRef.current = false;
@@ -175,8 +185,13 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       console.log("🎯 SIMPLE_INTERVENTION - Enregistrement démarré avec succès");
     } catch (error) {
       console.error("🎯 SIMPLE_INTERVENTION - Erreur démarrage:", error);
+      toast({
+        title: "Erreur d'enregistrement",
+        description: error instanceof Error ? error.message : "Impossible de démarrer l'enregistrement",
+        variant: "destructive",
+      });
     }
-  }, [startRecording, user?.id]);
+  }, [startRecording, user?.id, isSupported]);
 
   const handleStopRecording = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -201,7 +216,6 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     clearRecording();
     setUploadedAudioUrl(null);
     hasProcessedRef.current = false;
-    setIsPlaying(false);
     
     // Notifier le parent avec un blob vide
     const emptyBlob = new Blob([], { type: 'audio/webm' });
@@ -211,21 +225,6 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
       onAudioUrlGenerated('');
     }
   }, [clearRecording, onAudioRecorded, onAudioUrlGenerated]);
-
-  const handlePlayPause = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!audioRef.current) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  }, [isPlaying]);
 
   const handleExportAudio = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -297,6 +296,16 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (!isSupported) {
+    return (
+      <div className="border rounded-lg p-4 bg-red-50 border-red-200">
+        <div className="text-red-700 text-sm">
+          ⚠️ L'enregistrement audio n'est pas supporté sur cet appareil
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border rounded-lg p-4 bg-white space-y-4">
       <div className="flex items-center justify-between">
@@ -344,17 +353,7 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
         )}
 
         {hasAudio && !isRecording && (
-          <>
-            <Button
-              type="button"
-              onClick={handlePlayPause}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              {isPlaying ? 'Pause' : 'Écouter'}
-            </Button>
-            
+          <div className="flex items-center gap-2 w-full">
             <Button
               type="button"
               onClick={handleExportAudio}
@@ -374,9 +373,19 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
             >
               <Trash2 className="w-4 h-4" />
             </Button>
-          </>
+          </div>
         )}
       </div>
+
+      {/* Lecteur audio avec fallback iPad */}
+      {currentAudioUrl && hasAudio && !isRecording && (
+        <div className="space-y-2">
+          <AudioPlayerCore
+            audioUrl={currentAudioUrl}
+            className="w-full"
+          />
+        </div>
+      )}
 
       {/* Messages d'état */}
       {(uploadedAudioUrl || existingAudioUrl) && !isUploading && (
@@ -389,18 +398,6 @@ const SimpleInterventionAudioRecorder: React.FC<SimpleInterventionAudioRecorderP
         <div className="py-2 bg-yellow-50 rounded-md text-center">
           <span className="text-sm text-yellow-700">⚠ Audio sera sauvegardé avec le rapport</span>
         </div>
-      )}
-
-      {/* Lecteur audio caché */}
-      {currentAudioUrl && (
-        <audio
-          ref={audioRef}
-          src={currentAudioUrl}
-          onEnded={() => setIsPlaying(false)}
-          onPause={() => setIsPlaying(false)}
-          onPlay={() => setIsPlaying(true)}
-          className="hidden"
-        />
       )}
     </div>
   );
