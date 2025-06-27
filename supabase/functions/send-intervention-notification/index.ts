@@ -19,6 +19,26 @@ interface InterventionNotificationRequest {
 const generatePDFContent = (report: any, clientName: string) => {
   const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
   
+  // Fonction utilitaire pour vérifier si un array existe et n'est pas vide
+  const hasItems = (arr: any) => arr && Array.isArray(arr) && arr.length > 0;
+  
+  // Fonction utilitaire pour générer une liste HTML
+  const generateList = (items: any[], otherText?: string) => {
+    if (!hasItems(items)) return '';
+    
+    let listHtml = '<ul>';
+    items.forEach(item => {
+      listHtml += `<li>${item}</li>`;
+    });
+    listHtml += '</ul>';
+    
+    if (otherText) {
+      listHtml += `<p><strong>Autres :</strong> ${otherText}</p>`;
+    }
+    
+    return listHtml;
+  };
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -41,9 +61,9 @@ const generatePDFContent = (report: any, clientName: string) => {
     <body>
       <div class="header">
         <h1>Rapport d'intervention</h1>
-        <p><strong>Patient :</strong> ${report.patient_name}</p>
+        <p><strong>Patient :</strong> ${report.patient_name || 'Non spécifié'}</p>
         <p><strong>Date :</strong> ${reportDate}</p>
-        <p><strong>Auxiliaire :</strong> ${report.auxiliary_name}</p>
+        <p><strong>Auxiliaire :</strong> ${report.auxiliary_name || 'Non spécifié'}</p>
       </div>
 
       <div class="info-grid">
@@ -57,43 +77,33 @@ const generatePDFContent = (report: any, clientName: string) => {
         </div>
       </div>
 
-      ${report.activities && report.activities.length > 0 ? `
+      ${hasItems(report.activities) ? `
       <div class="section">
         <div class="section-title">Activités réalisées</div>
-        <ul>
-          ${report.activities.map((activity: string) => `<li>${activity}</li>`).join('')}
-        </ul>
-        ${report.activities_other ? `<p><strong>Autres :</strong> ${report.activities_other}</p>` : ''}
+        ${generateList(report.activities, report.activities_other)}
       </div>
       ` : ''}
 
-      ${report.physical_state && report.physical_state.length > 0 ? `
+      ${hasItems(report.physical_state) ? `
       <div class="section">
         <div class="section-title">État physique</div>
-        <ul>
-          ${report.physical_state.map((state: string) => `<li>${state}</li>`).join('')}
-        </ul>
-        ${report.physical_state_other ? `<p><strong>Autres :</strong> ${report.physical_state_other}</p>` : ''}
+        ${generateList(report.physical_state, report.physical_state_other)}
         ${report.pain_location ? `<p><strong>Douleur :</strong> ${report.pain_location}</p>` : ''}
       </div>
       ` : ''}
 
-      ${report.mental_state && report.mental_state.length > 0 ? `
+      ${hasItems(report.mental_state) ? `
       <div class="section">
         <div class="section-title">État mental</div>
-        <ul>
-          ${report.mental_state.map((state: string) => `<li>${state}</li>`).join('')}
-        </ul>
+        ${generateList(report.mental_state)}
         ${report.mental_state_change ? `<p><strong>Changements :</strong> ${report.mental_state_change}</p>` : ''}
       </div>
       ` : ''}
 
-      ${report.hygiene && report.hygiene.length > 0 ? `
+      ${hasItems(report.hygiene) ? `
       <div class="section">
         <div class="section-title">Hygiène</div>
-        <ul>
-          ${report.hygiene.map((item: string) => `<li>${item}</li>`).join('')}
-        </ul>
+        ${generateList(report.hygiene)}
         ${report.hygiene_comments ? `<p><strong>Commentaires :</strong> ${report.hygiene_comments}</p>` : ''}
       </div>
       ` : ''}
@@ -114,13 +124,10 @@ const generatePDFContent = (report: any, clientName: string) => {
         ` : ''}
       </div>
 
-      ${report.follow_up && report.follow_up.length > 0 ? `
+      ${hasItems(report.follow_up) ? `
       <div class="section">
         <div class="section-title">Suivi nécessaire</div>
-        <ul>
-          ${report.follow_up.map((item: string) => `<li>${item}</li>`).join('')}
-        </ul>
-        ${report.follow_up_other ? `<p><strong>Autres :</strong> ${report.follow_up_other}</p>` : ''}
+        ${generateList(report.follow_up, report.follow_up_other)}
       </div>
       ` : ''}
 
@@ -231,55 +238,60 @@ const handler = async (req: Request): Promise<Response> => {
     const emailPromises = caregivers.map(async (caregiver) => {
       const reportDate = new Date(report.date).toLocaleDateString('fr-FR');
       
-      return resend.emails.send({
-        from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
-        to: [caregiver.email],
-        subject: `Nouveau rapport d'intervention - ${clientName}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">Nouveau rapport d'intervention</h2>
-            
-            <p>Bonjour ${caregiver.first_name} ${caregiver.last_name},</p>
-            
-            <p>Un nouveau rapport d'intervention a été créé pour <strong>${clientName}</strong>.</p>
-            
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #374151;">Détails du rapport</h3>
-              <p><strong>Date :</strong> ${reportDate}</p>
-              <p><strong>Patient :</strong> ${report.patient_name}</p>
-              <p><strong>Auxiliaire :</strong> ${report.auxiliary_name}</p>
-              ${report.start_time && report.end_time ? `<p><strong>Horaires :</strong> ${report.start_time} - ${report.end_time}</p>` : ''}
-            </div>
-            
-            ${report.observations ? `
-              <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h4 style="margin-top: 0; color: #92400e;">Observations</h4>
-                <p style="margin-bottom: 0;">${report.observations}</p>
+      try {
+        return await resend.emails.send({
+          from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
+          to: [caregiver.email],
+          subject: `Nouveau rapport d'intervention - ${clientName}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Nouveau rapport d'intervention</h2>
+              
+              <p>Bonjour ${caregiver.first_name} ${caregiver.last_name},</p>
+              
+              <p>Un nouveau rapport d'intervention a été créé pour <strong>${clientName}</strong>.</p>
+              
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #374151;">Détails du rapport</h3>
+                <p><strong>Date :</strong> ${reportDate}</p>
+                <p><strong>Patient :</strong> ${report.patient_name || 'Non spécifié'}</p>
+                <p><strong>Auxiliaire :</strong> ${report.auxiliary_name || 'Non spécifié'}</p>
+                ${report.start_time && report.end_time ? `<p><strong>Horaires :</strong> ${report.start_time} - ${report.end_time}</p>` : ''}
               </div>
-            ` : ''}
-            
-            <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-              <h3 style="margin-top: 0; color: #0277bd;">Consulter le rapport complet</h3>
-              <p style="margin-bottom: 15px;">Cliquez sur le lien ci-dessous pour consulter le rapport détaillé en ligne :</p>
-              <a href="${reportUrl}" 
-                 style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                📋 Voir le rapport complet
-              </a>
+              
+              ${report.observations ? `
+                <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <h4 style="margin-top: 0; color: #92400e;">Observations</h4>
+                  <p style="margin-bottom: 0;">${report.observations}</p>
+                </div>
+              ` : ''}
+              
+              <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                <h3 style="margin-top: 0; color: #0277bd;">Consulter le rapport complet</h3>
+                <p style="margin-bottom: 15px;">Cliquez sur le lien ci-dessous pour consulter le rapport détaillé en ligne :</p>
+                <a href="${reportUrl}" 
+                   style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                  📋 Voir le rapport complet
+                </a>
+              </div>
+              
+              <p>Vous recevez ce message en tant que proche aidant de ${clientName}.</p>
+              
+              <p>Cordialement,<br>L'équipe Senior Digital Mentor</p>
             </div>
-            
-            <p>Vous recevez ce message en tant que proche aidant de ${clientName}.</p>
-            
-            <p>Cordialement,<br>L'équipe Senior Digital Mentor</p>
-          </div>
-        `,
-        attachments: [
-          {
-            filename: `rapport-intervention-${clientName.replace(/\s+/g, '-')}-${reportDate.replace(/\//g, '-')}.html`,
-            content: Buffer.from(pdfContent).toString('base64'),
-            content_type: 'text/html'
-          }
-        ]
-      });
+          `,
+          attachments: [
+            {
+              filename: `rapport-intervention-${clientName.replace(/\s+/g, '-')}-${reportDate.replace(/\//g, '-')}.html`,
+              content: Buffer.from(pdfContent).toString('base64'),
+              content_type: 'text/html'
+            }
+          ]
+        });
+      } catch (error) {
+        console.error('❌ Erreur envoi email pour:', caregiver.email, error);
+        throw error;
+      }
     });
 
     const emailResults = await Promise.allSettled(emailPromises);
@@ -292,6 +304,13 @@ const handler = async (req: Request): Promise<Response> => {
       total: emailResults.length, 
       success: successCount, 
       failures: failureCount 
+    });
+
+    // Afficher les erreurs d'envoi
+    emailResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`❌ Erreur email ${index + 1}:`, result.reason);
+      }
     });
 
     // 7. Marquer le rapport comme notifié si au moins un email a été envoyé
