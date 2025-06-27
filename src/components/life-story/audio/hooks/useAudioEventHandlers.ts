@@ -1,5 +1,5 @@
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 
 interface UseAudioEventHandlersProps {
   onPlay?: () => void;
@@ -116,7 +116,8 @@ export const useAudioEventHandlers = ({
     onError
   ]);
 
-  return {
+  // Mémoriser l'objet retourné pour éviter les re-renders
+  return useMemo(() => ({
     handleLoadStart,
     handleCanPlay,
     handleLoadedData,
@@ -124,5 +125,13 @@ export const useAudioEventHandlers = ({
     handlePause,
     handleEnded,
     handleError
-  };
+  }), [
+    handleLoadStart,
+    handleCanPlay,
+    handleLoadedData,
+    handlePlay,
+    handlePause,
+    handleEnded,
+    handleError
+  ]);
 };

@@ -125,7 +125,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
       audio.pause();
       audio.src = '';
     };
-  }, [processedAudioUrl, eventHandlers, isIOS, isIPad]);
+  }, [processedAudioUrl, isIOS, isIPad]); // Retirer eventHandlers des dépendances
 
   // Vérifier si l'URL semble valide
   if (!processedAudioUrl || !validateAudioUrl(processedAudioUrl)) {
