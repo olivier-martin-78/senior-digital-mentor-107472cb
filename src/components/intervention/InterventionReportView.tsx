@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import InterventionNotificationButton from './InterventionNotificationButton';
-import { AudioDiagnosticTool } from './AudioDiagnosticTool';
 import { ReportHeader } from './view/ReportHeader';
 import { GeneralInfoSection } from './view/GeneralInfoSection';
 import { AppointmentInfoSection } from './view/AppointmentInfoSection';
@@ -19,7 +18,6 @@ import { useReportActions } from './view/hooks/useReportActions';
 const InterventionReportView = () => {
   const [searchParams] = useSearchParams();
   const reportId = searchParams.get('report_id');
-  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   const { loading, report, appointment, audioStatus, setAudioStatus } = useReportData(reportId);
   const { deleting, handleEdit, handleDelete, handleExportAudio, handleBack } = useReportActions(reportId, report);
@@ -30,13 +28,6 @@ const InterventionReportView = () => {
     hasReport: !!report,
     audioStatus
   });
-
-  // Show diagnostic tool when audio issues are detected
-  React.useEffect(() => {
-    if (audioStatus === 'expired' || audioStatus === 'none') {
-      setShowDiagnostic(true);
-    }
-  }, [audioStatus]);
 
   if (loading) {
     console.log('⏳ Affichage état de chargement');
@@ -77,8 +68,7 @@ const InterventionReportView = () => {
     audioStatus,
     hasAudioUrl: !!report.audio_url,
     audioUrl: report.audio_url,
-    willShowPlayer: audioStatus === 'valid' && report.audio_url,
-    showDiagnostic
+    willShowPlayer: audioStatus === 'valid' && report.audio_url
   });
 
   return (
@@ -171,17 +161,6 @@ const InterventionReportView = () => {
           />
         </CardContent>
       </Card>
-
-      {/* Outil de diagnostic audio */}
-      {showDiagnostic && reportId && (
-        <div className="max-w-4xl mx-auto">
-          <AudioDiagnosticTool
-            reportId={reportId}
-            currentAudioUrl={report?.audio_url}
-            onAudioStatusChange={setAudioStatus}
-          />
-        </div>
-      )}
     </div>
   );
 };
