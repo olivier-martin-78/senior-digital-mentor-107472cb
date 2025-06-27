@@ -99,7 +99,7 @@ export const GameModeSelection: React.FC<GameModeSelectionProps> = ({
             <CardDescription>
               Traduisez des mots anglais vers le français
             </CardDescription>
-          </CardContent>
+          </CardHeader>
           <CardContent>
             <Button 
               onClick={() => onStartGame('en-to-fr')}
