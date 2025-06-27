@@ -75,7 +75,7 @@ export const GameResults = ({ score, totalQuestions, onResetGame }: GameResultsP
               <RotateCcw className="w-4 h-4 mr-2" />
               Rejouer
             </Button>
-            <Link to="/activities">
+            <Link to="/activities/translation">
               <Button 
                 variant="outline" 
                 className="w-full border-2 border-purple-300 hover:bg-purple-50 text-purple-700 font-medium py-3 text-lg"
