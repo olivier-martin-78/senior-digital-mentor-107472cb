@@ -20,7 +20,8 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
     hasFile: !!mediaFile.file,
     fileSize: mediaFile.file?.size,
     imageError,
-    retryCount
+    retryCount,
+    preview: mediaFile.preview
   });
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -42,6 +43,17 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
 
   const fileName = mediaFile.name || mediaFile.file?.name || 'Media';
 
+  // Déterminer l'URL de l'image à afficher
+  const getImageUrl = () => {
+    if (mediaFile.preview) return mediaFile.preview;
+    // Pour les médias existants, essayer d'utiliser d'autres propriétés
+    if ((mediaFile as any).url) return (mediaFile as any).url;
+    if ((mediaFile as any).media_url) return (mediaFile as any).media_url;
+    return null;
+  };
+
+  const imageUrl = getImageUrl();
+
   return (
     <div className="relative bg-gray-50 rounded-lg p-3">
       <button
@@ -54,10 +66,10 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
       
       {mediaFile.type === 'image' ? (
         <div className="w-full mb-2">
-          {mediaFile.preview && !imageError ? (
+          {imageUrl && !imageError ? (
             <img
               key={retryCount} // Force re-render on retry
-              src={mediaFile.preview}
+              src={imageUrl}
               alt={fileName}
               className="w-full h-auto object-contain rounded max-h-48"
               onError={handleImageError}
@@ -73,7 +85,7 @@ export const MediaFileItem: React.FC<MediaFileItemProps> = ({ mediaFile, onRemov
                 <span className="text-xs text-gray-500 mb-2">
                   {imageError ? 'Erreur de chargement' : 'Preview en cours...'}
                 </span>
-                {imageError && (
+                {imageError && imageUrl && (
                   <button
                     onClick={handleRetry}
                     className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"

@@ -17,32 +17,26 @@ export const useMediaFileHandler = ({ onMediaChange, existingMediaFiles = [] }: 
     if (existingMediaFiles.length > 0 && mediaFiles.length === 0) {
       console.log('📸 MEDIA_HANDLER - Initialisation avec médias existants:', existingMediaFiles);
       
-      // Traiter les médias existants pour générer les previews manquantes
+      // Traiter les médias existants pour s'assurer qu'ils ont les bonnes propriétés
       const processedMedia = existingMediaFiles.map(media => {
-        console.log('📸 MEDIA_HANDLER - Traitement média:', {
+        console.log('📸 MEDIA_HANDLER - Traitement média existant:', {
           id: media.id,
           name: media.name,
           type: media.type,
           hasPreview: !!media.preview,
-          hasFile: !!media.file,
-          fileSize: media.file?.size
+          hasFile: !!media.file
         });
 
-        // Si c'est une image et qu'elle n'a pas de preview, essayer de la générer
-        if (media.type === 'image' && !media.preview && media.file) {
-          console.log('📸 MEDIA_HANDLER - Génération preview pour:', media.name);
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const preview = e.target?.result as string;
-            console.log('📸 MEDIA_HANDLER - Preview générée pour:', media.name);
-            setMediaFiles(prev => prev.map(m => 
-              m.id === media.id ? { ...m, preview } : m
-            ));
+        // Pour les médias existants qui sont des images mais n'ont pas de preview
+        if (media.type === 'image' && !media.preview) {
+          // Si c'est un média existant (pas un nouveau fichier), utiliser l'URL comme preview
+          const processedMedia = {
+            ...media,
+            preview: media.file ? undefined : (media as any).url || (media as any).media_url
           };
-          reader.onerror = (error) => {
-            console.error('❌ MEDIA_HANDLER - Erreur génération preview:', error);
-          };
-          reader.readAsDataURL(media.file);
+          
+          console.log('📸 MEDIA_HANDLER - Média traité:', processedMedia);
+          return processedMedia;
         }
         
         return media;
