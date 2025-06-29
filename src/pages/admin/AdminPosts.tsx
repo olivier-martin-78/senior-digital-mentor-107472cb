@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PostWithAuthor, AlbumWithAuthor, BlogCategory } from '@/types/supabase';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -400,7 +399,6 @@ const AdminPosts = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Gestion des Albums</h1>
