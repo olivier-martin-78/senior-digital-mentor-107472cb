@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,7 +122,6 @@ const AdminDiary = () => {
   if (loading && entries.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center py-20">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -135,7 +133,6 @@ const AdminDiary = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal">Administration - Journaux</h1>

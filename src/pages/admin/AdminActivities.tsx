@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import Header from '@/components/Header';
 import { useActivities } from '@/hooks/useActivities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -166,7 +164,6 @@ const AdminActivities = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <div className="pt-20 px-4">
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">

@@ -1,6 +1,5 @@
 
 import React, { useRef } from 'react';
-import Header from '@/components/Header';
 import InvitationGroups, { InvitationGroupsRef } from '@/components/admin/InvitationGroups';
 import ProcessPendingInvitations from '@/components/admin/ProcessPendingInvitations';
 
@@ -16,7 +15,6 @@ const AdminInvitationGroups = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-2">
