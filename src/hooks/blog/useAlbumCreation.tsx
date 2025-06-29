@@ -38,7 +38,7 @@ export const useAlbumCreation = (
       return;
     }
 
-    // Vérifier l'unicité uniquement parmi les albums accessibles
+    // Vérifier l'unicité uniquement parmi les albums accessibles de l'utilisateur
     const albumExistsInAccessible = accessibleAlbums.some(
       album => album.name.toLowerCase() === newAlbumName.trim().toLowerCase()
     );
@@ -69,7 +69,21 @@ export const useAlbumCreation = (
 
       if (albumError) {
         console.error('Erreur lors de la création de l\'album:', albumError);
-        throw albumError;
+        // Gérer le cas spécifique de l'album existant pour cet utilisateur
+        if (albumError.code === '23505' && albumError.message.includes('blog_albums_name_author_unique')) {
+          toast({
+            title: "Album existant",
+            description: "Vous avez déjà un album avec ce nom.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erreur",
+            description: albumError.message || "Une erreur est survenue lors de la création de l'album.",
+            variant: "destructive"
+          });
+        }
+        return false;
       }
       
       // Si une vignette a été sélectionnée, la télécharger
