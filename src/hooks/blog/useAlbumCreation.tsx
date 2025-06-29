@@ -38,12 +38,26 @@ export const useAlbumCreation = (
       return;
     }
 
+    // Vérifier l'unicité uniquement parmi les albums accessibles
+    const albumExistsInAccessible = accessibleAlbums.some(
+      album => album.name.toLowerCase() === newAlbumName.trim().toLowerCase()
+    );
+
+    if (albumExistsInAccessible) {
+      toast({
+        title: "Album existant",
+        description: "Un album avec ce nom existe déjà dans vos albums accessibles.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setUploadingThumbnail(!!newAlbumThumbnail);
       
       let thumbnailUrl = null;
       
-      // Créer d'abord l'album pour obtenir un ID
+      // Créer l'album
       const { data: albumData, error: albumError } = await supabase
         .from('blog_albums')
         .insert({
@@ -54,16 +68,8 @@ export const useAlbumCreation = (
         .single();
 
       if (albumError) {
-        if (albumError.code === '23505') {
-          toast({
-            title: "Album existant",
-            description: "Un album avec ce nom existe déjà.",
-            variant: "destructive"
-          });
-        } else {
-          throw albumError;
-        }
-        return;
+        console.error('Erreur lors de la création de l\'album:', albumError);
+        throw albumError;
       }
       
       // Si une vignette a été sélectionnée, la télécharger
