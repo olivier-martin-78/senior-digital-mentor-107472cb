@@ -30,18 +30,20 @@ const AdminInvitationGroups = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mr-auto"
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Retour
-          </Button>
-          <h1 className="text-3xl font-serif text-tranches-charcoal">
-            Gestion des groupes d'invitation
-          </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="mr-4"
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Retour
+            </Button>
+            <h1 className="text-3xl font-serif text-tranches-charcoal">
+              Gestion des groupes d'invitation
+            </h1>
+          </div>
         </div>
         
         <div className="mb-6">
