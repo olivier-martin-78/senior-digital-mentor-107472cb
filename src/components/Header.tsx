@@ -219,7 +219,7 @@ const Header = () => {
                             <span>Mon compte</span>
                           </DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link to="/profile" className="flex items-center space-x-2">
+                            <Link to="/profile" className="flex items-center space-x-2 cursor-pointer">
                               <User className="w-4 h-4" />
                               <span>Profil</span>
                             </Link>
@@ -233,55 +233,55 @@ const Header = () => {
                           </DropdownMenuLabel>
                           
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/users" className="flex items-center space-x-2">
+                            <Link to="/admin/users" className="flex items-center space-x-2 cursor-pointer">
                               <Users className="w-4 h-4" />
                               <span>Utilisateurs</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/posts" className="flex items-center space-x-2">
+                            <Link to="/admin/posts" className="flex items-center space-x-2 cursor-pointer">
                               <FileText className="w-4 h-4" />
                               <span>Articles de blog</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/albums" className="flex items-center space-x-2">
+                            <Link to="/admin/albums" className="flex items-center space-x-2 cursor-pointer">
                               <FileText className="w-4 h-4" />
                               <span>Albums</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/wish-albums" className="flex items-center space-x-2">
+                            <Link to="/admin/wish-albums" className="flex items-center space-x-2 cursor-pointer">
                               <FileText className="w-4 h-4" />
                               <span>Albums de souhaits</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/diary" className="flex items-center space-x-2">
+                            <Link to="/admin/diary" className="flex items-center space-x-2 cursor-pointer">
                               <FileText className="w-4 h-4" />
                               <span>Journal</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/life-stories" className="flex items-center space-x-2">
+                            <Link to="/admin/life-stories" className="flex items-center space-x-2 cursor-pointer">
                               <FileText className="w-4 h-4" />
                               <span>Récits de vie</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/activities" className="flex items-center space-x-2">
+                            <Link to="/admin/activities" className="flex items-center space-x-2 cursor-pointer">
                               <Sparkles className="w-4 h-4" />
                               <span>Activités</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/permissions-diagnostic" className="flex items-center space-x-2">
+                            <Link to="/admin/permissions-diagnostic" className="flex items-center space-x-2 cursor-pointer">
                               <Settings className="w-4 h-4" />
                               <span>Diagnostic permissions</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/admin/invitation-groups" className="flex items-center space-x-2">
+                            <Link to="/admin/invitation-groups" className="flex items-center space-x-2 cursor-pointer">
                               <Users className="w-4 h-4" />
                               <span>Groupes d'invitation</span>
                             </Link>
@@ -289,7 +289,7 @@ const Header = () => {
                           
                           <DropdownMenuSeparator />
                           
-                          <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2 text-red-600">
+                          <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2 text-red-600 cursor-pointer">
                             <LogOut className="w-4 h-4" />
                             <span>Déconnexion</span>
                           </DropdownMenuItem>
@@ -473,6 +473,86 @@ const Header = () => {
                     <Crown className="w-4 h-4" />
                     <span>Abonnements</span>
                   </Link>
+
+                  {/* Menus d'administration pour mobile */}
+                  {hasRole('admin') && (
+                    <>
+                      <div className="border-t border-gray-200 my-2"></div>
+                      <div className="px-2 py-1 text-sm font-medium text-gray-500">Administration</div>
+                      <Link
+                        to="/admin/users"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>Utilisateurs</span>
+                      </Link>
+                      <Link
+                        to="/admin/posts"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Articles de blog</span>
+                      </Link>
+                      <Link
+                        to="/admin/albums"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Albums</span>
+                      </Link>
+                      <Link
+                        to="/admin/wish-albums"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Albums de souhaits</span>
+                      </Link>
+                      <Link
+                        to="/admin/diary"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Journal</span>
+                      </Link>
+                      <Link
+                        to="/admin/life-stories"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Récits de vie</span>
+                      </Link>
+                      <Link
+                        to="/admin/activities"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Activités</span>
+                      </Link>
+                      <Link
+                        to="/admin/permissions-diagnostic"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Diagnostic permissions</span>
+                      </Link>
+                      <Link
+                        to="/admin/invitation-groups"
+                        className="flex items-center space-x-1 text-sm text-gray-600 hover:text-tranches-dustyblue px-2 py-1"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>Groupes d'invitation</span>
+                      </Link>
+                    </>
+                  )}
                   
                   <div className="flex items-center space-x-2 px-2 py-2">
                     <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
