@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Header from '@/components/Header';
 import { v4 as uuidv4 } from 'uuid';
 import { parseISO } from 'date-fns';
 import { DiaryEntry } from '@/types/diary';
@@ -264,9 +263,8 @@ const DiaryEdit = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-24 flex justify-center">
+      <div className="min-h-screen bg-gray-50 pt-16">
+        <div className="container mx-auto px-4 py-8 flex justify-center">
           <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
         </div>
       </div>
@@ -274,9 +272,8 @@ const DiaryEdit = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-24">
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
             <Button 
