@@ -16,6 +16,8 @@ interface ActivityCardProps {
   onEdit?: () => void;
   subActivityName?: string;
   iframeCode?: string;
+  activityId?: string;
+  canEdit?: boolean;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -28,7 +30,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   showEditButton = false,
   onEdit,
   subActivityName,
-  iframeCode
+  iframeCode,
+  activityId,
+  canEdit = false
 }) => {
   const getDisplayImage = () => {
     if (thumbnailUrl) {
@@ -79,6 +83,13 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit();
+    }
+  };
+
   return (
     <Card className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
       <div className="relative">
@@ -111,6 +122,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               <div className="w-0 h-0 border-l-8 border-l-white border-t-4 border-t-transparent border-b-4 border-b-transparent ml-1"></div>
             </div>
           </div>
+        )}
+        {canEdit && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleEditClick}
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
         )}
         {showEditButton && onEdit && (
           <Button

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,8 +15,9 @@ const ActivityPage = () => {
   const { type } = useParams<{ type: string }>();
   const [subTagFilter, setSubTagFilter] = useState<string>('');
   const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
   
-  const { activities, loading } = useActivities(type || '');
+  const { activities, loading, canEditActivity } = useActivities(type || '');
   const { subTags } = useActivitySubTags(type || '');
 
   // Vérifier si l'utilisateur peut ajouter des activités
@@ -61,6 +62,10 @@ const ActivityPage = () => {
   const filterActivitiesBySubTag = (activities: any[], filter: string) => {
     if (!filter) return activities;
     return activities.filter(activity => activity.sub_activity_tag_id === filter);
+  };
+
+  const handleEditActivity = (activityId: string) => {
+    navigate(`/admin/activities/${type}?edit=${activityId}`);
   };
 
   const filteredActivities = filterActivitiesBySubTag(activities, subTagFilter);
@@ -233,6 +238,9 @@ const ActivityPage = () => {
                   activityDate={activity.activity_date}
                   subActivityName={activity.activity_sub_tags?.name}
                   iframeCode={activity.iframe_code}
+                  activityId={activity.id}
+                  canEdit={canEditActivity(activity)}
+                  onEdit={() => handleEditActivity(activity.id)}
                 />
               );
             })}
