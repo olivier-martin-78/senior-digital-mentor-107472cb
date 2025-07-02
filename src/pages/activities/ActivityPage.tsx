@@ -2,19 +2,25 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Brain, Gamepad2, Dumbbell, Languages } from 'lucide-react';
+import { ArrowLeft, Brain, Gamepad2, Dumbbell, Languages, Plus } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
+import { useAuth } from '@/contexts/AuthContext';
 import ActivityCard from '@/components/activities/ActivityCard';
 
 const ActivityPage = () => {
   const { type } = useParams<{ type: string }>();
   const [subTagFilter, setSubTagFilter] = useState<string>('');
+  const { user, hasRole } = useAuth();
   
   const { activities, loading } = useActivities(type || '');
   const { subTags } = useActivitySubTags(type || '');
+
+  // Vérifier si l'utilisateur peut ajouter des activités
+  const canAddActivity = user && (hasRole('admin') || hasRole('editor'));
 
   const getPageTitle = () => {
     switch (type) {
@@ -147,18 +153,29 @@ const ActivityPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center mb-8">
-          <Link to="/activities" className="flex items-center gap-2 text-tranches-dustyblue hover:text-tranches-dustyblue/80 mr-4">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Retour</span>
-          </Link>
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <PageIcon className="w-8 h-8 text-tranches-dustyblue mr-3" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
-              <p className="text-gray-600">{getPageDescription()}</p>
+            <Link to="/activities" className="flex items-center gap-2 text-tranches-dustyblue hover:text-tranches-dustyblue/80 mr-4">
+              <ArrowLeft className="w-5 h-5" />
+              <span>Retour</span>
+            </Link>
+            <div className="flex items-center">
+              <PageIcon className="w-8 h-8 text-tranches-dustyblue mr-3" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
+                <p className="text-gray-600">{getPageDescription()}</p>
+              </div>
             </div>
           </div>
+          
+          {canAddActivity && (
+            <Link to={`/admin/activities/${type}`}>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter une activité
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Filtre par sous-activité */}

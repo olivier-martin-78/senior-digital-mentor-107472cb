@@ -109,6 +109,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/diary" element={<AdminDiary />} />
             <Route path="/admin/life-stories" element={<AdminLifeStories />} />
             <Route path="/admin/activities" element={<AdminActivities />} />
+            <Route path="/admin/activities/:type" element={<AdminActivities />} />
             <Route path="/admin/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
           </Route>
