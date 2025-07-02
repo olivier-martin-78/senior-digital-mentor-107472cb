@@ -38,6 +38,7 @@ import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
 import TranslationGame from '@/pages/activities/TranslationGame';
+import ProfessionalModule from '@/pages/ProfessionalModule';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
@@ -58,6 +59,9 @@ const PrivateApp: React.FC = () => {
         <Routes>
           {/* Page d'accueil pour les utilisateurs connectés */}
           <Route path="/" element={<Index />} />
+          
+          {/* Page module professionnel - accessible à tous */}
+          <Route path="/module-pro" element={<ProfessionalModule />} />
           
           {/* Public subscription route for non-authenticated users */}
           {!user && <Route path="/subscription" element={<PublicSubscription />} />}
