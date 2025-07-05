@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,19 +7,24 @@ import { toast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
+import { MonthYearSelector } from './MonthYearSelector';
 
 interface AppointmentExporterProps {
   professionalId: string;
 }
 
 const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalId }) => {
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+
   const exportCompletedAppointments = async () => {
     try {
-      const currentDate = new Date();
-      const monthStart = startOfMonth(currentDate);
-      const monthEnd = endOfMonth(currentDate);
+      const targetDate = new Date(selectedYear, selectedMonth, 1);
+      const monthStart = startOfMonth(targetDate);
+      const monthEnd = endOfMonth(targetDate);
 
-      // Récupérer tous les rendez-vous du mois (terminés, programmés et annulés)
+      // Récupérer tous les rendez-vous du mois sélectionné (terminés, programmés et annulés)
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -49,7 +54,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       if (!data || data.length === 0) {
         toast({
           title: 'Aucun rendez-vous',
-          description: 'Aucun rendez-vous trouvé pour ce mois',
+          description: `Aucun rendez-vous trouvé pour ${format(targetDate, 'MMMM yyyy', { locale: fr })}`,
         });
         return;
       }
@@ -169,7 +174,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
         XLSX.utils.book_append_sheet(workbook, cancelledWorksheet, 'RDV Annulés');
       }
 
-      // 4. NOUVEAU : Onglets par client pour les rendez-vous terminés
+      // 4. Onglets par client pour les rendez-vous terminés
       if (completedAppointments.length > 0) {
         // Grouper les rendez-vous terminés par client
         const appointmentsByClient = completedAppointments.reduce((acc, appointment) => {
@@ -274,7 +279,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `rendez-vous-${format(currentDate, 'MM-yyyy')}.xlsx`);
+      link.setAttribute('download', `rendez-vous-${format(targetDate, 'MM-yyyy')}.xlsx`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -306,7 +311,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
 
       toast({
         title: 'Export réussi',
-        description: `${completedAppointments.length} RDV terminés, ${scheduledAppointments.length} programmés, ${cancelledAppointments.length} annulés + ${uniqueClients} onglets clients (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
+        description: `${format(targetDate, 'MMMM yyyy', { locale: fr })} : ${completedAppointments.length} RDV terminés, ${scheduledAppointments.length} programmés, ${cancelledAppointments.length} annulés + ${uniqueClients} onglets clients (${totalHours.toFixed(2)}h - ${totalAmount.toFixed(2)}€)`,
       });
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
@@ -319,14 +324,23 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
   };
 
   return (
-    <Button 
-      onClick={exportCompletedAppointments}
-      variant="outline"
-      className="flex items-center gap-2"
-    >
-      <Download className="h-4 w-4" />
-      Exporter RDV du mois
-    </Button>
+    <div className="space-y-4">
+      <MonthYearSelector
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={setSelectedMonth}
+        onYearChange={setSelectedYear}
+      />
+      
+      <Button 
+        onClick={exportCompletedAppointments}
+        variant="outline"
+        className="flex items-center gap-2 w-full"
+      >
+        <Download className="h-4 w-4" />
+        Exporter RDV de {format(new Date(selectedYear, selectedMonth), 'MMMM yyyy', { locale: fr })}
+      </Button>
+    </div>
   );
 };
 

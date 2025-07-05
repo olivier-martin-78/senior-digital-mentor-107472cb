@@ -330,7 +330,7 @@ const ProfessionalScheduler = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Exporter les Rendez-vous</CardTitle>
-                <CardDescription>Exportez vos rendez-vous au format CSV.</CardDescription>
+                <CardDescription>Choisissez le mois et l'année puis exportez vos rendez-vous au format Excel.</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentExporter professionalId={user?.id || ''} />
