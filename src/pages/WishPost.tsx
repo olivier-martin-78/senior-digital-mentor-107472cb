@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -241,7 +241,6 @@ const WishPost = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center py-20">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -254,7 +253,6 @@ const WishPost = () => {
   if (!wish) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-20">
             <h2 className="text-2xl font-serif text-tranches-charcoal mb-4">Souhait non trouvé</h2>
@@ -303,7 +301,6 @@ const WishPost = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <Button 
           variant="ghost" 
