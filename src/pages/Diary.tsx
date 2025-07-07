@@ -59,7 +59,7 @@ const Diary = () => {
             )}
             <Button 
               onClick={() => navigate('/diary/new')}
-              className="bg-tranches-sage hover:bg-tranches-sage/90 w-full sm:w-auto"
+              className="bg-black hover:bg-black/90 text-white w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Nouvelle entrée
