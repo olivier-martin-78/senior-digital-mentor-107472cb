@@ -32,7 +32,7 @@ interface CaregiverMessage {
   created_at: string;
   author_id: string;
   client_id: string;
-  profiles: {
+  author_profile: {
     display_name?: string;
     email: string;
   };
@@ -121,20 +121,38 @@ export const useCaregiversData = () => {
 
           setInterventionReports(reports || []);
 
-          // Récupérer les messages de coordination
+          // Récupérer les messages de coordination avec les profils des auteurs
           const { data: messagesData } = await supabase
             .from('caregiver_messages')
             .select(`
-              *,
-              profiles:author_id (
-                display_name,
-                email
-              )
+              id,
+              message,
+              created_at,
+              author_id,
+              client_id
             `)
             .in('client_id', clientIds)
             .order('created_at', { ascending: false });
 
-          setMessages(messagesData || []);
+          if (messagesData) {
+            // Récupérer les profils des auteurs séparément
+            const authorIds = [...new Set(messagesData.map(m => m.author_id))];
+            const { data: authorsData } = await supabase
+              .from('profiles')
+              .select('id, display_name, email')
+              .in('id', authorIds);
+
+            // Combiner les messages avec les profils des auteurs
+            const messagesWithAuthors = messagesData.map(message => ({
+              ...message,
+              author_profile: authorsData?.find(author => author.id === message.author_id) || {
+                display_name: 'Utilisateur inconnu',
+                email: ''
+              }
+            }));
+
+            setMessages(messagesWithAuthors);
+          }
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données aidants:', error);
@@ -160,22 +178,37 @@ export const useCaregiversData = () => {
 
       if (error) throw error;
 
-      // Recharger les messages
+      // Recharger les messages pour ce client
       const { data: messagesData } = await supabase
         .from('caregiver_messages')
         .select(`
-          *,
-          profiles:author_id (
-            display_name,
-            email
-          )
+          id,
+          message,
+          created_at,
+          author_id,
+          client_id
         `)
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
       if (messagesData) {
+        // Récupérer les profils des auteurs
+        const authorIds = [...new Set(messagesData.map(m => m.author_id))];
+        const { data: authorsData } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .in('id', authorIds);
+
+        const messagesWithAuthors = messagesData.map(message => ({
+          ...message,
+          author_profile: authorsData?.find(author => author.id === message.author_id) || {
+            display_name: 'Utilisateur inconnu',
+            email: ''
+          }
+        }));
+
         setMessages(prev => [
-          ...messagesData,
+          ...messagesWithAuthors,
           ...prev.filter(m => m.client_id !== clientId)
         ]);
       }

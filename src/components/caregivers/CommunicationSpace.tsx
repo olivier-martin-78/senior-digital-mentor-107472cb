@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Send, Bell, User } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 const CommunicationSpace = () => {
   const { clients, messages, isLoading, sendMessage } = useCaregiversData();
@@ -149,7 +149,7 @@ const CommunicationSpace = () => {
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-500" />
                       <span className="font-medium">
-                        {message.profiles?.display_name || message.profiles?.email}
+                        {message.author_profile?.display_name || message.author_profile?.email}
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">

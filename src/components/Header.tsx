@@ -26,13 +26,15 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
-  const { session, userRole } = useAuth();
+  const { session, roles } = useAuth();
   const { hasCaregiversAccess } = useCaregiversAccess();
   const location = useLocation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  const isProfessional = roles.includes('professionnel');
 
   const navigationItems = [
     { path: '/recent', label: 'Accueil', icon: Heart },
@@ -42,7 +44,7 @@ const Header = () => {
     { path: '/wishes', label: 'Souhaits', icon: Star },
   ];
 
-  if (userRole === 'professionnel') {
+  if (isProfessional) {
     navigationItems.push(
       { path: '/professional-scheduler', label: 'Planning', icon: Calendar },
       { path: '/professional-module', label: 'Module Pro', icon: Shield }
