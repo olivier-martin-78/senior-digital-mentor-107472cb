@@ -48,13 +48,16 @@ export const useCaregiversData = () => {
   useEffect(() => {
     const fetchCaregiversData = async () => {
       if (!session?.user) {
+        console.log('❌ Pas d\'utilisateur connecté');
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('🔍 Récupération des données pour l\'utilisateur:', session.user.email);
+
         // Récupérer les clients pour lesquels l'utilisateur est proche aidant
-        const { data: caregiverClients } = await supabase
+        const { data: caregiverClients, error: caregiverError } = await supabase
           .from('caregivers')
           .select(`
             client_id,
@@ -69,8 +72,14 @@ export const useCaregiversData = () => {
           `)
           .eq('email', session.user.email);
 
+        if (caregiverError) {
+          console.error('❌ Erreur lors de la récupération des clients aidant:', caregiverError);
+        } else {
+          console.log('✅ Clients trouvés pour aidant:', caregiverClients?.length || 0);
+        }
+
         // Récupérer aussi les clients pour lesquels l'utilisateur est professionnel
-        const { data: professionalClients } = await supabase
+        const { data: professionalClients, error: professionalError } = await supabase
           .from('appointments')
           .select(`
             client_id,
@@ -84,6 +93,12 @@ export const useCaregiversData = () => {
             )
           `)
           .eq('professional_id', session.user.id);
+
+        if (professionalError) {
+          console.error('❌ Erreur lors de la récupération des clients professionnel:', professionalError);
+        } else {
+          console.log('✅ Clients trouvés pour professionnel:', professionalClients?.length || 0);
+        }
 
         // Combiner et dédupliquer les clients
         const allClients = new Map<string, CaregiverClient>();
@@ -102,27 +117,50 @@ export const useCaregiversData = () => {
 
         const clientsList = Array.from(allClients.values());
         setClients(clientsList);
+        console.log('📊 Total clients uniques:', clientsList.length);
 
         if (clientsList.length > 0) {
           const clientIds = clientsList.map(c => c.id);
+          console.log('🎯 IDs des clients:', clientIds);
 
-          // Récupérer les rapports d'intervention
-          const { data: reports } = await supabase
-            .from('intervention_reports')
-            .select('*')
-            .in('appointment_id', 
-              await supabase
-                .from('appointments')
-                .select('id')
-                .in('client_id', clientIds)
-                .then(res => res.data?.map(a => a.id) || [])
-            )
-            .order('date', { ascending: false });
+          // Étape 1: Récupérer tous les appointments pour ces clients
+          const { data: appointments, error: appointmentsError } = await supabase
+            .from('appointments')
+            .select('id, client_id, professional_id, intervenant_id')
+            .in('client_id', clientIds);
 
-          setInterventionReports(reports || []);
+          if (appointmentsError) {
+            console.error('❌ Erreur lors de la récupération des appointments:', appointmentsError);
+          } else {
+            console.log('✅ Appointments trouvés:', appointments?.length || 0);
+            console.log('📋 Appointments détails:', appointments);
+          }
+
+          const appointmentIds = appointments?.map(a => a.id) || [];
+          console.log('🎯 IDs des appointments:', appointmentIds);
+
+          if (appointmentIds.length > 0) {
+            // Étape 2: Récupérer les rapports d'intervention pour ces appointments
+            const { data: reports, error: reportsError } = await supabase
+              .from('intervention_reports')
+              .select('*')
+              .in('appointment_id', appointmentIds)
+              .order('date', { ascending: false });
+
+            if (reportsError) {
+              console.error('❌ Erreur lors de la récupération des rapports:', reportsError);
+            } else {
+              console.log('✅ Rapports d\'intervention trouvés:', reports?.length || 0);
+              console.log('📋 Rapports détails:', reports);
+              setInterventionReports(reports || []);
+            }
+          } else {
+            console.log('⚠️ Aucun appointment trouvé pour ces clients');
+            setInterventionReports([]);
+          }
 
           // Récupérer les messages de coordination avec les profils des auteurs
-          const { data: messagesData } = await supabase
+          const { data: messagesData, error: messagesError } = await supabase
             .from('caregiver_messages')
             .select(`
               id,
@@ -134,13 +172,23 @@ export const useCaregiversData = () => {
             .in('client_id', clientIds)
             .order('created_at', { ascending: false });
 
+          if (messagesError) {
+            console.error('❌ Erreur lors de la récupération des messages:', messagesError);
+          } else {
+            console.log('✅ Messages trouvés:', messagesData?.length || 0);
+          }
+
           if (messagesData) {
             // Récupérer les profils des auteurs séparément
             const authorIds = [...new Set(messagesData.map(m => m.author_id))];
-            const { data: authorsData } = await supabase
+            const { data: authorsData, error: authorsError } = await supabase
               .from('profiles')
               .select('id, display_name, email')
               .in('id', authorIds);
+
+            if (authorsError) {
+              console.error('❌ Erreur lors de la récupération des profils auteurs:', authorsError);
+            }
 
             // Combiner les messages avec les profils des auteurs
             const messagesWithAuthors = messagesData.map(message => ({
@@ -153,9 +201,13 @@ export const useCaregiversData = () => {
 
             setMessages(messagesWithAuthors);
           }
+        } else {
+          console.log('⚠️ Aucun client trouvé pour cet utilisateur');
+          setInterventionReports([]);
+          setMessages([]);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des données aidants:', error);
+        console.error('❌ Erreur générale lors du chargement des données aidants:', error);
       } finally {
         setIsLoading(false);
       }
@@ -215,7 +267,7 @@ export const useCaregiversData = () => {
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du message:', error);
+      console.error('❌ Erreur lors de l\'envoi du message:', error);
       return false;
     }
   };
