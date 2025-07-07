@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -114,7 +115,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
         // Calculer le total du mois
         const totalAmount = completedData.reduce((sum, appointment) => sum + appointment['Total (€)'], 0);
         
-        // Ajouter une ligne de total
+        // Ajouter une ligne de total avec des types corrects
         completedData.push({
           'Date': '',
           'Heure début': '',
@@ -123,11 +124,11 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
           'Adresse': '',
           'Téléphone': '',
           'Email': '',
-          'Notes': '',
+          'Notes': 'TOTAL MENSUEL',
           'Nombre d\'heures': '',
-          'Prix horaire (€)': 'TOTAL MENSUEL',
+          'Prix horaire (€)': '',
           'Total (€)': Number(totalAmount.toFixed(2))
-        });
+        } as any);
         
         const completedWorksheet = XLSX.utils.json_to_sheet(completedData);
         
@@ -255,7 +256,7 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
             'Prix horaire (€)': '',
             'Total (€)': Number(totalAmount.toFixed(2)),
             'Notes': 'TOTAL MENSUEL'
-          });
+          } as any);
 
           // Créer la feuille de calcul
           const clientWorksheet = XLSX.utils.json_to_sheet(clientDataForExport);
