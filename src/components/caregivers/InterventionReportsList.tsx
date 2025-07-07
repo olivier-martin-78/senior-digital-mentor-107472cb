@@ -3,14 +3,14 @@ import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { useCaregiversData } from '@/hooks/useCaregiversData';
+import { useInterventionReports } from '@/hooks/useInterventionReports';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, FileText, Eye } from 'lucide-react';
 
 const InterventionReportsList = () => {
-  const { interventionReports, isLoading } = useCaregiversData();
+  const { interventionReports, isLoading } = useInterventionReports();
   const navigate = useNavigate();
 
   const handleViewReport = (reportId: string) => {

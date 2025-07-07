@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useCaregiversData } from '@/hooks/useCaregiversData';
+import { useCaregiverClients } from '@/hooks/useCaregiverClients';
+import { useCaregiverMessages } from '@/hooks/useCaregiverMessages';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useMessageStatus } from '@/hooks/useMessageStatus';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,14 +18,19 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const CommunicationSpace = () => {
   const { user } = useAuth();
-  const { clients, messages, isLoading, sendMessage, refreshMessages } = useCaregiversData();
+  const { clients, isLoading: clientsLoading } = useCaregiverClients();
+  const { messages, isLoading: messagesLoading, sendMessage } = useCaregiverMessages();
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendingNotifications, setSendingNotifications] = useState<Record<string, boolean>>({});
   
   const { unreadMessageIds } = useUnreadMessages(selectedClient);
-  const { messageStatuses, markNotificationAsSent } = useMessageStatus(messages, refreshMessages);
+  const { messageStatuses, markNotificationAsSent } = useMessageStatus(messages, () => {
+    // Refresh callback - pas besoin de recharger tout, juste les messages
+  });
+
+  const isLoading = clientsLoading || messagesLoading;
 
   const handleSendMessage = async () => {
     if (!selectedClient || !newMessage.trim()) {
@@ -78,7 +84,6 @@ const CommunicationSpace = () => {
 
       console.log('🔔 Notification envoyée avec succès');
       
-      // Marquer la notification comme envoyée dans la base de données
       const updateSuccess = await markNotificationAsSent(messageId);
       
       if (updateSuccess) {
@@ -113,7 +118,6 @@ const CommunicationSpace = () => {
     ? clients.find(c => c.id === selectedClient)?.first_name + ' ' + clients.find(c => c.id === selectedClient)?.last_name
     : '';
 
-  // Fonction pour vérifier si un message est récent (moins d'un jour)
   const isMessageRecent = (createdAt: string) => {
     const messageDate = new Date(createdAt);
     const oneDayAgo = new Date();
