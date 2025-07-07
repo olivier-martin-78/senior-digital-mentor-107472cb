@@ -1,11 +1,11 @@
-
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export const useReportActions = (reportId: string | null, report: any) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(false);
 
   const handleEdit = () => {
@@ -113,7 +113,12 @@ export const useReportActions = (reportId: string | null, report: any) => {
   };
 
   const handleBack = () => {
-    navigate('/scheduler');
+    const fromParam = searchParams.get('from');
+    if (fromParam === 'caregivers') {
+      navigate('/caregivers');
+    } else {
+      navigate('/professional-scheduler');
+    }
   };
 
   return {

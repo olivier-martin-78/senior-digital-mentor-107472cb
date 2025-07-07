@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -14,7 +13,7 @@ const InterventionReportsList = () => {
   const navigate = useNavigate();
 
   const handleViewReport = (reportId: string) => {
-    navigate(`/intervention-report?report_id=${reportId}`);
+    navigate(`/intervention-report?report_id=${reportId}&from=caregivers`);
   };
 
   if (isLoading) {
