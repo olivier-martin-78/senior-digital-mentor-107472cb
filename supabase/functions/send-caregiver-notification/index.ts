@@ -1,4 +1,5 @@
 
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -46,10 +47,6 @@ serve(async (req) => {
       .from('caregiver_messages')
       .select(`
         *,
-        profiles:author_id (
-          display_name,
-          email
-        ),
         clients:client_id (
           first_name,
           last_name
@@ -70,6 +67,20 @@ serve(async (req) => {
     }
 
     console.log('🔔 Message trouvé:', messageData);
+
+    // Récupérer le profil de l'auteur séparément
+    console.log('🔔 Récupération du profil de l\'auteur...');
+    const { data: authorProfile, error: authorError } = await supabaseClient
+      .from('profiles')
+      .select('display_name, email')
+      .eq('id', messageData.author_id)
+      .single()
+
+    if (authorError) {
+      console.error('🔔 Erreur lors de la récupération du profil auteur:', authorError)
+    }
+
+    console.log('🔔 Profil auteur trouvé:', authorProfile);
 
     // Récupérer tous les participants (aidants + professionnels)
     const participants = new Set<string>()
@@ -108,7 +119,9 @@ serve(async (req) => {
     })
 
     // Exclure l'auteur du message des notifications
-    participants.delete(messageData.profiles.email)
+    if (authorProfile?.email) {
+      participants.delete(authorProfile.email)
+    }
 
     console.log('🔔 Participants à notifier:', Array.from(participants));
 
@@ -145,7 +158,7 @@ serve(async (req) => {
           
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Patient :</strong> ${messageData.clients?.first_name} ${messageData.clients?.last_name}</p>
-            <p><strong>De :</strong> ${messageData.profiles?.display_name || messageData.profiles?.email}</p>
+            <p><strong>De :</strong> ${authorProfile?.display_name || authorProfile?.email}</p>
             <p><strong>Date :</strong> ${new Date(messageData.created_at).toLocaleDateString('fr-FR')}</p>
           </div>
 
@@ -200,3 +213,4 @@ serve(async (req) => {
     )
   }
 })
+
