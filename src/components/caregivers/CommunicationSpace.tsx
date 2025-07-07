@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useCaregiversData } from '@/hooks/useCaregiversData';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useMessageStatus } from '@/hooks/useMessageStatus';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,16 +13,18 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Send, Bell, User, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CommunicationSpace = () => {
+  const { user } = useAuth();
   const { clients, messages, isLoading, sendMessage } = useCaregiversData();
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [notificationStates, setNotificationStates] = useState<Record<string, boolean>>({});
   const [sendingNotifications, setSendingNotifications] = useState<Record<string, boolean>>({});
   
   const { unreadMessageIds } = useUnreadMessages(selectedClient);
+  const { messageStatuses, markNotificationAsSent } = useMessageStatus(messages);
 
   const handleSendMessage = async () => {
     if (!selectedClient || !newMessage.trim()) {
@@ -73,11 +77,22 @@ const CommunicationSpace = () => {
       }
 
       console.log('🔔 Notification envoyée avec succès');
-      setNotificationStates(prev => ({ ...prev, [messageId]: true }));
-      toast({
-        title: 'Notifications envoyées',
-        description: 'Les participants ont été notifiés du nouveau message',
-      });
+      
+      // Marquer la notification comme envoyée dans la base de données
+      const updateSuccess = await markNotificationAsSent(messageId);
+      
+      if (updateSuccess) {
+        toast({
+          title: 'Notifications envoyées',
+          description: 'Les participants ont été notifiés du nouveau message',
+        });
+      } else {
+        toast({
+          title: 'Erreur',
+          description: 'Notification envoyée mais erreur de sauvegarde du statut',
+          variant: 'destructive',
+        });
+      }
     } catch (error: any) {
       console.error('🔔 Erreur lors de l\'envoi des notifications:', error);
       toast({
@@ -192,9 +207,13 @@ const CommunicationSpace = () => {
             <div className="space-y-4">
               {filteredMessages.map((message) => {
                 const isUnread = unreadMessageIds.includes(message.id);
-                const isNotificationSent = notificationStates[message.id];
-                const isSendingNotification = sendingNotifications[message.id];
                 const isRecent = isMessageRecent(message.created_at);
+                const messageStatus = messageStatuses[message.id];
+                const isNotificationSent = messageStatus?.notification_sent || false;
+                const isSendingNotification = sendingNotifications[message.id];
+                const isMyMessage = message.author_id === user?.id;
+                const isRead = messageStatus?.is_read;
+                const readAt = messageStatus?.read_at;
                 
                 return (
                   <div 
@@ -216,6 +235,11 @@ const CommunicationSpace = () => {
                             Nouveau
                           </Badge>
                         )}
+                        {!isMyMessage && isRead && readAt && (
+                          <Badge variant="secondary" className="text-xs text-green-600">
+                            ✓ Lu le {format(new Date(readAt), 'dd/MM à HH:mm', { locale: fr })}
+                          </Badge>
+                        )}
                       </div>
                       <span className="text-sm text-gray-500">
                         {format(new Date(message.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
@@ -228,6 +252,11 @@ const CommunicationSpace = () => {
                         <div className="flex items-center text-sm text-green-600">
                           <Check className="h-4 w-4 mr-2" />
                           Notification envoyée
+                          {messageStatus?.notification_sent_at && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              le {format(new Date(messageStatus.notification_sent_at), 'dd/MM à HH:mm', { locale: fr })}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <Button

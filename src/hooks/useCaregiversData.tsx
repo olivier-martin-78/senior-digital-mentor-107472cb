@@ -32,6 +32,8 @@ interface CaregiverMessage {
   created_at: string;
   author_id: string;
   client_id: string;
+  notification_sent: boolean;
+  notification_sent_at: string | null;
   author_profile: {
     display_name?: string;
     email: string;
@@ -160,7 +162,7 @@ export const useCaregiversData = () => {
             setInterventionReports([]);
           }
 
-          // Récupérer les messages de coordination avec les profils des auteurs
+          // Récupérer les messages de coordination avec les profils des auteurs ET les statuts de notification
           const { data: messagesData, error: messagesError } = await supabase
             .from('caregiver_messages')
             .select(`
@@ -168,7 +170,9 @@ export const useCaregiversData = () => {
               message,
               created_at,
               author_id,
-              client_id
+              client_id,
+              notification_sent,
+              notification_sent_at
             `)
             .in('client_id', clientIds)
             .order('created_at', { ascending: false });
@@ -226,7 +230,9 @@ export const useCaregiversData = () => {
         .insert({
           client_id: clientId,
           author_id: session.user.id,
-          message: message
+          message: message,
+          notification_sent: false,
+          notification_sent_at: null
         });
 
       if (error) throw error;
@@ -239,7 +245,9 @@ export const useCaregiversData = () => {
           message,
           created_at,
           author_id,
-          client_id
+          client_id,
+          notification_sent,
+          notification_sent_at
         `)
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
