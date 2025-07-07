@@ -53,30 +53,37 @@ const CommunicationSpace = () => {
   };
 
   const handleNotifyParticipants = async (messageId: string, clientId: string) => {
+    console.log('🔔 Tentative d\'envoi de notification pour:', { messageId, clientId });
     setSendingNotifications(prev => ({ ...prev, [messageId]: true }));
     
     try {
-      const { error } = await supabase.functions.invoke('send-caregiver-notification', {
+      console.log('🔔 Appel de la fonction Edge send-caregiver-notification...');
+      
+      const { data, error } = await supabase.functions.invoke('send-caregiver-notification', {
         body: {
           client_id: clientId,
           message_id: messageId
         }
       });
 
+      console.log('🔔 Réponse de la fonction Edge:', { data, error });
+
       if (error) {
+        console.error('🔔 Erreur de la fonction Edge:', error);
         throw error;
       }
 
+      console.log('🔔 Notification envoyée avec succès');
       setNotificationStates(prev => ({ ...prev, [messageId]: true }));
       toast({
         title: 'Notifications envoyées',
         description: 'Les participants ont été notifiés du nouveau message',
       });
     } catch (error: any) {
-      console.error('Erreur lors de l\'envoi des notifications:', error);
+      console.error('🔔 Erreur lors de l\'envoi des notifications:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'envoyer les notifications',
+        description: `Impossible d'envoyer les notifications: ${error.message || 'Erreur inconnue'}`,
         variant: 'destructive',
       });
     } finally {
