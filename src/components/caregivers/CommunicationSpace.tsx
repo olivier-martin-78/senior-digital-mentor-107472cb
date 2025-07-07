@@ -9,14 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, Bell, User } from 'lucide-react';
+import { MessageCircle, Send, Bell, User, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const CommunicationSpace = () => {
   const { clients, messages, isLoading, sendMessage } = useCaregiversData();
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [notificationStates, setNotificationStates] = useState<Record<string, boolean>>({});
+  const [sendingNotifications, setSendingNotifications] = useState<Record<string, boolean>>({});
   
   const { unreadMessageIds } = useUnreadMessages(selectedClient);
 
@@ -47,6 +50,38 @@ const CommunicationSpace = () => {
       });
     }
     setIsSending(false);
+  };
+
+  const handleNotifyParticipants = async (messageId: string, clientId: string) => {
+    setSendingNotifications(prev => ({ ...prev, [messageId]: true }));
+    
+    try {
+      const { error } = await supabase.functions.invoke('send-caregiver-notification', {
+        body: {
+          client_id: clientId,
+          message_id: messageId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setNotificationStates(prev => ({ ...prev, [messageId]: true }));
+      toast({
+        title: 'Notifications envoyées',
+        description: 'Les participants ont été notifiés du nouveau message',
+      });
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi des notifications:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer les notifications',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingNotifications(prev => ({ ...prev, [messageId]: false }));
+    }
   };
 
   const filteredMessages = selectedClient 
@@ -116,11 +151,6 @@ const CommunicationSpace = () => {
               <Send className="h-4 w-4" />
               {isSending ? 'Envoi...' : 'Publier le message'}
             </Button>
-            
-            <Button variant="outline" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifier les participants
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -148,6 +178,9 @@ const CommunicationSpace = () => {
             <div className="space-y-4">
               {filteredMessages.map((message) => {
                 const isUnread = unreadMessageIds.includes(message.id);
+                const isNotificationSent = notificationStates[message.id];
+                const isSendingNotification = sendingNotifications[message.id];
+                
                 return (
                   <div 
                     key={message.id} 
@@ -173,7 +206,27 @@ const CommunicationSpace = () => {
                         {format(new Date(message.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
                       </span>
                     </div>
-                    <p className="text-gray-700">{message.message}</p>
+                    <p className="text-gray-700 mb-3">{message.message}</p>
+                    
+                    <div className="flex justify-end">
+                      {isNotificationSent ? (
+                        <div className="flex items-center text-sm text-green-600">
+                          <Check className="h-4 w-4 mr-2" />
+                          Notification envoyée
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleNotifyParticipants(message.id, message.client_id)}
+                          disabled={isSendingNotification}
+                          className="flex items-center gap-2"
+                        >
+                          <Bell className="h-4 w-4" />
+                          {isSendingNotification ? 'Envoi...' : 'Notifier les participants'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
