@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCaregiversAccess } from '@/hooks/useCaregiversAccess';
@@ -14,9 +14,21 @@ import InterventionReviews from '@/components/caregivers/InterventionReviews';
 const Caregivers = () => {
   const { session, isLoading: authLoading } = useAuth();
   const { hasCaregiversAccess, isLoading: accessLoading } = useCaregiversAccess();
-  const { unreadCount } = useUnreadMessages();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('reports');
+  const [hasViewedCommunication, setHasViewedCommunication] = useState(false);
+  
+  const { unreadCount, markAllAsRead } = useUnreadMessages();
+
+  const navigate = useNavigate();
+
+  // Marquer les messages comme lus quand l'utilisateur clique sur l'onglet communication
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'communication' && !hasViewedCommunication) {
+      setHasViewedCommunication(true);
+      markAllAsRead();
+    }
+  };
 
   if (authLoading || accessLoading) {
     return (
@@ -48,6 +60,9 @@ const Caregivers = () => {
     );
   }
 
+  // Afficher la pastille seulement si l'utilisateur n'a pas encore visité l'onglet communication
+  const displayUnreadCount = !hasViewedCommunication ? unreadCount : 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -56,17 +71,17 @@ const Caregivers = () => {
             Espace Aidants
           </h1>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="reports">Rapports d'intervention</TabsTrigger>
               <TabsTrigger value="communication" className="relative">
                 Espace de coordination
-                {unreadCount > 0 && (
+                {displayUnreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
                   >
-                    {unreadCount}
+                    {displayUnreadCount}
                   </Badge>
                 )}
               </TabsTrigger>

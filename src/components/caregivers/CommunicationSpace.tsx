@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -99,6 +98,14 @@ const CommunicationSpace = () => {
     ? clients.find(c => c.id === selectedClient)?.first_name + ' ' + clients.find(c => c.id === selectedClient)?.last_name
     : '';
 
+  // Fonction pour vérifier si un message est récent (moins d'un jour)
+  const isMessageRecent = (createdAt: string) => {
+    const messageDate = new Date(createdAt);
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    return messageDate > oneDayAgo;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -187,12 +194,13 @@ const CommunicationSpace = () => {
                 const isUnread = unreadMessageIds.includes(message.id);
                 const isNotificationSent = notificationStates[message.id];
                 const isSendingNotification = sendingNotifications[message.id];
+                const isRecent = isMessageRecent(message.created_at);
                 
                 return (
                   <div 
                     key={message.id} 
                     className={`border rounded-lg p-4 ${
-                      isUnread 
+                      isUnread && isRecent
                         ? 'border-blue-300 bg-blue-50' 
                         : 'border-gray-200 bg-white'
                     }`}
@@ -203,7 +211,7 @@ const CommunicationSpace = () => {
                         <span className="font-medium">
                           {message.author_profile?.display_name || message.author_profile?.email}
                         </span>
-                        {isUnread && (
+                        {isUnread && isRecent && (
                           <Badge variant="destructive" className="text-xs">
                             Nouveau
                           </Badge>
