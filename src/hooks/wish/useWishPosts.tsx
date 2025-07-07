@@ -1,39 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useGroupPermissions } from '../useGroupPermissions';
-
-export interface WishPost {
-  id: string;
-  title: string;
-  content: string;
-  author_id: string;
-  album_id: string | null;
-  cover_image: string | null;
-  published: boolean | null;
-  created_at: string;
-  updated_at: string;
-  email_notification_sent: boolean | null;
-  email_notification_requested: boolean | null;
-  // Champs spécifiques aux souhaits
-  first_name: string | null;
-  email: string | null;
-  age: string | null;
-  location: string | null;
-  request_type: string | null;
-  custom_request_type: string | null;
-  importance: string | null;
-  needs: string | null;
-  offering: string | null;
-  date: string | null;
-  attachment_url: string | null;
-  user_id: string | null;
-  profiles?: {
-    display_name?: string | null;
-    email?: string;
-  };
-}
+import { WishPost } from '@/types/supabase';
 
 export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '', wishId?: string) => {
   const [posts, setPosts] = useState<WishPost[]>([]);
