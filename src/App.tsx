@@ -72,16 +72,16 @@ function App() {
                   <Route path="/diary" element={<Diary />} />
                   <Route path="/diary/new" element={<DiaryNew />} />
                   <Route path="/diary/:id" element={<DiaryEntry />} />
-                  <Route path="/diary/:id/edit" element={<DiaryEdit />} />
+                  <Route path="/diary/edit/:id" element={<DiaryEdit />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/new" element={<BlogEditor />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
-                  <Route path="/blog/:id/edit" element={<BlogEditor />} />
+                  <Route path="/blog/edit/:id" element={<BlogEditor />} />
                   <Route path="/life-story" element={<LifeStory />} />
                   <Route path="/wishes" element={<Wishes />} />
                   <Route path="/wishes/new" element={<WishNew />} />
                   <Route path="/wishes/:id" element={<WishPost />} />
-                  <Route path="/wishes/:id/edit" element={<WishEdit />} />
+                  <Route path="/wishes/edit/:id" element={<WishEdit />} />
                   <Route path="/wishes/form/:id" element={<WishForm />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/subscription" element={<Subscription />} />
