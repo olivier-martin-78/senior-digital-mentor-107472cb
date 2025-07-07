@@ -9,7 +9,9 @@ export const useReportActions = (reportId: string | null, report: any) => {
   const [deleting, setDeleting] = useState(false);
 
   const handleEdit = () => {
-    navigate(`/intervention-report?report_id=${reportId}&edit=true`);
+    const fromParam = searchParams.get('from');
+    const editUrl = `/intervention-report?report_id=${reportId}&edit=true${fromParam ? `&from=${fromParam}` : ''}`;
+    navigate(editUrl);
   };
 
   const handleDelete = async () => {

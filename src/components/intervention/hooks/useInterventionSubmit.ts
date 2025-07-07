@@ -1,7 +1,7 @@
 
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { InterventionFormData } from '../types/FormData';
@@ -9,6 +9,7 @@ import { InterventionFormData } from '../types/FormData';
 export const useInterventionSubmit = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Refs pour éviter les soumissions multiples
   const isSubmitting = useRef(false);
@@ -190,11 +191,15 @@ export const useInterventionSubmit = () => {
 
       // Navigation sécurisée - SEULEMENT après sauvegarde complète
       navigationPending.current = true;
-      console.log('🔄 SUBMIT_HOOK - Navigation vers le planificateur');
+      console.log('🔄 SUBMIT_HOOK - Navigation vers la page appropriée');
+      
+      // Déterminer où naviguer en fonction du paramètre 'from'
+      const fromParam = searchParams.get('from');
+      const destination = fromParam === 'caregivers' ? '/caregivers' : '/scheduler';
       
       // Délai pour s'assurer que tout est sauvegardé
       setTimeout(() => {
-        navigate('/scheduler');
+        navigate(destination);
       }, 500);
       
       return true;
