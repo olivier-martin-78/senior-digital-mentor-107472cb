@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-type',
 }
 
 serve(async (req) => {
@@ -13,6 +13,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔔 Fonction send-caregiver-notification appelée');
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -25,8 +27,10 @@ serve(async (req) => {
     )
 
     const { client_id, message_id } = await req.json()
+    console.log('🔔 Paramètres reçus:', { client_id, message_id });
 
     if (!client_id || !message_id) {
+      console.error('🔔 Paramètres manquants');
       return new Response(
         JSON.stringify({ error: 'Client ID and Message ID are required' }),
         { 
@@ -37,6 +41,7 @@ serve(async (req) => {
     }
 
     // Récupérer les informations du message
+    console.log('🔔 Récupération du message...');
     const { data: messageData, error: messageError } = await supabaseClient
       .from('caregiver_messages')
       .select(`
@@ -54,7 +59,7 @@ serve(async (req) => {
       .single()
 
     if (messageError) {
-      console.error('Error fetching message:', messageError)
+      console.error('🔔 Erreur lors de la récupération du message:', messageError)
       return new Response(
         JSON.stringify({ error: 'Message not found' }),
         { 
@@ -64,15 +69,19 @@ serve(async (req) => {
       )
     }
 
+    console.log('🔔 Message trouvé:', messageData);
+
     // Récupérer tous les participants (aidants + professionnels)
     const participants = new Set<string>()
 
     // Ajouter les proches aidants
+    console.log('🔔 Récupération des aidants...');
     const { data: caregivers } = await supabaseClient
       .from('caregivers')
       .select('email')
       .eq('client_id', client_id)
 
+    console.log('🔔 Aidants trouvés:', caregivers);
     caregivers?.forEach(caregiver => {
       if (caregiver.email) {
         participants.add(caregiver.email)
@@ -80,6 +89,7 @@ serve(async (req) => {
     })
 
     // Ajouter les professionnels ayant des RDV avec ce client
+    console.log('🔔 Récupération des professionnels...');
     const { data: appointments } = await supabaseClient
       .from('appointments')
       .select(`
@@ -90,6 +100,7 @@ serve(async (req) => {
       `)
       .eq('client_id', client_id)
 
+    console.log('🔔 RDV trouvés:', appointments);
     appointments?.forEach(appointment => {
       if (appointment.profiles?.email) {
         participants.add(appointment.profiles.email)
@@ -99,7 +110,10 @@ serve(async (req) => {
     // Exclure l'auteur du message des notifications
     participants.delete(messageData.profiles.email)
 
+    console.log('🔔 Participants à notifier:', Array.from(participants));
+
     if (participants.size === 0) {
+      console.log('🔔 Aucun participant à notifier');
       return new Response(
         JSON.stringify({ message: 'No participants to notify' }),
         { 
@@ -113,7 +127,7 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     
     if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY not configured')
+      console.error('🔔 RESEND_API_KEY non configuré')
       return new Response(
         JSON.stringify({ error: 'Email service not configured' }),
         { 
@@ -123,6 +137,7 @@ serve(async (req) => {
       )
     }
 
+    console.log('🔔 Envoi des emails...');
     const emailPromises = Array.from(participants).map(async (email) => {
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -161,6 +176,7 @@ serve(async (req) => {
     })
 
     await Promise.all(emailPromises)
+    console.log('🔔 Tous les emails envoyés avec succès');
 
     return new Response(
       JSON.stringify({ 
@@ -174,7 +190,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in send-caregiver-notification:', error)
+    console.error('🔔 Erreur dans send-caregiver-notification:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { 
