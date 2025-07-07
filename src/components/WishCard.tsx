@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useContentReadStatus } from '@/hooks/useContentReadStatus';
+import RecentItemImage from '@/components/RecentItemImage';
 
 interface WishCardProps {
   wish: WishPost;
@@ -98,13 +99,13 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
     <Link to={`/wishes/${wish.id}`} onClick={handleClick}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
         {wish.cover_image && (
-          <div className="aspect-video overflow-hidden rounded-t-lg">
-            <img
-              src={wish.cover_image}
-              alt={wish.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <RecentItemImage
+            type="wish"
+            id={wish.id}
+            title={wish.title}
+            coverImage={wish.cover_image}
+            className="w-full aspect-video overflow-hidden rounded-t-lg"
+          />
         )}
         
         <CardHeader className="pb-3">
