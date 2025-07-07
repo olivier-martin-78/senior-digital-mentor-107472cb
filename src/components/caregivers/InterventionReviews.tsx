@@ -1,57 +1,14 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useCaregiversData } from '@/hooks/useCaregiversData';
+import { useInterventionReviews } from '@/hooks/useInterventionReviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, MessageSquare, TrendingUp } from 'lucide-react';
 
 const InterventionReviews = () => {
-  const { interventionReports, clients, isLoading } = useCaregiversData();
-
-  const reviewsData = useMemo(() => {
-    const reportsWithReviews = interventionReports.filter(
-      report => report.client_rating || report.client_comments
-    );
-
-    // Grouper par professionnel
-    const byProfessional = reportsWithReviews.reduce((acc, report) => {
-      if (!acc[report.professional_id]) {
-        acc[report.professional_id] = {
-          auxiliary_name: report.auxiliary_name,
-          reviews: [],
-          ratings: []
-        };
-      }
-      
-      acc[report.professional_id].reviews.push(report);
-      if (report.client_rating) {
-        acc[report.professional_id].ratings.push(report.client_rating);
-      }
-      
-      return acc;
-    }, {} as Record<string, any>);
-
-    // Calculer les moyennes
-    Object.keys(byProfessional).forEach(professionalId => {
-      const ratings = byProfessional[professionalId].ratings;
-      if (ratings.length > 0) {
-        byProfessional[professionalId].averageRating = 
-          ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length;
-      }
-    });
-
-    return {
-      reportsWithReviews,
-      byProfessional,
-      totalReviews: reportsWithReviews.length,
-      averageRating: reportsWithReviews
-        .filter(r => r.client_rating)
-        .reduce((sum, r) => sum + r.client_rating!, 0) / 
-        reportsWithReviews.filter(r => r.client_rating).length || 0
-    };
-  }, [interventionReports]);
+  const { reviewsData, isLoading } = useInterventionReviews();
 
   if (isLoading) {
     return (
@@ -117,7 +74,7 @@ const InterventionReviews = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Avis par intervenant</h3>
         
-        {Object.entries(reviewsData.byProfessional).map(([professionalId, data]: [string, any]) => (
+        {Object.entries(reviewsData.byProfessional).map(([professionalId, data]) => (
           <Card key={professionalId}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -137,7 +94,7 @@ const InterventionReviews = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.reviews.map((review: any) => (
+                {data.reviews.map((review) => (
                   <div key={review.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium">{review.patient_name}</span>
@@ -148,7 +105,7 @@ const InterventionReviews = () => {
                               <Star
                                 key={star}
                                 className={`h-4 w-4 ${
-                                  star <= review.client_rating
+                                  star <= review.client_rating!
                                     ? 'fill-current text-yellow-500'
                                     : 'text-gray-300'
                                 }`}
