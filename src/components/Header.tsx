@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCaregiversAccess } from '@/hooks/useCaregiversAccess';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Heart, 
   BookOpen, 
@@ -26,7 +27,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
-  const { session, roles } = useAuth();
+  const { session, roles, profile } = useAuth();
   const { hasCaregiversAccess } = useCaregiversAccess();
   const location = useLocation();
 
@@ -37,7 +38,7 @@ const Header = () => {
   const isProfessional = roles.includes('professionnel');
 
   const navigationItems = [
-    { path: '/recent', label: 'Accueil', icon: Heart },
+    { path: '/recent', label: 'Récent', icon: Heart },
     { path: '/diary', label: 'Journal', icon: BookOpen },
     { path: '/blog', label: 'Blog', icon: Calendar },
     { path: '/life-story', label: 'Récit de vie', icon: Star },
@@ -70,6 +71,17 @@ const Header = () => {
       icon: Users
     });
   }
+
+  // Fonction pour obtenir les initiales de l'utilisateur
+  const getUserInitials = () => {
+    if (profile?.display_name) {
+      return profile.display_name.split(' ').map(name => name[0]).join('').toUpperCase();
+    }
+    if (session?.user?.email) {
+      return session.user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -143,12 +155,16 @@ const Header = () => {
                 </DropdownMenu>
               </nav>
 
-              {/* User Menu */}
+              {/* User Menu avec Avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span className="hidden md:inline">Mon compte</span>
+                  <Button variant="ghost" className="flex items-center space-x-2 p-1 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.avatar_url || ''} alt="Photo de profil" />
+                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
