@@ -44,10 +44,21 @@ const Header = () => {
     { path: '/wishes', label: 'Souhaits', icon: Star },
   ];
 
+  // Ajouter le menu Activités avec ses sous-menus
+  const activitiesMenu = {
+    path: '/activities',
+    label: 'Activités',
+    icon: Activity,
+    subItems: [
+      { path: '/activities/crossword', label: 'Mots croisés' },
+      { path: '/activities/sudoku', label: 'Sudoku' },
+      { path: '/activities/translation', label: 'Traduction' }
+    ]
+  };
+
   if (isProfessional) {
     navigationItems.push(
-      { path: '/professional-scheduler', label: 'Planning', icon: Calendar },
-      { path: '/professional-module', label: 'Module Pro', icon: Shield }
+      { path: '/professional-scheduler', label: 'Planning', icon: Calendar }
     );
   }
 
@@ -97,6 +108,39 @@ const Header = () => {
                     </Link>
                   );
                 })}
+
+                {/* Menu Activités avec dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        location.pathname.startsWith('/activities')
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Activity className="h-4 w-4" />
+                      <span>{activitiesMenu.label}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/activities" className="flex items-center">
+                        <Activity className="mr-2 h-4 w-4" />
+                        Vue d'ensemble
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {activitiesMenu.subItems.map((subItem) => (
+                      <DropdownMenuItem key={subItem.path} asChild>
+                        <Link to={subItem.path} className="flex items-center">
+                          {subItem.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </nav>
 
               {/* User Menu */}
