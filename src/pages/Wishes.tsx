@@ -58,7 +58,7 @@ const Wishes = () => {
             )}
             <Button 
               onClick={() => navigate('/wishes/new')}
-              className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90 w-full sm:w-auto"
+              className="bg-black hover:bg-black/90 text-white w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Nouveau souhait
@@ -126,7 +126,7 @@ const Wishes = () => {
             {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && (
               <Button 
                 onClick={() => navigate('/wishes/new')}
-                className="bg-tranches-dustyblue hover:bg-tranches-dustyblue/90"
+                className="bg-black hover:bg-black/90 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Créer mon premier souhait
