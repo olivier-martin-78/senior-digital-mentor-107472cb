@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCaregiversAccess } from '@/hooks/useCaregiversAccess';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import InterventionReportsList from '@/components/caregivers/InterventionReportsList';
 import CommunicationSpace from '@/components/caregivers/CommunicationSpace';
 import InterventionReviews from '@/components/caregivers/InterventionReviews';
@@ -12,6 +14,7 @@ import InterventionReviews from '@/components/caregivers/InterventionReviews';
 const Caregivers = () => {
   const { session, isLoading: authLoading } = useAuth();
   const { hasCaregiversAccess, isLoading: accessLoading } = useCaregiversAccess();
+  const { unreadCount } = useUnreadMessages();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('reports');
 
@@ -56,7 +59,17 @@ const Caregivers = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="reports">Rapports d'intervention</TabsTrigger>
-              <TabsTrigger value="communication">Espace de coordination</TabsTrigger>
+              <TabsTrigger value="communication" className="relative">
+                Espace de coordination
+                {unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="reviews">Avis sur les interventions</TabsTrigger>
             </TabsList>
 

@@ -2,13 +2,20 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { useCaregiversData } from '@/hooks/useCaregiversData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, User, FileText, Eye } from 'lucide-react';
 
 const InterventionReportsList = () => {
   const { interventionReports, isLoading } = useCaregiversData();
+  const navigate = useNavigate();
+
+  const handleViewReport = (reportId: string) => {
+    navigate(`/intervention-report?report_id=${reportId}`);
+  };
 
   if (isLoading) {
     return (
@@ -38,9 +45,20 @@ const InterventionReportsList = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">{report.patient_name}</CardTitle>
-              <Badge variant="outline">
-                {format(new Date(report.date), 'dd MMMM yyyy', { locale: fr })}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {format(new Date(report.date), 'dd MMMM yyyy', { locale: fr })}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleViewReport(report.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Voir le rapport
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

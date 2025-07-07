@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useCaregiversData } from '@/hooks/useCaregiversData';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +17,8 @@ const CommunicationSpace = () => {
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  
+  const { unreadMessageIds } = useUnreadMessages(selectedClient);
 
   const handleSendMessage = async () => {
     if (!selectedClient || !newMessage.trim()) {
@@ -143,22 +146,37 @@ const CommunicationSpace = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredMessages.map((message) => (
-                <div key={message.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium">
-                        {message.author_profile?.display_name || message.author_profile?.email}
+              {filteredMessages.map((message) => {
+                const isUnread = unreadMessageIds.includes(message.id);
+                return (
+                  <div 
+                    key={message.id} 
+                    className={`border rounded-lg p-4 ${
+                      isUnread 
+                        ? 'border-blue-300 bg-blue-50' 
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium">
+                          {message.author_profile?.display_name || message.author_profile?.email}
+                        </span>
+                        {isUnread && (
+                          <Badge variant="destructive" className="text-xs">
+                            Nouveau
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {format(new Date(message.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {format(new Date(message.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                    </span>
+                    <p className="text-gray-700">{message.message}</p>
                   </div>
-                  <p className="text-gray-700">{message.message}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
