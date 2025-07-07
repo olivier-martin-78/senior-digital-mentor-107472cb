@@ -160,7 +160,7 @@ const ActivityPage = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <Link to="/activities/activities" className="flex items-center gap-2 text-tranches-dustyblue hover:text-tranches-dustyblue/80 mr-4">
+            <Link to="/activities" className="flex items-center gap-2 text-tranches-dustyblue hover:text-tranches-dustyblue/80 mr-4">
               <ArrowLeft className="w-5 h-5" />
               <span>Retour</span>
             </Link>
