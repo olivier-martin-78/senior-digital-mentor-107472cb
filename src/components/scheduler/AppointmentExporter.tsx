@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -111,6 +110,25 @@ const AppointmentExporter: React.FC<AppointmentExporterProps> = ({ professionalI
       // 1. Feuille des rendez-vous terminés (avec données financières)
       if (completedAppointments.length > 0) {
         const completedData = prepareAppointmentData(completedAppointments, true);
+        
+        // Calculer le total du mois
+        const totalAmount = completedData.reduce((sum, appointment) => sum + appointment['Total (€)'], 0);
+        
+        // Ajouter une ligne de total
+        completedData.push({
+          'Date': '',
+          'Heure début': '',
+          'Heure fin': '',
+          'Client': '',
+          'Adresse': '',
+          'Téléphone': '',
+          'Email': '',
+          'Notes': '',
+          'Nombre d\'heures': '',
+          'Prix horaire (€)': 'TOTAL MENSUEL',
+          'Total (€)': Number(totalAmount.toFixed(2))
+        });
+        
         const completedWorksheet = XLSX.utils.json_to_sheet(completedData);
         
         // Définir la largeur des colonnes pour les RDV terminés
