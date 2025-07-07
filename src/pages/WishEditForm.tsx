@@ -92,7 +92,7 @@ const WishEditForm = () => {
     return null;
   }
 
-  return <WishForm wishToEdit={wish} />;
+  return <WishForm wishToEdit={wish} hideHeader={true} />;
 };
 
 export default WishEditForm;

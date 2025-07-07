@@ -38,6 +38,7 @@ import WishAlbumSelector from '@/components/WishAlbumSelector';
 // Props type for the WishForm component
 interface WishFormProps {
   wishToEdit?: WishPost;
+  hideHeader?: boolean;
 }
 
 // Schéma de validation pour le formulaire
@@ -63,7 +64,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
+const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) => {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
     console.log('WishForm - Chargement de l\'authentification');
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
+        {!hideHeader && <Header />}
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin h-8 w-8 border-4 border-tranches-sage border-t-transparent rounded-full"></div>
@@ -402,7 +403,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit }) => {
   
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
+      {!hideHeader && <Header />}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-6">
