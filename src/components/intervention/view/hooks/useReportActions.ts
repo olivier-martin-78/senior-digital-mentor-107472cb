@@ -42,7 +42,13 @@ export const useReportActions = (reportId: string | null, report: any) => {
         description: 'Rapport supprimé avec succès',
       });
 
-      navigate('/scheduler');
+      // Navigation conditionnelle basée sur le paramètre 'from'
+      const fromParam = searchParams.get('from');
+      if (fromParam === 'caregivers') {
+        navigate('/caregivers');
+      } else {
+        navigate('/professional-scheduler');
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({

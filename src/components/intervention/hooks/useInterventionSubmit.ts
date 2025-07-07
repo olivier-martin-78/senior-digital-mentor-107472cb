@@ -195,7 +195,7 @@ export const useInterventionSubmit = () => {
       
       // Déterminer où naviguer en fonction du paramètre 'from'
       const fromParam = searchParams.get('from');
-      const destination = fromParam === 'caregivers' ? '/caregivers' : '/scheduler';
+      const destination = fromParam === 'caregivers' ? '/caregivers' : '/professional-scheduler';
       
       // Délai pour s'assurer que tout est sauvegardé
       setTimeout(() => {
