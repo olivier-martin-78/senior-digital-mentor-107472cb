@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -47,7 +47,7 @@ export const useContentReadStatus = (
     checkReadStatus();
   }, [user, contentType, contentId]);
 
-  const markAsRead = async () => {
+  const markAsRead = useCallback(async () => {
     if (!user || !contentId || isRead) return;
 
     try {
@@ -70,7 +70,7 @@ export const useContentReadStatus = (
     } catch (error) {
       console.error('Erreur lors du marquage comme lu:', error);
     }
-  };
+  }, [user, contentId, contentType, isRead]);
 
   return { isRead, readAt, markAsRead };
 };
