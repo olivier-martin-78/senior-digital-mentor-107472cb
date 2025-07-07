@@ -92,7 +92,11 @@ const WishEditForm = () => {
     return null;
   }
 
-  return <WishForm wishToEdit={wish} />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <WishForm wishToEdit={wish} />
+    </div>
+  );
 };
 
 export default WishEditForm;
