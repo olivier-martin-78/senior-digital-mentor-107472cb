@@ -40,12 +40,11 @@ export const useMessageStatus = (messages: any[], onStatusChange?: () => void) =
         return;
       }
 
-      // Créer un map des statuts de lecture
       const readStatusMap = new Map(
         readStatuses?.map(status => [status.message_id, status.read_at]) || []
       );
 
-      // Créer les statuts finaux
+      // Créer les statuts finaux en utilisant les données des messages passés en paramètre
       const statuses: Record<string, MessageStatus> = {};
       messages.forEach(message => {
         const readAt = readStatusMap.get(message.id);
@@ -106,7 +105,9 @@ export const useMessageStatus = (messages: any[], onStatusChange?: () => void) =
       // Déclencher le callback pour forcer un refresh des données parentes
       if (onStatusChange) {
         console.log('🔄 markNotificationAsSent - Déclenchement du refresh...');
-        onStatusChange();
+        setTimeout(() => {
+          onStatusChange();
+        }, 500); // Petit délai pour s'assurer que la DB est à jour
       }
 
       return true;

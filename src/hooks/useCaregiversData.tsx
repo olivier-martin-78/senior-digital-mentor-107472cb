@@ -56,7 +56,6 @@ export const useCaregiversData = () => {
     try {
       console.log('🔍 Récupération des données pour l\'utilisateur:', session.user.email);
 
-      // Récupérer les clients pour lesquels l'utilisateur est proche aidant
       const { data: caregiverClients, error: caregiverError } = await supabase
         .from('caregivers')
         .select(`
@@ -78,7 +77,6 @@ export const useCaregiversData = () => {
         console.log('✅ Clients trouvés pour aidant:', caregiverClients?.length || 0);
       }
 
-      // Récupérer aussi les clients pour lesquels l'utilisateur est professionnel
       const { data: professionalClients, error: professionalError } = await supabase
         .from('appointments')
         .select(`
@@ -100,7 +98,6 @@ export const useCaregiversData = () => {
         console.log('✅ Clients trouvés pour professionnel:', professionalClients?.length || 0);
       }
 
-      // Combiner et dédupliquer les clients
       const allClients = new Map<string, CaregiverClient>();
       
       caregiverClients?.forEach(item => {
@@ -139,7 +136,6 @@ export const useCaregiversData = () => {
         console.log('🎯 IDs des appointments:', appointmentIds);
 
         if (appointmentIds.length > 0) {
-          // Récupérer les rapports d'intervention pour ces appointments
           const { data: reports, error: reportsError } = await supabase
             .from('intervention_reports')
             .select('*')
@@ -158,7 +154,7 @@ export const useCaregiversData = () => {
           setInterventionReports([]);
         }
 
-        // Récupérer les messages de coordination avec les profils des auteurs ET les statuts de notification
+        console.log('🔍 Récupération des messages avec refresh forcé...');
         const { data: messagesData, error: messagesError } = await supabase
           .from('caregiver_messages')
           .select(`
@@ -177,7 +173,7 @@ export const useCaregiversData = () => {
           console.error('❌ Erreur lors de la récupération des messages:', messagesError);
         } else {
           console.log('✅ Messages trouvés:', messagesData?.length || 0);
-          console.log('🔍 DEBUG - Messages avec statut notification:', messagesData?.map(m => ({
+          console.log('🔍 DEBUG - Messages avec statut notification APRÈS REFRESH:', messagesData?.map(m => ({
             id: m.id.substring(0, 8),
             notification_sent: m.notification_sent,
             notification_sent_at: m.notification_sent_at
@@ -185,7 +181,6 @@ export const useCaregiversData = () => {
         }
 
         if (messagesData) {
-          // Récupérer les profils des auteurs séparément
           const authorIds = [...new Set(messagesData.map(m => m.author_id))];
           const { data: authorsData, error: authorsError } = await supabase
             .from('profiles')
@@ -196,7 +191,6 @@ export const useCaregiversData = () => {
             console.error('❌ Erreur lors de la récupération des profils auteurs:', authorsError);
           }
 
-          // Combiner les messages avec les profils des auteurs
           const messagesWithAuthors = messagesData.map(message => ({
             ...message,
             author_profile: authorsData?.find(author => author.id === message.author_id) || {
@@ -206,7 +200,7 @@ export const useCaregiversData = () => {
           }));
 
           setMessages(messagesWithAuthors);
-          console.log('🔍 DEBUG - Messages finaux avec auteurs:', messagesWithAuthors.map(m => ({
+          console.log('🔍 DEBUG - Messages finaux APRÈS REFRESH:', messagesWithAuthors.map(m => ({
             id: m.id.substring(0, 8),
             notification_sent: m.notification_sent,
             notification_sent_at: m.notification_sent_at,
@@ -225,10 +219,6 @@ export const useCaregiversData = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCaregiversData();
-  }, [session]);
-
   const sendMessage = async (clientId: string, message: string) => {
     if (!session?.user) return false;
 
@@ -245,7 +235,6 @@ export const useCaregiversData = () => {
 
       if (error) throw error;
 
-      // Recharger les messages pour ce client
       const { data: messagesData } = await supabase
         .from('caregiver_messages')
         .select(`
@@ -261,7 +250,6 @@ export const useCaregiversData = () => {
         .order('created_at', { ascending: false });
 
       if (messagesData) {
-        // Récupérer les profils des auteurs
         const authorIds = [...new Set(messagesData.map(m => m.author_id))];
         const { data: authorsData } = await supabase
           .from('profiles')
@@ -289,11 +277,14 @@ export const useCaregiversData = () => {
     }
   };
 
-  // Nouvelle fonction pour forcer le refresh des messages
   const refreshMessages = async () => {
     console.log('🔄 Refresh forcé des messages...');
     await fetchCaregiversData();
   };
+
+  useEffect(() => {
+    fetchCaregiversData();
+  }, [session]);
 
   return {
     clients,
