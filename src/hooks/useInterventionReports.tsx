@@ -33,7 +33,7 @@ export const useInterventionReports = () => {
     try {
       console.log('🔍 Récupération optimisée des rapports d\'intervention...');
       
-      // Requête optimisée : une seule requête avec JOIN au lieu de 3 requêtes séquentielles
+      // Requête optimisée : spécifier explicitement la relation à utiliser
       const { data: reports, error } = await supabase
         .from('intervention_reports')
         .select(`
@@ -48,12 +48,12 @@ export const useInterventionReports = () => {
           observations,
           professional_id,
           appointment_id,
-          appointments!inner(
+          appointments!intervention_reports_appointment_id_fkey(
             client_id
           )
         `)
         .order('date', { ascending: false })
-        .limit(20); // Limiter à 20 rapports récents
+        .limit(20);
 
       if (error) {
         console.error('❌ Erreur lors de la récupération des rapports:', error);

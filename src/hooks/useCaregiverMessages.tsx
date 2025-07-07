@@ -32,42 +32,61 @@ export const useCaregiverMessages = () => {
     try {
       console.log('🔍 Récupération optimisée des messages...');
 
-      // Requête optimisée avec JOIN pour récupérer messages + profils en une fois
+      // Récupérer les messages d'abord
       const { data: messagesData, error: messagesError } = await supabase
         .from('caregiver_messages')
-        .select(`
-          id,
-          message,
-          created_at,
-          author_id,
-          client_id,
-          notification_sent,
-          notification_sent_at,
-          profiles!inner(
-            display_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(50); // Limiter à 50 messages récents
+        .limit(50);
 
       if (messagesError) {
         console.error('❌ Erreur lors de la récupération des messages:', messagesError);
         setMessages([]);
-      } else {
-        console.log('✅ Messages optimisés trouvés:', messagesData?.length || 0);
-        
-        // Transformer les données pour correspondre à l'interface attendue
-        const transformedMessages = messagesData?.map(message => ({
+        return;
+      }
+
+      if (!messagesData || messagesData.length === 0) {
+        console.log('✅ Aucun message trouvé');
+        setMessages([]);
+        return;
+      }
+
+      // Récupérer les profils des auteurs
+      const authorIds = [...new Set(messagesData.map(msg => msg.author_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', authorIds);
+
+      if (profilesError) {
+        console.error('❌ Erreur lors de la récupération des profils:', profilesError);
+        // Continuer avec les messages sans les profils
+        const messagesWithoutProfiles = messagesData.map(message => ({
           ...message,
           author_profile: {
-            display_name: message.profiles?.display_name,
-            email: message.profiles?.email || ''
+            display_name: 'Utilisateur inconnu',
+            email: 'email.inconnu@example.com'
           }
-        })) || [];
-        
-        setMessages(transformedMessages);
+        }));
+        setMessages(messagesWithoutProfiles);
+        return;
       }
+
+      // Créer un map des profils pour un accès rapide
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
+      // Combiner les messages avec les profils
+      const messagesWithProfiles = messagesData.map(message => ({
+        ...message,
+        author_profile: {
+          display_name: profilesMap.get(message.author_id)?.display_name,
+          email: profilesMap.get(message.author_id)?.email || 'email.inconnu@example.com'
+        }
+      }));
+
+      console.log('✅ Messages optimisés trouvés:', messagesWithProfiles.length);
+      setMessages(messagesWithProfiles);
+
     } catch (error) {
       console.error('❌ Erreur générale lors du chargement des messages:', error);
       setMessages([]);
