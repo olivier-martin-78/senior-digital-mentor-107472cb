@@ -1,111 +1,178 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-
-interface WishPost {
-  id: string;
-  title: string;
-  content: string;
-  first_name?: string;
-  age?: string;
-  location?: string;
-  request_type?: string;
-  importance?: string;
-  published?: boolean;
-  created_at: string;
-  cover_image?: string;
-  profiles?: {
-    display_name?: string | null;
-    email?: string;
-  };
-  author_id?: string;
-}
+import { Button } from '@/components/ui/button';
+import { WishPost } from '@/types/supabase';
+import { Edit, Trash2, Calendar, User, Clock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { useContentReadStatus } from '@/hooks/useContentReadStatus';
 
 interface WishCardProps {
   wish: WishPost;
 }
 
 const WishCard: React.FC<WishCardProps> = ({ wish }) => {
-  const isDraft = !wish.published;
-  const thumbnailUrl = wish.cover_image 
-    ? getThumbnailUrlSync(wish.cover_image, ALBUM_THUMBNAILS_BUCKET)
-    : '/placeholder.svg';
+  const { user, hasRole } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { isRead, readAt, markAsRead } = useContentReadStatus('wish', wish.id);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Déterminer le nom de l'auteur
-  const authorName = wish.profiles?.display_name || wish.profiles?.email || wish.first_name || 'Utilisateur';
-  
-  // Formater la date de création
-  const createdDate = format(new Date(wish.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr });
+  const canEdit = user && (wish.author_id === user.id || hasRole('admin'));
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user || !canEdit) return;
+
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce souhait ?')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      
+      const { error } = await supabase
+        .from('wish_posts')
+        .delete()
+        .eq('id', wish.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Souhait supprimé',
+        description: 'Le souhait a été supprimé avec succès.',
+      });
+
+      // Recharger la page pour mettre à jour la liste
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Erreur lors de la suppression du souhait:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer le souhait. Veuillez réessayer.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/wishes/edit/${wish.id}`);
+  };
+
+  // Marquer comme lu quand l'utilisateur clique sur la carte (seulement pour les autres auteurs)
+  const handleClick = () => {
+    if (user && wish.author_id !== user.id && !isRead) {
+      markAsRead();
+    }
+  };
+
+  const getStatusBadge = () => {
+    if (!wish.published) {
+      return <Badge variant="secondary">Brouillon</Badge>;
+    }
+    return null;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
-    <Link to={`/wishes/${wish.id}`}>
-      <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full ${
-        isDraft ? 'bg-orange-50 border-orange-200 border-2' : ''
-      }`}>
-        <CardHeader className="pb-3">
-          {/* Informations d'auteur et date en haut */}
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-            <span className="font-medium">{authorName}</span>
-            <span>{createdDate}</span>
+    <Link to={`/wishes/${wish.id}`} onClick={handleClick}>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+        {wish.cover_image && (
+          <div className="aspect-video overflow-hidden rounded-t-lg">
+            <img
+              src={wish.cover_image}
+              alt={wish.title}
+              className="w-full h-full object-cover"
+            />
           </div>
-
-          {/* Statut brouillon si applicable */}
-          {isDraft && (
-            <div className="mb-3">
-              <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
-                📝 Brouillon
-              </Badge>
+        )}
+        
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg font-medium text-gray-900 line-clamp-2">
+                {wish.title}
+              </CardTitle>
+              <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+                <User className="h-4 w-4" />
+                <span>Pour {wish.first_name}</span>
+              </div>
+              {user && wish.author_id !== user.id && isRead && readAt && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Lu le {new Date(readAt).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
             </div>
-          )}
-
-          <CardTitle className="text-lg font-medium text-tranches-charcoal line-clamp-2">
-            {wish.title}
-          </CardTitle>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            {wish.first_name && <span>{wish.first_name}</span>}
-            {wish.age && <span>• {wish.age} ans</span>}
-            {wish.location && <span>• {wish.location}</span>}
+            <div className="flex flex-col gap-1">
+              {getStatusBadge()}
+              {canEdit && (
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
-
-        {/* Image de couverture */}
-        <div className="px-4 mb-4">
-          <AspectRatio ratio={16 / 9}>
-            <img
-              src={thumbnailUrl}
-              alt={`Couverture de ${wish.title}`}
-              className="w-full h-full object-cover rounded-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg';
-              }}
-            />
-          </AspectRatio>
-        </div>
-
+        
         <CardContent className="pt-0">
-          <p className="text-gray-600 text-sm line-clamp-3 mb-3">
-            {wish.content}
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              {wish.request_type && (
-                <Badge variant="outline" className="text-xs">
-                  {wish.request_type}
-                </Badge>
-              )}
-              {wish.importance && (
-                <Badge variant="outline" className="text-xs">
-                  {wish.importance}
-                </Badge>
-              )}
+          {wish.content && (
+            <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+              {wish.content}
+            </p>
+          )}
+          
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>{formatDate(wish.created_at)}</span>
             </div>
+            {wish.updated_at !== wish.created_at && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>Modifié le {formatDate(wish.updated_at)}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

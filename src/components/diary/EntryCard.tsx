@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DiaryEntryWithAuthor } from '@/types/diary';
@@ -10,6 +10,7 @@ import RecentItemImage from '@/components/RecentItemImage';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useContentReadStatus } from '@/hooks/useContentReadStatus';
 
 interface EntryCardProps {
   entry: DiaryEntryWithAuthor;
@@ -17,6 +18,7 @@ interface EntryCardProps {
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   const { user, hasRole } = useAuth();
+  const { isRead, readAt, markAsRead } = useContentReadStatus('diary', entry.id);
   const isDraft = !entry.title || entry.title.trim() === '';
   
   // Vérifier si l'utilisateur peut modifier cette entrée
@@ -28,8 +30,15 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
   // Obtenir le nom d'affichage de l'auteur
   const authorDisplayName = entry.profiles?.display_name || entry.profiles?.email || 'Utilisateur inconnu';
 
+  // Marquer comme lu quand l'utilisateur clique sur la carte (seulement pour les autres auteurs)
+  const handleClick = () => {
+    if (user && entry.user_id !== user.id && !isRead) {
+      markAsRead();
+    }
+  };
+
   return (
-    <Link to={`/diary/${entry.id}`}>
+    <Link to={`/diary/${entry.id}`} onClick={handleClick}>
       <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full ${
         isDraft ? 'bg-orange-50 border-orange-200 border-2' : ''
       }`}>
@@ -67,6 +76,17 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry }) => {
               <p className="text-xs text-gray-400 mt-1">
                 Par {authorDisplayName}
               </p>
+              {/* Afficher le statut de lecture seulement si ce n'est pas l'auteur */}
+              {user && entry.user_id !== user.id && isRead && readAt && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Lu le {new Date(readAt).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
               {/* Afficher un indicateur si l'utilisateur ne peut pas modifier */}
               {!canEdit && user && entry.user_id !== user.id && (
                 <p className="text-xs text-gray-400 mt-1">👀 Lecture seule</p>

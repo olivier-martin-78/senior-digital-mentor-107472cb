@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,9 +24,38 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [hasBeenNotified, setHasBeenNotified] = useState(false);
+
+  // Vérifier si une notification a déjà été envoyée pour ce contenu
+  useEffect(() => {
+    const checkNotificationStatus = async () => {
+      if (!user || !contentId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_notifications_read')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('content_type', contentType)
+          .eq('content_id', contentId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erreur lors de la vérification du statut de notification:', error);
+          return;
+        }
+
+        setHasBeenNotified(!!data || isNotificationSent);
+      } catch (error) {
+        console.error('Erreur lors de la vérification du statut de notification:', error);
+      }
+    };
+
+    checkNotificationStatus();
+  }, [user, contentType, contentId, isNotificationSent]);
 
   // Ne pas afficher le bouton si la notification a déjà été envoyée
-  if (isNotificationSent) {
+  if (hasBeenNotified) {
     return (
       <div className="flex items-center text-sm text-gray-500">
         <Mail className="w-4 h-4 mr-2" />
@@ -104,6 +133,20 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
         throw new Error(`Erreur base de données: ${updateError.message}`);
       }
 
+      // Marquer dans la table de tracking des notifications
+      const { error: trackingError } = await supabase
+        .from('user_notifications_read')
+        .upsert({
+          user_id: user.id,
+          content_type: contentType,
+          content_id: contentId
+        });
+
+      if (trackingError) {
+        console.error('🔍 GroupNotification - Erreur tracking:', trackingError);
+        // Ne pas faire échouer l'opération pour une erreur de tracking
+      }
+
       console.log('🔍 GroupNotification - Succès complet');
 
       toast({
@@ -111,6 +154,7 @@ const GroupNotificationButton: React.FC<GroupNotificationButtonProps> = ({
         description: 'Les membres de votre groupe ont été notifiés de votre nouvelle publication.',
       });
 
+      setHasBeenNotified(true);
       onNotificationSent?.();
       
     } catch (error: any) {

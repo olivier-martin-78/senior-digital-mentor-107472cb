@@ -11,6 +11,7 @@ import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { useContentReadStatus } from '@/hooks/useContentReadStatus';
 
 interface DiaryEntryWithAuthor extends DiaryEntry {
   profiles: {
@@ -26,6 +27,7 @@ const DiaryEntryPage = () => {
   const { toast } = useToast();
   const [entry, setEntry] = useState<DiaryEntryWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
+  const { markAsRead } = useContentReadStatus('diary', id || '');
 
   console.log('🔍 DiaryEntry - Debug state:', {
     id,
@@ -88,6 +90,11 @@ const DiaryEntryPage = () => {
               profiles: profileData
             } as DiaryEntryWithAuthor);
           }
+
+          // Marquer comme lu si ce n'est pas l'auteur
+          if (user.id !== entryData.user_id) {
+            markAsRead();
+          }
         }
       } catch (error: any) {
         console.error('💥 DiaryEntry - Critical error:', error);
@@ -103,7 +110,7 @@ const DiaryEntryPage = () => {
     };
 
     fetchEntry();
-  }, [id, user, toast, navigate]);
+  }, [id, user, toast, navigate, markAsRead]);
 
   const handleDelete = async () => {
     if (!id || !user) return;

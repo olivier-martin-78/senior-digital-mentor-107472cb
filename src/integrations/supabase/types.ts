@@ -1164,6 +1164,30 @@ export type Database = {
           },
         ]
       }
+      user_content_read_status: {
+        Row: {
+          content_id: string
+          content_type: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_intervenant_permissions: {
         Row: {
           created_at: string
@@ -1192,6 +1216,59 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_messages_read_status: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_messages_read_status_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notifications_read: {
+        Row: {
+          content_id: string
+          content_type: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
