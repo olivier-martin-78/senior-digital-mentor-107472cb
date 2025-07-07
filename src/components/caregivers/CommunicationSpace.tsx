@@ -17,14 +17,14 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const CommunicationSpace = () => {
   const { user } = useAuth();
-  const { clients, messages, isLoading, sendMessage } = useCaregiversData();
+  const { clients, messages, isLoading, sendMessage, refreshMessages } = useCaregiversData();
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendingNotifications, setSendingNotifications] = useState<Record<string, boolean>>({});
   
   const { unreadMessageIds } = useUnreadMessages(selectedClient);
-  const { messageStatuses, markNotificationAsSent } = useMessageStatus(messages);
+  const { messageStatuses, markNotificationAsSent } = useMessageStatus(messages, refreshMessages);
 
   const handleSendMessage = async () => {
     if (!selectedClient || !newMessage.trim()) {
@@ -56,7 +56,7 @@ const CommunicationSpace = () => {
   };
 
   const handleNotifyParticipants = async (messageId: string, clientId: string) => {
-    console.log('🔔 Tentative d\'envoi de notification pour:', { messageId, clientId });
+    console.log('🔔 Tentative d\'envoi de notification pour:', { messageId: messageId.substring(0, 8), clientId: clientId.substring(0, 8) });
     setSendingNotifications(prev => ({ ...prev, [messageId]: true }));
     
     try {

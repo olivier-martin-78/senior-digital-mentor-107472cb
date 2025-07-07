@@ -11,7 +11,7 @@ interface MessageStatus {
   read_at: string | null;
 }
 
-export const useMessageStatus = (messages: any[]) => {
+export const useMessageStatus = (messages: any[], onStatusChange?: () => void) => {
   const { user } = useAuth();
   const [messageStatuses, setMessageStatuses] = useState<Record<string, MessageStatus>>({});
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,8 @@ export const useMessageStatus = (messages: any[]) => {
     try {
       setLoading(true);
       const messageIds = messages.map(m => m.id);
+
+      console.log('🔍 useMessageStatus - Fetch des statuts pour messages:', messageIds.map(id => id.substring(0, 8)));
 
       // Récupérer les statuts de lecture pour l'utilisateur connecté
       const { data: readStatuses, error: readError } = await supabase
@@ -56,6 +58,12 @@ export const useMessageStatus = (messages: any[]) => {
         };
       });
 
+      console.log('🔍 useMessageStatus - Statuts calculés:', Object.entries(statuses).map(([id, status]) => ({
+        id: id.substring(0, 8),
+        notification_sent: status.notification_sent,
+        notification_sent_at: status.notification_sent_at
+      })));
+
       setMessageStatuses(statuses);
     } catch (error) {
       console.error('Erreur lors du chargement des statuts de messages:', error);
@@ -66,6 +74,8 @@ export const useMessageStatus = (messages: any[]) => {
 
   const markNotificationAsSent = async (messageId: string) => {
     try {
+      console.log('🔔 markNotificationAsSent - Début pour message:', messageId.substring(0, 8));
+      
       const { error } = await supabase
         .from('caregiver_messages')
         .update({ 
@@ -75,9 +85,11 @@ export const useMessageStatus = (messages: any[]) => {
         .eq('id', messageId);
 
       if (error) {
-        console.error('Erreur lors de la mise à jour du statut notification:', error);
+        console.error('🔔 markNotificationAsSent - Erreur lors de la mise à jour du statut notification:', error);
         return false;
       }
+
+      console.log('🔔 markNotificationAsSent - Mise à jour DB réussie pour message:', messageId.substring(0, 8));
 
       // Mettre à jour le state local
       setMessageStatuses(prev => ({
@@ -89,9 +101,17 @@ export const useMessageStatus = (messages: any[]) => {
         }
       }));
 
+      console.log('🔔 markNotificationAsSent - State local mis à jour');
+
+      // Déclencher le callback pour forcer un refresh des données parentes
+      if (onStatusChange) {
+        console.log('🔄 markNotificationAsSent - Déclenchement du refresh...');
+        onStatusChange();
+      }
+
       return true;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du statut notification:', error);
+      console.error('🔔 markNotificationAsSent - Erreur générale:', error);
       return false;
     }
   };
