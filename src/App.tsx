@@ -37,6 +37,14 @@ import BlogLanding from './pages/BlogLanding';
 import Caregivers from './pages/Caregivers';
 import HeaderWrapper from './components/HeaderWrapper';
 
+// Import activities components
+import ActivitiesOverview from './pages/activities/ActivitiesOverview';
+import ActivityPage from './pages/activities/ActivityPage';
+import CrosswordGame from './pages/activities/CrosswordGame';
+import SudokuGame from './pages/activities/SudokuGame';
+import OppositesGame from './pages/activities/OppositesGame';
+import TranslationGame from './pages/activities/TranslationGame';
+
 const queryClient = new QueryClient();
 
 function App() {
