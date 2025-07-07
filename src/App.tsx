@@ -79,6 +79,14 @@ function App() {
                   <Route path="/subscription" element={<Subscription />} />
                   <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
                   
+                  {/* Routes d'activités */}
+                  <Route path="/activities" element={<ActivitiesOverview />} />
+                  <Route path="/activities/:type" element={<ActivityPage />} />
+                  <Route path="/activities/crossword" element={<CrosswordGame />} />
+                  <Route path="/activities/sudoku" element={<SudokuGame />} />
+                  <Route path="/activities/opposites" element={<OppositesGame />} />
+                  <Route path="/activities/translation" element={<TranslationGame />} />
+                  
                   {/* Routes professionnelles */}
                   <Route path="/professional-scheduler" element={<ProfessionalScheduler />} />
                   <Route path="/professional-module" element={<ProfessionalModule />} />

@@ -13,8 +13,8 @@ import {
   Settings, 
   LogOut,
   Users,
-  Shield,
-  Activity
+  Activity,
+  CreditCard
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,15 +44,15 @@ const Header = () => {
     { path: '/wishes', label: 'Souhaits', icon: Star },
   ];
 
-  // Ajouter le menu Activités avec ses sous-menus
+  // Ajouter le menu Activités avec ses sous-menus corrigés
   const activitiesMenu = {
     path: '/activities',
     label: 'Activités',
     icon: Activity,
     subItems: [
-      { path: '/activities/crossword', label: 'Mots croisés' },
-      { path: '/activities/sudoku', label: 'Sudoku' },
-      { path: '/activities/translation', label: 'Traduction' }
+      { path: '/activities/meditation', label: 'Méditation' },
+      { path: '/activities/games', label: 'Jeux' },
+      { path: '/activities/exercises', label: 'Exercices' }
     ]
   };
 
@@ -156,6 +156,12 @@ const Header = () => {
                     <Link to="/profile" className="flex items-center">
                       <Settings className="mr-2 h-4 w-4" />
                       Profil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/subscription" className="flex items-center">
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Abonnements
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
