@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 
 interface FileDropZoneProps {
-  onFileSelect: (files: FileList | null) => void;
+  onFileSelect: (files: File[]) => void;
   disabled?: boolean;
 }
 
@@ -14,7 +14,8 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileSelect, disabl
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    onFileSelect(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer.files);
+    onFileSelect(files);
   }, [onFileSelect]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -26,6 +27,13 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileSelect, disabl
     e.preventDefault();
     setIsDragging(false);
   }, []);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      onFileSelect(files);
+    }
+  };
 
   return (
     <div
@@ -49,7 +57,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileSelect, disabl
         type="file"
         multiple
         accept="image/*,.pdf,.doc,.docx,.txt"
-        onChange={(e) => onFileSelect(e.target.files)}
+        onChange={handleFileInputChange}
         className="hidden"
         id="media-upload"
         disabled={disabled}
