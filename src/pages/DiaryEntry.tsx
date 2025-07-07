@@ -5,11 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { DiaryEntry } from '@/types/diary';
 import { useToast } from '@/hooks/use-toast';
-import DiaryHeader from '@/components/diary/DiaryHeader';
 import EntryHeader from '@/components/diary/EntryHeader';
 import EntryContent from '@/components/diary/EntryContent';
 import LoadingSpinner from '@/components/diary/LoadingSpinner';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 
 interface DiaryEntryWithAuthor extends DiaryEntry {
   profiles: {
@@ -198,13 +199,52 @@ const DiaryEntryPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-3xl mx-auto">
-          <DiaryHeader 
-            entryId={entry.id} 
-            onDelete={handleDelete}
-            canEdit={canEdit}
-            authorName={authorName}
-            createdAt={entry.created_at || undefined}
-          />
+          {/* En-tête de navigation et actions */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/diary')}
+              className="flex items-center gap-2 self-start"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour au journal
+            </Button>
+            
+            {canEdit && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/diary/edit/${entry.id}`)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Informations sur l'auteur et la date */}
+          <div className="mb-4 text-sm text-gray-600">
+            <p>Par {authorName}</p>
+            {entry.created_at && (
+              <p>Créé le {new Date(entry.created_at).toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</p>
+            )}
+          </div>
           
           <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
             <EntryHeader 
