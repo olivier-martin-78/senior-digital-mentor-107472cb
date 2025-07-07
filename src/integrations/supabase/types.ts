@@ -364,6 +364,41 @@ export type Database = {
           },
         ]
       }
+      caregiver_messages: {
+        Row: {
+          author_id: string
+          client_id: string
+          created_at: string | null
+          id: string
+          message: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          message: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          message?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregiver_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       caregivers: {
         Row: {
           address: string | null
