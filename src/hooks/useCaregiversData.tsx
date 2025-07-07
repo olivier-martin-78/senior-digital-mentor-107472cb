@@ -123,7 +123,8 @@ export const useCaregiversData = () => {
           const clientIds = clientsList.map(c => c.id);
           console.log('🎯 IDs des clients:', clientIds);
 
-          // Étape 1: Récupérer tous les appointments pour ces clients
+          // MODIFICATION IMPORTANTE : Récupérer TOUS les appointments pour ces clients, 
+          // pas seulement ceux créés par l'utilisateur connecté
           const { data: appointments, error: appointmentsError } = await supabase
             .from('appointments')
             .select('id, client_id, professional_id, intervenant_id')
@@ -140,7 +141,7 @@ export const useCaregiversData = () => {
           console.log('🎯 IDs des appointments:', appointmentIds);
 
           if (appointmentIds.length > 0) {
-            // Étape 2: Récupérer les rapports d'intervention pour ces appointments
+            // Récupérer les rapports d'intervention pour ces appointments
             const { data: reports, error: reportsError } = await supabase
               .from('intervention_reports')
               .select('*')
