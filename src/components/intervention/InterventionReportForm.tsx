@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Mic, AlertTriangle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInterventionForm } from './hooks/useInterventionForm';
 import { BasicInfoSection } from './form-sections/BasicInfoSection';
 import LastReportsSelector from './form-sections/LastReportsSelector';
@@ -20,6 +20,7 @@ import { InterventionFormData } from './types/FormData';
 
 const InterventionReportForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     formData,
     setFormData,
@@ -68,6 +69,15 @@ const InterventionReportForm: React.FC = () => {
     }));
   };
 
+  const handleBack = () => {
+    const fromParam = searchParams.get('from');
+    if (fromParam === 'caregivers') {
+      navigate('/caregivers');
+    } else {
+      navigate('/professional-scheduler');
+    }
+  };
+
   if (loadingData) {
     return (
       <div className="flex justify-center py-20">
@@ -92,7 +102,7 @@ const InterventionReportForm: React.FC = () => {
             </CardTitle>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/scheduler')} 
+              onClick={handleBack} 
               className="w-full sm:w-auto" 
               disabled={isRecording || loading}
             >
