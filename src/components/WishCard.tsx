@@ -282,7 +282,7 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
             </p>
           )}
           
-          <div className="flex items-center justify-between text-xs text-gray-400">
+          <div className="flex flex-col gap-1 text-xs text-gray-400">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               <span>{formatDate(wish.created_at)}</span>
@@ -291,6 +291,12 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 <span>Modifié le {formatDate(wish.updated_at)}</span>
+              </div>
+            )}
+            {wish.status === 'fulfilled' && wish.status_changed_at && (
+              <div className="flex items-center gap-1 text-green-600">
+                <Check className="h-3 w-3" />
+                <span>Réalisé le {formatDate(wish.status_changed_at)}</span>
               </div>
             )}
           </div>
