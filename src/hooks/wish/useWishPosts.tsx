@@ -66,7 +66,7 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
         query = query.lte('created_at', endDate + 'T23:59:59.999Z');
       }
 
-      if (statusFilter && statusFilter !== '') {
+      if (statusFilter && statusFilter !== 'all') {
         query = query.eq('status', statusFilter as 'pending' | 'fulfilled' | 'cancelled');
       }
 

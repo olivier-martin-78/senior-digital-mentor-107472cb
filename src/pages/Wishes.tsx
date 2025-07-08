@@ -22,7 +22,7 @@ const Wishes = () => {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   
   const { albums, loading: albumsLoading } = useWishAlbums();
   const { posts, loading: postsLoading } = useWishPosts(searchTerm, selectedAlbum || '', startDate, endDate, undefined, selectedStatus);
@@ -40,7 +40,7 @@ const Wishes = () => {
     setStartDate('');
     setEndDate('');
     setSelectedAlbum(null);
-    setSelectedStatus('');
+    setSelectedStatus('all');
   };
 
   const handleAlbumsUpdate = () => {
@@ -93,7 +93,7 @@ const Wishes = () => {
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="fulfilled">Réalisés</SelectItem>
                 <SelectItem value="cancelled">Annulés</SelectItem>
@@ -134,11 +134,11 @@ const Wishes = () => {
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun souhait trouvé</h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || selectedAlbum || startDate || endDate || selectedStatus
+              {searchTerm || selectedAlbum || startDate || endDate || (selectedStatus && selectedStatus !== 'all')
                 ? 'Aucun souhait ne correspond à vos critères de recherche.'
                 : 'Commencez par créer votre premier souhait.'}
             </p>
-            {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && !selectedStatus && (
+            {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && (!selectedStatus || selectedStatus === 'all') && (
               <Button 
                 onClick={() => navigate('/wishes/new')}
                 className="bg-black hover:bg-black/90 text-white"
