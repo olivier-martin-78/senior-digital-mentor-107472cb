@@ -41,6 +41,9 @@ const Header = () => {
 
   const isProfessional = roles.includes('professionnel');
   const isAdmin = roles.includes('admin');
+  
+  // Debug: afficher les rôles en console pour vérifier
+  console.log('User roles:', roles, 'isAdmin:', isAdmin);
 
   const navigationItems = [
     { path: '/recent', label: 'Récent', icon: Heart },
