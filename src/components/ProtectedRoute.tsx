@@ -55,9 +55,19 @@ const ProtectedRoute = ({ requiredRoles, requiresFullAccess = true }: ProtectedR
   }
 
   // Check role permissions
-  if (requiredRoles && !requiredRoles.some(role => hasRole(role))) {
-    console.log('ProtectedRoute - Redirection vers /unauthorized (rôles insuffisants)');
-    return <Navigate to="/unauthorized" replace />;
+  if (requiredRoles && requiredRoles.length > 0) {
+    console.log('🔐 ProtectedRoute - Vérification des rôles:', {
+      requiredRoles,
+      userRoles: roles,
+      hasAnyRequiredRole: requiredRoles.some(role => hasRole(role))
+    });
+    
+    if (!requiredRoles.some(role => hasRole(role))) {
+      console.log('❌ ProtectedRoute - Redirection vers /unauthorized (rôles insuffisants)');
+      return <Navigate to="/unauthorized" replace />;
+    }
+    
+    console.log('✅ ProtectedRoute - Rôles suffisants, accès autorisé');
   }
 
   // Check account access only if full access is required

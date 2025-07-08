@@ -64,6 +64,12 @@ export class AuthService {
       console.log('✅ Raw roles data from database:', data);
       const roles = data?.map(row => row.role) || [];
       console.log('✅ Processed roles array:', roles);
+      console.log('🔍 Role types:', roles.map(role => `${role} (${typeof role})`));
+      
+      // Vérifier si 'admin' est présent
+      const hasAdminRole = roles.includes('admin');
+      console.log('🔍 Has admin role?', hasAdminRole);
+      
       return roles;
     } catch (error) {
       console.error('❌ Exception while fetching roles:', error);
