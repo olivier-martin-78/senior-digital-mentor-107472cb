@@ -17,7 +17,8 @@ import {
   Activity,
   CreditCard,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ const Header = () => {
   };
 
   const isProfessional = roles.includes('professionnel');
+  const isAdmin = roles.includes('admin');
 
   const navigationItems = [
     { path: '/recent', label: 'Récent', icon: Heart },
@@ -199,6 +201,31 @@ const Header = () => {
                         Abonnements
                       </Link>
                     </DropdownMenuItem>
+                    
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/users" className="flex items-center">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Admin - Utilisateurs
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/posts" className="flex items-center">
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Admin - Posts
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/activities" className="flex items-center">
+                            <Activity className="mr-2 h-4 w-4" />
+                            Admin - Activités
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
