@@ -201,6 +201,12 @@ const Header = () => {
                         Abonnements
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-invitation-groups" className="flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        Invités
+                      </Link>
+                    </DropdownMenuItem>
                     
                     {isAdmin && (
                       <>
