@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WishPost } from '@/types/supabase';
-import { Edit, Trash2, Calendar, User, Clock } from 'lucide-react';
+import { Edit, Trash2, Calendar, User, Clock, Check, X, RotateCcw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,8 +23,10 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
   const navigate = useNavigate();
   const { isRead, readAt, markAsRead } = useContentReadStatus('wish', wish.id);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const canEdit = user && (wish.author_id === user.id || hasRole('admin'));
+  const canChangeStatus = user && (wish.author_id === user.id || hasRole('admin'));
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,6 +75,49 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
     navigate(`/wishes/edit/${wish.id}`);
   };
 
+  const handleStatusChange = async (e: React.MouseEvent, newStatus: 'pending' | 'fulfilled' | 'cancelled') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user || !canChangeStatus || isUpdatingStatus) return;
+
+    try {
+      setIsUpdatingStatus(true);
+      
+      const { error } = await supabase
+        .from('wish_posts')
+        .update({ status: newStatus })
+        .eq('id', wish.id);
+
+      if (error) {
+        throw error;
+      }
+
+      const statusLabels = {
+        pending: 'en attente',
+        fulfilled: 'réalisé',
+        cancelled: 'annulé'
+      };
+
+      toast({
+        title: 'Statut mis à jour',
+        description: `Le souhait est maintenant ${statusLabels[newStatus]}.`,
+      });
+
+      // Recharger la page pour mettre à jour la liste
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour le statut. Veuillez réessayer.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   // Marquer comme lu quand l'utilisateur clique sur la carte (seulement pour les autres auteurs)
   const handleClick = () => {
     if (user && wish.author_id !== user.id && !isRead) {
@@ -84,7 +129,33 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
     if (!wish.published) {
       return <Badge variant="secondary">Brouillon</Badge>;
     }
-    return null;
+    
+    const statusConfig = {
+      pending: { label: 'En attente', variant: 'outline' as const, color: 'text-gray-600' },
+      fulfilled: { label: 'Réalisé ✓', variant: 'default' as const, color: 'text-green-600' },
+      cancelled: { label: 'Annulé', variant: 'destructive' as const, color: 'text-red-600' }
+    };
+    
+    const config = statusConfig[wish.status as keyof typeof statusConfig] || statusConfig.pending;
+    
+    return (
+      <Badge variant={config.variant} className={config.color}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getCardClass = () => {
+    const baseClass = "hover:shadow-md transition-shadow cursor-pointer h-full";
+    
+    switch (wish.status) {
+      case 'fulfilled':
+        return `${baseClass} border-green-300 bg-green-50/50`;
+      case 'cancelled':
+        return `${baseClass} border-red-300 bg-red-50/50`;
+      default:
+        return baseClass;
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -97,7 +168,7 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
 
   return (
     <Link to={`/wishes/${wish.id}`} onClick={handleClick}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+      <Card className={getCardClass()}>
         {wish.cover_image && (
           <RecentItemImage
             type="wish"
@@ -131,25 +202,71 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
             </div>
             <div className="flex flex-col gap-1">
               {getStatusBadge()}
-              {canEdit && (
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleEdit}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+              {(canEdit || canChangeStatus) && (
+                <div className="flex flex-wrap gap-1">
+                  {canChangeStatus && (
+                    <>
+                      {wish.status !== 'fulfilled' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleStatusChange(e, 'fulfilled')}
+                          disabled={isUpdatingStatus}
+                          className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          title="Marquer comme réalisé"
+                        >
+                          {isUpdatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </Button>
+                      )}
+                      {wish.status !== 'cancelled' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleStatusChange(e, 'cancelled')}
+                          disabled={isUpdatingStatus}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Marquer comme annulé"
+                        >
+                          {isUpdatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-4 w-4" />}
+                        </Button>
+                      )}
+                      {wish.status !== 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleStatusChange(e, 'pending')}
+                          disabled={isUpdatingStatus}
+                          className="h-8 w-8 p-0 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                          title="Remettre en attente"
+                        >
+                          {isUpdatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {canEdit && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleEdit}
+                        className="h-8 w-8 p-0"
+                        title="Modifier"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

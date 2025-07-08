@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import WishCard from '@/components/WishCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Calendar } from 'lucide-react';
+import { Search, Plus, Calendar, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWishAlbums } from '@/hooks/wish/useWishAlbums';
 import { useWishPosts } from '@/hooks/wish/useWishPosts';
 import WishAlbumSelector from '@/components/WishAlbumSelector';
@@ -21,9 +22,10 @@ const Wishes = () => {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   
   const { albums, loading: albumsLoading } = useWishAlbums();
-  const { posts, loading: postsLoading } = useWishPosts(searchTerm, selectedAlbum || '', startDate, endDate);
+  const { posts, loading: postsLoading } = useWishPosts(searchTerm, selectedAlbum || '', startDate, endDate, undefined, selectedStatus);
 
   console.log('📖 Wishes - Vérification utilisateur invité:', {
     isInvitedUser
@@ -38,6 +40,7 @@ const Wishes = () => {
     setStartDate('');
     setEndDate('');
     setSelectedAlbum(null);
+    setSelectedStatus('');
   };
 
   const handleAlbumsUpdate = () => {
@@ -84,6 +87,18 @@ const Wishes = () => {
               onAlbumChange={setSelectedAlbum}
               onAlbumsUpdate={handleAlbumsUpdate}
             />
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-full sm:w-48">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="fulfilled">Réalisés</SelectItem>
+                <SelectItem value="cancelled">Annulés</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <DateRangeFilter
@@ -119,11 +134,11 @@ const Wishes = () => {
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun souhait trouvé</h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || selectedAlbum || startDate || endDate
+              {searchTerm || selectedAlbum || startDate || endDate || selectedStatus
                 ? 'Aucun souhait ne correspond à vos critères de recherche.'
                 : 'Commencez par créer votre premier souhait.'}
             </p>
-            {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && (
+            {!isInvitedUser && !searchTerm && !selectedAlbum && !startDate && !endDate && !selectedStatus && (
               <Button 
                 onClick={() => navigate('/wishes/new')}
                 className="bg-black hover:bg-black/90 text-white"

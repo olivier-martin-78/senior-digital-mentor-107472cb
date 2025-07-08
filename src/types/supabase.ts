@@ -773,6 +773,9 @@ export interface WishPost {
   date: string | null;
   attachment_url: string | null;
   user_id: string | null;
+  status: 'pending' | 'fulfilled' | 'cancelled';
+  status_changed_by: string | null;
+  status_changed_at: string | null;
   profiles?: Profile;
   album?: WishAlbum;
 }

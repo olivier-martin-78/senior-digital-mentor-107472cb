@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGroupPermissions } from '../useGroupPermissions';
 import { WishPost } from '@/types/supabase';
 
-export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '', wishId?: string) => {
+export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '', wishId?: string, statusFilter: string = '') => {
   const [posts, setPosts] = useState<WishPost[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -66,6 +66,10 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
         query = query.lte('created_at', endDate + 'T23:59:59.999Z');
       }
 
+      if (statusFilter && statusFilter !== '') {
+        query = query.eq('status', statusFilter as 'pending' | 'fulfilled' | 'cancelled');
+      }
+
       const { data, error } = await query;
 
       if (error) {
@@ -100,7 +104,7 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
     if (!permissionsLoading) {
       fetchPosts();
     }
-  }, [searchTerm, albumId, startDate, endDate, wishId, authorizedUserIds, permissionsLoading]);
+  }, [searchTerm, albumId, startDate, endDate, wishId, statusFilter, authorizedUserIds, permissionsLoading]);
 
   return { posts, loading, refetch: fetchPosts };
 };

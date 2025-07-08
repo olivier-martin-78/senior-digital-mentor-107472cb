@@ -1407,6 +1407,9 @@ export type Database = {
           offering: string | null
           published: boolean | null
           request_type: string | null
+          status: Database["public"]["Enums"]["wish_status"]
+          status_changed_at: string | null
+          status_changed_by: string | null
           title: string
           updated_at: string
           user_id: string | null
@@ -1432,6 +1435,9 @@ export type Database = {
           offering?: string | null
           published?: boolean | null
           request_type?: string | null
+          status?: Database["public"]["Enums"]["wish_status"]
+          status_changed_at?: string | null
+          status_changed_by?: string | null
           title: string
           updated_at?: string
           user_id?: string | null
@@ -1457,6 +1463,9 @@ export type Database = {
           offering?: string | null
           published?: boolean | null
           request_type?: string | null
+          status?: Database["public"]["Enums"]["wish_status"]
+          status_changed_at?: string | null
+          status_changed_by?: string | null
           title?: string
           updated_at?: string
           user_id?: string | null
@@ -1593,6 +1602,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "editor" | "reader" | "professionnel"
+      wish_status: "pending" | "fulfilled" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1721,6 +1731,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "reader", "professionnel"],
+      wish_status: ["pending", "fulfilled", "cancelled"],
     },
   },
 } as const
