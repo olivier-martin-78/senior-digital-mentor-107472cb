@@ -136,7 +136,8 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
       cancelled: { label: 'Annulé', variant: 'destructive' as const, color: 'text-red-600' }
     };
     
-    const config = statusConfig[wish.status as keyof typeof statusConfig] || statusConfig.pending;
+    const currentStatus = wish.status || 'pending';
+    const config = statusConfig[currentStatus as keyof typeof statusConfig] || statusConfig.pending;
     
     return (
       <Badge variant={config.variant} className={config.color}>
@@ -147,8 +148,9 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
 
   const getCardClass = () => {
     const baseClass = "hover:shadow-md transition-shadow cursor-pointer h-full";
+    const currentStatus = wish.status || 'pending';
     
-    switch (wish.status) {
+    switch (currentStatus) {
       case 'fulfilled':
         return `${baseClass} border-green-300 bg-green-50/50`;
       case 'cancelled':
@@ -204,9 +206,9 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
               {getStatusBadge()}
               {(canEdit || canChangeStatus) && (
                 <div className="flex flex-wrap gap-1">
-                  {canChangeStatus && (
+                   {canChangeStatus && (
                     <>
-                      {wish.status !== 'fulfilled' && (
+                      {(wish.status || 'pending') !== 'fulfilled' && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -218,7 +220,7 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
                           {isUpdatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-4 w-4" />}
                         </Button>
                       )}
-                      {wish.status !== 'cancelled' && (
+                      {(wish.status || 'pending') !== 'cancelled' && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -230,7 +232,7 @@ const WishCard: React.FC<WishCardProps> = ({ wish }) => {
                           {isUpdatingStatus ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-4 w-4" />}
                         </Button>
                       )}
-                      {wish.status !== 'pending' && (
+                      {(wish.status || 'pending') !== 'pending' && (
                         <Button
                           variant="ghost"
                           size="sm"
