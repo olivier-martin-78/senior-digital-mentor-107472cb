@@ -76,6 +76,11 @@ function App() {
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 <Route path="/blog-landing" element={<BlogLanding />} />
                 <Route path="/ai-landing" element={<AILanding />} />
+                
+                {/* Route subscription - accessible aux utilisateurs authentifiés même avec accès expiré */}
+                <Route element={<ProtectedRoute requiresFullAccess={false} />}>
+                  <Route path="/subscription" element={<Subscription />} />
+                </Route>
 
                 {/* Routes protégées */}
                 <Route element={<ProtectedRoute />}>
@@ -95,7 +100,6 @@ function App() {
                   <Route path="/wishes/edit/:id" element={<WishEdit />} />
                   <Route path="/wishes/form/:id" element={<WishForm />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/subscription" element={<Subscription />} />
                   <Route path="/my-invitation-groups" element={<MyInvitationGroups />} />
                   
                   {/* Routes d'activités */}
