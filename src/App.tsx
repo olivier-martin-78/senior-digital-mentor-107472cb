@@ -37,6 +37,17 @@ import BlogLanding from './pages/BlogLanding';
 import Caregivers from './pages/Caregivers';
 import HeaderWrapper from './components/HeaderWrapper';
 
+// Import admin components
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPosts from './pages/admin/AdminPosts';
+import AdminActivities from './pages/admin/AdminActivities';
+import AdminAlbums from './pages/admin/AdminAlbums';
+import AdminWishAlbums from './pages/admin/AdminWishAlbums';
+import AdminDiary from './pages/admin/AdminDiary';
+import AdminLifeStories from './pages/admin/AdminLifeStories';
+import AdminInvitationGroups from './pages/admin/AdminInvitationGroups';
+import AdminPermissionsDiagnostic from './pages/admin/AdminPermissionsDiagnostic';
+
 // Import activities components
 import ActivitiesOverview from './pages/activities/ActivitiesOverview';
 import ActivityPage from './pages/activities/ActivityPage';
@@ -104,6 +115,19 @@ function App() {
                   <Route path="/caregivers" element={<Caregivers />} />
                   
                   <Route path="/capria" element={<CaprIA />} />
+                </Route>
+                
+                {/* Routes admin - nécessitent le rôle admin */}
+                <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/posts" element={<AdminPosts />} />
+                  <Route path="/admin/activities" element={<AdminActivities />} />
+                  <Route path="/admin/albums" element={<AdminAlbums />} />
+                  <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
+                  <Route path="/admin/diary" element={<AdminDiary />} />
+                  <Route path="/admin/life-stories" element={<AdminLifeStories />} />
+                  <Route path="/admin/invitation-groups" element={<AdminInvitationGroups />} />
+                  <Route path="/admin/permissions-diagnostic" element={<AdminPermissionsDiagnostic />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />
