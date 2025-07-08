@@ -27,7 +27,6 @@ export class AuthService {
 
   static async fetchUserProfile(userId: string): Promise<Profile | null> {
     try {
-      console.log('🔍 Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -35,44 +34,33 @@ export class AuthService {
         .single();
 
       if (error) {
-        console.error('❌ Error fetching user profile:', error);
+        console.error('Error fetching user profile:', error);
         return null;
       }
 
-      console.log('✅ Profile fetched successfully:', data);
       return data;
     } catch (error) {
-      console.error('❌ Exception while fetching profile:', error);
+      console.error('Exception while fetching profile:', error);
       return null;
     }
   }
 
   static async fetchUserRoles(userId: string): Promise<AppRole[]> {
     try {
-      console.log('🔍 Fetching roles for user:', userId);
-      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 
       if (error) {
-        console.error('❌ Error fetching user roles:', error);
+        console.error('Error fetching user roles:', error);
         return [];
       }
 
-      console.log('✅ Raw roles data from database:', data);
       const roles = data?.map(row => row.role) || [];
-      console.log('✅ Processed roles array:', roles);
-      console.log('🔍 Role types:', roles.map(role => `${role} (${typeof role})`));
-      
-      // Vérifier si 'admin' est présent
-      const hasAdminRole = roles.includes('admin');
-      console.log('🔍 Has admin role?', hasAdminRole);
-      
       return roles;
     } catch (error) {
-      console.error('❌ Exception while fetching roles:', error);
+      console.error('Exception while fetching roles:', error);
       return [];
     }
   }
