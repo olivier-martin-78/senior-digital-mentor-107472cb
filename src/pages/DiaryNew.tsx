@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Header from '@/components/Header';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Form } from '@/components/ui/form';
@@ -159,9 +158,8 @@ const DiaryNew = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-24">
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-serif text-tranches-charcoal mb-8">Nouvelle entrée de journal</h1>
           
