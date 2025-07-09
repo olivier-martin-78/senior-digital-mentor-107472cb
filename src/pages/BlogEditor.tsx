@@ -20,7 +20,7 @@ import { Switch } from '@/components/ui/switch';
 
 const BlogEditor = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const {
     isEditing,
     loading,
@@ -152,29 +152,31 @@ const BlogEditor = () => {
             />
           </div>
 
-          {/* Partage Global */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50">
-              <div className="space-y-0.5">
-                <Label className="text-base font-medium">
-                  Partager globalement
-                </Label>
-                <div className="text-sm text-muted-foreground">
-                  Rendre cet article visible par tous les utilisateurs authentifiés
+          {/* Partage Global - Visible seulement pour les admins */}
+          {user && hasRole && hasRole('admin') && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">
+                    Partager globalement
+                  </Label>
+                  <div className="text-sm text-muted-foreground">
+                    Rendre cet article visible par tous les utilisateurs authentifiés
+                  </div>
                 </div>
+                <Switch
+                  checked={sharedGlobally}
+                  onCheckedChange={setSharedGlobally}
+                  disabled={!post?.published && !saving}
+                />
               </div>
-              <Switch
-                checked={sharedGlobally}
-                onCheckedChange={setSharedGlobally}
-                disabled={!post?.published && !saving}
-              />
+              {sharedGlobally && (
+                <p className="text-xs text-blue-600 mt-2">
+                  ℹ️ Le contenu ne sera partagé globalement que s'il est publié
+                </p>
+              )}
             </div>
-            {sharedGlobally && (
-              <p className="text-xs text-blue-600 mt-2">
-                ℹ️ Le contenu ne sera partagé globalement que s'il est publié
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Media Upload - only show if post is already saved */}
           {(isEditing || post) && (

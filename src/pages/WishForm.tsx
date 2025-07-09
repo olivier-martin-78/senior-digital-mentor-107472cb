@@ -66,7 +66,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, hasRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [wishAlbums, setWishAlbums] = useState<WishAlbum[]>([]);
@@ -873,28 +873,31 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name="sharedGlobally"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Partager globalement</FormLabel>
-                            <FormDescription>
-                              Lorsque activé, ce souhait sera visible par tous les utilisateurs authentifiés,
-                              même ceux qui ne sont pas dans votre groupe.
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
+                    {/* Partage Global - Visible seulement pour les admins */}
+                    {hasRole('admin') && (
+                      <FormField
+                        control={form.control}
+                        name="sharedGlobally"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Partager globalement</FormLabel>
+                              <FormDescription>
+                                Lorsque activé, ce souhait sera visible par tous les utilisateurs authentifiés,
+                                même ceux qui ne sont pas dans votre groupe.
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
                               disabled={!form.watch('published')}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 )}
                 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { LifeStory } from '@/types/lifeStory';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLifeStory } from '@/hooks/use-life-story';
 import StoryHeader from './StoryHeader';
 import StoryProgress from './StoryProgress';
@@ -17,6 +18,7 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
   isReadOnly = false,
   targetUserId 
 }) => {
+  const { hasRole } = useAuth();
   // En mode lecture seule (admin), utiliser directement les données existantes sans hook
   if (isReadOnly && existingStory) {
     // Mélanger les chapitres initiaux avec les données existantes pour préserver les réponses
@@ -179,8 +181,8 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
       {/* Barre de progression */}
       <StoryProgress progress={lifeStoryHook.progress} />
       
-      {/* Partage Global - Seulement en mode édition */}
-      {!isReadOnly && (
+      {/* Partage Global - Seulement en mode édition et pour les admins */}
+      {!isReadOnly && hasRole('admin') && (
         <div className="mb-6">
           <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50">
             <div className="space-y-0.5">

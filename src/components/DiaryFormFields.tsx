@@ -1,5 +1,6 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,6 +26,7 @@ interface DiaryFormFieldsProps {
 }
 
 const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaType }: DiaryFormFieldsProps) => {
+  const { hasRole } = useAuth();
   const [newPerson, setNewPerson] = useState('');
   const [newTag, setNewTag] = useState('');
 
@@ -426,30 +428,32 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         />
       )}
 
-      {/* Partage Global */}
-      <FormField
-        control={form.control}
-        name="shared_globally"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-blue-50">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base font-medium">
-                Partager globalement
-              </FormLabel>
-              <div className="text-sm text-muted-foreground">
-                Rendre cette entrée visible par tous les utilisateurs authentifiés
+      {/* Partage Global - Visible seulement pour les admins */}
+      {hasRole('admin') && (
+        <FormField
+          control={form.control}
+          name="shared_globally"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-blue-50">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base font-medium">
+                  Partager globalement
+                </FormLabel>
+                <div className="text-sm text-muted-foreground">
+                  Rendre cette entrée visible par tous les utilisateurs authentifiés
+                </div>
               </div>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
                 disabled={isLocked}
               />
-            </FormControl>
-          </FormItem>
-        )}
-      />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 };
