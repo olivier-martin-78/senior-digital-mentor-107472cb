@@ -3,33 +3,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecentItem } from '../useRecentItems';
-import { useGroupPermissions } from '../useGroupPermissions';
 
 export const useRecentWishes = () => {
   const { user, getEffectiveUserId } = useAuth();
   const [wishes, setWishes] = useState<RecentItem[]>([]);
-  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchWishes = useCallback(async () => {
-    if (!user || permissionsLoading) {
+    if (!user) {
+      console.log('🚫 useRecentWishes - Pas d\'utilisateur connecté');
       setWishes([]);
       return;
     }
 
-    console.log('🔍 useRecentWishes - Récupération avec permissions de groupe centralisées');
+    console.log('🔍 useRecentWishes - Récupération des souhaits récents');
 
     try {
       const effectiveUserId = getEffectiveUserId();
 
-      if (authorizedUserIds.length === 0) {
-        console.log('⚠️ useRecentWishes - Aucun utilisateur autorisé');
-        setWishes([]);
-        return;
-      }
-
-      console.log('✅ useRecentWishes - Utilisateurs autorisés:', authorizedUserIds);
-
-      // Utiliser la jointure directe maintenant que les FK sont correctes
+      // Récupérer TOUS les souhaits accessibles via RLS
       const { data: wishesData, error } = await supabase
         .from('wish_posts')
         .select(`
@@ -43,7 +34,6 @@ export const useRecentWishes = () => {
           author_id,
           profiles!inner(id, email, display_name)
         `)
-        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false })
         .limit(15);
 
@@ -76,7 +66,7 @@ export const useRecentWishes = () => {
       console.error('💥 useRecentWishes - Erreur critique:', error);
       setWishes([]);
     }
-  }, [user, authorizedUserIds, permissionsLoading, getEffectiveUserId]);
+  }, [user, getEffectiveUserId]);
 
   useEffect(() => {
     fetchWishes();

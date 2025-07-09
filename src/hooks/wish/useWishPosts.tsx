@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useGroupPermissions } from '../useGroupPermissions';
 import { WishPost } from '@/types/supabase';
 
 export const useWishPosts = (searchTerm: string = '', albumId: string = '', startDate: string = '', endDate: string = '', wishId?: string, statusFilter: string = '') => {
@@ -11,7 +10,6 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   const fetchPosts = async () => {
     if (wishId === 'new') {
@@ -19,14 +17,8 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
       return;
     }
 
-    if (!user || permissionsLoading) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
-
-    if (authorizedUserIds.length === 0) {
-      console.log('⚠️ useWishPosts - Aucun utilisateur autorisé');
+    if (!user) {
+      console.log('🚫 useWishPosts - Pas d\'utilisateur connecté');
       setPosts([]);
       setLoading(false);
       return;
@@ -35,8 +27,7 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
     try {
       setLoading(true);
       
-      console.log('🔍 useWishPosts - Récupération avec permissions de groupe');
-      console.log('✅ useWishPosts - Utilisateurs autorisés:', authorizedUserIds);
+      console.log('🔍 useWishPosts - Récupération des souhaits');
 
       let query = supabase
         .from('wish_posts')
@@ -44,7 +35,6 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
           *,
           profiles:author_id(display_name, email)
         `)
-        .in('author_id', authorizedUserIds)
         .order('created_at', { ascending: false });
 
       if (wishId && wishId !== 'new') {
@@ -101,10 +91,8 @@ export const useWishPosts = (searchTerm: string = '', albumId: string = '', star
   };
 
   useEffect(() => {
-    if (!permissionsLoading) {
-      fetchPosts();
-    }
-  }, [searchTerm, albumId, startDate, endDate, wishId, statusFilter, authorizedUserIds, permissionsLoading]);
+    fetchPosts();
+  }, [searchTerm, albumId, startDate, endDate, wishId, statusFilter, user]);
 
   return { posts, loading, refetch: fetchPosts };
 };
