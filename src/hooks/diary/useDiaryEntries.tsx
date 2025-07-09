@@ -4,14 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiaryEntryWithAuthor } from '@/types/diary';
 import { useToast } from '@/hooks/use-toast';
-import { useGroupPermissions } from '../useGroupPermissions';
-
 export const useDiaryEntries = (searchTerm: string = '', startDate: string = '', endDate: string = '', entryId?: string) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [entries, setEntries] = useState<DiaryEntryWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
-  const { authorizedUserIds, loading: permissionsLoading } = useGroupPermissions();
 
   useEffect(() => {
     // Si nous cherchons une entrée spécifique avec l'ID "new", ne pas faire de requête
@@ -21,14 +18,8 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
     }
 
     const fetchEntries = async () => {
-      if (!user || permissionsLoading) {
-        setEntries([]);
-        setLoading(false);
-        return;
-      }
-
-      if (authorizedUserIds.length === 0) {
-        console.log('⚠️ useDiaryEntries - Aucun utilisateur autorisé');
+      if (!user) {
+        console.log('🚫 useDiaryEntries - Pas d\'utilisateur connecté');
         setEntries([]);
         setLoading(false);
         return;
@@ -37,14 +28,12 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
       try {
         setLoading(true);
         
-        console.log('🔍 useDiaryEntries - Récupération avec permissions de groupe');
-        console.log('✅ useDiaryEntries - Utilisateurs autorisés:', authorizedUserIds);
+        console.log('🔍 useDiaryEntries - Récupération des entrées de journal');
 
-        // Récupérer les entrées de journal
+        // Récupérer TOUTES les entrées accessibles via RLS
         let query = supabase
           .from('diary_entries')
           .select('*')
-          .in('user_id', authorizedUserIds)
           .order('entry_date', { ascending: false });
 
         // Si nous cherchons une entrée spécifique
@@ -126,10 +115,8 @@ export const useDiaryEntries = (searchTerm: string = '', startDate: string = '',
       }
     };
 
-    if (!permissionsLoading) {
-      fetchEntries();
-    }
-  }, [searchTerm, startDate, endDate, entryId, authorizedUserIds, permissionsLoading, user, toast]);
+    fetchEntries();
+  }, [searchTerm, startDate, endDate, entryId, user, toast]);
 
   return { entries, loading, refetch: () => {
     if (entryId !== 'new') {
