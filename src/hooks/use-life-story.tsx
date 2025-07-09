@@ -280,6 +280,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
         updated_at: new Date().toISOString(),
         last_edited_chapter: data.last_edited_chapter || null,
         last_edited_question: data.last_edited_question || null,
+        shared_globally: data.shared_globally || false,
       };
 
       console.log('💾 Données à sauvegarder:', {
@@ -519,6 +520,7 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
     progress,
     lastSaved,
     setActiveTab,
+    setData,
     toggleQuestions,
     handleQuestionFocus,
     updateAnswer,

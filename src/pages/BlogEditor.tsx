@@ -16,6 +16,7 @@ import CategorySelector from '@/components/blog/CategorySelector';
 import MediaUploader from '@/components/blog/MediaUploader';
 import MediaGallery from '@/components/blog/MediaGallery';
 import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
 
 const BlogEditor = () => {
   const navigate = useNavigate();
@@ -49,7 +50,9 @@ const BlogEditor = () => {
     setCoverImageFile,
     uploadingCoverImage,
     heicConversionProgress,
-    setHeicConversionProgress
+    setHeicConversionProgress,
+    sharedGlobally,
+    setSharedGlobally
   } = useBlogEditor();
 
   if (loading) {
@@ -147,6 +150,30 @@ const BlogEditor = () => {
               className="min-h-[250px] sm:min-h-[300px] mt-1"
               placeholder="Contenu de l'article..."
             />
+          </div>
+
+          {/* Partage Global */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50">
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">
+                  Partager globalement
+                </Label>
+                <div className="text-sm text-muted-foreground">
+                  Rendre cet article visible par tous les utilisateurs authentifiés
+                </div>
+              </div>
+              <Switch
+                checked={sharedGlobally}
+                onCheckedChange={setSharedGlobally}
+                disabled={!post?.published && !saving}
+              />
+            </div>
+            {sharedGlobally && (
+              <p className="text-xs text-blue-600 mt-2">
+                ℹ️ Le contenu ne sera partagé globalement que s'il est publié
+              </p>
+            )}
           </div>
 
           {/* Media Upload - only show if post is already saved */}

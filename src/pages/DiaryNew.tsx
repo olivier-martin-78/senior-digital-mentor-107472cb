@@ -31,6 +31,7 @@ const diaryFormSchema = z.object({
   private_notes: z.string().optional().nullable(),
   is_private_notes_locked: z.boolean().default(false),
   objectives: z.string().optional().nullable(),
+  shared_globally: z.boolean().default(false),
 });
 
 type DiaryFormValues = z.infer<typeof diaryFormSchema>;
@@ -60,6 +61,7 @@ const DiaryNew = () => {
       private_notes: '',
       is_private_notes_locked: false,
       objectives: '',
+      shared_globally: false,
     },
   });
 
@@ -120,6 +122,7 @@ const DiaryNew = () => {
         private_notes: data.private_notes || null,
         is_private_notes_locked: data.is_private_notes_locked,
         objectives: data.objectives || null,
+        shared_globally: data.shared_globally || false,
       };
 
       console.log("Création de l'entrée avec les données:", entryData);

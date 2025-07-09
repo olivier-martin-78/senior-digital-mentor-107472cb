@@ -318,6 +318,7 @@ export type Database = {
           email_notification_sent: boolean | null
           id: string
           published: boolean | null
+          shared_globally: boolean | null
           title: string
           updated_at: string
         }
@@ -331,6 +332,7 @@ export type Database = {
           email_notification_sent?: boolean | null
           id?: string
           published?: boolean | null
+          shared_globally?: boolean | null
           title: string
           updated_at?: string
         }
@@ -344,6 +346,7 @@ export type Database = {
           email_notification_sent?: boolean | null
           id?: string
           published?: boolean | null
+          shared_globally?: boolean | null
           title?: string
           updated_at?: string
         }
@@ -527,6 +530,7 @@ export type Database = {
           positive_things: string | null
           private_notes: string | null
           reflections: string | null
+          shared_globally: boolean | null
           tags: string[] | null
           title: string
           updated_at: string | null
@@ -552,6 +556,7 @@ export type Database = {
           positive_things?: string | null
           private_notes?: string | null
           reflections?: string | null
+          shared_globally?: boolean | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
@@ -577,6 +582,7 @@ export type Database = {
           positive_things?: string | null
           private_notes?: string | null
           reflections?: string | null
+          shared_globally?: boolean | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
@@ -920,6 +926,7 @@ export type Database = {
           id: string
           last_edited_chapter: string | null
           last_edited_question: string | null
+          shared_globally: boolean | null
           title: string
           updated_at: string
           user_id: string
@@ -930,6 +937,7 @@ export type Database = {
           id?: string
           last_edited_chapter?: string | null
           last_edited_question?: string | null
+          shared_globally?: boolean | null
           title: string
           updated_at?: string
           user_id: string
@@ -940,6 +948,7 @@ export type Database = {
           id?: string
           last_edited_chapter?: string | null
           last_edited_question?: string | null
+          shared_globally?: boolean | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -1407,6 +1416,7 @@ export type Database = {
           offering: string | null
           published: boolean | null
           request_type: string | null
+          shared_globally: boolean | null
           status: Database["public"]["Enums"]["wish_status"]
           status_changed_at: string | null
           status_changed_by: string | null
@@ -1435,6 +1445,7 @@ export type Database = {
           offering?: string | null
           published?: boolean | null
           request_type?: string | null
+          shared_globally?: boolean | null
           status?: Database["public"]["Enums"]["wish_status"]
           status_changed_at?: string | null
           status_changed_by?: string | null
@@ -1463,6 +1474,7 @@ export type Database = {
           offering?: string | null
           published?: boolean | null
           request_type?: string | null
+          shared_globally?: boolean | null
           status?: Database["public"]["Enums"]["wish_status"]
           status_changed_at?: string | null
           status_changed_by?: string | null

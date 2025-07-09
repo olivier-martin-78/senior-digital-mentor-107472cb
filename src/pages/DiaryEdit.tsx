@@ -34,6 +34,7 @@ const diaryFormSchema = z.object({
   private_notes: z.string().optional().nullable(),
   is_private_notes_locked: z.boolean().default(false),
   objectives: z.string().optional().nullable(),
+  shared_globally: z.boolean().default(false),
 });
 
 type DiaryFormValues = z.infer<typeof diaryFormSchema>;
@@ -67,6 +68,7 @@ const DiaryEdit = () => {
       private_notes: '',
       is_private_notes_locked: false,
       objectives: '',
+      shared_globally: false,
     },
   });
 
@@ -124,6 +126,7 @@ const DiaryEdit = () => {
             private_notes: entryData.private_notes || '',
             is_private_notes_locked: entryData.is_private_notes_locked || false,
             objectives: entryData.objectives || '',
+            shared_globally: entryData.shared_globally || false,
           });
           
           console.log("Entrée chargée avec succès:", entryData);
@@ -223,6 +226,7 @@ const DiaryEdit = () => {
         private_notes: data.private_notes || null,
         is_private_notes_locked: data.is_private_notes_locked,
         objectives: data.objectives || null,
+        shared_globally: data.shared_globally || false,
         updated_at: new Date().toISOString(),
       };
 

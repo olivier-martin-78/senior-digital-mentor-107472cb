@@ -179,6 +179,31 @@ export const LifeStoryForm: React.FC<LifeStoryFormProps> = ({
       {/* Barre de progression */}
       <StoryProgress progress={lifeStoryHook.progress} />
       
+      {/* Partage Global - Seulement en mode édition */}
+      {!isReadOnly && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50">
+            <div className="space-y-0.5">
+              <label className="text-base font-medium">
+                Partager globalement
+              </label>
+              <div className="text-sm text-muted-foreground">
+                Rendre cette histoire de vie visible par tous les utilisateurs authentifiés
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={displayData.shared_globally || false}
+              onChange={(e) => {
+                const newData = { ...displayData, shared_globally: e.target.checked };
+                lifeStoryHook.setData?.(newData);
+              }}
+              className="toggle"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Layout principal avec navigation et contenu */}
       {displayData.chapters.length > 0 ? (
         <LifeStoryLayout

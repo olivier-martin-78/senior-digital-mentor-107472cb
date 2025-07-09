@@ -59,7 +59,8 @@ const formSchema = z.object({
   attachmentUrl: z.string().optional(),
   albumId: z.string().optional(),
   published: z.boolean().default(false),
-  thumbnail: z.string().optional()
+  thumbnail: z.string().optional(),
+  sharedGlobally: z.boolean().default(false)
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -162,7 +163,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
         attachmentUrl: wishToEdit.attachment_url || '',
         albumId: wishToEdit.album_id || 'none',
         published: wishToEdit.published || false,
-        thumbnail: wishToEdit.cover_image || ''
+        thumbnail: wishToEdit.cover_image || '',
+        sharedGlobally: wishToEdit.shared_globally || false
       };
     }
     
@@ -182,7 +184,8 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
       attachmentUrl: '',
       albumId: 'none',
       published: false,
-      thumbnail: ''
+      thumbnail: '',
+      sharedGlobally: false
     };
   };
   
@@ -345,6 +348,7 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
         attachment_url: values.attachmentUrl || null,
         album_id: values.albumId === 'none' ? null : values.albumId || null,
         published: values.published,
+        shared_globally: values.sharedGlobally && values.published,
         cover_image: finalCoverImagePath || null // Chemin uniquement
       };
 

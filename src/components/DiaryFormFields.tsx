@@ -425,6 +425,31 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
           disabled={isLocked}
         />
       )}
+
+      {/* Partage Global */}
+      <FormField
+        control={form.control}
+        name="shared_globally"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-blue-50">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base font-medium">
+                Partager globalement
+              </FormLabel>
+              <div className="text-sm text-muted-foreground">
+                Rendre cette entrée visible par tous les utilisateurs authentifiés
+              </div>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                disabled={isLocked}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
     </div>
   );
 };

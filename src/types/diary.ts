@@ -21,6 +21,7 @@ export interface DiaryEntry {
   private_notes: string | null;
   is_private_notes_locked: boolean | null;
   objectives: string | null;
+  shared_globally?: boolean;
   created_at: string | null;
   updated_at: string | null;
   email_notification_sent?: boolean;

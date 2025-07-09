@@ -703,6 +703,7 @@ export interface BlogPost {
   album_id: string | null;
   cover_image: string | null;
   published: boolean | null;
+  shared_globally?: boolean;
   created_at: string;
   updated_at: string;
   email_notification_sent: boolean | null;
@@ -757,6 +758,7 @@ export interface WishPost {
   album_id: string | null;
   cover_image: string | null;
   published: boolean | null;
+  shared_globally?: boolean;
   created_at: string;
   updated_at: string;
   email_notification_sent: boolean | null;

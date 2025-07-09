@@ -23,6 +23,7 @@ export const useBlogEditor = () => {
   const [allCategories, setAllCategories] = useState<BlogCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<BlogCategory[]>([]);
   const [isPublished, setIsPublished] = useState(false);
+  const [sharedGlobally, setSharedGlobally] = useState(false);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [media, setMedia] = useState<BlogMedia[]>([]);
@@ -121,6 +122,7 @@ export const useBlogEditor = () => {
         setTitle(data.title);
         setContent(data.content);
         setIsPublished(data.published);
+        setSharedGlobally(data.shared_globally || false);
         setAlbumId(data.album_id);
         setCoverImage(data.cover_image || null);
 
@@ -242,6 +244,7 @@ export const useBlogEditor = () => {
             title: title.trim(),
             content: content.trim(),
             published: publish || isPublished,
+            shared_globally: sharedGlobally && (publish || isPublished),
             album_id: albumId,
             updated_at: new Date().toISOString(),
             cover_image: finalCoverImage
@@ -285,6 +288,7 @@ export const useBlogEditor = () => {
             author_id: user?.id,
             album_id: albumId,
             published: publish,
+            shared_globally: sharedGlobally && publish,
             cover_image: null
           })
           .select()
@@ -565,6 +569,8 @@ export const useBlogEditor = () => {
     setCoverImageFile,
     uploadingCoverImage,
     heicConversionProgress,
-    setHeicConversionProgress
+    setHeicConversionProgress,
+    sharedGlobally,
+    setSharedGlobally
   };
 };

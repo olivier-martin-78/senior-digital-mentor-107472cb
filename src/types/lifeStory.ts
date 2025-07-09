@@ -25,6 +25,7 @@ export interface LifeStory {
   updated_at?: string;
   last_edited_chapter?: string | null;
   last_edited_question?: string | null;
+  shared_globally?: boolean;
 }
 
 export interface LifeStoryProgress {
