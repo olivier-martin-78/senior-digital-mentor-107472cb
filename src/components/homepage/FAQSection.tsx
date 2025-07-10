@@ -49,7 +49,7 @@ const FAQSection = () => {
                 Combien cela coûte-t-il ?
               </AccordionTrigger>
               <AccordionContent>
-                Après avoir créé votre compte vous bénéficiez d'une première période d'essai gratuite de 48 heures. Au-delà vous devez vous rendre sur la page « Abonnements », sélectionnez le plan « Senior » à 4.90 €/mois ou « Professionnel » à 6.90 €/mois et entrer vos informations de paiement. Vous profitez alors d'une seconde période gratuite de 15 jours ou de 65 jours pour le plan Professionnel. Vous pouvez durant cette deuxième période d'essai gratuite annuler votre abonnement pour ne pas être prélevé de votre première mensualité. Après la période d'essai vous pouvez à tout moment annuler votre abonnement. Pour cela cliquez depuis la page « Abonnements » sur le lien « Gérer mon abonnement »
+                Après avoir créé votre compte vous bénéficiez d'une première période d'essai gratuite de 10 jours. Au-delà vous devez vous rendre sur la page « Abonnements », sélectionnez le plan « Senior » à 4.90 €/mois ou « Professionnel » à 6.90 €/mois et entrer vos informations de paiement. Vous profitez alors d'une seconde période gratuite de 15 jours ou de 65 jours pour le plan Professionnel. Vous pouvez durant cette deuxième période d'essai gratuite annuler votre abonnement pour ne pas être prélevé de votre première mensualité. Après la période d'essai vous pouvez à tout moment annuler votre abonnement. Pour cela cliquez depuis la page « Abonnements » sur le lien « Gérer mon abonnement »
               </AccordionContent>
             </AccordionItem>
 
