@@ -58,7 +58,7 @@ const FAQSection = () => {
                 Est-ce que les familles peuvent participer ?
               </AccordionTrigger>
               <AccordionContent>
-                Absolument ! Les personnes que vous invitez (via le bouton « Inviter une personne ») ont accès aux mêmes fonctionnalités que vous. Elles ont accès au contenu que vous publiez sans pouvoir le modifier. Elles peuvent interagir avec los articles de blog, créer du nouveau contenu dans le blog, le journal intime et les souhaits.
+                Absolument ! Les personnes que vous invitez (via le bouton « Inviter une personne ») ont accès aux mêmes fonctionnalités que vous. Elles ont accès au contenu que vous publiez sans pouvoir le modifier. Elles peuvent interagir avec vos articles de blog, créer de nouveaux articles dans le blog, le journal intime et les souhaits.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
