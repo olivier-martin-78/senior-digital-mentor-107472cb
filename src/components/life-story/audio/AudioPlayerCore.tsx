@@ -4,6 +4,7 @@ import { getAudioUrl, validateAudioUrl } from '../utils/audioUtils';
 import { detectDevice, getTimeoutDuration } from './utils/deviceDetection';
 import { useAudioEventHandlers } from './hooks/useAudioEventHandlers';
 import IPadAudioFallback from './IPadAudioFallback';
+import IPhoneAudioFallback from './IPhoneAudioFallback';
 import AudioLoadingManager from './AudioLoadingManager';
 import AudioErrorMessage from './AudioErrorMessage';
 import NoAudioDisplay from './NoAudioDisplay';
@@ -30,6 +31,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showIPadFallback, setShowIPadFallback] = useState(false);
+  const [showIPhoneFallback, setShowIPhoneFallback] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Traiter l'URL audio pour s'assurer qu'elle est valide et complète
@@ -38,8 +40,8 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
   console.log("🎵 AUDIO_PLAYER_CORE - Rendering with URL:", audioUrl);
   console.log("🎵 AUDIO_PLAYER_CORE - Processed URL:", processedAudioUrl);
 
-  const { isIPad, isIOS } = detectDevice();
-  console.log("🎵 AUDIO_PLAYER_CORE - Device detection:", { isIPad, isIOS });
+  const { isIPad, isIPhone, isIOS } = detectDevice();
+  console.log("🎵 AUDIO_PLAYER_CORE - Device detection:", { isIPad, isIPhone, isIOS });
 
   const eventHandlers = useAudioEventHandlers({
     onPlay,
@@ -50,9 +52,11 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     setHasError,
     setErrorMessage,
     setShowIPadFallback,
+    setShowIPhoneFallback,
     loadingTimeoutRef,
     processedAudioUrl: processedAudioUrl || '',
     isIPad,
+    isIPhone,
     isIOS
   });
 
@@ -64,8 +68,9 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     setErrorMessage('');
     setIsLoading(true);
     setShowIPadFallback(false);
+    setShowIPhoneFallback(false);
 
-    const timeoutDuration = getTimeoutDuration(isIPad, isIOS);
+    const timeoutDuration = getTimeoutDuration(isIPad, isIPhone, isIOS);
     
     // Timeout pour arrêter le loading
     loadingTimeoutRef.current = setTimeout(() => {
@@ -125,7 +130,7 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
       audio.pause();
       audio.src = '';
     };
-  }, [processedAudioUrl, isIOS, isIPad]); // Retirer eventHandlers des dépendances
+  }, [processedAudioUrl, isIOS, isIPad, isIPhone]); // Retirer eventHandlers des dépendances
 
   // Vérifier si l'URL semble valide
   if (!processedAudioUrl || !validateAudioUrl(processedAudioUrl)) {
@@ -138,8 +143,13 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
     return <IPadAudioFallback audioUrl={processedAudioUrl} className={className} />;
   }
 
-  // Afficher un message d'erreur seulement si l'erreur persiste et n'est pas sur iPad
-  if (hasError && !showIPadFallback) {
+  // Fallback spécifique pour iPhone avec WebM
+  if (showIPhoneFallback && isIPhone) {
+    return <IPhoneAudioFallback audioUrl={processedAudioUrl} className={className} />;
+  }
+
+  // Afficher un message d'erreur seulement si l'erreur persiste et n'est pas sur iPad/iPhone
+  if (hasError && !showIPadFallback && !showIPhoneFallback) {
     return (
       <AudioErrorMessage 
         hasError={hasError}

@@ -10,9 +10,11 @@ interface UseAudioEventHandlersProps {
   setHasError: (hasError: boolean) => void;
   setErrorMessage: (message: string) => void;
   setShowIPadFallback: (show: boolean) => void;
+  setShowIPhoneFallback: (show: boolean) => void;
   loadingTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>;
   processedAudioUrl: string;
   isIPad: boolean;
+  isIPhone: boolean;
   isIOS: boolean;
 }
 
@@ -25,9 +27,11 @@ export const useAudioEventHandlers = ({
   setHasError,
   setErrorMessage,
   setShowIPadFallback,
+  setShowIPhoneFallback,
   loadingTimeoutRef,
   processedAudioUrl,
   isIPad,
+  isIPhone,
   isIOS
 }: UseAudioEventHandlersProps) => {
   
@@ -41,21 +45,23 @@ export const useAudioEventHandlers = ({
     console.log("🎵 AUDIO_PLAYER_CORE - Can play");
     setIsLoading(false);
     setShowIPadFallback(false);
+    setShowIPhoneFallback(false);
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
     }
-  }, [setIsLoading, setShowIPadFallback, loadingTimeoutRef]);
+  }, [setIsLoading, setShowIPadFallback, setShowIPhoneFallback, loadingTimeoutRef]);
 
   const handleLoadedData = useCallback(() => {
     console.log("🎵 AUDIO_PLAYER_CORE - Loaded data");
     setIsLoading(false);
     setShowIPadFallback(false);
+    setShowIPhoneFallback(false);
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
     }
-  }, [setIsLoading, setShowIPadFallback, loadingTimeoutRef]);
+  }, [setIsLoading, setShowIPadFallback, setShowIPhoneFallback, loadingTimeoutRef]);
 
   const handlePlay = useCallback(() => {
     console.log("🎵 AUDIO_PLAYER_CORE - Playing");
@@ -95,6 +101,15 @@ export const useAudioEventHandlers = ({
       return;
     }
     
+    // Sur iPhone avec WebM, activer immédiatement le fallback
+    if (isIPhone && processedAudioUrl.includes('.webm')) {
+      console.log("🎵 AUDIO_PLAYER_CORE - iPhone WebM error, activating fallback");
+      setShowIPhoneFallback(true);
+      setIsLoading(false);
+      setHasError(false); // Ne pas afficher l'erreur générique
+      return;
+    }
+    
     // Pour les autres cas, attendre un peu avant d'afficher l'erreur
     const errorDelay = isIOS ? 2000 : 1000;
     setTimeout(() => {
@@ -107,8 +122,10 @@ export const useAudioEventHandlers = ({
   }, [
     loadingTimeoutRef,
     isIPad,
+    isIPhone,
     processedAudioUrl,
     setShowIPadFallback,
+    setShowIPhoneFallback,
     setIsLoading,
     setHasError,
     isIOS,
