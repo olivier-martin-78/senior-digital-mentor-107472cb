@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCaregiversAccess } from '@/hooks/useCaregiversAccess';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { FileText, MessageSquare, Star } from 'lucide-react';
 import InterventionReportsList from '@/components/caregivers/InterventionReportsList';
 import CommunicationSpace from '@/components/caregivers/CommunicationSpace';
 import InterventionReviews from '@/components/caregivers/InterventionReviews';
@@ -18,8 +20,12 @@ const Caregivers = () => {
   const [hasViewedCommunication, setHasViewedCommunication] = useState(false);
   
   const { unreadCount, markAllAsRead } = useUnreadMessages();
+  const { isMobileDevice } = useIsMobile();
 
   const navigate = useNavigate();
+
+  // Détecter si c'est un iPhone
+  const isIPhone = isMobileDevice && typeof navigator !== 'undefined' && /iPhone/i.test(navigator.userAgent);
 
   // Marquer les messages comme lus quand l'utilisateur clique sur l'onglet communication
   const handleTabChange = (value: string) => {
@@ -73,9 +79,19 @@ const Caregivers = () => {
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="reports">Rapports d'intervention</TabsTrigger>
+              <TabsTrigger value="reports">
+                {isIPhone ? (
+                  <FileText className="h-4 w-4" />
+                ) : (
+                  "Rapports d'intervention"
+                )}
+              </TabsTrigger>
               <TabsTrigger value="communication" className="relative">
-                Espace de coordination
+                {isIPhone ? (
+                  <MessageSquare className="h-4 w-4" />
+                ) : (
+                  "Espace de coordination"
+                )}
                 {displayUnreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -85,7 +101,13 @@ const Caregivers = () => {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="reviews">Avis sur les interventions</TabsTrigger>
+              <TabsTrigger value="reviews">
+                {isIPhone ? (
+                  <Star className="h-4 w-4" />
+                ) : (
+                  "Avis sur les interventions"
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="reports" className="mt-6">
