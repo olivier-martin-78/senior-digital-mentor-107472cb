@@ -207,7 +207,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-start">
           <div className="mb-8 md:mb-0">
             <h3 className="text-2xl font-serif text-tranches-charcoal mb-2">Senior Digital Mentor</h3>
-            <p className="text-tranches-warmgray">Le compagnon digital des seniors et de leur famille.</p>
+            <p className="text-tranches-warmgray">Des activités digitales qui me font du bien et me sentir moins seul(e).</p>
           </div>
           
           <div className="w-full md:w-1/2 lg:w-2/5">
