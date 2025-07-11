@@ -113,6 +113,7 @@ function App() {
                   {/* Routes professionnelles */}
                   <Route path="/professional-scheduler" element={<ProfessionalScheduler />} />
                   <Route path="/professional-module" element={<ProfessionalModule />} />
+                  <Route path="/module-pro" element={<ProfessionalModule />} />
                   <Route path="/intervention-report" element={<InterventionReport />} />
                   
                   {/* Route aidants */}
