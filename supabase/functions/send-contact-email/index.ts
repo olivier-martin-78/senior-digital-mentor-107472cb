@@ -135,6 +135,7 @@ serve(async (req: Request) => {
     const confirmationResult = await resend.emails.send({
       from: 'contact@senior-digital-mentor.com',
       to: email,
+      to: 'contact@senior-digital-mentor.com',
       subject: 'Nous avons bien reçu votre message - Senior Digital Mentor',
       html: `
         <h1>Bonjour ${firstName},</h1>
@@ -145,7 +146,7 @@ serve(async (req: Request) => {
         <p><strong>L'équipe Senior Digital Mentor</strong></p>
         <hr style="margin: 20px 0;">
         <p style="color: #666; font-size: 12px;">
-          Senior Digital Mentor - Le digital à mon rythme
+          Senior Digital Mentor - Des activités digitales qui me font du bien et me sentir moins seul(e).
         </p>
       `,
     });
