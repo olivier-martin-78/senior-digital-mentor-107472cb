@@ -24,6 +24,10 @@ interface UserAdmin {
   created_at: string;
   role: AppRole;
   display_name: string | null;
+  last_sign_in_at: string | null;
+  blog_posts_count: number;
+  diary_entries_count: number;
+  wish_posts_count: number;
 }
 
 const AdminUsers = () => {
@@ -69,6 +73,30 @@ const AdminUsers = () => {
         throw new Error(`Erreur Supabase: ${rolesError.message} (code: ${rolesError.code})`);
       }
 
+      // Récupérer les comptes d'articles de blog
+      const { data: blogPostsData } = await supabase
+        .from('blog_posts')
+        .select('author_id');
+
+      // Récupérer les comptes d'entrées de journal
+      const { data: diaryEntriesData } = await supabase
+        .from('diary_entries')
+        .select('user_id');
+
+      // Récupérer les comptes de souhaits
+      const { data: wishPostsData } = await supabase
+        .from('wish_posts')
+        .select('author_id');
+
+      // Essayer de récupérer les données d'authentification (peut échouer pour les non-admin)
+      let authUsersData: any[] = [];
+      try {
+        const { data: authData } = await supabase.auth.admin.listUsers();
+        authUsersData = authData?.users || [];
+      } catch (authError) {
+        console.log('Impossible de récupérer les données auth:', authError);
+      }
+
       if (profilesData && rolesData) {
         // Créer une map pour la recherche facile des rôles
         const rolesMap: { [key: string]: AppRole } = {};
@@ -76,13 +104,39 @@ const AdminUsers = () => {
           rolesMap[roleEntry.user_id] = roleEntry.role;
         });
 
-        // Combiner les données de profil et de rôle
+        // Créer des maps pour les comptes
+        const blogCountsMap: { [key: string]: number } = {};
+        blogPostsData?.forEach(post => {
+          blogCountsMap[post.author_id] = (blogCountsMap[post.author_id] || 0) + 1;
+        });
+
+        const diaryCountsMap: { [key: string]: number } = {};
+        diaryEntriesData?.forEach(entry => {
+          diaryCountsMap[entry.user_id] = (diaryCountsMap[entry.user_id] || 0) + 1;
+        });
+
+        const wishCountsMap: { [key: string]: number } = {};
+        wishPostsData?.forEach(wish => {
+          wishCountsMap[wish.author_id] = (wishCountsMap[wish.author_id] || 0) + 1;
+        });
+
+        // Créer une map pour les dernières connexions
+        const lastSignInMap: { [key: string]: string | null } = {};
+        authUsersData.forEach((user: any) => {
+          lastSignInMap[user.id] = user.last_sign_in_at;
+        });
+
+        // Combiner toutes les données
         const combinedUsers: UserAdmin[] = profilesData.map(profile => ({
           id: profile.id,
           email: profile.email,
           created_at: profile.created_at,
           role: rolesMap[profile.id] || 'reader',
-          display_name: profile.display_name
+          display_name: profile.display_name,
+          last_sign_in_at: lastSignInMap[profile.id] || null,
+          blog_posts_count: blogCountsMap[profile.id] || 0,
+          diary_entries_count: diaryCountsMap[profile.id] || 0,
+          wish_posts_count: wishCountsMap[profile.id] || 0
         }));
 
         setUsers(combinedUsers);
@@ -184,42 +238,61 @@ const AdminUsers = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Date de création</TableHead>
+                  <TableHead>Dernière connexion</TableHead>
+                  <TableHead>Articles blog</TableHead>
+                  <TableHead>Journal intime</TableHead>
+                  <TableHead>Souhaits</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <UserRoleSelector
-                          userId={user.id}
-                          currentRole={user.role}
-                          onRoleChange={handleRoleChanged}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <DeleteUserDialog
-                          userId={user.id}
-                          userEmail={user.email}
-                          onUserDeleted={handleUserDeleted}
-                        />
-                      </TableCell>
-                    </TableRow>
+                     <TableRow key={user.id}>
+                       <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
+                       <TableCell>{user.email}</TableCell>
+                       <TableCell>
+                         <UserRoleSelector
+                           userId={user.id}
+                           currentRole={user.role}
+                           onRoleChange={handleRoleChanged}
+                         />
+                       </TableCell>
+                       <TableCell>
+                         {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                       </TableCell>
+                       <TableCell>
+                         {user.last_sign_in_at 
+                           ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
+                           : 'Jamais connecté'
+                         }
+                       </TableCell>
+                       <TableCell className="text-center">
+                         <Badge variant="secondary">{user.blog_posts_count}</Badge>
+                       </TableCell>
+                       <TableCell className="text-center">
+                         <Badge variant="secondary">{user.diary_entries_count}</Badge>
+                       </TableCell>
+                       <TableCell className="text-center">
+                         <Badge variant="secondary">{user.wish_posts_count}</Badge>
+                       </TableCell>
+                       <TableCell className="text-right space-x-2">
+                         <DeleteUserDialog
+                           userId={user.id}
+                           userEmail={user.email}
+                           onUserDeleted={handleUserDeleted}
+                         />
+                       </TableCell>
+                     </TableRow>
                   ))
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      {searchTerm
-                        ? 'Aucun utilisateur ne correspond à votre recherche'
-                        : 'Aucun utilisateur n\'a été trouvé'}
-                    </TableCell>
-                  </TableRow>
+                   <TableRow>
+                     <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                       {searchTerm
+                         ? 'Aucun utilisateur ne correspond à votre recherche'
+                         : 'Aucun utilisateur n\'a été trouvé'}
+                     </TableCell>
+                   </TableRow>
                 )}
               </TableBody>
             </Table>
