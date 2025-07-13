@@ -1536,6 +1536,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_admin_users_with_auth_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          created_at: string
+          last_sign_in_at: string
+          display_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          blog_posts_count: number
+          diary_entries_count: number
+          wish_posts_count: number
+        }[]
+      }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string

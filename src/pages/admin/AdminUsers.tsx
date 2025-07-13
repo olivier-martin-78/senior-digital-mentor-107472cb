@@ -53,90 +53,27 @@ const AdminUsers = () => {
     try {
       setLoading(true);
 
-      // Récupérer les données des profils
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, created_at, display_name');
+      // Utiliser la nouvelle fonction de base de données pour récupérer toutes les données
+      const { data: usersData, error } = await supabase
+        .rpc('get_admin_users_with_auth_data');
 
-      if (profilesError) {
-        console.error('Erreur Supabase (profils):', profilesError);
-        throw new Error(`Erreur Supabase: ${profilesError.message} (code: ${profilesError.code})`);
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw new Error(`Erreur Supabase: ${error.message}`);
       }
 
-      // Récupérer les rôles des utilisateurs
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.error('Erreur Supabase (rôles):', rolesError);
-        throw new Error(`Erreur Supabase: ${rolesError.message} (code: ${rolesError.code})`);
-      }
-
-      // Récupérer les comptes d'articles de blog
-      const { data: blogPostsData } = await supabase
-        .from('blog_posts')
-        .select('author_id');
-
-      // Récupérer les comptes d'entrées de journal
-      const { data: diaryEntriesData } = await supabase
-        .from('diary_entries')
-        .select('user_id');
-
-      // Récupérer les comptes de souhaits
-      const { data: wishPostsData } = await supabase
-        .from('wish_posts')
-        .select('author_id');
-
-      // Essayer de récupérer les données d'authentification (peut échouer pour les non-admin)
-      let authUsersData: any[] = [];
-      try {
-        const { data: authData } = await supabase.auth.admin.listUsers();
-        authUsersData = authData?.users || [];
-      } catch (authError) {
-        console.log('Impossible de récupérer les données auth:', authError);
-      }
-
-      if (profilesData && rolesData) {
-        // Créer une map pour la recherche facile des rôles
-        const rolesMap: { [key: string]: AppRole } = {};
-        rolesData.forEach(roleEntry => {
-          rolesMap[roleEntry.user_id] = roleEntry.role;
-        });
-
-        // Créer des maps pour les comptes
-        const blogCountsMap: { [key: string]: number } = {};
-        blogPostsData?.forEach(post => {
-          blogCountsMap[post.author_id] = (blogCountsMap[post.author_id] || 0) + 1;
-        });
-
-        const diaryCountsMap: { [key: string]: number } = {};
-        diaryEntriesData?.forEach(entry => {
-          diaryCountsMap[entry.user_id] = (diaryCountsMap[entry.user_id] || 0) + 1;
-        });
-
-        const wishCountsMap: { [key: string]: number } = {};
-        wishPostsData?.forEach(wish => {
-          wishCountsMap[wish.author_id] = (wishCountsMap[wish.author_id] || 0) + 1;
-        });
-
-        // Créer une map pour les dernières connexions
-        const lastSignInMap: { [key: string]: string | null } = {};
-        authUsersData.forEach((user: any) => {
-          lastSignInMap[user.id] = user.last_sign_in_at;
-        });
-
-        // Combiner toutes les données
-        const combinedUsers: UserAdmin[] = profilesData.map(profile => ({
-          id: profile.id,
-          email: profile.email,
-          created_at: profile.created_at,
-          role: rolesMap[profile.id] || 'reader',
-          display_name: profile.display_name,
-          last_sign_in_at: lastSignInMap[profile.id] || null,
-          blog_posts_count: blogCountsMap[profile.id] || 0,
-          diary_entries_count: diaryCountsMap[profile.id] || 0,
-          wish_posts_count: wishCountsMap[profile.id] || 0
+      if (usersData) {
+        // Convertir les données reçues au format UserAdmin
+        const combinedUsers: UserAdmin[] = usersData.map((user: any) => ({
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          role: user.role,
+          display_name: user.display_name,
+          last_sign_in_at: user.last_sign_in_at,
+          blog_posts_count: Number(user.blog_posts_count),
+          diary_entries_count: Number(user.diary_entries_count),
+          wish_posts_count: Number(user.wish_posts_count)
         }));
 
         setUsers(combinedUsers);
