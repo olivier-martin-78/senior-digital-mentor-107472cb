@@ -55,6 +55,7 @@ import CrosswordGame from './pages/activities/CrosswordGame';
 import SudokuGame from './pages/activities/SudokuGame';
 import OppositesGame from './pages/activities/OppositesGame';
 import TranslationGame from './pages/activities/TranslationGame';
+import Quiz70sGame from './pages/activities/Quiz70sGame';
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,7 @@ function App() {
                   <Route path="/activities/sudoku" element={<SudokuGame />} />
                   <Route path="/activities/opposites" element={<OppositesGame />} />
                   <Route path="/activities/translation" element={<TranslationGame />} />
+                  <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
                   
                   {/* Routes professionnelles */}
                   <Route path="/professional-scheduler" element={<ProfessionalScheduler />} />

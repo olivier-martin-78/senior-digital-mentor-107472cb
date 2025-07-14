@@ -157,6 +157,25 @@ const ActivitiesOverview = () => {
           </p>
         </CardContent>
       </Link>
+    </Card>,
+    
+    <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+      <Link to="/activities/quiz70s" className="block">
+        <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Quiz Années 70</h3>
+          </div>
+        </div>
+        <CardHeader>
+          <CardTitle className="text-lg">Quiz Années 70</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.
+          </p>
+        </CardContent>
+      </Link>
     </Card>
   ];
 
