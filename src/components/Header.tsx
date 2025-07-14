@@ -42,15 +42,16 @@ const Header = () => {
   const isProfessional = roles.includes('professionnel');
   const isAdmin = roles.includes('admin');
 
-  const navigationItems = [
+  // Menu Senior regroupant les fonctionnalités principales
+  const seniorMenuItems = [
     { path: '/recent', label: 'Récent', icon: Heart },
-    { path: '/diary', label: 'Journal', icon: BookOpen },
     { path: '/blog', label: 'Blog', icon: Calendar },
+    { path: '/diary', label: 'Journal', icon: BookOpen },
     { path: '/life-story', label: 'Récit de vie', icon: Star },
     { path: '/wishes', label: 'Souhaits', icon: Star },
   ];
 
-  // Ajouter le menu Activités avec ses sous-menus corrigés
+  // Menu Activités avec ses sous-menus
   const activitiesMenu = {
     path: '/activities',
     label: 'Activités',
@@ -62,15 +63,20 @@ const Header = () => {
     ]
   };
 
+  // Menu Professionnel regroupant les fonctionnalités métier
+  const professionalMenuItems = [];
+  
   if (isProfessional) {
-    navigationItems.push(
-      { path: '/professional-scheduler', label: 'Planning', icon: Calendar }
-    );
+    professionalMenuItems.push({
+      path: '/professional-scheduler',
+      label: 'Planning',
+      icon: Calendar
+    });
   }
 
   // Ajouter le menu Aidants si l'utilisateur y a accès
   if (hasCaregiversAccess) {
-    navigationItems.push({
+    professionalMenuItems.push({
       path: '/caregivers',
       label: 'Aidants',
       icon: Users
@@ -109,59 +115,81 @@ const Header = () => {
             <>
               {/* Navigation Desktop - Cachée sur mobile */}
               <nav className="hidden lg:flex items-center space-x-6">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path || 
-                    (item.path !== '/recent' && location.pathname.startsWith(item.path));
-                  
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-
-                {/* Menu Activités avec dropdown - Desktop */}
+                {/* Menu Senior avec dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        location.pathname.startsWith('/activities')
+                        seniorMenuItems.some(item => location.pathname === item.path || location.pathname.startsWith(item.path)) || location.pathname.startsWith('/activities')
                           ? 'text-blue-600 bg-blue-50'
                           : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                       }`}
                     >
-                      <Activity className="h-4 w-4" />
-                      <span>{activitiesMenu.label}</span>
+                      <Heart className="h-4 w-4" />
+                      <span>Senior</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56 bg-white">
+                    {seniorMenuItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <DropdownMenuItem key={item.path} asChild>
+                          <Link to={item.path} className="flex items-center">
+                            <Icon className="mr-2 h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/activities" className="flex items-center">
                         <Activity className="mr-2 h-4 w-4" />
-                        Vue d'ensemble
+                        Activités - Vue d'ensemble
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     {activitiesMenu.subItems.map((subItem) => (
                       <DropdownMenuItem key={subItem.path} asChild>
-                        <Link to={subItem.path} className="flex items-center">
+                        <Link to={subItem.path} className="flex items-center pl-6">
                           {subItem.label}
                         </Link>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Menu Professionnel avec dropdown - Affiché seulement si items disponibles */}
+                {professionalMenuItems.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          professionalMenuItems.some(item => location.pathname === item.path || location.pathname.startsWith(item.path))
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Professionnel</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56 bg-white">
+                      {professionalMenuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem key={item.path} asChild>
+                            <Link to={item.path} className="flex items-center">
+                              <Icon className="mr-2 h-4 w-4" />
+                              {item.label}
+                            </Link>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </nav>
 
               {/* Mobile Menu Button et User Avatar */}
@@ -248,30 +276,34 @@ const Header = () => {
         {session && isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-100 py-4">
             <nav className="flex flex-col space-y-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path || 
-                  (item.path !== '/recent' && location.pathname.startsWith(item.path));
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={closeMobileMenu}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+              {/* Section Senior Mobile */}
+              <div className="mb-4">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Senior
+                </div>
+                {seniorMenuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path || 
+                    (item.path !== '/recent' && location.pathname.startsWith(item.path));
+                  
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={closeMobileMenu}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
 
-              {/* Menu Activités Mobile */}
-              <div className="border-t border-gray-100 pt-2 mt-2">
+                {/* Menu Activités Mobile */}
                 <Link
                   to="/activities"
                   onClick={closeMobileMenu}
@@ -300,6 +332,36 @@ const Header = () => {
                   </Link>
                 ))}
               </div>
+
+              {/* Section Professionnel Mobile - Affiché seulement si items disponibles */}
+              {professionalMenuItems.length > 0 && (
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Professionnel
+                  </div>
+                  {professionalMenuItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path || 
+                      (item.path !== '/caregivers' && location.pathname.startsWith(item.path));
+                    
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={closeMobileMenu}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </nav>
           </div>
         )}
