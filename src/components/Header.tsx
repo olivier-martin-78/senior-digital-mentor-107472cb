@@ -42,6 +42,8 @@ const Header = () => {
   const isProfessional = roles.includes('professionnel');
   const isAdmin = roles.includes('admin');
 
+  console.log('🔍 Header - User roles:', roles, 'isProfessional:', isProfessional, 'isAdmin:', isAdmin);
+
   // Menu Senior regroupant les fonctionnalités principales
   const seniorMenuItems = [
     { path: '/recent', label: 'Récent', icon: Heart },
