@@ -129,9 +129,7 @@ function App() {
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/posts" element={<AdminPosts />} />
                   <Route path="/admin/activities" element={<AdminActivities />} />
-                  <Route path="/admin/activities/games" element={<AdminActivities />} />
-                  <Route path="/admin/activities/exercises" element={<AdminActivities />} />
-                  <Route path="/admin/activities/meditation" element={<AdminActivities />} />
+                  <Route path="/admin/activities/:type" element={<AdminActivities />} />
                   <Route path="/admin/albums" element={<AdminAlbums />} />
                   <Route path="/admin/wish-albums" element={<AdminWishAlbums />} />
                   <Route path="/admin/diary" element={<AdminDiary />} />
