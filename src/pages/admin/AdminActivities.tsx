@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useActivities } from '@/hooks/useActivities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ const activityTypes = [
 
 const AdminActivities = () => {
   const { type } = useParams<{ type: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { activities, refetch } = useActivities(type || '');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -45,6 +46,24 @@ const AdminActivities = () => {
   // Vérifier si l'utilisateur peut utiliser la fonction de partage global
   const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
                           ['meditation', 'games', 'exercises'].includes(type || '');
+
+  // Gérer le paramètre edit dans l'URL
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && activities.length > 0) {
+      const activityToEdit = activities.find(activity => activity.id === editId);
+      if (activityToEdit) {
+        setEditingActivity(activityToEdit);
+        setShowForm(false);
+        // Nettoyer le paramètre edit de l'URL après avoir trouvé l'activité
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.delete('edit');
+          return newParams;
+        });
+      }
+    }
+  }, [activities, searchParams, setSearchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
