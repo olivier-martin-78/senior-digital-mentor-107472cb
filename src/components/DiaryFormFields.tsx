@@ -375,6 +375,26 @@ const DiaryFormFields = ({ form, onMediaChange, existingMediaUrl, existingMediaT
         )}
       />
 
+      {/* Qu'ai-je appris aujourd'hui - verrouillable */}
+      <FormField
+        control={form.control}
+        name="what_learned_today"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Qu'ai-je appris aujourd'hui ?</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Qu'avez-vous appris ou découvert aujourd'hui ?"
+                {...field}
+                value={field.value || ''}
+                disabled={isLocked}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Tags - verrouillable */}
       <FormField
         control={form.control}

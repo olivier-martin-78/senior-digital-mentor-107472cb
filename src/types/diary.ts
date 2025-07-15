@@ -17,6 +17,7 @@ export interface DiaryEntry {
   media_url: string | null;
   media_type: string | null;
   desire_of_day: string | null;
+  what_learned_today: string | null;
   tags: string[] | null;
   private_notes: string | null;
   is_private_notes_locked: boolean | null;

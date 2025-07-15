@@ -535,6 +535,7 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string
+          what_learned_today: string | null
         }
         Insert: {
           activities?: string | null
@@ -561,6 +562,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           user_id: string
+          what_learned_today?: string | null
         }
         Update: {
           activities?: string | null
@@ -587,6 +589,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+          what_learned_today?: string | null
         }
         Relationships: []
       }
