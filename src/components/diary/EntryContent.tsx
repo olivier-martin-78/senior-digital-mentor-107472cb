@@ -80,6 +80,11 @@ const EntryContent: React.FC<EntryContentProps> = ({ entry }) => {
       />
 
       <EntrySection
+        title="Qu'ai-je appris aujourd'hui ?"
+        content={entry.what_learned_today}
+      />
+
+      <EntrySection
         title="Tags"
         tags={entry.tags}
       />
