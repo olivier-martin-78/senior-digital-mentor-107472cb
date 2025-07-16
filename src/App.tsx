@@ -72,7 +72,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/public-subscription" element={<PublicSubscription />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/auth-confirm" element={<AuthConfirm />} />
+                <Route path="/auth/confirm" element={<AuthConfirm />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 <Route path="/blog-landing" element={<BlogLanding />} />
