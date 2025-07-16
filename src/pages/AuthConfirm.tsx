@@ -11,9 +11,10 @@ import Header from '@/components/Header';
 const AuthConfirm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'expired'>('loading');
   const [message, setMessage] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [isResending, setIsResending] = useState(false);
 
   const confirmEmailWithRetry = async (maxRetries = 3) => {
     try {
@@ -93,6 +94,11 @@ const AuthConfirm = () => {
           return confirmEmailWithRetry(maxRetries);
         }
         
+        // Pour les liens expirés, proposer de renvoyer l'email
+        if (errorMessage.includes('expired') || errorMessage.includes('invalid')) {
+          throw new Error('EXPIRED_LINK');
+        }
+        
         // Pour les autres erreurs, ne pas retry
         throw new Error(confirmationResult.error.message);
       }
@@ -117,6 +123,13 @@ const AuthConfirm = () => {
         console.log(`🔄 Retry global ${retryCount + 1}/${maxRetries}`);
         setRetryCount(prev => prev + 1);
         return confirmEmailWithRetry(maxRetries);
+      }
+      
+      // Gérer le cas du lien expiré
+      if (error instanceof Error && error.message === 'EXPIRED_LINK') {
+        setStatus('expired');
+        setMessage('Ce lien de confirmation a expiré. Vous pouvez demander un nouveau lien.');
+        return;
       }
       
       setStatus('error');
@@ -151,6 +164,38 @@ const AuthConfirm = () => {
     navigate('/auth');
   };
 
+  const handleResendConfirmation = async () => {
+    setIsResending(true);
+    try {
+      // Extraire l'email du token si possible, sinon demander à l'utilisateur
+      const email = searchParams.get('email');
+      if (!email) {
+        setMessage('Impossible de récupérer l\'email. Veuillez retourner à la page de connexion pour créer un nouveau compte.');
+        setIsResending(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setMessage('Un nouveau lien de confirmation a été envoyé à votre adresse email.');
+    } catch (error) {
+      console.error('Erreur lors du renvoi:', error);
+      setMessage('Impossible de renvoyer l\'email. Veuillez retourner à la page de connexion.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <Header />
@@ -160,7 +205,7 @@ const AuthConfirm = () => {
             <CardTitle className="text-2xl font-serif text-center flex items-center justify-center gap-2">
               {status === 'loading' && <Loader2 className="h-6 w-6 animate-spin" />}
               {status === 'success' && <CheckCircle className="h-6 w-6 text-green-500" />}
-              {status === 'error' && <XCircle className="h-6 w-6 text-red-500" />}
+              {(status === 'error' || status === 'expired') && <XCircle className="h-6 w-6 text-red-500" />}
               Confirmation d'email
             </CardTitle>
           </CardHeader>
@@ -196,6 +241,40 @@ const AuthConfirm = () => {
               </div>
             )}
             
+            {status === 'expired' && (
+              <div className="text-center space-y-4">
+                <Alert variant="destructive">
+                  <XCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {message}
+                  </AlertDescription>
+                </Alert>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={handleResendConfirmation}
+                    disabled={isResending}
+                    className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                  >
+                    {isResending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      'Renvoyer l\'email de confirmation'
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={handleReturnToAuth}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Retour à la page de connexion
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {status === 'error' && (
               <div className="text-center space-y-4">
                 <Alert variant="destructive">
