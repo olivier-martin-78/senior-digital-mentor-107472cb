@@ -1551,6 +1551,9 @@ export type Database = {
           blog_posts_count: number
           diary_entries_count: number
           wish_posts_count: number
+          clients_count: number
+          appointments_count: number
+          intervention_reports_count: number
         }[]
       }
       get_current_user_email: {

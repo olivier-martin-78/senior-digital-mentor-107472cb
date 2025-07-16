@@ -28,6 +28,9 @@ interface UserAdmin {
   blog_posts_count: number;
   diary_entries_count: number;
   wish_posts_count: number;
+  clients_count: number;
+  appointments_count: number;
+  intervention_reports_count: number;
 }
 
 const AdminUsers = () => {
@@ -73,7 +76,10 @@ const AdminUsers = () => {
           last_sign_in_at: user.last_sign_in_at,
           blog_posts_count: Number(user.blog_posts_count),
           diary_entries_count: Number(user.diary_entries_count),
-          wish_posts_count: Number(user.wish_posts_count)
+          wish_posts_count: Number(user.wish_posts_count),
+          clients_count: Number(user.clients_count),
+          appointments_count: Number(user.appointments_count),
+          intervention_reports_count: Number(user.intervention_reports_count)
         }));
 
         setUsers(combinedUsers);
@@ -179,6 +185,9 @@ const AdminUsers = () => {
                   <TableHead>Articles blog</TableHead>
                   <TableHead>Journal intime</TableHead>
                   <TableHead>Souhaits</TableHead>
+                  <TableHead>Clients</TableHead>
+                  <TableHead>Rendez-vous</TableHead>
+                  <TableHead>Rapports</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -210,10 +219,19 @@ const AdminUsers = () => {
                        <TableCell className="text-center">
                          <Badge variant="secondary">{user.diary_entries_count}</Badge>
                        </TableCell>
-                       <TableCell className="text-center">
-                         <Badge variant="secondary">{user.wish_posts_count}</Badge>
-                       </TableCell>
-                       <TableCell className="text-right space-x-2">
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{user.wish_posts_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{user.clients_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{user.appointments_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{user.intervention_reports_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
                          <DeleteUserDialog
                            userId={user.id}
                            userEmail={user.email}
@@ -224,7 +242,7 @@ const AdminUsers = () => {
                   ))
                 ) : (
                    <TableRow>
-                     <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                     <TableCell colSpan={12} className="text-center py-8 text-gray-500">
                        {searchTerm
                          ? 'Aucun utilisateur ne correspond à votre recherche'
                          : 'Aucun utilisateur n\'a été trouvé'}
