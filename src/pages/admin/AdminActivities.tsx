@@ -30,6 +30,7 @@ const AdminActivities = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
+  const [showMemoryManager, setShowMemoryManager] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
@@ -189,11 +190,52 @@ const AdminActivities = () => {
             <h1 className="text-3xl font-bold text-gray-900">
               Gestion des activités - {currentActivityType?.label}
             </h1>
-            <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter une activité
-            </Button>
+            <div className="flex gap-2">
+              {type === 'games' && (
+                <Button 
+                  onClick={() => setShowMemoryManager(!showMemoryManager)} 
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Gérer les jeux de Memory
+                </Button>
+              )}
+              <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter une activité
+              </Button>
+            </div>
           </div>
+
+          {showMemoryManager && type === 'games' && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex justify-between items-center">
+                  Gestion des jeux de Memory
+                  <Button 
+                    onClick={() => setShowMemoryManager(false)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Fermer
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Gérez ici les séries de cartes pour les jeux de memory. Vous pouvez créer de nouvelles séries avec vos propres images.
+                  </p>
+                  <iframe 
+                    src="/activities/games" 
+                    className="w-full h-96 border rounded-lg"
+                    title="Gestionnaire de jeux Memory"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {editingActivity && (
             <div className="mb-8">
