@@ -58,7 +58,235 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
   const handleClick = () => {
     if (iframeCode) {
-      // Ouvrir dans une nouvelle fenêtre avec le code iframe
+      try {
+        // Essayer de parser le JSON pour les jeux Memory
+        const gameData = JSON.parse(iframeCode);
+        if (gameData.type === 'memory_game') {
+          // Ouvrir le jeu Memory dans une nouvelle fenêtre
+          const newWindow = window.open('', '_blank', 'width=1200,height=800');
+          if (newWindow) {
+            newWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <title>${title}</title>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>
+                    body { 
+                      margin: 0; 
+                      padding: 0; 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                      background: #f3f4f6; 
+                    }
+                    .memory-game-container {
+                      padding: 20px;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                    }
+                    .header {
+                      text-align: center;
+                      margin-bottom: 30px;
+                    }
+                    .header h1 {
+                      color: #1f2937;
+                      margin-bottom: 20px;
+                    }
+                    .game-info {
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      gap: 20px;
+                      margin-bottom: 20px;
+                    }
+                    .moves {
+                      font-size: 18px;
+                      font-weight: 600;
+                    }
+                    .reset-btn {
+                      padding: 8px 16px;
+                      background: #6b7280;
+                      color: white;
+                      border: none;
+                      border-radius: 6px;
+                      cursor: pointer;
+                      font-size: 14px;
+                    }
+                    .reset-btn:hover {
+                      background: #4b5563;
+                    }
+                    .game-grid {
+                      display: grid;
+                      gap: 12px;
+                      max-width: 600px;
+                      margin: 0 auto;
+                      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                    }
+                    .card {
+                      aspect-ratio: 1;
+                      background: #3b82f6;
+                      border-radius: 8px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      position: relative;
+                      overflow: hidden;
+                    }
+                    .card:hover:not(.flipped):not(.matched) {
+                      background: #2563eb;
+                      transform: scale(1.05);
+                    }
+                    .card.flipped, .card.matched {
+                      background: white;
+                    }
+                    .card.matched {
+                      border: 2px solid #10b981;
+                    }
+                    .card img {
+                      width: 100%;
+                      height: 100%;
+                      object-fit: cover;
+                      border-radius: 6px;
+                    }
+                    .card-back {
+                      color: white;
+                      font-size: 24px;
+                      font-weight: bold;
+                    }
+                    .success-message {
+                      background: #dcfce7;
+                      border: 2px solid #16a34a;
+                      padding: 20px;
+                      border-radius: 8px;
+                      text-align: center;
+                      margin-bottom: 20px;
+                      color: #15803d;
+                      font-size: 18px;
+                      font-weight: 600;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="memory-game-container">
+                    <div class="header">
+                      <h1>${gameData.title}</h1>
+                      <div class="game-info">
+                        <div class="moves">Coups: <span id="moves">0</span></div>
+                        <button class="reset-btn" onclick="resetGame()">🔄 Recommencer</button>
+                      </div>
+                    </div>
+                    <div id="success-message" class="success-message" style="display: none;">
+                      🏆 Félicitations ! Jeu terminé en <span id="final-moves"></span> coups !
+                    </div>
+                    <div id="game-grid" class="game-grid"></div>
+                  </div>
+                  
+                  <script>
+                    const gameData = ${JSON.stringify(gameData)};
+                    let cards = [];
+                    let flippedCards = [];
+                    let moves = 0;
+                    let gameComplete = false;
+                    
+                    function initializeGame() {
+                      const pairs = [];
+                      gameData.images.forEach((imageUrl, index) => {
+                        pairs.push(
+                          { id: index * 2, imageUrl, isFlipped: false, isMatched: false },
+                          { id: index * 2 + 1, imageUrl, isFlipped: false, isMatched: false }
+                        );
+                      });
+                      
+                      cards = pairs.sort(() => Math.random() - 0.5);
+                      flippedCards = [];
+                      moves = 0;
+                      gameComplete = false;
+                      
+                      document.getElementById('moves').textContent = moves;
+                      document.getElementById('success-message').style.display = 'none';
+                      renderCards();
+                    }
+                    
+                    function renderCards() {
+                      const grid = document.getElementById('game-grid');
+                      const cols = Math.ceil(Math.sqrt(cards.length));
+                      grid.style.gridTemplateColumns = \`repeat(\${cols}, 1fr)\`;
+                      
+                      grid.innerHTML = cards.map(card => \`
+                        <div class="card \${card.isFlipped ? 'flipped' : ''} \${card.isMatched ? 'matched' : ''}" 
+                             onclick="handleCardClick(\${card.id})">
+                          \${card.isFlipped || card.isMatched ? 
+                            \`<img src="\${card.imageUrl}" alt="Memory card">\` : 
+                            '<div class="card-back">?</div>'
+                          }
+                        </div>
+                      \`).join('');
+                    }
+                    
+                    function handleCardClick(cardId) {
+                      if (gameComplete) return;
+                      if (flippedCards.length >= 2) return;
+                      if (flippedCards.includes(cardId)) return;
+                      
+                      const card = cards.find(c => c.id === cardId);
+                      if (card.isMatched) return;
+                      
+                      flippedCards.push(cardId);
+                      card.isFlipped = true;
+                      renderCards();
+                      
+                      if (flippedCards.length === 2) {
+                        moves++;
+                        document.getElementById('moves').textContent = moves;
+                        
+                        const [firstId, secondId] = flippedCards;
+                        const firstCard = cards.find(c => c.id === firstId);
+                        const secondCard = cards.find(c => c.id === secondId);
+                        
+                        if (firstCard.imageUrl === secondCard.imageUrl) {
+                          setTimeout(() => {
+                            firstCard.isMatched = true;
+                            secondCard.isMatched = true;
+                            flippedCards = [];
+                            renderCards();
+                            
+                            if (cards.every(c => c.isMatched)) {
+                              gameComplete = true;
+                              document.getElementById('final-moves').textContent = moves;
+                              document.getElementById('success-message').style.display = 'block';
+                            }
+                          }, 500);
+                        } else {
+                          setTimeout(() => {
+                            firstCard.isFlipped = false;
+                            secondCard.isFlipped = false;
+                            flippedCards = [];
+                            renderCards();
+                          }, 1000);
+                        }
+                      }
+                    }
+                    
+                    function resetGame() {
+                      initializeGame();
+                    }
+                    
+                    // Initialiser le jeu au chargement
+                    initializeGame();
+                  </script>
+                </body>
+              </html>
+            `);
+          }
+          return;
+        }
+      } catch (e) {
+        // Si ce n'est pas du JSON valide, traiter comme un iframe normal
+      }
+      
+      // Code iframe normal
       const newWindow = window.open('', '_blank', 'width=800,height=600');
       if (newWindow) {
         newWindow.document.write(`
