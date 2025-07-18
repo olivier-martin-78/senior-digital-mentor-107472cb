@@ -16,6 +16,7 @@ import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import ActivityCard from '@/components/activities/ActivityCard';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
 
 
 const activityTypes = [
@@ -224,64 +225,10 @@ const AdminActivities = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-800 mb-2">Instructions :</h3>
-                    <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• Donnez un titre descriptif à votre série (ex: "Animaux de la ferme")</li>
-                      <li>• Sélectionnez entre 2 et 14 images</li>
-                      <li>• Les images seront utilisées pour créer des paires à retrouver</li>
-                      <li>• Une fois créée, la série sera disponible pour tous les utilisateurs</li>
-                    </ul>
-                  </div>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="memory-title">Titre de la série</Label>
-                      <Input
-                        id="memory-title"
-                        placeholder="Ex: Animaux de la ferme"
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Images (2 à 14 images)</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          className="hidden"
-                          id="memory-file-upload"
-                        />
-                        <label htmlFor="memory-file-upload" className="cursor-pointer">
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                              <Plus className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">
-                                Cliquez pour sélectionner des images
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                Formats supportés: JPG, PNG, GIF (max 14 images)
-                              </p>
-                            </div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        Créer la série
-                      </Button>
-                      <Button variant="outline" onClick={() => setShowMemoryManager(false)}>
-                        Annuler
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <CreateMemoryGameForm 
+                  onSuccess={() => setShowMemoryManager(false)}
+                  onCancel={() => setShowMemoryManager(false)}
+                />
               </CardContent>
             </Card>
           )}
