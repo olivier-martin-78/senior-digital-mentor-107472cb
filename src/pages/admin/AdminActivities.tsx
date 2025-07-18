@@ -16,6 +16,7 @@ import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import ActivityCard from '@/components/activities/ActivityCard';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
+import CreateMemoryGameForm from '@/components/games/CreateMemoryGameForm';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
