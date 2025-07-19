@@ -17,6 +17,7 @@ import ActivityCard from '@/components/activities/ActivityCard';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
+import { EditMemoryGameForm } from '@/components/admin/EditMemoryGameForm';
 
 
 const activityTypes = [
@@ -161,6 +162,7 @@ const AdminActivities = () => {
   const handleEditActivity = (activity: Activity) => {
     setEditingActivity(activity);
     setShowForm(false);
+    setShowMemoryManager(false); // Fermer le gestionnaire Memory si ouvert
   };
 
   const handleSaveEdit = () => {
@@ -235,11 +237,32 @@ const AdminActivities = () => {
 
           {editingActivity && (
             <div className="mb-8">
-              <ActivityEditForm
-                activity={editingActivity}
-                onSave={handleSaveEdit}
-                onCancel={handleCancelEdit}
-              />
+              {(() => {
+                // Vérifier si c'est un jeu Memory
+                try {
+                  const gameData = editingActivity.iframe_code ? JSON.parse(editingActivity.iframe_code) : null;
+                  if (gameData?.type === 'memory_game') {
+                    return (
+                      <EditMemoryGameForm
+                        activity={editingActivity}
+                        onSave={handleSaveEdit}
+                        onCancel={handleCancelEdit}
+                      />
+                    );
+                  }
+                } catch (e) {
+                  // Si ce n'est pas du JSON valide, utiliser le formulaire générique
+                }
+                
+                // Formulaire générique pour les autres types d'activités
+                return (
+                  <ActivityEditForm
+                    activity={editingActivity}
+                    onSave={handleSaveEdit}
+                    onCancel={handleCancelEdit}
+                  />
+                );
+              })()}
             </div>
           )}
 
