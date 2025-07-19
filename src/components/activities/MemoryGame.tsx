@@ -26,7 +26,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
   const [moves, setMoves] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [numberOfPairs, setNumberOfPairs] = useState<number>(Math.min(6, gameData.images.length));
+  const [numberOfPairs, setNumberOfPairs] = useState<number>(Math.max(2, Math.min(6, gameData.images.length)));
 
   // Initialiser le jeu
   useEffect(() => {
@@ -141,24 +141,31 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
           </div>
           
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Niveau de difficulté:</label>
+            <label className="text-sm font-medium">Nombre de cartes:</label>
             <Select value={numberOfPairs.toString()} onValueChange={handleNumberOfPairsChange}>
               <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2, 3, 4, 5, 6, 7].map((pairCount) => {
-                  const cardCount = pairCount * 2;
-                  return (
-                    <SelectItem 
-                      key={pairCount} 
-                      value={pairCount.toString()} 
-                      disabled={pairCount > gameData.images.length}
-                    >
-                      {cardCount} cartes
-                    </SelectItem>
-                  );
-                })}
+                {(() => {
+                  const maxCards = gameData.images.length * 2; // Nombre maximum de cartes possibles
+                  const options = [];
+                  
+                  // Générer des nombres pairs commençant par 4 jusqu'au maximum disponible
+                  for (let cards = 4; cards <= maxCards; cards += 2) {
+                    const pairs = cards / 2;
+                    options.push(
+                      <SelectItem 
+                        key={pairs} 
+                        value={pairs.toString()}
+                      >
+                        {cards} cartes
+                      </SelectItem>
+                    );
+                  }
+                  
+                  return options;
+                })()}
               </SelectContent>
             </Select>
           </div>
