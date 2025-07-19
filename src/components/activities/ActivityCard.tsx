@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -406,61 +405,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       height: 315px;
                       width: 560px;
                     }
-                    .ios-video-fallback {
-                      background: #000;
-                      border-radius: 10px;
-                      padding: 20px;
-                      text-align: center;
-                      position: relative;
-                      overflow: hidden;
-                    }
-                    .ios-video-fallback img {
-                      width: 100%;
-                      max-width: 560px;
-                      height: 315px;
-                      object-fit: cover;
-                      border-radius: 8px;
-                    }
-                    .play-button-overlay {
-                      position: absolute;
-                      top: 50%;
-                      left: 50%;
-                      transform: translate(-50%, -50%);
-                      background: rgba(255, 0, 0, 0.9);
-                      border-radius: 50%;
-                      width: 80px;
-                      height: 80px;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      cursor: pointer;
-                      transition: all 0.3s ease;
-                    }
-                    .play-button-overlay:hover {
-                      background: rgba(255, 0, 0, 1);
-                      transform: translate(-50%, -50%) scale(1.1);
-                    }
-                    .play-button-overlay::after {
-                      content: '';
-                      width: 0;
-                      height: 0;
-                      border-left: 20px solid white;
-                      border-top: 12px solid transparent;
-                      border-bottom: 12px solid transparent;
-                      margin-left: 4px;
-                    }
-                    .ios-fallback-text {
-                      color: white;
-                      margin-top: 15px;
-                      font-size: 14px;
-                      opacity: 0.8;
-                    }
                     @media (max-width: 600px) {
                       .video-container iframe {
                         width: 100%;
-                        height: 250px;
-                      }
-                      .ios-video-fallback img {
                         height: 250px;
                       }
                     }
@@ -575,33 +522,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     let score = 0;
                     let answering = false;
 
-                    // Detect iOS devices
-                    function isIOS() {
-                      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                    }
-
                     // Extract YouTube video ID from embed code
                     function extractYouTubeId(embedCode) {
                       const match = embedCode.match(/(?:youtube\\.com\\/embed\\/|youtu\\.be\\/)([^"&?\\/ ]{11})/);
                       return match ? match[1] : null;
-                    }
-
-                    // Get YouTube thumbnail
-                    function getYouTubeThumbnail(videoId) {
-                      return \`https://img.youtube.com/vi/\${videoId}/maxresdefault.jpg\`;
-                    }
-
-                    // Open YouTube video in native app (iOS)
-                    function openYouTubeNative(videoId) {
-                      const youtubeAppUrl = \`youtube://watch?v=\${videoId}\`;
-                      const youtubeWebUrl = \`https://m.youtube.com/watch?v=\${videoId}\`;
-                      
-                      // Try to open in YouTube app first, fallback to web
-                      window.location.href = youtubeAppUrl;
-                      setTimeout(() => {
-                        window.open(youtubeWebUrl, '_blank');
-                      }, 1000);
                     }
 
                     function showQuestion() {
@@ -611,50 +535,40 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('current-question').textContent = currentQuestionIndex + 1;
                       document.getElementById('current-score').textContent = score;
                       
-                      let videoContent = '';
-                      const videoId = extractYouTubeId(question.youtubeEmbed);
-                      
-                      if (isIOS() && videoId) {
-                        // iOS fallback: show thumbnail with play button
-                        const thumbnailUrl = getYouTubeThumbnail(videoId);
-                        videoContent = \`
-                          <div class="ios-video-fallback" onclick="openYouTubeNative('\${videoId}')">
-                            <img src="\${thumbnailUrl}" alt="Miniature vidéo">
-                            <div class="play-button-overlay"></div>
-                            <div class="ios-fallback-text">Appuyez pour voir la vidéo dans YouTube</div>
-                          </div>
-                        \`;
-                      } else {
-                        // Standard embed with optimized parameters
-                        let embedCode = question.youtubeEmbed;
-                        if (embedCode.includes('youtube.com/embed/')) {
-                          // Replace youtube.com with youtube-nocookie.com for better privacy/compatibility
-                          embedCode = embedCode.replace('youtube.com', 'youtube-nocookie.com');
-                          
-                          // Add comprehensive iOS and compatibility parameters
-                          embedCode = embedCode.replace(/src="([^"]*)"/, (match, url) => {
-                            const separator = url.includes('?') ? '&' : '?';
-                            const params = [
-                              'playsinline=1',
-                              'rel=0',
-                              'modestbranding=1',
-                              'enablejsapi=1',
-                              'origin=' + encodeURIComponent(window.location.origin),
-                              'widget_referrer=' + encodeURIComponent(window.location.href)
-                            ].join('&');
-                            return \`src="\${url}\${separator}\${params}"\`;
-                          });
-                          
-                          // Add comprehensive iframe attributes for iOS compatibility
-                          embedCode = embedCode.replace('<iframe', 
-                            '<iframe playsinline webkit-playsinline allow="autoplay; encrypted-media; picture-in-picture"');
-                        }
-                        videoContent = embedCode;
+                      // Optimiser l'iframe YouTube pour une meilleure compatibilité iOS
+                      let embedCode = question.youtubeEmbed;
+                      if (embedCode.includes('youtube.com/embed/')) {
+                        // Remplacer par youtube-nocookie.com pour une meilleure compatibilité
+                        embedCode = embedCode.replace('youtube.com', 'youtube-nocookie.com');
+                        
+                        // Ajouter des paramètres optimisés pour iOS
+                        embedCode = embedCode.replace(/src="([^"]*)"/, (match, url) => {
+                          const separator = url.includes('?') ? '&' : '?';
+                          const params = [
+                            'playsinline=1',
+                            'rel=0',
+                            'modestbranding=1',
+                            'enablejsapi=1',
+                            'origin=' + encodeURIComponent(window.location.origin),
+                            'widget_referrer=' + encodeURIComponent(window.location.href),
+                            'controls=1',
+                            'fs=1',
+                            'iv_load_policy=3'
+                          ].join('&');
+                          return \`src="\${url}\${separator}\${params}"\`;
+                        });
+                        
+                        // Ajouter des attributs iframe optimisés pour iOS
+                        embedCode = embedCode.replace('<iframe', 
+                          '<iframe playsinline="1" webkit-playsinline="1" ' +
+                          'sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox" ' +
+                          'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" ' +
+                          'referrerpolicy="strict-origin-when-cross-origin"');
                       }
                        
                        questionArea.innerHTML = \`
                          <div class="video-container">
-                           \${videoContent}
+                           \${embedCode}
                          </div>
                          <div class="question">\${question.question}</div>
                          <div class="answers">
