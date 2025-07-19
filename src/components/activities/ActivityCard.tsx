@@ -166,13 +166,32 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         height: 250px;
                       }
                     }
-                    .question {
-                      font-size: 1.5rem;
-                      font-weight: 600;
-                      margin-bottom: 25px;
-                      text-align: center;
-                      color: #2d3748;
-                    }
+                     .question {
+                       font-size: 1.5rem;
+                       font-weight: 600;
+                       margin-bottom: 25px;
+                       text-align: center;
+                       color: #2d3748;
+                     }
+                     .artist-title {
+                       font-size: 1.1rem;
+                       font-weight: 500;
+                       color: #4a5568;
+                       text-align: center;
+                       margin-bottom: 20px;
+                       padding: 10px;
+                       background: rgba(255,255,255,0.8);
+                       border-radius: 8px;
+                       border-left: 4px solid #667eea;
+                     }
+                     @media (max-width: 768px) {
+                       .question {
+                         font-size: 1.1rem;
+                       }
+                       .artist-title {
+                         font-size: 0.95rem;
+                       }
+                     }
                     .answers {
                       display: flex;
                       flex-direction: column;
@@ -350,46 +369,48 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('current-question').textContent = currentQuestionIndex + 1;
                       document.getElementById('current-score').textContent = score;
                       
-                      // Sur iOS, priorité à l'audio
-                      if (isiOSDevice && question.audioUrl) {
-                        questionArea.innerHTML = \`
-                          <div class="audio-container">
-                            <div class="audio-player">
-                              <h3>🎵 Écoutez cet extrait audio</h3>
-                              <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
-                                <source src="\${question.audioUrl}" type="audio/mpeg">
-                                <source src="\${question.audioUrl}" type="audio/mp4">
-                                <source src="\${question.audioUrl}" type="audio/wav">
-                                Votre navigateur ne supporte pas la lecture audio.
-                              </audio>
-                            </div>
-                          </div>
-                          <div class="question">\${question.question}</div>
-                          <div class="answers">
-                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                          </div>
-                        \`;
-                        return;
-                      }
+                       // Sur iOS, priorité à l'audio
+                       if (isiOSDevice && question.audioUrl) {
+                         questionArea.innerHTML = \`
+                           <div class="audio-container">
+                             <div class="audio-player">
+                               <h3>🎵 Écoutez cet extrait audio</h3>
+                               <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
+                                 <source src="\${question.audioUrl}" type="audio/mpeg">
+                                 <source src="\${question.audioUrl}" type="audio/mp4">
+                                 <source src="\${question.audioUrl}" type="audio/wav">
+                                 Votre navigateur ne supporte pas la lecture audio.
+                               </audio>
+                             </div>
+                           </div>
+                           \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                           <div class="question">\${question.question}</div>
+                           <div class="answers">
+                             <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                             <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                             <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                           </div>
+                         \`;
+                         return;
+                       }
                       
                       // Sur PC/Android, essayer YouTube d'abord
                       if (!isiOSDevice && question.youtubeEmbed) {
                         const videoId = extractYouTubeId(question.youtubeEmbed);
                         
                         if (videoId) {
-                          questionArea.innerHTML = \`
-                            <div class="video-container">
-                              <div id="player"></div>
-                            </div>
-                            <div class="question">\${question.question}</div>
-                            <div class="answers">
-                              <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                              <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                              <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                            </div>
-                          \`;
+                           questionArea.innerHTML = \`
+                             <div class="video-container">
+                               <div id="player"></div>
+                             </div>
+                             \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                             <div class="question">\${question.question}</div>
+                             <div class="answers">
+                               <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                               <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                               <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                             </div>
+                           \`;
                           
                           createYouTubePlayer(videoId).catch(() => {
                             // Fallback sur audio si YouTube échoue
@@ -405,43 +426,45 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       if (question.audioUrl) {
                         showAudioFallback(question);
                       } else {
-                        // Aucun contenu disponible
-                        questionArea.innerHTML = \`
-                          <div class="question">\${question.question}</div>
-                          <p style="text-align: center; color: #666; margin: 20px 0;">
-                            ⚠️ Aucun contenu audio ou vidéo disponible pour cette question
-                          </p>
-                          <div class="answers">
-                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                          </div>
-                        \`;
+                         // Aucun contenu disponible
+                         questionArea.innerHTML = \`
+                           \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                           <div class="question">\${question.question}</div>
+                           <p style="text-align: center; color: #666; margin: 20px 0;">
+                             ⚠️ Aucun contenu audio ou vidéo disponible pour cette question
+                           </p>
+                           <div class="answers">
+                             <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                             <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                             <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                           </div>
+                         \`;
                       }
                     }
                     
-                    function showAudioFallback(question) {
-                      const questionArea = document.getElementById('question-area');
-                      questionArea.innerHTML = \`
-                        <div class="audio-container">
-                          <div class="audio-player">
-                            <h3>🎵 Écoutez cet extrait audio</h3>
-                            <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
-                              <source src="\${question.audioUrl}" type="audio/mpeg">
-                              <source src="\${question.audioUrl}" type="audio/mp4">
-                              <source src="\${question.audioUrl}" type="audio/wav">
-                              Votre navigateur ne supporte pas la lecture audio.
-                            </audio>
-                          </div>
-                        </div>
-                        <div class="question">\${question.question}</div>
-                        <div class="answers">
-                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                        </div>
-                      \`;
-                    }
+                     function showAudioFallback(question) {
+                       const questionArea = document.getElementById('question-area');
+                       questionArea.innerHTML = \`
+                         <div class="audio-container">
+                           <div class="audio-player">
+                             <h3>🎵 Écoutez cet extrait audio</h3>
+                             <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
+                               <source src="\${question.audioUrl}" type="audio/mpeg">
+                               <source src="\${question.audioUrl}" type="audio/mp4">
+                               <source src="\${question.audioUrl}" type="audio/wav">
+                               Votre navigateur ne supporte pas la lecture audio.
+                             </audio>
+                           </div>
+                         </div>
+                         \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                         <div class="question">\${question.question}</div>
+                         <div class="answers">
+                           <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                           <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                           <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                         </div>
+                       \`;
+                     }
 
                     function selectAnswer(selectedAnswer) {
                       if (answering) return;
