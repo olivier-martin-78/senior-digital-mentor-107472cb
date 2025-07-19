@@ -38,42 +38,30 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
     setIsExtracting(true);
 
     try {
-      // Simuler l'extraction audio (en attendant l'API réelle)
-      // Pour l'instant, nous créons un fichier audio de démonstration
-      const audioFileName = `audio_${videoId}_${Date.now()}.mp3`;
-      
-      // Créer un blob audio de démonstration (silence de 30 secondes)
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const sampleRate = 44100;
-      const duration = 30; // 30 secondes
-      const arrayBuffer = audioContext.createBuffer(2, sampleRate * duration, sampleRate);
-      
-      // Créer un fichier audio vide pour la démonstration
-      const audioBlob = new Blob([new ArrayBuffer(1000)], { type: 'audio/mpeg' });
-      
-      const { error: uploadError } = await supabase.storage
-        .from('activity-thumbnails')
-        .upload(`audio/${audioFileName}`, audioBlob, {
-          contentType: 'audio/mpeg'
-        });
+      // Appeler l'Edge Function pour extraire l'audio
+      const { data, error } = await supabase.functions.invoke('extract-youtube-audio', {
+        body: { youtubeUrl }
+      });
 
-      if (uploadError) throw uploadError;
+      if (error) {
+        throw new Error(error.message || 'Erreur lors de l\'extraction audio');
+      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('activity-thumbnails')
-        .getPublicUrl(`audio/${audioFileName}`);
+      if (!data.success || !data.audioUrl) {
+        throw new Error('Impossible d\'extraire l\'audio de cette vidéo');
+      }
 
-      onAudioExtracted(publicUrl);
+      onAudioExtracted(data.audioUrl);
 
       toast({
         title: 'Succès',
-        description: 'Audio extrait avec succès ! (Version de démonstration)',
+        description: 'Audio extrait avec succès depuis YouTube !',
       });
     } catch (error) {
       console.error('Erreur lors de l\'extraction audio:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'extraire l\'audio. Veuillez uploader un fichier audio manuellement.',
+        description: error instanceof Error ? error.message : 'Impossible d\'extraire l\'audio. Veuillez uploader un fichier audio manuellement.',
         variant: 'destructive',
       });
     } finally {
