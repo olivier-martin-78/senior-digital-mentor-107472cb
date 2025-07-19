@@ -143,10 +143,10 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Nombre de cartes:</label>
             <Select value={numberOfPairs.toString()} onValueChange={handleNumberOfPairsChange}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border border-border shadow-lg z-50">
                 {(() => {
                   const maxCards = gameData.images.length * 2; // Nombre maximum de cartes possibles
                   const options = [];
@@ -158,6 +158,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
                       <SelectItem 
                         key={pairs} 
                         value={pairs.toString()}
+                        className="cursor-pointer hover:bg-accent"
                       >
                         {cards} cartes
                       </SelectItem>
