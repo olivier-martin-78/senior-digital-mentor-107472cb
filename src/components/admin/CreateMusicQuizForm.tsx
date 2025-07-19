@@ -8,8 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Plus, Trash2, Upload, AlertCircle } from 'lucide-react';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
+import AudioExtractor from './AudioExtractor';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Question {
   id: string;
@@ -80,7 +82,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${questionId}_${Date.now()}.${fileExt}`;
+      const fileName = `audio/quiz_${questionId}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('activity-thumbnails')
@@ -106,6 +108,22 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         variant: 'destructive',
       });
     }
+  };
+
+  const handleAudioExtracted = (questionId: string, audioUrl: string) => {
+    updateQuestion(questionId, 'audioUrl', audioUrl);
+  };
+
+  const extractYouTubeUrl = (embedCode: string): string => {
+    const match = embedCode.match(/src="([^"]+)"/);
+    if (match) {
+      const embedUrl = match[1];
+      const videoIdMatch = embedUrl.match(/embed\/([^?]+)/);
+      if (videoIdMatch) {
+        return `https://www.youtube.com/watch?v=${videoIdMatch[1]}`;
+      }
+    }
+    return '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,6 +195,15 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     <Card>
       <CardHeader>
         <CardTitle>Créer un Quiz Musical</CardTitle>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Compatible iOS :</strong> Pour que votre quiz fonctionne sur iPad/iPhone, 
+            ajoutez des fichiers audio ou utilisez l'extracteur automatique YouTube.
+            <br />
+            <strong>Compatible PC :</strong> Les vidéos YouTube fonctionnent normalement.
+          </AlertDescription>
+        </Alert>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -239,9 +266,29 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <Label>Fichier audio (recommandé pour iOS)</Label>
+                    <Label>Code d'intégration YouTube</Label>
+                    <Textarea
+                      value={question.youtubeEmbed}
+                      onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
+                      placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
+                      rows={3}
+                    />
+                  </div>
+
+                  {question.youtubeEmbed && (
+                    <div className="space-y-2">
+                      <Label>Extraction automatique d'audio (pour iOS)</Label>
+                      <AudioExtractor
+                        youtubeUrl={extractYouTubeUrl(question.youtubeEmbed)}
+                        onAudioExtracted={(audioUrl) => handleAudioExtracted(question.id, audioUrl)}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label>OU Upload manuel de fichier audio</Label>
                     <input
                       type="file"
                       accept="audio/*"
@@ -256,16 +303,6 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
                         </audio>
                       </div>
                     )}
-                  </div>
-
-                  <div>
-                    <Label>Code d'intégration YouTube (optionnel)</Label>
-                    <Textarea
-                      value={question.youtubeEmbed}
-                      onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
-                      placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
-                      rows={3}
-                    />
                   </div>
 
                   <div>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, RefreshCw } from 'lucide-react';
 import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import ActivityEditForm from '@/components/activities/ActivityEditForm';
@@ -20,7 +20,7 @@ import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
 import { EditMemoryGameForm } from '@/components/admin/EditMemoryGameForm';
 import CreateMusicQuizForm from '@/components/admin/CreateMusicQuizForm';
 import EditMusicQuizForm from '@/components/admin/EditMusicQuizForm';
-
+import QuizConverter from '@/components/admin/QuizConverter';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
@@ -37,6 +37,7 @@ const AdminActivities = () => {
   const [showForm, setShowForm] = useState(false);
   const [showMemoryManager, setShowMemoryManager] = useState(false);
   const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
+  const [showQuizConverter, setShowQuizConverter] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
@@ -165,8 +166,9 @@ const AdminActivities = () => {
   const handleEditActivity = (activity: Activity) => {
     setEditingActivity(activity);
     setShowForm(false);
-    setShowMemoryManager(false); // Fermer le gestionnaire Memory si ouvert
-    setShowMusicQuizForm(false); // Fermer le formulaire quiz musical si ouvert
+    setShowMemoryManager(false);
+    setShowMusicQuizForm(false);
+    setShowQuizConverter(false);
   };
 
   const handleSaveEdit = () => {
@@ -217,6 +219,14 @@ const AdminActivities = () => {
                     <Plus className="h-4 w-4" />
                     Nouveau quiz musical
                   </Button>
+                  <Button 
+                    onClick={() => setShowQuizConverter(!showQuizConverter)} 
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Convertir quiz existants
+                  </Button>
                 </>
               )}
               <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
@@ -225,6 +235,17 @@ const AdminActivities = () => {
               </Button>
             </div>
           </div>
+
+          {showQuizConverter && type === 'games' && (
+            <div className="mb-8">
+              <QuizConverter 
+                onConversionComplete={() => {
+                  setShowQuizConverter(false);
+                  refetch();
+                }}
+              />
+            </div>
+          )}
 
           {showMemoryManager && type === 'games' && (
             <Card className="mb-8">
@@ -445,6 +466,7 @@ const AdminActivities = () => {
                     onEdit={() => handleEditActivity(activity)}
                     subActivityName={activity.activity_sub_tags?.name}
                     iframeCode={activity.iframe_code}
+                    audioUrl={activity.audio_url}
                   />
                   {activity.shared_globally && (
                     <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">

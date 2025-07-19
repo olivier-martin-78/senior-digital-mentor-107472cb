@@ -1,8 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Edit, ExternalLink } from 'lucide-react';
+import { Calendar, Edit, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { isIOS } from '@/utils/platformDetection';
 
 interface ActivityCardProps {
   title: string;
@@ -17,6 +18,7 @@ interface ActivityCardProps {
   iframeCode?: string;
   activityId?: string;
   canEdit?: boolean;
+  audioUrl?: string;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -31,7 +33,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   subActivityName,
   iframeCode,
   activityId,
-  canEdit = false
+  canEdit = false,
+  audioUrl
 }) => {
   const getDisplayImage = () => {
     if (thumbnailUrl) {
@@ -58,8 +61,502 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   const handleClick = () => {
     if (iframeCode) {
       try {
-        // Essayer de parser le JSON pour les jeux Memory
+        // Essayer de parser le JSON pour les jeux
         const gameData = JSON.parse(iframeCode);
+        
+        if (gameData.type === 'music_quiz') {
+          // Gestion spéciale pour les quiz musicaux
+          const isiOSDevice = isIOS();
+          
+          // Sur iOS, vérifier si on a de l'audio disponible
+          if (isiOSDevice && !audioUrl && !gameData.questions.some((q: any) => q.audioUrl)) {
+            alert('Ce quiz musical n\'est pas compatible avec votre appareil iOS. Veuillez demander à l\'administrateur d\'ajouter des fichiers audio.');
+            return;
+          }
+          
+          // Ouvrir le quiz musical avec logique adaptée
+          const newWindow = window.open('', '_blank', 'width=1200,height=800');
+          if (newWindow) {
+            newWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <title>${title}</title>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>
+                    body { 
+                      margin: 0; 
+                      padding: 0; 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      min-height: 100vh;
+                      color: white;
+                    }
+                    .quiz-container {
+                      padding: 20px;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      min-height: 100vh;
+                      display: flex;
+                      flex-direction: column;
+                    }
+                    .header {
+                      text-align: center;
+                      margin-bottom: 30px;
+                    }
+                    .header h1 {
+                      color: white;
+                      margin: 0 0 10px 0;
+                      font-size: 2.5rem;
+                      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                    }
+                    .platform-info {
+                      background: rgba(255,255,255,0.1);
+                      padding: 10px;
+                      border-radius: 8px;
+                      margin-bottom: 20px;
+                      text-align: center;
+                      font-size: 14px;
+                    }
+                    .score-info {
+                      background: rgba(255,255,255,0.1);
+                      padding: 15px;
+                      border-radius: 10px;
+                      text-align: center;
+                      margin-bottom: 20px;
+                      backdrop-filter: blur(10px);
+                    }
+                    .question-container {
+                      background: rgba(255,255,255,0.95);
+                      border-radius: 15px;
+                      padding: 30px;
+                      margin-bottom: 20px;
+                      color: #333;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    }
+                    .audio-container {
+                      margin-bottom: 30px;
+                      text-align: center;
+                      position: relative;
+                    }
+                    .audio-player {
+                      width: 100%;
+                      max-width: 500px;
+                      margin: 0 auto;
+                      background: #f8f9fa;
+                      border-radius: 10px;
+                      padding: 20px;
+                    }
+                    .video-container {
+                      margin-bottom: 30px;
+                      text-align: center;
+                      position: relative;
+                    }
+                    #player {
+                      border-radius: 10px;
+                      max-width: 100%;
+                      height: 315px;
+                      width: 560px;
+                      margin: 0 auto;
+                    }
+                    @media (max-width: 600px) {
+                      #player {
+                        width: 100%;
+                        height: 250px;
+                      }
+                    }
+                    .question {
+                      font-size: 1.5rem;
+                      font-weight: 600;
+                      margin-bottom: 25px;
+                      text-align: center;
+                      color: #2d3748;
+                    }
+                    .answers {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 15px;
+                    }
+                    .answer-btn {
+                      padding: 15px 20px;
+                      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                      color: white;
+                      border: none;
+                      border-radius: 10px;
+                      cursor: pointer;
+                      font-size: 1.1rem;
+                      font-weight: 500;
+                      transition: all 0.3s ease;
+                      transform: translateY(0);
+                    }
+                    .answer-btn:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+                    }
+                    .answer-btn.correct {
+                      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+                      animation: correctAnswer 0.6s ease;
+                    }
+                    .answer-btn.incorrect {
+                      background: linear-gradient(135deg, #ff7979 0%, #f093fb 100%);
+                      animation: incorrectAnswer 0.6s ease;
+                    }
+                    @keyframes correctAnswer {
+                      0% { transform: scale(1); }
+                      50% { transform: scale(1.05); }
+                      100% { transform: scale(1); }
+                    }
+                    @keyframes incorrectAnswer {
+                      0% { transform: translateX(0); }
+                      25% { transform: translateX(-5px); }
+                      75% { transform: translateX(5px); }
+                      100% { transform: translateX(0); }
+                    }
+                    .final-score {
+                      background: rgba(255,255,255,0.95);
+                      border-radius: 15px;
+                      padding: 40px;
+                      text-align: center;
+                      color: #333;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    }
+                    .final-score h2 {
+                      font-size: 2.5rem;
+                      margin-bottom: 20px;
+                      color: #2d3748;
+                    }
+                    .score-message {
+                      font-size: 1.3rem;
+                      margin-bottom: 30px;
+                      color: #4a5568;
+                    }
+                    .restart-btn {
+                      padding: 15px 30px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      border: none;
+                      border-radius: 10px;
+                      cursor: pointer;
+                      font-size: 1.2rem;
+                      font-weight: 600;
+                      transition: all 0.3s ease;
+                    }
+                    .restart-btn:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="quiz-container">
+                    <div class="header">
+                      <h1>${gameData.title}</h1>
+                      <div class="platform-info">
+                        ${isiOSDevice ? '📱 Mode iOS - Audio natif' : '💻 Mode PC - Vidéo YouTube'}
+                      </div>
+                    </div>
+                    
+                    <div class="score-info">
+                      <strong>Question <span id="current-question">1</span> sur ${gameData.questions.length}</strong>
+                      <span style="margin: 0 20px;">|</span>
+                      <strong>Score: <span id="current-score">0</span>/${gameData.questions.length}</strong>
+                    </div>
+
+                    <div id="question-area" class="question-container">
+                      <!-- Question content will be inserted here -->
+                    </div>
+
+                    <div id="final-screen" class="final-score" style="display: none;">
+                      <h2 id="final-score-text"></h2>
+                      <div id="final-message" class="score-message"></div>
+                      <button class="restart-btn" onclick="restartQuiz()">🎵 Recommencer le quiz</button>
+                    </div>
+                  </div>
+                  
+                  ${!isiOSDevice ? '<script src="https://www.youtube.com/iframe_api"></script>' : ''}
+                  
+                  <script>
+                    const quizData = ${JSON.stringify(gameData)};
+                    const isiOSDevice = ${isiOSDevice};
+                    let currentQuestionIndex = 0;
+                    let score = 0;
+                    let answering = false;
+                    let player = null;
+                    let playerReady = false;
+
+                    // YouTube Player API callback (only for non-iOS)
+                    function onYouTubeIframeAPIReady() {
+                      if (!isiOSDevice) {
+                        console.log('YouTube API ready');
+                        showQuestion();
+                      }
+                    }
+
+                    // Extract YouTube video ID from embed code
+                    function extractYouTubeId(embedCode) {
+                      const match = embedCode.match(/(?:youtube\\.com\\/embed\\/|youtu\\.be\\/)([^"&?\\/ ]{11})/);
+                      return match ? match[1] : null;
+                    }
+
+                    function createYouTubePlayer(videoId) {
+                      if (isiOSDevice) return Promise.resolve(null);
+                      
+                      return new Promise((resolve, reject) => {
+                        try {
+                          if (player) {
+                            player.destroy();
+                          }
+                          
+                          player = new YT.Player('player', {
+                            height: '315',
+                            width: '560',
+                            videoId: videoId,
+                            playerVars: {
+                              'playsinline': 1,
+                              'rel': 0,
+                              'modestbranding': 1,
+                              'controls': 1,
+                              'fs': 1,
+                              'iv_load_policy': 3,
+                              'cc_load_policy': 0,
+                              'disablekb': 0,
+                              'enablejsapi': 1,
+                              'origin': window.location.origin
+                            },
+                            events: {
+                              'onReady': function(event) {
+                                console.log('Player ready for video:', videoId);
+                                playerReady = true;
+                                resolve(event.target);
+                              },
+                              'onError': function(event) {
+                                console.error('Player error:', event.data);
+                                reject(event);
+                              }
+                            }
+                          });
+                        } catch (error) {
+                          console.error('Error creating player:', error);
+                          reject(error);
+                        }
+                      });
+                    }
+
+                    function showQuestion() {
+                      const question = quizData.questions[currentQuestionIndex];
+                      const questionArea = document.getElementById('question-area');
+                      
+                      document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+                      document.getElementById('current-score').textContent = score;
+                      
+                      // Sur iOS, priorité à l'audio
+                      if (isiOSDevice && question.audioUrl) {
+                        questionArea.innerHTML = \`
+                          <div class="audio-container">
+                            <div class="audio-player">
+                              <h3>🎵 Écoutez cet extrait audio</h3>
+                              <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
+                                <source src="\${question.audioUrl}" type="audio/mpeg">
+                                <source src="\${question.audioUrl}" type="audio/mp4">
+                                <source src="\${question.audioUrl}" type="audio/wav">
+                                Votre navigateur ne supporte pas la lecture audio.
+                              </audio>
+                            </div>
+                          </div>
+                          <div class="question">\${question.question}</div>
+                          <div class="answers">
+                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                          </div>
+                        \`;
+                        return;
+                      }
+                      
+                      // Sur PC/Android, essayer YouTube d'abord
+                      if (!isiOSDevice && question.youtubeEmbed) {
+                        const videoId = extractYouTubeId(question.youtubeEmbed);
+                        
+                        if (videoId) {
+                          questionArea.innerHTML = \`
+                            <div class="video-container">
+                              <div id="player"></div>
+                            </div>
+                            <div class="question">\${question.question}</div>
+                            <div class="answers">
+                              <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                              <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                              <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                            </div>
+                          \`;
+                          
+                          createYouTubePlayer(videoId).catch(() => {
+                            // Fallback sur audio si YouTube échoue
+                            if (question.audioUrl) {
+                              showAudioFallback(question);
+                            }
+                          });
+                          return;
+                        }
+                      }
+                      
+                      // Fallback audio pour tous les cas
+                      if (question.audioUrl) {
+                        showAudioFallback(question);
+                      } else {
+                        // Aucun contenu disponible
+                        questionArea.innerHTML = \`
+                          <div class="question">\${question.question}</div>
+                          <p style="text-align: center; color: #666; margin: 20px 0;">
+                            ⚠️ Aucun contenu audio ou vidéo disponible pour cette question
+                          </p>
+                          <div class="answers">
+                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                          </div>
+                        \`;
+                      }
+                    }
+                    
+                    function showAudioFallback(question) {
+                      const questionArea = document.getElementById('question-area');
+                      questionArea.innerHTML = \`
+                        <div class="audio-container">
+                          <div class="audio-player">
+                            <h3>🎵 Écoutez cet extrait audio</h3>
+                            <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
+                              <source src="\${question.audioUrl}" type="audio/mpeg">
+                              <source src="\${question.audioUrl}" type="audio/mp4">
+                              <source src="\${question.audioUrl}" type="audio/wav">
+                              Votre navigateur ne supporte pas la lecture audio.
+                            </audio>
+                          </div>
+                        </div>
+                        <div class="question">\${question.question}</div>
+                        <div class="answers">
+                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                        </div>
+                      \`;
+                    }
+
+                    function selectAnswer(selectedAnswer) {
+                      if (answering) return;
+                      answering = true;
+                      
+                      // Pause media if playing
+                      if (player && playerReady && typeof player.pauseVideo === 'function') {
+                        try {
+                          player.pauseVideo();
+                        } catch (e) {
+                          console.log('Could not pause video:', e);
+                        }
+                      }
+                      
+                      const audioElement = document.getElementById('current-audio');
+                      if (audioElement) {
+                        audioElement.pause();
+                      }
+                      
+                      const question = quizData.questions[currentQuestionIndex];
+                      const isCorrect = selectedAnswer === question.correctAnswer;
+                      const buttons = document.querySelectorAll('.answer-btn');
+                      
+                      buttons.forEach((btn, index) => {
+                        const answer = ['A', 'B', 'C'][index];
+                        btn.disabled = true;
+                        
+                        if (answer === selectedAnswer) {
+                          btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+                        }
+                        
+                        if (answer === question.correctAnswer && !isCorrect) {
+                          btn.style.background = 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)';
+                          btn.style.transform = 'scale(1.02)';
+                        }
+                      });
+                      
+                      if (isCorrect) {
+                        score++;
+                      }
+                      
+                      setTimeout(() => {
+                        currentQuestionIndex++;
+                        if (currentQuestionIndex < quizData.questions.length) {
+                          answering = false;
+                          showQuestion();
+                        } else {
+                          showFinalScore();
+                        }
+                      }, 2000);
+                    }
+
+                    function showFinalScore() {
+                      // Destroy player when quiz ends
+                      if (player && typeof player.destroy === 'function') {
+                        try {
+                          player.destroy();
+                          player = null;
+                          playerReady = false;
+                        } catch (e) {
+                          console.log('Could not destroy player:', e);
+                        }
+                      }
+                      
+                      document.getElementById('question-area').style.display = 'none';
+                      document.getElementById('final-screen').style.display = 'block';
+                      
+                      document.getElementById('final-score-text').textContent = \`Bravo ! Tu as obtenu \${score}/\${quizData.questions.length} 🎉\`;
+                      
+                      let message = '';
+                      if (score <= 3) {
+                        message = "Ne t'inquiète pas, tu vas progresser ! 😌";
+                      } else if (score <= 6) {
+                        message = "Pas mal du tout, continue comme ça ! 👏";
+                      } else if (score <= 9) {
+                        message = "Bravo, tu as l'oreille musicale ! 🎶";
+                      } else {
+                        message = "Incroyable, tu es une encyclopédie musicale ! 🏆";
+                      }
+                      
+                      document.getElementById('final-message').textContent = message;
+                    }
+
+                    function restartQuiz() {
+                      currentQuestionIndex = 0;
+                      score = 0;
+                      answering = false;
+                      playerReady = false;
+                      
+                      if (player && typeof player.destroy === 'function') {
+                        try {
+                          player.destroy();
+                          player = null;
+                        } catch (e) {
+                          console.log('Could not destroy player:', e);
+                        }
+                      }
+                      
+                      document.getElementById('question-area').style.display = 'block';
+                      document.getElementById('final-screen').style.display = 'none';
+                      showQuestion();
+                    }
+
+                    // Initialize quiz
+                    if (isiOSDevice || typeof YT !== 'undefined') {
+                      showQuestion();
+                    }
+                  </script>
+                </body>
+              </html>
+            `);
+          }
+          return;
+        }
+        
         if (gameData.type === 'memory_game') {
           // Ouvrir le jeu Memory dans une nouvelle fenêtre
           const newWindow = window.open('', '_blank', 'width=1200,height=800');
@@ -341,461 +838,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             `);
           }
           return;
-        } else if (gameData.type === 'music_quiz') {
-          // Ouvrir le quiz musical dans une nouvelle fenêtre avec support audio
-          const newWindow = window.open('', '_blank', 'width=1200,height=800');
-          if (newWindow) {
-            newWindow.document.write(`
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <title>${title}</title>
-                  <meta charset="utf-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <style>
-                    body { 
-                      margin: 0; 
-                      padding: 0; 
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      min-height: 100vh;
-                      color: white;
-                    }
-                    .quiz-container {
-                      padding: 20px;
-                      max-width: 800px;
-                      margin: 0 auto;
-                      min-height: 100vh;
-                      display: flex;
-                      flex-direction: column;
-                    }
-                    .header {
-                      text-align: center;
-                      margin-bottom: 30px;
-                    }
-                    .header h1 {
-                      color: white;
-                      margin: 0 0 10px 0;
-                      font-size: 2.5rem;
-                      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                    }
-                    .score-info {
-                      background: rgba(255,255,255,0.1);
-                      padding: 15px;
-                      border-radius: 10px;
-                      text-align: center;
-                      margin-bottom: 20px;
-                      backdrop-filter: blur(10px);
-                    }
-                    .question-container {
-                      background: rgba(255,255,255,0.95);
-                      border-radius: 15px;
-                      padding: 30px;
-                      margin-bottom: 20px;
-                      color: #333;
-                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                    }
-                    .audio-container {
-                      margin-bottom: 30px;
-                      text-align: center;
-                      position: relative;
-                    }
-                    .audio-player {
-                      width: 100%;
-                      max-width: 500px;
-                      margin: 0 auto;
-                      background: #f8f9fa;
-                      border-radius: 10px;
-                      padding: 20px;
-                    }
-                    .video-container {
-                      margin-bottom: 30px;
-                      text-align: center;
-                      position: relative;
-                    }
-                    #player {
-                      border-radius: 10px;
-                      max-width: 100%;
-                      height: 315px;
-                      width: 560px;
-                      margin: 0 auto;
-                    }
-                    @media (max-width: 600px) {
-                      #player {
-                        width: 100%;
-                        height: 250px;
-                      }
-                    }
-                    .loading-message {
-                      background: rgba(59, 130, 246, 0.1);
-                      border: 2px solid #3b82f6;
-                      padding: 20px;
-                      border-radius: 10px;
-                      text-align: center;
-                      color: #1e40af;
-                      font-size: 16px;
-                      margin-bottom: 20px;
-                    }
-                    .question {
-                      font-size: 1.5rem;
-                      font-weight: 600;
-                      margin-bottom: 25px;
-                      text-align: center;
-                      color: #2d3748;
-                    }
-                    .answers {
-                      display: flex;
-                      flex-direction: column;
-                      gap: 15px;
-                    }
-                    .answer-btn {
-                      padding: 15px 20px;
-                      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                      color: white;
-                      border: none;
-                      border-radius: 10px;
-                      cursor: pointer;
-                      font-size: 1.1rem;
-                      font-weight: 500;
-                      transition: all 0.3s ease;
-                      transform: translateY(0);
-                    }
-                    .answer-btn:hover {
-                      transform: translateY(-2px);
-                      box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
-                    }
-                    .answer-btn.correct {
-                      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-                      animation: correctAnswer 0.6s ease;
-                    }
-                    .answer-btn.incorrect {
-                      background: linear-gradient(135deg, #ff7979 0%, #f093fb 100%);
-                      animation: incorrectAnswer 0.6s ease;
-                    }
-                    @keyframes correctAnswer {
-                      0% { transform: scale(1); }
-                      50% { transform: scale(1.05); }
-                      100% { transform: scale(1); }
-                    }
-                    @keyframes incorrectAnswer {
-                      0% { transform: translateX(0); }
-                      25% { transform: translateX(-5px); }
-                      75% { transform: translateX(5px); }
-                      100% { transform: translateX(0); }
-                    }
-                    .final-score {
-                      background: rgba(255,255,255,0.95);
-                      border-radius: 15px;
-                      padding: 40px;
-                      text-align: center;
-                      color: #333;
-                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                    }
-                    .final-score h2 {
-                      font-size: 2.5rem;
-                      margin-bottom: 20px;
-                      color: #2d3748;
-                    }
-                    .score-message {
-                      font-size: 1.3rem;
-                      margin-bottom: 30px;
-                      color: #4a5568;
-                    }
-                    .restart-btn {
-                      padding: 15px 30px;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
-                      border: none;
-                      border-radius: 10px;
-                      cursor: pointer;
-                      font-size: 1.2rem;
-                      font-weight: 600;
-                      transition: all 0.3s ease;
-                    }
-                    .restart-btn:hover {
-                      transform: translateY(-2px);
-                      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="quiz-container">
-                    <div class="header">
-                      <h1>${gameData.title}</h1>
-                    </div>
-                    
-                    <div class="score-info">
-                      <strong>Question <span id="current-question">1</span> sur ${gameData.questions.length}</strong>
-                      <span style="margin: 0 20px;">|</span>
-                      <strong>Score: <span id="current-score">0</span>/${gameData.questions.length}</strong>
-                    </div>
-
-                    <div id="question-area" class="question-container">
-                      <!-- Question content will be inserted here -->
-                    </div>
-
-                    <div id="final-screen" class="final-score" style="display: none;">
-                      <h2 id="final-score-text"></h2>
-                      <div id="final-message" class="score-message"></div>
-                      <button class="restart-btn" onclick="restartQuiz()">🎵 Recommencer le quiz</button>
-                    </div>
-                  </div>
-                  
-                  <!-- YouTube Player API -->
-                  <script src="https://www.youtube.com/iframe_api"></script>
-                  
-                  <script>
-                    const quizData = ${JSON.stringify(gameData)};
-                    let currentQuestionIndex = 0;
-                    let score = 0;
-                    let answering = false;
-                    let player = null;
-                    let playerReady = false;
-
-                    // YouTube Player API callback
-                    function onYouTubeIframeAPIReady() {
-                      console.log('YouTube API ready');
-                      showQuestion();
-                    }
-
-                    // Extract YouTube video ID from embed code
-                    function extractYouTubeId(embedCode) {
-                      const match = embedCode.match(/(?:youtube\\.com\\/embed\\/|youtu\\.be\\/)([^"&?\\/ ]{11})/);
-                      return match ? match[1] : null;
-                    }
-
-                    function createYouTubePlayer(videoId) {
-                      return new Promise((resolve, reject) => {
-                        try {
-                          if (player) {
-                            player.destroy();
-                          }
-                          
-                          player = new YT.Player('player', {
-                            height: '315',
-                            width: '560',
-                            videoId: videoId,
-                            playerVars: {
-                              'playsinline': 1,
-                              'rel': 0,
-                              'modestbranding': 1,
-                              'controls': 1,
-                              'fs': 1,
-                              'iv_load_policy': 3,
-                              'cc_load_policy': 0,
-                              'disablekb': 0,
-                              'enablejsapi': 1,
-                              'origin': window.location.origin
-                            },
-                            events: {
-                              'onReady': function(event) {
-                                console.log('Player ready for video:', videoId);
-                                playerReady = true;
-                                resolve(event.target);
-                              },
-                              'onError': function(event) {
-                                console.error('Player error:', event.data);
-                                reject(event);
-                              },
-                              'onStateChange': function(event) {
-                                console.log('Player state changed:', event.data);
-                              }
-                            }
-                          });
-                        } catch (error) {
-                          console.error('Error creating player:', error);
-                          reject(error);
-                        }
-                      });
-                    }
-
-                    function showQuestion() {
-                      const question = quizData.questions[currentQuestionIndex];
-                      const questionArea = document.getElementById('question-area');
-                      
-                      document.getElementById('current-question').textContent = currentQuestionIndex + 1;
-                      document.getElementById('current-score').textContent = score;
-                      
-                      // Priorité à l'audio si disponible
-                      if (question.audioUrl) {
-                        questionArea.innerHTML = \`
-                          <div class="audio-container">
-                            <div class="audio-player">
-                              <h3>🎵 Écoutez cet extrait audio</h3>
-                              <audio controls id="current-audio" style="width: 100%; margin-top: 10px;">
-                                <source src="\${question.audioUrl}" type="audio/mpeg">
-                                Votre navigateur ne supporte pas la lecture audio.
-                              </audio>
-                            </div>
-                          </div>
-                          <div class="question">\${question.question}</div>
-                          <div class="answers">
-                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                          </div>
-                        \`;
-                        return;
-                      }
-                      
-                      // Fallback sur YouTube si pas d'audio
-                      const videoId = extractYouTubeId(question.youtubeEmbed);
-                      
-                      if (!videoId) {
-                        console.error('No audio or valid YouTube video found');
-                        questionArea.innerHTML = \`
-                          <div class="loading-message">
-                            ❌ Aucun contenu audio ou vidéo disponible
-                          </div>
-                          <div class="question">\${question.question}</div>
-                          <div class="answers">
-                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                          </div>
-                        \`;
-                        return;
-                      }
-                      
-                      questionArea.innerHTML = \`
-                        <div class="video-container">
-                          <div class="loading-message">
-                            🎵 Chargement de la vidéo...
-                          </div>
-                          <div id="player"></div>
-                        </div>
-                        <div class="question">\${question.question}</div>
-                        <div class="answers">
-                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                        </div>
-                      \`;
-                      
-                      // Create YouTube player
-                      createYouTubePlayer(videoId)
-                        .then(() => {
-                          document.querySelector('.loading-message').style.display = 'none';
-                          console.log('Video loaded successfully:', videoId);
-                        })
-                        .catch((error) => {
-                          console.error('Failed to load video:', error);
-                          document.querySelector('.loading-message').innerHTML = '⚠️ Vidéo non disponible sur cet appareil';
-                        });
-                    }
-
-                    function selectAnswer(selectedAnswer) {
-                      if (answering) return;
-                      answering = true;
-                      
-                      // Pause video if playing
-                      if (player && playerReady && typeof player.pauseVideo === 'function') {
-                        try {
-                          player.pauseVideo();
-                        } catch (e) {
-                          console.log('Could not pause video:', e);
-                        }
-                      }
-                      
-                      const question = quizData.questions[currentQuestionIndex];
-                      const isCorrect = selectedAnswer === question.correctAnswer;
-                      const buttons = document.querySelectorAll('.answer-btn');
-                      
-                      buttons.forEach((btn, index) => {
-                        const answer = ['A', 'B', 'C'][index];
-                        btn.disabled = true;
-                        
-                        if (answer === selectedAnswer) {
-                          btn.classList.add(isCorrect ? 'correct' : 'incorrect');
-                        }
-                        
-                        if (answer === question.correctAnswer && !isCorrect) {
-                          btn.style.background = 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)';
-                          btn.style.transform = 'scale(1.02)';
-                        }
-                      });
-                      
-                      if (isCorrect) {
-                        score++;
-                      }
-                      
-                      setTimeout(() => {
-                        currentQuestionIndex++;
-                        if (currentQuestionIndex < quizData.questions.length) {
-                          answering = false;
-                          showQuestion();
-                        } else {
-                          showFinalScore();
-                        }
-                      }, 2000);
-                    }
-
-                    function showFinalScore() {
-                      // Destroy player when quiz ends
-                      if (player && typeof player.destroy === 'function') {
-                        try {
-                          player.destroy();
-                          player = null;
-                          playerReady = false;
-                        } catch (e) {
-                          console.log('Could not destroy player:', e);
-                        }
-                      }
-                      
-                      document.getElementById('question-area').style.display = 'none';
-                      document.getElementById('final-screen').style.display = 'block';
-                      
-                      document.getElementById('final-score-text').textContent = \`Bravo ! Tu as obtenu \${score}/\${quizData.questions.length} 🎉\`;
-                      
-                      let message = '';
-                      if (score <= 3) {
-                        message = "Ne t'inquiète pas, tu vas progresser ! 😌";
-                      } else if (score <= 6) {
-                        message = "Pas mal du tout, continue comme ça ! 👏";
-                      } else if (score <= 9) {
-                        message = "Bravo, tu as l'oreille musicale ! 🎶";
-                      } else {
-                        message = "Incroyable, tu es une encyclopédie musicale ! 🏆";
-                      }
-                      
-                      document.getElementById('final-message').textContent = message;
-                    }
-
-                    function restartQuiz() {
-                      currentQuestionIndex = 0;
-                      score = 0;
-                      answering = false;
-                      playerReady = false;
-                      
-                      if (player && typeof player.destroy === 'function') {
-                        try {
-                          player.destroy();
-                          player = null;
-                        } catch (e) {
-                          console.log('Could not destroy player:', e);
-                        }
-                      }
-                      
-                      document.getElementById('question-area').style.display = 'block';
-                      document.getElementById('final-screen').style.display = 'none';
-                      showQuestion();
-                    }
-
-                    // Wait for YouTube API to be ready
-                    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-                      // API not loaded yet, wait for callback
-                      console.log('Waiting for YouTube API...');
-                    } else {
-                      // API already loaded
-                      console.log('YouTube API already available');
-                      showQuestion();
-                    }
-                  </script>
-                </body>
-              </html>
-            `);
-          }
-          return;
         }
       } catch (e) {
         // Si ce n'est pas du JSON valide, traiter comme un iframe normal
@@ -833,6 +875,22 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
+  // Déterminer si on doit afficher un avertissement iOS
+  const shouldShowIOSWarning = () => {
+    if (!iframeCode) return false;
+    
+    try {
+      const gameData = JSON.parse(iframeCode);
+      if (gameData.type === 'music_quiz') {
+        return !audioUrl && !gameData.questions.some((q: any) => q.audioUrl);
+      }
+    } catch (e) {
+      // Pas un JSON valide
+    }
+    
+    return false;
+  };
+
   return (
     <Card className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
       <div className="relative">
@@ -841,22 +899,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           alt={title}
           className="w-full h-48 object-cover rounded-t-lg"
           onError={(e) => {
-            console.error('🖼️ IMAGE LOAD ERROR for activity:', {
-              title,
-              thumbnailUrl,
-              iframeCode: !!iframeCode,
-              videoId,
-              isYouTube,
-              finalUrl: getDisplayImage()
-            });
             const target = e.target as HTMLImageElement;
             target.src = '/placeholder.svg';
-          }}
-          onLoad={() => {
-            console.log('🖼️ SUCCESS image loaded for activity:', {
-              title,
-              url: getDisplayImage()
-            });
           }}
         />
         {(isYouTube || iframeCode) && (
@@ -866,6 +910,15 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </div>
           </div>
         )}
+        
+        {/* Avertissement iOS pour quiz sans audio */}
+        {shouldShowIOSWarning() && isIOS() && (
+          <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            iOS incompatible
+          </div>
+        )}
+
         {canEdit && (
           <Button
             variant="secondary"
