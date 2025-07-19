@@ -400,10 +400,17 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       margin-bottom: 30px;
                       text-align: center;
                     }
-                    .video-container iframe {
+                     .video-container iframe {
                       border-radius: 10px;
                       max-width: 100%;
                       height: 315px;
+                      width: 560px;
+                    }
+                    @media (max-width: 600px) {
+                      .video-container iframe {
+                        width: 100%;
+                        height: 250px;
+                      }
                     }
                     .question {
                       font-size: 1.5rem;
@@ -523,17 +530,29 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('current-question').textContent = currentQuestionIndex + 1;
                       document.getElementById('current-score').textContent = score;
                       
-                      questionArea.innerHTML = \`
-                        <div class="video-container">
-                          \${question.youtubeEmbed}
-                        </div>
-                        <div class="question">\${question.question}</div>
-                        <div class="answers">
-                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                        </div>
-                      \`;
+                       // Fix YouTube embed for iOS compatibility
+                       let embedCode = question.youtubeEmbed;
+                       if (embedCode.includes('youtube.com/embed/')) {
+                         // Add iOS-compatible parameters
+                         embedCode = embedCode.replace(/src="([^"]*)"/, (match, url) => {
+                           const separator = url.includes('?') ? '&' : '?';
+                           return \`src="\${url}\${separator}playsinline=1&rel=0&modestbranding=1"\`;
+                         });
+                         // Add iOS-specific attributes
+                         embedCode = embedCode.replace('<iframe', '<iframe playsinline webkit-playsinline');
+                       }
+                       
+                       questionArea.innerHTML = \`
+                         <div class="video-container">
+                           \${embedCode}
+                         </div>
+                         <div class="question">\${question.question}</div>
+                         <div class="answers">
+                           <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                           <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                           <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                         </div>
+                       \`;
                     }
 
                     function selectAnswer(selectedAnswer) {
