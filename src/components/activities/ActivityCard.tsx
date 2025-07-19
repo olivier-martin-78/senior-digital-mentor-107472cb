@@ -98,10 +98,34 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       align-items: center;
                       gap: 20px;
                       margin-bottom: 20px;
+                      flex-wrap: wrap;
                     }
                     .moves {
                       font-size: 18px;
                       font-weight: 600;
+                    }
+                    .difficulty-selector {
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    }
+                    .difficulty-selector label {
+                      font-size: 14px;
+                      font-weight: 500;
+                      color: #374151;
+                    }
+                    .difficulty-selector select {
+                      padding: 6px 12px;
+                      border: 1px solid #d1d5db;
+                      border-radius: 6px;
+                      background: white;
+                      font-size: 14px;
+                      cursor: pointer;
+                    }
+                    .difficulty-selector select:focus {
+                      outline: none;
+                      border-color: #3b82f6;
+                      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                     }
                     .reset-btn {
                       padding: 8px 16px;
@@ -174,6 +198,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       <h1>${gameData.title}</h1>
                       <div class="game-info">
                         <div class="moves">Coups: <span id="moves">0</span></div>
+                        <div class="difficulty-selector">
+                          <label for="difficulty-select">Nombre de cartes:</label>
+                          <select id="difficulty-select" onchange="changeDifficulty()">
+                            <!-- Options will be populated by JavaScript -->
+                          </select>
+                        </div>
                         <button class="reset-btn" onclick="resetGame()">🔄 Recommencer</button>
                       </div>
                     </div>
@@ -189,10 +219,40 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     let flippedCards = [];
                     let moves = 0;
                     let gameComplete = false;
+                    let numberOfPairs = Math.max(2, Math.min(6, gameData.images.length)); // Default to reasonable number
+                    
+                    function populateDifficultySelector() {
+                      const select = document.getElementById('difficulty-select');
+                      const maxCards = gameData.images.length * 2;
+                      
+                      // Clear existing options
+                      select.innerHTML = '';
+                      
+                      // Generate even numbers starting from 4 up to maxCards
+                      for (let cards = 4; cards <= maxCards; cards += 2) {
+                        const pairs = cards / 2;
+                        const option = document.createElement('option');
+                        option.value = pairs;
+                        option.textContent = cards + ' cartes';
+                        if (pairs === numberOfPairs) {
+                          option.selected = true;
+                        }
+                        select.appendChild(option);
+                      }
+                    }
+                    
+                    function changeDifficulty() {
+                      const select = document.getElementById('difficulty-select');
+                      numberOfPairs = parseInt(select.value);
+                      initializeGame();
+                    }
                     
                     function initializeGame() {
+                      // Use only the selected number of images
+                      const selectedImages = gameData.images.slice(0, numberOfPairs);
+                      
                       const pairs = [];
-                      gameData.images.forEach((imageUrl, index) => {
+                      selectedImages.forEach((imageUrl, index) => {
                         pairs.push(
                           { id: index * 2, imageUrl, isFlipped: false, isMatched: false },
                           { id: index * 2 + 1, imageUrl, isFlipped: false, isMatched: false }
@@ -273,7 +333,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       initializeGame();
                     }
                     
-                    // Initialiser le jeu au chargement
+                    // Initialize the game and populate selector on load
+                    populateDifficultySelector();
                     initializeGame();
                   </script>
                 </body>
