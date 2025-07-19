@@ -141,21 +141,24 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
           </div>
           
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Nombre de paires:</label>
+            <label className="text-sm font-medium">Niveau de difficulté:</label>
             <Select value={numberOfPairs.toString()} onValueChange={handleNumberOfPairsChange}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2, 3, 4, 5, 6, 7].map((num) => (
-                  <SelectItem 
-                    key={num} 
-                    value={num.toString()} 
-                    disabled={num > gameData.images.length}
-                  >
-                    {num}
-                  </SelectItem>
-                ))}
+                {[2, 3, 4, 5, 6, 7].map((pairCount) => {
+                  const cardCount = pairCount * 2;
+                  return (
+                    <SelectItem 
+                      key={pairCount} 
+                      value={pairCount.toString()} 
+                      disabled={pairCount > gameData.images.length}
+                    >
+                      {cardCount} cartes
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
