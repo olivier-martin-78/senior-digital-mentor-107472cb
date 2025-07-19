@@ -18,6 +18,8 @@ import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
 import { EditMemoryGameForm } from '@/components/admin/EditMemoryGameForm';
+import CreateMusicQuizForm from '@/components/admin/CreateMusicQuizForm';
+import EditMusicQuizForm from '@/components/admin/EditMusicQuizForm';
 
 
 const activityTypes = [
@@ -34,6 +36,7 @@ const AdminActivities = () => {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [showMemoryManager, setShowMemoryManager] = useState(false);
+  const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
@@ -163,6 +166,7 @@ const AdminActivities = () => {
     setEditingActivity(activity);
     setShowForm(false);
     setShowMemoryManager(false); // Fermer le gestionnaire Memory si ouvert
+    setShowMusicQuizForm(false); // Fermer le formulaire quiz musical si ouvert
   };
 
   const handleSaveEdit = () => {
@@ -196,14 +200,24 @@ const AdminActivities = () => {
             </h1>
             <div className="flex gap-2">
               {type === 'games' && (
-                <Button 
-                  onClick={() => setShowMemoryManager(!showMemoryManager)} 
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Gérer les jeux de Memory
-                </Button>
+                <>
+                  <Button 
+                    onClick={() => setShowMemoryManager(!showMemoryManager)} 
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Gérer les jeux de Memory
+                  </Button>
+                  <Button 
+                    onClick={() => setShowMusicQuizForm(!showMusicQuizForm)} 
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nouveau quiz musical
+                  </Button>
+                </>
               )}
               <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -235,15 +249,35 @@ const AdminActivities = () => {
             </Card>
           )}
 
+          {showMusicQuizForm && type === 'games' && (
+            <div className="mb-8">
+              <CreateMusicQuizForm 
+                onSuccess={() => {
+                  setShowMusicQuizForm(false);
+                  refetch();
+                }}
+                onCancel={() => setShowMusicQuizForm(false)}
+              />
+            </div>
+          )}
+
           {editingActivity && (
             <div className="mb-8">
               {(() => {
-                // Vérifier si c'est un jeu Memory
+                // Vérifier le type de jeu/activité
                 try {
                   const gameData = editingActivity.iframe_code ? JSON.parse(editingActivity.iframe_code) : null;
                   if (gameData?.type === 'memory_game') {
                     return (
                       <EditMemoryGameForm
+                        activity={editingActivity}
+                        onSave={handleSaveEdit}
+                        onCancel={handleCancelEdit}
+                      />
+                    );
+                  } else if (gameData?.type === 'music_quiz') {
+                    return (
+                      <EditMusicQuizForm
                         activity={editingActivity}
                         onSave={handleSaveEdit}
                         onCancel={handleCancelEdit}

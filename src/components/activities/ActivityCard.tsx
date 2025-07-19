@@ -342,6 +342,274 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             `);
           }
           return;
+        } else if (gameData.type === 'music_quiz') {
+          // Ouvrir le quiz musical dans une nouvelle fenêtre
+          const newWindow = window.open('', '_blank', 'width=1200,height=800');
+          if (newWindow) {
+            newWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <title>${title}</title>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>
+                    body { 
+                      margin: 0; 
+                      padding: 0; 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      min-height: 100vh;
+                      color: white;
+                    }
+                    .quiz-container {
+                      padding: 20px;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      min-height: 100vh;
+                      display: flex;
+                      flex-direction: column;
+                    }
+                    .header {
+                      text-align: center;
+                      margin-bottom: 30px;
+                    }
+                    .header h1 {
+                      color: white;
+                      margin: 0 0 10px 0;
+                      font-size: 2.5rem;
+                      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                    }
+                    .score-info {
+                      background: rgba(255,255,255,0.1);
+                      padding: 15px;
+                      border-radius: 10px;
+                      text-align: center;
+                      margin-bottom: 20px;
+                      backdrop-filter: blur(10px);
+                    }
+                    .question-container {
+                      background: rgba(255,255,255,0.95);
+                      border-radius: 15px;
+                      padding: 30px;
+                      margin-bottom: 20px;
+                      color: #333;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    }
+                    .video-container {
+                      margin-bottom: 30px;
+                      text-align: center;
+                    }
+                    .video-container iframe {
+                      border-radius: 10px;
+                      max-width: 100%;
+                      height: 315px;
+                    }
+                    .question {
+                      font-size: 1.5rem;
+                      font-weight: 600;
+                      margin-bottom: 25px;
+                      text-align: center;
+                      color: #2d3748;
+                    }
+                    .answers {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 15px;
+                    }
+                    .answer-btn {
+                      padding: 15px 20px;
+                      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                      color: white;
+                      border: none;
+                      border-radius: 10px;
+                      cursor: pointer;
+                      font-size: 1.1rem;
+                      font-weight: 500;
+                      transition: all 0.3s ease;
+                      transform: translateY(0);
+                    }
+                    .answer-btn:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+                    }
+                    .answer-btn.correct {
+                      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+                      animation: correctAnswer 0.6s ease;
+                    }
+                    .answer-btn.incorrect {
+                      background: linear-gradient(135deg, #ff7979 0%, #f093fb 100%);
+                      animation: incorrectAnswer 0.6s ease;
+                    }
+                    @keyframes correctAnswer {
+                      0% { transform: scale(1); }
+                      50% { transform: scale(1.05); }
+                      100% { transform: scale(1); }
+                    }
+                    @keyframes incorrectAnswer {
+                      0% { transform: translateX(0); }
+                      25% { transform: translateX(-5px); }
+                      75% { transform: translateX(5px); }
+                      100% { transform: translateX(0); }
+                    }
+                    .final-score {
+                      background: rgba(255,255,255,0.95);
+                      border-radius: 15px;
+                      padding: 40px;
+                      text-align: center;
+                      color: #333;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    }
+                    .final-score h2 {
+                      font-size: 2.5rem;
+                      margin-bottom: 20px;
+                      color: #2d3748;
+                    }
+                    .score-message {
+                      font-size: 1.3rem;
+                      margin-bottom: 30px;
+                      color: #4a5568;
+                    }
+                    .restart-btn {
+                      padding: 15px 30px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      border: none;
+                      border-radius: 10px;
+                      cursor: pointer;
+                      font-size: 1.2rem;
+                      font-weight: 600;
+                      transition: all 0.3s ease;
+                    }
+                    .restart-btn:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="quiz-container">
+                    <div class="header">
+                      <h1>${gameData.title}</h1>
+                    </div>
+                    
+                    <div class="score-info">
+                      <strong>Question <span id="current-question">1</span> sur ${gameData.questions.length}</strong>
+                      <span style="margin: 0 20px;">|</span>
+                      <strong>Score: <span id="current-score">0</span>/${gameData.questions.length}</strong>
+                    </div>
+
+                    <div id="question-area" class="question-container">
+                      <!-- Question content will be inserted here -->
+                    </div>
+
+                    <div id="final-screen" class="final-score" style="display: none;">
+                      <h2 id="final-score-text"></h2>
+                      <div id="final-message" class="score-message"></div>
+                      <button class="restart-btn" onclick="restartQuiz()">🎵 Recommencer le quiz</button>
+                    </div>
+                  </div>
+                  
+                  <script>
+                    const quizData = ${JSON.stringify(gameData)};
+                    let currentQuestionIndex = 0;
+                    let score = 0;
+                    let answering = false;
+
+                    function showQuestion() {
+                      const question = quizData.questions[currentQuestionIndex];
+                      const questionArea = document.getElementById('question-area');
+                      
+                      document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+                      document.getElementById('current-score').textContent = score;
+                      
+                      questionArea.innerHTML = \`
+                        <div class="video-container">
+                          \${question.youtubeEmbed}
+                        </div>
+                        <div class="question">\${question.question}</div>
+                        <div class="answers">
+                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                        </div>
+                      \`;
+                    }
+
+                    function selectAnswer(selectedAnswer) {
+                      if (answering) return;
+                      answering = true;
+                      
+                      const question = quizData.questions[currentQuestionIndex];
+                      const isCorrect = selectedAnswer === question.correctAnswer;
+                      const buttons = document.querySelectorAll('.answer-btn');
+                      
+                      buttons.forEach((btn, index) => {
+                        const answer = ['A', 'B', 'C'][index];
+                        btn.disabled = true;
+                        
+                        if (answer === selectedAnswer) {
+                          btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+                        }
+                        
+                        if (answer === question.correctAnswer && !isCorrect) {
+                          btn.style.background = 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)';
+                          btn.style.transform = 'scale(1.02)';
+                        }
+                      });
+                      
+                      if (isCorrect) {
+                        score++;
+                      }
+                      
+                      setTimeout(() => {
+                        currentQuestionIndex++;
+                        if (currentQuestionIndex < quizData.questions.length) {
+                          answering = false;
+                          showQuestion();
+                        } else {
+                          showFinalScore();
+                        }
+                      }, 2000);
+                    }
+
+                    function showFinalScore() {
+                      document.getElementById('question-area').style.display = 'none';
+                      document.getElementById('final-screen').style.display = 'block';
+                      
+                      document.getElementById('final-score-text').textContent = \`Bravo ! Tu as obtenu \${score}/\${quizData.questions.length} 🎉\`;
+                      
+                      let message = '';
+                      if (score <= 3) {
+                        message = "Ne t'inquiète pas, tu vas progresser ! 😌";
+                      } else if (score <= 6) {
+                        message = "Pas mal du tout, continue comme ça ! 👏";
+                      } else if (score <= 9) {
+                        message = "Bravo, tu as l'oreille musicale ! 🎶";
+                      } else {
+                        message = "Incroyable, tu es une encyclopédie musicale ! 🏆";
+                      }
+                      
+                      document.getElementById('final-message').textContent = message;
+                    }
+
+                    function restartQuiz() {
+                      currentQuestionIndex = 0;
+                      score = 0;
+                      answering = false;
+                      document.getElementById('question-area').style.display = 'block';
+                      document.getElementById('final-screen').style.display = 'none';
+                      showQuestion();
+                    }
+
+                    // Start the quiz
+                    showQuestion();
+                  </script>
+                </body>
+              </html>
+            `);
+          }
+          return;
         }
       } catch (e) {
         // Si ce n'est pas du JSON valide, traiter comme un iframe normal
