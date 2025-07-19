@@ -17,6 +17,7 @@ interface Question {
   id: string;
   youtubeEmbed: string;
   question: string;
+  artistTitle: string;
   answerA: string;
   answerB: string;
   answerC: string;
@@ -44,6 +45,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
       id: '1',
       youtubeEmbed: '',
       question: '',
+      artistTitle: '',
       answerA: '',
       answerB: '',
       answerC: '',
@@ -57,6 +59,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         id: (questions.length + 1).toString(),
         youtubeEmbed: '',
         question: '',
+        artistTitle: '',
         answerA: '',
         answerB: '',
         answerC: '',
@@ -303,6 +306,16 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
                         </audio>
                       </div>
                     )}
+                  </div>
+
+                  <div>
+                    <Label>Nom de l'artiste - Titre de la chanson</Label>
+                    <Input
+                      value={question.artistTitle}
+                      onChange={(e) => updateQuestion(question.id, 'artistTitle', e.target.value)}
+                      placeholder="Jean-Jacques Goldman - Il changeait la vie"
+                      required
+                    />
                   </div>
 
                   <div>

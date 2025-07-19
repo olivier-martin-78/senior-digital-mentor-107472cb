@@ -219,14 +219,6 @@ const AdminActivities = () => {
                     <Plus className="h-4 w-4" />
                     Nouveau quiz musical
                   </Button>
-                  <Button 
-                    onClick={() => setShowQuizConverter(!showQuizConverter)} 
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Convertir quiz existants
-                  </Button>
                 </>
               )}
               <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
@@ -235,17 +227,6 @@ const AdminActivities = () => {
               </Button>
             </div>
           </div>
-
-          {showQuizConverter && type === 'games' && (
-            <div className="mb-8">
-              <QuizConverter 
-                onConversionComplete={() => {
-                  setShowQuizConverter(false);
-                  refetch();
-                }}
-              />
-            </div>
-          )}
 
           {showMemoryManager && type === 'games' && (
             <Card className="mb-8">
