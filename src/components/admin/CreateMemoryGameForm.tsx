@@ -18,6 +18,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
 }) => {
   const [title, setTitle] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -38,6 +39,17 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnailFile(null);
   };
 
   const uploadImageToStorage = async (file: File): Promise<string> => {
@@ -86,6 +98,12 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
         selectedFiles.map(file => uploadImageToStorage(file))
       );
 
+      // Upload thumbnail if provided
+      let thumbnailUrl = null;
+      if (thumbnailFile) {
+        thumbnailUrl = await uploadImageToStorage(thumbnailFile);
+      }
+
       // Create the memory game series (you might want to create a specific table for this)
       const gameData = {
         title: title.trim(),
@@ -102,6 +120,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
           activity_type: 'games',
           link: '#', // Could be a link to the game with the series ID
           iframe_code: JSON.stringify(gameData),
+          thumbnail_url: thumbnailUrl,
           created_by: (await supabase.auth.getUser()).data.user?.id,
           shared_globally: true
         });
@@ -118,6 +137,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
       // Reset form
       setTitle("");
       setSelectedFiles([]);
+      setThumbnailFile(null);
       
       if (onSuccess) {
         onSuccess();
@@ -157,6 +177,47 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
             onChange={(e) => setTitle(e.target.value)}
             className="w-full"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Image de couverture (optionnelle)</Label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailSelect}
+              className="hidden"
+              id="thumbnail-upload"
+            />
+            {!thumbnailFile ? (
+              <label htmlFor="thumbnail-upload" className="cursor-pointer">
+                <div className="space-y-2">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                    <Plus className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Cliquez pour ajouter une image de couverture
+                  </p>
+                </div>
+              </label>
+            ) : (
+              <div className="relative inline-block">
+                <img
+                  src={URL.createObjectURL(thumbnailFile)}
+                  alt="Aperçu"
+                  className="w-24 h-24 object-cover rounded"
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="absolute -top-1 -right-1 h-6 w-6 p-0"
+                  onClick={removeThumbnail}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="space-y-2">

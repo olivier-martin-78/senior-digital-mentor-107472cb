@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw, Trophy } from 'lucide-react';
 
 interface MemoryGameProps {
@@ -25,16 +26,20 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
   const [moves, setMoves] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [numberOfPairs, setNumberOfPairs] = useState<number>(Math.min(6, gameData.images.length));
 
   // Initialiser le jeu
   useEffect(() => {
     initializeGame();
-  }, [gameData]);
+  }, [gameData, numberOfPairs]);
 
   const initializeGame = () => {
-    // Créer des paires à partir des images
+    // Utiliser seulement le nombre d'images sélectionné
+    const selectedImages = gameData.images.slice(0, numberOfPairs);
+    
+    // Créer des paires à partir des images sélectionnées
     const pairs: CardData[] = [];
-    gameData.images.forEach((imageUrl, index) => {
+    selectedImages.forEach((imageUrl, index) => {
       pairs.push(
         { id: index * 2, imageUrl, isFlipped: false, isMatched: false },
         { id: index * 2 + 1, imageUrl, isFlipped: false, isMatched: false }
@@ -48,6 +53,11 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
     setMoves(0);
     setIsGameComplete(false);
     setGameStarted(false);
+  };
+
+  const handleNumberOfPairsChange = (value: string) => {
+    const newNumberOfPairs = parseInt(value);
+    setNumberOfPairs(newNumberOfPairs);
   };
 
   const handleCardClick = (cardId: number) => {
@@ -124,10 +134,32 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold mb-2">{gameData.title}</h1>
-        <div className="flex justify-center items-center gap-4 mb-4">
+        
+        <div className="flex justify-center items-center gap-4 mb-4 flex-wrap">
           <div className="text-lg">
             Coups: <span className="font-semibold">{moves}</span>
           </div>
+          
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Nombre de paires:</label>
+            <Select value={numberOfPairs.toString()} onValueChange={handleNumberOfPairsChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2, 3, 4, 5, 6, 7].map((num) => (
+                  <SelectItem 
+                    key={num} 
+                    value={num.toString()} 
+                    disabled={num > gameData.images.length}
+                  >
+                    {num}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <Button onClick={resetGame} variant="outline" size="sm">
             <RotateCcw className="h-4 w-4 mr-2" />
             Recommencer
