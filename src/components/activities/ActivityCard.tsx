@@ -342,7 +342,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           }
           return;
         } else if (gameData.type === 'music_quiz') {
-          // Ouvrir le quiz musical dans une nouvelle fenêtre avec YouTube Player API
+          // Ouvrir le quiz musical dans une nouvelle fenêtre avec support audio
           const newWindow = window.open('', '_blank', 'width=1200,height=800');
           if (newWindow) {
             newWindow.document.write(`
@@ -394,6 +394,19 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       margin-bottom: 20px;
                       color: #333;
                       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    }
+                    .audio-container {
+                      margin-bottom: 30px;
+                      text-align: center;
+                      position: relative;
+                    }
+                    .audio-player {
+                      width: 100%;
+                      max-width: 500px;
+                      margin: 0 auto;
+                      background: #f8f9fa;
+                      border-radius: 10px;
+                      padding: 20px;
                     }
                     .video-container {
                       margin-bottom: 30px;
@@ -603,14 +616,36 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('current-question').textContent = currentQuestionIndex + 1;
                       document.getElementById('current-score').textContent = score;
                       
-                      // Extract video ID from embed code
+                      // Priorité à l'audio si disponible
+                      if (question.audioUrl) {
+                        questionArea.innerHTML = \`
+                          <div class="audio-container">
+                            <div class="audio-player">
+                              <h3>🎵 Écoutez cet extrait audio</h3>
+                              <audio controls id="current-audio" style="width: 100%; margin-top: 10px;">
+                                <source src="\${question.audioUrl}" type="audio/mpeg">
+                                Votre navigateur ne supporte pas la lecture audio.
+                              </audio>
+                            </div>
+                          </div>
+                          <div class="question">\${question.question}</div>
+                          <div class="answers">
+                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                          </div>
+                        \`;
+                        return;
+                      }
+                      
+                      // Fallback sur YouTube si pas d'audio
                       const videoId = extractYouTubeId(question.youtubeEmbed);
                       
                       if (!videoId) {
-                        console.error('Could not extract video ID from:', question.youtubeEmbed);
+                        console.error('No audio or valid YouTube video found');
                         questionArea.innerHTML = \`
                           <div class="loading-message">
-                            ❌ Erreur: Impossible de charger la vidéo
+                            ❌ Aucun contenu audio ou vidéo disponible
                           </div>
                           <div class="question">\${question.question}</div>
                           <div class="answers">

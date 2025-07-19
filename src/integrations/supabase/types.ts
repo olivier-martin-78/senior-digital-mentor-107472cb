@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           activity_date: string | null
           activity_type: string
+          audio_url: string | null
           created_at: string
           created_by: string
           id: string
@@ -31,6 +32,7 @@ export type Database = {
         Insert: {
           activity_date?: string | null
           activity_type: string
+          audio_url?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -44,6 +46,7 @@ export type Database = {
         Update: {
           activity_date?: string | null
           activity_type?: string
+          audio_url?: string | null
           created_at?: string
           created_by?: string
           id?: string

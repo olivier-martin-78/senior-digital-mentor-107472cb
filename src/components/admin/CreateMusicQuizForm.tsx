@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload } from 'lucide-react';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 
 interface Question {
@@ -19,6 +19,7 @@ interface Question {
   answerB: string;
   answerC: string;
   correctAnswer: 'A' | 'B' | 'C';
+  audioUrl?: string;
 }
 
 interface CreateMusicQuizFormProps {
@@ -74,6 +75,39 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     ));
   };
 
+  const handleAudioUpload = async (questionId: string, file: File | undefined) => {
+    if (!file || !user) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${questionId}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('activity-thumbnails')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('activity-thumbnails')
+        .getPublicUrl(fileName);
+
+      updateQuestion(questionId, 'audioUrl', publicUrl);
+
+      toast({
+        title: 'Succès',
+        description: 'Fichier audio uploadé avec succès',
+      });
+    } catch (error) {
+      console.error('Erreur upload audio:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'uploader le fichier audio',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,10 +121,10 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     }
 
     // Validation
-    if (questions.some(q => !q.youtubeEmbed || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
+    if (questions.some(q => (!q.audioUrl && !q.youtubeEmbed) || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
       toast({
         title: 'Erreur',
-        description: 'Veuillez remplir tous les champs pour chaque question',
+        description: 'Veuillez fournir un fichier audio ou un code YouTube et remplir tous les champs pour chaque question',
         variant: 'destructive',
       });
       return;
@@ -103,6 +137,9 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         questions: questions,
       };
 
+      // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
+      const firstAudioUrl = questions.find(q => q.audioUrl)?.audioUrl || null;
+
       const { error } = await supabase
         .from('activities')
         .insert([{
@@ -110,6 +147,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
           title: formData.title,
           link: '',
           thumbnail_url: formData.thumbnail_url || null,
+          audio_url: firstAudioUrl,
           iframe_code: JSON.stringify(quizData),
           created_by: user.id,
           shared_globally: formData.shared_globally,
@@ -203,13 +241,30 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
 
                 <div className="space-y-3">
                   <div>
-                    <Label>Code d'intégration YouTube</Label>
+                    <Label>Fichier audio (recommandé pour iOS)</Label>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleAudioUpload(question.id, e.target.files?.[0])}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                    {question.audioUrl && (
+                      <div className="mt-2">
+                        <audio controls className="w-full">
+                          <source src={question.audioUrl} type="audio/mpeg" />
+                          Votre navigateur ne supporte pas la lecture audio.
+                        </audio>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>Code d'intégration YouTube (optionnel)</Label>
                     <Textarea
                       value={question.youtubeEmbed}
                       onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
                       placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
                       rows={3}
-                      required
                     />
                   </div>
 
