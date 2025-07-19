@@ -40,16 +40,16 @@ serve(async (req) => {
       throw new Error('Clé RapidAPI manquante');
     }
 
-    // Appel à l'API d'extraction audio
-    const extractionResponse = await fetch('https://youtube-mp36.p.rapidapi.com/dl', {
+    // Appel à l'API d'extraction audio avec URL correctement construite
+    const apiUrl = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
+    console.log('Appel API RapidAPI avec URL:', apiUrl);
+    
+    const extractionResponse = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'X-RapidAPI-Key': rapidApiKey,
         'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com'
-      },
-      params: new URLSearchParams({
-        id: videoId
-      })
+      }
     });
 
     if (!extractionResponse.ok) {
