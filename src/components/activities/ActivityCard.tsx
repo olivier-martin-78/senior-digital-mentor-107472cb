@@ -342,7 +342,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           }
           return;
         } else if (gameData.type === 'music_quiz') {
-          // Ouvrir le quiz musical dans une nouvelle fenêtre
+          // Ouvrir le quiz musical dans une nouvelle fenêtre avec YouTube Player API
           const newWindow = window.open('', '_blank', 'width=1200,height=800');
           if (newWindow) {
             newWindow.document.write(`
@@ -398,18 +398,30 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     .video-container {
                       margin-bottom: 30px;
                       text-align: center;
+                      position: relative;
                     }
-                    .video-container iframe {
+                    #player {
                       border-radius: 10px;
                       max-width: 100%;
                       height: 315px;
                       width: 560px;
+                      margin: 0 auto;
                     }
                     @media (max-width: 600px) {
-                      .video-container iframe {
+                      #player {
                         width: 100%;
                         height: 250px;
                       }
+                    }
+                    .loading-message {
+                      background: rgba(59, 130, 246, 0.1);
+                      border: 2px solid #3b82f6;
+                      padding: 20px;
+                      border-radius: 10px;
+                      text-align: center;
+                      color: #1e40af;
+                      font-size: 16px;
+                      margin-bottom: 20px;
                     }
                     .question {
                       font-size: 1.5rem;
@@ -516,16 +528,72 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     </div>
                   </div>
                   
+                  <!-- YouTube Player API -->
+                  <script src="https://www.youtube.com/iframe_api"></script>
+                  
                   <script>
                     const quizData = ${JSON.stringify(gameData)};
                     let currentQuestionIndex = 0;
                     let score = 0;
                     let answering = false;
+                    let player = null;
+                    let playerReady = false;
+
+                    // YouTube Player API callback
+                    function onYouTubeIframeAPIReady() {
+                      console.log('YouTube API ready');
+                      showQuestion();
+                    }
 
                     // Extract YouTube video ID from embed code
                     function extractYouTubeId(embedCode) {
                       const match = embedCode.match(/(?:youtube\\.com\\/embed\\/|youtu\\.be\\/)([^"&?\\/ ]{11})/);
                       return match ? match[1] : null;
+                    }
+
+                    function createYouTubePlayer(videoId) {
+                      return new Promise((resolve, reject) => {
+                        try {
+                          if (player) {
+                            player.destroy();
+                          }
+                          
+                          player = new YT.Player('player', {
+                            height: '315',
+                            width: '560',
+                            videoId: videoId,
+                            playerVars: {
+                              'playsinline': 1,
+                              'rel': 0,
+                              'modestbranding': 1,
+                              'controls': 1,
+                              'fs': 1,
+                              'iv_load_policy': 3,
+                              'cc_load_policy': 0,
+                              'disablekb': 0,
+                              'enablejsapi': 1,
+                              'origin': window.location.origin
+                            },
+                            events: {
+                              'onReady': function(event) {
+                                console.log('Player ready for video:', videoId);
+                                playerReady = true;
+                                resolve(event.target);
+                              },
+                              'onError': function(event) {
+                                console.error('Player error:', event.data);
+                                reject(event);
+                              },
+                              'onStateChange': function(event) {
+                                console.log('Player state changed:', event.data);
+                              }
+                            }
+                          });
+                        } catch (error) {
+                          console.error('Error creating player:', error);
+                          reject(error);
+                        }
+                      });
                     }
 
                     function showQuestion() {
@@ -535,53 +603,64 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('current-question').textContent = currentQuestionIndex + 1;
                       document.getElementById('current-score').textContent = score;
                       
-                      // Optimiser l'iframe YouTube pour une meilleure compatibilité iOS
-                      let embedCode = question.youtubeEmbed;
-                      if (embedCode.includes('youtube.com/embed/')) {
-                        // Remplacer par youtube-nocookie.com pour une meilleure compatibilité
-                        embedCode = embedCode.replace('youtube.com', 'youtube-nocookie.com');
-                        
-                        // Ajouter des paramètres optimisés pour iOS
-                        embedCode = embedCode.replace(/src="([^"]*)"/, (match, url) => {
-                          const separator = url.includes('?') ? '&' : '?';
-                          const params = [
-                            'playsinline=1',
-                            'rel=0',
-                            'modestbranding=1',
-                            'enablejsapi=1',
-                            'origin=' + encodeURIComponent(window.location.origin),
-                            'widget_referrer=' + encodeURIComponent(window.location.href),
-                            'controls=1',
-                            'fs=1',
-                            'iv_load_policy=3'
-                          ].join('&');
-                          return \`src="\${url}\${separator}\${params}"\`;
-                        });
-                        
-                        // Ajouter des attributs iframe optimisés pour iOS
-                        embedCode = embedCode.replace('<iframe', 
-                          '<iframe playsinline="1" webkit-playsinline="1" ' +
-                          'sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox" ' +
-                          'allow="autoplay; fullscreen; picture-in-picture; encrypted-media" ' +
-                          'referrerpolicy="strict-origin-when-cross-origin"');
+                      // Extract video ID from embed code
+                      const videoId = extractYouTubeId(question.youtubeEmbed);
+                      
+                      if (!videoId) {
+                        console.error('Could not extract video ID from:', question.youtubeEmbed);
+                        questionArea.innerHTML = \`
+                          <div class="loading-message">
+                            ❌ Erreur: Impossible de charger la vidéo
+                          </div>
+                          <div class="question">\${question.question}</div>
+                          <div class="answers">
+                            <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                            <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                            <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                          </div>
+                        \`;
+                        return;
                       }
-                       
-                       questionArea.innerHTML = \`
-                         <div class="video-container">
-                           \${embedCode}
-                         </div>
-                         <div class="question">\${question.question}</div>
-                         <div class="answers">
-                           <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                           <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                           <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                         </div>
-                       \`;
+                      
+                      questionArea.innerHTML = \`
+                        <div class="video-container">
+                          <div class="loading-message">
+                            🎵 Chargement de la vidéo...
+                          </div>
+                          <div id="player"></div>
+                        </div>
+                        <div class="question">\${question.question}</div>
+                        <div class="answers">
+                          <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                          <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                          <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                        </div>
+                      \`;
+                      
+                      // Create YouTube player
+                      createYouTubePlayer(videoId)
+                        .then(() => {
+                          document.querySelector('.loading-message').style.display = 'none';
+                          console.log('Video loaded successfully:', videoId);
+                        })
+                        .catch((error) => {
+                          console.error('Failed to load video:', error);
+                          document.querySelector('.loading-message').innerHTML = '⚠️ Vidéo non disponible sur cet appareil';
+                        });
                     }
 
                     function selectAnswer(selectedAnswer) {
                       if (answering) return;
                       answering = true;
+                      
+                      // Pause video if playing
+                      if (player && playerReady && typeof player.pauseVideo === 'function') {
+                        try {
+                          player.pauseVideo();
+                        } catch (e) {
+                          console.log('Could not pause video:', e);
+                        }
+                      }
                       
                       const question = quizData.questions[currentQuestionIndex];
                       const isCorrect = selectedAnswer === question.correctAnswer;
@@ -617,6 +696,17 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     }
 
                     function showFinalScore() {
+                      // Destroy player when quiz ends
+                      if (player && typeof player.destroy === 'function') {
+                        try {
+                          player.destroy();
+                          player = null;
+                          playerReady = false;
+                        } catch (e) {
+                          console.log('Could not destroy player:', e);
+                        }
+                      }
+                      
                       document.getElementById('question-area').style.display = 'none';
                       document.getElementById('final-screen').style.display = 'block';
                       
@@ -640,13 +730,31 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       currentQuestionIndex = 0;
                       score = 0;
                       answering = false;
+                      playerReady = false;
+                      
+                      if (player && typeof player.destroy === 'function') {
+                        try {
+                          player.destroy();
+                          player = null;
+                        } catch (e) {
+                          console.log('Could not destroy player:', e);
+                        }
+                      }
+                      
                       document.getElementById('question-area').style.display = 'block';
                       document.getElementById('final-screen').style.display = 'none';
                       showQuestion();
                     }
 
-                    // Start the quiz
-                    showQuestion();
+                    // Wait for YouTube API to be ready
+                    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+                      // API not loaded yet, wait for callback
+                      console.log('Waiting for YouTube API...');
+                    } else {
+                      // API already loaded
+                      console.log('YouTube API already available');
+                      showQuestion();
+                    }
                   </script>
                 </body>
               </html>
