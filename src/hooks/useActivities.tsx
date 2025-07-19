@@ -12,6 +12,7 @@ export interface Activity {
   iframe_code?: string;
   thumbnail_url?: string;
   activity_date?: string;
+  audio_url?: string;
   created_at: string;
   created_by: string;
   sub_activity_tag_id?: string;
