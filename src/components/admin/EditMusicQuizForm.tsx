@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
+import AudioExtractor from './AudioExtractor';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Activity } from '@/hooks/useActivities';
 
 interface Question {
@@ -20,6 +23,7 @@ interface Question {
   answerB: string;
   answerC: string;
   correctAnswer: 'A' | 'B' | 'C';
+  audioUrl?: string;
 }
 
 interface EditMusicQuizFormProps {
@@ -64,6 +68,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
         answerB: '',
         answerC: '',
         correctAnswer: 'A',
+        audioUrl: '',
       }]);
     }
   };
@@ -80,6 +85,55 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
     ));
   };
 
+  const handleAudioUpload = async (questionId: string, file: File | undefined) => {
+    if (!file || !user) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `audio/quiz_${questionId}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('activity-thumbnails')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('activity-thumbnails')
+        .getPublicUrl(fileName);
+
+      updateQuestion(questionId, 'audioUrl', publicUrl);
+
+      toast({
+        title: 'Succès',
+        description: 'Fichier audio uploadé avec succès',
+      });
+    } catch (error) {
+      console.error('Erreur upload audio:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'uploader le fichier audio',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAudioExtracted = (questionId: string, audioUrl: string) => {
+    updateQuestion(questionId, 'audioUrl', audioUrl);
+  };
+
+  const extractYouTubeUrl = (embedCode: string): string => {
+    const match = embedCode.match(/src="([^"]+)"/);
+    if (match) {
+      const embedUrl = match[1];
+      const videoIdMatch = embedUrl.match(/embed\/([^?]+)/);
+      if (videoIdMatch) {
+        return `https://www.youtube.com/watch?v=${videoIdMatch[1]}`;
+      }
+    }
+    return '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -93,10 +147,10 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
     }
 
     // Validation
-    if (questions.some(q => !q.youtubeEmbed || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
+    if (questions.some(q => (!q.audioUrl && !q.youtubeEmbed) || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
       toast({
         title: 'Erreur',
-        description: 'Veuillez remplir tous les champs pour chaque question',
+        description: 'Veuillez fournir un fichier audio ou un code YouTube et remplir tous les champs pour chaque question',
         variant: 'destructive',
       });
       return;
@@ -109,11 +163,15 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
         questions: questions,
       };
 
+      // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
+      const firstAudioUrl = questions.find(q => q.audioUrl)?.audioUrl || null;
+
       const { error } = await supabase
         .from('activities')
         .update({
           title: formData.title,
           thumbnail_url: formData.thumbnail_url || null,
+          audio_url: firstAudioUrl,
           iframe_code: JSON.stringify(quizData),
           shared_globally: formData.shared_globally,
         })
@@ -143,6 +201,15 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
     <Card>
       <CardHeader>
         <CardTitle>Modifier le Quiz Musical</CardTitle>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Compatible iOS :</strong> Pour que votre quiz fonctionne sur iPad/iPhone, 
+            ajoutez des fichiers audio ou utilisez l'extracteur automatique YouTube.
+            <br />
+            <strong>Compatible PC :</strong> Les vidéos YouTube fonctionnent normalement.
+          </AlertDescription>
+        </Alert>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -205,7 +272,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
                     <Label>Code d'intégration YouTube</Label>
                     <Textarea
@@ -213,8 +280,35 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
                       onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
                       placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
                       rows={3}
-                      required
                     />
+                  </div>
+
+                  {question.youtubeEmbed && (
+                    <div className="space-y-2">
+                      <Label>Extraction automatique d'audio (pour iOS)</Label>
+                      <AudioExtractor
+                        youtubeUrl={extractYouTubeUrl(question.youtubeEmbed)}
+                        onAudioExtracted={(audioUrl) => handleAudioExtracted(question.id, audioUrl)}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label>OU Upload manuel de fichier audio</Label>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleAudioUpload(question.id, e.target.files?.[0])}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                    {question.audioUrl && (
+                      <div className="mt-2">
+                        <audio controls className="w-full">
+                          <source src={question.audioUrl} type="audio/mpeg" />
+                          Votre navigateur ne supporte pas la lecture audio.
+                        </audio>
+                      </div>
+                    )}
                   </div>
 
                   <div>
