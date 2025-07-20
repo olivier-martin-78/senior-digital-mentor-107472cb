@@ -3,7 +3,6 @@ import { ArrowLeft, CheckCircle, XCircle, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/Header';
 
 interface Question {
   id: number;
@@ -185,7 +184,6 @@ const Quiz70sGame: React.FC = () => {
   if (gameCompleted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-orange-100">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <Link 
             to="/activities" 
@@ -241,7 +239,6 @@ const Quiz70sGame: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-orange-100">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <Link 
           to="/activities" 
