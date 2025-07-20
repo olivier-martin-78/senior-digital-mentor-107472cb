@@ -195,7 +195,14 @@ export const useInterventionSubmit = () => {
       
       // Déterminer où naviguer en fonction du paramètre 'from'
       const fromParam = searchParams.get('from');
-      const destination = fromParam === 'caregivers' ? '/caregivers' : '/professional-scheduler';
+      const tabParam = searchParams.get('tab');
+      
+      let destination = '/professional-scheduler';
+      if (fromParam === 'caregivers') {
+        destination = '/caregivers';
+      } else if (fromParam === 'my-appointments' && tabParam === 'completed') {
+        destination = '/professional-scheduler?tab=my-appointments&subtab=completed';
+      }
       
       // Délai pour s'assurer que tout est sauvegardé
       setTimeout(() => {

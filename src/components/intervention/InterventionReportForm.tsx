@@ -71,8 +71,13 @@ const InterventionReportForm: React.FC = () => {
 
   const handleBack = () => {
     const fromParam = searchParams.get('from');
+    const tabParam = searchParams.get('tab');
+    
     if (fromParam === 'caregivers') {
       navigate('/caregivers');
+    } else if (fromParam === 'my-appointments' && tabParam === 'completed') {
+      // Retourner à l'onglet "Mes rendez-vous" > "Terminés"
+      navigate('/professional-scheduler?tab=my-appointments&subtab=completed');
     } else {
       navigate('/professional-scheduler');
     }

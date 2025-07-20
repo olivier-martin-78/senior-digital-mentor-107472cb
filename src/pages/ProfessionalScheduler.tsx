@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import AppointmentForm from '@/components/scheduler/AppointmentForm';
@@ -20,6 +20,7 @@ import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock } from 'lu
 const ProfessionalScheduler = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
@@ -247,7 +248,7 @@ const ProfessionalScheduler = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="calendar" className="w-full space-y-4">
+        <Tabs defaultValue={searchParams.get('tab') || 'calendar'} className="w-full space-y-4">
           <TabsList>
             <TabsTrigger value="calendar" className="data-[state=active]:bg-tranches-mauve/50">
               <CalendarDays className="w-4 h-4 mr-2" />
@@ -295,6 +296,7 @@ const ProfessionalScheduler = () => {
             <MyAppointments
               appointments={filteredAppointments}
               onAppointmentEdit={handleAppointmentEdit}
+              defaultTab={searchParams.get('subtab') === 'completed' ? 'completed' : 'scheduled'}
             />
           </TabsContent>
           

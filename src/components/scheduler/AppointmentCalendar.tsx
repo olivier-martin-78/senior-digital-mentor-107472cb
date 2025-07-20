@@ -256,14 +256,14 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const handleCreateReport = () => {
     if (selectedAppointment) {
       // Naviguer vers la page de création de rapport avec l'ID du rendez-vous
-      navigate(`/intervention-report?appointment_id=${selectedAppointment.id}`);
+      navigate(`/intervention-report?appointment_id=${selectedAppointment.id}&from=professional-scheduler`);
     }
   };
 
   const handleViewReport = () => {
     if (selectedAppointment?.intervention_report_id) {
       // Naviguer vers la page de visualisation du rapport
-      navigate(`/intervention-report?report_id=${selectedAppointment.intervention_report_id}`);
+      navigate(`/intervention-report?report_id=${selectedAppointment.intervention_report_id}&from=professional-scheduler`);
     }
   };
 

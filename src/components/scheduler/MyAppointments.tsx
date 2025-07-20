@@ -12,11 +12,13 @@ import AuxiliaryAvatar from './AuxiliaryAvatar';
 interface MyAppointmentsProps {
   appointments: Appointment[];
   onAppointmentEdit: (appointment: Appointment) => void;
+  defaultTab?: string;
 }
 
 const MyAppointments: React.FC<MyAppointmentsProps> = ({ 
   appointments, 
-  onAppointmentEdit 
+  onAppointmentEdit,
+  defaultTab = 'scheduled'
 }) => {
   // Filtrer et trier les rendez-vous planifiés (par date croissante)
   const scheduledAppointments = appointments
@@ -130,7 +132,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({
           <CardDescription>Consultez vos rendez-vous planifiés et terminés.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="scheduled" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="scheduled">
                 Planifiés ({scheduledAppointments.length})

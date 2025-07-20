@@ -102,11 +102,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (hasInterventionReport && interventionReportId) {
       // Ouvrir le rapport existant en mode lecture dans l'onglet actuel
       console.log('📖 Ouverture du rapport existant:', interventionReportId);
-      navigate(`/intervention-report?report_id=${interventionReportId}`);
+      navigate(`/intervention-report?report_id=${interventionReportId}&from=my-appointments&tab=completed`);
     } else {
       // Créer un nouveau rapport dans l'onglet actuel
       console.log('📝 Création d\'un nouveau rapport pour RDV:', appointment.id);
-      navigate(`/intervention-report?appointment_id=${appointment.id}`);
+      navigate(`/intervention-report?appointment_id=${appointment.id}&from=my-appointments&tab=completed`);
     }
   };
 
