@@ -136,7 +136,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
       const { error } = await supabase
         .from('activities')
         .update({
-          title: `Jeu Memory: ${title}`,
+          title: title,
           iframe_code: JSON.stringify(updatedGameData),
           thumbnail_url: thumbnailUrl,
           sub_activity_tag_id: selectedSubTagId,

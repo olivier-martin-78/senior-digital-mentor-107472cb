@@ -118,7 +118,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
       const { error } = await supabase
         .from('activities')
         .insert({
-          title: `Jeu Memory: ${title}`,
+          title: title,
           activity_type: 'games',
           link: '#', // Could be a link to the game with the series ID
           iframe_code: JSON.stringify(gameData),
