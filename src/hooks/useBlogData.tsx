@@ -31,7 +31,7 @@ export const useBlogData = (
   // Corriger la logique pour inclure le rôle "professionnel"
   const hasCreatePermission = user && (hasRole('admin') || hasRole('editor') || hasRole('professionnel'));
 
-  // Récupérer les catégories
+  // Récupérer seulement les catégories qui ont des posts visibles par l'utilisateur
   const fetchCategories = async () => {
     if (!user) {
       setCategories([]);
@@ -42,14 +42,35 @@ export const useBlogData = (
     try {
       setLoadingCategories(true);
       
+      // Récupérer les catégories qui ont au moins un post visible par l'utilisateur
       const { data, error } = await supabase
         .from('blog_categories')
-        .select('*')
+        .select(`
+          *,
+          post_categories!inner(
+            blog_posts!inner(
+              id
+            )
+          )
+        `)
         .order('name');
 
       if (error) throw error;
 
-      setCategories(data || []);
+      // Dédoublonner les catégories car il peut y avoir plusieurs posts par catégorie
+      const uniqueCategories = data?.reduce((acc: BlogCategory[], category) => {
+        if (!acc.find(c => c.id === category.id)) {
+          acc.push({
+            id: category.id,
+            name: category.name,
+            created_by: category.created_by,
+            created_at: category.created_at
+          });
+        }
+        return acc;
+      }, []) || [];
+
+      setCategories(uniqueCategories);
     } catch (error: any) {
       console.error('Erreur lors du chargement des catégories:', error);
       toast({
