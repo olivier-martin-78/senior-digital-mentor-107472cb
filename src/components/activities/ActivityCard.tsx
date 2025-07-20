@@ -509,6 +509,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       if (isCorrect) {
                         score++;
                         console.log('Score incremented to:', score, 'Question:', currentQuestionIndex + 1);
+                        // Mettre à jour l'affichage du score immédiatement
+                        document.getElementById('current-score').textContent = score;
                       }
                       
                       // Capturer le score final APRÈS l'incrémentation
@@ -803,7 +805,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       grid.style.gridTemplateColumns = \`repeat(\${cols}, 1fr)\`;
                       
                       grid.innerHTML = cards.map(card => \`
-                        <div class="card \${card.isFlipped ? 'flipped' : ''} \${card.isMatched ? 'matched' : ''}" 
+                        <div class="card \${card.isFlipped ? 'flipped' : ''} \${card.isMatched ? 'matched' : ''} 
                              onclick="handleCardClick(\${card.id})">
                           \${card.isFlipped || card.isMatched ? 
                             \`<img src="\${card.imageUrl}" alt="Memory card">\` : 
