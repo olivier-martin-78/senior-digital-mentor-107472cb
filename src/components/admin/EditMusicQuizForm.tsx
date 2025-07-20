@@ -297,18 +297,9 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
                     />
                   </div>
 
-                  {question.youtubeEmbed && (
-                    <div className="space-y-2">
-                      <Label>Extraction automatique d'audio (pour iOS)</Label>
-                      <AudioExtractor
-                        youtubeUrl={extractYouTubeUrl(question.youtubeEmbed)}
-                        onAudioExtracted={(audioUrl) => handleAudioExtracted(question.id, audioUrl)}
-                      />
-                    </div>
-                  )}
 
-                  <div>
-                    <Label>OU Upload manuel de fichier audio</Label>
+                   <div>
+                     <Label>Upload de fichier audio</Label>
                     <input
                       type="file"
                       accept="audio/*"
