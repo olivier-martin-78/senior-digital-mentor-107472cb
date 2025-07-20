@@ -511,7 +511,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         console.log('Score incremented to:', score, 'Question:', currentQuestionIndex + 1);
                       }
                       
-                      // Capturer le score final pour éviter les problèmes de timing
+                      // Capturer le score final APRÈS l'incrémentation
                       const finalScore = score;
                       
                       setTimeout(() => {
