@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   canEdit = false,
   audioUrl
 }) => {
+  // Fonction pour nettoyer le titre des jeux Memory
+  const getCleanTitle = () => {
+    if (title.startsWith('Jeu Memory: ')) {
+      return title.replace('Jeu Memory: ', '');
+    }
+    return title;
+  };
+
   const getDisplayImage = () => {
     if (thumbnailUrl) {
       return thumbnailUrl;
@@ -930,7 +939,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       <div className="relative">
         <img
           src={getDisplayImage()}
-          alt={title}
+          alt={getCleanTitle()}
           className="w-full h-48 object-cover rounded-t-lg"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -979,7 +988,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       </div>
       
       <CardHeader>
-        <CardTitle className="text-lg line-clamp-2">{title}</CardTitle>
+        <CardTitle className="text-lg line-clamp-2">{getCleanTitle()}</CardTitle>
         {subActivityName && (
           <Badge variant="secondary" className="w-fit">
             {subActivityName}
