@@ -16,6 +16,9 @@ serve(async (req) => {
 
   try {
     console.log('🎵 Starting YouTube audio extraction process...');
+    console.log('🔍 Environment check - RAPIDAPI_KEY exists:', !!Deno.env.get('RAPIDAPI_KEY'));
+    console.log('🔍 Environment check - SUPABASE_URL exists:', !!Deno.env.get('SUPABASE_URL'));
+    console.log('🔍 Environment check - SUPABASE_SERVICE_ROLE_KEY exists:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     
     const { youtubeUrl } = await req.json();
     console.log('📋 Request data:', { youtubeUrl });
