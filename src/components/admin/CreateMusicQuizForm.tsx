@@ -24,6 +24,7 @@ interface Question {
   answerC: string;
   correctAnswer: 'A' | 'B' | 'C';
   audioUrl?: string;
+  instruction?: string;
 }
 
 interface CreateMusicQuizFormProps {
@@ -330,15 +331,25 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
                     />
                   </div>
 
-                  <div>
-                    <Label>Question</Label>
-                    <Input
-                      value={question.question}
-                      onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
-                      placeholder="Quel mot vient après cette phrase ?"
-                      required
-                    />
-                  </div>
+                   <div>
+                     <Label>Consigne</Label>
+                     <Textarea
+                       value={question.instruction || ''}
+                       onChange={(e) => updateQuestion(question.id, 'instruction', e.target.value)}
+                       placeholder="Trouvez le mot manquant dans cette phrase"
+                       rows={2}
+                     />
+                   </div>
+
+                   <div>
+                     <Label>Question</Label>
+                     <Input
+                       value={question.question}
+                       onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
+                       placeholder="Quel mot vient après cette phrase ?"
+                       required
+                     />
+                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
