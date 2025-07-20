@@ -12,6 +12,7 @@ import { Plus, Trash2, Upload, AlertCircle } from 'lucide-react';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import AudioExtractor from './AudioExtractor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SubActivitySelector from '@/components/activities/SubActivitySelector';
 
 interface Question {
   id: string;
@@ -39,6 +40,8 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     thumbnail_url: '',
     shared_globally: false,
   });
+  
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
   
   const [questions, setQuestions] = useState<Question[]>([
     {
@@ -170,6 +173,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
           thumbnail_url: formData.thumbnail_url || null,
           audio_url: firstAudioUrl,
           iframe_code: JSON.stringify(quizData),
+          sub_activity_tag_id: selectedSubTagId,
           created_by: user.id,
           shared_globally: formData.shared_globally,
         }]);
@@ -225,6 +229,14 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
             currentThumbnail={formData.thumbnail_url}
             onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
           />
+
+          <div>
+            <SubActivitySelector
+              activityType="games"
+              selectedSubTagId={selectedSubTagId}
+              onSubTagChange={setSelectedSubTagId}
+            />
+          </div>
 
           {canShareGlobally && (
             <div className="flex items-center space-x-2">

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SubActivitySelector from "@/components/activities/SubActivitySelector";
 
 interface CreateMemoryGameFormProps {
   onSuccess?: () => void;
@@ -19,6 +20,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
   const [title, setTitle] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -121,6 +123,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
           link: '#', // Could be a link to the game with the series ID
           iframe_code: JSON.stringify(gameData),
           thumbnail_url: thumbnailUrl,
+          sub_activity_tag_id: selectedSubTagId,
           created_by: (await supabase.auth.getUser()).data.user?.id,
           shared_globally: true
         });
@@ -138,6 +141,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
       setTitle("");
       setSelectedFiles([]);
       setThumbnailFile(null);
+      setSelectedSubTagId(null);
       
       if (onSuccess) {
         onSuccess();
@@ -176,6 +180,14 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <SubActivitySelector
+            activityType="games"
+            selectedSubTagId={selectedSubTagId}
+            onSubTagChange={setSelectedSubTagId}
           />
         </div>
 

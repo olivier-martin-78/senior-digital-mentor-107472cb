@@ -14,6 +14,7 @@ import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnail
 import AudioExtractor from './AudioExtractor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Activity } from '@/hooks/useActivities';
+import SubActivitySelector from '@/components/activities/SubActivitySelector';
 
 interface Question {
   id: string;
@@ -43,6 +44,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
     shared_globally: activity.shared_globally || false,
   });
   
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(activity.sub_activity_tag_id);
   const [questions, setQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
@@ -175,6 +177,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
           thumbnail_url: formData.thumbnail_url || null,
           audio_url: firstAudioUrl,
           iframe_code: JSON.stringify(quizData),
+          sub_activity_tag_id: selectedSubTagId,
           shared_globally: formData.shared_globally,
         })
         .eq('id', activity.id);
@@ -230,6 +233,14 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
             currentThumbnail={formData.thumbnail_url}
             onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
           />
+
+          <div>
+            <SubActivitySelector
+              activityType="games"
+              selectedSubTagId={selectedSubTagId}
+              onSubTagChange={setSelectedSubTagId}
+            />
+          </div>
 
           {canShareGlobally && (
             <div className="flex items-center space-x-2">

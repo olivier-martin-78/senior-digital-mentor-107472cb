@@ -7,6 +7,7 @@ import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Activity } from '@/hooks/useActivities';
+import SubActivitySelector from "@/components/activities/SubActivitySelector";
 
 interface EditMemoryGameFormProps {
   activity: Activity;
@@ -29,6 +30,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [currentImages, setCurrentImages] = useState<string[]>(gameData?.images || []);
   const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(activity.thumbnail_url || null);
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(activity.sub_activity_tag_id);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,6 +139,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
           title: `Jeu Memory: ${title}`,
           iframe_code: JSON.stringify(updatedGameData),
           thumbnail_url: thumbnailUrl,
+          sub_activity_tag_id: selectedSubTagId,
         })
         .eq('id', activity.id);
 
@@ -198,6 +201,14 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <SubActivitySelector
+                activityType="games"
+                selectedSubTagId={selectedSubTagId}
+                onSubTagChange={setSelectedSubTagId}
               />
             </div>
 
