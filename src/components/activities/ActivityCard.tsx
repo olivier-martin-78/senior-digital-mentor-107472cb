@@ -508,10 +508,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       
                       if (isCorrect) {
                         score++;
+                        console.log('Score incremented to:', score, 'Question:', currentQuestionIndex + 1);
                       }
                       
                       setTimeout(() => {
                         currentQuestionIndex++;
+                        console.log('Moving to next question or ending. Current index:', currentQuestionIndex, 'Total questions:', quizData.questions.length, 'Current score:', score);
                         if (currentQuestionIndex < quizData.questions.length) {
                           answering = false;
                           showQuestion();
