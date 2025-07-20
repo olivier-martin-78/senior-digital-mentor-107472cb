@@ -184,6 +184,9 @@ const ProfessionalScheduler = () => {
   };
 
   const handleOpenClientManager = () => {
+    // Fermer les autres modals avant d'ouvrir celui-ci
+    setIsIntervenantManagerOpen(false);
+    setIsCaregiverManagerOpen(false);
     setIsClientManagerOpen(true);
   };
 
@@ -193,6 +196,9 @@ const ProfessionalScheduler = () => {
   };
 
   const handleOpenIntervenantManager = () => {
+    // Fermer les autres modals avant d'ouvrir celui-ci
+    setIsClientManagerOpen(false);
+    setIsCaregiverManagerOpen(false);
     setIsIntervenantManagerOpen(true);
   };
 
