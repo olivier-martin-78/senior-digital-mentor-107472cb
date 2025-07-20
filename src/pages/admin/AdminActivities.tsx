@@ -429,45 +429,47 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map((activity) => {
-              const isYouTube = isYouTubeUrl(activity.link);
-              const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
+          {!editingActivity && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activities.map((activity) => {
+                const isYouTube = isYouTubeUrl(activity.link);
+                const videoId = isYouTube ? getYouTubeVideoId(activity.link) : null;
 
-              return (
-                <div key={activity.id} className="relative group">
-                  <ActivityCard
-                    title={activity.title}
-                    link={activity.link}
-                    isYouTube={isYouTube}
-                    videoId={videoId || undefined}
-                    thumbnailUrl={activity.thumbnail_url}
-                    activityDate={activity.activity_date}
-                    showEditButton={true}
-                    onEdit={() => handleEditActivity(activity)}
-                    subActivityName={activity.activity_sub_tags?.name}
-                    iframeCode={activity.iframe_code}
-                    audioUrl={activity.audio_url}
-                  />
-                  {activity.shared_globally && (
-                    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
-                      Partagé
-                    </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(activity.id)}
-                    className="absolute top-2 right-12 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+                return (
+                  <div key={activity.id} className="relative group">
+                    <ActivityCard
+                      title={activity.title}
+                      link={activity.link}
+                      isYouTube={isYouTube}
+                      videoId={videoId || undefined}
+                      thumbnailUrl={activity.thumbnail_url}
+                      activityDate={activity.activity_date}
+                      showEditButton={true}
+                      onEdit={() => handleEditActivity(activity)}
+                      subActivityName={activity.activity_sub_tags?.name}
+                      iframeCode={activity.iframe_code}
+                      audioUrl={activity.audio_url}
+                    />
+                    {activity.shared_globally && (
+                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
+                        Partagé
+                      </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(activity.id)}
+                      className="absolute top-2 right-12 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          {activities.length === 0 && (
+          {!editingActivity && activities.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">Aucune activité pour le moment.</p>
             </div>
