@@ -16,7 +16,6 @@ serve(async (req) => {
 
   try {
     console.log('🎵 Starting YouTube audio extraction process...');
-    console.log('🔍 Environment check - RAPIDAPI_KEY exists:', !!Deno.env.get('RAPIDAPI_KEY'));
     console.log('🔍 Environment check - SUPABASE_URL exists:', !!Deno.env.get('SUPABASE_URL'));
     console.log('🔍 Environment check - SUPABASE_SERVICE_ROLE_KEY exists:', !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     
@@ -43,32 +42,32 @@ serve(async (req) => {
 
     console.log('🔍 Extracted video ID:', videoId);
 
-    // Vérifier la disponibilité de la clé RapidAPI
-    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
-    if (!rapidApiKey) {
-      console.error('❌ RapidAPI key not found in environment');
-      throw new Error('Clé RapidAPI manquante. Veuillez configurer RAPIDAPI_KEY dans les secrets Supabase.');
-    }
-
-    console.log('🔑 RapidAPI key found, proceeding with extraction...');
-
-    // Essayer d'abord l'API RapidAPI principale
+    // Essayer plusieurs services gratuits
     let audioUrl = null;
     let audioBuffer = null;
 
     try {
-      audioUrl = await extractWithRapidAPI(videoId, rapidApiKey);
-      console.log('✅ RapidAPI extraction successful:', audioUrl);
-    } catch (rapidApiError) {
-      console.warn('⚠️ RapidAPI failed, trying alternative method:', rapidApiError.message);
+      // Essayer le service gratuit YT1s
+      audioUrl = await extractWithYT1s(videoId);
+      console.log('✅ YT1s extraction successful:', audioUrl);
+    } catch (yt1sError) {
+      console.warn('⚠️ YT1s failed, trying alternative method:', yt1sError.message);
       
-      // Essayer une méthode alternative avec une autre API RapidAPI
       try {
-        audioUrl = await extractWithAlternativeAPI(videoId, rapidApiKey);
-        console.log('✅ Alternative API extraction successful:', audioUrl);
-      } catch (altError) {
-        console.error('❌ All extraction methods failed:', altError.message);
-        throw new Error('Impossible d\'extraire l\'audio de cette vidéo. Les services d\'extraction sont temporairement indisponibles.');
+        // Essayer le service gratuit Y2mate
+        audioUrl = await extractWithY2mate(videoId);
+        console.log('✅ Y2mate extraction successful:', audioUrl);
+      } catch (y2mateError) {
+        console.warn('⚠️ Y2mate failed, trying cobalt.tools:', y2mateError.message);
+        
+        try {
+          // Essayer cobalt.tools comme dernière option
+          audioUrl = await extractWithCobalt(youtubeUrl);
+          console.log('✅ Cobalt extraction successful:', audioUrl);
+        } catch (cobaltError) {
+          console.error('❌ All extraction methods failed:', cobaltError.message);
+          throw new Error('Tous les services d\'extraction gratuits sont temporairement indisponibles. Veuillez réessayer plus tard ou utiliser l\'upload manuel.');
+        }
       }
     }
 
@@ -158,73 +157,151 @@ serve(async (req) => {
   }
 });
 
-// Fonction d'extraction avec l'API RapidAPI principale
-async function extractWithRapidAPI(videoId: string, rapidApiKey: string): Promise<string> {
-  const apiUrl = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
-  console.log('🔗 Calling RapidAPI:', apiUrl);
+// Service gratuit YT1s
+async function extractWithYT1s(videoId: string): Promise<string> {
+  console.log('🔗 Calling YT1s API for video:', videoId);
   
-  const response = await fetch(apiUrl, {
-    method: 'GET',
+  // Première étape : obtenir les informations de la vidéo
+  const infoResponse = await fetch('https://yt1s.com/api/ajaxSearch/index', {
+    method: 'POST',
     headers: {
-      'X-RapidAPI-Key': rapidApiKey,
-      'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com'
-    }
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `q=https://www.youtube.com/watch?v=${videoId}&vt=home`
   });
 
-  console.log('📡 RapidAPI response status:', response.status);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ RapidAPI error response:', errorText);
-    console.error('❌ RapidAPI status:', response.status);
-    
-    if (response.status === 403) {
-      throw new Error(`Vous devez vous abonner à l'API YouTube MP3 Downloader sur RapidAPI. Status: ${response.status}`);
-    }
-    
-    throw new Error(`RapidAPI error: ${response.status} - ${errorText}`);
+  if (!infoResponse.ok) {
+    throw new Error(`YT1s info request failed: ${infoResponse.status}`);
   }
 
-  const data = await response.json();
-  console.log('📋 RapidAPI response data:', data);
-  
-  if (data.status !== 'ok' || !data.link) {
-    throw new Error(`RapidAPI extraction failed: ${data.msg || 'Unknown error'}`);
+  const infoData = await infoResponse.json();
+  console.log('📋 YT1s info response:', infoData);
+
+  if (infoData.status !== 'ok' || !infoData.links || !infoData.links.mp3) {
+    throw new Error('YT1s: No MP3 links found');
   }
 
-  return data.link;
+  // Prendre le premier lien MP3 disponible (généralement 128kbps)
+  const mp3Links = infoData.links.mp3;
+  const firstMp3Key = Object.keys(mp3Links)[0];
+  const mp3Info = mp3Links[firstMp3Key];
+
+  if (!mp3Info || !mp3Info.k) {
+    throw new Error('YT1s: No valid MP3 conversion key found');
+  }
+
+  // Deuxième étape : convertir et obtenir le lien de téléchargement
+  const convertResponse = await fetch('https://yt1s.com/api/ajaxConvert/index', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `vid=${videoId}&k=${mp3Info.k}`
+  });
+
+  if (!convertResponse.ok) {
+    throw new Error(`YT1s convert request failed: ${convertResponse.status}`);
+  }
+
+  const convertData = await convertResponse.json();
+  console.log('📋 YT1s convert response:', convertData);
+
+  if (convertData.status !== 'ok' || !convertData.dlink) {
+    throw new Error('YT1s: Conversion failed or no download link');
+  }
+
+  return convertData.dlink;
 }
 
-// Fonction d'extraction avec une API alternative
-async function extractWithAlternativeAPI(videoId: string, rapidApiKey: string): Promise<string> {
-  // Utiliser une API alternative comme youtube-mp3-downloader
-  const apiUrl = `https://youtube-mp3-downloader.p.rapidapi.com/dl?id=${videoId}`;
-  console.log('🔗 Calling alternative API:', apiUrl);
+// Service gratuit Y2mate
+async function extractWithY2mate(videoId: string): Promise<string> {
+  console.log('🔗 Calling Y2mate API for video:', videoId);
   
-  const response = await fetch(apiUrl, {
-    method: 'GET',
+  const response = await fetch('https://www.y2mate.com/mates/analyzeV2/ajax', {
+    method: 'POST',
     headers: {
-      'X-RapidAPI-Key': rapidApiKey,
-      'X-RapidAPI-Host': 'youtube-mp3-downloader.p.rapidapi.com'
-    }
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `k_query=https://www.youtube.com/watch?v=${videoId}&k_page=home&hl=en&q_auto=0`
   });
 
-  console.log('📡 Alternative API response status:', response.status);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Alternative API error response:', errorText);
-    throw new Error(`Alternative API error: ${response.status} - ${errorText}`);
+    throw new Error(`Y2mate request failed: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('📋 Alternative API response data:', data);
-  
-  if (!data.link && !data.downloadUrl && !data.url) {
-    throw new Error('Alternative API: No download link found');
+  console.log('📋 Y2mate response:', data);
+
+  if (data.status !== 'ok' || !data.links || !data.links.mp3) {
+    throw new Error('Y2mate: No MP3 links found');
   }
 
-  return data.link || data.downloadUrl || data.url;
+  // Prendre le premier lien MP3 disponible
+  const mp3Links = data.links.mp3;
+  const firstMp3Key = Object.keys(mp3Links)[0];
+  const mp3Info = mp3Links[firstMp3Key];
+
+  if (!mp3Info || !mp3Info.k) {
+    throw new Error('Y2mate: No valid MP3 conversion key found');
+  }
+
+  // Convertir
+  const convertResponse = await fetch('https://www.y2mate.com/mates/convertV2/index', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `vid=${videoId}&k=${mp3Info.k}`
+  });
+
+  if (!convertResponse.ok) {
+    throw new Error(`Y2mate convert failed: ${convertResponse.status}`);
+  }
+
+  const convertData = await convertResponse.json();
+  console.log('📋 Y2mate convert response:', convertData);
+
+  if (convertData.status !== 'ok' || !convertData.dlink) {
+    throw new Error('Y2mate: Conversion failed');
+  }
+
+  return convertData.dlink;
+}
+
+// Service gratuit Cobalt.tools
+async function extractWithCobalt(youtubeUrl: string): Promise<string> {
+  console.log('🔗 Calling Cobalt API for URL:', youtubeUrl);
+  
+  const response = await fetch('https://api.cobalt.tools/api/json', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      url: youtubeUrl,
+      quality: '128',
+      format: 'mp3',
+      filenamePattern: 'basic'
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Cobalt request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('📋 Cobalt response:', data);
+
+  if (data.status !== 'stream' && data.status !== 'success') {
+    throw new Error(`Cobalt: ${data.text || 'Unknown error'}`);
+  }
+
+  if (!data.url) {
+    throw new Error('Cobalt: No download URL provided');
+  }
+
+  return data.url;
 }
 
 function extractYouTubeId(url: string): string | null {
