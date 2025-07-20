@@ -176,6 +176,12 @@ async function extractWithRapidAPI(videoId: string, rapidApiKey: string): Promis
   if (!response.ok) {
     const errorText = await response.text();
     console.error('❌ RapidAPI error response:', errorText);
+    console.error('❌ RapidAPI status:', response.status);
+    
+    if (response.status === 403) {
+      throw new Error(`Vous devez vous abonner à l'API YouTube MP3 Downloader sur RapidAPI. Status: ${response.status}`);
+    }
+    
     throw new Error(`RapidAPI error: ${response.status} - ${errorText}`);
   }
 
