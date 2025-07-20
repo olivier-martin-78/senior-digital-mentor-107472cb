@@ -139,11 +139,15 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('💥 Fatal error in extract-youtube-audio:', error);
+    console.error('💥 Error stack:', error.stack);
+    console.error('💥 Error name:', error.name);
+    console.error('💥 Error message:', error.message);
     
     return new Response(
       JSON.stringify({ 
         error: 'Erreur lors de l\'extraction audio',
         details: error.message,
+        errorType: error.name,
         timestamp: new Date().toISOString()
       }),
       { 
