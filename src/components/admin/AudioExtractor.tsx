@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Music, AlertCircle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ManualAudioUploader } from './ManualAudioUploader';
 
 interface AudioExtractorProps {
   youtubeUrl: string;
@@ -16,6 +17,7 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [lastError, setLastError] = useState<string | null>(null);
+  const [showManualUpload, setShowManualUpload] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -83,13 +85,14 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
     } catch (error) {
       console.error('💥 Audio extraction error:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue lors de l\'extraction';
+      const errorMessage = 'Les services d\'extraction automatique sont temporairement indisponibles. Utilisez l\'upload manuel ci-dessous.';
       setLastError(errorMessage);
       setExtractionStatus('error');
+      setShowManualUpload(true);
       
       toast({
-        title: 'Erreur d\'extraction',
-        description: errorMessage,
+        title: 'Extraction automatique indisponible',
+        description: 'Utilisez l\'upload manuel pour ajouter votre fichier audio',
         variant: 'destructive',
       });
     } finally {
@@ -169,6 +172,24 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
       {isExtracting && (
         <div className="text-xs text-gray-500 text-center">
           Cela peut prendre quelques secondes selon la taille de la vidéo...
+        </div>
+      )}
+
+      {showManualUpload && (
+        <div className="mt-4">
+          <ManualAudioUploader 
+            youtubeUrl={youtubeUrl}
+            onAudioExtracted={(audioUrl) => {
+              onAudioExtracted(audioUrl);
+              setShowManualUpload(false);
+              setExtractionStatus('success');
+              setLastError(null);
+              toast({
+                title: 'Succès',
+                description: 'Fichier audio uploadé avec succès !',
+              });
+            }}
+          />
         </div>
       )}
     </div>
