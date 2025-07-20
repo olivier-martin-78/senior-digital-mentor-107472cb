@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Music } from 'lucide-react';
+import { Loader2, Music, AlertCircle, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AudioExtractorProps {
   youtubeUrl: string;
@@ -13,6 +14,8 @@ interface AudioExtractorProps {
 
 const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) => {
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionStatus, setExtractionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [lastError, setLastError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -35,33 +38,58 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
       return;
     }
 
+    console.log('🎵 Starting audio extraction for video:', videoId);
     setIsExtracting(true);
+    setExtractionStatus('idle');
+    setLastError(null);
 
     try {
       // Appeler l'Edge Function pour extraire l'audio
+      console.log('📡 Calling extract-youtube-audio function...');
       const { data, error } = await supabase.functions.invoke('extract-youtube-audio', {
         body: { youtubeUrl }
       });
 
+      console.log('📋 Function response:', { data, error });
+
       if (error) {
-        throw new Error(error.message || 'Erreur lors de l\'extraction audio');
+        console.error('❌ Supabase function error:', error);
+        throw new Error(error.message || 'Erreur lors de l\'appel à la fonction d\'extraction');
+      }
+
+      if (!data) {
+        throw new Error('Aucune réponse de la fonction d\'extraction');
       }
 
       if (!data.success || !data.audioUrl) {
-        throw new Error('Impossible d\'extraire l\'audio de cette vidéo');
+        const errorMsg = data.details || data.error || 'Impossible d\'extraire l\'audio de cette vidéo';
+        throw new Error(errorMsg);
       }
 
+      console.log('✅ Audio extraction successful:', {
+        audioUrl: data.audioUrl,
+        fileName: data.fileName,
+        fileSize: data.fileSize
+      });
+
       onAudioExtracted(data.audioUrl);
+      setExtractionStatus('success');
 
       toast({
         title: 'Succès',
-        description: 'Audio extrait avec succès depuis YouTube !',
+        description: `Audio extrait avec succès depuis YouTube ! (${Math.round((data.fileSize || 0) / 1024)} KB)`,
       });
+
     } catch (error) {
-      console.error('Erreur lors de l\'extraction audio:', error);
+      console.error('💥 Audio extraction error:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue lors de l\'extraction';
+      setLastError(errorMessage);
+      setExtractionStatus('error');
+      
       toast({
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Impossible d\'extraire l\'audio. Veuillez uploader un fichier audio manuellement.',
+        title: 'Erreur d\'extraction',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -69,26 +97,81 @@ const AudioExtractor = ({ youtubeUrl, onAudioExtracted }: AudioExtractorProps) =
     }
   };
 
+  const getStatusIcon = () => {
+    switch (extractionStatus) {
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Music className="h-4 w-4" />;
+    }
+  };
+
+  const getButtonVariant = () => {
+    switch (extractionStatus) {
+      case 'success':
+        return 'default' as const;
+      case 'error':
+        return 'destructive' as const;
+      default:
+        return 'outline' as const;
+    }
+  };
+
   return (
-    <Button
-      type="button"
-      onClick={extractAudio}
-      disabled={isExtracting || !youtubeUrl}
-      variant="outline"
-      className="w-full"
-    >
-      {isExtracting ? (
-        <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Extraction en cours...
-        </>
-      ) : (
-        <>
-          <Music className="h-4 w-4 mr-2" />
-          Extraire audio depuis YouTube
-        </>
+    <div className="space-y-3">
+      <Button
+        type="button"
+        onClick={extractAudio}
+        disabled={isExtracting || !youtubeUrl}
+        variant={getButtonVariant()}
+        className="w-full"
+      >
+        {isExtracting ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Extraction en cours...
+          </>
+        ) : (
+          <>
+            {getStatusIcon()}
+            <span className="ml-2">
+              {extractionStatus === 'success' 
+                ? 'Audio extrait avec succès !' 
+                : extractionStatus === 'error'
+                ? 'Réessayer l\'extraction'
+                : 'Extraire audio depuis YouTube'
+              }
+            </span>
+          </>
+        )}
+      </Button>
+
+      {extractionStatus === 'error' && lastError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Détails de l'erreur :</strong> {lastError}
+          </AlertDescription>
+        </Alert>
       )}
-    </Button>
+
+      {extractionStatus === 'success' && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription className="text-sm text-green-700">
+            L'audio a été extrait et téléversé avec succès. Vous pouvez maintenant sauvegarder votre quiz musical.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isExtracting && (
+        <div className="text-xs text-gray-500 text-center">
+          Cela peut prendre quelques secondes selon la taille de la vidéo...
+        </div>
+      )}
+    </div>
   );
 };
 
