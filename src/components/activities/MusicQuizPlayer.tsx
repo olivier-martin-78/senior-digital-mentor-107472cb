@@ -152,7 +152,7 @@ export function MusicQuizPlayer({
               <div className="flex items-center space-x-2">
                 <Volume2 className="h-5 w-5 text-gray-500" />
                 <span className="text-sm text-gray-600">
-                  {isPlaying ? 'En cours de lecture...' : 'Blind test audio'}
+                  {isPlaying ? 'En cours de lecture...' : 'Audio'}
                 </span>
               </div>
             </div>
