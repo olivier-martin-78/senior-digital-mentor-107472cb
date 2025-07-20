@@ -74,102 +74,128 @@ const ActivityPage = () => {
   const getIntegratedGames = () => {
     if (type !== 'games') return [];
     
-    return [
-      <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-        <Link to="/activities/opposites" className="block">
-          <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+    const remueMeningesSubTag = subTags.find(tag => tag.name === 'Remue-méninges');
+    const remueMeningesId = remueMeningesSubTag?.id;
+    
+    const games = [
+      {
+        key: "opposites",
+        subTagId: remueMeningesId,
+        card: <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link to="/activities/opposites" className="block">
+            <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+              </div>
             </div>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
-            </p>
-          </CardContent>
-        </Link>
-      </Card>,
-      
-      <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-        <Link to="/activities/sudoku" className="block">
-          <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Sudoku</h3>
+            <CardHeader>
+              <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "sudoku",
+        subTagId: remueMeningesId,
+        card: <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link to="/activities/sudoku" className="block">
+            <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Sudoku</h3>
+              </div>
             </div>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-lg">Sudoku</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
-            </p>
-          </CardContent>
-        </Link>
-      </Card>,
-      
-      <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-        <Link to="/activities/crossword" className="block">
-          <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+            <CardHeader>
+              <CardTitle className="text-lg">Sudoku</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "crossword",
+        subTagId: remueMeningesId,
+        card: <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link to="/activities/crossword" className="block">
+            <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+              </div>
             </div>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
-            </p>
-          </CardContent>
-        </Link>
-      </Card>,
-      
-      <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-        <Link to="/activities/translation" className="block">
-          <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Languages className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Jeu de Traduction</h3>
+            <CardHeader>
+              <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "translation",
+        subTagId: remueMeningesId,
+        card: <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link to="/activities/translation" className="block">
+            <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Languages className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Jeu de Traduction</h3>
+              </div>
             </div>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-lg">Jeu de Traduction</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Traduisez 20 mots entre le français et l'anglais. Deux modes disponibles avec historique des scores.
-            </p>
-          </CardContent>
-        </Link>
-      </Card>,
-      
-      <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-        <Link to="/activities/quiz70s" className="block">
-          <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Quiz Années 70</h3>
+            <CardHeader>
+              <CardTitle className="text-lg">Jeu de Traduction</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Traduisez 20 mots entre le français et l'anglais. Deux modes disponibles avec historique des scores.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "quiz70s",
+        subTagId: remueMeningesId,
+        card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link to="/activities/quiz70s" className="block">
+            <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Quiz Années 70</h3>
+              </div>
             </div>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-lg">Quiz Années 70</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.
-            </p>
-          </CardContent>
-        </Link>
-      </Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quiz Années 70</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      }
     ];
+
+    // Filtrer par sous-activité si un filtre est appliqué
+    if (subTagFilter && subTagFilter !== '') {
+      return games.filter(game => game.subTagId === subTagFilter).map(game => game.card);
+    }
+    
+    return games.map(game => game.card);
   };
 
   const PageIcon = getPageIcon();
