@@ -511,19 +511,22 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         console.log('Score incremented to:', score, 'Question:', currentQuestionIndex + 1);
                       }
                       
+                      // Capturer le score final pour éviter les problèmes de timing
+                      const finalScore = score;
+                      
                       setTimeout(() => {
                         currentQuestionIndex++;
-                        console.log('Moving to next question or ending. Current index:', currentQuestionIndex, 'Total questions:', quizData.questions.length, 'Current score:', score);
+                        console.log('Moving to next question or ending. Current index:', currentQuestionIndex, 'Total questions:', quizData.questions.length, 'Final score captured:', finalScore);
                         if (currentQuestionIndex < quizData.questions.length) {
                           answering = false;
                           showQuestion();
                         } else {
-                          showFinalScore();
+                          showFinalScore(finalScore);
                         }
                       }, 2000);
                     }
 
-                    function showFinalScore() {
+                    function showFinalScore(finalScore) {
                       // Destroy player when quiz ends
                       if (player && typeof player.destroy === 'function') {
                         try {
@@ -538,14 +541,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       document.getElementById('question-area').style.display = 'none';
                       document.getElementById('final-screen').style.display = 'block';
                       
-                      document.getElementById('final-score-text').textContent = \`Bravo ! Tu as obtenu \${score}/\${quizData.questions.length} 🎉\`;
+                      document.getElementById('final-score-text').textContent = \`Bravo ! Tu as obtenu \${finalScore}/\${quizData.questions.length} 🎉\`;
                       
                       let message = '';
-                      if (score <= 3) {
+                      if (finalScore <= 3) {
                         message = "Ne t'inquiète pas, tu vas progresser ! 😌";
-                      } else if (score <= 6) {
+                      } else if (finalScore <= 6) {
                         message = "Pas mal du tout, continue comme ça ! 👏";
-                      } else if (score <= 9) {
+                      } else if (finalScore <= 9) {
                         message = "Bravo, tu as l'oreille musicale ! 🎶";
                       } else {
                         message = "Incroyable, tu es une encyclopédie musicale ! 🏆";
