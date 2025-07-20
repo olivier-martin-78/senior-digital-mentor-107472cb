@@ -111,14 +111,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       font-size: 2.5rem;
                       text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
                     }
-                    .platform-info {
-                      background: rgba(255,255,255,0.1);
-                      padding: 10px;
-                      border-radius: 8px;
-                      margin-bottom: 20px;
-                      text-align: center;
-                      font-size: 14px;
-                    }
                     .score-info {
                       background: rgba(255,255,255,0.1);
                       padding: 15px;
@@ -165,6 +157,17 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         width: 100%;
                         height: 250px;
                       }
+                    }
+                    .instruction {
+                      background: rgba(59, 130, 246, 0.1);
+                      border: 1px solid rgba(59, 130, 246, 0.3);
+                      border-radius: 8px;
+                      padding: 15px;
+                      margin-bottom: 20px;
+                      color: #1e40af;
+                      font-weight: 500;
+                      text-align: center;
+                      font-size: 1rem;
                     }
                      .question {
                        font-size: 1.5rem;
@@ -271,9 +274,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                   <div class="quiz-container">
                     <div class="header">
                       <h1>${gameData.title}</h1>
-                      <div class="platform-info">
-                        ${isiOSDevice ? '📱 Mode iOS - Audio natif' : '💻 Mode PC - Vidéo YouTube'}
-                      </div>
                     </div>
                     
                     <div class="score-info">
@@ -383,6 +383,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                                </audio>
                              </div>
                            </div>
+                           \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
                            \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
                            <div class="question">\${question.question}</div>
                            <div class="answers">
@@ -403,6 +404,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                              <div class="video-container">
                                <div id="player"></div>
                              </div>
+                             \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
                              \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
                              <div class="question">\${question.question}</div>
                              <div class="answers">
@@ -428,6 +430,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       } else {
                          // Aucun contenu disponible
                          questionArea.innerHTML = \`
+                           \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
                            \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
                            <div class="question">\${question.question}</div>
                            <p style="text-align: center; color: #666; margin: 20px 0;">
@@ -456,6 +459,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                              </audio>
                            </div>
                          </div>
+                         \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
                          \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
                          <div class="question">\${question.question}</div>
                          <div class="answers">
