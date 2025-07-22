@@ -60,8 +60,8 @@ const Header = () => {
     icon: Activity,
     subItems: [
       { path: '/activities/meditation', label: 'Méditation' },
-      { path: '/activities/games', label: 'Jeux' },
-      { path: '/activities/exercises', label: 'Exercices' }
+      { path: '/activities/games', label: 'Jeux cognitifs' },
+      { path: '/activities/exercises', label: 'Gym douce' }
     ]
   };
 
