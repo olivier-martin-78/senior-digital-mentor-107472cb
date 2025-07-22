@@ -300,7 +300,7 @@ const ActivityPage = () => {
           </div>
         )}
 
-        {!loading && filteredActivities.length === 0 && type !== 'games' && (
+        {!loading && filteredActivities.length === 0 && getIntegratedGames().length === 0 && (
           <Card className="p-8 text-center bg-gray-50">
             <PageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
