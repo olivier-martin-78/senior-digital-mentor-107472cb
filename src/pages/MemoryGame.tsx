@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { MemoryGamePlayer } from '@/components/activities/MemoryGamePlayer';
 
 const MemoryGame: React.FC = () => {
   const location = useLocation();
@@ -37,19 +38,7 @@ const MemoryGame: React.FC = () => {
         </Button>
       </div>
       
-      <div className="container mx-auto px-4">
-        <h1 className="text-2xl font-bold text-foreground mb-6 text-center">
-          {gameData.title || 'Jeu Memory'}
-        </h1>
-        
-        {/* Ici vous pourrez intégrer le composant Memory Game quand il sera créé */}
-        <div className="text-center text-muted-foreground">
-          <p>Interface du jeu Memory à implémenter</p>
-          <pre className="mt-4 p-4 bg-muted rounded text-left text-sm overflow-auto">
-            {JSON.stringify(gameData, null, 2)}
-          </pre>
-        </div>
-      </div>
+      <MemoryGamePlayer gameData={gameData} />
     </div>
   );
 };
