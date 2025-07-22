@@ -64,12 +64,25 @@ const MusicQuizGame: React.FC = () => {
   }
 
   if (isFinished) {
+    const percentage = (score / quizData.questions.length) * 100;
+    
+    const getEncouragementMessage = () => {
+      if (percentage === 100) return "Parfait ! Tu es un vrai expert ! 🎉";
+      if (percentage >= 80) return "Excellent travail ! Tu maîtrises bien le sujet ! 👏";
+      if (percentage >= 60) return "Bien joué ! Continue comme ça ! 💪";
+      if (percentage >= 40) return "Pas mal ! Avec un peu plus d'entraînement, tu vas y arriver ! 🌟";
+      return "N'abandonne pas ! Chaque tentative te fait progresser ! 🚀";
+    };
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Quiz terminé !</h1>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-4">
             Score final : {score} / {quizData.questions.length}
+          </p>
+          <p className="text-lg font-medium text-primary mb-6">
+            {getEncouragementMessage()}
           </p>
           <Button onClick={handleExit} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
