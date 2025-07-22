@@ -33,7 +33,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     description: '',
     year: '',
     category: '',
-    answerOptions: ['', '', '']
+    answerOptions: undefined
   });
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
 
   const handleAnswerOptionChange = (index: number, value: string) => {
     setCurrentEvent(prev => {
-      const newOptions = [...(prev.answerOptions || ['', '', ''])];
+      const newOptions = prev.answerOptions ? [...prev.answerOptions] : ['', '', ''];
       newOptions[index] = value;
       return { ...prev, answerOptions: newOptions };
     });
@@ -126,12 +126,15 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       return;
     }
 
-    // Vérifier les options de réponse seulement si elles sont fournies
+    // Vérifier les options de réponse seulement si elles sont fournies ET non vides
     const answerOptions = currentEvent.answerOptions || [];
     console.log('Answer options check:', answerOptions);
     
-    // Si des options de réponse sont fournies, elles doivent être complètes (3 options)
-    if (answerOptions.length > 0) {
+    // Vérifier si au moins une option de réponse est remplie
+    const hasFilledOptions = answerOptions.some(option => option && option.trim());
+    
+    // Si des options de réponse sont commencées, elles doivent être complètes (3 options)
+    if (hasFilledOptions) {
       if (answerOptions.length !== 3 || answerOptions.some(option => !option.trim())) {
         console.log('Answer options incomplete');
         toast({ 
@@ -141,10 +144,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
         });
         return;
       }
-    }
 
-    // Vérifier qu'une des options correspond à l'année (seulement si des options sont fournies)
-    if (answerOptions.length > 0) {
+      // Vérifier qu'une des options correspond à l'année
       console.log('Checking if year matches options:', currentEvent.year, answerOptions);
       if (!answerOptions.includes(currentEvent.year!)) {
         console.log('No option matches the year');
@@ -168,7 +169,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
         year: currentEvent.year!,
         category: currentEvent.category || '',
         imageUrl: currentEvent.imageUrl,
-        answerOptions: currentEvent.answerOptions
+        answerOptions: hasFilledOptions ? currentEvent.answerOptions : undefined
       };
 
       setFormData(prev => ({
@@ -189,7 +190,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
         year: currentEvent.year!,
         category: currentEvent.category || '',
         imageUrl: currentEvent.imageUrl,
-        answerOptions: currentEvent.answerOptions
+        answerOptions: hasFilledOptions ? currentEvent.answerOptions : undefined
       };
 
       setFormData(prev => ({
@@ -207,7 +208,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       year: '',
       category: '',
       imageUrl: undefined,
-      answerOptions: ['', '', '']
+      answerOptions: undefined
     });
   };
 
@@ -218,7 +219,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       year: event.year,
       category: event.category,
       imageUrl: event.imageUrl,
-      answerOptions: event.answerOptions || ['', '', '']
+      answerOptions: event.answerOptions || undefined
     });
     setEditingEventId(event.id);
   };
@@ -231,7 +232,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       year: '',
       category: '',
       imageUrl: undefined,
-      answerOptions: ['', '', '']
+      answerOptions: undefined
     });
   };
 
@@ -467,9 +468,9 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
           </div>
 
           <div>
-            <Label>Options de réponse pour le quiz (3 options requises)</Label>
+            <Label>Options de réponse pour le quiz (optionnel - 3 options requises si utilisé)</Label>
             <div className="space-y-2 mt-2">
-              {(currentEvent.answerOptions || ['', '', '']).map((option, index) => (
+              {((currentEvent.answerOptions && currentEvent.answerOptions.length > 0) ? currentEvent.answerOptions : ['', '', '']).map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <span className="text-sm font-medium w-8">
                     {String.fromCharCode(65 + index)})
@@ -486,6 +487,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
+              Laissez vide pour une timeline classique, ou remplissez les 3 options pour un quiz. 
               La bonne réponse sera automatiquement détectée parmi les options qui correspondent à l'année saisie ({currentEvent.year})
             </p>
           </div>
