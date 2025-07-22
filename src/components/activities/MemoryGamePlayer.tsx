@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw } from 'lucide-react';
 
 interface MemoryGamePlayerProps {
@@ -125,32 +126,37 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
 
   // Écran de sélection de difficulté
   if (!gameStarted) {
-    const maxPairs = Math.min(gameData.images.length, 12); // Limiter à 12 paires max
-    const difficultyOptions = [
-      { pairs: 3, label: "Facile (3 paires)" },
-      { pairs: 6, label: "Moyen (6 paires)" },
-      { pairs: 9, label: "Difficile (9 paires)" },
-      { pairs: maxPairs, label: `Expert (${maxPairs} paires)` }
-    ].filter(option => option.pairs <= maxPairs);
+    const maxPairs = gameData.images.length;
+    
+    // Générer les options : commence à 2 paires (4 cartes) et s'incrémente de 2 en 2
+    const pairOptions = [];
+    for (let pairs = 2; pairs <= maxPairs; pairs += 2) {
+      pairOptions.push({
+        value: pairs.toString(),
+        label: `${pairs * 2} cartes (${pairs} paires)`
+      });
+    }
 
     return (
       <div className="max-w-2xl mx-auto p-4">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-4">{gameData.title}</h1>
-          <p className="text-muted-foreground">Choisissez votre niveau de difficulté</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
-          {difficultyOptions.map((option) => (
-            <Button
-              key={option.pairs}
-              onClick={() => setSelectedPairs(option.pairs)}
-              variant="outline"
-              className="h-16 text-lg"
-            >
-              {option.label}
-            </Button>
-          ))}
+          <p className="text-muted-foreground mb-6">Choisissez le nombre de cartes à retourner</p>
+          
+          <div className="max-w-xs mx-auto mb-6">
+            <Select onValueChange={(value) => setSelectedPairs(parseInt(value))}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionnez la difficulté" />
+              </SelectTrigger>
+              <SelectContent>
+                {pairOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
     );
@@ -163,6 +169,7 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
         <h1 className="text-2xl font-bold text-foreground mb-4">{gameData.title}</h1>
         <div className="flex justify-center gap-6 text-sm text-muted-foreground">
           <span>Paires trouvées: {matchedPairs} / {selectedPairs}</span>
+          <span>Cartes: {selectedPairs * 2}</span>
           <span>Coups joués: {moves}</span>
         </div>
         <div className="flex justify-center gap-2 mt-4">
