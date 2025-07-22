@@ -15,6 +15,9 @@ const TimelineGame: React.FC = () => {
   
   const timelineData = location.state?.timelineData as TimelineData;
 
+  console.log('🎮 TimelineGame - Timeline data received:', timelineData);
+  console.log('🎮 TimelineGame - Number of events:', timelineData?.events?.length);
+
   const handleExit = () => {
     navigate('/activities');
   };
@@ -39,8 +42,20 @@ const TimelineGame: React.FC = () => {
     event.answerOptions && Array.isArray(event.answerOptions) && event.answerOptions.length >= 3
   );
 
+  console.log('🎮 TimelineGame - Checking events for answer options:');
+  timelineData.events.forEach((event, index) => {
+    console.log(`🎮 Event ${index + 1}:`, {
+      name: event.name,
+      hasAnswerOptions: !!event.answerOptions,
+      answerOptionsLength: event.answerOptions?.length || 0,
+      answerOptions: event.answerOptions
+    });
+  });
+  console.log('🎮 TimelineGame - hasAnswerOptions result:', hasAnswerOptions);
+
   // Si c'est un quiz, utiliser TimelineQuizPlayer directement
   if (hasAnswerOptions) {
+    console.log('🎮 TimelineGame - Rendering TimelineQuizPlayer');
     return (
       <div className="min-h-screen bg-background">
         <TimelineQuizPlayer timelineData={timelineData} onExit={handleExit} />
@@ -49,6 +64,7 @@ const TimelineGame: React.FC = () => {
   }
 
   // Pour les timelines normales, permettre de choisir entre les deux versions
+  console.log('🎮 TimelineGame - Rendering timeline player with toggle');
   return (
     <div className="min-h-screen bg-background">
       {/* Sélecteur de version en haut */}
