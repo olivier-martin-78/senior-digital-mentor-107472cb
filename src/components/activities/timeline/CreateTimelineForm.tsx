@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Plus, Trash2, Upload, Edit } from 'lucide-react';
 import { TimelineData, TimelineEvent } from '@/types/timeline';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -35,6 +35,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     answerOptions: ['', '', '']
   });
 
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
@@ -150,21 +151,72 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
 
     console.log('All validations passed, adding event');
 
-    const newEvent: TimelineEvent = {
-      id: Date.now().toString(),
-      name: currentEvent.name!,
-      description: currentEvent.description!,
-      year: currentEvent.year!,
-      category: currentEvent.category || '',
-      imageUrl: currentEvent.imageUrl,
-      answerOptions: currentEvent.answerOptions
-    };
+    if (editingEventId) {
+      // Mode édition
+      const updatedEvent: TimelineEvent = {
+        id: editingEventId,
+        name: currentEvent.name!,
+        description: currentEvent.description!,
+        year: currentEvent.year!,
+        category: currentEvent.category || '',
+        imageUrl: currentEvent.imageUrl,
+        answerOptions: currentEvent.answerOptions
+      };
 
-    setFormData(prev => ({
-      ...prev,
-      events: [...prev.events, newEvent]
-    }));
+      setFormData(prev => ({
+        ...prev,
+        events: prev.events.map(event => 
+          event.id === editingEventId ? updatedEvent : event
+        )
+      }));
 
+      setEditingEventId(null);
+      toast({ title: "Événement modifié avec succès" });
+    } else {
+      // Mode ajout
+      const newEvent: TimelineEvent = {
+        id: Date.now().toString(),
+        name: currentEvent.name!,
+        description: currentEvent.description!,
+        year: currentEvent.year!,
+        category: currentEvent.category || '',
+        imageUrl: currentEvent.imageUrl,
+        answerOptions: currentEvent.answerOptions
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        events: [...prev.events, newEvent]
+      }));
+
+      toast({ title: "Événement ajouté avec succès" });
+    }
+
+    // Réinitialiser le formulaire
+    setCurrentEvent({
+      name: '',
+      description: '',
+      year: '',
+      category: '',
+      imageUrl: undefined,
+      answerOptions: ['', '', '']
+    });
+  };
+
+  const editEvent = (event: TimelineEvent) => {
+    setCurrentEvent({
+      name: event.name,
+      description: event.description,
+      year: event.year,
+      category: event.category,
+      imageUrl: event.imageUrl,
+      answerOptions: event.answerOptions || ['', '', '']
+    });
+    setEditingEventId(event.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingEventId(null);
     setCurrentEvent({
       name: '',
       description: '',
@@ -190,10 +242,11 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       formData: formData
     });
     
-    if (!formData.creatorName || !formData.timelineName || formData.events.length < 2) {
+    if (!formData.creatorName || !formData.timelineName || formData.events.length < 1) {
+      console.log('Validation failed - missing data');
       toast({ 
         title: "Informations manquantes", 
-        description: "Veuillez remplir tous les champs et ajouter au moins 2 événements",
+        description: "Veuillez remplir tous les champs et ajouter au moins 1 événement",
         variant: "destructive" 
       });
       return;
@@ -319,7 +372,9 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
 
       <Card>
         <CardHeader>
-          <CardTitle>Ajouter un évènement</CardTitle>
+          <CardTitle>
+            {editingEventId ? 'Modifier l\'événement' : 'Ajouter un événement'}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -420,10 +475,26 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
             </p>
           </div>
 
-          <Button onClick={addEvent} className="w-full">
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter l'évènement
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={addEvent} className="flex-1">
+              {editingEventId ? (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Modifier l'événement
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter l'événement
+                </>
+              )}
+            </Button>
+            {editingEventId && (
+              <Button variant="outline" onClick={cancelEdit}>
+                Annuler
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -449,13 +520,22 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
                       <div className="text-sm text-muted-foreground">{event.description}</div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeEvent(event.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => editEvent(event)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeEvent(event.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

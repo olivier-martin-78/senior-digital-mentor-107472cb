@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { isIOS } from '@/utils/platformDetection';
 import { Activity } from '@/hooks/useActivities';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-
 
 interface ActivityCardProps {
   title: string;
@@ -54,38 +52,47 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const getDisplayImage = () => {
-    // Debug pour Timeline
-    if (activity && activity.iframe_code) {
-      try {
-        const gameData = JSON.parse(activity.iframe_code);
-        if (gameData.timelineName) {
-          console.log('Timeline activity debug:', {
-            title: title,
-            thumbnailUrl: thumbnailUrl,
-            activityThumbnailUrl: activity.thumbnail_url,
-            gameDataThumbnailUrl: gameData.thumbnailUrl
-          });
-        }
-      } catch (error) {
-        // Ignore
-      }
-    }
+    console.log('ActivityCard getDisplayImage debug:', {
+      title: title,
+      thumbnailUrl: thumbnailUrl,
+      activity: activity ? {
+        id: activity.id,
+        thumbnail_url: activity.thumbnail_url,
+        iframe_code: activity.iframe_code ? 'has iframe_code' : 'no iframe_code'
+      } : 'no activity'
+    });
 
+    // Priorité 1: thumbnailUrl passé en prop
     if (thumbnailUrl) {
+      console.log('Using thumbnailUrl prop:', thumbnailUrl);
       return thumbnailUrl;
     }
     
-    // Vérifier si c'est un jeu Timeline et récupérer sa vignette personnalisée
+    // Priorité 2: thumbnail_url de l'activité
+    if (activity?.thumbnail_url) {
+      console.log('Using activity thumbnail_url:', activity.thumbnail_url);
+      return activity.thumbnail_url;
+    }
+    
+    // Priorité 3: Vérifier si c'est un jeu Timeline et récupérer sa vignette personnalisée
     if (activity && activity.iframe_code) {
       try {
         const gameData = JSON.parse(activity.iframe_code);
+        console.log('Parsed game data:', {
+          timelineName: gameData.timelineName,
+          thumbnailUrl: gameData.thumbnailUrl
+        });
+        
         if (gameData.timelineName && gameData.thumbnailUrl) {
+          console.log('Using Timeline custom thumbnail:', gameData.thumbnailUrl);
           return gameData.thumbnailUrl;
         } else if (gameData.timelineName) {
           // Utiliser la vignette par défaut si pas de vignette personnalisée
+          console.log('Using default Timeline thumbnail');
           return '/timeline-game-thumbnail.jpg';
         }
       } catch (error) {
+        console.log('Error parsing iframe_code as JSON:', error);
         // Pas un JSON valide, continuer avec la logique normale
       }
     }
