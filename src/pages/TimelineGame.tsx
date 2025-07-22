@@ -36,7 +36,7 @@ const TimelineGame: React.FC = () => {
 
   // Vérifier si les événements ont des options de réponse pour déterminer le type de jeu
   const hasAnswerOptions = timelineData.events.some(event => 
-    event.answerOptions && Array.isArray(event.answerOptions) && event.answerOptions.length === 3
+    event.answerOptions && Array.isArray(event.answerOptions) && event.answerOptions.length >= 3
   );
 
   // Si c'est un quiz, utiliser TimelineQuizPlayer directement
