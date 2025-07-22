@@ -225,7 +225,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
           <React.Fragment key={event.id}>
             <EventCard 
               event={event} 
-              showYear={timelineData.showYearOnCard}
+              showYear={timelineData.showDateOnCard || timelineData.showYearOnCard}
             />
             
             {/* Zone de drop après chaque événement */}
@@ -247,7 +247,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
           <div className="flex justify-center">
             <EventCard
               event={gameState.currentEvent}
-              showYear={timelineData.showYearOnCard}
+              showYear={timelineData.showDateOnCard || timelineData.showYearOnCard}
               isDragging={isDragging}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}

@@ -17,6 +17,7 @@ export const EditTimelineForm: React.FC<EditTimelineFormProps> = ({
     <CreateTimelineForm 
       onSubmit={onSubmit}
       onCancel={onCancel}
+      initialData={initialData}
     />
   );
 };

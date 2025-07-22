@@ -82,14 +82,477 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       const gameData = JSON.parse(activity.iframe_code || '{}');
       
       if (gameData.timelineName) {
-        // Timeline game
-        const timelineData: TimelineData = gameData;
-        setGameComponent(
-          <TimelinePlayer 
-            timelineData={timelineData}
-            onExit={() => setGameComponent(null)}
-          />
-        );
+        // Timeline game - open in new window
+        // Ensure backwards compatibility for existing timelines
+        const timelineData: TimelineData = {
+          ...gameData,
+          showDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : gameData.showYearOnCard
+        };
+        const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
+        if (newWindow) {
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Frise chronologique - ${gameData.timelineName}</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+                <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                  body { 
+                    margin: 0; 
+                    padding: 0; 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    color: #1f2937;
+                  }
+                  .timeline-container {
+                    max-width: 4rem;
+                    max-width: 64rem;
+                    margin: 0 auto;
+                    padding: 1.5rem;
+                  }
+                  .card {
+                    background: white;
+                    border-radius: 0.5rem;
+                    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+                    width: 16rem;
+                    transition: all 0.2s;
+                    cursor: grab;
+                  }
+                  .card:hover {
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                  }
+                  .card.dragging {
+                    opacity: 0.5;
+                    transform: scale(0.95);
+                  }
+                  .card-content {
+                    padding: 1rem;
+                  }
+                  .drop-zone {
+                    width: 100%;
+                    height: 4rem;
+                    border: 2px dashed #d1d5db;
+                    border-radius: 0.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                    background: rgba(255, 255, 255, 0.1);
+                  }
+                  .drop-zone.active {
+                    border-color: #3b82f6;
+                    background: rgba(59, 130, 246, 0.1);
+                    transform: scale(1.05);
+                  }
+                  .header {
+                    background: rgba(255, 255, 255, 0.95);
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                    margin-bottom: 1.5rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                  }
+                  .timeline {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1rem;
+                    margin-bottom: 2rem;
+                  }
+                  .pioche {
+                    background: rgba(255, 255, 255, 0.1);
+                    padding: 1.5rem;
+                    border-radius: 0.5rem;
+                    backdrop-filter: blur(10px);
+                  }
+                  .btn {
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.375rem;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                  }
+                  .btn-primary {
+                    background: #3b82f6;
+                    color: white;
+                  }
+                  .btn-outline {
+                    background: transparent;
+                    color: white;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                  }
+                  .btn:hover {
+                    transform: translateY(-1px);
+                  }
+                  .actions {
+                    display: flex;
+                    justify-content: center;
+                    gap: 1rem;
+                    margin-top: 1.5rem;
+                  }
+                  .modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                  }
+                  .modal-content {
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 0.5rem;
+                    text-align: center;
+                    max-width: 28rem;
+                    margin: 1rem;
+                  }
+                  .hidden { display: none; }
+                  .event-image {
+                    width: 100%;
+                    height: 8rem;
+                    object-fit: cover;
+                    border-radius: 0.5rem;
+                    margin-bottom: 0.75rem;
+                  }
+                  .event-title {
+                    font-weight: bold;
+                    font-size: 1.125rem;
+                    margin-bottom: 0.5rem;
+                  }
+                  .event-year {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    color: #3b82f6;
+                    margin-bottom: 0.5rem;
+                  }
+                  .event-description {
+                    font-size: 0.875rem;
+                    color: #6b7280;
+                    margin-bottom: 0.5rem;
+                  }
+                  .event-category {
+                    display: inline-block;
+                    padding: 0.25rem 0.5rem;
+                    background: #f3f4f6;
+                    border-radius: 9999px;
+                    font-size: 0.75rem;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="timeline-container">
+                  <!-- Header -->
+                  <div class="header">
+                    <div>
+                      <h1 style="font-size: 1.5rem; font-weight: bold; margin: 0;">${gameData.timelineName}</h1>
+                      <p style="color: #6b7280; margin: 0;">par ${gameData.creatorName}</p>
+                    </div>
+                    <div style="text-align: right;">
+                      <p style="font-size: 0.875rem; color: #6b7280; margin: 0;">Score</p>
+                      <p id="score" style="font-size: 1.875rem; font-weight: bold; color: #3b82f6; margin: 0;">0</p>
+                    </div>
+                  </div>
+
+                  <!-- Timeline -->
+                  <div id="timeline" class="timeline">
+                    <!-- Timeline items will be inserted here -->
+                  </div>
+
+                  <!-- Pioche -->
+                  <div id="pioche" class="pioche">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; text-align: center; color: white;">
+                      Événement à placer (<span id="remaining-count">0</span> restant<span id="remaining-plural">s</span>)
+                    </h3>
+                    <div style="display: flex; justify-content: center;">
+                      <div id="current-event" class="card">
+                        <!-- Current event will be inserted here -->
+                      </div>
+                    </div>
+                    <p style="text-align: center; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); margin-top: 1rem;">
+                      Glissez cette carte vers la position chronologique correcte
+                    </p>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="actions">
+                    <button class="btn btn-outline" onclick="window.close()">Quitter</button>
+                    <button class="btn btn-outline" onclick="restartGame()">🔄 Recommencer</button>
+                  </div>
+                </div>
+
+                <!-- Feedback Modal -->
+                <div id="feedback-modal" class="modal hidden">
+                  <div class="modal-content">
+                    <h3 id="feedback-title" style="margin-bottom: 1rem;"></h3>
+                    <p id="feedback-message"></p>
+                  </div>
+                </div>
+
+                <!-- Game Over Modal -->
+                <div id="gameover-modal" class="modal hidden">
+                  <div class="modal-content">
+                    <h2 style="margin-bottom: 1rem;">🏆 Jeu terminé !</h2>
+                    <p style="font-size: 1.125rem; margin-bottom: 1rem;">
+                      Votre score final : <span id="final-score" style="font-weight: bold; color: #3b82f6; font-size: 1.5rem;"></span>
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem;">
+                      Vous avez placé tous les événements sur la timeline !
+                    </p>
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                      <button class="btn btn-outline" onclick="restartGame()">🔄 Rejouer</button>
+                      <button class="btn btn-primary" onclick="window.close()">Quitter</button>
+                    </div>
+                  </div>
+                </div>
+
+                <script>
+                  const timelineData = ${JSON.stringify(gameData)};
+                  let gameState = {
+                    placedEvents: [],
+                    remainingEvents: [],
+                    currentEvent: null,
+                    score: 0,
+                    gameComplete: false
+                  };
+                  let isDragging = false;
+                  let dragOverIndex = null;
+
+                  function initializeGame() {
+                    const events = [...timelineData.events];
+                    const shuffled = events.sort(() => Math.random() - 0.5);
+                    const firstEvent = shuffled[0];
+                    const remaining = shuffled.slice(1);
+
+                    gameState = {
+                      placedEvents: [firstEvent],
+                      remainingEvents: remaining,
+                      currentEvent: remaining.length > 0 ? remaining[0] : null,
+                      score: 0,
+                      gameComplete: false
+                    };
+
+                    renderGame();
+                  }
+
+                  function renderGame() {
+                    renderTimeline();
+                    renderCurrentEvent();
+                    updateScore();
+                    updateRemainingCount();
+                  }
+
+                  function renderTimeline() {
+                    const timeline = document.getElementById('timeline');
+                    timeline.innerHTML = '';
+
+                    // First drop zone
+                    const firstDropZone = createDropZone(0);
+                    timeline.appendChild(firstDropZone);
+
+                    // Placed events with drop zones
+                    gameState.placedEvents.forEach((event, index) => {
+                      const eventCard = createEventCard(event, true);
+                      timeline.appendChild(eventCard);
+
+                      const dropZone = createDropZone(index + 1);
+                      timeline.appendChild(dropZone);
+                    });
+                  }
+
+                  function createEventCard(event, isPlaced = false) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    if (!isPlaced) {
+                      card.draggable = true;
+                      card.addEventListener('dragstart', handleDragStart);
+                      card.addEventListener('dragend', handleDragEnd);
+                    }
+
+                    const showDate = timelineData.showDateOnCard !== undefined ? timelineData.showDateOnCard : timelineData.showYearOnCard;
+
+                    card.innerHTML = \`
+                      <div class="card-content">
+                        \${event.imageUrl ? \`<img src="\${event.imageUrl}" alt="\${event.name}" class="event-image">\` : ''}
+                        <div class="event-title">\${event.name}</div>
+                        \${showDate ? \`<div class="event-year">\${event.year}</div>\` : ''}
+                        <div class="event-description">\${event.description}</div>
+                        \${event.category ? \`<span class="event-category">\${event.category}</span>\` : ''}
+                      </div>
+                    \`;
+
+                    return card;
+                  }
+
+                  function createDropZone(position) {
+                    const dropZone = document.createElement('div');
+                    dropZone.className = 'drop-zone';
+                    dropZone.innerHTML = '<span style="font-size: 0.875rem; color: #6b7280;">Zone de dépôt</span>';
+                    
+                    dropZone.addEventListener('dragover', (e) => e.preventDefault());
+                    dropZone.addEventListener('dragenter', () => {
+                      dragOverIndex = position;
+                      updateDropZones();
+                    });
+                    dropZone.addEventListener('drop', (e) => {
+                      e.preventDefault();
+                      handleDrop(position);
+                    });
+
+                    return dropZone;
+                  }
+
+                  function renderCurrentEvent() {
+                    const currentEventElement = document.getElementById('current-event');
+                    const pioche = document.getElementById('pioche');
+                    
+                    if (gameState.currentEvent && !gameState.gameComplete) {
+                      pioche.style.display = 'block';
+                      const eventCard = createEventCard(gameState.currentEvent, false);
+                      currentEventElement.innerHTML = '';
+                      currentEventElement.appendChild(eventCard.firstElementChild);
+                    } else {
+                      pioche.style.display = 'none';
+                    }
+                  }
+
+                  function updateScore() {
+                    document.getElementById('score').textContent = gameState.score;
+                  }
+
+                  function updateRemainingCount() {
+                    const remaining = gameState.remainingEvents.length + (gameState.currentEvent ? 1 : 0);
+                    document.getElementById('remaining-count').textContent = remaining;
+                    document.getElementById('remaining-plural').textContent = remaining > 1 ? 's' : '';
+                  }
+
+                  function updateDropZones() {
+                    const dropZones = document.querySelectorAll('.drop-zone');
+                    dropZones.forEach((zone, index) => {
+                      if (index === dragOverIndex && isDragging) {
+                        zone.classList.add('active');
+                        zone.innerHTML = '<span style="font-size: 0.875rem; color: #3b82f6;">Relâchez ici</span>';
+                      } else {
+                        zone.classList.remove('active');
+                        zone.innerHTML = '<span style="font-size: 0.875rem; color: #6b7280;">Zone de dépôt</span>';
+                      }
+                    });
+                  }
+
+                  function handleDragStart(e) {
+                    isDragging = true;
+                    e.target.closest('.card').classList.add('dragging');
+                  }
+
+                  function handleDragEnd(e) {
+                    isDragging = false;
+                    dragOverIndex = null;
+                    e.target.closest('.card').classList.remove('dragging');
+                    updateDropZones();
+                  }
+
+                  function isCorrectPlacement(event, position) {
+                    const newTimeline = [...gameState.placedEvents];
+                    newTimeline.splice(position, 0, event);
+                    
+                    for (let i = 0; i < newTimeline.length - 1; i++) {
+                      const currentYear = parseInt(newTimeline[i].year);
+                      const nextYear = parseInt(newTimeline[i + 1].year);
+                      if (currentYear > nextYear) {
+                        return false;
+                      }
+                    }
+                    return true;
+                  }
+
+                  function handleDrop(position) {
+                    if (!gameState.currentEvent) return;
+
+                    const isCorrect = isCorrectPlacement(gameState.currentEvent, position);
+                    
+                    if (isCorrect) {
+                      const newPlacedEvents = [...gameState.placedEvents];
+                      newPlacedEvents.splice(position, 0, gameState.currentEvent);
+                      
+                      const newRemainingEvents = gameState.remainingEvents.slice(1);
+                      const nextEvent = newRemainingEvents.length > 0 ? newRemainingEvents[0] : null;
+                      
+                      gameState = {
+                        ...gameState,
+                        placedEvents: newPlacedEvents,
+                        remainingEvents: newRemainingEvents,
+                        currentEvent: nextEvent,
+                        score: gameState.score + 1,
+                        gameComplete: newRemainingEvents.length === 0
+                      };
+
+                      showFeedback(true, 'Excellent ! Vous avez gagné 1 point !');
+                    } else {
+                      gameState = {
+                        ...gameState,
+                        score: Math.max(0, gameState.score - 1)
+                      };
+
+                      showFeedback(false, 'Incorrect ! Vous perdez 1 point. Réessayez !');
+                    }
+
+                    renderGame();
+
+                    if (gameState.gameComplete) {
+                      setTimeout(() => {
+                        showGameOver();
+                      }, 2000);
+                    }
+                  }
+
+                  function showFeedback(success, message) {
+                    const modal = document.getElementById('feedback-modal');
+                    const title = document.getElementById('feedback-title');
+                    const messageEl = document.getElementById('feedback-message');
+                    
+                    title.textContent = success ? '🎉 Bravo !' : '❌ Oups !';
+                    title.style.color = success ? '#16a34a' : '#dc2626';
+                    messageEl.textContent = message;
+                    
+                    modal.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                      modal.classList.add('hidden');
+                    }, 2000);
+                  }
+
+                  function showGameOver() {
+                    const modal = document.getElementById('gameover-modal');
+                    const finalScore = document.getElementById('final-score');
+                    
+                    finalScore.textContent = gameState.score;
+                    modal.classList.remove('hidden');
+                  }
+
+                  function restartGame() {
+                    document.getElementById('feedback-modal').classList.add('hidden');
+                    document.getElementById('gameover-modal').classList.add('hidden');
+                    initializeGame();
+                  }
+
+                  // Initialize game when page loads
+                  window.addEventListener('load', initializeGame);
+                </script>
+              </body>
+            </html>
+          `);
+          newWindow.document.close();
+        }
         return;
       }
     } catch (error) {

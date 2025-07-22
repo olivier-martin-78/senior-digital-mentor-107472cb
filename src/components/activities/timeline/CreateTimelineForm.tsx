@@ -13,14 +13,16 @@ import { toast } from '@/hooks/use-toast';
 interface CreateTimelineFormProps {
   onSubmit: (data: TimelineData) => void;
   onCancel: () => void;
+  initialData?: TimelineData;
 }
 
-export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<TimelineData>({
+export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel, initialData }) => {
+  const [formData, setFormData] = useState<TimelineData>(initialData || {
     creatorName: '',
     shareGlobally: false,
     timelineName: '',
     showYearOnCard: true,
+    showDateOnCard: true,
     events: []
   });
 
@@ -151,21 +153,37 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
             </div>
           </div>
 
+          <div>
+            <Label htmlFor="timelineName">Nom de votre frise chronologique</Label>
+            <Input
+              id="timelineName"
+              value={formData.timelineName}
+              onChange={(e) => handleInputChange('timelineName', e.target.value)}
+              placeholder="Nom de la frise"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="timelineName">Nom de votre frise chronologique</Label>
-              <Input
-                id="timelineName"
-                value={formData.timelineName}
-                onChange={(e) => handleInputChange('timelineName', e.target.value)}
-                placeholder="Nom de la frise"
-              />
-            </div>
             <div>
               <Label htmlFor="showYear">Afficher l'année sur la carte de l'évènement</Label>
               <Select 
                 value={formData.showYearOnCard ? 'yes' : 'no'} 
                 onValueChange={(value) => handleInputChange('showYearOnCard', value === 'yes')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Oui</SelectItem>
+                  <SelectItem value="no">Non</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="showDateOnCard">Date visible dans la carte</Label>
+              <Select 
+                value={formData.showDateOnCard ? 'yes' : 'no'} 
+                onValueChange={(value) => handleInputChange('showDateOnCard', value === 'yes')}
               >
                 <SelectTrigger>
                   <SelectValue />

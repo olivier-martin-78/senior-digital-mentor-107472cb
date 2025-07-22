@@ -12,6 +12,7 @@ export interface TimelineData {
   shareGlobally: boolean;
   timelineName: string;
   showYearOnCard: boolean;
+  showDateOnCard: boolean;
   events: TimelineEvent[];
 }
 
