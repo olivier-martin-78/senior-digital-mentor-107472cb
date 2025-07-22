@@ -115,10 +115,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const handleClick = () => {
-    // Check if it's a game stored in iframe_code
-    if (activity && activity.iframe_code) {
+    // Check if it's a game stored in iframe_code (priority to activity.iframe_code, then fallback to iframeCode prop)
+    const gameCodeToCheck = (activity && activity.iframe_code) ? activity.iframe_code : iframeCode;
+    
+    if (gameCodeToCheck) {
       try {
-        const gameData = JSON.parse(activity.iframe_code);
+        const gameData = JSON.parse(gameCodeToCheck);
         
         // Timeline game - use React Router navigation
         if (gameData.timelineName) {
@@ -159,8 +161,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       }
     }
     
-    // Check if it's iframe content stored in iframeCode prop
-    if (iframeCode) {
+    // Fallback: if it's iframe content but not JSON parseable
+    if (iframeCode && !gameCodeToCheck) {
       try {
         const gameData = JSON.parse(iframeCode);
         
