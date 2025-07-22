@@ -275,10 +275,8 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
     setShowFeedback({ show: false, success: false, message: '' });
   };
 
-  // Fonction pour déterminer si on doit afficher l'année sur les cartes
   const shouldShowYear = () => {
-    // Rétrocompatibilité : utiliser showDateOnCard si disponible, sinon showYearOnCard, sinon true par défaut
-    return timelineData.showDateOnCard ?? timelineData.showYearOnCard ?? true;
+    return timelineData.showDateOnCard !== false;
   };
 
   if (error) {
@@ -311,13 +309,6 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-background text-foreground">
-      {/* Bouton Retour en haut à gauche */}
-      <div className="mb-4">
-        <Button variant="outline" onClick={onExit} className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </Button>
-      </div>
 
       {/* Header avec score */}
       <div className="flex justify-between items-center mb-6 p-4 bg-card text-card-foreground rounded-lg border">

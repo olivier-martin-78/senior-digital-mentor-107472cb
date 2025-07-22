@@ -228,7 +228,7 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
   };
 
   const shouldShowYear = () => {
-    return timelineData.showDateOnCard ?? timelineData.showYearOnCard ?? true;
+    return timelineData.showDateOnCard !== false;
   };
 
   const restartGame = () => {
@@ -266,13 +266,6 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-background text-foreground">
-      {/* Bouton Retour */}
-      <div className="mb-4">
-        <Button variant="outline" onClick={onExit} className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </Button>
-      </div>
 
       {/* Header */}
       <div className="flex justify-between items-center mb-6 p-4 bg-card text-card-foreground rounded-lg border">
