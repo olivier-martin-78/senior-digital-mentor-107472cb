@@ -44,7 +44,7 @@ const EventCard: React.FC<EventCardProps> = ({
         />
       )}
       <div className="space-y-2">
-        <h3 className="font-bold text-lg">{event.name}</h3>
+        <h3 className="font-bold text-lg text-foreground">{event.name}</h3>
         {showYear && (
           <p className="text-xl font-semibold text-primary">{event.year}</p>
         )}
@@ -283,10 +283,10 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6 p-4 bg-card rounded-lg">
+      <div className="max-w-4xl mx-auto p-6 bg-background text-foreground">
+        <div className="flex justify-between items-center mb-6 p-4 bg-card text-card-foreground rounded-lg border">
           <div>
-            <h1 className="text-2xl font-bold">{timelineData?.timelineName || 'Timeline'}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{timelineData?.timelineName || 'Timeline'}</h1>
             <p className="text-muted-foreground">par {timelineData?.creatorName || 'Inconnu'}</p>
           </div>
         </div>
@@ -294,7 +294,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
           <AlertCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
           <h2 className="text-xl font-bold text-destructive mb-2">Erreur de chargement</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
+          <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-center gap-4">
             <Button variant="outline" onClick={onExit}>
               Retour
@@ -310,11 +310,11 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 bg-background text-foreground">
       {/* Header avec score */}
-      <div className="flex justify-between items-center mb-6 p-4 bg-card rounded-lg">
+      <div className="flex justify-between items-center mb-6 p-4 bg-card text-card-foreground rounded-lg border">
         <div>
-          <h1 className="text-2xl font-bold">{timelineData.timelineName}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{timelineData.timelineName}</h1>
           <p className="text-muted-foreground">par {timelineData.creatorName}</p>
         </div>
         <div className="text-right">
@@ -351,8 +351,8 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
 
       {/* Zone de pioche */}
       {gameState.currentEvent && !gameState.gameComplete && (
-        <div className="bg-muted/50 p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4 text-center">
+        <div className="bg-muted/50 p-6 rounded-lg border">
+          <h3 className="text-lg font-semibold mb-4 text-center text-foreground">
             Événement à placer ({gameState.remainingEvents.length + 1} restant{gameState.remainingEvents.length > 0 ? 's' : ''})
           </h3>
           <div className="flex justify-center">
@@ -389,7 +389,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
               {showFeedback.success ? '🎉 Bravo !' : '❌ Oups !'}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-center">{showFeedback.message}</p>
+          <p className="text-center text-foreground">{showFeedback.message}</p>
         </DialogContent>
       </Dialog>
 
@@ -397,13 +397,13 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
       <Dialog open={gameState.gameComplete} onOpenChange={() => {}}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl">
+            <DialogTitle className="text-center text-2xl text-foreground">
               <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
               Jeu terminé !
             </DialogTitle>
           </DialogHeader>
           <div className="text-center space-y-4">
-            <p className="text-lg">
+            <p className="text-lg text-foreground">
               Votre score final : <span className="font-bold text-primary text-2xl">{gameState.score}</span>
             </p>
             <p className="text-muted-foreground">
