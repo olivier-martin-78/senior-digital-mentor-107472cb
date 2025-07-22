@@ -23,7 +23,7 @@ const MusicQuizGame: React.FC = () => {
   const quizData = location.state?.quizData as QuizData;
 
   const handleExit = () => {
-    navigate(-1);
+    navigate('/activities');
   };
 
   const handleAnswer = (answer: 'A' | 'B' | 'C') => {
@@ -82,11 +82,21 @@ const MusicQuizGame: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-4">
+      <div className="p-4 flex justify-between items-center">
         <Button onClick={handleExit} variant="outline" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Retour
         </Button>
+        
+        {/* Affichage du score en cours */}
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-muted-foreground">
+            Question {currentQuestionIndex + 1} / {quizData.questions.length}
+          </span>
+          <span className="font-semibold text-primary">
+            Score: {score} / {quizData.questions.length}
+          </span>
+        </div>
       </div>
       
       <MusicQuizPlayer
