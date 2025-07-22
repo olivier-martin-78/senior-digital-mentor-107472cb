@@ -11,7 +11,7 @@ import { ArrowLeft, ToggleLeft, ToggleRight } from 'lucide-react';
 const TimelineGame: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [useV2Gameplay, setUseV2Gameplay] = useState(false);
+  const [useV2Gameplay, setUseV2Gameplay] = useState(true);
   
   const timelineData = location.state?.timelineData as TimelineData;
 
