@@ -16,6 +16,7 @@ export interface TimelineData {
   showYearOnCard: boolean;
   showDateOnCard?: boolean; // Nouveau champ optionnel pour rétrocompatibilité
   events: TimelineEvent[];
+  thumbnailUrl?: string; // Vignette personnalisée pour la timeline
 }
 
 export interface TimelineGameState {

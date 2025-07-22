@@ -23,7 +23,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     timelineName: '',
     showYearOnCard: true,
     showDateOnCard: true,
-    events: []
+    events: [],
+    thumbnailUrl: undefined
   });
 
   const [currentEvent, setCurrentEvent] = useState<Partial<TimelineEvent>>({
@@ -35,6 +36,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
   const handleInputChange = (field: keyof TimelineData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -56,7 +58,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `timeline-${Date.now()}.${fileExt}`;
+      const fileName = `timeline-event-${Date.now()}.${fileExt}`;
       const filePath = fileName;
 
       const { error: uploadError, data } = await supabase.storage
@@ -76,6 +78,33 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       toast({ title: "Erreur lors du téléchargement", variant: "destructive" });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleThumbnailUpload = async (file: File) => {
+    setIsThumbnailUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `timeline-thumbnail-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('activity-thumbnails')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('activity-thumbnails')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, thumbnailUrl: publicUrl }));
+      toast({ title: "Vignette téléchargée avec succès" });
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      toast({ title: "Erreur lors du téléchargement de la vignette", variant: "destructive" });
+    } finally {
+      setIsThumbnailUploading(false);
     }
   };
 
@@ -193,6 +222,41 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
               onChange={(e) => handleInputChange('timelineName', e.target.value)}
               placeholder="Nom de la frise"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="timelineThumbnail">Vignette de votre frise chronologique</Label>
+            <div className="flex items-center gap-4 mt-2">
+              <input
+                id="timelineThumbnail"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleThumbnailUpload(file);
+                }}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('timelineThumbnail')?.click()}
+                disabled={isThumbnailUploading}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {isThumbnailUploading ? 'Téléchargement...' : 'Choisir une vignette'}
+              </Button>
+              {formData.thumbnailUrl && (
+                <img 
+                  src={formData.thumbnailUrl} 
+                  alt="Vignette de la timeline" 
+                  className="w-16 h-16 object-cover rounded"
+                />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Cette vignette illustrera votre jeu Timeline dans la liste des activités
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
