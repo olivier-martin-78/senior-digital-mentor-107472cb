@@ -109,14 +109,25 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   };
 
   const addEvent = () => {
+    console.log('Adding event validation:', {
+      currentEvent: currentEvent,
+      name: currentEvent.name,
+      year: currentEvent.year,
+      description: currentEvent.description,
+      answerOptions: currentEvent.answerOptions
+    });
+
     if (!currentEvent.name || !currentEvent.year || !currentEvent.description) {
+      console.log('Missing required fields');
       toast({ title: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
       return;
     }
 
     // Vérifier que les 3 options de réponse sont remplies
     const answerOptions = currentEvent.answerOptions || [];
+    console.log('Answer options check:', answerOptions);
     if (answerOptions.length !== 3 || answerOptions.some(option => !option.trim())) {
+      console.log('Answer options incomplete');
       toast({ 
         title: "Options de réponse incomplètes", 
         description: "Veuillez remplir les 3 options de réponse pour le quiz",
@@ -126,7 +137,9 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     }
 
     // Vérifier qu'une des options correspond à l'année
+    console.log('Checking if year matches options:', currentEvent.year, answerOptions);
     if (!answerOptions.includes(currentEvent.year!)) {
+      console.log('No option matches the year');
       toast({ 
         title: "Aucune option ne correspond à l'année", 
         description: "Une des options de réponse doit correspondre exactement à l'année saisie",
@@ -134,6 +147,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       });
       return;
     }
+
+    console.log('All validations passed, adding event');
 
     const newEvent: TimelineEvent = {
       id: Date.now().toString(),
