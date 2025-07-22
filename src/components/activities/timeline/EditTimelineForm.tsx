@@ -4,7 +4,7 @@ import { CreateTimelineForm } from './CreateTimelineForm';
 
 interface EditTimelineFormProps {
   initialData: TimelineData;
-  onSubmit: (data: TimelineData) => void;
+  onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
   onCancel: () => void;
 }
 

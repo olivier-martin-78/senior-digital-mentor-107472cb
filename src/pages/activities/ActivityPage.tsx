@@ -26,7 +26,7 @@ const ActivityPage = () => {
   const getPageTitle = () => {
     switch (type) {
       case 'meditation': return 'Relaxation';
-      case 'games': return 'Jeux';
+      case 'games': return 'Jeux cognitifs';
       case 'exercises': return 'Gym douce';
       default: return 'Activités';
     }

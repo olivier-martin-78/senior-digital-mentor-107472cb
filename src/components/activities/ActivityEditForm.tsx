@@ -22,7 +22,7 @@ interface ActivityEditFormProps {
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
-  { value: 'games', label: 'Jeux' },
+  { value: 'games', label: 'Jeux cognitifs' },
   { value: 'exercises', label: 'Gym douce' },
 ];
 

@@ -39,7 +39,7 @@ const ActivitiesOverview = () => {
       setFilter: setMeditationFilter
     },
     {
-      title: 'Jeux',
+      title: 'Jeux cognitifs',
       type: 'games',
       icon: Gamepad2,
       description: 'Jeux ludiques et divertissants pour stimuler l\'esprit',

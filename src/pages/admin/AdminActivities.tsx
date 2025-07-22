@@ -27,7 +27,7 @@ import QuizConverter from '@/components/admin/QuizConverter';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
-  { value: 'games', label: 'Jeux' },
+  { value: 'games', label: 'Jeux cognitifs' },
   { value: 'exercises', label: 'Gym douce' },
 ];
 
@@ -279,7 +279,7 @@ const AdminActivities = () => {
           {showTimelineForm && type === 'games' && (
             <div className="mb-8">
               <CreateTimelineForm 
-                onSubmit={async (data: TimelineData) => {
+                onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
                   try {
                     const dataToInsert = {
                       activity_type: 'games',
@@ -290,7 +290,7 @@ const AdminActivities = () => {
                       link: '',
                       thumbnail_url: data.thumbnailUrl || null,
                       activity_date: null,
-                      sub_activity_tag_id: null,
+                      sub_activity_tag_id: data.subActivityTagId || null,
                     };
 
                     const { error } = await supabase
@@ -346,13 +346,14 @@ const AdminActivities = () => {
                     return (
                       <EditTimelineForm
                         initialData={gameData}
-                        onSubmit={async (data: TimelineData) => {
+                        onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
                           try {
                             const { error } = await supabase
                               .from('activities')
                               .update({
                                 title: data.timelineName,
                                 iframe_code: JSON.stringify(data),
+                                sub_activity_tag_id: data.subActivityTagId || null,
                                 shared_globally: canShareGlobally ? data.shareGlobally : false,
                                 thumbnail_url: data.thumbnailUrl || null,
                               })

@@ -9,9 +9,10 @@ import { Plus, Trash2, Upload, Edit } from 'lucide-react';
 import { TimelineData, TimelineEvent } from '@/types/timeline';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import SubActivitySelector from '@/components/activities/SubActivitySelector';
 
 interface CreateTimelineFormProps {
-  onSubmit: (data: TimelineData) => void;
+  onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
   onCancel: () => void;
   initialData?: TimelineData;
 }
@@ -36,6 +37,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   });
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
@@ -253,7 +255,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     }
 
     console.log('Validation passed, calling onSubmit');
-    onSubmit(formData);
+    onSubmit({ ...formData, subActivityTagId: selectedSubTagId });
   };
 
   return (
@@ -299,6 +301,13 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
               placeholder="Nom de la frise"
             />
           </div>
+
+          {/* Sélecteur de sous-activité */}
+          <SubActivitySelector
+            activityType="games"
+            selectedSubTagId={selectedSubTagId}
+            onSubTagChange={setSelectedSubTagId}
+          />
 
           <div>
             <Label htmlFor="timelineThumbnail">Vignette de votre frise chronologique</Label>
