@@ -9,7 +9,7 @@ import { Activity } from '@/hooks/useActivities';
 // Game components will be imported when needed
 import { TimelinePlayer } from './timeline/TimelinePlayer';
 import { TimelineData } from '@/types/timeline';
-import { openTimelineGamePopup } from './timeline/TimelineGamePopup';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
 interface ActivityCardProps {
@@ -45,6 +45,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   audioUrl,
   activity
 }) => {
+  const navigate = useNavigate();
   const [gameComponent, setGameComponent] = useState<React.ReactNode>(null);
   // Fonction pour nettoyer le titre des jeux Memory
   const getCleanTitle = () => {
@@ -91,7 +92,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         };
         
         try {
-          openTimelineGamePopup(timelineData);
+          navigate('/activities/timeline/play', { state: { timelineData } });
         } catch (error) {
           console.error('Erreur lors du lancement du jeu Timeline:', error);
           toast({
