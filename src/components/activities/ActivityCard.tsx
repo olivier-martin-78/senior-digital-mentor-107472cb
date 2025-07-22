@@ -404,54 +404,93 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                          return;
                        }
                       
-                      // Sur PC/Android, essayer YouTube d'abord
-                      if (!isiOSDevice && question.youtubeEmbed) {
-                        const videoId = extractYouTubeId(question.youtubeEmbed);
-                        
-                        if (videoId) {
-                           questionArea.innerHTML = \`
-                             <div class="video-container">
-                               <div id="player"></div>
-                             </div>
-                             \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
-                             \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
-                             <div class="question">\${question.question}</div>
-                             <div class="answers">
-                               <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
-                               <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
-                               <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
-                             </div>
-                           \`;
-                          
-                          createYouTubePlayer(videoId).catch(() => {
-                            // Fallback sur audio si YouTube échoue
-                            if (question.audioUrl) {
-                              showAudioFallback(question);
-                            }
-                          });
-                          return;
-                        }
-                      }
-                      
-                      // Fallback audio pour tous les cas
-                      if (question.audioUrl) {
-                        showAudioFallback(question);
-                      } else {
-                         // Aucun contenu disponible
+                       // Gestion des illustrations (quizType: "illustrations")
+                       if (quizData.quizType === 'illustrations' && question.imageUrl) {
                          questionArea.innerHTML = \`
-                           \${question.instruction ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
-                           \${question.artistTitle ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                           <div class="video-container">
+                             <img src="\${question.imageUrl}" alt="Illustration de la question" style="
+                               width: 100%; 
+                               max-width: 560px; 
+                               height: 315px; 
+                               object-fit: contain; 
+                               border-radius: 10px; 
+                               background: #f8f9fa;
+                               margin: 0 auto;
+                               display: block;
+                             ">
+                           </div>
+                           \${question.instruction && question.instruction.trim() ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
+                           \${question.audioUrl ? \`
+                             <div class="audio-container">
+                               <div class="audio-player">
+                                 <h3>🎵 Écoutez cet extrait audio</h3>
+                                 <audio controls id="current-audio" style="width: 100%; margin-top: 10px;" preload="metadata">
+                                   <source src="\${question.audioUrl}" type="audio/mpeg">
+                                   <source src="\${question.audioUrl}" type="audio/mp4">
+                                   <source src="\${question.audioUrl}" type="audio/wav">
+                                   Votre navigateur ne supporte pas la lecture audio.
+                                 </audio>
+                               </div>
+                             </div>
+                           \` : ''}
                            <div class="question">\${question.question}</div>
-                           <p style="text-align: center; color: #666; margin: 20px 0;">
-                             ⚠️ Aucun contenu audio ou vidéo disponible pour cette question
-                           </p>
                            <div class="answers">
                              <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
                              <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
                              <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
                            </div>
                          \`;
-                      }
+                         return;
+                       }
+                       
+                       // Sur PC/Android, essayer YouTube d'abord pour les quiz vidéos
+                       if (!isiOSDevice && question.youtubeEmbed) {
+                         const videoId = extractYouTubeId(question.youtubeEmbed);
+                         
+                         if (videoId) {
+                            questionArea.innerHTML = \`
+                              <div class="video-container">
+                                <div id="player"></div>
+                              </div>
+                              \${question.instruction && question.instruction.trim() ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
+                              \${question.artistTitle && question.artistTitle.trim() ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                              <div class="question">\${question.question}</div>
+                              <div class="answers">
+                                <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                                <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                                <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                              </div>
+                            \`;
+                           
+                           createYouTubePlayer(videoId).catch(() => {
+                             // Fallback sur audio si YouTube échoue
+                             if (question.audioUrl) {
+                               showAudioFallback(question);
+                             }
+                           });
+                           return;
+                         }
+                       }
+                       
+                       // Fallback audio pour tous les cas
+                       if (question.audioUrl) {
+                         showAudioFallback(question);
+                       } else {
+                          // Aucun contenu disponible
+                          questionArea.innerHTML = \`
+                            \${question.instruction && question.instruction.trim() ? \`<div class="instruction">📝 \${question.instruction}</div>\` : ''}
+                            \${question.artistTitle && question.artistTitle.trim() ? \`<div class="artist-title">🎤 \${question.artistTitle}</div>\` : ''}
+                            <div class="question">\${question.question}</div>
+                            <p style="text-align: center; color: #666; margin: 20px 0;">
+                              ⚠️ Aucun contenu audio ou vidéo disponible pour cette question
+                            </p>
+                            <div class="answers">
+                              <button class="answer-btn" onclick="selectAnswer('A')">\${question.answerA}</button>
+                              <button class="answer-btn" onclick="selectAnswer('B')">\${question.answerB}</button>
+                              <button class="answer-btn" onclick="selectAnswer('C')">\${question.answerC}</button>
+                            </div>
+                          \`;
+                       }
                     }
                     
                      function showAudioFallback(question) {
