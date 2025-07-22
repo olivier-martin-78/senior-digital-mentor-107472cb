@@ -54,6 +54,23 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const getDisplayImage = () => {
+    // Debug pour Timeline
+    if (activity && activity.iframe_code) {
+      try {
+        const gameData = JSON.parse(activity.iframe_code);
+        if (gameData.timelineName) {
+          console.log('Timeline activity debug:', {
+            title: title,
+            thumbnailUrl: thumbnailUrl,
+            activityThumbnailUrl: activity.thumbnail_url,
+            gameDataThumbnailUrl: gameData.thumbnailUrl
+          });
+        }
+      } catch (error) {
+        // Ignore
+      }
+    }
+
     if (thumbnailUrl) {
       return thumbnailUrl;
     }
