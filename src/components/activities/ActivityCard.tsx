@@ -129,14 +129,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             showDateOnCard: gameData.showDateOnCard,
             showYearOnCard: gameData.showYearOnCard,
             showDateOnCardUndefined: gameData.showDateOnCard === undefined,
-            finalShowDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : gameData.showYearOnCard
+            finalShowDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : false
           });
           
           navigate('/activities/timeline/play', { 
             state: { 
               timelineData: {
                 ...gameData,
-                showDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : gameData.showYearOnCard
+                showDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : false
               }
             }
           });
