@@ -1,3 +1,4 @@
+
 export interface TimelineEvent {
   id: string;
   name: string;
@@ -12,7 +13,7 @@ export interface TimelineData {
   shareGlobally: boolean;
   timelineName: string;
   showYearOnCard: boolean;
-  showDateOnCard: boolean;
+  showDateOnCard?: boolean; // Nouveau champ optionnel pour rétrocompatibilité
   events: TimelineEvent[];
 }
 

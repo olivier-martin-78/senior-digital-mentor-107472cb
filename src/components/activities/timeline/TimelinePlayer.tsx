@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { TimelineData, TimelineEvent, TimelineGameState } from '@/types/timeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, RotateCcw } from 'lucide-react';
+import { Trophy, RotateCcw, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface TimelinePlayerProps {
@@ -100,24 +101,96 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
     success: boolean;
     message: string;
   }>({ show: false, success: false, message: '' });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🎮 Timeline Player - Initializing with data:', timelineData);
     initializeGame();
   }, [timelineData]);
 
-  const initializeGame = () => {
-    const events = [...timelineData.events];
-    const shuffled = events.sort(() => Math.random() - 0.5);
-    const firstEvent = shuffled[0];
-    const remaining = shuffled.slice(1);
+  const validateTimelineData = (): boolean => {
+    console.log('🔍 Validating timeline data...');
+    
+    if (!timelineData) {
+      console.error('❌ No timeline data provided');
+      setError('Aucune donnée de timeline fournie');
+      return false;
+    }
 
-    setGameState({
-      placedEvents: [firstEvent],
-      remainingEvents: remaining,
-      currentEvent: remaining.length > 0 ? remaining[0] : null,
-      score: 0,
-      gameComplete: false
+    if (!timelineData.events || !Array.isArray(timelineData.events)) {
+      console.error('❌ Events is not an array:', timelineData.events);
+      setError('Les événements ne sont pas correctement définis');
+      return false;
+    }
+
+    if (timelineData.events.length < 2) {
+      console.error('❌ Not enough events:', timelineData.events.length);
+      setError('Il faut au moins 2 événements pour jouer à Timeline');
+      return false;
+    }
+
+    // Valider chaque événement
+    const invalidEvents = timelineData.events.filter(event => 
+      !event.name || !event.year || !event.description
+    );
+    
+    if (invalidEvents.length > 0) {
+      console.error('❌ Invalid events found:', invalidEvents);
+      setError('Certains événements sont incomplets (nom, année ou description manquante)');
+      return false;
+    }
+
+    // Valider que les années sont convertibles en nombres
+    const invalidYears = timelineData.events.filter(event => {
+      const year = parseInt(event.year);
+      return isNaN(year);
     });
+
+    if (invalidYears.length > 0) {
+      console.error('❌ Invalid years found:', invalidYears);
+      setError('Certaines années ne sont pas valides');
+      return false;
+    }
+
+    console.log('✅ Timeline data validation successful');
+    return true;
+  };
+
+  const initializeGame = () => {
+    try {
+      console.log('🚀 Initializing Timeline game...');
+      setError(null);
+
+      if (!validateTimelineData()) {
+        return;
+      }
+
+      const events = [...timelineData.events];
+      console.log('📝 Events to shuffle:', events);
+      
+      const shuffled = events.sort(() => Math.random() - 0.5);
+      console.log('🔀 Shuffled events:', shuffled);
+      
+      const firstEvent = shuffled[0];
+      const remaining = shuffled.slice(1);
+
+      console.log('🎯 First event:', firstEvent);
+      console.log('📚 Remaining events:', remaining.length);
+
+      setGameState({
+        placedEvents: [firstEvent],
+        remainingEvents: remaining,
+        currentEvent: remaining.length > 0 ? remaining[0] : null,
+        score: 0,
+        gameComplete: false
+      });
+
+      console.log('✅ Game initialized successfully');
+      
+    } catch (error) {
+      console.error('💥 Error initializing game:', error);
+      setError('Erreur lors de l\'initialisation du jeu');
+    }
   };
 
   const isCorrectPlacement = (event: TimelineEvent, position: number): boolean => {
@@ -138,6 +211,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   const handleDrop = (position: number) => {
     if (!gameState.currentEvent) return;
 
+    console.log('🎯 Dropping event at position:', position);
     const isCorrect = isCorrectPlacement(gameState.currentEvent, position);
     
     if (isCorrect) {
@@ -185,18 +259,55 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    console.log('🖱️ Drag started');
     setIsDragging(true);
   };
 
   const handleDragEnd = () => {
+    console.log('🖱️ Drag ended');
     setIsDragging(false);
     setDragOverIndex(null);
   };
 
   const restartGame = () => {
+    console.log('🔄 Restarting game');
     initializeGame();
     setShowFeedback({ show: false, success: false, message: '' });
   };
+
+  // Fonction pour déterminer si on doit afficher l'année sur les cartes
+  const shouldShowYear = () => {
+    // Rétrocompatibilité : utiliser showDateOnCard si disponible, sinon showYearOnCard, sinon true par défaut
+    return timelineData.showDateOnCard ?? timelineData.showYearOnCard ?? true;
+  };
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-6 p-4 bg-card rounded-lg">
+          <div>
+            <h1 className="text-2xl font-bold">{timelineData?.timelineName || 'Timeline'}</h1>
+            <p className="text-muted-foreground">par {timelineData?.creatorName || 'Inconnu'}</p>
+          </div>
+        </div>
+        
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
+          <h2 className="text-xl font-bold text-destructive mb-2">Erreur de chargement</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <div className="flex justify-center gap-4">
+            <Button variant="outline" onClick={onExit}>
+              Retour
+            </Button>
+            <Button onClick={restartGame}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Réessayer
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -225,7 +336,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
           <React.Fragment key={event.id}>
             <EventCard 
               event={event} 
-              showYear={timelineData.showDateOnCard || timelineData.showYearOnCard}
+              showYear={shouldShowYear()}
             />
             
             {/* Zone de drop après chaque événement */}
@@ -247,7 +358,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
           <div className="flex justify-center">
             <EventCard
               event={gameState.currentEvent}
-              showYear={timelineData.showDateOnCard || timelineData.showYearOnCard}
+              showYear={shouldShowYear()}
               isDragging={isDragging}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
