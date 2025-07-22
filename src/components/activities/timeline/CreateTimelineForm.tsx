@@ -30,7 +30,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     name: '',
     description: '',
     year: '',
-    category: ''
+    category: '',
+    answerOptions: ['', '', '']
   });
 
   const [isUploading, setIsUploading] = useState(false);
@@ -39,8 +40,16 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleEventChange = (field: keyof TimelineEvent, value: string) => {
+  const handleEventChange = (field: keyof TimelineEvent, value: string | string[]) => {
     setCurrentEvent(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAnswerOptionChange = (index: number, value: string) => {
+    setCurrentEvent(prev => {
+      const newOptions = [...(prev.answerOptions || ['', '', ''])];
+      newOptions[index] = value;
+      return { ...prev, answerOptions: newOptions };
+    });
   };
 
   const handleImageUpload = async (file: File) => {
@@ -76,13 +85,35 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       return;
     }
 
+    // Vérifier que les 3 options de réponse sont remplies
+    const answerOptions = currentEvent.answerOptions || [];
+    if (answerOptions.length !== 3 || answerOptions.some(option => !option.trim())) {
+      toast({ 
+        title: "Options de réponse incomplètes", 
+        description: "Veuillez remplir les 3 options de réponse pour le quiz",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Vérifier qu'une des options correspond à l'année
+    if (!answerOptions.includes(currentEvent.year!)) {
+      toast({ 
+        title: "Aucune option ne correspond à l'année", 
+        description: "Une des options de réponse doit correspondre exactement à l'année saisie",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     const newEvent: TimelineEvent = {
       id: Date.now().toString(),
       name: currentEvent.name!,
       description: currentEvent.description!,
       year: currentEvent.year!,
       category: currentEvent.category || '',
-      imageUrl: currentEvent.imageUrl
+      imageUrl: currentEvent.imageUrl,
+      answerOptions: currentEvent.answerOptions
     };
 
     setFormData(prev => ({
@@ -95,7 +126,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       description: '',
       year: '',
       category: '',
-      imageUrl: undefined
+      imageUrl: undefined,
+      answerOptions: ['', '', '']
     });
   };
 
@@ -275,6 +307,30 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
                 />
               )}
             </div>
+          </div>
+
+          <div>
+            <Label>Options de réponse pour le quiz (3 options requises)</Label>
+            <div className="space-y-2 mt-2">
+              {(currentEvent.answerOptions || ['', '', '']).map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-sm font-medium w-8">
+                    {String.fromCharCode(65 + index)})
+                  </span>
+                  <Input
+                    value={option}
+                    onChange={(e) => handleAnswerOptionChange(index, e.target.value)}
+                    placeholder={`Option ${String.fromCharCode(65 + index)} (ex: 1960-1970)`}
+                  />
+                  {option === currentEvent.year && (
+                    <span className="text-xs text-green-600 font-medium">✓ Bonne réponse</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              La bonne réponse sera automatiquement détectée parmi les options qui correspondent à l'année saisie ({currentEvent.year})
+            </p>
           </div>
 
           <Button onClick={addEvent} className="w-full">

@@ -8,7 +8,7 @@ import { isIOS } from '@/utils/platformDetection';
 import { Activity } from '@/hooks/useActivities';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import timelineThumbnail from '@/assets/timeline-game-thumbnail.jpg';
+
 
 interface ActivityCardProps {
   title: string;
@@ -64,7 +64,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         const gameData = JSON.parse(activity.iframe_code);
         if (gameData.timelineName) {
           // Utiliser la vignette Timeline
-          return timelineThumbnail;
+          return '/timeline-game-thumbnail.jpg';
         }
       } catch (error) {
         // Pas un JSON valide, continuer avec la logique normale
