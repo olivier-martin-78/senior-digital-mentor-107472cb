@@ -12,7 +12,7 @@ interface MemoryGamePlayerProps {
 }
 
 interface GameCard {
-  id: number;
+  id: string;
   imageUrl: string;
   isFlipped: boolean;
   isMatched: boolean;
@@ -20,21 +20,30 @@ interface GameCard {
 
 export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) => {
   const [cards, setCards] = useState<GameCard[]>([]);
-  const [flippedCards, setFlippedCards] = useState<number[]>([]);
+  const [flippedCards, setFlippedCards] = useState<string[]>([]);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [moves, setMoves] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
+  const [selectedPairs, setSelectedPairs] = useState<number | null>(null);
+  const [gameStarted, setGameStarted] = useState(false);
 
   // Initialiser le jeu
   useEffect(() => {
-    initializeGame();
-  }, [gameData]);
+    if (selectedPairs !== null) {
+      initializeGame();
+    }
+  }, [selectedPairs]);
 
   const initializeGame = () => {
-    // Créer des paires d'images
-    const imagePairs = gameData.images.flatMap((image, index) => [
-      { id: index * 2, imageUrl: image, isFlipped: false, isMatched: false },
-      { id: index * 2 + 1, imageUrl: image, isFlipped: false, isMatched: false }
+    if (selectedPairs === null) return;
+    
+    // Utiliser seulement le nombre de paires sélectionnées
+    const selectedImages = gameData.images.slice(0, selectedPairs);
+    
+    // Créer des paires d'images avec des IDs uniques
+    const imagePairs = selectedImages.flatMap((image, index) => [
+      { id: `${index}-a`, imageUrl: image, isFlipped: false, isMatched: false },
+      { id: `${index}-b`, imageUrl: image, isFlipped: false, isMatched: false }
     ]);
 
     // Mélanger les cartes
@@ -44,11 +53,15 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
     setMatchedPairs(0);
     setMoves(0);
     setIsGameComplete(false);
+    setGameStarted(true);
   };
 
-  const handleCardClick = (cardId: number) => {
+  const handleCardClick = (cardId: string) => {
+    // Trouver la carte par son ID
+    const clickedCard = cards.find(card => card.id === cardId);
+    
     // Ne pas permettre de cliquer si 2 cartes sont déjà retournées ou si la carte est déjà retournée/appariée
-    if (flippedCards.length === 2 || cards[cardId]?.isFlipped || cards[cardId]?.isMatched) {
+    if (flippedCards.length === 2 || clickedCard?.isFlipped || clickedCard?.isMatched) {
       return;
     }
 
@@ -85,7 +98,7 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
           setFlippedCards([]);
 
           // Vérifier si le jeu est terminé
-          if (matchedPairs + 1 === gameData.images.length) {
+          if (matchedPairs + 1 === selectedPairs) {
             setIsGameComplete(true);
           }
         }, 1000);
@@ -105,24 +118,70 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
     }
   };
 
+  const startNewGame = () => {
+    setSelectedPairs(null);
+    setGameStarted(false);
+  };
+
+  // Écran de sélection de difficulté
+  if (!gameStarted) {
+    const maxPairs = Math.min(gameData.images.length, 12); // Limiter à 12 paires max
+    const difficultyOptions = [
+      { pairs: 3, label: "Facile (3 paires)" },
+      { pairs: 6, label: "Moyen (6 paires)" },
+      { pairs: 9, label: "Difficile (9 paires)" },
+      { pairs: maxPairs, label: `Expert (${maxPairs} paires)` }
+    ].filter(option => option.pairs <= maxPairs);
+
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-foreground mb-4">{gameData.title}</h1>
+          <p className="text-muted-foreground">Choisissez votre niveau de difficulté</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+          {difficultyOptions.map((option) => (
+            <Button
+              key={option.pairs}
+              onClick={() => setSelectedPairs(option.pairs)}
+              variant="outline"
+              className="h-16 text-lg"
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* En-tête du jeu */}
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-foreground mb-4">{gameData.title}</h1>
         <div className="flex justify-center gap-6 text-sm text-muted-foreground">
-          <span>Paires trouvées: {matchedPairs} / {gameData.images.length}</span>
+          <span>Paires trouvées: {matchedPairs} / {selectedPairs}</span>
           <span>Coups joués: {moves}</span>
         </div>
-        <Button 
-          onClick={initializeGame} 
-          variant="outline" 
-          size="sm" 
-          className="mt-4"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Recommencer
-        </Button>
+        <div className="flex justify-center gap-2 mt-4">
+          <Button 
+            onClick={initializeGame} 
+            variant="outline" 
+            size="sm"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Recommencer
+          </Button>
+          <Button 
+            onClick={startNewGame} 
+            variant="outline" 
+            size="sm"
+          >
+            Changer difficulté
+          </Button>
+        </div>
       </div>
 
       {/* Message de victoire */}
@@ -139,15 +198,15 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
 
       {/* Grille de cartes */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {cards.map((card, index) => (
+        {cards.map((card) => (
           <Card
-            key={`${card.id}-${index}`}
+            key={card.id}
             className={`aspect-square cursor-pointer transition-all duration-300 transform hover:scale-105 ${
               card.isFlipped || card.isMatched 
                 ? 'bg-white dark:bg-card' 
                 : 'bg-primary/10 hover:bg-primary/20'
             }`}
-            onClick={() => handleCardClick(index)}
+            onClick={() => handleCardClick(card.id)}
           >
             <div className="h-full w-full p-2">
               {card.isFlipped || card.isMatched ? (
