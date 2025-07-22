@@ -36,6 +36,7 @@ import MyInvitationGroups from './pages/MyInvitationGroups';
 import BlogLanding from './pages/BlogLanding';
 import Caregivers from './pages/Caregivers';
 import HeaderWrapper from './components/HeaderWrapper';
+import TimelineGame from './pages/TimelineGame';
 
 // Import admin components
 import AdminUsers from './pages/admin/AdminUsers';
@@ -111,6 +112,7 @@ function App() {
                   <Route path="/activities/opposites" element={<OppositesGame />} />
                   <Route path="/activities/translation" element={<TranslationGame />} />
                   <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
+                  <Route path="/activities/timeline/play" element={<TimelineGame />} />
                   
                   {/* Routes professionnelles */}
                   <Route path="/professional-scheduler" element={<ProfessionalScheduler />} />
