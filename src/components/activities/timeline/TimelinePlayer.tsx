@@ -275,7 +275,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   };
 
   const shouldShowYear = () => {
-    return timelineData.showYearOnCard !== false;
+    return timelineData.showYearOnCard === true;
   };
 
   if (error) {
@@ -293,9 +293,6 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
           <h2 className="text-xl font-bold text-destructive mb-2">Erreur de chargement</h2>
           <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-center gap-4">
-            <Button variant="outline" onClick={onExit}>
-              Retour
-            </Button>
             <Button onClick={restartGame}>
               <RotateCcw className="w-4 h-4 mr-2" />
               Réessayer

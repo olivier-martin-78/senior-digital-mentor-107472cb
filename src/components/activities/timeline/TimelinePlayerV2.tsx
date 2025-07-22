@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TimelineData, TimelineEvent } from '@/types/timeline';
 import { Button } from '@/components/ui/button';
@@ -228,7 +227,7 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
   };
 
   const shouldShowYear = () => {
-    return timelineData.showYearOnCard !== false;
+    return timelineData.showYearOnCard === true;
   };
 
   const restartGame = () => {
@@ -251,9 +250,6 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
           <h2 className="text-xl font-bold text-destructive mb-2">Erreur de chargement</h2>
           <p className="text-foreground mb-4">{error}</p>
           <div className="flex justify-center gap-4">
-            <Button variant="outline" onClick={onExit}>
-              Retour
-            </Button>
             <Button onClick={restartGame}>
               <RotateCcw className="w-4 h-4 mr-2" />
               Réessayer
