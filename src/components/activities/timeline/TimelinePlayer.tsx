@@ -275,7 +275,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   };
 
   const shouldShowYear = () => {
-    return timelineData.showYearOnCard === true;
+    return timelineData.showDateOnCard === true;
   };
 
   if (error) {
