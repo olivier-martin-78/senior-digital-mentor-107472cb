@@ -3,7 +3,7 @@ import { TimelineData, TimelineEvent } from '@/types/timeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, RotateCcw, AlertCircle } from 'lucide-react';
+import { Trophy, RotateCcw, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface TimelineQuizPlayerProps {
@@ -203,6 +203,14 @@ const TimelineQuizPlayer: React.FC<TimelineQuizPlayerProps> = ({ timelineData, o
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-background text-foreground">
+      {/* Bouton Retour en haut à gauche */}
+      <div className="mb-4">
+        <Button variant="outline" onClick={onExit} className="flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Retour
+        </Button>
+      </div>
+
       {/* Header avec score */}
       <div className="flex justify-between items-center mb-6 p-4 bg-card text-card-foreground rounded-lg border">
         <div>
@@ -306,7 +314,7 @@ const TimelineQuizPlayer: React.FC<TimelineQuizPlayerProps> = ({ timelineData, o
       </Dialog>
 
       {/* Dialog de fin de jeu */}
-      <Dialog open={gameState.gameComplete} onOpenChange={() => {}}>
+      <Dialog open={gameState.gameComplete} onOpenChange={(open) => !open && onExit()}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl text-foreground">
