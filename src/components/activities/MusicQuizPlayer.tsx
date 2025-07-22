@@ -117,10 +117,10 @@ export function MusicQuizPlayer({
       <CardContent className="space-y-6">
         {/* Vidéo YouTube si disponible pour le type "videos" */}
         {quizData.quizType === 'videos' && currentQuestion.youtubeEmbed && (
-          <div className="relative aspect-video">
+          <div className="relative aspect-video overflow-hidden rounded-lg">
             <div 
               dangerouslySetInnerHTML={{ __html: currentQuestion.youtubeEmbed }}
-              className="w-full h-full"
+              className="w-full h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:max-w-full [&_iframe]:border-0"
             />
           </div>
         )}
