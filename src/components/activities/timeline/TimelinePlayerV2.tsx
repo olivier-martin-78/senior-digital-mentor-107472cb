@@ -228,7 +228,7 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
   };
 
   const shouldShowYear = () => {
-    return timelineData.showDateOnCard !== false;
+    return timelineData.showYearOnCard !== false;
   };
 
   const restartGame = () => {

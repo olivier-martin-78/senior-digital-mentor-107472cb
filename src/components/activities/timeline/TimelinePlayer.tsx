@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TimelineData, TimelineEvent, TimelineGameState } from '@/types/timeline';
 import { Button } from '@/components/ui/button';
@@ -276,7 +275,7 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   };
 
   const shouldShowYear = () => {
-    return timelineData.showDateOnCard !== false;
+    return timelineData.showYearOnCard !== false;
   };
 
   if (error) {
@@ -371,9 +370,6 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
 
       {/* Boutons d'action */}
       <div className="flex justify-center gap-4 mt-6">
-        <Button variant="outline" onClick={onExit}>
-          Quitter
-        </Button>
         <Button variant="outline" onClick={restartGame}>
           <RotateCcw className="w-4 h-4 mr-2" />
           Recommencer
