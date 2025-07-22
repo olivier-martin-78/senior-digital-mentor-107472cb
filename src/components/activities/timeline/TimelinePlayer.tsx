@@ -422,7 +422,10 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Rejouer
               </Button>
-              <Button onClick={onExit}>
+              <Button onClick={() => {
+                // Forcer la fermeture du jeu
+                onExit();
+              }}>
                 Quitter
               </Button>
             </div>
