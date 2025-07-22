@@ -17,6 +17,13 @@ const TimelineGame: React.FC = () => {
 
   console.log('🎮 TimelineGame - Timeline data received:', timelineData);
   console.log('🎮 TimelineGame - Number of events:', timelineData?.events?.length);
+  console.log('🔍 TimelineGame - Date display settings analysis:', {
+    showYearOnCard: timelineData?.showYearOnCard,
+    showDateOnCard: timelineData?.showDateOnCard,
+    typeOfShowYearOnCard: typeof timelineData?.showYearOnCard,
+    typeOfShowDateOnCard: typeof timelineData?.showDateOnCard,
+    fullTimelineData: timelineData
+  });
 
   const handleExit = () => {
     navigate('/activities');

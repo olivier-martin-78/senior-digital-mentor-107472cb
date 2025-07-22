@@ -25,38 +25,47 @@ const EventCard: React.FC<EventCardProps> = ({
   isDragging, 
   onDragStart, 
   onDragEnd 
-}) => (
-  <Card 
-    className={`w-64 cursor-grab transition-all duration-200 ${
-      isDragging ? 'opacity-50 scale-95' : 'hover:shadow-lg'
-    }`}
-    draggable={!!onDragStart}
-    onDragStart={onDragStart}
-    onDragEnd={onDragEnd}
-  >
-    <CardContent className="p-4">
-      {event.imageUrl && (
-        <img 
-          src={event.imageUrl} 
-          alt={event.name}
-          className="w-full h-32 object-cover rounded-lg mb-3"
-        />
-      )}
-      <div className="space-y-2">
-        <h3 className="font-bold text-lg text-foreground">{event.name}</h3>
-        {showYear && (
-          <p className="text-xl font-semibold text-primary">{event.year}</p>
+}) => {
+  console.log('🃏 EventCard - Rendering with:', {
+    eventName: event.name,
+    eventYear: event.year,
+    showYear: showYear,
+    shouldRenderYear: showYear
+  });
+
+  return (
+    <Card 
+      className={`w-64 cursor-grab transition-all duration-200 ${
+        isDragging ? 'opacity-50 scale-95' : 'hover:shadow-lg'
+      }`}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
+      <CardContent className="p-4">
+        {event.imageUrl && (
+          <img 
+            src={event.imageUrl} 
+            alt={event.name}
+            className="w-full h-32 object-cover rounded-lg mb-3"
+          />
         )}
-        <p className="text-sm text-muted-foreground">{event.description}</p>
-        {event.category && (
-          <span className="inline-block px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
-            {event.category}
-          </span>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
+        <div className="space-y-2">
+          <h3 className="font-bold text-lg text-foreground">{event.name}</h3>
+          {showYear && (
+            <p className="text-xl font-semibold text-primary">{event.year}</p>
+          )}
+          <p className="text-sm text-muted-foreground">{event.description}</p>
+          {event.category && (
+            <span className="inline-block px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
+              {event.category}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 interface DropZoneProps {
   onDrop: () => void;
@@ -104,6 +113,11 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
 
   useEffect(() => {
     console.log('🎮 Timeline Player - Initializing with data:', timelineData);
+    console.log('🔍 Timeline Player - Date display settings:', {
+      showYearOnCard: timelineData.showYearOnCard,
+      showDateOnCard: timelineData.showDateOnCard,
+      fullTimelineData: timelineData
+    });
     initializeGame();
   }, [timelineData]);
 
@@ -275,7 +289,15 @@ export const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ timelineData, on
   };
 
   const shouldShowYear = () => {
-    return timelineData.showDateOnCard === true;
+    const result = timelineData.showDateOnCard === true;
+    console.log('📅 shouldShowYear - Checking date display:', {
+      showDateOnCard: timelineData.showDateOnCard,
+      showYearOnCard: timelineData.showYearOnCard,
+      result: result,
+      typeOfShowDateOnCard: typeof timelineData.showDateOnCard,
+      typeOfShowYearOnCard: typeof timelineData.showYearOnCard
+    });
+    return result;
   };
 
   if (error) {

@@ -27,6 +27,11 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
 
   useEffect(() => {
     console.log('🎮 Timeline Player V2 - Initializing with data:', timelineData);
+    console.log('🔍 Timeline Player V2 - Date display settings:', {
+      showYearOnCard: timelineData.showYearOnCard,
+      showDateOnCard: timelineData.showDateOnCard,
+      fullTimelineData: timelineData
+    });
     initializeGame();
   }, [timelineData]);
 
@@ -227,7 +232,15 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
   };
 
   const shouldShowYear = () => {
-    return timelineData.showDateOnCard === true;
+    const result = timelineData.showDateOnCard === true;
+    console.log('📅 shouldShowYear V2 - Checking date display:', {
+      showDateOnCard: timelineData.showDateOnCard,
+      showYearOnCard: timelineData.showYearOnCard,
+      result: result,
+      typeOfShowDateOnCard: typeof timelineData.showDateOnCard,
+      typeOfShowYearOnCard: typeof timelineData.showYearOnCard
+    });
+    return result;
   };
 
   const restartGame = () => {
@@ -297,33 +310,43 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
           <div className="space-y-4">
             {eventsWithOrder
               .sort((a, b) => a.displayIndex - b.displayIndex)
-              .map((item, index) => (
-              <Card key={item.event.id} className="p-4">
-                <CardContent className="p-0">
-                  <div className="flex gap-4">
-                    {item.event.imageUrl && (
-                      <img 
-                        src={item.event.imageUrl} 
-                        alt={item.event.name}
-                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <h3 className="font-bold text-lg text-foreground">{item.event.name}</h3>
-                      {shouldShowYear() && (
-                        <p className="text-lg font-semibold text-primary">{item.event.year}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground">{item.event.description}</p>
-                      {item.event.category && (
-                        <span className="inline-block px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
-                          {item.event.category}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+              .map((item, index) => {
+                const showYear = shouldShowYear();
+                console.log('🃏 EventCard V2 - Rendering with:', {
+                  eventName: item.event.name,
+                  eventYear: item.event.year,
+                  showYear: showYear,
+                  shouldRenderYear: showYear
+                });
+                
+                return (
+                  <Card key={item.event.id} className="p-4">
+                    <CardContent className="p-0">
+                      <div className="flex gap-4">
+                        {item.event.imageUrl && (
+                          <img 
+                            src={item.event.imageUrl} 
+                            alt={item.event.name}
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 space-y-2">
+                          <h3 className="font-bold text-lg text-foreground">{item.event.name}</h3>
+                          {showYear && (
+                            <p className="text-lg font-semibold text-primary">{item.event.year}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground">{item.event.description}</p>
+                          {item.event.category && (
+                            <span className="inline-block px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
+                              {item.event.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         </div>
 
