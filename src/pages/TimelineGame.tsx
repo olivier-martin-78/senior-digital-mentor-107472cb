@@ -14,7 +14,7 @@ const TimelineGame: React.FC = () => {
   const timelineData = location.state?.timelineData as TimelineData;
 
   const handleExit = () => {
-    navigate(-1);
+    navigate('/activities');
   };
 
   if (!timelineData) {
