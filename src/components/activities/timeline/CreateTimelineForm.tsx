@@ -126,29 +126,35 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       return;
     }
 
-    // Vérifier que les 3 options de réponse sont remplies
+    // Vérifier les options de réponse seulement si elles sont fournies
     const answerOptions = currentEvent.answerOptions || [];
     console.log('Answer options check:', answerOptions);
-    if (answerOptions.length !== 3 || answerOptions.some(option => !option.trim())) {
-      console.log('Answer options incomplete');
-      toast({ 
-        title: "Options de réponse incomplètes", 
-        description: "Veuillez remplir les 3 options de réponse pour le quiz",
-        variant: "destructive" 
-      });
-      return;
+    
+    // Si des options de réponse sont fournies, elles doivent être complètes (3 options)
+    if (answerOptions.length > 0) {
+      if (answerOptions.length !== 3 || answerOptions.some(option => !option.trim())) {
+        console.log('Answer options incomplete');
+        toast({ 
+          title: "Options de réponse incomplètes", 
+          description: "Si vous ajoutez des options de réponse, veuillez remplir les 3 options pour le quiz",
+          variant: "destructive" 
+        });
+        return;
+      }
     }
 
-    // Vérifier qu'une des options correspond à l'année
-    console.log('Checking if year matches options:', currentEvent.year, answerOptions);
-    if (!answerOptions.includes(currentEvent.year!)) {
-      console.log('No option matches the year');
-      toast({ 
-        title: "Aucune option ne correspond à l'année", 
-        description: "Une des options de réponse doit correspondre exactement à l'année saisie",
-        variant: "destructive" 
-      });
-      return;
+    // Vérifier qu'une des options correspond à l'année (seulement si des options sont fournies)
+    if (answerOptions.length > 0) {
+      console.log('Checking if year matches options:', currentEvent.year, answerOptions);
+      if (!answerOptions.includes(currentEvent.year!)) {
+        console.log('No option matches the year');
+        toast({ 
+          title: "Aucune option ne correspond à l'année", 
+          description: "Une des options de réponse doit correspondre exactement à l'année saisie",
+          variant: "destructive" 
+        });
+        return;
+      }
     }
 
     console.log('All validations passed, adding event');
