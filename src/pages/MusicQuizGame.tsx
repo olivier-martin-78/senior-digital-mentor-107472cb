@@ -26,7 +26,7 @@ const MusicQuizGame: React.FC = () => {
     navigate('/activities');
   };
 
-  const handleAnswer = (answer: 'A' | 'B' | 'C') => {
+  const handleAnswer = (questionId: string, answer: string) => {
     const currentQuestion = quizData.questions[currentQuestionIndex];
     const isCorrect = currentQuestion.correctAnswer === answer;
     
