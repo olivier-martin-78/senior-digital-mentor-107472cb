@@ -16,12 +16,14 @@ interface Question {
   correctAnswer: 'A' | 'B' | 'C';
   audioUrl?: string;
   instruction?: string;
+  imageUrl?: string;
 }
 
 interface QuizData {
   type: 'music_quiz';
   title: string;
   questions: Question[];
+  quizType?: 'videos' | 'illustrations';
 }
 
 interface MusicQuizPlayerProps {
@@ -113,12 +115,23 @@ export function MusicQuizPlayer({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Vidéo YouTube si disponible */}
-        {currentQuestion.youtubeEmbed && (
+        {/* Vidéo YouTube si disponible pour le type "videos" */}
+        {quizData.quizType === 'videos' && currentQuestion.youtubeEmbed && (
           <div className="relative aspect-video">
             <div 
               dangerouslySetInnerHTML={{ __html: currentQuestion.youtubeEmbed }}
               className="w-full h-full"
+            />
+          </div>
+        )}
+
+        {/* Image pour le type "illustrations" */}
+        {quizData.quizType === 'illustrations' && currentQuestion.imageUrl && (
+          <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+            <img 
+              src={currentQuestion.imageUrl} 
+              alt="Illustration de la question"
+              className="w-full h-full object-contain"
             />
           </div>
         )}
@@ -159,8 +172,8 @@ export function MusicQuizPlayer({
           </div>
         )}
 
-        {/* Consigne si disponible */}
-        {currentQuestion.instruction && (
+        {/* Consigne si disponible et non vide */}
+        {currentQuestion.instruction && currentQuestion.instruction.trim() && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-800 font-medium text-center">
               {currentQuestion.instruction}
@@ -168,10 +181,12 @@ export function MusicQuizPlayer({
           </div>
         )}
 
-        {/* Nom de l'artiste et titre */}
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">{currentQuestion.artistTitle}</h3>
-        </div>
+        {/* Nom de l'artiste et titre pour le type "videos" seulement */}
+        {quizData.quizType === 'videos' && currentQuestion.artistTitle && currentQuestion.artistTitle.trim() && (
+          <div className="text-center space-y-2">
+            <h3 className="text-lg font-semibold">{currentQuestion.artistTitle}</h3>
+          </div>
+        )}
 
         {/* Question */}
         <div className="text-center">
@@ -213,8 +228,8 @@ export function MusicQuizPlayer({
           </div>
         )}
 
-        {/* Message si pas d'audio ni vidéo */}
-        {!currentQuestion.audioUrl && !currentQuestion.youtubeEmbed && (
+        {/* Message si pas d'audio ni vidéo ni image */}
+        {!currentQuestion.audioUrl && !currentQuestion.youtubeEmbed && !currentQuestion.imageUrl && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 text-center">
               Aucun média disponible pour cette question

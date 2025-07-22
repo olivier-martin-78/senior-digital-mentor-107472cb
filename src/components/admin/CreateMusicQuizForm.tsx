@@ -25,6 +25,14 @@ interface Question {
   correctAnswer: 'A' | 'B' | 'C';
   audioUrl?: string;
   instruction?: string;
+  imageUrl?: string;
+}
+
+interface QuizData {
+  type: 'music_quiz';
+  title: string;
+  questions: Question[];
+  quizType: 'videos' | 'illustrations';
 }
 
 interface CreateMusicQuizFormProps {
@@ -41,6 +49,8 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     thumbnail_url: '',
     shared_globally: false,
   });
+  
+  const [quizType, setQuizType] = useState<'videos' | 'illustrations'>('videos');
   
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
   
@@ -121,6 +131,39 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     updateQuestion(questionId, 'audioUrl', audioUrl);
   };
 
+  const handleImageUpload = async (questionId: string, file: File | undefined) => {
+    if (!file || !user) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `images/quiz_${questionId}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('activity-thumbnails')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('activity-thumbnails')
+        .getPublicUrl(fileName);
+
+      updateQuestion(questionId, 'imageUrl', publicUrl);
+
+      toast({
+        title: 'Succès',
+        description: 'Image uploadée avec succès',
+      });
+    } catch (error) {
+      console.error('Erreur upload image:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'uploader l\'image',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const extractYouTubeUrl = (embedCode: string): string => {
     const match = embedCode.match(/src="([^"]+)"/);
     if (match) {
@@ -145,14 +188,25 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
       return;
     }
 
-    // Validation
-    if (questions.some(q => (!q.audioUrl && !q.youtubeEmbed) || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez fournir un fichier audio ou un code YouTube et remplir tous les champs pour chaque question',
-        variant: 'destructive',
-      });
-      return;
+    // Validation selon le type de quiz
+    if (quizType === 'videos') {
+      if (questions.some(q => (!q.audioUrl && !q.youtubeEmbed) || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
+        toast({
+          title: 'Erreur',
+          description: 'Veuillez fournir un fichier audio ou un code YouTube et remplir tous les champs pour chaque question',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (questions.some(q => !q.imageUrl || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
+        toast({
+          title: 'Erreur',
+          description: 'Veuillez fournir une illustration et remplir tous les champs pour chaque question',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     try {
@@ -160,6 +214,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         type: 'music_quiz',
         title: formData.title,
         questions: questions,
+        quizType: quizType,
       };
 
       // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
@@ -202,7 +257,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Créer un Quiz Musical</CardTitle>
+        <CardTitle>Créer un quiz</CardTitle>
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -230,6 +285,34 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
             currentThumbnail={formData.thumbnail_url}
             onThumbnailChange={(url) => setFormData({ ...formData, thumbnail_url: url || '' })}
           />
+
+          <div>
+            <Label htmlFor="quizType">Type de quiz</Label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="quizType"
+                  value="videos"
+                  checked={quizType === 'videos'}
+                  onChange={(e) => setQuizType(e.target.value as 'videos' | 'illustrations')}
+                  className="text-primary"
+                />
+                <span>Avec vidéos YouTube</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="quizType"
+                  value="illustrations"
+                  checked={quizType === 'illustrations'}
+                  onChange={(e) => setQuizType(e.target.value as 'videos' | 'illustrations')}
+                  className="text-primary"
+                />
+                <span>Avec illustrations</span>
+              </label>
+            </div>
+          </div>
 
           <div>
             <SubActivitySelector
@@ -283,44 +366,88 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <Label>Code d'intégration YouTube</Label>
-                    <Textarea
-                      value={question.youtubeEmbed}
-                      onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
-                      placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
-                      rows={3}
-                    />
-                  </div>
-
-
-                   <div>
-                     <Label>Upload de fichier audio</Label>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) => handleAudioUpload(question.id, e.target.files?.[0])}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    />
-                    {question.audioUrl && (
-                      <div className="mt-2">
-                        <audio controls className="w-full">
-                          <source src={question.audioUrl} type="audio/mpeg" />
-                          Votre navigateur ne supporte pas la lecture audio.
-                        </audio>
+                  {quizType === 'videos' && (
+                    <>
+                      <div>
+                        <Label>Code d'intégration YouTube</Label>
+                        <Textarea
+                          value={question.youtubeEmbed}
+                          onChange={(e) => updateQuestion(question.id, 'youtubeEmbed', e.target.value)}
+                          placeholder='<iframe width="560" height="315" src="https://www.youtube.com/embed/..." title="YouTube video player" frameborder="0" allow="..." allowfullscreen></iframe>'
+                          rows={3}
+                        />
                       </div>
-                    )}
-                  </div>
 
-                  <div>
-                    <Label>Nom de l'artiste - Titre de la chanson</Label>
-                    <Input
-                      value={question.artistTitle}
-                      onChange={(e) => updateQuestion(question.id, 'artistTitle', e.target.value)}
-                      placeholder="Jean-Jacques Goldman - Il changeait la vie"
-                      required
-                    />
-                  </div>
+                      <div>
+                        <Label>Upload de fichier audio</Label>
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={(e) => handleAudioUpload(question.id, e.target.files?.[0])}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        />
+                        {question.audioUrl && (
+                          <div className="mt-2">
+                            <audio controls className="w-full">
+                              <source src={question.audioUrl} type="audio/mpeg" />
+                              Votre navigateur ne supporte pas la lecture audio.
+                            </audio>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label>Nom de l'artiste - Titre de la chanson</Label>
+                        <Input
+                          value={question.artistTitle}
+                          onChange={(e) => updateQuestion(question.id, 'artistTitle', e.target.value)}
+                          placeholder="Jean-Jacques Goldman - Il changeait la vie"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {quizType === 'illustrations' && (
+                    <>
+                      <div>
+                        <Label>Illustration de la question</Label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(question.id, e.target.files?.[0])}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        />
+                        {question.imageUrl && (
+                          <div className="mt-2">
+                            <img 
+                              src={question.imageUrl} 
+                              alt="Illustration de la question"
+                              className="w-full max-w-md h-auto rounded-md"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label>Upload de fichier audio (optionnel)</Label>
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={(e) => handleAudioUpload(question.id, e.target.files?.[0])}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        />
+                        {question.audioUrl && (
+                          <div className="mt-2">
+                            <audio controls className="w-full">
+                              <source src={question.audioUrl} type="audio/mpeg" />
+                              Votre navigateur ne supporte pas la lecture audio.
+                            </audio>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                    <div>
                      <Label>Consigne</Label>
