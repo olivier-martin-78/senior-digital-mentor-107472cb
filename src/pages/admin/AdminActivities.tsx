@@ -288,7 +288,7 @@ const AdminActivities = () => {
                       created_by: user?.id,
                       shared_globally: canShareGlobally ? data.shareGlobally : false,
                       link: '',
-                      thumbnail_url: null,
+                      thumbnail_url: data.thumbnailUrl || null,
                       activity_date: null,
                       sub_activity_tag_id: null,
                     };
@@ -354,6 +354,7 @@ const AdminActivities = () => {
                                 title: data.timelineName,
                                 iframe_code: JSON.stringify(data),
                                 shared_globally: canShareGlobally ? data.shareGlobally : false,
+                                thumbnail_url: data.thumbnailUrl || null,
                               })
                               .eq('id', editingActivity.id);
 

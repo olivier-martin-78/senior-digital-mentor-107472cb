@@ -58,13 +58,15 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       return thumbnailUrl;
     }
     
-    // Vérifier si c'est un jeu Timeline
+    // Vérifier si c'est un jeu Timeline et récupérer sa vignette personnalisée
     if (activity && activity.iframe_code) {
       try {
         const gameData = JSON.parse(activity.iframe_code);
-        if (gameData.timelineName) {
-          // Utiliser la vignette personnalisée si elle existe, sinon la vignette par défaut
-          return gameData.thumbnailUrl || '/timeline-game-thumbnail.jpg';
+        if (gameData.timelineName && gameData.thumbnailUrl) {
+          return gameData.thumbnailUrl;
+        } else if (gameData.timelineName) {
+          // Utiliser la vignette par défaut si pas de vignette personnalisée
+          return '/timeline-game-thumbnail.jpg';
         }
       } catch (error) {
         // Pas un JSON valide, continuer avec la logique normale
