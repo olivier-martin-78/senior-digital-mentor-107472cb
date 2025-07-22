@@ -168,6 +168,13 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   };
 
   const handleSubmit = () => {
+    console.log('Timeline form validation:', {
+      creatorName: formData.creatorName,
+      timelineName: formData.timelineName,
+      eventsCount: formData.events.length,
+      formData: formData
+    });
+    
     if (!formData.creatorName || !formData.timelineName || formData.events.length < 2) {
       toast({ 
         title: "Informations manquantes", 
@@ -177,6 +184,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       return;
     }
 
+    console.log('Validation passed, calling onSubmit');
     onSubmit(formData);
   };
 
