@@ -8,6 +8,7 @@ import { isIOS } from '@/utils/platformDetection';
 import { Activity } from '@/hooks/useActivities';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import timelineThumbnail from '@/assets/timeline-game-thumbnail.jpg';
 
 interface ActivityCardProps {
   title: string;
@@ -55,6 +56,19 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   const getDisplayImage = () => {
     if (thumbnailUrl) {
       return thumbnailUrl;
+    }
+    
+    // Vérifier si c'est un jeu Timeline
+    if (activity && activity.iframe_code) {
+      try {
+        const gameData = JSON.parse(activity.iframe_code);
+        if (gameData.timelineName) {
+          // Utiliser la vignette Timeline
+          return timelineThumbnail;
+        }
+      } catch (error) {
+        // Pas un JSON valide, continuer avec la logique normale
+      }
     }
     
     // Si on a un code iframe, extraire l'ID de la vidéo depuis le code
@@ -114,12 +128,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             <head>
               <title>${title}</title>
               <style>
-                body { margin: 0; padding: 20px; background: #000; }
+                body { margin: 0; padding: 20px; background: #f5f5f5; }
                 iframe { width: 100%; height: 500px; }
               </style>
             </head>
             <body>
-              <h2 style="color: white; text-align: center;">${title}</h2>
+              <h2 style="color: black; text-align: center;">${title}</h2>
               ${iframeCode}
             </body>
           </html>

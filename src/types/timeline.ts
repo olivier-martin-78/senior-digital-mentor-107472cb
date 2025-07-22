@@ -6,6 +6,7 @@ export interface TimelineEvent {
   description: string;
   year: string;
   category: string;
+  answerOptions?: string[]; // 3 options de réponse définies par le créateur
 }
 
 export interface TimelineData {

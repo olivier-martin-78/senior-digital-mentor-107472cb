@@ -2,6 +2,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { TimelinePlayer } from '@/components/activities/timeline/TimelinePlayer';
+import TimelineQuizPlayer from '@/components/activities/timeline/TimelineQuizPlayer';
 import { TimelineData } from '@/types/timeline';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -31,9 +32,18 @@ const TimelineGame: React.FC = () => {
     );
   }
 
+  // Vérifier si les événements ont des options de réponse pour déterminer le type de jeu
+  const hasAnswerOptions = timelineData.events.some(event => 
+    event.answerOptions && Array.isArray(event.answerOptions) && event.answerOptions.length === 3
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      <TimelinePlayer timelineData={timelineData} onExit={handleExit} />
+      {hasAnswerOptions ? (
+        <TimelineQuizPlayer timelineData={timelineData} onExit={handleExit} />
+      ) : (
+        <TimelinePlayer timelineData={timelineData} onExit={handleExit} />
+      )}
     </div>
   );
 };
