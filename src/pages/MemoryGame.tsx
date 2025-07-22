@@ -11,7 +11,7 @@ const MemoryGame: React.FC = () => {
   const gameData = location.state?.gameData;
 
   const handleExit = () => {
-    navigate(-1);
+    navigate('/activities');
   };
 
   if (!gameData) {
