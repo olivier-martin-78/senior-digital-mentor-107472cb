@@ -110,7 +110,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     color: #1f2937;
                   }
                   .timeline-container {
-                    max-width: 4rem;
                     max-width: 64rem;
                     margin: 0 auto;
                     padding: 1.5rem;
@@ -420,7 +419,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                       pioche.style.display = 'block';
                       const eventCard = createEventCard(gameState.currentEvent, false);
                       currentEventElement.innerHTML = '';
-                      currentEventElement.appendChild(eventCard.firstElementChild);
+                      currentEventElement.appendChild(eventCard);
                     } else {
                       pioche.style.display = 'none';
                     }
