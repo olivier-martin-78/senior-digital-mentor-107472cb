@@ -61,6 +61,9 @@ const ActivityPage = () => {
 
   const filterActivitiesBySubTag = (activities: any[], filter: string) => {
     if (!filter) return activities;
+    if (filter === 'null') {
+      return activities.filter(activity => !activity.sub_activity_tag_id);
+    }
     return activities.filter(activity => activity.sub_activity_tag_id === filter);
   };
 
@@ -80,7 +83,7 @@ const ActivityPage = () => {
     const games = [
       {
         key: "opposites",
-        subTagId: remueMeningesId,
+        subTagId: remueMeningesId || null,
         card: <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link to="/activities/opposites" className="block">
             <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
@@ -102,7 +105,7 @@ const ActivityPage = () => {
       },
       {
         key: "sudoku",
-        subTagId: remueMeningesId,
+        subTagId: remueMeningesId || null,
         card: <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link to="/activities/sudoku" className="block">
             <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
@@ -124,7 +127,7 @@ const ActivityPage = () => {
       },
       {
         key: "crossword",
-        subTagId: remueMeningesId,
+        subTagId: remueMeningesId || null,
         card: <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link to="/activities/crossword" className="block">
             <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
@@ -146,7 +149,7 @@ const ActivityPage = () => {
       },
       {
         key: "translation",
-        subTagId: remueMeningesId,
+        subTagId: remueMeningesId || null,
         card: <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link to="/activities/translation" className="block">
             <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
@@ -168,7 +171,7 @@ const ActivityPage = () => {
       },
       {
         key: "quiz70s",
-        subTagId: remueMeningesId,
+        subTagId: remueMeningesId || null,
         card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link to="/activities/quiz70s" className="block">
             <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
@@ -192,9 +195,13 @@ const ActivityPage = () => {
 
     // Filtrer par sous-activité si un filtre est appliqué
     if (subTagFilter && subTagFilter !== '') {
+      if (subTagFilter === 'null') {
+        return games.filter(game => !game.subTagId).map(game => game.card);
+      }
       return games.filter(game => game.subTagId === subTagFilter).map(game => game.card);
     }
     
+    // Si aucun filtre n'est appliqué, montrer tous les jeux
     return games.map(game => game.card);
   };
 
@@ -240,6 +247,7 @@ const ActivityPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les sous-activités</SelectItem>
+              <SelectItem value="null">Sans sous-activité</SelectItem>
               {subTags.map((tag) => (
                 <SelectItem key={tag.id} value={tag.id}>
                   {tag.name}
