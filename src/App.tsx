@@ -37,6 +37,8 @@ import BlogLanding from './pages/BlogLanding';
 import Caregivers from './pages/Caregivers';
 import HeaderWrapper from './components/HeaderWrapper';
 import TimelineGame from './pages/TimelineGame';
+import MusicQuizGame from './pages/MusicQuizGame';
+import MemoryGame from './pages/MemoryGame';
 
 // Import admin components
 import AdminUsers from './pages/admin/AdminUsers';
@@ -113,6 +115,8 @@ function App() {
                   <Route path="/activities/translation" element={<TranslationGame />} />
                   <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
                   <Route path="/activities/timeline/play" element={<TimelineGame />} />
+                  <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
+                  <Route path="/activities/memory-game/play" element={<MemoryGame />} />
                   
                   {/* Routes professionnelles */}
                   <Route path="/professional-scheduler" element={<ProfessionalScheduler />} />

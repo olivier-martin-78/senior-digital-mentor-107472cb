@@ -115,13 +115,13 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const handleClick = () => {
-    // Timeline game - use React Router navigation
+    // Check if it's a game stored in iframe_code
     if (activity && activity.iframe_code) {
       try {
         const gameData = JSON.parse(activity.iframe_code);
         
+        // Timeline game - use React Router navigation
         if (gameData.timelineName) {
-          // Navigate to Timeline game page
           navigate('/activities/timeline/play', { 
             state: { 
               timelineData: {
@@ -132,43 +132,85 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           });
           return;
         }
+        
+        // Music Quiz - use React Router navigation
+        if (gameData.type === 'music_quiz') {
+          navigate('/activities/music-quiz/play', { 
+            state: { 
+              quizData: gameData
+            }
+          });
+          return;
+        }
+        
+        // Memory Game - navigate to memory game page
+        if (gameData.type === 'memory_game') {
+          navigate('/activities/memory-game/play', { 
+            state: { 
+              gameData: gameData
+            }
+          });
+          return;
+        }
+        
       } catch (error) {
-        console.error('Error parsing Timeline game data:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger le jeu Timeline",
-          variant: "destructive"
-        });
+        console.error('Error parsing game data:', error);
+        // If JSON parsing fails, treat as regular iframe content
+      }
+    }
+    
+    // Check if it's iframe content stored in iframeCode prop
+    if (iframeCode) {
+      try {
+        const gameData = JSON.parse(iframeCode);
+        
+        // Music Quiz from iframeCode prop
+        if (gameData.type === 'music_quiz') {
+          navigate('/activities/music-quiz/play', { 
+            state: { 
+              quizData: gameData
+            }
+          });
+          return;
+        }
+        
+        // Memory Game from iframeCode prop
+        if (gameData.type === 'memory_game') {
+          navigate('/activities/memory-game/play', { 
+            state: { 
+              gameData: gameData
+            }
+          });
+          return;
+        }
+        
+      } catch (error) {
+        // If JSON parsing fails, treat as regular iframe HTML
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        if (newWindow) {
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>${title}</title>
+                <style>
+                  body { margin: 0; padding: 20px; background: #f5f5f5; }
+                  iframe { width: 100%; height: 500px; }
+                </style>
+              </head>
+              <body>
+                <h2 style="color: black; text-align: center;">${title}</h2>
+                ${iframeCode}
+              </body>
+            </html>
+          `);
+        }
         return;
       }
     }
     
-    // For all other activities, open in new window
-    if (iframeCode) {
-      // Handle other game types or iframe content in popup
-      const newWindow = window.open('', '_blank', 'width=800,height=600');
-      if (newWindow) {
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>${title}</title>
-              <style>
-                body { margin: 0; padding: 20px; background: #f5f5f5; }
-                iframe { width: 100%; height: 500px; }
-              </style>
-            </head>
-            <body>
-              <h2 style="color: black; text-align: center;">${title}</h2>
-              ${iframeCode}
-            </body>
-          </html>
-        `);
-      }
-    } else {
-      // Regular link
-      window.open(link, '_blank', 'noopener,noreferrer');
-    }
+    // Regular link
+    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
