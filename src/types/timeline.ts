@@ -1,0 +1,24 @@
+export interface TimelineEvent {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  description: string;
+  year: string;
+  category: string;
+}
+
+export interface TimelineData {
+  creatorName: string;
+  shareGlobally: boolean;
+  timelineName: string;
+  showYearOnCard: boolean;
+  events: TimelineEvent[];
+}
+
+export interface TimelineGameState {
+  placedEvents: TimelineEvent[];
+  remainingEvents: TimelineEvent[];
+  currentEvent: TimelineEvent | null;
+  score: number;
+  gameComplete: boolean;
+}

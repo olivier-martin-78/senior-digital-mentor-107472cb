@@ -20,6 +20,9 @@ import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
 import { EditMemoryGameForm } from '@/components/admin/EditMemoryGameForm';
 import CreateMusicQuizForm from '@/components/admin/CreateMusicQuizForm';
 import EditMusicQuizForm from '@/components/admin/EditMusicQuizForm';
+import { CreateTimelineForm } from '@/components/activities/timeline/CreateTimelineForm';
+import { EditTimelineForm } from '@/components/activities/timeline/EditTimelineForm';
+import { TimelineData } from '@/types/timeline';
 import QuizConverter from '@/components/admin/QuizConverter';
 
 const activityTypes = [
@@ -37,6 +40,7 @@ const AdminActivities = () => {
   const [showForm, setShowForm] = useState(false);
   const [showMemoryManager, setShowMemoryManager] = useState(false);
   const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
+  const [showTimelineForm, setShowTimelineForm] = useState(false);
   const [showQuizConverter, setShowQuizConverter] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
@@ -168,6 +172,7 @@ const AdminActivities = () => {
     setShowForm(false);
     setShowMemoryManager(false);
     setShowMusicQuizForm(false);
+    setShowTimelineForm(false);
     setShowQuizConverter(false);
   };
 
@@ -211,14 +216,22 @@ const AdminActivities = () => {
                     <Plus className="h-4 w-4" />
                     Gérer les jeux de Memory
                   </Button>
-                  <Button 
-                    onClick={() => setShowMusicQuizForm(!showMusicQuizForm)} 
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nouveau quiz
-                  </Button>
+                   <Button 
+                     onClick={() => setShowMusicQuizForm(!showMusicQuizForm)} 
+                     variant="outline"
+                     className="flex items-center gap-2"
+                   >
+                     <Plus className="h-4 w-4" />
+                     Nouveau quiz
+                   </Button>
+                   <Button 
+                     onClick={() => setShowTimelineForm(!showTimelineForm)} 
+                     variant="outline"
+                     className="flex items-center gap-2"
+                   >
+                     <Plus className="h-4 w-4" />
+                     Nouvelle Frise Chronologique
+                   </Button>
                 </>
               )}
               <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
@@ -263,6 +276,50 @@ const AdminActivities = () => {
             </div>
           )}
 
+          {showTimelineForm && type === 'games' && (
+            <div className="mb-8">
+              <CreateTimelineForm 
+                onSubmit={async (data: TimelineData) => {
+                  try {
+                    const dataToInsert = {
+                      activity_type: 'games',
+                      title: data.timelineName,
+                      iframe_code: JSON.stringify(data),
+                      created_by: user?.id,
+                      shared_globally: canShareGlobally ? data.shareGlobally : false,
+                      link: '',
+                      thumbnail_url: null,
+                      activity_date: null,
+                      sub_activity_tag_id: null,
+                    };
+
+                    const { error } = await supabase
+                      .from('activities')
+                      .insert([dataToInsert]);
+
+                    if (error) throw error;
+
+                    toast({
+                      title: 'Succès',
+                      description: 'Frise chronologique créée avec succès',
+                    });
+
+                    setShowTimelineForm(false);
+                    refetch();
+                  } catch (error) {
+                    console.error('Erreur lors de la création:', error);
+                    toast({
+                      title: 'Erreur',
+                      description: 'Impossible de créer la frise chronologique',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+                onCancel={() => setShowTimelineForm(false)}
+              />
+            </div>
+          )}
+
           {editingActivity && (
             <div className="mb-8">
               {(() => {
@@ -282,6 +339,17 @@ const AdminActivities = () => {
                       <EditMusicQuizForm
                         activity={editingActivity}
                         onSave={handleSaveEdit}
+                        onCancel={handleCancelEdit}
+                      />
+                    );
+                  } else if (gameData?.timelineName) {
+                    return (
+                      <EditTimelineForm
+                        initialData={gameData}
+                        onSubmit={(data: TimelineData) => {
+                          // Implementation for timeline data save
+                          handleSaveEdit();
+                        }}
                         onCancel={handleCancelEdit}
                       />
                     );

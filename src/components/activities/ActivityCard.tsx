@@ -1,10 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Edit, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { isIOS } from '@/utils/platformDetection';
+import { Activity } from '@/hooks/useActivities';
+// Game components will be imported when needed
+import { TimelinePlayer } from './timeline/TimelinePlayer';
+import { TimelineData } from '@/types/timeline';
+import { toast } from '@/hooks/use-toast';
 
 interface ActivityCardProps {
   title: string;
@@ -20,6 +25,7 @@ interface ActivityCardProps {
   activityId?: string;
   canEdit?: boolean;
   audioUrl?: string;
+  activity?: Activity;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -35,8 +41,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   iframeCode,
   activityId,
   canEdit = false,
-  audioUrl
+  audioUrl,
+  activity
 }) => {
+  const [gameComponent, setGameComponent] = useState<React.ReactNode>(null);
   // Fonction pour nettoyer le titre des jeux Memory
   const getCleanTitle = () => {
     if (title.startsWith('Jeu Memory: ')) {
@@ -67,7 +75,40 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     return '/placeholder.svg';
   };
 
+  const handleGameLaunch = () => {
+    if (!activity) return;
+    
+    try {
+      const gameData = JSON.parse(activity.iframe_code || '{}');
+      
+      if (gameData.timelineName) {
+        // Timeline game
+        const timelineData: TimelineData = gameData;
+        setGameComponent(
+          <TimelinePlayer 
+            timelineData={timelineData}
+            onExit={() => setGameComponent(null)}
+          />
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('Error parsing game data:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le jeu",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleClick = () => {
+    // If this is a game activity with activity object, use game launcher
+    if (activity && activity.iframe_code) {
+      handleGameLaunch();
+      return;
+    }
+    
     if (iframeCode) {
       try {
         // Essayer de parser le JSON pour les jeux
@@ -972,6 +1013,11 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     
     return false;
   };
+
+  // If gameComponent is set, render it instead of the card
+  if (gameComponent) {
+    return <div className="w-full h-full">{gameComponent}</div>;
+  }
 
   return (
     <Card className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
