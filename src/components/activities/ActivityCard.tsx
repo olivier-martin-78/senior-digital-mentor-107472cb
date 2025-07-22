@@ -124,6 +124,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         
         // Timeline game - use React Router navigation
         if (gameData.timelineName) {
+          console.log('🎮 ActivityCard - Timeline game data mapping:', {
+            originalGameData: gameData,
+            showDateOnCard: gameData.showDateOnCard,
+            showYearOnCard: gameData.showYearOnCard,
+            showDateOnCardUndefined: gameData.showDateOnCard === undefined,
+            finalShowDateOnCard: gameData.showDateOnCard !== undefined ? gameData.showDateOnCard : gameData.showYearOnCard
+          });
+          
           navigate('/activities/timeline/play', { 
             state: { 
               timelineData: {
