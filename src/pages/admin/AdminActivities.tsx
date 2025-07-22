@@ -346,9 +346,33 @@ const AdminActivities = () => {
                     return (
                       <EditTimelineForm
                         initialData={gameData}
-                        onSubmit={(data: TimelineData) => {
-                          // Implementation for timeline data save
-                          handleSaveEdit();
+                        onSubmit={async (data: TimelineData) => {
+                          try {
+                            const { error } = await supabase
+                              .from('activities')
+                              .update({
+                                title: data.timelineName,
+                                iframe_code: JSON.stringify(data),
+                                shared_globally: canShareGlobally ? data.shareGlobally : false,
+                              })
+                              .eq('id', editingActivity.id);
+
+                            if (error) throw error;
+
+                            toast({
+                              title: 'Succès',
+                              description: 'Frise chronologique modifiée avec succès',
+                            });
+
+                            handleSaveEdit();
+                          } catch (error) {
+                            console.error('Erreur lors de la modification:', error);
+                            toast({
+                              title: 'Erreur',
+                              description: 'Impossible de modifier la frise chronologique',
+                              variant: 'destructive',
+                            });
+                          }
                         }}
                         onCancel={handleCancelEdit}
                       />
