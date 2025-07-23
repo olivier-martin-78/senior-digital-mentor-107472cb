@@ -1,12 +1,10 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { Play, Pause, RotateCcw, CheckCircle, Loader2 } from 'lucide-react';
+import { Play, Square, RotateCcw, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface DictationGameProps {
   title: string;
@@ -30,223 +28,77 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [showCorrection, setShowCorrection] = useState(false);
   const [score, setScore] = useState(20);
   const [differences, setDifferences] = useState<WordDifference[]>([]);
-  const [currentPosition, setCurrentPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const { toast } = useToast();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Generate audio using Web Speech API (free alternative)
+  // Initialize speech synthesis when component mounts
   useEffect(() => {
-    if (dictationText && !audioUrl) {
-      generateAudio();
-    }
-  }, [dictationText]);
-
-  const generateAudio = async () => {
-    setIsGeneratingAudio(true);
-    try {
-      console.log('Generating audio using Web Speech API...');
-      
-      // Check if speech synthesis is supported
-      if (!('speechSynthesis' in window)) {
-        throw new Error('Speech synthesis not supported in this browser');
-      }
-
-      // Create speech utterance for audio generation only (no immediate playback)
-      const utterance = new SpeechSynthesisUtterance(dictationText);
-      
-      // Configure voice settings
-      utterance.rate = 0.8; // Slightly slower for dictation
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      // Try to use a French voice if available
-      const voices = speechSynthesis.getVoices();
-      const frenchVoice = voices.find(voice => 
-        voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
-      );
-      
-      if (frenchVoice) {
-        utterance.voice = frenchVoice;
-        console.log('Using French voice:', frenchVoice.name);
-      } else {
-        console.log('No French voice found, using default voice');
-      }
-
-      // Create audio blob from speech synthesis
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const destination = audioContext.createMediaStreamDestination();
-      const mediaRecorder = new MediaRecorder(destination.stream);
-      const audioChunks: BlobPart[] = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioUrl(url);
-        console.log('Audio generated successfully with Web Speech API');
-      };
-
-      // Start recording and speak
-      mediaRecorder.start();
-      speechSynthesis.speak(utterance);
-
-      utterance.onend = () => {
-        setTimeout(() => {
-          mediaRecorder.stop();
-          audioContext.close();
-        }, 100);
-      };
-
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        mediaRecorder.stop();
-        audioContext.close();
-        throw new Error('Speech synthesis failed');
-      };
-
-    } catch (error) {
-      console.error('Error generating audio:', error);
-      
-      // Fallback: create audio URL for controlled speech synthesis
-      console.log('Using fallback mode with controlled speech synthesis...');
-      const fallbackUrl = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuE0fG+2+LDdCkGJG/E+eOGOgcUZrXo8KhV3+LDdSYGIm/G9-WMPwgNYLPq9qFQDA0L';
-      setAudioUrl(fallbackUrl);
-      
+    // Check if speech synthesis is supported
+    if ('speechSynthesis' in window) {
+      setIsReady(true);
+    } else {
       toast({
-        title: 'Mode de lecture directe',
-        description: 'Audio prêt pour la lecture',
+        title: 'Erreur',
+        description: 'La synthèse vocale n\'est pas supportée dans ce navigateur',
+        variant: 'destructive',
       });
-    } finally {
-      setIsGeneratingAudio(false);
     }
-  };
-
-  // Initialize audio element when URL is available
-  useEffect(() => {
-    if (audioUrl && !audioRef.current) {
-      audioRef.current = new Audio(audioUrl);
-      
-      audioRef.current.onloadedmetadata = () => {
-        if (audioRef.current) {
-          setDuration(audioRef.current.duration);
-        }
-      };
-      
-      audioRef.current.ontimeupdate = () => {
-        if (audioRef.current) {
-          setCurrentPosition(audioRef.current.currentTime);
-        }
-      };
-      
-      audioRef.current.onended = () => {
-        setIsPlaying(false);
-      };
-      
-      audioRef.current.onerror = (event) => {
-        console.error('Audio playback error:', event);
-        setIsPlaying(false);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de lire l\'audio',
-          variant: 'destructive',
-        });
-      };
-    }
-  }, [audioUrl, toast]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-    };
-  }, [audioUrl]);
+  }, [toast]);
 
   const speakText = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(dictationText);
-      utterance.rate = 0.8;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      const voices = speechSynthesis.getVoices();
-      const frenchVoice = voices.find(voice => 
-        voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
-      );
-      
-      if (frenchVoice) {
-        utterance.voice = frenchVoice;
-      }
-
-      utterance.onstart = () => {
-        setIsPlaying(true);
-      };
-
-      utterance.onend = () => {
-        setIsPlaying(false);
-      };
-
-      utterance.onerror = () => {
-        setIsPlaying(false);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de lire le texte',
-          variant: 'destructive',
-        });
-      };
-
-      speechSynthesis.speak(utterance);
+    if (!('speechSynthesis' in window)) return;
+    
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(dictationText);
+    utterance.rate = 0.8; // Slightly slower for dictation
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    // Try to use a French voice if available
+    const voices = speechSynthesis.getVoices();
+    const frenchVoice = voices.find(voice => 
+      voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+    );
+    
+    if (frenchVoice) {
+      utterance.voice = frenchVoice;
     }
+
+    utterance.onstart = () => {
+      setIsPlaying(true);
+    };
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de lire le texte',
+        variant: 'destructive',
+      });
+    };
+
+    speechSynthesis.speak(utterance);
   };
 
   const handlePlay = () => {
-    if (audioRef.current && audioRef.current.src && !audioRef.current.src.includes('data:audio/wav;base64')) {
-      // Use audio element if we have a real audio file
-      audioRef.current.play();
-      setIsPlaying(true);
-    } else {
-      // Use speech synthesis for direct playback
-      speakText();
-    }
+    speakText();
   };
 
-  const handlePause = () => {
-    if (audioRef.current && !audioRef.current.src.includes('data:audio/wav;base64')) {
-      audioRef.current.pause();
-    } else {
-      speechSynthesis.cancel();
-    }
+  const handleStop = () => {
+    speechSynthesis.cancel();
     setIsPlaying(false);
   };
 
   const handleRestart = () => {
-    if (audioRef.current && !audioRef.current.src.includes('data:audio/wav;base64')) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
-      setIsPlaying(true);
-    } else {
-      speechSynthesis.cancel();
-      setTimeout(() => speakText(), 100);
-    }
-  };
-
-  const handleSeek = (value: number[]) => {
-    const newPosition = value[0];
-    if (!audioRef.current) return;
-    
-    audioRef.current.currentTime = newPosition;
-    setCurrentPosition(newPosition);
+    speechSynthesis.cancel();
+    setTimeout(() => speakText(), 100);
   };
 
   const normalizeText = (text: string): string => {
@@ -300,18 +152,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setShowCorrection(false);
     setScore(20);
     setDifferences([]);
-    setCurrentPosition(0);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
+    speechSynthesis.cancel();
     setIsPlaying(false);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderCorrectedText = () => {
@@ -364,60 +206,41 @@ const DictationGame: React.FC<DictationGameProps> = ({
         <CardContent className="space-y-6">
           {/* Contrôles audio */}
           <div className="space-y-4">
-            {isGeneratingAudio ? (
-              <div className="flex justify-center items-center space-x-2 py-8">
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <span>Génération de l'audio en cours...</span>
-              </div>
-            ) : (
-              <div className="flex justify-center items-center space-x-4">
-                <Button
-                  onClick={handlePlay}
-                  disabled={isPlaying || !audioUrl}
-                  variant="outline"
-                  size="lg"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  Lire
-                </Button>
-                
-                <Button
-                  onClick={handlePause}
-                  disabled={!isPlaying || !audioUrl}
-                  variant="outline"
-                  size="lg"
-                >
-                  <Pause className="w-5 h-5 mr-2" />
-                  Pause
-                </Button>
-                
-                <Button
-                  onClick={handleRestart}
-                  disabled={!audioUrl}
-                  variant="outline"
-                  size="lg"
-                >
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  Recommencer
-                </Button>
-              </div>
-            )}
+            <div className="flex justify-center items-center space-x-4">
+              <Button
+                onClick={handlePlay}
+                disabled={!isReady || isPlaying}
+                variant="outline"
+                size="lg"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Lire
+              </Button>
+              
+              <Button
+                onClick={handleStop}
+                disabled={!isReady || !isPlaying}
+                variant="outline"
+                size="lg"
+              >
+                <Square className="w-5 h-5 mr-2" />
+                Arrêter
+              </Button>
+              
+              <Button
+                onClick={handleRestart}
+                disabled={!isReady}
+                variant="outline"
+                size="lg"
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />
+                Recommencer
+              </Button>
+            </div>
             
-            {/* Curseur de progression */}
-            {!isGeneratingAudio && audioUrl && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{formatTime(currentPosition)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-                <Slider
-                  value={[currentPosition]}
-                  onValueChange={handleSeek}
-                  max={duration}
-                  min={0}
-                  step={0.1}
-                  className="w-full"
-                />
+            {isPlaying && (
+              <div className="text-center text-sm text-muted-foreground">
+                🔊 Lecture en cours...
               </div>
             )}
           </div>
