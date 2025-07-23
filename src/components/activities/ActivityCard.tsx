@@ -163,6 +163,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           return;
         }
         
+        // Dictation Game - navigate to dictation game page
+        if (gameData.type === 'dictation') {
+          navigate(`/activities/dictation/${activityId}`, { replace: false });
+          return;
+        }
+        
       } catch (error) {
         console.error('Error parsing game data:', error);
         // If JSON parsing fails, treat as regular iframe content
