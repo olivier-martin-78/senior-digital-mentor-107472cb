@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
 import { Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,13 +29,26 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [showCorrection, setShowCorrection] = useState(false);
   const [score, setScore] = useState(20);
   const [differences, setDifferences] = useState<WordDifference[]>([]);
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [textSegments, setTextSegments] = useState<string[]>([]);
   const { toast } = useToast();
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const synth = window.speechSynthesis;
 
-  // Initialize speech synthesis
+  // Initialize speech synthesis and text segments
   useEffect(() => {
     if (dictationText) {
+      // Diviser le texte en segments pour simuler la progression
+      const sentences = dictationText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      setTextSegments(sentences);
+      
+      // Estimer la durée basée sur le nombre de mots (environ 2 mots par seconde)
+      const wordCount = dictationText.split(' ').length;
+      const estimatedDuration = Math.max(10, wordCount * 0.5); // Minimum 10 secondes
+      setDuration(estimatedDuration);
+      
       utteranceRef.current = new SpeechSynthesisUtterance(dictationText);
       utteranceRef.current.lang = 'fr-FR';
       utteranceRef.current.rate = 0.8;
@@ -43,11 +57,18 @@ const DictationGame: React.FC<DictationGameProps> = ({
       
       utteranceRef.current.onend = () => {
         setIsPlaying(false);
+        setCurrentPosition(duration);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
       };
       
       utteranceRef.current.onerror = (event) => {
         console.error('Speech synthesis error:', event);
         setIsPlaying(false);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
         toast({
           title: 'Erreur',
           description: 'Impossible de lire le texte',
@@ -55,7 +76,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
         });
       };
     }
-  }, [dictationText, toast]);
+  }, [dictationText, toast, duration]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -63,16 +84,45 @@ const DictationGame: React.FC<DictationGameProps> = ({
       if (synth.speaking) {
         synth.cancel();
       }
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+      }
     };
   }, [synth]);
+
+  const startProgressTracking = () => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
+    
+    progressInterval.current = setInterval(() => {
+      setCurrentPosition(prev => {
+        const newPosition = prev + 0.1;
+        if (newPosition >= duration) {
+          if (progressInterval.current) {
+            clearInterval(progressInterval.current);
+          }
+          return duration;
+        }
+        return newPosition;
+      });
+    }, 100);
+  };
 
   const handlePlay = () => {
     if (!utteranceRef.current) return;
     
-    if (synth.speaking) {
+    if (synth.speaking && synth.paused) {
       synth.resume();
-    } else {
-      synth.speak(utteranceRef.current);
+      startProgressTracking();
+    } else if (!synth.speaking) {
+      // Si on n'est pas au début, on doit recréer l'utterance pour la position
+      if (currentPosition > 0) {
+        handleSeek([currentPosition]);
+      } else {
+        synth.speak(utteranceRef.current);
+        startProgressTracking();
+      }
     }
     setIsPlaying(true);
   };
@@ -81,18 +131,65 @@ const DictationGame: React.FC<DictationGameProps> = ({
     if (synth.speaking) {
       synth.pause();
     }
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
     setIsPlaying(false);
   };
 
   const handleRestart = () => {
     synth.cancel();
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
+    setCurrentPosition(0);
     setIsPlaying(false);
     setTimeout(() => {
       if (utteranceRef.current) {
         synth.speak(utteranceRef.current);
         setIsPlaying(true);
+        startProgressTracking();
       }
     }, 100);
+  };
+
+  const handleSeek = (value: number[]) => {
+    const newPosition = value[0];
+    setCurrentPosition(newPosition);
+    
+    if (synth.speaking) {
+      synth.cancel();
+    }
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
+    
+    // Calculer quel segment commencer basé sur la position
+    const segmentDuration = duration / textSegments.length;
+    const segmentIndex = Math.floor(newPosition / segmentDuration);
+    
+    if (segmentIndex < textSegments.length) {
+      // Créer un nouvel utterance avec le texte à partir du segment sélectionné
+      const remainingText = textSegments.slice(segmentIndex).join('. ');
+      const newUtterance = new SpeechSynthesisUtterance(remainingText);
+      newUtterance.lang = 'fr-FR';
+      newUtterance.rate = 0.8;
+      newUtterance.pitch = 1;
+      newUtterance.volume = 1;
+      
+      newUtterance.onend = () => {
+        setIsPlaying(false);
+        setCurrentPosition(duration);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+      };
+      
+      if (isPlaying) {
+        synth.speak(newUtterance);
+        startProgressTracking();
+      }
+    }
   };
 
   const normalizeText = (text: string): string => {
@@ -146,8 +243,18 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setShowCorrection(false);
     setScore(20);
     setDifferences([]);
+    setCurrentPosition(0);
     synth.cancel();
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
     setIsPlaying(false);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderCorrectedText = () => {
@@ -199,35 +306,53 @@ const DictationGame: React.FC<DictationGameProps> = ({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Contrôles audio */}
-          <div className="flex justify-center items-center space-x-4">
-            <Button
-              onClick={handlePlay}
-              disabled={isPlaying}
-              variant="outline"
-              size="lg"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Lire
-            </Button>
+          <div className="space-y-4">
+            <div className="flex justify-center items-center space-x-4">
+              <Button
+                onClick={handlePlay}
+                disabled={isPlaying}
+                variant="outline"
+                size="lg"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Lire
+              </Button>
+              
+              <Button
+                onClick={handlePause}
+                disabled={!isPlaying}
+                variant="outline"
+                size="lg"
+              >
+                <Pause className="w-5 h-5 mr-2" />
+                Pause
+              </Button>
+              
+              <Button
+                onClick={handleRestart}
+                variant="outline"
+                size="lg"
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />
+                Recommencer
+              </Button>
+            </div>
             
-            <Button
-              onClick={handlePause}
-              disabled={!isPlaying}
-              variant="outline"
-              size="lg"
-            >
-              <Pause className="w-5 h-5 mr-2" />
-              Pause
-            </Button>
-            
-            <Button
-              onClick={handleRestart}
-              variant="outline"
-              size="lg"
-            >
-              <RotateCcw className="w-5 h-5 mr-2" />
-              Recommencer
-            </Button>
+            {/* Curseur de progression */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{formatTime(currentPosition)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+              <Slider
+                value={[currentPosition]}
+                onValueChange={handleSeek}
+                max={duration}
+                min={0}
+                step={0.1}
+                className="w-full"
+              />
+            </div>
           </div>
           
           {/* Zone de saisie */}
