@@ -52,9 +52,17 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`OpenAI TTS API error: ${response.status} ${errorText}`);
+      console.error(`OpenAI TTS API error: ${response.status} ${response.statusText} - ${errorText}`);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment and try again.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: `TTS API error: ${response.status}` }),
+        JSON.stringify({ error: `TTS API error: ${response.status} - ${response.statusText}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
       );
     }
