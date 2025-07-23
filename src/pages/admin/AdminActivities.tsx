@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, RefreshCw, ChevronDown } from 'lucide-react';
 import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import ActivityEditForm from '@/components/activities/ActivityEditForm';
@@ -203,42 +204,41 @@ const AdminActivities = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Gestion des activités - {currentActivityType?.label}
+              Administration : {currentActivityType?.label}
             </h1>
-            <div className="flex gap-2">
-              {type === 'games' && (
-                <>
-                  <Button 
-                    onClick={() => setShowMemoryManager(!showMemoryManager)} 
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Gérer les jeux de Memory
-                  </Button>
-                   <Button 
-                     onClick={() => setShowMusicQuizForm(!showMusicQuizForm)} 
-                     variant="outline"
-                     className="flex items-center gap-2"
-                   >
-                     <Plus className="h-4 w-4" />
-                     Nouveau quiz
-                   </Button>
-                   <Button 
-                     onClick={() => setShowTimelineForm(!showTimelineForm)} 
-                     variant="outline"
-                     className="flex items-center gap-2"
-                   >
-                     <Plus className="h-4 w-4" />
-                     Nouvelle Frise Chronologique
-                   </Button>
-                </>
-              )}
-              <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une activité
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Formulaires
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Créer une nouvelle activité</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowForm(!showForm)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une activité
+                </DropdownMenuItem>
+                {type === 'games' && (
+                  <>
+                    <DropdownMenuItem onClick={() => setShowMemoryManager(!showMemoryManager)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Gérer les jeux de Memory
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowMusicQuizForm(!showMusicQuizForm)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouveau quiz
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowTimelineForm(!showTimelineForm)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouvelle Frise Chronologique
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {showMemoryManager && type === 'games' && (
