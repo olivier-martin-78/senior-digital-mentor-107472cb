@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
+  const [sharedGlobally, setSharedGlobally] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -125,7 +127,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
           thumbnail_url: thumbnailUrl,
           sub_activity_tag_id: selectedSubTagId,
           created_by: (await supabase.auth.getUser()).data.user?.id,
-          shared_globally: true
+          shared_globally: sharedGlobally
         });
 
       if (error) {
@@ -142,6 +144,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
       setSelectedFiles([]);
       setThumbnailFile(null);
       setSelectedSubTagId(null);
+      setSharedGlobally(false);
       
       if (onSuccess) {
         onSuccess();
@@ -189,6 +192,20 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
             selectedSubTagId={selectedSubTagId}
             onSubTagChange={setSelectedSubTagId}
           />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="shared-globally"
+            checked={sharedGlobally}
+            onCheckedChange={(checked) => setSharedGlobally(!!checked)}
+          />
+          <label
+            htmlFor="shared-globally"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Partager avec tout le monde
+          </label>
         </div>
 
         <div className="space-y-2">

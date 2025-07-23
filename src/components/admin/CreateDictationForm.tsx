@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,7 +26,8 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
     dictationText: '',
     correctedText: '',
     thumbnailUrl: '',
-    subActivityTagId: ''
+    subActivityTagId: '',
+    sharedGlobally: false
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -74,7 +76,7 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
           thumbnail_url: formData.thumbnailUrl || null,
           sub_activity_tag_id: formData.subActivityTagId || null,
           created_by: user.id,
-          shared_globally: false
+          shared_globally: formData.sharedGlobally
         }]);
 
       if (error) throw error;
@@ -163,6 +165,20 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
             <p className="text-sm text-gray-500 mt-1">
               Ce texte servira de référence pour la correction automatique
             </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="shared-globally"
+              checked={formData.sharedGlobally}
+              onCheckedChange={(checked) => setFormData({ ...formData, sharedGlobally: !!checked })}
+            />
+            <label
+              htmlFor="shared-globally"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Partager avec tout le monde
+            </label>
           </div>
 
           <div className="flex gap-2">
