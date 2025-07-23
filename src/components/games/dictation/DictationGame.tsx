@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DictationGameProps {
   title: string;
@@ -31,165 +32,132 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [differences, setDifferences] = useState<WordDifference[]>([]);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [textSegments, setTextSegments] = useState<string[]>([]);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
-  const synth = window.speechSynthesis;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize speech synthesis and text segments
+  // Generate audio from text using OpenAI TTS
   useEffect(() => {
-    if (dictationText) {
-      // Diviser le texte en segments pour simuler la progression
-      const sentences = dictationText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      setTextSegments(sentences);
+    if (dictationText && !audioUrl) {
+      generateAudio();
+    }
+  }, [dictationText]);
+
+  const generateAudio = async () => {
+    setIsGeneratingAudio(true);
+    try {
+      console.log('Generating audio for dictation text...');
       
-      // Estimer la durée basée sur le nombre de mots (environ 2 mots par seconde)
-      const wordCount = dictationText.split(' ').length;
-      const estimatedDuration = Math.max(10, wordCount * 0.5); // Minimum 10 secondes
-      setDuration(estimatedDuration);
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: {
+          text: dictationText,
+          voice: 'alloy'
+        }
+      });
+
+      if (error) {
+        console.error('Error generating audio:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de générer l\'audio',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Create blob URL from response
+      const blob = new Blob([data], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+
+      console.log('Audio generated successfully');
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer l\'audio',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
+  // Initialize audio element when URL is available
+  useEffect(() => {
+    if (audioUrl && !audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
       
-      utteranceRef.current = new SpeechSynthesisUtterance(dictationText);
-      utteranceRef.current.lang = 'fr-FR';
-      utteranceRef.current.rate = 0.8;
-      utteranceRef.current.pitch = 1;
-      utteranceRef.current.volume = 1;
-      
-      utteranceRef.current.onend = () => {
-        setIsPlaying(false);
-        setCurrentPosition(duration);
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
+      audioRef.current.onloadedmetadata = () => {
+        if (audioRef.current) {
+          setDuration(audioRef.current.duration);
         }
       };
       
-      utteranceRef.current.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        setIsPlaying(false);
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
+      audioRef.current.ontimeupdate = () => {
+        if (audioRef.current) {
+          setCurrentPosition(audioRef.current.currentTime);
         }
+      };
+      
+      audioRef.current.onended = () => {
+        setIsPlaying(false);
+      };
+      
+      audioRef.current.onerror = (event) => {
+        console.error('Audio playback error:', event);
+        setIsPlaying(false);
         toast({
           title: 'Erreur',
-          description: 'Impossible de lire le texte',
+          description: 'Impossible de lire l\'audio',
           variant: 'destructive',
         });
       };
     }
-  }, [dictationText, toast, duration]);
+  }, [audioUrl, toast]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (synth.speaking) {
-        synth.cancel();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
       }
     };
-  }, [synth]);
-
-  const startProgressTracking = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    
-    progressInterval.current = setInterval(() => {
-      setCurrentPosition(prev => {
-        const newPosition = prev + 0.1;
-        if (newPosition >= duration) {
-          if (progressInterval.current) {
-            clearInterval(progressInterval.current);
-          }
-          return duration;
-        }
-        return newPosition;
-      });
-    }, 100);
-  };
+  }, [audioUrl]);
 
   const handlePlay = () => {
-    if (!utteranceRef.current) return;
+    if (!audioRef.current) return;
     
-    if (synth.speaking && synth.paused) {
-      synth.resume();
-      startProgressTracking();
-    } else if (!synth.speaking) {
-      // Si on n'est pas au début, on doit recréer l'utterance pour la position
-      if (currentPosition > 0) {
-        handleSeek([currentPosition]);
-      } else {
-        synth.speak(utteranceRef.current);
-        startProgressTracking();
-      }
-    }
+    audioRef.current.play();
     setIsPlaying(true);
   };
 
   const handlePause = () => {
-    if (synth.speaking) {
-      synth.pause();
-    }
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
+    if (!audioRef.current) return;
+    
+    audioRef.current.pause();
     setIsPlaying(false);
   };
 
   const handleRestart = () => {
-    synth.cancel();
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    setCurrentPosition(0);
-    setIsPlaying(false);
-    setTimeout(() => {
-      if (utteranceRef.current) {
-        synth.speak(utteranceRef.current);
-        setIsPlaying(true);
-        startProgressTracking();
-      }
-    }, 100);
+    if (!audioRef.current) return;
+    
+    audioRef.current.currentTime = 0;
+    audioRef.current.play();
+    setIsPlaying(true);
   };
 
   const handleSeek = (value: number[]) => {
     const newPosition = value[0];
+    if (!audioRef.current) return;
+    
+    audioRef.current.currentTime = newPosition;
     setCurrentPosition(newPosition);
-    
-    if (synth.speaking) {
-      synth.cancel();
-    }
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    
-    // Calculer quel segment commencer basé sur la position
-    const segmentDuration = duration / textSegments.length;
-    const segmentIndex = Math.floor(newPosition / segmentDuration);
-    
-    if (segmentIndex < textSegments.length) {
-      // Créer un nouvel utterance avec le texte à partir du segment sélectionné
-      const remainingText = textSegments.slice(segmentIndex).join('. ');
-      const newUtterance = new SpeechSynthesisUtterance(remainingText);
-      newUtterance.lang = 'fr-FR';
-      newUtterance.rate = 0.8;
-      newUtterance.pitch = 1;
-      newUtterance.volume = 1;
-      
-      newUtterance.onend = () => {
-        setIsPlaying(false);
-        setCurrentPosition(duration);
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
-        }
-      };
-      
-      if (isPlaying) {
-        synth.speak(newUtterance);
-        startProgressTracking();
-      }
-    }
   };
 
   const normalizeText = (text: string): string => {
@@ -244,9 +212,9 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setScore(20);
     setDifferences([]);
     setCurrentPosition(0);
-    synth.cancel();
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
     setIsPlaying(false);
   };
@@ -307,52 +275,62 @@ const DictationGame: React.FC<DictationGameProps> = ({
         <CardContent className="space-y-6">
           {/* Contrôles audio */}
           <div className="space-y-4">
-            <div className="flex justify-center items-center space-x-4">
-              <Button
-                onClick={handlePlay}
-                disabled={isPlaying}
-                variant="outline"
-                size="lg"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Lire
-              </Button>
-              
-              <Button
-                onClick={handlePause}
-                disabled={!isPlaying}
-                variant="outline"
-                size="lg"
-              >
-                <Pause className="w-5 h-5 mr-2" />
-                Pause
-              </Button>
-              
-              <Button
-                onClick={handleRestart}
-                variant="outline"
-                size="lg"
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
-                Recommencer
-              </Button>
-            </div>
+            {isGeneratingAudio ? (
+              <div className="flex justify-center items-center space-x-2 py-8">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Génération de l'audio en cours...</span>
+              </div>
+            ) : (
+              <div className="flex justify-center items-center space-x-4">
+                <Button
+                  onClick={handlePlay}
+                  disabled={isPlaying || !audioUrl}
+                  variant="outline"
+                  size="lg"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Lire
+                </Button>
+                
+                <Button
+                  onClick={handlePause}
+                  disabled={!isPlaying || !audioUrl}
+                  variant="outline"
+                  size="lg"
+                >
+                  <Pause className="w-5 h-5 mr-2" />
+                  Pause
+                </Button>
+                
+                <Button
+                  onClick={handleRestart}
+                  disabled={!audioUrl}
+                  variant="outline"
+                  size="lg"
+                >
+                  <RotateCcw className="w-5 h-5 mr-2" />
+                  Recommencer
+                </Button>
+              </div>
+            )}
             
             {/* Curseur de progression */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{formatTime(currentPosition)}</span>
-                <span>{formatTime(duration)}</span>
+            {!isGeneratingAudio && audioUrl && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>{formatTime(currentPosition)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+                <Slider
+                  value={[currentPosition]}
+                  onValueChange={handleSeek}
+                  max={duration}
+                  min={0}
+                  step={0.1}
+                  className="w-full"
+                />
               </div>
-              <Slider
-                value={[currentPosition]}
-                onValueChange={handleSeek}
-                max={duration}
-                min={0}
-                step={0.1}
-                className="w-full"
-              />
-            </div>
+            )}
           </div>
           
           {/* Zone de saisie */}
