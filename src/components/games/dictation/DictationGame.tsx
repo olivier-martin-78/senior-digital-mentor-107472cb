@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Pause, RotateCcw, CheckCircle, Clock } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle, SkipForward, SkipBack, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface DictationGameProps {
@@ -19,6 +19,12 @@ interface WordDifference {
   index: number;
 }
 
+interface Sentence {
+  text: string;
+  start: number;
+  end: number;
+}
+
 const DictationGame: React.FC<DictationGameProps> = ({
   title,
   dictationText,
@@ -30,25 +36,56 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [score, setScore] = useState(20);
   const [differences, setDifferences] = useState<WordDifference[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const [sentences, setSentences] = useState<Sentence[]>([]);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [estimatedDuration, setEstimatedDuration] = useState(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const [isVoluntaryStop, setIsVoluntaryStop] = useState(false);
   
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
-  // Initialize speech synthesis when component mounts
+  // Fonction pour segmenter le texte en phrases
+  const segmentText = (text: string): Sentence[] => {
+    // Divise par phrases en utilisant les points, points d'exclamation et points d'interrogation
+    const sentenceRegex = /[.!?]+/g;
+    const sentences: Sentence[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = sentenceRegex.exec(text)) !== null) {
+      const sentence = text.slice(lastIndex, match.index + match[0].length).trim();
+      if (sentence.length > 0) {
+        sentences.push({
+          text: sentence,
+          start: lastIndex,
+          end: match.index + match[0].length
+        });
+      }
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Ajouter le reste du texte s'il n'y a pas de ponctuation finale
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex).trim();
+      if (remainingText.length > 0) {
+        sentences.push({
+          text: remainingText,
+          start: lastIndex,
+          end: text.length
+        });
+      }
+    }
+
+    return sentences;
+  };
+
+  // Initialisation
   useEffect(() => {
-    console.log('DictationGame component loaded - improved version with progress tracking');
-    // Check if speech synthesis is supported
+    console.log('DictationGame component loaded - segmented version');
     if ('speechSynthesis' in window) {
       setIsReady(true);
-      // Calculate estimated duration (average reading speed: 150 words per minute)
-      const wordCount = dictationText.split(' ').length;
-      const estimatedMinutes = (wordCount / 150) * 60; // Convert to seconds
-      setEstimatedDuration(estimatedMinutes);
+      const segmentedSentences = segmentText(dictationText);
+      setSentences(segmentedSentences);
+      console.log('Sentences segmented:', segmentedSentences);
     } else {
       toast({
         title: 'Erreur',
@@ -58,54 +95,26 @@ const DictationGame: React.FC<DictationGameProps> = ({
     }
   }, [dictationText, toast]);
 
-  // Clean up interval on unmount
+  // Mettre à jour la progression
   useEffect(() => {
-    return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-      }
-    };
-  }, []);
-
-  const startProgressTracking = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
+    if (sentences.length > 0) {
+      const progressPercent = (currentSentenceIndex / sentences.length) * 100;
+      setProgress(progressPercent);
     }
-    
-    const startTime = Date.now() - (elapsedTime * 1000);
-    
-    progressInterval.current = setInterval(() => {
-      const currentTime = Date.now();
-      const elapsed = (currentTime - startTime) / 1000;
-      setElapsedTime(elapsed);
-      
-      if (estimatedDuration > 0) {
-        const progressPercent = Math.min((elapsed / estimatedDuration) * 100, 100);
-        setProgress(progressPercent);
-      }
-    }, 100);
-  };
+  }, [currentSentenceIndex, sentences.length]);
 
-  const stopProgressTracking = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
-  };
-
-  const speakText = () => {
-    if (!('speechSynthesis' in window)) return;
+  const speakSentence = (sentenceIndex: number) => {
+    if (!('speechSynthesis' in window) || !sentences[sentenceIndex]) return;
     
-    // Cancel any ongoing speech
     setIsVoluntaryStop(false);
     speechSynthesis.cancel();
     
-    const utterance = new SpeechSynthesisUtterance(dictationText);
-    utterance.rate = 0.8; // Slightly slower for dictation
+    const utterance = new SpeechSynthesisUtterance(sentences[sentenceIndex].text);
+    utterance.rate = 0.8;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     
-    // Try to use a French voice if available
+    // Essayer d'utiliser une voix française
     const voices = speechSynthesis.getVoices();
     const frenchVoice = voices.find(voice => 
       voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
@@ -117,37 +126,35 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
     utterance.onstart = () => {
       setIsPlaying(true);
-      setIsPaused(false);
-      startProgressTracking();
     };
 
     utterance.onend = () => {
       setIsPlaying(false);
-      setIsPaused(false);
-      stopProgressTracking();
       
-      // Only show completion message if it wasn't a voluntary stop
       if (!isVoluntaryStop) {
-        setProgress(100);
-        setElapsedTime(estimatedDuration);
-        toast({
-          title: 'Lecture terminée',
-          description: 'Vous pouvez maintenant commencer à écrire votre dictée',
-        });
+        // Passer automatiquement à la phrase suivante
+        if (sentenceIndex < sentences.length - 1) {
+          setCurrentSentenceIndex(sentenceIndex + 1);
+          setTimeout(() => speakSentence(sentenceIndex + 1), 500);
+        } else {
+          // Fin de la dictée
+          setProgress(100);
+          toast({
+            title: 'Dictée terminée',
+            description: 'Toutes les phrases ont été lues',
+          });
+        }
       }
     };
 
     utterance.onerror = (event) => {
       console.error('Speech synthesis error:', event);
       setIsPlaying(false);
-      setIsPaused(false);
-      stopProgressTracking();
       
-      // Only show error if it wasn't a voluntary stop
       if (!isVoluntaryStop) {
         toast({
           title: 'Erreur',
-          description: 'Impossible de lire le texte',
+          description: 'Impossible de lire cette phrase',
           variant: 'destructive',
         });
       }
@@ -157,35 +164,48 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const handlePlay = () => {
-    // Reset progress if starting from the beginning
-    if (!isPaused) {
-      setProgress(0);
-      setElapsedTime(0);
-    }
-    speakText();
+    speakSentence(currentSentenceIndex);
   };
 
   const handlePause = () => {
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
     setIsPlaying(false);
-    setIsPaused(true);
-    stopProgressTracking();
   };
 
-  const handleRestart = () => {
+  const handleStop = () => {
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
+    setIsPlaying(false);
+    setCurrentSentenceIndex(0);
     setProgress(0);
-    setElapsedTime(0);
-    setIsPaused(false);
-    setTimeout(() => speakText(), 100);
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const handlePreviousSentence = () => {
+    if (currentSentenceIndex > 0) {
+      const newIndex = currentSentenceIndex - 1;
+      setCurrentSentenceIndex(newIndex);
+      if (isPlaying) {
+        speakSentence(newIndex);
+      }
+    }
+  };
+
+  const handleNextSentence = () => {
+    if (currentSentenceIndex < sentences.length - 1) {
+      const newIndex = currentSentenceIndex + 1;
+      setCurrentSentenceIndex(newIndex);
+      if (isPlaying) {
+        speakSentence(newIndex);
+      }
+    }
+  };
+
+  const handleSentenceClick = (index: number) => {
+    setCurrentSentenceIndex(index);
+    if (isPlaying) {
+      speakSentence(index);
+    }
   };
 
   const normalizeText = (text: string): string => {
@@ -239,13 +259,11 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setShowCorrection(false);
     setScore(20);
     setDifferences([]);
+    setCurrentSentenceIndex(0);
     setProgress(0);
-    setElapsedTime(0);
-    setIsPaused(false);
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
     setIsPlaying(false);
-    stopProgressTracking();
   };
 
   const renderCorrectedText = () => {
@@ -289,6 +307,23 @@ const DictationGame: React.FC<DictationGameProps> = ({
     return renderWords;
   };
 
+  const renderTextWithHighlight = () => {
+    return sentences.map((sentence, index) => (
+      <span
+        key={index}
+        className={`cursor-pointer p-1 rounded transition-colors ${
+          index === currentSentenceIndex
+            ? 'bg-blue-200 text-blue-900'
+            : 'hover:bg-gray-100'
+        }`}
+        onClick={() => handleSentenceClick(index)}
+      >
+        {sentence.text}
+        {index < sentences.length - 1 ? ' ' : ''}
+      </span>
+    ));
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <Card>
@@ -300,16 +335,34 @@ const DictationGame: React.FC<DictationGameProps> = ({
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-900 mb-2">Instructions :</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Cliquez sur "Lire" pour commencer la dictée</li>
-              <li>• Utilisez "Pause" pour arrêter temporairement (la lecture reprendra au début)</li>
-              <li>• "Recommencer" relance la lecture depuis le début</li>
+              <li>• Cliquez sur "Lire" pour commencer la dictée phrase par phrase</li>
+              <li>• Utilisez les flèches pour naviguer entre les phrases</li>
+              <li>• Cliquez sur une phrase dans le texte pour la sélectionner</li>
+              <li>• "Pause" arrête la lecture, "Stop" remet au début</li>
               <li>• Écrivez ce que vous entendez dans la zone de texte</li>
             </ul>
           </div>
 
+          {/* Texte avec phrases surlignées */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Texte de la dictée :</h4>
+            <div className="text-sm leading-relaxed">
+              {renderTextWithHighlight()}
+            </div>
+          </div>
+
           {/* Contrôles audio */}
           <div className="space-y-4">
-            <div className="flex justify-center items-center space-x-4">
+            <div className="flex justify-center items-center space-x-2">
+              <Button
+                onClick={handlePreviousSentence}
+                disabled={!isReady || currentSentenceIndex === 0}
+                variant="outline"
+                size="sm"
+              >
+                <SkipBack className="w-4 h-4" />
+              </Button>
+              
               <Button
                 onClick={handlePlay}
                 disabled={!isReady || isPlaying}
@@ -317,7 +370,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 size="lg"
               >
                 <Play className="w-5 h-5 mr-2" />
-                {isPaused ? 'Reprendre' : 'Lire'}
+                Lire
               </Button>
               
               <Button
@@ -331,27 +384,35 @@ const DictationGame: React.FC<DictationGameProps> = ({
               </Button>
               
               <Button
-                onClick={handleRestart}
+                onClick={handleStop}
                 disabled={!isReady}
                 variant="outline"
                 size="lg"
               >
-                <RotateCcw className="w-5 h-5 mr-2" />
-                Recommencer
+                <Square className="w-5 h-5 mr-2" />
+                Stop
+              </Button>
+              
+              <Button
+                onClick={handleNextSentence}
+                disabled={!isReady || currentSentenceIndex === sentences.length - 1}
+                variant="outline"
+                size="sm"
+              >
+                <SkipForward className="w-4 h-4" />
               </Button>
             </div>
             
-            {/* Progress bar and timing */}
+            {/* Progression */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm text-muted-foreground">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{formatTime(elapsedTime)} / {formatTime(estimatedDuration)}</span>
+                <div>
+                  Phrase {currentSentenceIndex + 1} sur {sentences.length}
                 </div>
                 <div>
                   {isPlaying && '🔊 Lecture en cours...'}
-                  {isPaused && '⏸️ En pause'}
-                  {!isPlaying && !isPaused && progress > 0 && '✓ Lecture terminée'}
+                  {!isPlaying && progress > 0 && progress < 100 && '⏸️ En pause'}
+                  {progress === 100 && '✓ Dictée terminée'}
                 </div>
               </div>
               
