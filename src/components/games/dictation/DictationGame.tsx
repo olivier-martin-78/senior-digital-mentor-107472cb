@@ -54,7 +54,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
         throw new Error('Speech synthesis not supported in this browser');
       }
 
-      // Create speech utterance
+      // Create speech utterance for audio generation only (no immediate playback)
       const utterance = new SpeechSynthesisUtterance(dictationText);
       
       // Configure voice settings
@@ -113,43 +113,15 @@ const DictationGame: React.FC<DictationGameProps> = ({
     } catch (error) {
       console.error('Error generating audio:', error);
       
-      // Fallback: direct speech without recording
-      try {
-        console.log('Falling back to direct speech synthesis...');
-        const utterance = new SpeechSynthesisUtterance(dictationText);
-        utterance.rate = 0.8;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        const voices = speechSynthesis.getVoices();
-        const frenchVoice = voices.find(voice => 
-          voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
-        );
-        
-        if (frenchVoice) {
-          utterance.voice = frenchVoice;
-        }
-
-        // Use direct speech synthesis instead of recorded audio
-        speechSynthesis.speak(utterance);
-        
-        // Create a dummy audio element to maintain UI consistency
-        const dummyUrl = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuE0fG+2+LDdCkGJG/E+eOGOgcUZrXo8KhV3+LDdSYGIm/G9-WMPwgNYLPq9qFQDA0L';
-        setAudioUrl(dummyUrl);
-        
-        toast({
-          title: 'Mode de lecture directe',
-          description: 'Audio généré avec succès (lecture directe)',
-        });
-        
-      } catch (fallbackError) {
-        console.error('Fallback speech synthesis error:', fallbackError);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de générer l\'audio. Vérifiez que votre navigateur supporte la synthèse vocale.',
-          variant: 'destructive',
-        });
-      }
+      // Fallback: create audio URL for controlled speech synthesis
+      console.log('Using fallback mode with controlled speech synthesis...');
+      const fallbackUrl = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuE0fG+2+LDdCkGJG/E+eOGOgcUZrXo8KhV3+LDdSYGIm/G9-WMPwgNYLPq9qFQDA0L';
+      setAudioUrl(fallbackUrl);
+      
+      toast({
+        title: 'Mode de lecture directe',
+        description: 'Audio prêt pour la lecture',
+      });
     } finally {
       setIsGeneratingAudio(false);
     }
@@ -201,26 +173,72 @@ const DictationGame: React.FC<DictationGameProps> = ({
     };
   }, [audioUrl]);
 
+  const speakText = () => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(dictationText);
+      utterance.rate = 0.8;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      const voices = speechSynthesis.getVoices();
+      const frenchVoice = voices.find(voice => 
+        voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+      );
+      
+      if (frenchVoice) {
+        utterance.voice = frenchVoice;
+      }
+
+      utterance.onstart = () => {
+        setIsPlaying(true);
+      };
+
+      utterance.onend = () => {
+        setIsPlaying(false);
+      };
+
+      utterance.onerror = () => {
+        setIsPlaying(false);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de lire le texte',
+          variant: 'destructive',
+        });
+      };
+
+      speechSynthesis.speak(utterance);
+    }
+  };
+
   const handlePlay = () => {
-    if (!audioRef.current) return;
-    
-    audioRef.current.play();
-    setIsPlaying(true);
+    if (audioRef.current && audioRef.current.src && !audioRef.current.src.includes('data:audio/wav;base64')) {
+      // Use audio element if we have a real audio file
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      // Use speech synthesis for direct playback
+      speakText();
+    }
   };
 
   const handlePause = () => {
-    if (!audioRef.current) return;
-    
-    audioRef.current.pause();
+    if (audioRef.current && !audioRef.current.src.includes('data:audio/wav;base64')) {
+      audioRef.current.pause();
+    } else {
+      speechSynthesis.cancel();
+    }
     setIsPlaying(false);
   };
 
   const handleRestart = () => {
-    if (!audioRef.current) return;
-    
-    audioRef.current.currentTime = 0;
-    audioRef.current.play();
-    setIsPlaying(true);
+    if (audioRef.current && !audioRef.current.src.includes('data:audio/wav;base64')) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      speechSynthesis.cancel();
+      setTimeout(() => speakText(), 100);
+    }
   };
 
   const handleSeek = (value: number[]) => {
