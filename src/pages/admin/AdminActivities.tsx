@@ -219,21 +219,21 @@ const AdminActivities = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setShowForm(!showForm)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter une activité
+                  Créer une activité
                 </DropdownMenuItem>
                 {type === 'games' && (
                   <>
                     <DropdownMenuItem onClick={() => setShowMemoryManager(!showMemoryManager)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Gérer les jeux de Memory
+                      Créer jeu des pairs
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowMusicQuizForm(!showMusicQuizForm)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Nouveau quiz
+                      Créer quiz
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowTimelineForm(!showTimelineForm)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Nouvelle Frise Chronologique
+                      Créer frise chronologique
                     </DropdownMenuItem>
                   </>
                 )}
