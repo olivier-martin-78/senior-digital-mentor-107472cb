@@ -1,5 +1,6 @@
 
 import React from 'react';
+import HeaderWrapper from '@/components/HeaderWrapper';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -56,6 +57,7 @@ const PrivateApp: React.FC = () => {
   return (
     <AuthProvider>
       <Toaster />
+      <HeaderWrapper />
       <div className="min-h-screen">
         <Routes>
           {/* Page d'accueil pour les utilisateurs connectés */}
