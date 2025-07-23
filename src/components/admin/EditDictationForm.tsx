@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Activity } from '@/hooks/useActivities';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditDictationFormProps {
   activity: Activity;
@@ -27,10 +29,15 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
     dictationText: '',
     correctedText: '',
     thumbnailUrl: activity.thumbnail_url || '',
-    subActivityTagId: activity.sub_activity_tag_id || ''
+    subActivityTagId: activity.sub_activity_tag_id || '',
+    sharedGlobally: activity.shared_globally || false
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // L'utilisateur peut partager s'il est le créateur de l'activité
+  const canShareGlobally = user?.id === activity.created_by;
 
   useEffect(() => {
     if (activity.iframe_code) {
@@ -39,7 +46,8 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
         setFormData(prev => ({
           ...prev,
           dictationText: dictationData.dictationText || '',
-          correctedText: dictationData.correctedText || ''
+          correctedText: dictationData.correctedText || '',
+          sharedGlobally: activity.shared_globally || false
         }));
       } catch (error) {
         console.error('Erreur lors du parsing des données de dictée:', error);
@@ -71,14 +79,21 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
         subActivityTagId: formData.subActivityTagId
       };
 
+      const updateData: any = {
+        title: formData.title,
+        iframe_code: JSON.stringify(dictationData),
+        thumbnail_url: formData.thumbnailUrl || null,
+        sub_activity_tag_id: formData.subActivityTagId || null,
+      };
+
+      // N'inclure shared_globally que si l'utilisateur peut modifier ce paramètre
+      if (canShareGlobally) {
+        updateData.shared_globally = formData.sharedGlobally;
+      }
+
       const { error } = await supabase
         .from('activities')
-        .update({
-          title: formData.title,
-          iframe_code: JSON.stringify(dictationData),
-          thumbnail_url: formData.thumbnailUrl || null,
-          sub_activity_tag_id: formData.subActivityTagId || null,
-        })
+        .update(updateData)
         .eq('id', activity.id);
 
       if (error) throw error;
@@ -168,6 +183,21 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
               Ce texte servira de référence pour la correction automatique
             </p>
           </div>
+
+          {canShareGlobally && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sharedGlobally"
+                checked={formData.sharedGlobally}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, sharedGlobally: checked === true })
+                }
+              />
+              <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Partager avec tout le monde
+              </Label>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button type="submit" disabled={loading}>

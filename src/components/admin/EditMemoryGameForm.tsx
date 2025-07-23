@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Activity } from '@/hooks/useActivities';
 import SubActivitySelector from "@/components/activities/SubActivitySelector";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditMemoryGameFormProps {
   activity: Activity;
@@ -21,9 +23,13 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
   onCancel 
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Parse les données du jeu Memory
   const gameData = activity.iframe_code ? JSON.parse(activity.iframe_code) : null;
+
+  // L'utilisateur peut partager s'il est le créateur de l'activité
+  const canShareGlobally = user?.id === activity.created_by;
   
   const [title, setTitle] = useState(gameData?.title || "");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -31,6 +37,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
   const [currentImages, setCurrentImages] = useState<string[]>(gameData?.images || []);
   const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(activity.thumbnail_url || null);
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(activity.sub_activity_tag_id);
+  const [sharedGlobally, setSharedGlobally] = useState<boolean>(activity.shared_globally || false);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,14 +140,21 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
       };
 
       // Mettre à jour l'activité
+      const updateData: any = {
+        title: title,
+        iframe_code: JSON.stringify(updatedGameData),
+        thumbnail_url: thumbnailUrl,
+        sub_activity_tag_id: selectedSubTagId,
+      };
+
+      // N'inclure shared_globally que si l'utilisateur peut modifier ce paramètre
+      if (canShareGlobally) {
+        updateData.shared_globally = sharedGlobally;
+      }
+
       const { error } = await supabase
         .from('activities')
-        .update({
-          title: title,
-          iframe_code: JSON.stringify(updatedGameData),
-          thumbnail_url: thumbnailUrl,
-          sub_activity_tag_id: selectedSubTagId,
-        })
+        .update(updateData)
         .eq('id', activity.id);
 
       if (error) {
@@ -211,6 +225,19 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
                 onSubTagChange={setSelectedSubTagId}
               />
             </div>
+
+            {canShareGlobally && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sharedGlobally"
+                  checked={sharedGlobally}
+                  onCheckedChange={(checked) => setSharedGlobally(checked === true)}
+                />
+                <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Partager avec tout le monde
+                </Label>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Image de couverture</Label>
