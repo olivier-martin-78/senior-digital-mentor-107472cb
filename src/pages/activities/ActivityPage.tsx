@@ -67,15 +67,17 @@ const ActivityPage = () => {
     return activities.filter(activity => activity.sub_activity_tag_id === filter);
   };
 
-  console.log('🔍 Debug filtrage par sous-activité:', {
-    subTagFilter,
-    subTags: subTags.map(tag => ({ id: tag.id, name: tag.name })),
-    activitiesWithSubTags: activities.map(a => ({
-      id: a.id,
-      title: a.title,
-      sub_activity_tag_id: a.sub_activity_tag_id,
-      matchesFilter: a.sub_activity_tag_id === subTagFilter
-    }))
+  // Debug pour iPhone - logs séparés pour éviter "[object Object]"
+  console.log('🔍 Debug subTagFilter:', subTagFilter);
+  console.log('🔍 Debug subTags count:', subTags.length);
+  console.log('🔍 Debug activities count:', activities.length);
+  console.log('🔍 Debug activities details:');
+  activities.forEach((a, index) => {
+    console.log(`Activity ${index}: ${a.title} | sub_tag_id: ${a.sub_activity_tag_id} | created_by: ${a.created_by} | shared_globally: ${a.shared_globally}`);
+  });
+  console.log('🔍 Debug subTags details:');
+  subTags.forEach((tag, index) => {
+    console.log(`SubTag ${index}: ${tag.name} | id: ${tag.id}`);
   });
 
   const handleEditActivity = (activityId: string) => {
