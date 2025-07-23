@@ -7,14 +7,18 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`Received ${req.method} request to text-to-speech function`);
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { text, voice = 'alloy' } = await req.json();
+    console.log(`Processing TTS request for text: "${text?.substring(0, 50)}..."`);
 
     if (!text) {
+      console.error("No text provided");
       return new Response(
         JSON.stringify({ error: 'Text is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -23,14 +27,14 @@ serve(async (req) => {
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      console.error("OPENAI_API_KEY not found");
+      console.error("OPENAI_API_KEY not found in environment");
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    console.log(`Generating speech for text: "${text.substring(0, 100)}..."`);
+    console.log(`Making request to OpenAI TTS API...`);
 
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -55,11 +59,13 @@ serve(async (req) => {
       );
     }
 
-    console.log("Successfully generated speech from OpenAI");
+    console.log("Successfully generated speech from OpenAI, converting to base64...");
     
     // Return the audio data as base64 in JSON
     const audioBuffer = await response.arrayBuffer();
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    
+    console.log(`Base64 conversion complete, audio size: ${base64Audio.length} chars`);
     
     return new Response(JSON.stringify({ audioContent: base64Audio }), {
       headers: {
@@ -71,7 +77,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("TTS generation error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Unknown error occurred' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
