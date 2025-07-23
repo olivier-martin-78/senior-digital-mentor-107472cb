@@ -42,8 +42,8 @@ const ActivityEditForm: React.FC<ActivityEditFormProps> = ({ activity, onSave, o
   });
 
   // Vérifier si l'utilisateur peut utiliser la fonction de partage global
-  const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com' && 
-                          ['meditation', 'games', 'exercises'].includes(activity.activity_type);
+  // L'utilisateur peut partager s'il est le créateur de l'activité
+  const canShareGlobally = user?.id === activity.created_by;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
