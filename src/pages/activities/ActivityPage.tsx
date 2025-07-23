@@ -226,11 +226,12 @@ const ActivityPage = () => {
           </div>
           
           {canAddActivity && (
-            <Link to={`/admin/activities/${type}`}>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une activité
-              </Button>
+            <Link 
+              to={`/admin/activities/${type}`}
+              className="text-tranches-dustyblue hover:text-tranches-dustyblue/80 underline underline-offset-4 flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une activité
             </Link>
           )}
         </div>

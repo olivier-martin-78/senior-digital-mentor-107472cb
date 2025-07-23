@@ -266,13 +266,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           </div>
         )}
         
-        {/* Avertissement iOS pour quiz sans audio */}
-        {shouldShowIOSWarning() && isIOS() && (
-          <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            iOS incompatible
-          </div>
-        )}
 
         {canEdit && (
           <Button
