@@ -30,6 +30,15 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
 
   // L'utilisateur peut partager s'il est le créateur de l'activité
   const canShareGlobally = user?.id === activity.created_by;
+
+  // Logs pour déboguer
+  console.log('EditMemoryGameForm Debug:', {
+    userId: user?.id,
+    activityCreatedBy: activity.created_by,
+    canShareGlobally,
+    activitySharedGlobally: activity.shared_globally,
+    activityData: activity
+  });
   
   const [title, setTitle] = useState(gameData?.title || "");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);

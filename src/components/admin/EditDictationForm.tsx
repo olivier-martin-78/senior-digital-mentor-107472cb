@@ -39,6 +39,15 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
   // L'utilisateur peut partager s'il est le créateur de l'activité
   const canShareGlobally = user?.id === activity.created_by;
 
+  // Logs pour déboguer
+  console.log('EditDictationForm Debug:', {
+    userId: user?.id,
+    activityCreatedBy: activity.created_by,
+    canShareGlobally,
+    activitySharedGlobally: activity.shared_globally,
+    activityData: activity
+  });
+
   useEffect(() => {
     if (activity.iframe_code) {
       try {
