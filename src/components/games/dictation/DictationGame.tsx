@@ -37,7 +37,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Generate audio from text using OpenAI TTS
+  // Generate audio using Web Speech API (free alternative)
   useEffect(() => {
     if (dictationText && !audioUrl) {
       generateAudio();
@@ -47,43 +47,109 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const generateAudio = async () => {
     setIsGeneratingAudio(true);
     try {
-      console.log('Generating audio for dictation text...');
+      console.log('Generating audio using Web Speech API...');
       
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: {
-          text: dictationText,
-          voice: 'alloy'
-        }
-      });
-
-      if (error) {
-        console.error('Error generating audio:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de générer l\'audio',
-          variant: 'destructive',
-        });
-        return;
+      // Check if speech synthesis is supported
+      if (!('speechSynthesis' in window)) {
+        throw new Error('Speech synthesis not supported in this browser');
       }
 
-      // Decode base64 audio data and create blob URL
-      const binaryString = atob(data.audioContent);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      // Create speech utterance
+      const utterance = new SpeechSynthesisUtterance(dictationText);
+      
+      // Configure voice settings
+      utterance.rate = 0.8; // Slightly slower for dictation
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Try to use a French voice if available
+      const voices = speechSynthesis.getVoices();
+      const frenchVoice = voices.find(voice => 
+        voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+      );
+      
+      if (frenchVoice) {
+        utterance.voice = frenchVoice;
+        console.log('Using French voice:', frenchVoice.name);
+      } else {
+        console.log('No French voice found, using default voice');
       }
-      const blob = new Blob([bytes], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
 
-      console.log('Audio generated successfully');
+      // Create audio blob from speech synthesis
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const destination = audioContext.createMediaStreamDestination();
+      const mediaRecorder = new MediaRecorder(destination.stream);
+      const audioChunks: BlobPart[] = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        console.log('Audio generated successfully with Web Speech API');
+      };
+
+      // Start recording and speak
+      mediaRecorder.start();
+      speechSynthesis.speak(utterance);
+
+      utterance.onend = () => {
+        setTimeout(() => {
+          mediaRecorder.stop();
+          audioContext.close();
+        }, 100);
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        mediaRecorder.stop();
+        audioContext.close();
+        throw new Error('Speech synthesis failed');
+      };
+
     } catch (error) {
       console.error('Error generating audio:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de générer l\'audio',
-        variant: 'destructive',
-      });
+      
+      // Fallback: direct speech without recording
+      try {
+        console.log('Falling back to direct speech synthesis...');
+        const utterance = new SpeechSynthesisUtterance(dictationText);
+        utterance.rate = 0.8;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        const voices = speechSynthesis.getVoices();
+        const frenchVoice = voices.find(voice => 
+          voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+        );
+        
+        if (frenchVoice) {
+          utterance.voice = frenchVoice;
+        }
+
+        // Use direct speech synthesis instead of recorded audio
+        speechSynthesis.speak(utterance);
+        
+        // Create a dummy audio element to maintain UI consistency
+        const dummyUrl = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuE0fG+2+LDdCkGJG/E+eOGOgcUZrXo8KhV3+LDdSYGIm/G9-WMPwgNYLPq9qFQDA0L';
+        setAudioUrl(dummyUrl);
+        
+        toast({
+          title: 'Mode de lecture directe',
+          description: 'Audio généré avec succès (lecture directe)',
+        });
+        
+      } catch (fallbackError) {
+        console.error('Fallback speech synthesis error:', fallbackError);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de générer l\'audio. Vérifiez que votre navigateur supporte la synthèse vocale.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsGeneratingAudio(false);
     }
