@@ -73,14 +73,12 @@ const ActivityPage = () => {
 
   const filteredActivities = filterActivitiesBySubTag(activities, subTagFilter);
 
-  // Jeux intégrés pour la section jeux
+  // Jeux intégrés pour la section jeux (SANS la dictée)
   const getIntegratedGames = () => {
     if (type !== 'games') return [];
     
     const remueMeningesSubTag = subTags.find(tag => tag.name === 'Remue-méninges');
-    const dicteeSubTag = subTags.find(tag => tag.name === 'Dictée');
     const remueMeningesId = remueMeningesSubTag?.id;
-    const dicteeId = dicteeSubTag?.id;
     
     const games = [
       {
@@ -192,28 +190,6 @@ const ActivityPage = () => {
             </CardContent>
           </Link>
         </Card>
-      },
-      {
-        key: "dictation",
-        subTagId: dicteeId || null,
-        card: <Card key="dictation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/dictation/5397b8b3-c9c8-4e63-86ad-bbcd7644cc34" className="block">
-            <div className="h-48 bg-gradient-to-br from-indigo-400 to-teal-500 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Dictée</h3>
-              </div>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg">Dictée</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Écoutez et écrivez le texte dicté. Exercice parfait pour améliorer l'orthographe et l'attention.
-              </p>
-            </CardContent>
-          </Link>
-        </Card>
       }
     ];
 
@@ -230,6 +206,44 @@ const ActivityPage = () => {
   };
 
   const PageIcon = getPageIcon();
+
+  // Fonction pour détecter si une activité est une dictée
+  const isDictationActivity = (activity: any) => {
+    // Vérifier si c'est une dictée via l'iframe_code
+    if (activity.iframe_code) {
+      try {
+        const gameData = JSON.parse(activity.iframe_code);
+        return gameData?.type === 'dictation';
+      } catch (e) {
+        // Si on ne peut pas parser le JSON, vérifier d'autres indicateurs
+      }
+    }
+    
+    // Vérifier si le titre contient "dictée"
+    if (activity.title && activity.title.toLowerCase().includes('dictée')) {
+      return true;
+    }
+    
+    // Vérifier si c'est associé à la sous-activité "Dictée"
+    const dicteeSubTag = subTags.find(tag => tag.name === 'Dictée');
+    if (dicteeSubTag && activity.sub_activity_tag_id === dicteeSubTag.id) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  console.log('🔍 Debug activités filtrées:', {
+    totalActivities: activities.length,
+    filteredActivities: filteredActivities.length,
+    subTagFilter,
+    activities: activities.map(a => ({
+      id: a.id,
+      title: a.title,
+      sub_activity_tag_id: a.sub_activity_tag_id,
+      isDictation: isDictationActivity(a)
+    }))
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -305,14 +319,8 @@ const ActivityPage = () => {
               const isYouTube = isYouTubeUrl(activity.link);
               const videoId = isYouTube ? extractYouTubeId(activity.link) : undefined;
               
-              // Vérifier si c'est une dictée
-              let isDictation = false;
-              try {
-                const gameData = activity.iframe_code ? JSON.parse(activity.iframe_code) : null;
-                isDictation = gameData?.type === 'dictation';
-              } catch (e) {
-                // Pas une dictée
-              }
+              // Vérifier si c'est une dictée avec une logique améliorée
+              const isDictation = isDictationActivity(activity);
               
               return (
                 <ActivityCard
