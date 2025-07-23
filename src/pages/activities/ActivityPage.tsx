@@ -67,6 +67,17 @@ const ActivityPage = () => {
     return activities.filter(activity => activity.sub_activity_tag_id === filter);
   };
 
+  console.log('🔍 Debug filtrage par sous-activité:', {
+    subTagFilter,
+    subTags: subTags.map(tag => ({ id: tag.id, name: tag.name })),
+    activitiesWithSubTags: activities.map(a => ({
+      id: a.id,
+      title: a.title,
+      sub_activity_tag_id: a.sub_activity_tag_id,
+      matchesFilter: a.sub_activity_tag_id === subTagFilter
+    }))
+  });
+
   const handleEditActivity = (activityId: string) => {
     navigate(`/admin/activities/${type}?edit=${activityId}`);
   };
