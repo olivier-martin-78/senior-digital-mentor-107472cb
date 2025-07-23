@@ -66,8 +66,13 @@ const DictationGame: React.FC<DictationGameProps> = ({
         return;
       }
 
-      // Create blob URL from response
-      const blob = new Blob([data], { type: 'audio/mpeg' });
+      // Decode base64 audio data and create blob URL
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'audio/mpeg' });
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
 

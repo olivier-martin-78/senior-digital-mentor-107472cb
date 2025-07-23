@@ -57,14 +57,14 @@ serve(async (req) => {
 
     console.log("Successfully generated speech from OpenAI");
     
-    // Return the audio file directly
+    // Return the audio data as base64 in JSON
     const audioBuffer = await response.arrayBuffer();
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
     
-    return new Response(audioBuffer, {
+    return new Response(JSON.stringify({ audioContent: base64Audio }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.byteLength.toString(),
+        'Content-Type': 'application/json',
       },
     });
 
