@@ -30,17 +30,6 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
 
   // L'utilisateur peut partager s'il est le créateur de l'activité
   const canShareGlobally = user?.id === activity.created_by;
-
-  // Logs pour déboguer
-  console.log('=== EditMemoryGameForm RENDU ===');
-  console.log('EditMemoryGameForm Debug:', {
-    userId: user?.id,
-    activityCreatedBy: activity.created_by,
-    canShareGlobally,
-    activitySharedGlobally: activity.shared_globally,
-    activityData: activity
-  });
-  console.log('=== FIN Debug EditMemoryGameForm ===');
   
   const [title, setTitle] = useState(gameData?.title || "");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -238,19 +227,16 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
             </div>
 
             {canShareGlobally && (
-              <>
-                {console.log('=== RENDU CASE À COCHER MEMORY GAME ===')}
-                <div className="flex items-center space-x-2" style={{backgroundColor: 'yellow', padding: '10px', border: '2px solid red'}}>
-                  <Checkbox
-                    id="sharedGlobally"
-                    checked={sharedGlobally}
-                    onCheckedChange={(checked) => setSharedGlobally(checked === true)}
-                  />
-                  <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Partager avec tout le monde
-                  </Label>
-                </div>
-              </>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sharedGlobally"
+                  checked={sharedGlobally}
+                  onCheckedChange={(checked) => setSharedGlobally(checked === true)}
+                />
+                <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Partager avec tout le monde
+                </Label>
+              </div>
             )}
 
             <div className="space-y-2">
