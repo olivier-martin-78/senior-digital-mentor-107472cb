@@ -33,6 +33,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   // Initialize speech synthesis when component mounts
   useEffect(() => {
+    console.log('DictationGame component loaded - refactored version');
     // Check if speech synthesis is supported
     if ('speechSynthesis' in window) {
       setIsReady(true);
