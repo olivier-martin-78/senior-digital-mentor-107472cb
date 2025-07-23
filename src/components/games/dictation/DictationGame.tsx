@@ -311,15 +311,14 @@ const DictationGame: React.FC<DictationGameProps> = ({
     return sentences.map((sentence, index) => (
       <span
         key={index}
-        className={`cursor-pointer p-1 rounded transition-colors ${
+        className={`cursor-pointer p-2 m-1 rounded transition-colors inline-block ${
           index === currentSentenceIndex
             ? 'bg-blue-200 text-blue-900'
             : 'hover:bg-gray-100'
         }`}
         onClick={() => handleSentenceClick(index)}
       >
-        {sentence.text}
-        {index < sentences.length - 1 ? ' ' : ''}
+        Phrase {index + 1}
       </span>
     ));
   };
