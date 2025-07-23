@@ -150,14 +150,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
     utterance.onerror = (event) => {
       console.error('Speech synthesis error:', event);
       setIsPlaying(false);
-      
-      if (!isVoluntaryStop) {
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de lire cette phrase',
-          variant: 'destructive',
-        });
-      }
     };
 
     speechSynthesis.speak(utterance);
