@@ -245,7 +245,7 @@ const AdminActivities = () => {
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  Créer une série de cartes Memory
+                  Créer une série de jeu des pairs
                   <Button 
                     onClick={() => setShowMemoryManager(false)}
                     variant="outline"
