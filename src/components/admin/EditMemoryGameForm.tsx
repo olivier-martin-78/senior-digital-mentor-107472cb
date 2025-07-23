@@ -238,16 +238,19 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
             </div>
 
             {canShareGlobally && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sharedGlobally"
-                  checked={sharedGlobally}
-                  onCheckedChange={(checked) => setSharedGlobally(checked === true)}
-                />
-                <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Partager avec tout le monde
-                </Label>
-              </div>
+              <>
+                {console.log('=== RENDU CASE À COCHER MEMORY GAME ===')}
+                <div className="flex items-center space-x-2" style={{backgroundColor: 'yellow', padding: '10px', border: '2px solid red'}}>
+                  <Checkbox
+                    id="sharedGlobally"
+                    checked={sharedGlobally}
+                    onCheckedChange={(checked) => setSharedGlobally(checked === true)}
+                  />
+                  <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Partager avec tout le monde
+                  </Label>
+                </div>
+              </>
             )}
 
             <div className="space-y-2">

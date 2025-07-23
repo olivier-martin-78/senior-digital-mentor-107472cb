@@ -196,18 +196,21 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
           </div>
 
           {canShareGlobally && (
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="sharedGlobally"
-                checked={formData.sharedGlobally}
-                onCheckedChange={(checked) => 
-                  setFormData({ ...formData, sharedGlobally: checked === true })
-                }
-              />
-              <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Partager avec tout le monde
-              </Label>
-            </div>
+            <>
+              {console.log('=== RENDU CASE À COCHER DICTATION ===')}
+              <div className="flex items-center space-x-2" style={{backgroundColor: 'yellow', padding: '10px', border: '2px solid red'}}>
+                <Checkbox
+                  id="sharedGlobally"
+                  checked={formData.sharedGlobally}
+                  onCheckedChange={(checked) => 
+                    setFormData({ ...formData, sharedGlobally: checked === true })
+                  }
+                />
+                <Label htmlFor="sharedGlobally" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Partager avec tout le monde
+                </Label>
+              </div>
+            </>
           )}
 
           <div className="flex gap-2">
