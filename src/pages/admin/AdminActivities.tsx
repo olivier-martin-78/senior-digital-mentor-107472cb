@@ -523,7 +523,7 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          {!editingActivity && (
+          {!editingActivity && !showForm && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => {
                 const isYouTube = isYouTubeUrl(activity.link);
