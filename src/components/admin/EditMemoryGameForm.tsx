@@ -32,6 +32,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
   const canShareGlobally = user?.id === activity.created_by;
 
   // Logs pour déboguer
+  console.log('=== EditMemoryGameForm RENDU ===');
   console.log('EditMemoryGameForm Debug:', {
     userId: user?.id,
     activityCreatedBy: activity.created_by,
@@ -39,6 +40,7 @@ export const EditMemoryGameForm: React.FC<EditMemoryGameFormProps> = ({
     activitySharedGlobally: activity.shared_globally,
     activityData: activity
   });
+  console.log('=== FIN Debug EditMemoryGameForm ===');
   
   const [title, setTitle] = useState(gameData?.title || "");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);

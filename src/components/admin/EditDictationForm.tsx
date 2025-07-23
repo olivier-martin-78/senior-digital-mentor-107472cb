@@ -40,6 +40,7 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
   const canShareGlobally = user?.id === activity.created_by;
 
   // Logs pour déboguer
+  console.log('=== EditDictationForm RENDU ===');
   console.log('EditDictationForm Debug:', {
     userId: user?.id,
     activityCreatedBy: activity.created_by,
@@ -47,6 +48,7 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
     activitySharedGlobally: activity.shared_globally,
     activityData: activity
   });
+  console.log('=== FIN Debug EditDictationForm ===');
 
   useEffect(() => {
     if (activity.iframe_code) {
