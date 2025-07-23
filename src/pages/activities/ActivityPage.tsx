@@ -281,11 +281,20 @@ const ActivityPage = () => {
               const isYouTube = isYouTubeUrl(activity.link);
               const videoId = isYouTube ? extractYouTubeId(activity.link) : undefined;
               
+              // Vérifier si c'est une dictée
+              let isDictation = false;
+              try {
+                const gameData = activity.iframe_code ? JSON.parse(activity.iframe_code) : null;
+                isDictation = gameData?.type === 'dictation';
+              } catch (e) {
+                // Pas une dictée
+              }
+              
               return (
                 <ActivityCard
                   key={activity.id}
                   title={activity.title}
-                  link={activity.link}
+                  link={isDictation ? `/activities/dictation/${activity.id}` : activity.link}
                   isYouTube={isYouTube}
                   videoId={videoId}
                   thumbnailUrl={activity.thumbnail_url}

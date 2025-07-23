@@ -25,6 +25,8 @@ import { CreateTimelineForm } from '@/components/activities/timeline/CreateTimel
 import { EditTimelineForm } from '@/components/activities/timeline/EditTimelineForm';
 import { TimelineData } from '@/types/timeline';
 import QuizConverter from '@/components/admin/QuizConverter';
+import CreateDictationForm from '@/components/admin/CreateDictationForm';
+import EditDictationForm from '@/components/admin/EditDictationForm';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
@@ -42,6 +44,7 @@ const AdminActivities = () => {
   const [showMemoryManager, setShowMemoryManager] = useState(false);
   const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
   const [showTimelineForm, setShowTimelineForm] = useState(false);
+  const [showDictationForm, setShowDictationForm] = useState(false);
   const [showQuizConverter, setShowQuizConverter] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
@@ -174,6 +177,7 @@ const AdminActivities = () => {
     setShowMemoryManager(false);
     setShowMusicQuizForm(false);
     setShowTimelineForm(false);
+    setShowDictationForm(false);
     setShowQuizConverter(false);
   };
 
@@ -234,6 +238,10 @@ const AdminActivities = () => {
                     <DropdownMenuItem onClick={() => setShowTimelineForm(!showTimelineForm)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Créer frise chronologique
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowDictationForm(!showDictationForm)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer dictée
                     </DropdownMenuItem>
                   </>
                 )}
@@ -320,6 +328,18 @@ const AdminActivities = () => {
             </div>
           )}
 
+          {showDictationForm && type === 'games' && (
+            <div className="mb-8">
+              <CreateDictationForm 
+                onSuccess={() => {
+                  setShowDictationForm(false);
+                  refetch();
+                }}
+                onCancel={() => setShowDictationForm(false)}
+              />
+            </div>
+          )}
+
           {editingActivity && (
             <div className="mb-8">
               {(() => {
@@ -337,6 +357,14 @@ const AdminActivities = () => {
                   } else if (gameData?.type === 'music_quiz') {
                     return (
                       <EditMusicQuizForm
+                        activity={editingActivity}
+                        onSave={handleSaveEdit}
+                        onCancel={handleCancelEdit}
+                      />
+                    );
+                  } else if (gameData?.type === 'dictation') {
+                    return (
+                      <EditDictationForm
                         activity={editingActivity}
                         onSave={handleSaveEdit}
                         onCancel={handleCancelEdit}
@@ -523,7 +551,7 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showQuizConverter && (
+          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showDictationForm && !showQuizConverter && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => {
                 const isYouTube = isYouTubeUrl(activity.link);
