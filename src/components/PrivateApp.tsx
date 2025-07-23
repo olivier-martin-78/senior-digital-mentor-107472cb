@@ -92,6 +92,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/wishes/new" element={<WishNew />} />
             <Route path="/wishes/edit/:id" element={<WishEdit />} />
             <Route path="/wishes/:id" element={<WishPost />} />
+            <Route path="/activities" element={<Activities />} />
             <Route path="/activities/activities" element={<Activities />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
