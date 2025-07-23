@@ -38,6 +38,7 @@ import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
 import TranslationGame from '@/pages/activities/TranslationGame';
+import DictationGamePage from '@/pages/activities/DictationGamePage';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
@@ -98,6 +99,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/sudoku" element={<SudokuGame />} />
             <Route path="/activities/crossword" element={<CrosswordGame />} />
             <Route path="/activities/translation" element={<TranslationGame />} />
+            <Route path="/activities/dictation/:id" element={<DictationGamePage />} />
           </Route>
 
           {/* Admin routes - require admin role */}
