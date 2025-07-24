@@ -333,11 +333,22 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const handleSeek = (value: number) => {
+    console.log('🎯 handleSeek appelée avec value:', value);
+    console.log('🎯 Duration actuelle:', duration);
+    
     if (audioRef.current && duration) {
       const newTime = (value / 100) * duration;
+      console.log('🎯 Nouveau temps calculé:', newTime);
+      console.log('🎯 Audio currentTime avant:', audioRef.current.currentTime);
+      
       audioRef.current.currentTime = newTime;
       setCurrentTime(newTime);
       setProgress(value);
+      
+      console.log('🎯 Audio currentTime après:', audioRef.current.currentTime);
+      console.log('🎯 State currentTime mis à jour:', newTime);
+    } else {
+      console.log('❌ handleSeek: audioRef ou duration manquant');
     }
   };
 
