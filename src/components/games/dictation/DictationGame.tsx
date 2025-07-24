@@ -154,20 +154,33 @@ const DictationGame: React.FC<DictationGameProps> = ({
         console.log('🎵 Audio element état avant:', {
           src: audioRef.current.src,
           readyState: audioRef.current.readyState,
-          networkState: audioRef.current.networkState
+          networkState: audioRef.current.networkState,
+          currentTime: audioRef.current.currentTime
         });
         
-        audioRef.current.src = currentAudioUrl;
-        audioRef.current.load();
+        // Ne recharger l'audio que si nécessaire
+        if (audioRef.current.src !== currentAudioUrl) {
+          console.log('🎵 URL différente - rechargement nécessaire');
+          audioRef.current.src = currentAudioUrl;
+          audioRef.current.load();
+        } else if (audioRef.current.readyState < 2) {
+          console.log('🎵 Audio pas encore prêt - rechargement nécessaire');
+          audioRef.current.load();
+        } else {
+          console.log('🎵 Audio déjà prêt - pas de rechargement');
+        }
         
-        console.log('🎵 Audio element état après load:', {
+        console.log('🎵 Audio element état après traitement:', {
           src: audioRef.current.src,
           readyState: audioRef.current.readyState,
-          networkState: audioRef.current.networkState
+          networkState: audioRef.current.networkState,
+          currentTime: audioRef.current.currentTime
         });
         
-        // Attendre un peu pour que l'audio soit prêt sur iOS
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Attendre un peu pour que l'audio soit prêt sur iOS (seulement si rechargé)
+        if (audioRef.current.readyState < 2) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         
         console.log('🎵 Tentative de lecture...');
         await audioRef.current.play();
