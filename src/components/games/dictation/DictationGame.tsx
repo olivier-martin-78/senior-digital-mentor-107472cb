@@ -256,6 +256,24 @@ const DictationGame: React.FC<DictationGameProps> = ({
           error: audioRef.current?.error
         });
         
+        // Si l'erreur est due à une URL blob expirée, basculer vers la synthèse vocale
+        if (error.name === 'NotSupportedError' && currentAudioUrl.startsWith('blob:')) {
+          console.log('🎵 URL blob expirée - basculement vers synthèse vocale');
+          setCurrentAudioUrl(null); // Supprimer l'URL blob expirée
+          toast({
+            title: 'Fichier audio expiré',
+            description: 'Le fichier audio original a expiré. Basculement vers la synthèse vocale.',
+            variant: 'default',
+          });
+          
+          // Relancer avec synthèse vocale
+          if (sentences.length > 0 && currentSentenceIndex < sentences.length) {
+            const currentSentence = sentences[currentSentenceIndex];
+            handleSynthesizeAndPlay(currentSentence.text);
+          }
+          return;
+        }
+        
         toast({
           title: 'Erreur de lecture',
           description: `Impossible de lire le fichier audio. ${error.message}`,
