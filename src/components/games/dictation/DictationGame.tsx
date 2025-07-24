@@ -115,7 +115,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
     }
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (!currentAudioUrl) {
       // Fallback vers TTS si pas d'audio uploadé
       speakWithNativeTTS(dictationText);
@@ -123,18 +123,24 @@ const DictationGame: React.FC<DictationGameProps> = ({
     }
 
     if (audioRef.current) {
-      audioRef.current.src = currentAudioUrl;
-      audioRef.current.load();
-      audioRef.current.play().catch((error) => {
+      try {
+        audioRef.current.src = currentAudioUrl;
+        audioRef.current.load();
+        
+        // Attendre un peu pour que l'audio soit prêt sur iOS
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        await audioRef.current.play();
+      } catch (error) {
         console.error('Error playing audio:', error);
         toast({
           title: 'Erreur de lecture',
-          description: 'Impossible de lire le fichier audio, passage en mode TTS',
+          description: 'Impossible de lire le fichier audio. Vérifiez votre connexion.',
           variant: 'destructive',
         });
-        // Fallback vers TTS
-        speakWithNativeTTS(dictationText);
-      });
+        // Ne pas utiliser le fallback TTS si on a un fichier audio
+        // L'utilisateur peut réessayer
+      }
     }
   };
 
@@ -223,10 +229,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   const handleSentenceClick = (index: number) => {
     setCurrentSentenceIndex(index);
-    // Si pas d'audio MP3, lire la phrase avec TTS
-    if (!currentAudioUrl) {
-      speakWithNativeTTS(sentences[index].text);
-    }
+    // Ne pas utiliser TTS si on a un fichier audio - cela évite la voix nasillarde sur iOS
+    // L'utilisateur doit utiliser les contrôles de lecture pour écouter l'audio MP3
   };
 
   const normalizeText = (text: string): string => {
