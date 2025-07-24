@@ -42,6 +42,9 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [progress, setProgress] = useState(0);
   const [isVoluntaryStop, setIsVoluntaryStop] = useState(false);
   const [useElevenLabs, setUseElevenLabs] = useState(true);
+  const [audioCache, setAudioCache] = useState<Map<number, string>>(new Map());
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const { toast } = useToast();
@@ -81,14 +84,19 @@ const DictationGame: React.FC<DictationGameProps> = ({
     return sentences;
   };
 
-  // Initialisation
+  // Initialisation et pré-chargement des audios ElevenLabs
   useEffect(() => {
-    console.log('DictationGame component loaded - segmented version');
+    console.log('DictationGame component loaded - segmented version with preloading');
     if ('speechSynthesis' in window) {
       setIsReady(true);
       const segmentedSentences = segmentText(dictationText);
       setSentences(segmentedSentences);
       console.log('Sentences segmented:', segmentedSentences);
+      
+      // Pré-charger les audios ElevenLabs en arrière-plan
+      if (useElevenLabs) {
+        preloadElevenLabsAudios(segmentedSentences);
+      }
     } else {
       toast({
         title: 'Erreur',
@@ -96,7 +104,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
         variant: 'destructive',
       });
     }
-  }, [dictationText, toast]);
+  }, [dictationText, toast, useElevenLabs]);
 
   // Mettre à jour la progression
   useEffect(() => {
@@ -105,6 +113,37 @@ const DictationGame: React.FC<DictationGameProps> = ({
       setProgress(progressPercent);
     }
   }, [currentSentenceIndex, sentences.length]);
+
+  // Fonction pour pré-charger tous les audios ElevenLabs
+  const preloadElevenLabsAudios = async (sentencesToPreload: Sentence[]) => {
+    if (!useElevenLabs || sentencesToPreload.length === 0) return;
+    
+    setIsPreloading(true);
+    setPreloadProgress(0);
+    const newCache = new Map<number, string>();
+    
+    try {
+      for (let i = 0; i < sentencesToPreload.length; i++) {
+        const sentence = sentencesToPreload[i];
+        console.log(`Preloading sentence ${i + 1}/${sentencesToPreload.length}`);
+        
+        const audioBlob = await generateElevenLabsAudio(sentence.text);
+        if (audioBlob) {
+          const audioUrl = URL.createObjectURL(audioBlob);
+          newCache.set(i, audioUrl);
+        }
+        
+        setPreloadProgress(((i + 1) / sentencesToPreload.length) * 100);
+      }
+      
+      setAudioCache(newCache);
+      console.log(`Successfully preloaded ${newCache.size}/${sentencesToPreload.length} sentences`);
+    } catch (error) {
+      console.error('Error preloading ElevenLabs audios:', error);
+    } finally {
+      setIsPreloading(false);
+    }
+  };
 
   // Fonction pour générer l'audio avec ElevenLabs
   const generateElevenLabsAudio = async (text: string): Promise<Blob | null> => {
@@ -143,16 +182,15 @@ const DictationGame: React.FC<DictationGameProps> = ({
     
     const sentenceText = sentences[sentenceIndex].text;
 
-    // Essayer d'abord ElevenLabs si activé
+    // Essayer d'abord ElevenLabs si activé et audio pré-chargé
     if (useElevenLabs) {
-      try {
-        const audioBlob = await generateElevenLabsAudio(sentenceText);
-        if (audioBlob && audioRef.current) {
-          // Créer une URL d'objet au lieu d'une URL de données pour iOS
-          const audioUrl = URL.createObjectURL(audioBlob);
-          audioRef.current.src = audioUrl;
+      const cachedAudioUrl = audioCache.get(sentenceIndex);
+      
+      if (cachedAudioUrl && audioRef.current) {
+        try {
+          audioRef.current.src = cachedAudioUrl;
           
-          // Pour iOS/iPad, on doit s'assurer que l'audio peut être joué
+          // Optimisations iOS/iPad
           audioRef.current.load();
           
           const playPromise = audioRef.current.play();
@@ -160,28 +198,54 @@ const DictationGame: React.FC<DictationGameProps> = ({
             playPromise
               .then(() => {
                 setIsPlaying(true);
-                console.log('ElevenLabs audio playing successfully');
+                console.log('ElevenLabs cached audio playing successfully');
               })
               .catch((error) => {
-                console.error('Audio play error (falling back to native TTS):', error);
-                // Nettoyer l'URL d'objet
-                URL.revokeObjectURL(audioUrl);
-                // Fallback vers la synthèse native
+                console.error('Cached audio play error (falling back to native TTS):', error);
                 speakWithNativeTTS(sentenceText, sentenceIndex);
               });
           } else {
             setIsPlaying(true);
           }
-          
-          // Nettoyer l'URL d'objet une fois l'audio terminé
-          audioRef.current.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-          };
-          
           return;
+        } catch (error) {
+          console.error('Error playing cached audio:', error);
         }
-      } catch (error) {
-        console.error('ElevenLabs error, falling back to native TTS:', error);
+      } else if (!cachedAudioUrl) {
+        console.log('Audio not cached for sentence', sentenceIndex, 'generating on demand...');
+        // Si pas en cache, générer à la demande
+        try {
+          const audioBlob = await generateElevenLabsAudio(sentenceText);
+          if (audioBlob && audioRef.current) {
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioRef.current.src = audioUrl;
+            audioRef.current.load();
+            
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  setIsPlaying(true);
+                  console.log('ElevenLabs on-demand audio playing successfully');
+                })
+                .catch((error) => {
+                  console.error('On-demand audio play error (falling back to native TTS):', error);
+                  URL.revokeObjectURL(audioUrl);
+                  speakWithNativeTTS(sentenceText, sentenceIndex);
+                });
+            } else {
+              setIsPlaying(true);
+            }
+            
+            audioRef.current.onended = () => {
+              URL.revokeObjectURL(audioUrl);
+            };
+            
+            return;
+          }
+        } catch (error) {
+          console.error('ElevenLabs on-demand error, falling back to native TTS:', error);
+        }
       }
     }
 
@@ -452,9 +516,11 @@ const DictationGame: React.FC<DictationGameProps> = ({
       <audio 
         ref={audioRef} 
         style={{ display: 'none' }}
-        preload="none"
+        preload="metadata"
         playsInline
+        webkit-playsinline="true"
         controls={false}
+        onContextMenu={(e) => e.preventDefault()}
       />
       
       <Card>
@@ -470,11 +536,18 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 <p className="text-sm text-yellow-800">
                   {useElevenLabs ? 'Mode Premium (ElevenLabs) - Voix de haute qualité' : 'Mode Standard (Navigateur) - Voix native'}
                 </p>
+                {isPreloading && (
+                  <div className="mt-2">
+                    <p className="text-xs text-yellow-700 mb-1">Préparation des audios premium...</p>
+                    <Progress value={preloadProgress} className="h-2" />
+                  </div>
+                )}
               </div>
               <Button
                 onClick={() => setUseElevenLabs(!useElevenLabs)}
                 variant={useElevenLabs ? "default" : "outline"}
                 size="sm"
+                disabled={isPreloading}
               >
                 {useElevenLabs ? '🎙️ Premium' : '🔊 Standard'}
               </Button>
