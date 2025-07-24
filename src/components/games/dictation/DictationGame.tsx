@@ -107,7 +107,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
   }, [currentSentenceIndex, sentences.length]);
 
   // Fonction pour générer l'audio avec ElevenLabs
-  const generateElevenLabsAudio = async (text: string): Promise<string | null> => {
+  const generateElevenLabsAudio = async (text: string): Promise<Blob | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { 
@@ -119,7 +119,14 @@ const DictationGame: React.FC<DictationGameProps> = ({
       if (error) throw error;
 
       if (data?.audioContent) {
-        return `data:audio/mpeg;base64,${data.audioContent}`;
+        // Convertir le base64 en Blob pour une meilleure compatibilité iOS
+        const byteCharacters = atob(data.audioContent);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: 'audio/mpeg' });
       }
       return null;
     } catch (error) {
@@ -139,27 +146,38 @@ const DictationGame: React.FC<DictationGameProps> = ({
     // Essayer d'abord ElevenLabs si activé
     if (useElevenLabs) {
       try {
-        const audioUrl = await generateElevenLabsAudio(sentenceText);
-        if (audioUrl && audioRef.current) {
+        const audioBlob = await generateElevenLabsAudio(sentenceText);
+        if (audioBlob && audioRef.current) {
+          // Créer une URL d'objet au lieu d'une URL de données pour iOS
+          const audioUrl = URL.createObjectURL(audioBlob);
           audioRef.current.src = audioUrl;
           
           // Pour iOS/iPad, on doit s'assurer que l'audio peut être joué
-          audioRef.current.load(); // Charger explicitement l'audio
+          audioRef.current.load();
           
           const playPromise = audioRef.current.play();
           if (playPromise !== undefined) {
             playPromise
               .then(() => {
                 setIsPlaying(true);
+                console.log('ElevenLabs audio playing successfully');
               })
               .catch((error) => {
                 console.error('Audio play error (falling back to native TTS):', error);
+                // Nettoyer l'URL d'objet
+                URL.revokeObjectURL(audioUrl);
                 // Fallback vers la synthèse native
                 speakWithNativeTTS(sentenceText, sentenceIndex);
               });
           } else {
             setIsPlaying(true);
           }
+          
+          // Nettoyer l'URL d'objet une fois l'audio terminé
+          audioRef.current.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+          };
+          
           return;
         }
       } catch (error) {
