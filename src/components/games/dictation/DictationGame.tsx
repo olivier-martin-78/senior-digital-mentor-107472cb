@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Play, Pause, RotateCcw, CheckCircle, SkipForward, SkipBack, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DictationGameProps {
   title: string;
@@ -40,6 +41,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isVoluntaryStop, setIsVoluntaryStop] = useState(false);
+  const [useElevenLabs, setUseElevenLabs] = useState(true);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   const { toast } = useToast();
 
@@ -103,13 +106,70 @@ const DictationGame: React.FC<DictationGameProps> = ({
     }
   }, [currentSentenceIndex, sentences.length]);
 
-  const speakSentence = (sentenceIndex: number) => {
-    if (!('speechSynthesis' in window) || !sentences[sentenceIndex]) return;
+  // Fonction pour générer l'audio avec ElevenLabs
+  const generateElevenLabsAudio = async (text: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { 
+          text: text,
+          voice_id: '9BWtsMINqrJLrQacOk9x' // Aria voice - excellente pour la dictée
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.audioContent) {
+        return `data:audio/mpeg;base64,${data.audioContent}`;
+      }
+      return null;
+    } catch (error) {
+      console.error('ElevenLabs TTS error:', error);
+      return null;
+    }
+  };
+
+  const speakSentence = async (sentenceIndex: number) => {
+    if (!sentences[sentenceIndex]) return;
     
     setIsVoluntaryStop(false);
     speechSynthesis.cancel();
     
-    const utterance = new SpeechSynthesisUtterance(sentences[sentenceIndex].text);
+    const sentenceText = sentences[sentenceIndex].text;
+
+    // Essayer d'abord ElevenLabs si activé
+    if (useElevenLabs) {
+      try {
+        const audioUrl = await generateElevenLabsAudio(sentenceText);
+        if (audioUrl && audioRef.current) {
+          audioRef.current.src = audioUrl;
+          
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                setIsPlaying(true);
+              })
+              .catch((error) => {
+                console.error('Audio play error:', error);
+                // Fallback vers la synthèse native
+                speakWithNativeTTS(sentenceText, sentenceIndex);
+              });
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('ElevenLabs error, falling back to native TTS:', error);
+      }
+    }
+
+    // Fallback vers la synthèse vocale native
+    speakWithNativeTTS(sentenceText, sentenceIndex);
+  };
+
+  const speakWithNativeTTS = (text: string, sentenceIndex: number) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.8;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
@@ -155,6 +215,43 @@ const DictationGame: React.FC<DictationGameProps> = ({
     speechSynthesis.speak(utterance);
   };
 
+  // Gestionnaire pour l'audio ElevenLabs
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      
+      if (!isVoluntaryStop) {
+        // Passer automatiquement à la phrase suivante
+        if (currentSentenceIndex < sentences.length - 1) {
+          setCurrentSentenceIndex(currentSentenceIndex + 1);
+          setTimeout(() => speakSentence(currentSentenceIndex + 1), 500);
+        } else {
+          // Fin de la dictée
+          setProgress(100);
+          toast({
+            title: 'Dictée terminée',
+            description: 'Toutes les phrases ont été lues',
+          });
+        }
+      }
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentSentenceIndex, sentences.length, isVoluntaryStop, toast]);
+
   const handlePlay = () => {
     speakSentence(currentSentenceIndex);
   };
@@ -162,12 +259,19 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const handlePause = () => {
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
     setIsPlaying(false);
   };
 
   const handleStop = () => {
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setIsPlaying(false);
     setCurrentSentenceIndex(0);
     setProgress(0);
@@ -255,6 +359,10 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setProgress(0);
     setIsVoluntaryStop(true);
     speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setIsPlaying(false);
   };
 
@@ -317,11 +425,33 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Audio element caché pour ElevenLabs */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
+      
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">{title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Sélecteur de mode vocal */}
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-yellow-900 mb-1">Qualité vocale :</h3>
+                <p className="text-sm text-yellow-800">
+                  {useElevenLabs ? 'Mode Premium (ElevenLabs) - Voix de haute qualité' : 'Mode Standard (Navigateur) - Voix native'}
+                </p>
+              </div>
+              <Button
+                onClick={() => setUseElevenLabs(!useElevenLabs)}
+                variant={useElevenLabs ? "default" : "outline"}
+                size="sm"
+              >
+                {useElevenLabs ? '🎙️ Premium' : '🔊 Standard'}
+              </Button>
+            </div>
+          </div>
+
           {/* Instructions */}
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-900 mb-2">Instructions :</h3>

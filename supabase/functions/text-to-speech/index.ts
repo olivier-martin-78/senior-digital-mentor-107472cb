@@ -1,95 +1,73 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-type',
-};
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
-  console.log(`Received ${req.method} request to text-to-speech function`);
-  
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { text, voice = 'alloy' } = await req.json();
-    console.log(`Processing TTS request for text: "${text?.substring(0, 50)}..."`);
+    const { text, voice_id = '9BWtsMINqrJLrQacOk9x' } = await req.json() // Default to Aria voice
 
     if (!text) {
-      console.error("No text provided");
-      return new Response(
-        JSON.stringify({ error: 'Text is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      throw new Error('Text is required')
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.error("OPENAI_API_KEY not found in environment");
-      return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+    const elevenLabsApiKey = Deno.env.get('ELEVEN_LABS_API_KEY')
+    if (!elevenLabsApiKey) {
+      throw new Error('ElevenLabs API key not configured')
     }
 
-    console.log(`Making request to OpenAI TTS API...`);
-
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // Generate speech using ElevenLabs API
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
+        'xi-api-key': elevenLabsApiKey,
       },
       body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: voice,
-        response_format: 'mp3',
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.5,
+          style: 0.0,
+          use_speaker_boost: true
+        }
       }),
-    });
+    })
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI TTS API error: ${response.status} ${response.statusText} - ${errorText}`);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment and try again.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ error: `TTS API error: ${response.status} - ${response.statusText}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
-      );
+      const error = await response.text()
+      throw new Error(`ElevenLabs API error: ${error}`)
     }
 
-    console.log("Successfully generated speech from OpenAI, converting to base64...");
-    
-    // Return the audio data as base64 in JSON
-    const audioBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
-    
-    console.log(`Base64 conversion complete, audio size: ${base64Audio.length} chars`);
-    
-    return new Response(JSON.stringify({ audioContent: base64Audio }), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Convert audio buffer to base64
+    const arrayBuffer = await response.arrayBuffer()
+    const base64Audio = btoa(
+      String.fromCharCode(...new Uint8Array(arrayBuffer))
+    )
 
-  } catch (error) {
-    console.error("TTS generation error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error occurred' }),
+      JSON.stringify({ audioContent: base64Audio }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    )
+  } catch (error) {
+    console.error('Error in text-to-speech function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+      },
+    )
   }
-});
+})
