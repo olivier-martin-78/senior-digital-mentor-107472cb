@@ -42,6 +42,7 @@ import TranslationGame from '@/pages/activities/TranslationGame';
 import DictationGamePage from '@/pages/activities/DictationGamePage';
 import Quiz70sGame from '@/pages/activities/Quiz70sGame';
 import MusicQuizGame from '@/pages/MusicQuizGame';
+import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Unauthorized from '@/pages/Unauthorized';
@@ -108,6 +109,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/dictation/:id" element={<DictationGamePage />} />
             <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
+            <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
           </Route>
 
