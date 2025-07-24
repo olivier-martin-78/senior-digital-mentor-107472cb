@@ -245,13 +245,14 @@ const DictationGame: React.FC<DictationGameProps> = ({
           error: audioRef.current?.error
         });
         
-        // Si l'erreur est due à une URL blob expirée, basculer vers la synthèse vocale
+        // Si l'erreur est due à une URL blob expirée (fichier temporaire du joueur), basculer vers la synthèse vocale
+        // Ne pas traiter les URLs permanentes de Supabase comme expirées
         if (error.name === 'NotSupportedError' && currentAudioUrl.startsWith('blob:')) {
-          console.log('🎵 URL blob expirée - basculement vers synthèse vocale');
+          console.log('🎵 URL blob temporaire expirée - basculement vers synthèse vocale');
           setCurrentAudioUrl(null); // Supprimer l'URL blob expirée
           toast({
-            title: 'Fichier audio expiré',
-            description: 'Le fichier audio original a expiré. Basculement vers la synthèse vocale.',
+            title: 'Fichier audio temporaire expiré',
+            description: 'Le fichier audio temporaire a expiré. Basculement vers la synthèse vocale.',
             variant: 'default',
           });
           
@@ -261,6 +262,11 @@ const DictationGame: React.FC<DictationGameProps> = ({
             handleSynthesizeAndPlay(currentSentence.text);
           }
           return;
+        }
+        
+        // Pour les fichiers permanents (Supabase), ne pas traiter comme expiré
+        if (currentAudioUrl && !currentAudioUrl.startsWith('blob:')) {
+          console.log('🎵 Erreur avec fichier permanent - pas de basculement vers synthèse vocale');
         }
         
         toast({
