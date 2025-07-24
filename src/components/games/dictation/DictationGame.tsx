@@ -133,11 +133,20 @@ const DictationGame: React.FC<DictationGameProps> = ({
     return sentences;
   };
 
-  // Initialisation - seulement au premier chargement
+  // Synchronisation de l'URL audio permanente avec currentAudioUrl
   useEffect(() => {
     console.log('DictationGame - audioUrl reçue:', audioUrl);
-    console.log('DictationGame - currentAudioUrl état initial:', currentAudioUrl);
+    console.log('DictationGame - currentAudioUrl état actuel:', currentAudioUrl);
     
+    // Si on a une URL permanente (Supabase) et qu'elle est différente de currentAudioUrl
+    if (audioUrl && audioUrl !== currentAudioUrl) {
+      console.log('DictationGame - Synchronisation URL permanente:', audioUrl);
+      setCurrentAudioUrl(audioUrl);
+    }
+  }, [audioUrl, currentAudioUrl]);
+
+  // Initialisation - seulement au premier chargement
+  useEffect(() => {
     setIsReady(true);
     const segmentedSentences = segmentText(dictationText);
     setSentences(segmentedSentences);
