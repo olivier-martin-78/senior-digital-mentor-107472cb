@@ -92,21 +92,25 @@ export const useAudioEventHandlers = ({
       loadingTimeoutRef.current = null;
     }
     
-    // Sur iPad avec WebM, activer immédiatement le fallback
-    if (isIPad && processedAudioUrl.includes('.webm')) {
-      console.log("🎵 AUDIO_PLAYER_CORE - iPad WebM error, activating fallback");
+    // Sur iPad avec WebM ET erreur de format spécifique, activer le fallback
+    if (isIPad && processedAudioUrl.includes('.webm') && 
+        (audio.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+         audio.error?.code === MediaError.MEDIA_ERR_DECODE)) {
+      console.log("🎵 AUDIO_PLAYER_CORE - iPad WebM format error, activating fallback");
       setShowIPadFallback(true);
       setIsLoading(false);
-      setHasError(false); // Ne pas afficher l'erreur générique
+      setHasError(false);
       return;
     }
     
-    // Sur iPhone avec WebM, activer immédiatement le fallback
-    if (isIPhone && processedAudioUrl.includes('.webm')) {
-      console.log("🎵 AUDIO_PLAYER_CORE - iPhone WebM error, activating fallback");
+    // Sur iPhone avec WebM ET erreur de format spécifique, activer le fallback  
+    if (isIPhone && processedAudioUrl.includes('.webm') && 
+        (audio.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+         audio.error?.code === MediaError.MEDIA_ERR_DECODE)) {
+      console.log("🎵 AUDIO_PLAYER_CORE - iPhone WebM format error, activating fallback");
       setShowIPhoneFallback(true);
       setIsLoading(false);
-      setHasError(false); // Ne pas afficher l'erreur générique
+      setHasError(false);
       return;
     }
     

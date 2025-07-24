@@ -77,9 +77,10 @@ const AudioPlayerCore: React.FC<AudioPlayerCoreProps> = ({
       console.log("🎵 AUDIO_PLAYER_CORE - Loading timeout reached, showing player");
       setIsLoading(false);
       
-      // Sur iPad, si on arrive au timeout sans succès, on prépare le fallback
-      if (isIPad && !audio.duration && audio.error) {
-        console.log("🎵 AUDIO_PLAYER_CORE - iPad timeout with error, preparing fallback");
+      // Sur iPad, si on arrive au timeout sans succès ET que c'est un fichier WebM, on prépare le fallback
+      // Ne pas activer le fallback pour les fichiers MP3 permanents de Supabase
+      if (isIPad && !audio.duration && audio.error && processedAudioUrl && processedAudioUrl.includes('.webm')) {
+        console.log("🎵 AUDIO_PLAYER_CORE - iPad timeout with WebM error, preparing fallback");
         setShowIPadFallback(true);
       }
     }, timeoutDuration);
