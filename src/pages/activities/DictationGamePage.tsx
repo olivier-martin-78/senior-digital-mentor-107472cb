@@ -32,10 +32,10 @@ const DictationGamePage = () => {
           console.log('Données parsées:', parsedData);
           
           if (parsedData.type === 'dictation') {
-            // Ajouter l'URL audio de la base de données aux données de dictée
+            // Utiliser l'URL audio des données parsées, pas de la base de données
             setDictationData({
               ...parsedData,
-              audioUrl: data.audio_url
+              audioUrl: parsedData.audioUrl || data.audio_url // Fallback sur data.audio_url si pas dans parsedData
             });
           } else {
             throw new Error('Cette activité n\'est pas une dictée');
