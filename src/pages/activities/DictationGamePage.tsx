@@ -28,7 +28,11 @@ const DictationGamePage = () => {
         if (data?.iframe_code) {
           const parsedData = JSON.parse(data.iframe_code);
           if (parsedData.type === 'dictation') {
-            setDictationData(parsedData);
+            // Ajouter l'URL audio de la base de données aux données de dictée
+            setDictationData({
+              ...parsedData,
+              audioUrl: data.audio_url
+            });
           } else {
             throw new Error('Cette activité n\'est pas une dictée');
           }
@@ -94,6 +98,7 @@ const DictationGamePage = () => {
           title={dictationData.title}
           dictationText={dictationData.dictationText}
           correctedText={dictationData.correctedText}
+          audioUrl={dictationData.audioUrl}
         />
       </div>
     </div>

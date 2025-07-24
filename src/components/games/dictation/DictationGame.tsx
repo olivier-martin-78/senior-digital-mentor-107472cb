@@ -117,8 +117,11 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   const handlePlay = async () => {
     if (!currentAudioUrl) {
-      // Fallback vers TTS si pas d'audio uploadé
-      speakWithNativeTTS(dictationText);
+      toast({
+        title: 'Aucun fichier audio',
+        description: 'Veuillez charger un fichier audio MP3 pour commencer la dictée.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -138,36 +141,10 @@ const DictationGame: React.FC<DictationGameProps> = ({
           description: 'Impossible de lire le fichier audio. Vérifiez votre connexion.',
           variant: 'destructive',
         });
-        // Ne pas utiliser le fallback TTS si on a un fichier audio
-        // L'utilisateur peut réessayer
       }
     }
   };
 
-  const speakWithNativeTTS = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    const voices = speechSynthesis.getVoices();
-    const frenchVoice = voices.find(voice => 
-      voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
-    );
-    
-    if (frenchVoice) {
-      utterance.voice = frenchVoice;
-    }
-
-    utterance.onstart = () => setIsPlaying(true);
-    utterance.onend = () => setIsPlaying(false);
-    utterance.onerror = () => setIsPlaying(false);
-
-    speechSynthesis.speak(utterance);
-  };
 
   // Gestionnaire pour l'audio et navigation par phrases
   useEffect(() => {
@@ -200,7 +177,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
     if (audioRef.current) {
       audioRef.current.pause();
     }
-    speechSynthesis.cancel();
     setIsPlaying(false);
   };
 
@@ -209,7 +185,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    speechSynthesis.cancel();
     setIsPlaying(false);
     setCurrentSentenceIndex(0);
     setProgress(0);
@@ -290,7 +265,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    speechSynthesis.cancel();
     setIsPlaying(false);
   };
 
