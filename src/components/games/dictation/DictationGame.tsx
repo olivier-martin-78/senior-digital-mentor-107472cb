@@ -48,6 +48,57 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const { toast } = useToast();
+
+  // Fonction pour synthétiser et lire le texte avec l'API Speech Synthesis
+  const handleSynthesizeAndPlay = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      toast({
+        title: 'Synthèse vocale non supportée',
+        description: 'Votre navigateur ne supporte pas la synthèse vocale.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Arrêter toute synthèse en cours
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configurer la voix française si disponible
+    const voices = window.speechSynthesis.getVoices();
+    const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
+    if (frenchVoice) {
+      utterance.voice = frenchVoice;
+    }
+    
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.8; // Vitesse de lecture plus lente pour la dictée
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => {
+      console.log('🎵 Synthèse vocale démarrée');
+      setIsPlaying(true);
+    };
+
+    utterance.onend = () => {
+      console.log('🎵 Synthèse vocale terminée');
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Erreur synthèse vocale:', event);
+      setIsPlaying(false);
+      toast({
+        title: 'Erreur de synthèse vocale',
+        description: 'Impossible de lire le texte avec la synthèse vocale.',
+        variant: 'destructive',
+      });
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
   
   // Fonction pour segmenter le texte en phrases
   const segmentText = (text: string): Sentence[] => {
@@ -137,12 +188,18 @@ const DictationGame: React.FC<DictationGameProps> = ({
     console.log('🎵 audioUrl prop initial:', audioUrl);
     
     if (!currentAudioUrl) {
-      console.log('❌ Aucune URL audio disponible');
-      toast({
-        title: 'Aucun fichier audio',
-        description: 'Veuillez charger un fichier audio MP3 pour commencer la dictée.',
-        variant: 'destructive',
-      });
+      // Pas de fichier audio - utiliser la synthèse vocale pour la phrase actuelle
+      console.log('🎵 Pas de fichier audio - utilisation de la synthèse vocale');
+      if (sentences.length > 0 && currentSentenceIndex < sentences.length) {
+        const currentSentence = sentences[currentSentenceIndex];
+        handleSynthesizeAndPlay(currentSentence.text);
+      } else {
+        toast({
+          title: 'Aucune phrase disponible',
+          description: 'Impossible de lire la dictée car aucune phrase n\'est sélectionnée.',
+          variant: 'destructive',
+        });
+      }
       return;
     }
 
@@ -257,16 +314,22 @@ const DictationGame: React.FC<DictationGameProps> = ({
   }, [toast, duration]);
 
   const handlePause = () => {
-    if (audioRef.current) {
+    if (currentAudioUrl && audioRef.current) {
       audioRef.current.pause();
+    } else {
+      // Arrêter la synthèse vocale
+      window.speechSynthesis.pause();
     }
     setIsPlaying(false);
   };
 
   const handleStop = () => {
-    if (audioRef.current) {
+    if (currentAudioUrl && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+    } else {
+      // Arrêter complètement la synthèse vocale
+      window.speechSynthesis.cancel();
     }
     setIsPlaying(false);
     setCurrentSentenceIndex(0);
@@ -495,6 +558,24 @@ const DictationGame: React.FC<DictationGameProps> = ({
               </div>
             )}
           </div>
+
+          {/* Upload de fichier audio optionnel */}
+          {!currentAudioUrl && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">Fichier audio (optionnel) :</h4>
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileUpload}
+                  className="text-sm"
+                />
+                <p className="text-xs text-blue-700">
+                  Chargez un fichier MP3 pour une meilleure qualité audio, ou utilisez la synthèse vocale du navigateur (qualité variable selon l'appareil).
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Contrôles audio */}
           <div className="space-y-4">
