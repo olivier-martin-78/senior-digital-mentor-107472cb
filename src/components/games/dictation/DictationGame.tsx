@@ -365,27 +365,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
           <CardTitle className="text-2xl font-bold text-center">{title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload de fichier audio */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <div className="space-y-3">
-              <h3 className="font-semibold text-blue-900">Fichier audio de la dictée :</h3>
-              <div className="flex items-center space-x-3">
-                <Input
-                  type="file"
-                  accept="audio/*"
-                  onChange={handleFileUpload}
-                  className="file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200"
-                />
-                <Upload className="w-5 h-5 text-blue-600" />
-              </div>
-              <p className="text-sm text-blue-800">
-                Chargez un fichier MP3 généré avec ElevenLabs ou tout autre fichier audio de la dictée.
-              </p>
-              {currentAudioUrl && (
-                <p className="text-sm text-green-700 font-semibold">✓ Fichier audio chargé avec succès</p>
-              )}
-            </div>
-          </div>
 
           {/* Instructions */}
           <div className="bg-yellow-50 p-4 rounded-lg">
