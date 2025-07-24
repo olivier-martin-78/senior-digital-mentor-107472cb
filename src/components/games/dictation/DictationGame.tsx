@@ -40,20 +40,68 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [differences, setDifferences] = useState<WordDifference[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(audioUrl || null);
+  const [sentences, setSentences] = useState<Sentence[]>([]);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const { toast } = useToast();
+  
+  // Fonction pour segmenter le texte en phrases
+  const segmentText = (text: string): Sentence[] => {
+    const sentenceRegex = /[.!?]+/g;
+    const sentences: Sentence[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = sentenceRegex.exec(text)) !== null) {
+      const sentence = text.slice(lastIndex, match.index + match[0].length).trim();
+      if (sentence.length > 0) {
+        sentences.push({
+          text: sentence,
+          start: lastIndex,
+          end: match.index + match[0].length
+        });
+      }
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex).trim();
+      if (remainingText.length > 0) {
+        sentences.push({
+          text: remainingText,
+          start: lastIndex,
+          end: text.length
+        });
+      }
+    }
+
+    return sentences;
+  };
 
   // Initialisation
   useEffect(() => {
     setIsReady(true);
-  }, []);
+    const segmentedSentences = segmentText(dictationText);
+    setSentences(segmentedSentences);
+  }, [dictationText]);
+
+  // Mise à jour de la progression
+  useEffect(() => {
+    if (sentences.length > 0) {
+      const progressPercent = (currentSentenceIndex / sentences.length) * 100;
+      setProgress(progressPercent);
+    }
+  }, [currentSentenceIndex, sentences.length]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('audio/')) {
       const url = URL.createObjectURL(file);
       setCurrentAudioUrl(url);
+      setCurrentSentenceIndex(0);
+      setProgress(0);
       toast({
         title: 'Fichier audio chargé',
         description: 'Vous pouvez maintenant lancer la dictée',
@@ -69,11 +117,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   const handlePlay = () => {
     if (!currentAudioUrl) {
-      toast({
-        title: 'Aucun fichier audio',
-        description: 'Veuillez d\'abord charger un fichier audio MP3',
-        variant: 'destructive',
-      });
+      // Fallback vers TTS si pas d'audio uploadé
+      speakWithNativeTTS(dictationText);
       return;
     }
 
@@ -84,14 +129,41 @@ const DictationGame: React.FC<DictationGameProps> = ({
         console.error('Error playing audio:', error);
         toast({
           title: 'Erreur de lecture',
-          description: 'Impossible de lire le fichier audio',
+          description: 'Impossible de lire le fichier audio, passage en mode TTS',
           variant: 'destructive',
         });
+        // Fallback vers TTS
+        speakWithNativeTTS(dictationText);
       });
     }
   };
 
-  // Gestionnaire pour l'audio
+  const speakWithNativeTTS = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    const voices = speechSynthesis.getVoices();
+    const frenchVoice = voices.find(voice => 
+      voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+    );
+    
+    if (frenchVoice) {
+      utterance.voice = frenchVoice;
+    }
+
+    utterance.onstart = () => setIsPlaying(true);
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+
+    speechSynthesis.speak(utterance);
+  };
+
+  // Gestionnaire pour l'audio et navigation par phrases
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -100,6 +172,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
     const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
       setIsPlaying(false);
+      setProgress(100);
       toast({
         title: 'Dictée terminée',
         description: 'L\'audio est terminé',
@@ -121,6 +194,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    speechSynthesis.cancel();
     setIsPlaying(false);
   };
 
@@ -129,7 +203,30 @@ const DictationGame: React.FC<DictationGameProps> = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    speechSynthesis.cancel();
     setIsPlaying(false);
+    setCurrentSentenceIndex(0);
+    setProgress(0);
+  };
+
+  const handlePreviousSentence = () => {
+    if (currentSentenceIndex > 0) {
+      setCurrentSentenceIndex(currentSentenceIndex - 1);
+    }
+  };
+
+  const handleNextSentence = () => {
+    if (currentSentenceIndex < sentences.length - 1) {
+      setCurrentSentenceIndex(currentSentenceIndex + 1);
+    }
+  };
+
+  const handleSentenceClick = (index: number) => {
+    setCurrentSentenceIndex(index);
+    // Si pas d'audio MP3, lire la phrase avec TTS
+    if (!currentAudioUrl) {
+      speakWithNativeTTS(sentences[index].text);
+    }
   };
 
   const normalizeText = (text: string): string => {
@@ -183,11 +280,31 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setShowCorrection(false);
     setScore(20);
     setDifferences([]);
+    setCurrentSentenceIndex(0);
+    setProgress(0);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    speechSynthesis.cancel();
     setIsPlaying(false);
+  };
+
+  const renderTextWithHighlight = () => {
+    return sentences.map((sentence, index) => (
+      <span
+        key={index}
+        className={`cursor-pointer p-2 m-1 rounded transition-colors inline-block ${
+          index === currentSentenceIndex
+            ? 'bg-blue-200 text-blue-900'
+            : 'hover:bg-gray-100'
+        }`}
+        onClick={() => handleSentenceClick(index)}
+        title={currentAudioUrl ? 'Cliquez pour sélectionner cette phrase' : 'Cliquez pour écouter cette phrase'}
+      >
+        {sentence.text}
+      </span>
+    ));
   };
 
   const renderCorrectedText = () => {
@@ -274,27 +391,42 @@ const DictationGame: React.FC<DictationGameProps> = ({
           <div className="bg-yellow-50 p-4 rounded-lg">
             <h3 className="font-semibold text-yellow-900 mb-2">Instructions :</h3>
             <ul className="text-sm text-yellow-800 space-y-1">
-              <li>• Chargez d'abord un fichier audio MP3 de la dictée</li>
-              <li>• Utilisez les contrôles audio pour écouter la dictée</li>
+              <li>• {currentAudioUrl ? 'Utilisez les contrôles pour écouter l\'audio MP3' : 'Chargez un fichier audio MP3 ou utilisez la synthèse vocale'}</li>
+              <li>• Cliquez sur une phrase dans le texte pour la sélectionner{!currentAudioUrl && ' ou l\'écouter'}</li>
+              <li>• Utilisez les flèches pour naviguer entre les phrases</li>
               <li>• Écrivez ce que vous entendez dans la zone de texte ci-dessous</li>
               <li>• Cliquez sur "Correction" pour voir vos erreurs</li>
             </ul>
           </div>
 
-          {/* Texte de référence */}
+          {/* Texte de référence avec phrases cliquables */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Texte de la dictée :</h4>
             <div className="text-sm leading-relaxed">
-              {dictationText}
+              {sentences.length > 0 ? renderTextWithHighlight() : dictationText}
             </div>
+            {sentences.length > 0 && (
+              <div className="mt-3 text-xs text-gray-600">
+                Phrase sélectionnée : {currentSentenceIndex + 1} sur {sentences.length}
+              </div>
+            )}
           </div>
 
-          {/* Contrôles audio simplifiés */}
+          {/* Contrôles audio avec navigation par phrases */}
           <div className="space-y-4">
             <div className="flex justify-center items-center space-x-2">
               <Button
+                onClick={handlePreviousSentence}
+                disabled={!isReady || currentSentenceIndex === 0}
+                variant="outline"
+                size="sm"
+              >
+                <SkipBack className="w-4 h-4" />
+              </Button>
+              
+              <Button
                 onClick={handlePlay}
-                disabled={!isReady || isPlaying || !currentAudioUrl}
+                disabled={!isReady || isPlaying}
                 variant="outline"
                 size="lg"
               >
@@ -321,6 +453,35 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 <Square className="w-5 h-5 mr-2" />
                 Stop
               </Button>
+              
+              <Button
+                onClick={handleNextSentence}
+                disabled={!isReady || currentSentenceIndex === sentences.length - 1}
+                variant="outline"
+                size="sm"
+              >
+                <SkipForward className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* Progression */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
+                <div>
+                  {sentences.length > 0 && `Phrase ${currentSentenceIndex + 1} sur ${sentences.length}`}
+                </div>
+                <div>
+                  {isPlaying && '🔊 Lecture en cours...'}
+                  {!isPlaying && progress > 0 && progress < 100 && '⏸️ En pause'}
+                  {progress === 100 && '✓ Dictée terminée'}
+                </div>
+              </div>
+              
+              <Progress 
+                value={progress} 
+                className="w-full" 
+                indicatorClassName={isPlaying ? 'bg-blue-500' : 'bg-green-500'}
+              />
             </div>
           </div>
           

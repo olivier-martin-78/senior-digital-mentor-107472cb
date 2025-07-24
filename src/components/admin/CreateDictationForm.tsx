@@ -27,7 +27,8 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
     correctedText: '',
     thumbnailUrl: '',
     subActivityTagId: '',
-    sharedGlobally: false
+    sharedGlobally: false,
+    audioUrl: ''
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -63,7 +64,8 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
         dictationText: formData.dictationText,
         correctedText: formData.correctedText,
         thumbnailUrl: formData.thumbnailUrl,
-        subActivityTagId: formData.subActivityTagId
+        subActivityTagId: formData.subActivityTagId,
+        audioUrl: formData.audioUrl
       };
 
       const { error } = await supabase
@@ -164,6 +166,26 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
             />
             <p className="text-sm text-gray-500 mt-1">
               Ce texte servira de référence pour la correction automatique
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="audioUrl">Fichier audio MP3 (optionnel)</Label>
+            <Input
+              id="audioUrl"
+              type="file"
+              accept="audio/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  setFormData({ ...formData, audioUrl: url });
+                }
+              }}
+              className="file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Uploadez un fichier MP3 généré avec ElevenLabs ou autre. Si aucun fichier n'est fourni, la synthèse vocale du navigateur sera utilisée.
             </p>
           </div>
 

@@ -30,7 +30,8 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
     correctedText: '',
     thumbnailUrl: activity.thumbnail_url || '',
     subActivityTagId: activity.sub_activity_tag_id || '',
-    sharedGlobally: activity.shared_globally || false
+    sharedGlobally: activity.shared_globally || false,
+    audioUrl: ''
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -47,7 +48,8 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
           ...prev,
           dictationText: dictationData.dictationText || '',
           correctedText: dictationData.correctedText || '',
-          sharedGlobally: activity.shared_globally || false
+          sharedGlobally: activity.shared_globally || false,
+          audioUrl: dictationData.audioUrl || ''
         }));
       } catch (error) {
         console.error('Erreur lors du parsing des données de dictée:', error);
@@ -76,7 +78,8 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
         dictationText: formData.dictationText,
         correctedText: formData.correctedText,
         thumbnailUrl: formData.thumbnailUrl,
-        subActivityTagId: formData.subActivityTagId
+        subActivityTagId: formData.subActivityTagId,
+        audioUrl: formData.audioUrl
       };
 
       const updateData: any = {
@@ -182,6 +185,29 @@ const EditDictationForm: React.FC<EditDictationFormProps> = ({
             <p className="text-sm text-gray-500 mt-1">
               Ce texte servira de référence pour la correction automatique
             </p>
+          </div>
+
+          <div>
+            <Label htmlFor="audioUrl">Fichier audio MP3 (optionnel)</Label>
+            <Input
+              id="audioUrl"
+              type="file"
+              accept="audio/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  setFormData({ ...formData, audioUrl: url });
+                }
+              }}
+              className="file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Uploadez un fichier MP3 généré avec ElevenLabs ou autre. Si aucun fichier n'est fourni, la synthèse vocale du navigateur sera utilisée.
+            </p>
+            {formData.audioUrl && (
+              <p className="text-sm text-green-600 mt-1">✓ Fichier audio chargé</p>
+            )}
           </div>
 
           {canShareGlobally && (
