@@ -196,28 +196,6 @@ const ActivitiesOverview = () => {
             </CardContent>
           </Link>
         </Card>
-      },
-      {
-        key: "dictation",
-        subTagId: remueMeningesId,
-        card: <Card key="dictation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/dictation/5397b8b3-c9c8-4e63-86ad-bbcd7644cc34" className="block">
-            <div className="h-48 bg-gradient-to-br from-indigo-400 to-teal-500 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Dictée</h3>
-              </div>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg">Dictée</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Écoutez et écrivez le texte dicté. Exercice parfait pour améliorer l'orthographe et l'attention.
-              </p>
-            </CardContent>
-          </Link>
-        </Card>
       }
     ];
 
