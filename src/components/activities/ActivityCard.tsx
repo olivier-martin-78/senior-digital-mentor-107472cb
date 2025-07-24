@@ -178,6 +178,21 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           return;
         }
         
+        // Spot Differences Game - navigate to spot differences game page
+        if (gameData.type === 'spot_differences') {
+          const gameId = activity?.id || activityId;
+          if (gameId) {
+            navigate(`/activities/spot-differences/${gameId}`, { replace: false });
+          } else {
+            toast({
+              title: "Erreur",
+              description: "ID du jeu non trouvé",
+              variant: "destructive"
+            });
+          }
+          return;
+        }
+        
       } catch (error) {
         console.error('Error parsing game data:', error);
         // If JSON parsing fails, check if it's a YouTube iframe

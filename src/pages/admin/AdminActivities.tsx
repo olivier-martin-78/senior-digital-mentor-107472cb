@@ -27,6 +27,8 @@ import { TimelineData } from '@/types/timeline';
 import QuizConverter from '@/components/admin/QuizConverter';
 import CreateDictationForm from '@/components/admin/CreateDictationForm';
 import EditDictationForm from '@/components/admin/EditDictationForm';
+import { CreateSpotDifferencesForm } from '@/components/admin/CreateSpotDifferencesForm';
+import { EditSpotDifferencesForm } from '@/components/admin/EditSpotDifferencesForm';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
@@ -45,6 +47,7 @@ const AdminActivities = () => {
   const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
   const [showTimelineForm, setShowTimelineForm] = useState(false);
   const [showDictationForm, setShowDictationForm] = useState(false);
+  const [showSpotDifferencesForm, setShowSpotDifferencesForm] = useState(false);
   const [showQuizConverter, setShowQuizConverter] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
@@ -178,6 +181,7 @@ const AdminActivities = () => {
     setShowMusicQuizForm(false);
     setShowTimelineForm(false);
     setShowDictationForm(false);
+    setShowSpotDifferencesForm(false);
     setShowQuizConverter(false);
   };
 
@@ -242,6 +246,10 @@ const AdminActivities = () => {
                     <DropdownMenuItem onClick={() => setShowDictationForm(!showDictationForm)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Créer dictée
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowSpotDifferencesForm(!showSpotDifferencesForm)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer jeu des 7 erreurs
                     </DropdownMenuItem>
                   </>
                 )}
@@ -340,6 +348,18 @@ const AdminActivities = () => {
             </div>
           )}
 
+          {showSpotDifferencesForm && type === 'games' && (
+            <div className="mb-8">
+              <CreateSpotDifferencesForm 
+                onSuccess={() => {
+                  setShowSpotDifferencesForm(false);
+                  refetch();
+                }}
+                onClose={() => setShowSpotDifferencesForm(false)}
+              />
+            </div>
+          )}
+
           {editingActivity && (
             <div className="mb-8">
               {(() => {
@@ -368,6 +388,14 @@ const AdminActivities = () => {
                         activity={editingActivity}
                         onSave={handleSaveEdit}
                         onCancel={handleCancelEdit}
+                      />
+                    );
+                  } else if (gameData?.type === 'spot_differences') {
+                    return (
+                      <EditSpotDifferencesForm
+                        activity={editingActivity}
+                        onSuccess={handleSaveEdit}
+                        onClose={handleCancelEdit}
                       />
                     );
                   } else if (gameData?.timelineName) {
@@ -551,7 +579,7 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showDictationForm && !showQuizConverter && (
+          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showDictationForm && !showSpotDifferencesForm && !showQuizConverter && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => {
                 const isYouTube = isYouTubeUrl(activity.link);

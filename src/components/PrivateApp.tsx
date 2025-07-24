@@ -40,6 +40,7 @@ import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
 import TranslationGame from '@/pages/activities/TranslationGame';
 import DictationGamePage from '@/pages/activities/DictationGamePage';
+import { SpotDifferencesGamePage } from '@/pages/activities/SpotDifferencesGame';
 import Quiz70sGame from '@/pages/activities/Quiz70sGame';
 import MusicQuizGame from '@/pages/MusicQuizGame';
 import MemoryGame from '@/pages/MemoryGame';
@@ -107,6 +108,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/crossword" element={<CrosswordGame />} />
             <Route path="/activities/translation" element={<TranslationGame />} />
             <Route path="/activities/dictation/:id" element={<DictationGamePage />} />
+            <Route path="/activities/spot-differences/:id" element={<SpotDifferencesGamePage />} />
             <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
