@@ -138,21 +138,10 @@ const DictationGame: React.FC<DictationGameProps> = ({
     console.log('DictationGame - audioUrl reçue:', audioUrl);
     console.log('DictationGame - currentAudioUrl état initial:', currentAudioUrl);
     
-    // Vérifier si l'URL blob provient de la base de données (et donc potentiellement expirée)
-    // Seulement si currentAudioUrl n'a pas encore été défini par un upload
-    if (audioUrl && audioUrl.startsWith('blob:') && !currentAudioUrl) {
-      console.log('⚠️ URL blob détectée depuis la base de données - probablement expirée');
-      toast({
-        title: 'Fichier audio expiré',
-        description: 'Le fichier audio de cette dictée a expiré. Veuillez charger un nouveau fichier MP3 pour continuer.',
-        variant: 'destructive',
-      });
-    }
-    
     setIsReady(true);
     const segmentedSentences = segmentText(dictationText);
     setSentences(segmentedSentences);
-  }, [dictationText]); // Retirer audioUrl et toast des dépendances pour éviter les re-exécutions
+  }, [dictationText]);
 
   // Mise à jour de la progression
   useEffect(() => {

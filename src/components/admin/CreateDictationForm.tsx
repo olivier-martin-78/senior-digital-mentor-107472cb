@@ -175,11 +175,50 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
               id="audioUrl"
               type="file"
               accept="audio/*"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  const url = URL.createObjectURL(file);
-                  setFormData({ ...formData, audioUrl: url });
+                  try {
+                    // Générer un nom de fichier unique
+                    const fileName = `${user?.id}/${Date.now()}-${file.name}`;
+                    
+                    // Uploader le fichier dans Supabase Storage
+                    const { data, error } = await supabase.storage
+                      .from('dictation-audios')
+                      .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                      });
+
+                    if (error) {
+                      console.error('Erreur upload audio:', error);
+                      toast({
+                        title: 'Erreur',
+                        description: 'Impossible d\'uploader le fichier audio',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+
+                    // Obtenir l'URL publique du fichier
+                    const { data: urlData } = supabase.storage
+                      .from('dictation-audios')
+                      .getPublicUrl(data.path);
+
+                    setFormData({ ...formData, audioUrl: urlData.publicUrl });
+                    
+                    toast({
+                      title: 'Succès',
+                      description: 'Fichier audio uploadé avec succès',
+                    });
+                  } catch (error) {
+                    console.error('Erreur:', error);
+                    toast({
+                      title: 'Erreur',
+                      description: 'Erreur lors de l\'upload du fichier',
+                      variant: 'destructive',
+                    });
+                  }
                 }
               }}
               className="file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200"
@@ -187,6 +226,11 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
             <p className="text-sm text-gray-500 mt-1">
               Uploadez un fichier MP3 généré avec ElevenLabs ou autre. Si aucun fichier n'est fourni, la synthèse vocale du navigateur sera utilisée.
             </p>
+            {formData.audioUrl && (
+              <p className="text-sm text-green-600 mt-1">
+                ✓ Fichier audio uploadé avec succès
+              </p>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
