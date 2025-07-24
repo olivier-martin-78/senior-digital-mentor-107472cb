@@ -571,6 +571,8 @@ const AdminActivities = () => {
                       subActivityName={activity.activity_sub_tags?.name}
                       iframeCode={activity.iframe_code}
                       audioUrl={activity.audio_url}
+                      activityId={activity.id}
+                      activity={activity}
                     />
                     {activity.shared_globally && (
                       <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-10">
