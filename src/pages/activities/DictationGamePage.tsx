@@ -27,6 +27,10 @@ const DictationGamePage = () => {
 
         if (data?.iframe_code) {
           const parsedData = JSON.parse(data.iframe_code);
+          console.log('Données activité complètes:', data);
+          console.log('Audio URL dans la base:', data.audio_url);
+          console.log('Données parsées:', parsedData);
+          
           if (parsedData.type === 'dictation') {
             // Ajouter l'URL audio de la base de données aux données de dictée
             setDictationData({

@@ -82,6 +82,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
   // Initialisation
   useEffect(() => {
+    console.log('DictationGame - audioUrl reçue:', audioUrl);
+    console.log('DictationGame - currentAudioUrl état:', currentAudioUrl);
     setIsReady(true);
     const segmentedSentences = segmentText(dictationText);
     setSentences(segmentedSentences);
