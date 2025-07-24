@@ -205,9 +205,17 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const handleSentenceClick = (index: number) => {
+    // Si on a un fichier audio MP3, on ne peut pas naviguer par phrases
+    if (currentAudioUrl) {
+      toast({
+        title: 'Navigation par phrases non disponible',
+        description: 'Avec les fichiers audio, utilisez les contrôles de lecture pour écouter toute la dictée.',
+        variant: 'default',
+      });
+      return;
+    }
+    
     setCurrentSentenceIndex(index);
-    // Ne pas utiliser TTS si on a un fichier audio - cela évite la voix nasillarde sur iOS
-    // L'utilisateur doit utiliser les contrôles de lecture pour écouter l'audio MP3
   };
 
   const normalizeText = (text: string): string => {
@@ -271,6 +279,16 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const renderTextWithHighlight = () => {
+    if (currentAudioUrl) {
+      // Si on a un fichier audio, afficher le texte complet sans segmentation cliquable
+      return (
+        <div className="text-gray-700 leading-relaxed">
+          {dictationText}
+        </div>
+      );
+    }
+    
+    // Mode sans audio - garder la segmentation par phrases
     return sentences.map((sentence, index) => (
       <span
         key={index}
@@ -280,7 +298,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
             : 'hover:bg-gray-100'
         }`}
         onClick={() => handleSentenceClick(index)}
-        title={currentAudioUrl ? 'Cliquez pour sélectionner cette phrase' : 'Cliquez pour écouter cette phrase'}
+        title="Cliquez pour sélectionner cette phrase"
       >
         Phrase {index + 1}
       </span>
@@ -357,30 +375,34 @@ const DictationGame: React.FC<DictationGameProps> = ({
             </ul>
           </div>
 
-          {/* Texte de référence avec phrases cliquables */}
+          {/* Texte de référence */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Texte de la dictée :</h4>
             <div className="text-sm leading-relaxed">
-              {sentences.length > 0 ? renderTextWithHighlight() : dictationText}
+              {renderTextWithHighlight()}
             </div>
-            {sentences.length > 0 && (
+            {!currentAudioUrl && sentences.length > 0 && (
               <div className="mt-3 text-xs text-gray-600">
                 Phrase sélectionnée : {currentSentenceIndex + 1} sur {sentences.length}
               </div>
             )}
           </div>
 
-          {/* Contrôles audio avec navigation par phrases */}
+          {/* Contrôles audio */}
           <div className="space-y-4">
             <div className="flex justify-center items-center space-x-2">
-              <Button
-                onClick={handlePreviousSentence}
-                disabled={!isReady || currentSentenceIndex === 0}
-                variant="outline"
-                size="sm"
-              >
-                <SkipBack className="w-4 h-4" />
-              </Button>
+              {!currentAudioUrl && (
+                <>
+                  <Button
+                    onClick={handlePreviousSentence}
+                    disabled={!isReady || currentSentenceIndex === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <SkipBack className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
               
               <Button
                 onClick={handlePlay}
@@ -412,21 +434,24 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 Stop
               </Button>
               
-              <Button
-                onClick={handleNextSentence}
-                disabled={!isReady || currentSentenceIndex === sentences.length - 1}
-                variant="outline"
-                size="sm"
-              >
-                <SkipForward className="w-4 h-4" />
-              </Button>
+              {!currentAudioUrl && (
+                <Button
+                  onClick={handleNextSentence}
+                  disabled={!isReady || currentSentenceIndex === sentences.length - 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  <SkipForward className="w-4 h-4" />
+                </Button>
+              )}
             </div>
             
             {/* Progression */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <div>
-                  {sentences.length > 0 && `Phrase ${currentSentenceIndex + 1} sur ${sentences.length}`}
+                  {currentAudioUrl ? 'Audio continu' : 
+                   (sentences.length > 0 && `Phrase ${currentSentenceIndex + 1} sur ${sentences.length}`)}
                 </div>
                 <div>
                   {isPlaying && '🔊 Lecture en cours...'}
