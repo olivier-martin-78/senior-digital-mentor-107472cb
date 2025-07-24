@@ -129,16 +129,6 @@ const DictationGame: React.FC<DictationGameProps> = ({
       return;
     }
 
-    // Vérifier si l'URL blob est encore valide
-    if (currentAudioUrl.startsWith('blob:')) {
-      toast({
-        title: 'Fichier audio expiré',
-        description: 'Le fichier audio n\'est plus accessible. Veuillez charger à nouveau un fichier MP3.',
-        variant: 'destructive',
-      });
-      setCurrentAudioUrl(null);
-      return;
-    }
 
     if (audioRef.current) {
       try {
