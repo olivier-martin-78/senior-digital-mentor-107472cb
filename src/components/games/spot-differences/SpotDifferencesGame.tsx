@@ -39,16 +39,32 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
   };
 
   const calculateScore = (): { score: number; results: boolean[] } => {
-    const results = playerAnswers.map((answer, index) => {
+    const usedCorrectAnswers = new Set<number>();
+    
+    const results = playerAnswers.map((answer) => {
+      if (!answer.trim()) return false;
+      
       const normalizedAnswer = normalizeText(answer);
-      const normalizedCorrect = normalizeText(gameData.differences[index]);
       
-      // Vérification exacte
-      if (normalizedAnswer === normalizedCorrect) return true;
-      
-      // Vérification si la réponse contient la bonne réponse
-      if (normalizedAnswer.includes(normalizedCorrect) || normalizedCorrect.includes(normalizedAnswer)) {
-        return normalizedAnswer.length > 2; // Éviter les correspondances trop courtes
+      // Chercher la meilleure correspondance parmi toutes les réponses correctes non utilisées
+      for (let i = 0; i < gameData.differences.length; i++) {
+        if (usedCorrectAnswers.has(i)) continue;
+        
+        const normalizedCorrect = normalizeText(gameData.differences[i]);
+        
+        // Vérification exacte
+        if (normalizedAnswer === normalizedCorrect) {
+          usedCorrectAnswers.add(i);
+          return true;
+        }
+        
+        // Vérification si la réponse contient la bonne réponse
+        if (normalizedAnswer.includes(normalizedCorrect) || normalizedCorrect.includes(normalizedAnswer)) {
+          if (normalizedAnswer.length > 2) { // Éviter les correspondances trop courtes
+            usedCorrectAnswers.add(i);
+            return true;
+          }
+        }
       }
       
       return false;
