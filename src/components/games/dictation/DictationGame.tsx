@@ -120,7 +120,12 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const handlePlay = async () => {
+    console.log('🎵 handlePlay - Début de lecture');
+    console.log('🎵 currentAudioUrl:', currentAudioUrl);
+    console.log('🎵 audioUrl prop initial:', audioUrl);
+    
     if (!currentAudioUrl) {
+      console.log('❌ Aucune URL audio disponible');
       toast({
         title: 'Aucun fichier audio',
         description: 'Veuillez charger un fichier audio MP3 pour commencer la dictée.',
@@ -129,24 +134,54 @@ const DictationGame: React.FC<DictationGameProps> = ({
       return;
     }
 
+    console.log('🎵 Type d\'URL détecté:', currentAudioUrl.startsWith('blob:') ? 'Blob URL' : 'URL normale');
 
     if (audioRef.current) {
       try {
+        console.log('🎵 Configuration de l\'élément audio...');
+        console.log('🎵 Audio element état avant:', {
+          src: audioRef.current.src,
+          readyState: audioRef.current.readyState,
+          networkState: audioRef.current.networkState
+        });
+        
         audioRef.current.src = currentAudioUrl;
         audioRef.current.load();
+        
+        console.log('🎵 Audio element état après load:', {
+          src: audioRef.current.src,
+          readyState: audioRef.current.readyState,
+          networkState: audioRef.current.networkState
+        });
         
         // Attendre un peu pour que l'audio soit prêt sur iOS
         await new Promise(resolve => setTimeout(resolve, 100));
         
+        console.log('🎵 Tentative de lecture...');
         await audioRef.current.play();
+        console.log('✅ Lecture démarrée avec succès');
       } catch (error) {
-        console.error('Error playing audio:', error);
+        console.error('❌ Error playing audio:', error);
+        console.error('❌ Error details:', {
+          name: error.name,
+          message: error.message,
+          code: error.code
+        });
+        console.error('❌ Audio element final state:', {
+          src: audioRef.current?.src,
+          readyState: audioRef.current?.readyState,
+          networkState: audioRef.current?.networkState,
+          error: audioRef.current?.error
+        });
+        
         toast({
           title: 'Erreur de lecture',
-          description: 'Impossible de lire le fichier audio. Le fichier pourrait être corrompu ou dans un format non supporté.',
+          description: `Impossible de lire le fichier audio. ${error.message}`,
           variant: 'destructive',
         });
       }
+    } else {
+      console.log('❌ audioRef.current est null');
     }
   };
 
