@@ -302,7 +302,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
         onClick={() => handleSentenceClick(index)}
         title={currentAudioUrl ? 'Cliquez pour sélectionner cette phrase' : 'Cliquez pour écouter cette phrase'}
       >
-        {sentence.text}
+        Phrase {index + 1}
       </span>
     ));
   };
