@@ -472,16 +472,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const renderTextWithHighlight = () => {
-    if (currentAudioUrl) {
-      // Si on a un fichier audio, afficher le texte complet sans segmentation cliquable
-      return (
-        <div className="text-gray-700 leading-relaxed">
-          {dictationText}
-        </div>
-      );
-    }
-    
-    // Mode sans audio - garder la segmentation par phrases
+    // Mode sans audio - afficher seulement les numéros de phrases
     return sentences.map((sentence, index) => (
       <span
         key={index}
