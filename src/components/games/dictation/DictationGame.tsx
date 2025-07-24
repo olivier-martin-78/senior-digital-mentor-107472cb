@@ -498,7 +498,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
 
           {/* Contrôles audio */}
           <div className="space-y-4">
-            <div className="flex justify-center items-center space-x-2">
+            <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-2">
               {!currentAudioUrl && (
                 <>
                   <Button
@@ -517,6 +517,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 disabled={!isReady || isPlaying}
                 variant="outline"
                 size="lg"
+                className="w-full sm:w-auto"
               >
                 <Play className="w-5 h-5 mr-2" />
                 Lire
@@ -527,6 +528,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 disabled={!isReady || !isPlaying}
                 variant="outline"
                 size="lg"
+                className="w-full sm:w-auto"
               >
                 <Pause className="w-5 h-5 mr-2" />
                 Pause
@@ -537,6 +539,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 disabled={!isReady}
                 variant="outline"
                 size="lg"
+                className="w-full sm:w-auto"
               >
                 <Square className="w-5 h-5 mr-2" />
                 Stop
