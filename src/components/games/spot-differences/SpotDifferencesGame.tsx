@@ -25,6 +25,7 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
   const [gameFinished, setGameFinished] = useState(false);
   const [score, setScore] = useState(0);
   const [results, setResults] = useState<boolean[]>([]);
+  const [showCorrection, setShowCorrection] = useState(false);
   const { toast } = useToast();
 
   const handleAnswerChange = (index: number, value: string) => {
@@ -102,6 +103,7 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
     setGameFinished(false);
     setScore(0);
     setResults([]);
+    setShowCorrection(false);
   };
 
   return (
@@ -187,12 +189,38 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
                 Valider mes réponses
               </Button>
             ) : (
-              <Button onClick={handleReset} size="lg" variant="outline">
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Rejouer
-              </Button>
+              <>
+                <Button onClick={() => setShowCorrection(!showCorrection)} size="lg" variant="secondary">
+                  {showCorrection ? 'Masquer la correction' : 'Voir la correction'}
+                </Button>
+                <Button onClick={handleReset} size="lg" variant="outline">
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Rejouer
+                </Button>
+              </>
             )}
           </div>
+
+          {/* Correction complète */}
+          {gameFinished && showCorrection && (
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="font-semibold mb-4 text-blue-900 dark:text-blue-100">Correction - Toutes les bonnes réponses :</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {gameData.differences.map((difference, index) => (
+                  <div key={index} className="p-3 bg-white dark:bg-gray-800 rounded border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        Différence #{index + 1}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      {difference}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Résultats détaillés */}
           {gameFinished && (
