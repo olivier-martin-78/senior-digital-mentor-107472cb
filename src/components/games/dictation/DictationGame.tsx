@@ -43,6 +43,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const { toast } = useToast();
@@ -158,22 +160,40 @@ const DictationGame: React.FC<DictationGameProps> = ({
     const handleEnded = () => {
       setIsPlaying(false);
       setProgress(100);
+      setCurrentTime(duration);
       toast({
         title: 'Dictée terminée',
         description: 'L\'audio est terminé',
       });
     };
 
+    const handleTimeUpdate = () => {
+      const current = audio.currentTime;
+      const total = audio.duration;
+      setCurrentTime(current);
+      if (total) {
+        setProgress((current / total) * 100);
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
-  }, [toast]);
+  }, [toast, duration]);
 
   const handlePause = () => {
     if (audioRef.current) {
@@ -264,6 +284,21 @@ const DictationGame: React.FC<DictationGameProps> = ({
     });
   };
 
+  const handleSeek = (value: number) => {
+    if (audioRef.current && duration) {
+      const newTime = (value / 100) * duration;
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+      setProgress(value);
+    }
+  };
+
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const resetGame = () => {
     setUserText('');
     setShowCorrection(false);
@@ -271,6 +306,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setDifferences([]);
     setCurrentSentenceIndex(0);
     setProgress(0);
+    setCurrentTime(0);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -446,8 +482,8 @@ const DictationGame: React.FC<DictationGameProps> = ({
               )}
             </div>
             
-            {/* Progression */}
-            <div className="space-y-2">
+            {/* Progression et contrôles temporels */}
+            <div className="space-y-3">
               <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <div>
                   {currentAudioUrl ? 'Audio continu' : 
@@ -459,12 +495,36 @@ const DictationGame: React.FC<DictationGameProps> = ({
                   {progress === 100 && '✓ Dictée terminée'}
                 </div>
               </div>
-              
-              <Progress 
-                value={progress} 
-                className="w-full" 
-                indicatorClassName={isPlaying ? 'bg-blue-500' : 'bg-green-500'}
-              />
+
+              {/* Barre de progression interactive pour l'audio */}
+              {currentAudioUrl && (
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={progress}
+                    onChange={(e) => handleSeek(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    style={{
+                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progress}%, #e5e7eb ${progress}%, #e5e7eb 100%)`
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Barre de progression simple pour le mode sans audio */}
+              {!currentAudioUrl && (
+                <Progress 
+                  value={progress} 
+                  className="w-full" 
+                  indicatorClassName={isPlaying ? 'bg-blue-500' : 'bg-green-500'}
+                />
+              )}
             </div>
           </div>
           
