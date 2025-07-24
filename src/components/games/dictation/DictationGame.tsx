@@ -472,6 +472,11 @@ const DictationGame: React.FC<DictationGameProps> = ({
   };
 
   const renderTextWithHighlight = () => {
+    if (currentAudioUrl) {
+      // Si on a un fichier audio, masquer complètement le texte de la dictée
+      return null;
+    }
+    
     // Mode sans audio - afficher seulement les numéros de phrases
     return sentences.map((sentence, index) => (
       <span
