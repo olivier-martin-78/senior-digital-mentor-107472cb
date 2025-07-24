@@ -41,7 +41,7 @@ import CrosswordGame from '@/pages/activities/CrosswordGame';
 import TranslationGame from '@/pages/activities/TranslationGame';
 import DictationGamePage from '@/pages/activities/DictationGamePage';
 import Quiz70sGame from '@/pages/activities/Quiz70sGame';
-import MusicQuizGame from '@/pages/activities/MusicQuizGame';
+import MusicQuizGame from '@/pages/MusicQuizGame';
 import TimelineGame from '@/pages/TimelineGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Unauthorized from '@/pages/Unauthorized';
