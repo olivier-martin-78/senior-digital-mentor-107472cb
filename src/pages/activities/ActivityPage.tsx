@@ -339,7 +339,7 @@ const ActivityPage = () => {
                 <ActivityCard
                   key={activity.id}
                   title={activity.title}
-                  link={isDictation ? `/activities/dictation/${activity.id}` : activity.link}
+                  link={isDictation && activity.id ? `/activities/dictation/${activity.id}` : activity.link}
                   isYouTube={isYouTube}
                   videoId={videoId}
                   thumbnailUrl={activity.thumbnail_url}
