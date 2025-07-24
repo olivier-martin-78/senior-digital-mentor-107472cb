@@ -129,6 +129,17 @@ const DictationGame: React.FC<DictationGameProps> = ({
       return;
     }
 
+    // Vérifier si l'URL blob est encore valide
+    if (currentAudioUrl.startsWith('blob:')) {
+      toast({
+        title: 'Fichier audio expiré',
+        description: 'Le fichier audio n\'est plus accessible. Veuillez charger à nouveau un fichier MP3.',
+        variant: 'destructive',
+      });
+      setCurrentAudioUrl(null);
+      return;
+    }
+
     if (audioRef.current) {
       try {
         audioRef.current.src = currentAudioUrl;
@@ -142,7 +153,7 @@ const DictationGame: React.FC<DictationGameProps> = ({
         console.error('Error playing audio:', error);
         toast({
           title: 'Erreur de lecture',
-          description: 'Impossible de lire le fichier audio. Vérifiez votre connexion.',
+          description: 'Impossible de lire le fichier audio. Le fichier pourrait être corrompu ou dans un format non supporté.',
           variant: 'destructive',
         });
       }
