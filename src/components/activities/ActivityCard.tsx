@@ -165,7 +165,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         
         // Dictation Game - navigate to dictation game page
         if (gameData.type === 'dictation') {
-          navigate(`/activities/dictation/${activityId}`, { replace: false });
+          const dictationId = activity?.id || activityId;
+          if (dictationId) {
+            navigate(`/activities/dictation/${dictationId}`, { replace: false });
+          } else {
+            toast({
+              title: "Erreur",
+              description: "ID de la dictée non trouvé",
+              variant: "destructive"
+            });
+          }
           return;
         }
         

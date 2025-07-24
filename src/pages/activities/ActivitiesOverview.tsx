@@ -297,6 +297,7 @@ const ActivitiesOverview = () => {
                         activityDate={activity.activity_date}
                         subActivityName={activity.activity_sub_tags?.name}
                         iframeCode={activity.iframe_code}
+                        activity={activity}
                       />
                     );
                   })}
