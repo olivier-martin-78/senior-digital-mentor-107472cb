@@ -171,7 +171,39 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         
       } catch (error) {
         console.error('Error parsing game data:', error);
-        // If JSON parsing fails, treat as regular iframe content
+        // If JSON parsing fails, check if it's a YouTube iframe
+        if (gameCodeToCheck.includes('youtube.com/embed/')) {
+          // Extract YouTube video ID from iframe
+          const srcMatch = gameCodeToCheck.match(/src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)/);
+          if (srcMatch && srcMatch[1]) {
+            // Open YouTube video directly
+            window.open(`https://www.youtube.com/watch?v=${srcMatch[1]}`, '_blank', 'noopener,noreferrer');
+            return;
+          }
+        }
+        
+        // For other iframe content, create a proper HTML page
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        if (newWindow) {
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>${title}</title>
+                <style>
+                  body { margin: 0; padding: 20px; background: #f5f5f5; }
+                  iframe { width: 100%; height: 500px; border: none; }
+                </style>
+              </head>
+              <body>
+                <h2 style="color: black; text-align: center;">${title}</h2>
+                ${gameCodeToCheck}
+              </body>
+            </html>
+          `);
+          newWindow.document.close();
+        }
+        return;
       }
     }
     
