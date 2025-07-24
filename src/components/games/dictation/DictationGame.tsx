@@ -143,6 +143,9 @@ const DictationGame: React.FC<DictationGameProps> = ({
         if (audioUrl && audioRef.current) {
           audioRef.current.src = audioUrl;
           
+          // Pour iOS/iPad, on doit s'assurer que l'audio peut être joué
+          audioRef.current.load(); // Charger explicitement l'audio
+          
           const playPromise = audioRef.current.play();
           if (playPromise !== undefined) {
             playPromise
@@ -150,10 +153,12 @@ const DictationGame: React.FC<DictationGameProps> = ({
                 setIsPlaying(true);
               })
               .catch((error) => {
-                console.error('Audio play error:', error);
+                console.error('Audio play error (falling back to native TTS):', error);
                 // Fallback vers la synthèse native
                 speakWithNativeTTS(sentenceText, sentenceIndex);
               });
+          } else {
+            setIsPlaying(true);
           }
           return;
         }
@@ -426,7 +431,13 @@ const DictationGame: React.FC<DictationGameProps> = ({
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Audio element caché pour ElevenLabs */}
-      <audio ref={audioRef} style={{ display: 'none' }} />
+      <audio 
+        ref={audioRef} 
+        style={{ display: 'none' }}
+        preload="none"
+        playsInline
+        controls={false}
+      />
       
       <Card>
         <CardHeader>
