@@ -313,8 +313,13 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       }
     }
     
-    // Regular link
-    window.open(link, '_blank', 'noopener,noreferrer');
+    // Regular link - check if it's YouTube to handle properly
+    if (link.includes('youtube.com') || link.includes('youtu.be')) {
+      // For YouTube links, navigate directly to avoid blank tab
+      window.location.href = link;
+    } else {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
