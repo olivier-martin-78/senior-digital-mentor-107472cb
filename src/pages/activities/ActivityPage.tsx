@@ -378,6 +378,7 @@ const ActivityPage = () => {
                   activityId={activity.id}
                   canEdit={canEditActivity(activity)}
                   onEdit={() => handleEditActivity(activity.id)}
+                  activity={activity}
                 />
               );
             })}

@@ -220,8 +220,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           // Extract YouTube video ID from iframe
           const srcMatch = gameCodeToCheck.match(/src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)/);
           if (srcMatch && srcMatch[1]) {
-            // Open YouTube video directly
-            window.open(`https://www.youtube.com/watch?v=${srcMatch[1]}`, '_blank', 'noopener,noreferrer');
+            // Open YouTube video directly - use _self to replace current tab
+            window.location.href = `https://www.youtube.com/watch?v=${srcMatch[1]}`;
             return;
           }
         }
@@ -282,8 +282,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           // Extract YouTube video ID from iframe
           const srcMatch = iframeCode.match(/src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)/);
           if (srcMatch && srcMatch[1]) {
-            // Open YouTube video directly
-            window.open(`https://www.youtube.com/watch?v=${srcMatch[1]}`, '_blank', 'noopener,noreferrer');
+            // Open YouTube video directly - use _self to replace current tab
+            window.location.href = `https://www.youtube.com/watch?v=${srcMatch[1]}`;
             return;
           }
         }
