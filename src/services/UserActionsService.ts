@@ -31,13 +31,13 @@ export class UserActionsService {
     metadata: Record<string, any> = {}
   ): Promise<void> {
     try {
-      console.log('🔍 UserActionsService.trackUserAction called:', {
+      console.log('🔍 UserActionsService.trackUserAction called:', JSON.stringify({
         actionType,
         contentType,
         contentId,
         contentTitle,
         metadata
-      });
+      }, null, 2));
 
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -57,14 +57,15 @@ export class UserActionsService {
         metadata: metadata
       };
 
-      console.log('📤 Inserting user action:', insertData);
+      console.log('📤 Inserting user action:', JSON.stringify(insertData, null, 2));
 
       const { error } = await supabase
         .from('user_actions')
         .insert(insertData);
 
       if (error) {
-        console.error('❌ Error tracking user action:', error);
+        console.error('❌ Error tracking user action:', JSON.stringify(error, null, 2));
+        console.error('❌ Error details - code:', error.code, 'message:', error.message);
       } else {
         console.log('✅ User action tracked successfully');
       }
