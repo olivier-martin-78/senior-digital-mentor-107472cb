@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Volume2, CheckCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface Question {
   id: string;
@@ -66,6 +67,16 @@ export function MusicQuizPlayer({
       if (audioRef.current && isPlaying) {
         audioRef.current.pause();
       }
+      
+      // Track answer
+      UserActionsService.trackView('activity', 'music-quiz-answer', quizData.title, {
+        action: 'answer_submitted',
+        questionId: currentQuestion.id,
+        answer: answer,
+        correctAnswer: currentQuestion.correctAnswer,
+        questionIndex: currentQuestionIndex,
+        quizType: quizData.quizType
+      });
     }
   };
 

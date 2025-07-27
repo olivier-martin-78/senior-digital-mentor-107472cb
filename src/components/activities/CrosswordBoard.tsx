@@ -7,6 +7,7 @@ import { getGridSize, generateCrosswordGrid, getWordsForLevel } from './crosswor
 import CrosswordCell from './crossword/CrosswordCell';
 import CrosswordControls from './crossword/CrosswordControls';
 import DefinitionsList from './crossword/DefinitionsList';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const CrosswordBoard = () => {
   const [grid, setGrid] = useState<Grid>([]);
@@ -32,6 +33,14 @@ const CrosswordBoard = () => {
     gridRefs.current = Array(size).fill(null).map(() =>
       Array(size).fill(null).map(() => React.createRef<HTMLInputElement>())
     );
+    
+    // Track new crossword game started
+    UserActionsService.trackView('activity', 'crossword-game', `Mots Fléchés niveau ${difficulty}`, {
+      action: 'new_game_started',
+      difficulty: difficulty,
+      wordsCount: placedWords.length,
+      gridSize: size
+    });
   };
 
   const handleCellInput = (row: number, col: number, value: string) => {
@@ -126,6 +135,12 @@ const CrosswordBoard = () => {
 
     if (allCorrect && words.length > 0) {
       setGameCompleted(true);
+      // Track crossword completion
+      UserActionsService.trackView('activity', 'crossword-completed', `Mots Fléchés niveau ${difficulty}`, {
+        action: 'game_completed',
+        difficulty: difficulty,
+        wordsCount: words.length
+      });
     }
   };
 

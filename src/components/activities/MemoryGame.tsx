@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw, Trophy } from 'lucide-react';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface MemoryGameProps {
   gameData: {
@@ -63,6 +64,11 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
   const handleCardClick = (cardId: number) => {
     if (!gameStarted) {
       setGameStarted(true);
+      // Track game start
+      UserActionsService.trackView('activity', 'memory-game', gameData.title, {
+        action: 'game_started',
+        numberOfPairs: numberOfPairs
+      });
     }
 
     if (flippedCards.length >= 2) return;
@@ -108,6 +114,12 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ gameData }) => {
           
           if (updatedCards.every(card => card.isMatched)) {
             setIsGameComplete(true);
+            // Track game completion
+            UserActionsService.trackView('activity', 'memory-game-completed', gameData.title, {
+              action: 'game_completed',
+              moves: moves + 1,
+              numberOfPairs: numberOfPairs
+            });
           }
         }, 500);
       } else {

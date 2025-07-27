@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, CheckCircle, AlertCircle, Star, Puzzle, Trophy } from 'lucide-react';
+import { UserActionsService } from '@/services/UserActionsService';
 
 type Difficulty = 'très-facile' | 'facile' | 'moyen' | 'difficile' | 'expert';
 type Cell = number | null;
@@ -106,6 +107,12 @@ const SudokuBoard = () => {
     setGameState('playing');
     setErrors([]);
     setSelectedCell(null);
+    
+    // Track new game started
+    UserActionsService.trackView('activity', 'sudoku-game', `Sudoku ${difficulty}`, {
+      action: 'new_game_started',
+      difficulty: difficulty
+    });
   };
 
   // Mettre à jour une cellule
@@ -159,6 +166,11 @@ const SudokuBoard = () => {
   useEffect(() => {
     if (grid.length > 0 && checkCompletion()) {
       setGameState('completed');
+      // Track game completion
+      UserActionsService.trackView('activity', 'sudoku-completed', `Sudoku ${difficulty}`, {
+        action: 'game_completed',
+        difficulty: difficulty
+      });
     }
   }, [grid]);
 
