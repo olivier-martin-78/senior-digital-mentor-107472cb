@@ -1156,6 +1156,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_actions: {
+        Row: {
+          action_type: string
+          content_id: string
+          content_title: string
+          content_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          content_id: string
+          content_title: string
+          content_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          content_id?: string
+          content_title?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_client_permissions: {
         Row: {
           client_id: string
