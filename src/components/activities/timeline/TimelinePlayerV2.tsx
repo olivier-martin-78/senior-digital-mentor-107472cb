@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Trophy, RotateCcw, AlertCircle, ArrowLeft, Shuffle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface TimelinePlayerV2Props {
   timelineData: TimelineData;
@@ -107,6 +108,13 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
 
       setEventsWithOrder(eventsWithOrderData);
       console.log('✅ Game V2 initialized successfully');
+      
+      // Track game start
+      UserActionsService.trackView('activity', 'timeline-game-started', timelineData.timelineName, {
+        action: 'game_started',
+        eventsCount: timelineData.events.length,
+        creator: timelineData.creatorName
+      });
       
     } catch (error) {
       console.error('💥 Error initializing game:', error);
@@ -223,6 +231,14 @@ const TimelinePlayerV2: React.FC<TimelinePlayerV2Props> = ({ timelineData, onExi
     setScore(correctPlacements);
     setGameComplete(true);
     setShowResults(true);
+
+    // Track game completion
+    UserActionsService.trackView('activity', 'timeline-game-completed', timelineData.timelineName, {
+      action: 'game_completed',
+      score: correctPlacements,
+      totalEvents: currentOrder.length,
+      percentage: (correctPlacements / currentOrder.length) * 100
+    });
 
     console.log('📊 Score calculated:', {
       correctPlacements,

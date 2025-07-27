@@ -13,6 +13,7 @@ import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnail
 import AudioExtractor from './AudioExtractor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface Question {
   id: string;
@@ -235,6 +236,15 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         }]);
 
       if (error) throw error;
+
+      // Track quiz creation
+      UserActionsService.trackCreate('activity', 'music-quiz-created', formData.title, {
+        action: 'quiz_created',
+        questionsCount: questions.length,
+        quizType: quizType,
+        sharedGlobally: formData.shared_globally,
+        subTagId: selectedSubTagId
+      });
 
       toast({
         title: 'Succès',

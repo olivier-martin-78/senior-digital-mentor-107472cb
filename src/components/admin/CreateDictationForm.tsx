@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface CreateDictationFormProps {
   onSuccess: () => void;
@@ -82,6 +83,14 @@ const CreateDictationForm: React.FC<CreateDictationFormProps> = ({
         }]);
 
       if (error) throw error;
+
+      // Track dictation creation
+      UserActionsService.trackCreate('activity', 'dictation-created', formData.title, {
+        action: 'dictation_created',
+        hasAudioFile: !!formData.audioUrl,
+        sharedGlobally: formData.sharedGlobally,
+        subTagId: formData.subActivityTagId
+      });
 
       toast({
         title: 'Succès',

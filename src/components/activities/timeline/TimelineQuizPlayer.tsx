@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Trophy, RotateCcw, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface TimelineQuizPlayerProps {
   timelineData: TimelineData;
@@ -101,6 +102,13 @@ const TimelineQuizPlayer: React.FC<TimelineQuizPlayerProps> = ({ timelineData, o
         shuffledEvents
       });
 
+      // Track quiz start
+      UserActionsService.trackView('activity', 'timeline-quiz-started', timelineData.timelineName, {
+        action: 'quiz_started',
+        questionsCount: timelineData.events.length,
+        creator: timelineData.creatorName
+      });
+
       console.log('✅ Quiz initialized successfully');
       
     } catch (error) {
@@ -114,6 +122,15 @@ const TimelineQuizPlayer: React.FC<TimelineQuizPlayerProps> = ({ timelineData, o
 
     const currentEvent = gameState.shuffledEvents[gameState.currentEventIndex];
     const isCorrect = selectedAnswer === currentEvent.year;
+    
+    // Track answer submission
+    UserActionsService.trackView('activity', 'timeline-quiz-answer', timelineData.timelineName, {
+      action: 'answer_submitted',
+      questionIndex: gameState.currentEventIndex,
+      isCorrect: isCorrect,
+      selectedAnswer: selectedAnswer,
+      correctAnswer: currentEvent.year
+    });
     
     setGameState(prev => ({
       ...prev,
@@ -136,6 +153,13 @@ const TimelineQuizPlayer: React.FC<TimelineQuizPlayerProps> = ({ timelineData, o
     const isGameComplete = nextIndex >= gameState.shuffledEvents.length;
     
     if (isGameComplete) {
+      // Track quiz completion
+      UserActionsService.trackView('activity', 'timeline-quiz-completed', timelineData.timelineName, {
+        action: 'quiz_completed',
+        finalScore: gameState.score + (gameState.selectedAnswer === gameState.shuffledEvents[gameState.currentEventIndex].year ? 1 : 0),
+        totalQuestions: gameState.shuffledEvents.length
+      });
+      
       setGameState(prev => ({
         ...prev,
         gameComplete: true

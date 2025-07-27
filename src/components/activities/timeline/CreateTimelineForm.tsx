@@ -10,6 +10,7 @@ import { TimelineData, TimelineEvent } from '@/types/timeline';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface CreateTimelineFormProps {
   onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
@@ -262,6 +263,15 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     }
 
     console.log('Validation passed, calling onSubmit');
+    
+    // Track timeline creation
+    UserActionsService.trackCreate('activity', 'timeline-created', formData.timelineName, {
+      action: 'timeline_created',
+      eventsCount: formData.events.length,
+      shareGlobally: formData.shareGlobally,
+      subTagId: selectedSubTagId
+    });
+    
     onSubmit({ ...formData, subActivityTagId: selectedSubTagId });
   };
 

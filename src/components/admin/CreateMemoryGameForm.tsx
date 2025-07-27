@@ -8,6 +8,7 @@ import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SubActivitySelector from "@/components/activities/SubActivitySelector";
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface CreateMemoryGameFormProps {
   onSuccess?: () => void;
@@ -133,6 +134,14 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
       if (error) {
         throw error;
       }
+
+      // Track game creation
+      UserActionsService.trackCreate('activity', 'memory-game-created', title, {
+        action: 'game_created',
+        imagesCount: imageUrls.length,
+        sharedGlobally: sharedGlobally,
+        subTagId: selectedSubTagId
+      });
 
       toast({
         title: "Série créée avec succès",

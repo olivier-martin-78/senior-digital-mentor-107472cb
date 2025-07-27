@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface SpotDifferencesGameData {
   type: 'spot_differences';
@@ -26,7 +27,18 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
   const [score, setScore] = useState(0);
   const [results, setResults] = useState<boolean[]>([]);
   const [showCorrection, setShowCorrection] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
   const { toast } = useToast();
+
+  // Track game start on first render
+  useEffect(() => {
+    if (!gameStarted) {
+      UserActionsService.trackView('activity', 'spot-differences-started', gameData.title, {
+        action: 'game_started'
+      });
+      setGameStarted(true);
+    }
+  }, [gameData.title, gameStarted]);
 
   const handleAnswerChange = (index: number, value: string) => {
     if (gameFinished) return;
@@ -91,6 +103,13 @@ export const SpotDifferencesGame: React.FC<SpotDifferencesGameProps> = ({ gameDa
     setScore(finalScore);
     setResults(gameResults);
     setGameFinished(true);
+
+    // Track game submission
+    UserActionsService.trackView('activity', 'spot-differences-submitted', gameData.title, {
+      action: 'game_submitted',
+      score: finalScore,
+      totalDifferences: 7
+    });
 
     toast({
       title: "Jeu terminé !",

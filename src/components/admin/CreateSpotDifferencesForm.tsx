@@ -10,6 +10,7 @@ import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import ActivityThumbnailUploader from '@/components/activities/ActivityThumbnailUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface CreateSpotDifferencesFormProps {
   onClose: () => void;
@@ -144,6 +145,13 @@ export const CreateSpotDifferencesForm: React.FC<CreateSpotDifferencesFormProps>
         });
 
       if (error) throw error;
+
+      // Track spot differences game creation
+      UserActionsService.trackCreate('activity', 'spot-differences-created', title, {
+        action: 'spot_differences_created',
+        sharedGlobally: sharedGlobally,
+        subTagId: selectedSubTagId
+      });
 
       toast({
         title: "Succès",

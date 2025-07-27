@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Play, Pause, RotateCcw, CheckCircle, SkipForward, SkipBack, Square, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface DictationGameProps {
   title: string;
@@ -150,7 +151,14 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setIsReady(true);
     const segmentedSentences = segmentText(dictationText);
     setSentences(segmentedSentences);
-  }, [dictationText]);
+    
+    // Track dictation game start
+    UserActionsService.trackView('activity', 'dictation-game-started', title, {
+      action: 'game_started',
+      hasAudioFile: !!audioUrl,
+      textLength: dictationText.length
+    });
+  }, [dictationText, title, audioUrl]);
 
   // Mise à jour de la progression
   useEffect(() => {
@@ -423,6 +431,14 @@ const DictationGame: React.FC<DictationGameProps> = ({
     setScore(finalScore);
     setDifferences(wordDifferences);
     setShowCorrection(true);
+    
+    // Track dictation submission
+    UserActionsService.trackView('activity', 'dictation-submitted', title, {
+      action: 'dictation_submitted',
+      score: finalScore,
+      totalWords: correctWords.length,
+      errors: errors
+    });
     
     toast({
       title: 'Correction terminée',
