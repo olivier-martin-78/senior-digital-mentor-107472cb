@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw } from 'lucide-react';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface MemoryGamePlayerProps {
   gameData: {
@@ -35,8 +36,15 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
     }
   }, [selectedPairs]);
 
-  const initializeGame = () => {
+  const initializeGame = async () => {
     if (selectedPairs === null) return;
+    
+    // Track game start
+    try {
+      await UserActionsService.trackView('activity', `memory-game-${selectedPairs}`, `${gameData.title} - ${selectedPairs * 2} cartes`);
+    } catch (error) {
+      console.error('Error tracking memory game start:', error);
+    }
     
     // Utiliser seulement le nombre de paires sélectionnées
     const selectedImages = gameData.images.slice(0, selectedPairs);
@@ -101,6 +109,12 @@ export const MemoryGamePlayer: React.FC<MemoryGamePlayerProps> = ({ gameData }) 
           // Vérifier si le jeu est terminé
           if (matchedPairs + 1 === selectedPairs) {
             setIsGameComplete(true);
+            // Track game completion
+            try {
+              UserActionsService.trackView('activity', `memory-game-completed-${selectedPairs}`, `${gameData.title} - Terminé en ${moves + 1} coups`).catch(console.error);
+            } catch (error) {
+              console.error('Error tracking memory game completion:', error);
+            }
           }
         }, 1000);
       } else {

@@ -8,6 +8,7 @@ import { Sparkles, Brain, Gamepad2, Dumbbell, Languages } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const ActivitiesOverview = () => {
   const { activities: meditationActivities, loading: meditationLoading } = useActivities('meditation');
@@ -91,7 +92,11 @@ const ActivitiesOverview = () => {
         key: "opposites",
         subTagId: remueMeningesId,
         card: <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/opposites" className="block">
+          <Link 
+            to="/activities/opposites" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'opposites-game', 'Jeu des Contraires').catch(console.error)}
+          >
             <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -113,7 +118,11 @@ const ActivitiesOverview = () => {
         key: "sudoku",
         subTagId: remueMeningesId,
         card: <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/sudoku" className="block">
+          <Link 
+            to="/activities/sudoku" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'sudoku-game', 'Sudoku').catch(console.error)}
+          >
             <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -135,7 +144,11 @@ const ActivitiesOverview = () => {
         key: "crossword",
         subTagId: remueMeningesId,
         card: <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/crossword" className="block">
+          <Link 
+            to="/activities/crossword" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'crossword-game', 'Mots Croisés Fléchés').catch(console.error)}
+          >
             <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -157,7 +170,11 @@ const ActivitiesOverview = () => {
         key: "translation",
         subTagId: remueMeningesId,
         card: <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/translation" className="block">
+          <Link 
+            to="/activities/translation" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'translation-game', 'Jeu de Traduction').catch(console.error)}
+          >
             <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Languages className="w-16 h-16 mx-auto mb-4" />
@@ -179,7 +196,11 @@ const ActivitiesOverview = () => {
         key: "quiz70s",
         subTagId: remueMeningesId,
         card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/quiz70s" className="block">
+          <Link 
+            to="/activities/quiz70s" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'quiz70s-game', 'Quiz Années 70').catch(console.error)}
+          >
             <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />

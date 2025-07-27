@@ -7,6 +7,7 @@ import { isIOS } from '@/utils/platformDetection';
 import { Activity } from '@/hooks/useActivities';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface ActivityCardProps {
   title: string;
@@ -114,7 +115,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     return '/placeholder.svg';
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Track activity view
+    if (activity) {
+      try {
+        await UserActionsService.trackView('activity', activity.id, activity.title);
+      } catch (error) {
+        console.error('Error tracking activity view:', error);
+      }
+    }
+
     // Check if it's a game stored in iframe_code (priority to activity.iframe_code, then fallback to iframeCode prop)
     const gameCodeToCheck = (activity && activity.iframe_code) ? activity.iframe_code : iframeCode;
     

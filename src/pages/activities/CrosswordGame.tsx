@@ -1,10 +1,15 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import CrosswordBoard from '@/components/activities/CrosswordBoard';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const CrosswordGame = () => {
+  useEffect(() => {
+    UserActionsService.trackView('activity', 'crossword-game-play', 'Mots Croisés Fléchés - Partie commencée').catch(console.error);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">

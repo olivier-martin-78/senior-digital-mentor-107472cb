@@ -1,10 +1,15 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import SudokuBoard from '@/components/activities/SudokuBoard';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const SudokuGame = () => {
+  useEffect(() => {
+    UserActionsService.trackView('activity', 'sudoku-game-play', 'Sudoku - Partie commencée').catch(console.error);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">

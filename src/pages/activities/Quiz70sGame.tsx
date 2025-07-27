@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface Question {
   id: number;
@@ -132,6 +133,14 @@ const Quiz70sGame: React.FC = () => {
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState<{ question: number; selected: string; correct: string; isCorrect: boolean }[]>([]);
   const [gameCompleted, setGameCompleted] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+
+  useEffect(() => {
+    if (!gameStarted) {
+      UserActionsService.trackView('activity', 'quiz70s-game-start', 'Quiz Années 70 - Partie commencée').catch(console.error);
+      setGameStarted(true);
+    }
+  }, [gameStarted]);
 
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -167,6 +176,8 @@ const Quiz70sGame: React.FC = () => {
       setShowResult(false);
     } else {
       setGameCompleted(true);
+      // Track game completion
+      UserActionsService.trackView('activity', 'quiz70s-game-completed', `Quiz Années 70 - Terminé avec ${score}/${questions.length} bonnes réponses`).catch(console.error);
     }
   };
 
