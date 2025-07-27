@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +72,13 @@ const BlogPost = () => {
     }
   }, [post?.cover_image]);
 
+  // Tracker la vue de l'article
+  useEffect(() => {
+    if (post?.id && post?.title) {
+      UserActionsService.trackView('blog_post', post.id, post.title);
+    }
+  }, [post?.id, post?.title]);
+
   const handleCommentSubmit = async (content: string) => {
     if (!user) return;
     await addComment(content, user.id);
@@ -113,6 +121,9 @@ const BlogPost = () => {
         .eq('id', post.id);
       
       if (postError) throw postError;
+
+      // Tracker la suppression
+      await UserActionsService.trackDelete('blog_post', post.id, post.title);
       
       toast({
         title: "Article supprimé",

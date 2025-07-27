@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import DiaryFormFields from '@/components/DiaryFormFields';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const diaryFormSchema = z.object({
   entry_date: z.date(),
@@ -130,12 +131,19 @@ const DiaryNew = () => {
       console.log("Création de l'entrée avec les données:", entryData);
 
       // Insert entry into Supabase
-      const { error } = await supabase
+      const { data: insertedEntry, error } = await supabase
         .from('diary_entries')
-        .insert(entryData);
+        .insert(entryData)
+        .select()
+        .single();
 
       if (error) {
         throw error;
+      }
+
+      // Tracker la création
+      if (insertedEntry) {
+        await UserActionsService.trackCreate('diary_entry', insertedEntry.id, data.title);
       }
 
       toast({

@@ -8,6 +8,7 @@ import { uploadAlbumThumbnail } from '@/utils/thumbnailtUtils';
 import { generateVideoThumbnail, isVideoFile } from '@/utils/videoThumbnailUtils';
 import { useBlogAlbums } from '@/hooks/blog/useBlogAlbums';
 import { processImageFile } from '@/utils/imageUtils';
+import { UserActionsService } from '@/services/UserActionsService';
 
 export const useBlogEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -253,6 +254,9 @@ export const useBlogEditor = () => {
 
         if (error) throw error;
 
+        // Tracker la modification
+        await UserActionsService.trackUpdate('blog_post', post.id, title.trim());
+
         // Update categories
         await supabase
           .from('post_categories')
@@ -295,6 +299,9 @@ export const useBlogEditor = () => {
           .single();
 
         if (error) throw error;
+
+        // Tracker la création
+        await UserActionsService.trackCreate('blog_post', data.id, title.trim());
 
         if (coverImageFile) {
           const uploadedCoverUrl = await uploadCoverImage(data.id);

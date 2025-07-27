@@ -12,6 +12,7 @@ import GroupNotificationButton from '@/components/GroupNotificationButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { useContentReadStatus } from '@/hooks/useContentReadStatus';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface DiaryEntryWithAuthor extends DiaryEntry {
   profiles: {
@@ -95,6 +96,11 @@ const DiaryEntryPage = () => {
           if (user.id !== entryData.user_id) {
             markAsRead();
           }
+
+          // Tracker la vue de l'entrée
+          if (entryData) {
+            UserActionsService.trackView('diary_entry', entryData.id, entryData.title);
+          }
         }
       } catch (error: any) {
         console.error('💥 DiaryEntry - Critical error:', error);
@@ -134,6 +140,11 @@ const DiaryEntryPage = () => {
 
       if (error) {
         throw error;
+      }
+
+      // Tracker la suppression
+      if (entry) {
+        await UserActionsService.trackDelete('diary_entry', entry.id, entry.title);
       }
 
       toast({

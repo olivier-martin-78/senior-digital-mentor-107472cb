@@ -120,9 +120,7 @@ export class UserActionsService {
      try {
        let query = supabase
          .from('user_actions')
-         .select(`
-           *
-         `, { count: 'exact' })
+         .select('*', { count: 'exact' })
          .order('timestamp', { ascending: false });
 
        // Appliquer les filtres
@@ -155,14 +153,31 @@ export class UserActionsService {
          query = query.range(filters.offset, (filters.offset + (filters.limit || 50)) - 1);
        }
 
-       const { data, error, count } = await query;
+       const { data: actionsData, error, count } = await query;
 
        if (error) {
          console.error('Error fetching user actions:', error);
          return { data: [], count: 0 };
        }
 
-       return { data: data as UserAction[] || [], count: count || 0 };
+       if (!actionsData || actionsData.length === 0) {
+         return { data: [], count: count || 0 };
+       }
+
+       // Récupérer les profils des utilisateurs
+       const userIds = [...new Set(actionsData.map(action => action.user_id))];
+       const { data: profilesData } = await supabase
+         .from('profiles')
+         .select('id, display_name, email')
+         .in('id', userIds);
+
+       // Associer les profils aux actions
+       const actionsWithProfiles = actionsData.map(action => ({
+         ...action,
+         profiles: profilesData?.find(profile => profile.id === action.user_id) || null
+       }));
+
+       return { data: actionsWithProfiles as UserAction[] || [], count: count || 0 };
      } catch (error) {
        console.error('Error in getUserActions:', error);
        return { data: [], count: 0 };

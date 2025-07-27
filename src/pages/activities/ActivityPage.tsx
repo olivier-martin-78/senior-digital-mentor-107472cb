@@ -10,6 +10,7 @@ import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { useAuth } from '@/contexts/AuthContext';
 import ActivityCard from '@/components/activities/ActivityCard';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const ActivityPage = () => {
   const { type } = useParams<{ type: string }>();
@@ -98,7 +99,11 @@ const ActivityPage = () => {
         key: "opposites",
         subTagId: remueMeningesId || null,
         card: <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/opposites" className="block">
+          <Link 
+            to="/activities/opposites" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'opposites', 'Jeu des Contraires')}
+          >
             <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -120,7 +125,11 @@ const ActivityPage = () => {
         key: "sudoku",
         subTagId: remueMeningesId || null,
         card: <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/sudoku" className="block">
+          <Link 
+            to="/activities/sudoku" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'sudoku', 'Sudoku')}
+          >
             <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -142,7 +151,11 @@ const ActivityPage = () => {
         key: "crossword",
         subTagId: remueMeningesId || null,
         card: <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/crossword" className="block">
+          <Link 
+            to="/activities/crossword" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'crossword', 'Mots Croisés Fléchés')}
+          >
             <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
@@ -164,7 +177,11 @@ const ActivityPage = () => {
         key: "translation",
         subTagId: remueMeningesId || null,
         card: <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/translation" className="block">
+          <Link 
+            to="/activities/translation" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'translation', 'Jeu de Traduction')}
+          >
             <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Languages className="w-16 h-16 mx-auto mb-4" />
@@ -186,7 +203,11 @@ const ActivityPage = () => {
         key: "quiz70s",
         subTagId: remueMeningesId || null,
         card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
-          <Link to="/activities/quiz70s" className="block">
+          <Link 
+            to="/activities/quiz70s" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'quiz70s', 'Quiz Années 70')}
+          >
             <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
               <div className="text-center text-white">
                 <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
