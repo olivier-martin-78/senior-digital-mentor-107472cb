@@ -7,6 +7,7 @@ import { GameLoading } from '@/components/translation-game/GameLoading';
 import { GameModeSelection } from '@/components/translation-game/GameModeSelection';
 import { GamePlay } from '@/components/translation-game/GamePlay';
 import { GameResults } from '@/components/translation-game/GameResults';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const TranslationGame = () => {
   const {
@@ -31,6 +32,24 @@ const TranslationGame = () => {
     nextQuestion,
     resetGame,
   } = useTranslationGame();
+
+  // Tracker le démarrage du jeu une seule fois
+  React.useEffect(() => {
+    UserActionsService.trackView('activity', 'translation-game', 'Jeu de Traduction Français-Anglais');
+  }, []);
+
+  const handleStartGame = async (mode: 'fr-to-en' | 'en-to-fr') => {
+    startGame(mode);
+    
+    // Tracker le démarrage d'une partie
+    await UserActionsService.trackUserAction(
+      'view',
+      'activity', 
+      'translation-game-start',
+      'Démarrage Jeu de Traduction',
+      { mode, totalQuestions: TOTAL_QUESTIONS }
+    );
+  };
 
   if (loading) {
     return <GameLoading />;
@@ -63,7 +82,7 @@ const TranslationGame = () => {
           <GameModeSelection
             gameWords={gameWords}
             gameHistory={gameHistory}
-            onStartGame={startGame}
+            onStartGame={handleStartGame}
             onReplayGame={replayWithWords} // Passer la fonction de rejeu
             totalQuestions={TOTAL_QUESTIONS}
           />

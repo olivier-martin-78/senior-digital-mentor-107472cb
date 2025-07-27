@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LifeStory, Chapter } from '@/types/lifeStory';
 import { toast } from '@/hooks/use-toast';
 import { initialChapters } from '@/components/life-story/initialChapters';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface UseLifeStoryProps {
   targetUserId?: string | null;
@@ -161,6 +162,11 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           user_id: userId,
           chapters: mergedChapters
         });
+
+        // Tracker la vue de l'histoire de vie
+        if (storyData.id && storyData.title) {
+          await UserActionsService.trackView('life_story', storyData.id, storyData.title);
+        }
       } else {
         console.log('💡 Aucune histoire trouvée, création avec les chapitres initiaux pour utilisateur:', userId);
         const newStory: LifeStory = {
@@ -325,6 +331,16 @@ export const useLifeStory = ({ targetUserId }: UseLifeStoryProps = {}) => {
           created_at: savedData.created_at,
           updated_at: savedData.updated_at
         }));
+
+        // Tracker la création ou mise à jour
+        const isNewStory = !data?.id;
+        const actionType = isNewStory ? 'create' : 'update';
+        await UserActionsService.trackUserAction(
+          actionType,
+          'life_story',
+          savedData.id,
+          data.title || 'Histoire de vie'
+        );
       }
       
       setLastSaved(new Date());

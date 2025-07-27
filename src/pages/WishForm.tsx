@@ -34,6 +34,7 @@ import { WishAlbum, WishPost } from '@/types/supabase';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WishAlbumSelector from '@/components/WishAlbumSelector';
+import { UserActionsService } from '@/services/UserActionsService';
 
 // Props type for the WishForm component
 interface WishFormProps {
@@ -373,6 +374,11 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
           title: 'Souhait mis à jour !',
           description: 'Votre souhait a bien été modifié.',
         });
+
+        // Tracker la mise à jour
+        if (data?.[0]?.id) {
+          await UserActionsService.trackUpdate('wish_post', data[0].id, values.title);
+        }
       } else {
         console.log('WishForm - Création d\'un nouveau souhait');
         ({ data, error } = await supabase
@@ -386,6 +392,11 @@ const WishForm: React.FC<WishFormProps> = ({ wishToEdit, hideHeader = false }) =
           title: 'Souhait enregistré !',
           description: 'Votre souhait a bien été reçu et sera examiné dans les meilleurs délais.',
         });
+
+        // Tracker la création
+        if (data?.[0]?.id) {
+          await UserActionsService.trackCreate('wish_post', data[0].id, values.title);
+        }
       }
       
       console.log('WishForm - Soumission réussie, redirection vers /wishes');

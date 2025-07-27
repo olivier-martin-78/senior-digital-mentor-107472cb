@@ -14,6 +14,7 @@ import { WishPost as WishPostType } from '@/types/supabase';
 import { sanitizeInput, isValidUrl } from '@/utils/securityUtils';
 import { getThumbnailUrlSync, ALBUM_THUMBNAILS_BUCKET } from '@/utils/thumbnailtUtils';
 import GroupNotificationButton from '@/components/GroupNotificationButton';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const WishPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +70,9 @@ const WishPost = () => {
         
         console.log('✅ WishPost - Wish found:', data.id);
         setWish(data as WishPostType);
+
+        // Tracker la vue du souhait
+        await UserActionsService.trackView('wish_post', data.id, data.title || 'Souhait sans titre');
       } catch (error) {
         console.error('💥 WishPost - Critical error:', error);
         toast({
@@ -142,6 +146,9 @@ const WishPost = () => {
         title: "Souhait supprimé",
         description: "Le souhait a été supprimé avec succès.",
       });
+
+      // Tracker la suppression
+      await UserActionsService.trackDelete('wish_post', wish.id, wish.title || 'Souhait sans titre');
       
       navigate('/wishes');
     } catch (error) {

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, CheckCircle, AlertCircle, Star, Zap, Heart } from 'lucide-react';
 import { useOppositesGame } from '@/hooks/useOppositesGame';
+import { UserActionsService } from '@/services/UserActionsService';
 
 const OppositesGameBoard = () => {
   const {
@@ -50,6 +51,37 @@ const OppositesGameBoard = () => {
 
   const handleDifficultyChange = (value: string) => {
     setDifficulty(value as 'easy' | 'medium' | 'hard');
+  };
+
+  // Tracker le démarrage du jeu une seule fois
+  React.useEffect(() => {
+    UserActionsService.trackView('activity', 'opposites-game', 'Jeu des Contraires');
+  }, []);
+
+  const handleCheckAnswers = async () => {
+    checkAnswers();
+    
+    // Tracker la vérification des réponses
+    await UserActionsService.trackUserAction(
+      'view',
+      'activity',
+      'opposites-game-check',
+      'Vérification Jeu des Contraires',
+      { difficulty, wordCount: words.length }
+    );
+  };
+
+  const handleGenerateNewGrid = async () => {
+    generateNewGrid();
+    
+    // Tracker la génération d'une nouvelle grille
+    await UserActionsService.trackUserAction(
+      'view', 
+      'activity',
+      'opposites-game-new',
+      'Nouvelle grille Jeu des Contraires',
+      { difficulty }
+    );
   };
 
   const renderGrid = () => {
@@ -175,7 +207,7 @@ const OppositesGameBoard = () => {
                 </div>
                 
                 <Button 
-                  onClick={generateNewGrid} 
+                  onClick={handleGenerateNewGrid} 
                   variant="outline"
                   className="flex items-center space-x-2 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
                 >
@@ -186,7 +218,7 @@ const OppositesGameBoard = () => {
 
               <div className="flex flex-wrap items-center gap-4">
                 <Button 
-                  onClick={checkAnswers}
+                  onClick={handleCheckAnswers}
                   disabled={gameState === 'completed' || Object.keys(userAnswers).length === 0}
                   className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
