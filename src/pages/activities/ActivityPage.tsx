@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,6 @@ const ActivityPage = () => {
   const [subTagFilter, setSubTagFilter] = useState<string>('');
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
-  
-  const { activities, loading, canEditActivity } = useActivities(type || '');
-  const { subTags } = useActivitySubTags(type || '');
-
-  // Vérifier si l'utilisateur peut ajouter des activités
-  const canAddActivity = user && (hasRole('admin') || hasRole('editor'));
 
   const getPageTitle = () => {
     switch (type) {
@@ -32,6 +26,20 @@ const ActivityPage = () => {
       default: return 'Activités';
     }
   };
+
+  // Track page view when component mounts or type changes
+  useEffect(() => {
+    if (type) {
+      const pageTitle = getPageTitle();
+      UserActionsService.trackView('activity', `${type}-page`, `Page ${pageTitle}`).catch(console.error);
+    }
+  }, [type]);
+  
+  const { activities, loading, canEditActivity } = useActivities(type || '');
+  const { subTags } = useActivitySubTags(type || '');
+
+  // Vérifier si l'utilisateur peut ajouter des activités
+  const canAddActivity = user && (hasRole('admin') || hasRole('editor'));
 
   const getPageIcon = () => {
     switch (type) {
