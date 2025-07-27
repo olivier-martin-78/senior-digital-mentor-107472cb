@@ -116,13 +116,23 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const handleClick = async () => {
+    console.log('🎯 ActivityCard.handleClick called for:', {
+      title,
+      activityId: activity?.id,
+      hasActivity: !!activity
+    });
+
     // Track activity view
     if (activity) {
+      console.log('📊 Tracking activity view for:', activity.id, activity.title);
       try {
         await UserActionsService.trackView('activity', activity.id, activity.title);
+        console.log('✅ Activity view tracked successfully');
       } catch (error) {
-        console.error('Error tracking activity view:', error);
+        console.error('❌ Error tracking activity view:', error);
       }
+    } else {
+      console.warn('⚠️ No activity object found for tracking');
     }
 
     // Check if it's a game stored in iframe_code (priority to activity.iframe_code, then fallback to iframeCode prop)

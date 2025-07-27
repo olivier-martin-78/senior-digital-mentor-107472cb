@@ -31,29 +31,45 @@ export class UserActionsService {
     metadata: Record<string, any> = {}
   ): Promise<void> {
     try {
+      console.log('🔍 UserActionsService.trackUserAction called:', {
+        actionType,
+        contentType,
+        contentId,
+        contentTitle,
+        metadata
+      });
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.warn('No authenticated user for action tracking');
+        console.warn('❌ No authenticated user found for tracking');
         return;
       }
 
+      console.log('✅ User found for tracking:', user.id);
+
+      const insertData = {
+        user_id: user.id,
+        action_type: actionType,
+        content_type: contentType,
+        content_id: contentId,
+        content_title: contentTitle,
+        metadata: metadata
+      };
+
+      console.log('📤 Inserting user action:', insertData);
+
       const { error } = await supabase
         .from('user_actions')
-        .insert({
-          user_id: user.id,
-          action_type: actionType,
-          content_type: contentType,
-          content_id: contentId,
-          content_title: contentTitle,
-          metadata: metadata
-        });
+        .insert(insertData);
 
       if (error) {
-        console.error('Error tracking user action:', error);
+        console.error('❌ Error tracking user action:', error);
+      } else {
+        console.log('✅ User action tracked successfully');
       }
     } catch (error) {
-      console.error('Error in trackUserAction:', error);
+      console.error('❌ Failed to track user action:', error);
     }
   }
 
