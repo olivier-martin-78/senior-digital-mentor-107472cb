@@ -18,7 +18,8 @@ import {
   CreditCard,
   Menu,
   X,
-  Shield
+  Shield,
+  BarChart3
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -241,6 +242,12 @@ const Header = () => {
                     {isAdmin && (
                       <>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/dashboard" className="flex items-center">
+                            <BarChart3 className="mr-2 h-4 w-4" />
+                            Tableau de bord
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link to="/admin/users" className="flex items-center">
                             <Shield className="mr-2 h-4 w-4" />

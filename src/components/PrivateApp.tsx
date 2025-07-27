@@ -35,6 +35,7 @@ import InterventionReport from '@/pages/InterventionReport';
 import InvitationGroups from '@/pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from '@/pages/MyInvitationGroups';
 import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
@@ -127,6 +128,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/activities/:type" element={<AdminActivities />} />
             <Route path="/admin/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
 
           {/* Error routes */}
