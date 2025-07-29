@@ -17,6 +17,8 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
   const [hasCreatorRole, setHasCreatorRole] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  console.log('🎨 ActivityCreatorToggle: Rendu du composant pour userId:', userId, 'hasCreatorRole:', hasCreatorRole);
+
   const fetchUserRoles = async () => {
     console.log('🔄 ActivityCreatorToggle: fetchUserRoles appelée pour userId:', userId);
     try {
@@ -65,6 +67,7 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
         }
 
         setHasCreatorRole(true);
+        console.log('✅ ActivityCreatorToggle: Rôle créateur accordé, état local mis à jour');
         toast({
           title: 'Habilitation accordée',
           description: 'L\'utilisateur peut maintenant créer des activités',

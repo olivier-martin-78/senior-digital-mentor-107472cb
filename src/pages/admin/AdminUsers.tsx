@@ -199,7 +199,9 @@ const AdminUsers = () => {
               </TableHeader>
               <TableBody>
                 {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
+                  (() => {
+                    console.log('🔍 AdminUsers: Rendu des utilisateurs filtrés:', filteredUsers.map(u => ({ id: u.id, email: u.email })));
+                    return filteredUsers.map((user) => (
                      <TableRow key={user.id}>
                        <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
                        <TableCell>{user.email}</TableCell>
@@ -251,7 +253,8 @@ const AdminUsers = () => {
                          />
                        </TableCell>
                      </TableRow>
-                  ))
+                  ));
+                  })()
                 ) : (
                    <TableRow>
                      <TableCell colSpan={13} className="text-center py-8 text-gray-500">
