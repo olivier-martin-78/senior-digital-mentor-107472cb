@@ -1,25 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
-import type { Database } from '@/integrations/supabase/types';
-
-type AppRole = Database['public']['Enums']['app_role'];
 
 interface ActivityCreatorToggleProps {
   userId: string;
-  currentRoles: AppRole[];
   onRoleChange: () => void;
 }
 
 const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
   userId,
-  currentRoles,
   onRoleChange,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-  const hasCreatorRole = currentRoles.includes('createur_activite');
+  const [hasCreatorRole, setHasCreatorRole] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserRoles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      const roles = data?.map(r => r.role) || [];
+      setHasCreatorRole(roles.includes('createur_activite'));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des rôles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserRoles();
+  }, [userId]);
 
   const handleToggle = async (checked: boolean) => {
     setIsUpdating(true);
@@ -41,6 +59,7 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
           }
         }
 
+        setHasCreatorRole(true);
         toast({
           title: 'Habilitation accordée',
           description: 'L\'utilisateur peut maintenant créer des activités',
@@ -55,6 +74,7 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
 
         if (error) throw error;
 
+        setHasCreatorRole(false);
         toast({
           title: 'Habilitation retirée',
           description: 'L\'utilisateur ne peut plus créer d\'activités',
@@ -72,6 +92,10 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
       setIsUpdating(false);
     }
   };
+
+  if (loading) {
+    return <Loader2 className="h-4 w-4 animate-spin" />;
+  }
 
   return (
     <div className="flex items-center space-x-2">

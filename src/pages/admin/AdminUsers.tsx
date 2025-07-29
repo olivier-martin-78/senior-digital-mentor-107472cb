@@ -12,7 +12,6 @@ import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import UserRoleSelector from '@/components/admin/UserRoleSelector';
 import ActivityCreatorToggle from '@/components/admin/ActivityCreatorToggle';
-import { useUserRoles } from '@/hooks/useUserRoles';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -44,9 +43,6 @@ const AdminUsers = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserAdmin | null>(null);
-
-  // Hook pour récupérer tous les rôles des utilisateurs
-  const { userRoles, refetch: refetchRoles } = useUserRoles(users.map(u => u.id));
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -124,7 +120,6 @@ const AdminUsers = () => {
 
   const handleRoleChanged = async () => {
     await loadUsers();
-    await refetchRoles();
   };
 
   // Filtrer les utilisateurs selon le terme de recherche
@@ -211,13 +206,12 @@ const AdminUsers = () => {
                             onRoleChange={handleRoleChanged}
                           />
                         </TableCell>
-                        <TableCell>
-                          <ActivityCreatorToggle
-                            userId={user.id}
-                            currentRoles={userRoles[user.id] || []}
-                            onRoleChange={handleRoleChanged}
-                          />
-                        </TableCell>
+                         <TableCell>
+                           <ActivityCreatorToggle
+                             userId={user.id}
+                             onRoleChange={handleRoleChanged}
+                           />
+                         </TableCell>
                         <TableCell>
                           {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                         </TableCell>
