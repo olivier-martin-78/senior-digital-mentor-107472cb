@@ -17,10 +17,7 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
   const [hasCreatorRole, setHasCreatorRole] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  console.log('🎨 ActivityCreatorToggle: Rendu du composant pour userId:', userId, 'hasCreatorRole:', hasCreatorRole);
-
   const fetchUserRoles = async () => {
-    console.log('🔄 ActivityCreatorToggle: fetchUserRoles appelée pour userId:', userId);
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -30,23 +27,19 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
       if (error) throw error;
 
       const roles = data ? data.map(r => r.role) : [];
-      const hasRole = roles.includes('createur_activite');
-      console.log('✅ ActivityCreatorToggle: Rôles récupérés pour', userId, ':', roles, 'hasCreatorRole:', hasRole);
-      setHasCreatorRole(hasRole);
+      setHasCreatorRole(roles.includes('createur_activite'));
     } catch (error) {
-      console.error('❌ ActivityCreatorToggle: Erreur lors de la récupération des rôles:', error);
+      console.error('Erreur lors de la récupération des rôles:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('⚡ ActivityCreatorToggle: useEffect déclenchée pour userId:', userId);
     fetchUserRoles();
   }, [userId]);
 
   const handleToggle = async (checked: boolean) => {
-    console.log('🔄 ActivityCreatorToggle: handleToggle appelée pour userId:', userId, 'checked:', checked);
     setIsUpdating(true);
     
     try {
@@ -67,7 +60,6 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
         }
 
         setHasCreatorRole(true);
-        console.log('✅ ActivityCreatorToggle: Rôle créateur accordé, état local mis à jour');
         toast({
           title: 'Habilitation accordée',
           description: 'L\'utilisateur peut maintenant créer des activités',

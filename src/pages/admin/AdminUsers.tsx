@@ -54,7 +54,6 @@ const AdminUsers = () => {
   }, [hasRole, navigate]);
 
   const loadUsers = async () => {
-    console.log('📥 AdminUsers: loadUsers appelée');
     try {
       setLoading(true);
 
@@ -84,7 +83,6 @@ const AdminUsers = () => {
           intervention_reports_count: Number(user.intervention_reports_count)
          }));
 
-         console.log('✅ AdminUsers: Utilisateurs chargés:', combinedUsers.length, 'utilisateurs');
          setUsers(combinedUsers);
       } else {
         throw new Error('Aucune donnée reçue de l\'API');
@@ -130,7 +128,7 @@ const AdminUsers = () => {
     (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
 
-  console.log('🎨 AdminUsers: Rendu du composant avec', filteredUsers.length, 'utilisateurs filtrés');
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -199,9 +197,7 @@ const AdminUsers = () => {
               </TableHeader>
               <TableBody>
                 {filteredUsers.length > 0 ? (
-                  (() => {
-                    console.log('🔍 AdminUsers: Rendu des utilisateurs filtrés:', filteredUsers.map(u => ({ id: u.id, email: u.email })));
-                    return filteredUsers.map((user) => (
+                  filteredUsers.map((user) => (
                      <TableRow key={user.id}>
                        <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
                        <TableCell>{user.email}</TableCell>
@@ -253,8 +249,7 @@ const AdminUsers = () => {
                          />
                        </TableCell>
                      </TableRow>
-                  ));
-                  })()
+                  ))
                 ) : (
                    <TableRow>
                      <TableCell colSpan={13} className="text-center py-8 text-gray-500">
