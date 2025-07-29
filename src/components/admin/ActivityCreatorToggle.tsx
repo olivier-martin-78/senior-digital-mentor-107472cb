@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ActivityCreatorToggleProps {
   userId: string;
-  onRoleChange: () => void;
+  onRoleChange?: () => void;
 }
 
 const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
@@ -80,8 +80,6 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
           description: 'L\'utilisateur ne peut plus créer d\'activités',
         });
       }
-
-      onRoleChange();
     } catch (error: any) {
       toast({
         title: 'Erreur',

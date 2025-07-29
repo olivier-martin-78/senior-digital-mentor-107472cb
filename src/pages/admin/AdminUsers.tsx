@@ -118,8 +118,8 @@ const AdminUsers = () => {
     setUserToDelete(null);
   };
 
-  const handleRoleChanged = async () => {
-    await loadUsers();
+  const handleRoleChanged = () => {
+    // Ne pas recharger les utilisateurs - laisser ActivityCreatorToggle gérer son propre état
   };
 
   // Filtrer les utilisateurs selon le terme de recherche
