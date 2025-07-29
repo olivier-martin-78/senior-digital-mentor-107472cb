@@ -326,6 +326,7 @@ const AdminActivities = () => {
           {showTimelineForm && type === 'games' && (
             <div className="mb-8">
               <CreateTimelineForm 
+                initialSubActivityTagId={null}
                 onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
                   try {
                     const dataToInsert = {
