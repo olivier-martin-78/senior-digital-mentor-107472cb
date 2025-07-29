@@ -26,7 +26,7 @@ const ActivityCreatorToggle: React.FC<ActivityCreatorToggleProps> = ({
 
       if (error) throw error;
 
-      const roles = data?.map(r => r.role) || [];
+      const roles = data ? data.map(r => r.role) : [];
       setHasCreatorRole(roles.includes('createur_activite'));
     } catch (error) {
       console.error('Erreur lors de la récupération des rôles:', error);
