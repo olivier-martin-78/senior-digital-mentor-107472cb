@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCaregiversAccess } from '@/hooks/useCaregiversAccess';
+import { useCanCreateActivities } from '@/hooks/useCanCreateActivities';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -33,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 const Header = () => {
   const { session, roles, profile } = useAuth();
   const { hasCaregiversAccess } = useCaregiversAccess();
+  const { canCreate: canCreateActivities } = useCanCreateActivities();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -264,6 +266,18 @@ const Header = () => {
                           <Link to="/admin/activities" className="flex items-center">
                             <Activity className="mr-2 h-4 w-4" />
                             Admin - Activités
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    {canCreateActivities && !isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/create-activities" className="flex items-center">
+                            <Activity className="mr-2 h-4 w-4" />
+                            Créer des activités
                           </Link>
                         </DropdownMenuItem>
                       </>

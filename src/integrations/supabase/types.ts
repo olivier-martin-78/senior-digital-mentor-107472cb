@@ -1550,6 +1550,10 @@ export type Database = {
         Args: { user_id_param: string; group_id_param?: string }
         Returns: boolean
       }
+      can_create_activities: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
       can_delete_client: {
         Args: { client_id_param: string }
         Returns: boolean

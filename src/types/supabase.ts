@@ -667,7 +667,7 @@ export type Enums<
     : never
 
 // Types personnalisés pour l'application
-export type AppRole = 'admin' | 'moderator' | 'user' | 'reader' | 'professionnel' | 'editor';
+export type AppRole = 'admin' | 'moderator' | 'user' | 'reader' | 'professionnel' | 'editor' | 'createur_activite';
 
 export interface Profile {
   id: string;

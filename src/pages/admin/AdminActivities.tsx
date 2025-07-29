@@ -17,6 +17,7 @@ import ActivityEditForm from '@/components/activities/ActivityEditForm';
 import ActivityCard from '@/components/activities/ActivityCard';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCanCreateActivities } from '@/hooks/useCanCreateActivities';
 import { CreateMemoryGameForm } from '@/components/admin/CreateMemoryGameForm';
 import { EditMemoryGameForm } from '@/components/admin/EditMemoryGameForm';
 import CreateMusicQuizForm from '@/components/admin/CreateMusicQuizForm';
@@ -42,6 +43,7 @@ const AdminActivities = () => {
   const { activities, refetch } = useActivities(type || '');
   const { toast } = useToast();
   const { user } = useAuth();
+  const { canCreate, loading } = useCanCreateActivities();
   const [showForm, setShowForm] = useState(false);
   const [showMemoryManager, setShowMemoryManager] = useState(false);
   const [showMusicQuizForm, setShowMusicQuizForm] = useState(false);
@@ -205,6 +207,35 @@ const AdminActivities = () => {
   };
 
   const currentActivityType = activityTypes.find(at => at.value === type);
+
+  // Afficher un loader pendant la vérification des permissions
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-tranches-sage" />
+          <p className="text-gray-600">Vérification des permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Rediriger si l'utilisateur n'a pas les permissions
+  if (!canCreate) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Accès non autorisé</h1>
+          <p className="text-gray-600 mb-4">
+            Vous n'avez pas les permissions nécessaires pour créer des activités.
+          </p>
+          <p className="text-sm text-gray-500">
+            Contactez un administrateur ou souscrivez à un plan "Professionnel" pour obtenir cette fonctionnalité.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

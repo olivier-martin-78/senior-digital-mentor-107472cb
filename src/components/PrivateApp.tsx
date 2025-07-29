@@ -4,6 +4,7 @@ import HeaderWrapper from '@/components/HeaderWrapper';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ActivityCreatorRoute from '@/components/ActivityCreatorRoute';
 import Index from '@/pages/Index';
 import Profile from '@/pages/Profile';
 import AdminUsers from '@/pages/admin/AdminUsers';
@@ -114,6 +115,12 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
+          </Route>
+
+          {/* Activity creator routes - require activity creation permissions */}
+          <Route element={<ActivityCreatorRoute />}>
+            <Route path="/create-activities" element={<AdminActivities />} />
+            <Route path="/create-activities/:type" element={<AdminActivities />} />
           </Route>
 
           {/* Admin routes - require admin role */}

@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import UserRoleSelector from '@/components/admin/UserRoleSelector';
+import ActivityCreatorToggle from '@/components/admin/ActivityCreatorToggle';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -42,6 +44,9 @@ const AdminUsers = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserAdmin | null>(null);
+
+  // Hook pour récupérer tous les rôles des utilisateurs
+  const { userRoles, refetch: refetchRoles } = useUserRoles(users.map(u => u.id));
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -180,6 +185,7 @@ const AdminUsers = () => {
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Habilitation</TableHead>
                   <TableHead>Date de création</TableHead>
                   <TableHead>Dernière connexion</TableHead>
                   <TableHead>Articles blog</TableHead>
@@ -197,16 +203,26 @@ const AdminUsers = () => {
                      <TableRow key={user.id}>
                        <TableCell className="font-medium">{user.display_name || 'Non défini'}</TableCell>
                        <TableCell>{user.email}</TableCell>
-                       <TableCell>
-                         <UserRoleSelector
-                           userId={user.id}
-                           currentRole={user.role}
-                           onRoleChange={handleRoleChanged}
-                         />
-                       </TableCell>
-                       <TableCell>
-                         {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                       </TableCell>
+                        <TableCell>
+                          <UserRoleSelector
+                            userId={user.id}
+                            currentRole={user.role}
+                            onRoleChange={handleRoleChanged}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <ActivityCreatorToggle
+                            userId={user.id}
+                            currentRoles={userRoles[user.id] || []}
+                            onRoleChange={() => {
+                              refetchRoles();
+                              handleRoleChanged();
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                        </TableCell>
                        <TableCell>
                          {user.last_sign_in_at 
                            ? format(new Date(user.last_sign_in_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
@@ -242,7 +258,7 @@ const AdminUsers = () => {
                   ))
                 ) : (
                    <TableRow>
-                     <TableCell colSpan={12} className="text-center py-8 text-gray-500">
+                     <TableCell colSpan={13} className="text-center py-8 text-gray-500">
                        {searchTerm
                          ? 'Aucun utilisateur ne correspond à votre recherche'
                          : 'Aucun utilisateur n\'a été trouvé'}
