@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { sanitizeUserData, isValidEmail, isValidUrl } from '@/utils/securityUtils';
+import { sanitizeUserData, isValidEmail, isValidUrl, validateFormInput, rateLimiter } from '@/utils/securityUtils';
 
 interface UseSecureFormOptions {
   maxLength?: number;
@@ -43,8 +43,15 @@ export const useSecureForm = (options: UseSecureFormOptions = {}) => {
     return null;
   };
 
-  const validateForm = (data: Record<string, any>): boolean => {
+  const validateForm = (data: Record<string, any>, userIdentifier?: string): boolean => {
     const newErrors: Record<string, string> = {};
+
+    // Vérification du rate limiting si un identifiant utilisateur est fourni
+    if (userIdentifier && !rateLimiter.isAllowed(userIdentifier)) {
+      newErrors._global = 'Trop de tentatives. Veuillez patienter avant de réessayer.';
+      setErrors(newErrors);
+      return false;
+    }
 
     for (const [name, value] of Object.entries(data)) {
       const error = validateField(name, value);

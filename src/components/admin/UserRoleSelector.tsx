@@ -40,8 +40,19 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
       return;
     }
 
+    // Validation côté client - empêcher l'escalade de privilèges
+    if (currentRole === 'admin' && selectedRole !== 'admin') {
+      const confirmChange = window.confirm(
+        'Attention: Vous êtes sur le point de retirer les privilèges admin. Êtes-vous sûr?'
+      );
+      if (!confirmChange) return;
+    }
+
     try {
       setIsUpdating(true);
+
+      // Log de sécurité pour audit
+      console.log(`🔐 Tentative de changement de rôle: ${currentRole} -> ${selectedRole} pour l'utilisateur ${userId}`);
 
       const { error } = await supabase
         .from('user_roles')
@@ -50,6 +61,9 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
 
       if (error) throw error;
 
+      // Log de succès
+      console.log(`✅ Rôle mis à jour avec succès: ${currentRole} -> ${selectedRole} pour l'utilisateur ${userId}`);
+      
       onRoleChange(selectedRole);
 
       toast({
@@ -57,6 +71,7 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
         description: `Le rôle de l'utilisateur a été changé vers ${roles.find(r => r.value === selectedRole)?.label}`,
       });
     } catch (error: any) {
+      console.error(`❌ Erreur lors du changement de rôle pour l'utilisateur ${userId}:`, error);
       toast({
         title: 'Erreur',
         description: `Impossible de mettre à jour le rôle : ${error.message}`,

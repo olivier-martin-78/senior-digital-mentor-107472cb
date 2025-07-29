@@ -101,6 +101,54 @@ class RateLimiter {
   }
 }
 
+// Fonction de validation renforcée pour les formulaires sensibles
+export const validateFormInput = (
+  fieldName: string, 
+  value: any, 
+  options: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: RegExp;
+    allowedValues?: string[];
+  } = {}
+): string | null => {
+  const { required = false, minLength = 0, maxLength = 1000, pattern, allowedValues } = options;
+
+  // Vérifier si requis
+  if (required && (!value || value.toString().trim() === '')) {
+    return `${fieldName} est requis`;
+  }
+
+  // Si pas de valeur et pas requis, c'est valide
+  if (!value && !required) {
+    return null;
+  }
+
+  const stringValue = value.toString();
+
+  // Vérifier la longueur
+  if (stringValue.length < minLength) {
+    return `${fieldName} doit contenir au moins ${minLength} caractères`;
+  }
+  
+  if (stringValue.length > maxLength) {
+    return `${fieldName} ne doit pas dépasser ${maxLength} caractères`;
+  }
+
+  // Vérifier le pattern
+  if (pattern && !pattern.test(stringValue)) {
+    return `Format de ${fieldName} invalide`;
+  }
+
+  // Vérifier les valeurs autorisées
+  if (allowedValues && !allowedValues.includes(stringValue)) {
+    return `Valeur non autorisée pour ${fieldName}`;
+  }
+
+  return null;
+};
+
 export const rateLimiter = new RateLimiter();
 
 // Fonction pour sécuriser le stockage local

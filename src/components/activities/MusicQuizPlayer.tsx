@@ -129,10 +129,30 @@ export function MusicQuizPlayer({
         {/* Vidéo YouTube si disponible pour le type "videos" */}
         {quizData.quizType === 'videos' && currentQuestion.youtubeEmbed && (
           <div className="relative aspect-video overflow-hidden rounded-lg">
-            <div 
-              dangerouslySetInnerHTML={{ __html: currentQuestion.youtubeEmbed }}
-              className="w-full h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:max-w-full [&_iframe]:border-0"
-            />
+            {(() => {
+              // Extract YouTube URL safely
+              const match = currentQuestion.youtubeEmbed.match(/src="([^"]*youtube[^"]*)"/);
+              if (match && match[1]) {
+                try {
+                  const url = new URL(match[1]);
+                  if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+                    return (
+                      <iframe
+                        src={match[1]}
+                        className="w-full h-full border-0"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title="YouTube video"
+                      />
+                    );
+                  }
+                } catch (error) {
+                  console.error('Invalid YouTube URL:', error);
+                }
+              }
+              return <div className="flex items-center justify-center h-full text-gray-500">Vidéo non disponible</div>;
+            })()}
           </div>
         )}
 
