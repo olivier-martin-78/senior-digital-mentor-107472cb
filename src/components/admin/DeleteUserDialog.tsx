@@ -80,13 +80,23 @@ const DeleteUserDialog = ({ userId, userEmail, onUserDeleted, disabled }: Delete
             Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{userEmail}</strong> ?
             <br />
             <br />
-            Cette action est <strong>irréversible</strong> et supprimera :
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Le profil utilisateur</li>
-              <li>Tous ses contenus (articles, journaux, souhaits, etc.)</li>
-              <li>Toutes ses permissions</li>
-              <li>Ses invitations et groupes créés</li>
+            Cette action est <strong>irréversible</strong> et supprimera définitivement :
+            <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+              <li><strong>Profil utilisateur</strong> - Le compte sera complètement supprimé</li>
+              <li><strong>Contenus créés</strong> - Articles de blog, journaux intimes, récits de vie, souhaits</li>
+              <li><strong>Planning professionnel</strong> - Rendez-vous créés, clients, intervenants</li>
+              <li><strong>Compte-rendus d'intervention</strong> - Tous les rapports rédigés</li>
+              <li><strong>Messages</strong> - Communications dans l'espace proche-aidants</li>
+              <li><strong>Groupes et invitations</strong> - Groupes créés et personnes invitées</li>
+              <li><strong>Permissions et rôles</strong> - Tous les accès accordés</li>
             </ul>
+            <br />
+            <div className="bg-muted p-3 rounded-md">
+              <p className="text-sm text-muted-foreground">
+                💡 <strong>Note :</strong> L'utilisateur pourra recréer un compte avec la même adresse email 
+                et bénéficiera d'une nouvelle période d'essai gratuite.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
