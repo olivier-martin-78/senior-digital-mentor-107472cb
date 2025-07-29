@@ -1566,6 +1566,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      current_user_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       debug_intervention_report_access: {
         Args: { report_id_param: string }
         Returns: Json
