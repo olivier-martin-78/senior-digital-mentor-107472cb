@@ -55,11 +55,18 @@ const AdminUsers = () => {
 
   const loadUsers = async () => {
     try {
+      console.log('🔍 AdminUsers: loadUsers() appelée');
       setLoading(true);
 
       // Utiliser la nouvelle fonction de base de données pour récupérer toutes les données
       const { data: usersData, error } = await supabase
         .rpc('get_admin_users_with_auth_data');
+
+      console.log('📊 AdminUsers: Données brutes de la DB:', {
+        count: usersData?.length,
+        data: usersData,
+        error
+      });
 
       if (error) {
         console.error('Erreur Supabase:', error);
@@ -67,6 +74,13 @@ const AdminUsers = () => {
       }
 
       if (usersData) {
+        // Vérifier les doublons dans les données brutes
+        const userIds = usersData.map((u: any) => u.id);
+        const duplicateIds = userIds.filter((id: string, index: number) => userIds.indexOf(id) !== index);
+        if (duplicateIds.length > 0) {
+          console.error('🚨 AdminUsers: DOUBLONS DÉTECTÉS dans les données DB:', duplicateIds);
+        }
+
         // Convertir les données reçues au format UserAdmin
         const combinedUsers: UserAdmin[] = usersData.map((user: any) => ({
           id: user.id,
@@ -82,6 +96,11 @@ const AdminUsers = () => {
           appointments_count: Number(user.appointments_count),
           intervention_reports_count: Number(user.intervention_reports_count)
          }));
+
+         console.log('✅ AdminUsers: Données transformées:', {
+           count: combinedUsers.length,
+           users: combinedUsers.map(u => ({ id: u.id, email: u.email }))
+         });
 
          setUsers(combinedUsers);
       } else {
@@ -119,6 +138,7 @@ const AdminUsers = () => {
   };
 
   const handleRoleChanged = () => {
+    console.log('🔄 AdminUsers: handleRoleChanged appelée - NE recharge PAS les utilisateurs');
     // Ne pas recharger les utilisateurs - laisser ActivityCreatorToggle gérer son propre état
   };
 
@@ -127,6 +147,13 @@ const AdminUsers = () => {
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
+
+  console.log('🎯 AdminUsers: Re-render détecté', {
+    usersCount: users.length,
+    filteredCount: filteredUsers.length,
+    searchTerm,
+    userIds: users.map(u => u.id)
+  });
 
   
 
