@@ -15,6 +15,11 @@ export const EditTimelineForm: React.FC<EditTimelineFormProps> = ({
   onCancel,
   initialSubActivityTagId
 }) => {
+  console.log('🔍 EditTimelineForm - Initialisation avec:', {
+    initialData,
+    initialSubActivityTagId
+  });
+
   return (
     <CreateTimelineForm 
       onSubmit={onSubmit}

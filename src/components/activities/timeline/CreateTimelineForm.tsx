@@ -20,10 +20,11 @@ interface CreateTimelineFormProps {
 }
 
 export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel, initialData, initialSubActivityTagId }) => {
-  console.log('🔍 CreateTimelineForm - Initialisation:', {
+  console.log('🔍 CreateTimelineForm - Initialisation avec:', {
     initialData,
     initialSubActivityTagId,
-    hasInitialData: !!initialData
+    hasInitialData: !!initialData,
+    isEditing: !!initialData
   });
 
   const [formData, setFormData] = useState<TimelineData>(initialData || {
@@ -47,7 +48,25 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(initialSubActivityTagId || null);
   
-  console.log('🔍 CreateTimelineForm - État initial selectedSubTagId:', selectedSubTagId);
+  console.log('🔍 CreateTimelineForm - État initial selectedSubTagId:', {
+    selectedSubTagId,
+    initialSubActivityTagId,
+    willSetFromProp: !!initialSubActivityTagId
+  });
+
+  // useEffect pour surveiller les changements de initialSubActivityTagId
+  React.useEffect(() => {
+    console.log('🔍 CreateTimelineForm - useEffect initialSubActivityTagId changé:', {
+      newValue: initialSubActivityTagId,
+      oldSelectedSubTagId: selectedSubTagId,
+      willUpdate: !!initialSubActivityTagId && initialSubActivityTagId !== selectedSubTagId
+    });
+    
+    if (initialSubActivityTagId && initialSubActivityTagId !== selectedSubTagId) {
+      console.log('🔍 CreateTimelineForm - Mise à jour selectedSubTagId vers:', initialSubActivityTagId);
+      setSelectedSubTagId(initialSubActivityTagId);
+    }
+  }, [initialSubActivityTagId, selectedSubTagId]);
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 

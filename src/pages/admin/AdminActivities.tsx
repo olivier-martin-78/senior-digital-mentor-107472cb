@@ -177,6 +177,13 @@ const AdminActivities = () => {
   };
 
   const handleEditActivity = (activity: Activity) => {
+    console.log('🔍 AdminActivities - handleEditActivity appelé avec:', {
+      id: activity.id,
+      title: activity.title,
+      activity_type: activity.activity_type,
+      sub_activity_tag_id: activity.sub_activity_tag_id
+    });
+    
     setEditingActivity(activity);
     setShowForm(false);
     setShowMemoryManager(false);
