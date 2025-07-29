@@ -12,6 +12,7 @@ import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import UserRoleSelector from '@/components/admin/UserRoleSelector';
 import ActivityCreatorToggle from '@/components/admin/ActivityCreatorToggle';
+import { PermanentAccessToggle } from '@/components/admin/PermanentAccessToggle';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,6 +33,8 @@ interface UserAdmin {
   clients_count: number;
   appointments_count: number;
   intervention_reports_count: number;
+  access_status: string;
+  permanent_access: boolean;
 }
 
 const AdminUsers = () => {
@@ -94,7 +97,9 @@ const AdminUsers = () => {
           wish_posts_count: Number(user.wish_posts_count),
           clients_count: Number(user.clients_count),
           appointments_count: Number(user.appointments_count),
-          intervention_reports_count: Number(user.intervention_reports_count)
+          intervention_reports_count: Number(user.intervention_reports_count),
+          access_status: user.access_status,
+          permanent_access: user.permanent_access
          }));
 
          console.log('✅ AdminUsers: Données transformées:', {
@@ -211,6 +216,8 @@ const AdminUsers = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Habilitation</TableHead>
+                  <TableHead>Statut d'accès</TableHead>
+                  <TableHead>Accès permanent</TableHead>
                   <TableHead>Date de création</TableHead>
                   <TableHead>Dernière connexion</TableHead>
                   <TableHead>Articles blog</TableHead>
@@ -241,6 +248,22 @@ const AdminUsers = () => {
                              onRoleChange={handleRoleChanged}
                            />
                          </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={user.access_status === 'Accès permanent' ? 'default' : 
+                                    user.access_status === 'Période d\'essai' ? 'outline' : 
+                                    user.access_status.includes('Abonné') ? 'default' : 'destructive'}
+                          >
+                            {user.access_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <PermanentAccessToggle
+                            userId={user.id}
+                            currentValue={user.permanent_access}
+                            onToggle={loadUsers}
+                          />
+                        </TableCell>
                         <TableCell>
                           {format(new Date(user.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                         </TableCell>
@@ -279,7 +302,7 @@ const AdminUsers = () => {
                   ))
                 ) : (
                    <TableRow>
-                     <TableCell colSpan={13} className="text-center py-8 text-gray-500">
+                     <TableCell colSpan={15} className="text-center py-8 text-gray-500">
                        {searchTerm
                          ? 'Aucun utilisateur ne correspond à votre recherche'
                          : 'Aucun utilisateur n\'a été trouvé'}

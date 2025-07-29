@@ -69,7 +69,7 @@ const WishPost = () => {
         }
         
         console.log('✅ WishPost - Wish found:', data.id);
-        setWish(data as WishPostType);
+        setWish(data as any);
 
         // Tracker la vue du souhait
         await UserActionsService.trackView('wish_post', data.id, data.title || 'Souhait sans titre');

@@ -1058,6 +1058,7 @@ export type Database = {
           free_trial_end: string | null
           free_trial_start: string | null
           id: string
+          permanent_access: boolean | null
           receive_contacts: boolean
         }
         Insert: {
@@ -1069,6 +1070,7 @@ export type Database = {
           free_trial_end?: string | null
           free_trial_start?: string | null
           id: string
+          permanent_access?: boolean | null
           receive_contacts?: boolean
         }
         Update: {
@@ -1080,6 +1082,7 @@ export type Database = {
           free_trial_end?: string | null
           free_trial_start?: string | null
           id?: string
+          permanent_access?: boolean | null
           receive_contacts?: boolean
         }
         Relationships: []
@@ -1601,6 +1604,8 @@ export type Database = {
           clients_count: number
           appointments_count: number
           intervention_reports_count: number
+          access_status: string
+          permanent_access: boolean
         }[]
       }
       get_current_user_email: {
@@ -1618,6 +1623,10 @@ export type Database = {
           display_name: string
           email: string
         }[]
+      }
+      get_user_access_status: {
+        Args: { user_id_param: string }
+        Returns: string
       }
       get_user_role: {
         Args: { user_id: string }
