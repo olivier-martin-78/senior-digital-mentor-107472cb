@@ -124,6 +124,7 @@ const AdminUsers = () => {
 
   const handleRoleChanged = async () => {
     await loadUsers();
+    await refetchRoles();
   };
 
   // Filtrer les utilisateurs selon le terme de recherche
@@ -214,10 +215,7 @@ const AdminUsers = () => {
                           <ActivityCreatorToggle
                             userId={user.id}
                             currentRoles={userRoles[user.id] || []}
-                            onRoleChange={() => {
-                              refetchRoles();
-                              handleRoleChanged();
-                            }}
+                            onRoleChange={handleRoleChanged}
                           />
                         </TableCell>
                         <TableCell>
