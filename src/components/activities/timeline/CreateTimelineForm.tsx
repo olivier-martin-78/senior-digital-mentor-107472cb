@@ -16,9 +16,10 @@ interface CreateTimelineFormProps {
   onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
   onCancel: () => void;
   initialData?: TimelineData;
+  initialSubActivityTagId?: string | null;
 }
 
-export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel, initialData }) => {
+export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel, initialData, initialSubActivityTagId }) => {
   const [formData, setFormData] = useState<TimelineData>(initialData || {
     creatorName: '',
     shareGlobally: false,
@@ -38,7 +39,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   });
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(null);
+  const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(initialSubActivityTagId || null);
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 

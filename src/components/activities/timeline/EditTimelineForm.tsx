@@ -6,18 +6,21 @@ interface EditTimelineFormProps {
   initialData: TimelineData;
   onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
   onCancel: () => void;
+  initialSubActivityTagId?: string | null;
 }
 
 export const EditTimelineForm: React.FC<EditTimelineFormProps> = ({ 
   initialData, 
   onSubmit, 
-  onCancel 
+  onCancel,
+  initialSubActivityTagId
 }) => {
   return (
     <CreateTimelineForm 
       onSubmit={onSubmit}
       onCancel={onCancel}
       initialData={initialData}
+      initialSubActivityTagId={initialSubActivityTagId}
     />
   );
 };

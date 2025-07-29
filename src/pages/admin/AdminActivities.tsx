@@ -433,6 +433,7 @@ const AdminActivities = () => {
                     return (
                       <EditTimelineForm
                         initialData={gameData}
+                        initialSubActivityTagId={editingActivity.sub_activity_tag_id}
                         onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
                           try {
                             const { error } = await supabase
