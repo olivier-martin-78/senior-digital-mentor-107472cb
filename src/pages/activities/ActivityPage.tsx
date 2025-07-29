@@ -39,7 +39,7 @@ const ActivityPage = () => {
   const { subTags } = useActivitySubTags(type || '');
 
   // Vérifier si l'utilisateur peut ajouter des activités
-  const canAddActivity = user && (hasRole('admin') || hasRole('editor'));
+  const canAddActivity = user && (hasRole('admin') || hasRole('editor') || hasRole('createur_activite'));
 
   const getPageIcon = () => {
     switch (type) {
