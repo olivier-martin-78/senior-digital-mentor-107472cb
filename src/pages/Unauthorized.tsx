@@ -6,9 +6,8 @@ import Header from '@/components/Header';
 
 const Unauthorized = () => {
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
-      <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-4xl font-serif text-tranches-charcoal mb-4">Accès refusé</h1>
         <p className="text-lg text-gray-600 mb-8 text-center">
           Vous n'avez pas les autorisations nécessaires pour accéder à cette page.

@@ -8,7 +8,10 @@ const ActivityCreatorRoute: React.FC = () => {
   const { user } = useAuth();
   const { canCreate, loading } = useCanCreateActivities();
 
+  console.log('🔍 ActivityCreatorRoute: État actuel', { user: user?.id, canCreate, loading });
+
   if (loading) {
+    console.log('⏳ ActivityCreatorRoute: Chargement en cours...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -20,13 +23,16 @@ const ActivityCreatorRoute: React.FC = () => {
   }
 
   if (!user) {
+    console.log('❌ ActivityCreatorRoute: Pas d\'utilisateur - redirection vers auth');
     return <Navigate to="/auth" replace />;
   }
 
   if (!canCreate) {
+    console.log('❌ ActivityCreatorRoute: Permissions insuffisantes - redirection vers unauthorized');
     return <Navigate to="/unauthorized" replace />;
   }
 
+  console.log('✅ ActivityCreatorRoute: Accès autorisé');
   return <Outlet />;
 };
 

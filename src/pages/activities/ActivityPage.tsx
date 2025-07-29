@@ -90,7 +90,7 @@ const ActivityPage = () => {
   });
 
   const handleEditActivity = (activityId: string) => {
-    navigate(`/admin/activities/${type}?edit=${activityId}`);
+    navigate(`/create-activities/${type}?edit=${activityId}`);
   };
 
   const filteredActivities = filterActivitiesBySubTag(activities, subTagFilter);
@@ -307,7 +307,7 @@ const ActivityPage = () => {
           
           {canAddActivity && (
             <Link 
-              to={`/admin/activities/${type}`}
+              to={`/create-activities/${type}`}
               className="text-tranches-dustyblue hover:text-tranches-dustyblue/80 underline underline-offset-4 flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
