@@ -54,6 +54,7 @@ const AdminUsers = () => {
   }, [hasRole, navigate]);
 
   const loadUsers = async () => {
+    console.log('📥 AdminUsers: loadUsers appelée');
     try {
       setLoading(true);
 
@@ -81,9 +82,10 @@ const AdminUsers = () => {
           clients_count: Number(user.clients_count),
           appointments_count: Number(user.appointments_count),
           intervention_reports_count: Number(user.intervention_reports_count)
-        }));
+         }));
 
-        setUsers(combinedUsers);
+         console.log('✅ AdminUsers: Utilisateurs chargés:', combinedUsers.length, 'utilisateurs');
+         setUsers(combinedUsers);
       } else {
         throw new Error('Aucune donnée reçue de l\'API');
       }
@@ -127,6 +129,8 @@ const AdminUsers = () => {
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
+
+  console.log('🎨 AdminUsers: Rendu du composant avec', filteredUsers.length, 'utilisateurs filtrés');
 
   return (
     <div className="min-h-screen bg-gray-50">
