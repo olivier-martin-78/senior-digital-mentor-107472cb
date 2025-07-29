@@ -40,7 +40,7 @@ const activityTypes = [
 const AdminActivities = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activities, refetch } = useActivities(type || '');
+  const { activities, refetch, canEditActivity } = useActivities(type || '');
   const { toast } = useToast();
   const { user } = useAuth();
   const { canCreate, loading } = useCanCreateActivities();
@@ -625,7 +625,7 @@ const AdminActivities = () => {
                       videoId={videoId || undefined}
                       thumbnailUrl={activity.thumbnail_url}
                       activityDate={activity.activity_date}
-                      showEditButton={true}
+                      showEditButton={canEditActivity(activity)}
                       onEdit={() => handleEditActivity(activity)}
                       subActivityName={activity.activity_sub_tags?.name}
                       iframeCode={activity.iframe_code}
@@ -638,14 +638,16 @@ const AdminActivities = () => {
                         Partagé
                       </div>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(activity.id)}
-                      className="absolute top-2 right-12 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canEditActivity(activity) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(activity.id)}
+                        className="absolute top-2 right-12 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 );
               })}
