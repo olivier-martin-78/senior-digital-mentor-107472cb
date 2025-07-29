@@ -328,6 +328,9 @@ const AdminActivities = () => {
               <CreateTimelineForm 
                 initialSubActivityTagId={null}
                 onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
+                  console.log('🔍 AdminActivities - Réception des données timeline:', data);
+                  console.log('🔍 AdminActivities - subActivityTagId reçu:', data.subActivityTagId);
+                  
                   try {
                     const dataToInsert = {
                       activity_type: 'games',
@@ -340,6 +343,8 @@ const AdminActivities = () => {
                       activity_date: null,
                       sub_activity_tag_id: data.subActivityTagId || null,
                     };
+
+                    console.log('🔍 AdminActivities - Données à insérer:', dataToInsert);
 
                     const { error } = await supabase
                       .from('activities')
@@ -431,21 +436,33 @@ const AdminActivities = () => {
                       />
                     );
                   } else if (gameData?.timelineName) {
+                    console.log('🔍 AdminActivities - Édition timeline avec:', {
+                      gameData,
+                      sub_activity_tag_id: editingActivity.sub_activity_tag_id
+                    });
+                    
                     return (
                       <EditTimelineForm
                         initialData={gameData}
                         initialSubActivityTagId={editingActivity.sub_activity_tag_id}
                         onSubmit={async (data: TimelineData & { subActivityTagId?: string }) => {
+                          console.log('🔍 AdminActivities - Mise à jour timeline avec:', data);
+                          console.log('🔍 AdminActivities - subActivityTagId pour mise à jour:', data.subActivityTagId);
+                          
                           try {
+                            const updateData = {
+                              title: data.timelineName,
+                              iframe_code: JSON.stringify(data),
+                              sub_activity_tag_id: data.subActivityTagId || null,
+                              shared_globally: canShareGlobally ? data.shareGlobally : false,
+                              thumbnail_url: data.thumbnailUrl || null,
+                            };
+                            
+                            console.log('🔍 AdminActivities - Données de mise à jour:', updateData);
+
                             const { error } = await supabase
                               .from('activities')
-                              .update({
-                                title: data.timelineName,
-                                iframe_code: JSON.stringify(data),
-                                sub_activity_tag_id: data.subActivityTagId || null,
-                                shared_globally: canShareGlobally ? data.shareGlobally : false,
-                                thumbnail_url: data.thumbnailUrl || null,
-                              })
+                              .update(updateData)
                               .eq('id', editingActivity.id);
 
                             if (error) throw error;

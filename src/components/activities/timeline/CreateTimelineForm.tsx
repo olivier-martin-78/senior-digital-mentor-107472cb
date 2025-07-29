@@ -20,6 +20,12 @@ interface CreateTimelineFormProps {
 }
 
 export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit, onCancel, initialData, initialSubActivityTagId }) => {
+  console.log('🔍 CreateTimelineForm - Initialisation:', {
+    initialData,
+    initialSubActivityTagId,
+    hasInitialData: !!initialData
+  });
+
   const [formData, setFormData] = useState<TimelineData>(initialData || {
     creatorName: '',
     shareGlobally: false,
@@ -40,6 +46,8 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(initialSubActivityTagId || null);
+  
+  console.log('🔍 CreateTimelineForm - État initial selectedSubTagId:', selectedSubTagId);
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
@@ -246,15 +254,16 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   };
 
   const handleSubmit = () => {
-    console.log('Timeline form validation:', {
+    console.log('🔍 Timeline form validation:', {
       creatorName: formData.creatorName,
       timelineName: formData.timelineName,
       eventsCount: formData.events.length,
+      selectedSubTagId: selectedSubTagId,
       formData: formData
     });
     
     if (!formData.creatorName || !formData.timelineName || formData.events.length < 1) {
-      console.log('Validation failed - missing data');
+      console.log('❌ Validation failed - missing data');
       toast({ 
         title: "Informations manquantes", 
         description: "Veuillez remplir tous les champs et ajouter au moins 1 événement",
@@ -263,7 +272,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       return;
     }
 
-    console.log('Validation passed, calling onSubmit');
+    console.log('✅ Validation passed, calling onSubmit with selectedSubTagId:', selectedSubTagId);
     
     // Track timeline creation
     UserActionsService.trackCreate('activity', 'timeline-created', formData.timelineName, {
@@ -273,6 +282,7 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       subTagId: selectedSubTagId
     });
     
+    console.log('🚀 Calling onSubmit with data:', { ...formData, subActivityTagId: selectedSubTagId });
     onSubmit({ ...formData, subActivityTagId: selectedSubTagId });
   };
 
@@ -324,7 +334,10 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
           <SubActivitySelector
             activityType="games"
             selectedSubTagId={selectedSubTagId}
-            onSubTagChange={setSelectedSubTagId}
+            onSubTagChange={(subTagId) => {
+              console.log('🔍 SubActivitySelector - Changement de sous-activité:', subTagId);
+              setSelectedSubTagId(subTagId);
+            }}
           />
 
           <div>
