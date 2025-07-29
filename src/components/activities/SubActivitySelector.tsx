@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,28 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Effect pour s'assurer que la sélection est appliquée après le chargement des sous-tags
+  useEffect(() => {
+    console.log('🔍 SubActivitySelector - useEffect détecte changement:', {
+      selectedSubTagId,
+      subTagsCount: subTags.length,
+      loading,
+      subTagExists: selectedSubTagId ? subTags.some(tag => tag.id === selectedSubTagId) : false
+    });
+    
+    // Si on a un selectedSubTagId et que les subTags sont chargés
+    // mais que l'ID sélectionné n'existe pas dans la liste, on appelle onSubTagChange avec null
+    if (selectedSubTagId && !loading && subTags.length > 0) {
+      const subTagExists = subTags.some(tag => tag.id === selectedSubTagId);
+      if (!subTagExists) {
+        console.log('⚠️ SubActivitySelector - selectedSubTagId non trouvé dans les subTags, reset à null');
+        onSubTagChange(null);
+      } else {
+        console.log('✅ SubActivitySelector - selectedSubTagId trouvé dans les subTags');
+      }
+    }
+  }, [selectedSubTagId, subTags, loading, onSubTagChange]);
 
   const handleCreateSubTag = async () => {
     if (!newTagName.trim() || !activityType) return;
