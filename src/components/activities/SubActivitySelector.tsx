@@ -18,7 +18,20 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
   selectedSubTagId,
   onSubTagChange
 }) => {
+  console.log('🔍 SubActivitySelector - Props reçues:', {
+    activityType,
+    selectedSubTagId,
+    hasOnSubTagChange: !!onSubTagChange
+  });
+
   const { subTags, loading, createSubTag } = useActivitySubTags(activityType);
+  
+  console.log('🔍 SubActivitySelector - SubTags disponibles:', {
+    subTags: subTags.map(tag => ({ id: tag.id, name: tag.name })),
+    loading,
+    selectedSubTagId
+  });
+
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -60,7 +73,14 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
         <div className="flex gap-2">
           <Select
             value={selectedSubTagId || 'none'}
-            onValueChange={(value) => onSubTagChange(value === 'none' ? null : value)}
+            onValueChange={(value) => {
+              console.log('🔍 SubActivitySelector - Select onValueChange:', {
+                newValue: value,
+                oldSelectedSubTagId: selectedSubTagId,
+                willCall: value === 'none' ? 'null' : value
+              });
+              onSubTagChange(value === 'none' ? null : value);
+            }}
             disabled={loading}
           >
             <SelectTrigger className="flex-1">
