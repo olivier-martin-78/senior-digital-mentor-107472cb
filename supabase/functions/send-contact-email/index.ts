@@ -66,6 +66,19 @@ serve(async (req: Request) => {
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
+
+    // Valider le format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.error('Email invalide:', email);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Adresse email invalide' 
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
     
     const fullName = `${firstName} ${lastName}`;
     
@@ -134,8 +147,7 @@ serve(async (req: Request) => {
     
     const confirmationResult = await resend.emails.send({
       from: 'contact@senior-digital-mentor.com',
-      to: email,
-      to: 'contact@senior-digital-mentor.com',
+      to: [email],
       subject: 'Nous avons bien reçu votre message - Senior Digital Mentor',
       html: `
         <h1>Bonjour ${firstName},</h1>

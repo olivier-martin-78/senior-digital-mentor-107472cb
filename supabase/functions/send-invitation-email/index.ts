@@ -35,6 +35,18 @@ serve(async (req) => {
       console.error('Paramètres manquants:', { firstName, lastName, email, inviterName, inviterEmail });
       throw new Error('Paramètres manquants dans la requête');
     }
+
+    // Valider les formats d'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.error('Format email invalide pour le destinataire:', email);
+      throw new Error('Format d\'email invalide pour le destinataire');
+    }
+    if (!emailRegex.test(inviterEmail)) {
+      console.error('Format email invalide pour l\'inviteur:', inviterEmail);
+      throw new Error('Format d\'email invalide pour l\'inviteur');
+    }
+    
     console.log('Paramètres validés avec succès');
 
     // Email HTML avec nouvelle logique d'accès automatique
@@ -92,7 +104,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Senior Digital Mentor <contact@senior-digital-mentor.com>',
         to: [email],
-        cc: ['contact@senior-digital-mentor.com'],
+        reply_to: inviterEmail,
         subject: `Invitation à rejoindre Senior Digital Mentor de la part de ${inviterName}`,
         html: emailHtml,
       }),

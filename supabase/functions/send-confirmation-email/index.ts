@@ -39,6 +39,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Paramètres manquants:", { email: !!email, confirmationUrl: !!confirmationUrl });
       throw new Error("Email et URL de confirmation requis");
     }
+
+    // Valider le format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.error("Format d'email invalide:", email);
+      throw new Error("Format d'email invalide");
+    }
+    
     console.log("Paramètres validés avec succès");
 
     console.log("Préparation de l'envoi email de confirmation vers:", email);
@@ -100,7 +108,6 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Senior Digital Mentor <contact@senior-digital-mentor.com>",
       to: [email],
-      cc: "Senior Digital Mentor <contact@senior-digital-mentor.com>",
       subject: "Confirmez votre inscription à Senior Digital Mentor",
       html: emailHtml,
     });

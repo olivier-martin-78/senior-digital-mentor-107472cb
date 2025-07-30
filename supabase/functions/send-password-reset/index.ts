@@ -76,6 +76,16 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Valider le format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      console.error("❌ Format d'email invalide:", email.trim());
+      return new Response(
+        JSON.stringify({ error: "Format d'email invalide" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     console.log(`✅ Email validé: ${email.trim()}`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
