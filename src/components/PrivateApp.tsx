@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import HeaderWrapper from '@/components/HeaderWrapper';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -48,6 +48,7 @@ import MusicQuizGame from '@/pages/MusicQuizGame';
 import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
+import Caregivers from '@/pages/Caregivers';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
@@ -55,6 +56,17 @@ import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 const PrivateApp: React.FC = () => {
   const { user, isLoading } = useOptionalAuth();
+
+  // Timeout de sécurité pour éviter les états de chargement infinis
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('⚠️ Timeout de chargement de l\'authentification atteint');
+      }
+    }, 10000); // 10 secondes
+
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
 
   // Show loading while checking auth
   if (isLoading) {
@@ -115,12 +127,18 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
+            <Route path="/caregivers" element={<Caregivers />} />
           </Route>
 
           {/* Activity creator routes - require activity creation permissions */}
           <Route element={<ActivityCreatorRoute />}>
             <Route path="/create-activities" element={<AdminActivities />} />
             <Route path="/create-activities/:type" element={<AdminActivities />} />
+          </Route>
+
+          {/* Professional scheduler routes */}
+          <Route element={<ProtectedRoute requiredRoles={['professionnel' as AppRole]} />}>
+            <Route path="/professional-scheduler" element={<Scheduler />} />
           </Route>
 
           {/* Admin routes - require admin role */}
