@@ -83,11 +83,19 @@ const BlogLanding = () => {
         const functionUrl = `https://cvcebcisijjmmmwuedcv.supabase.co/functions/v1/send-contact-email`;
         console.log('URL fonction:', functionUrl);
         
+        // Récupérer la session courante pour l'auth
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token;
+        
+        if (!authToken) {
+          throw new Error('Vous devez être connecté pour envoyer un message');
+        }
+
         const response = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE`,
+            'Authorization': `Bearer ${authToken}`,
           },
           body: JSON.stringify(emailData)
         });

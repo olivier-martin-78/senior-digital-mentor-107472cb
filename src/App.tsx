@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import PrivateApp from "./components/PrivateApp";
 import PublicApp from "./components/PublicApp";
 import { useOptionalAuth } from "@/hooks/useOptionalAuth";
+import { SecurityMonitor } from "@/components/security/SecurityMonitor";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +23,12 @@ const AppContent = () => {
     );
   }
 
-  return user ? <PrivateApp /> : <PublicApp />;
+  return (
+    <>
+      {user ? <PrivateApp /> : <PublicApp />}
+      <SecurityMonitor />
+    </>
+  );
 };
 
 const App = () => (

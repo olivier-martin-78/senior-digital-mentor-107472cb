@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SubActivitySelector from '@/components/activities/SubActivitySelector';
 import { UserActionsService } from '@/services/UserActionsService';
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { sanitizeInput } from '@/utils/securityUtils';
 
 interface CreateTimelineFormProps {
   onSubmit: (data: TimelineData & { subActivityTagId?: string }) => void;
@@ -54,6 +56,14 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     willSetFromProp: !!initialSubActivityTagId
   });
 
+  // Hook sécurisé pour la validation des formulaires
+  const { validateForm, sanitizeFormData, getFieldError } = useSecureForm({
+    maxLength: 2000,
+    allowedFields: ['creatorName', 'timelineName', 'name', 'description', 'year', 'category'],
+    validateEmail: false,
+    validateUrl: false
+  });
+
   // useEffect pour surveiller les changements de initialSubActivityTagId
   React.useEffect(() => {
     console.log('🔍 CreateTimelineForm - useEffect initialSubActivityTagId changé:', {
@@ -71,11 +81,16 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
   const handleInputChange = (field: keyof TimelineData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Sécuriser l'entrée utilisateur
+    const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : value;
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
   const handleEventChange = (field: keyof TimelineEvent, value: string | string[]) => {
-    setCurrentEvent(prev => ({ ...prev, [field]: value }));
+    // Sécuriser l'entrée utilisateur
+    const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : 
+                          Array.isArray(value) ? value.map(v => sanitizeInput(v)) : value;
+    setCurrentEvent(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
   const handleAnswerOptionChange = (index: number, value: string) => {
@@ -280,6 +295,22 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
       selectedSubTagId: selectedSubTagId,
       formData: formData
     });
+
+    // Validation sécurisée des données de base
+    const dataToValidate = {
+      creatorName: formData.creatorName,
+      timelineName: formData.timelineName
+    };
+
+    if (!validateForm(dataToValidate)) {
+      console.log('❌ Validation sécurisée échouée');
+      toast({ 
+        title: "Données invalides", 
+        description: "Veuillez vérifier les informations saisies",
+        variant: "destructive" 
+      });
+      return;
+    }
     
     if (!formData.creatorName || !formData.timelineName || formData.events.length < 1) {
       console.log('❌ Validation failed - missing data');
@@ -293,16 +324,22 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
 
     console.log('✅ Validation passed, calling onSubmit with selectedSubTagId:', selectedSubTagId);
     
+    // Sécuriser toutes les données avant soumission
+    const sanitizedFormData = sanitizeFormData(formData);
+    
     // Track timeline creation
-    UserActionsService.trackCreate('activity', 'timeline-created', formData.timelineName, {
+    UserActionsService.trackCreate('activity', 'timeline-created', sanitizedFormData.timelineName, {
       action: 'timeline_created',
-      eventsCount: formData.events.length,
-      shareGlobally: formData.shareGlobally,
+      eventsCount: sanitizedFormData.events.length,
+      shareGlobally: sanitizedFormData.shareGlobally,
       subTagId: selectedSubTagId
     });
     
-    console.log('🚀 Calling onSubmit with data:', { ...formData, subActivityTagId: selectedSubTagId });
-    onSubmit({ ...formData, subActivityTagId: selectedSubTagId });
+    console.log('🚀 Calling onSubmit with data:', { ...sanitizedFormData, subActivityTagId: selectedSubTagId });
+    onSubmit({ 
+      ...sanitizedFormData as TimelineData, 
+      subActivityTagId: selectedSubTagId 
+    });
   };
 
   return (
