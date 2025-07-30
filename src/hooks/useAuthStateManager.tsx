@@ -79,81 +79,69 @@ export const useAuthStateManager = (options: AuthStateManagerOptions = {}) => {
 
   useEffect(() => {
     let mounted = true;
+    let authSubscription: any = null;
 
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('Auth state change:', event, session?.user?.id);
-        
-        // Handle session changes
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Clear error state on successful auth
-        if (session && authError) {
-          setAuthError(null);
-          setRetryCount(0);
-        }
-        
-        // Handle specific auth events
-        switch (event) {
-          case 'SIGNED_IN':
-            setIsLoading(false);
-            break;
-          case 'SIGNED_OUT':
-            clearAuthState();
-            setIsLoading(false);
-            break;
-          case 'TOKEN_REFRESHED':
-            console.log('Token refreshed successfully');
-            break;
-          case 'USER_UPDATED':
-            console.log('User updated');
-            break;
-        }
-      }
-    );
-
-    // Check for existing session
-    const checkSession = async () => {
+    const initializeAuth = async () => {
       try {
+        // Set up auth state listener first (only once)
+        const { data } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            if (!mounted) return;
+
+            console.log('Auth state change:', event, session?.user?.id);
+            
+            // Prevent multiple rapid updates
+            if (event === 'INITIAL_SESSION') {
+              setSession(session);
+              setUser(session?.user ?? null);
+              setIsLoading(false);
+              return;
+            }
+            
+            // Handle session changes
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            // Clear error state on successful auth
+            if (session && authError) {
+              setAuthError(null);
+              setRetryCount(0);
+            }
+          }
+        );
+        
+        authSubscription = data.subscription;
+
+        // Check for existing session only once
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (error) {
-          console.warn('Session check error:', error);
-          // Try recovery if this is the first attempt
-          if (enableRecovery && retryCount === 0) {
-            const recovered = await attemptAuthRecovery();
-            if (!recovered) {
-              handleAuthError(error);
-            }
-          } else {
+        if (mounted) {
+          if (error) {
             handleAuthError(error);
+          } else {
+            setSession(session);
+            setUser(session?.user ?? null);
           }
-        } else if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
+          setIsLoading(false);
         }
+
       } catch (error) {
         if (mounted) {
           handleAuthError(error as Error);
-        }
-      } finally {
-        if (mounted) {
           setIsLoading(false);
         }
       }
     };
 
-    checkSession();
+    initializeAuth();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
     };
-  }, [enableRecovery, retryCount, authError, handleAuthError, clearAuthState]);
+  }, []); // Empty dependency array to run only once
 
   return {
     session,
