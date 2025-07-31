@@ -140,7 +140,7 @@ const PublicSubscription = () => {
             Choisissez votre plan
           </h1>
           <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto mb-4">
-            Choisissez les fonctionnalités dont vous avez besoin.
+            De quelles fonctionnalités avez-vous besoin ?
           </p>
           <div 
             id="urgent-message" 
@@ -159,7 +159,7 @@ const PublicSubscription = () => {
             }}
           >
             <p style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>
-              🚨 Ces plans sont gratuits seulement pour les 1000 premiers inscrits, dépêchez-vous ! 🚨
+              🚨 Ces plans sont gratuits pour les 1000 premiers inscrits, dépêchez-vous ! 🚨
             </p>
           </div>
           
