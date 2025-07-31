@@ -132,7 +132,7 @@ const Subscription = () => {
             Choisissez votre plan
           </h1>
           <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto">
-            Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles
+            Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles. Ces plans sont gratuites pour les 1000 premiers inscrits
           </p>
           
           {/* Statut du compte */}
