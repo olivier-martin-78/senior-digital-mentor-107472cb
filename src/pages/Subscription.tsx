@@ -131,9 +131,14 @@ const Subscription = () => {
           <h1 className="text-4xl md:text-5xl font-serif text-tranches-charcoal mb-6">
             Choisissez votre plan
           </h1>
-          <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto">
-            Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles. Ces plans sont gratuites pour les 1000 premiers inscrits
+          <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto mb-4">
+            Découvrez toutes les fonctionnalités de CaprIA avec nos plans flexibles.
           </p>
+          <div className="bg-green-100 border border-green-300 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-green-800 font-semibold text-lg">
+              Ces plans sont gratuits pour les 1000 premiers inscrits
+            </p>
+          </div>
           
           {/* Statut du compte */}
           {accountStatus === 'trial' && timeRemaining && (
