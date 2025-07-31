@@ -144,7 +144,7 @@ const PublicSubscription = () => {
           </p>
           <div className="bg-green-100 border border-green-300 rounded-lg p-4 max-w-md mx-auto">
             <p className="text-green-800 font-semibold text-lg">
-              Ces plans sont gratuits pour les 1000 premiers inscrits
+              Ces plans sont gratuits seulement pour les 1000 premiers inscrits, dépêchez-vous
             </p>
           </div>
           
