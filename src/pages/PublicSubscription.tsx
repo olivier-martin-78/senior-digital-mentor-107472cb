@@ -140,7 +140,7 @@ const PublicSubscription = () => {
             Choisissez votre plan
           </h1>
           <p className="text-xl text-tranches-charcoal/70 max-w-2xl mx-auto mb-4">
-            Choisissez quelles fonctionnalités dont vous avez besoin.
+            Choisissez les fonctionnalités dont vous avez besoin.
           </p>
           <div 
             id="urgent-message" 
