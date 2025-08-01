@@ -112,8 +112,11 @@ const AdminDashboard: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      toast.loading('Suppression en cours...');
+      const loadingToast = toast.loading('Suppression en cours...');
       const result = await UserActionsService.deleteAllUserActions(selectedUserId);
+      
+      // Fermer le toast de loading
+      toast.dismiss(loadingToast);
       
       if (result.success) {
         toast.success(`${result.deletedCount || 0} action(s) supprimée(s) avec succès`);
@@ -123,6 +126,7 @@ const AdminDashboard: React.FC = () => {
         toast.error(result.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
+      toast.dismiss(); // Fermer tous les toasts de loading en cas d'erreur
       toast.error('Erreur inattendue lors de la suppression');
     }
   };
