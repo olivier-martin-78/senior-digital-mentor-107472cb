@@ -226,25 +226,12 @@ const AdminDashboard: React.FC = () => {
               {/* Sélecteur d'utilisateur */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Utilisateur</label>
-                <div className="flex items-center gap-2">
-                  <UserSelector
-                    permissionType="blog"
-                    selectedUserId={selectedUserId}
-                    onUserChange={setSelectedUserId}
-                    adminMode={true}
-                  />
-                  {selectedUserId && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDeleteUserActions}
-                      className="px-3"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Supprimer actions
-                    </Button>
-                  )}
-                </div>
+                <UserSelector
+                  permissionType="blog"
+                  selectedUserId={selectedUserId}
+                  onUserChange={setSelectedUserId}
+                  adminMode={true}
+                />
               </div>
 
               {/* Date de début */}
@@ -340,6 +327,28 @@ const AdminDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Actions administratives */}
+        {selectedUserId && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions administratives</CardTitle>
+              <CardDescription>
+                Actions disponibles pour l'utilisateur sélectionné
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteUserActions}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer toutes les actions de cet utilisateur
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Contenu le plus consulté */}
         {stats?.topContent && stats.topContent.length > 0 && (
