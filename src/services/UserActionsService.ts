@@ -341,4 +341,26 @@ export class UserActionsService {
       return [];
     }
   }
+
+  /**
+   * Supprimer toutes les actions d'un utilisateur (pour les admins)
+   */
+  static async deleteAllUserActions(userId: string): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+    try {
+      const { data, error, count } = await supabase
+        .from('user_actions')
+        .delete({ count: 'exact' })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error deleting user actions:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, deletedCount: count || 0 };
+    } catch (error) {
+      console.error('Error in deleteAllUserActions:', error);
+      return { success: false, error: 'Erreur inattendue lors de la suppression' };
+    }
+  }
 }

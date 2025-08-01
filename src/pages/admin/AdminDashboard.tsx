@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserActions, useUsageStats } from '@/hooks/useUserActions';
 import UserSelector from '@/components/UserSelector';
+import { UserActionsService } from '@/services/UserActionsService';
+import { toast } from 'sonner';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +46,7 @@ const AdminDashboard: React.FC = () => {
     currentPage,
     totalPages,
     isLoading: actionsLoading,
+    refetch,
     setPage
   } = useUserActions(filters);
 
@@ -93,6 +96,34 @@ const AdminDashboard: React.FC = () => {
       case 'update': return 'Modification';
       case 'delete': return 'Suppression';
       default: return actionType;
+    }
+  };
+
+  const handleDeleteUserActions = async () => {
+    if (!selectedUserId) {
+      toast.error('Veuillez sélectionner un utilisateur');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Êtes-vous sûr de vouloir supprimer TOUTES les actions de cet utilisateur ? Cette action est irréversible.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      toast.loading('Suppression en cours...');
+      const result = await UserActionsService.deleteAllUserActions(selectedUserId);
+      
+      if (result.success) {
+        toast.success(`${result.deletedCount || 0} action(s) supprimée(s) avec succès`);
+        // Recharger les données
+        refetch();
+      } else {
+        toast.error(result.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      toast.error('Erreur inattendue lors de la suppression');
     }
   };
 
@@ -195,12 +226,25 @@ const AdminDashboard: React.FC = () => {
               {/* Sélecteur d'utilisateur */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Utilisateur</label>
-                <UserSelector
-                  permissionType="blog"
-                  selectedUserId={selectedUserId}
-                  onUserChange={setSelectedUserId}
-                  adminMode={true}
-                />
+                <div className="flex items-center gap-2">
+                  <UserSelector
+                    permissionType="blog"
+                    selectedUserId={selectedUserId}
+                    onUserChange={setSelectedUserId}
+                    adminMode={true}
+                  />
+                  {selectedUserId && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteUserActions}
+                      className="px-3"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Supprimer actions
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Date de début */}
