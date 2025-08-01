@@ -199,6 +199,7 @@ const AdminDashboard: React.FC = () => {
                   permissionType="blog"
                   selectedUserId={selectedUserId}
                   onUserChange={setSelectedUserId}
+                  adminMode={true}
                 />
               </div>
 

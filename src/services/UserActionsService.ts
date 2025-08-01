@@ -299,4 +299,46 @@ export class UserActionsService {
       };
     }
   }
+
+  /**
+   * Récupérer les utilisateurs qui ont des actions enregistrées (pour le filtre admin)
+   */
+  static async getUsersWithActions(): Promise<Array<{ id: string; display_name: string | null; email: string }>> {
+    try {
+      // Récupérer les IDs d'utilisateurs uniques qui ont des actions
+      const { data: userActions, error: actionsError } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .order('user_id');
+
+      if (actionsError) {
+        console.error('Error fetching user actions:', actionsError);
+        return [];
+      }
+
+      // Extraire les IDs uniques
+      const uniqueUserIds = [...new Set(userActions?.map(action => action.user_id) || [])];
+
+      if (uniqueUserIds.length === 0) {
+        return [];
+      }
+
+      // Récupérer les profils de ces utilisateurs
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', uniqueUserIds)
+        .order('display_name');
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
+
+      return profiles || [];
+    } catch (error) {
+      console.error('Error in getUsersWithActions:', error);
+      return [];
+    }
+  }
 }

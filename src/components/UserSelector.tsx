@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { UserActionsService } from '@/services/UserActionsService';
 
 interface UserProfile {
   id: string;
@@ -17,13 +18,15 @@ interface UserSelectorProps {
   selectedUserId: string | null;
   onUserChange: (userId: string | null) => void;
   className?: string;
+  adminMode?: boolean; // Pour afficher seulement les utilisateurs avec des actions
 }
 
 const UserSelector: React.FC<UserSelectorProps> = ({
   permissionType,
   selectedUserId,
   onUserChange,
-  className = ''
+  className = '',
+  adminMode = false
 }) => {
   const { user, hasRole } = useAuth();
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
@@ -31,7 +34,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
 
   useEffect(() => {
     loadAvailableUsers();
-  }, [user, permissionType]);
+  }, [user, permissionType, adminMode]);
 
   const loadAvailableUsers = async () => {
     if (!user) return;
@@ -41,14 +44,20 @@ const UserSelector: React.FC<UserSelectorProps> = ({
       const users: UserProfile[] = [];
 
       if (hasRole('admin')) {
-        // Les admins voient tous les utilisateurs
-        const { data: allUsers, error } = await supabase
-          .from('profiles')
-          .select('id, display_name, email')
-          .order('display_name');
+        if (adminMode) {
+          // En mode admin, ne récupérer que les utilisateurs avec des actions
+          const usersWithActions = await UserActionsService.getUsersWithActions();
+          users.push(...usersWithActions);
+        } else {
+          // Les admins voient tous les utilisateurs
+          const { data: allUsers, error } = await supabase
+            .from('profiles')
+            .select('id, display_name, email')
+            .order('display_name');
 
-        if (!error && allUsers) {
-          users.push(...allUsers);
+          if (!error && allUsers) {
+            users.push(...allUsers);
+          }
         }
       } else {
         // Récupérer les utilisateurs autorisés via les groupes d'invitation seulement
