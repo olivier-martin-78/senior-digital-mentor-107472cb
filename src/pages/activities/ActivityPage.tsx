@@ -308,9 +308,9 @@ const ActivityPage = () => {
           {canAddActivity && (
             <Link 
               to={`/create-activities/${type}`}
-              className="text-tranches-dustyblue hover:text-tranches-dustyblue/80 underline underline-offset-4 flex items-center gap-2"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-primary hover:scale-105"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5" />
               Ajouter une activité
             </Link>
           )}
