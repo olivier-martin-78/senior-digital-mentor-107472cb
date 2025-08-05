@@ -30,6 +30,8 @@ import CreateDictationForm from '@/components/admin/CreateDictationForm';
 import EditDictationForm from '@/components/admin/EditDictationForm';
 import { CreateSpotDifferencesForm } from '@/components/admin/CreateSpotDifferencesForm';
 import { EditSpotDifferencesForm } from '@/components/admin/EditSpotDifferencesForm';
+import CreateReverseDictionaryForm from '@/components/admin/CreateReverseDictionaryForm';
+import EditReverseDictionaryForm from '@/components/admin/EditReverseDictionaryForm';
 
 const activityTypes = [
   { value: 'meditation', label: 'Relaxation' },
@@ -51,6 +53,7 @@ const AdminActivities = () => {
   const [showDictationForm, setShowDictationForm] = useState(false);
   const [showSpotDifferencesForm, setShowSpotDifferencesForm] = useState(false);
   const [showQuizConverter, setShowQuizConverter] = useState(false);
+  const [showReverseDictionary, setShowReverseDictionary] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [formData, setFormData] = useState({
     activity_type: type || '',
@@ -192,6 +195,7 @@ const AdminActivities = () => {
     setShowDictationForm(false);
     setShowSpotDifferencesForm(false);
     setShowQuizConverter(false);
+    setShowReverseDictionary(false);
   };
 
   const handleSaveEdit = () => {
@@ -289,6 +293,10 @@ const AdminActivities = () => {
                     <DropdownMenuItem onClick={() => setShowSpotDifferencesForm(!showSpotDifferencesForm)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Créer jeu des 7 erreurs
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowReverseDictionary(!showReverseDictionary)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer dictionnaire inversé
                     </DropdownMenuItem>
                   </>
                 )}
@@ -405,6 +413,18 @@ const AdminActivities = () => {
             </div>
           )}
 
+          {showReverseDictionary && (!type || type === 'games') && (
+            <div className="mb-8">
+              <CreateReverseDictionaryForm 
+                onSuccess={() => {
+                  setShowReverseDictionary(false);
+                  refetch();
+                }}
+                onCancel={() => setShowReverseDictionary(false)}
+              />
+            </div>
+          )}
+
           {editingActivity && (
             <div className="mb-8">
               {(() => {
@@ -441,6 +461,14 @@ const AdminActivities = () => {
                         activity={editingActivity}
                         onSuccess={handleSaveEdit}
                         onClose={handleCancelEdit}
+                      />
+                    );
+                  } else if (gameData?.type === 'reverse_dictionary') {
+                    return (
+                      <EditReverseDictionaryForm
+                        activityId={editingActivity.id}
+                        onSuccess={handleSaveEdit}
+                        onCancel={handleCancelEdit}
                       />
                     );
                   } else if (gameData?.timelineName) {
@@ -637,7 +665,7 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showDictationForm && !showSpotDifferencesForm && !showQuizConverter && (
+          {!editingActivity && !showForm && !showMemoryManager && !showMusicQuizForm && !showTimelineForm && !showDictationForm && !showSpotDifferencesForm && !showQuizConverter && !showReverseDictionary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => {
                 const isYouTube = isYouTubeUrl(activity.link);

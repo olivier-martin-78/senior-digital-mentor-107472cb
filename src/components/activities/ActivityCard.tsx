@@ -197,6 +197,21 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           }
           return;
         }
+
+        // Reverse Dictionary Game - navigate to reverse dictionary game page
+        if (gameData.type === 'reverse_dictionary') {
+          const reverseDictionaryId = activity?.id || activityId;
+          if (reverseDictionaryId) {
+            navigate(`/activities/reverse-dictionary/${reverseDictionaryId}`, { replace: false });
+          } else {
+            toast({
+              title: 'Erreur',
+              description: 'ID du dictionnaire inversé manquant',
+              variant: 'destructive',
+            });
+          }
+          return;
+        }
         
         // Spot Differences Game - navigate to spot differences game page
         if (gameData.type === 'spot_differences') {
