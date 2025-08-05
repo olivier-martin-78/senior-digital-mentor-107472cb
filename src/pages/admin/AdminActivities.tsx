@@ -272,7 +272,7 @@ const AdminActivities = () => {
                   <>
                     <DropdownMenuItem onClick={() => setShowMemoryManager(!showMemoryManager)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Créer jeu des pairs
+                      Créer jeu des paires
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowMusicQuizForm(!showMusicQuizForm)}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -300,7 +300,7 @@ const AdminActivities = () => {
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  Créer une série de jeu des pairs
+                  Créer une série de jeu des paires
                   <Button 
                     onClick={() => setShowMemoryManager(false)}
                     variant="outline"
