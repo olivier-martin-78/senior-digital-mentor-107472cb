@@ -186,10 +186,9 @@ const CreateReverseDictionaryForm: React.FC<CreateReverseDictionaryFormProps> = 
             <Input
               id="timerDuration"
               type="number"
-              min="5"
               max="300"
               value={formData.timerDuration}
-              onChange={(e) => setFormData({ ...formData, timerDuration: parseInt(e.target.value) || 30 })}
+              onChange={(e) => setFormData({ ...formData, timerDuration: parseInt(e.target.value) || 0 })}
               required
             />
             <p className="text-sm text-gray-500 mt-1">
