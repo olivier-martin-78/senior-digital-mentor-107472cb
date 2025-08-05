@@ -250,7 +250,7 @@ const AdminActivities = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Administration : {currentActivityType?.label}
+              Administration : {currentActivityType?.label || 'Créateur d\'activités'}
             </h1>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -267,7 +267,8 @@ const AdminActivities = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   Créer une activité
                 </DropdownMenuItem>
-                {type === 'games' && (
+                {/* Afficher les options spéciales si pas de type défini OU si type est 'games' */}
+                {(!type || type === 'games') && (
                   <>
                     <DropdownMenuItem onClick={() => setShowMemoryManager(!showMemoryManager)}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -295,7 +296,7 @@ const AdminActivities = () => {
             </DropdownMenu>
           </div>
 
-          {showMemoryManager && type === 'games' && (
+          {showMemoryManager && (!type || type === 'games') && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
@@ -318,7 +319,7 @@ const AdminActivities = () => {
             </Card>
           )}
 
-          {showMusicQuizForm && type === 'games' && (
+          {showMusicQuizForm && (!type || type === 'games') && (
             <div className="mb-8">
               <CreateMusicQuizForm 
                 onSuccess={() => {
@@ -330,7 +331,7 @@ const AdminActivities = () => {
             </div>
           )}
 
-          {showTimelineForm && type === 'games' && (
+          {showTimelineForm && (!type || type === 'games') && (
             <div className="mb-8">
               <CreateTimelineForm 
                 initialSubActivityTagId={null}
@@ -380,7 +381,7 @@ const AdminActivities = () => {
             </div>
           )}
 
-          {showDictationForm && type === 'games' && (
+          {showDictationForm && (!type || type === 'games') && (
             <div className="mb-8">
               <CreateDictationForm 
                 onSuccess={() => {
@@ -392,7 +393,7 @@ const AdminActivities = () => {
             </div>
           )}
 
-          {showSpotDifferencesForm && type === 'games' && (
+          {showSpotDifferencesForm && (!type || type === 'games') && (
             <div className="mb-8">
               <CreateSpotDifferencesForm 
                 onSuccess={() => {
