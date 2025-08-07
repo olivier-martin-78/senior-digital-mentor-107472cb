@@ -301,6 +301,41 @@ export class UserActionsService {
   }
 
   /**
+   * Tracker une connexion utilisateur
+   */
+  static async trackLogin(): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.warn('No authenticated user found for login tracking');
+        return;
+      }
+
+      // Récupérer les informations du navigateur
+      const userAgent = navigator.userAgent;
+      const ipAddress = null; // L'IP sera gérée côté serveur si nécessaire
+      
+      const { error } = await supabase
+        .from('user_login_sessions')
+        .insert({
+          user_id: user.id,
+          login_timestamp: new Date().toISOString(),
+          ip_address: ipAddress,
+          user_agent: userAgent
+        });
+
+      if (error) {
+        console.error('Error tracking login session:', error);
+      } else {
+        console.log('Login session tracked successfully');
+      }
+    } catch (error) {
+      console.error('Error in trackLogin:', error);
+    }
+  }
+
+  /**
    * Récupérer les utilisateurs qui ont des actions enregistrées (pour le filtre admin)
    */
   static async getUsersWithActions(): Promise<Array<{ id: string; display_name: string | null; email: string }>> {

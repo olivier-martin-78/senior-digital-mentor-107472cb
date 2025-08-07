@@ -34,9 +34,11 @@ export const useAuthState = () => {
         
         if (currentSession?.user) {
           // Use setTimeout to avoid deadlocks
-          setTimeout(() => {
-            fetchUserData(currentSession.user.id);
-          }, 0);
+        setTimeout(() => {
+          fetchUserData(currentSession.user.id);
+          // Tracker la connexion
+          trackLoginSession();
+        }, 0);
         } else {
           // For anonymous users, clear data and stop loading immediately
           console.log('useAuthState - User signed out, clearing data');
@@ -54,7 +56,10 @@ export const useAuthState = () => {
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        fetchUserData(currentSession.user.id);
+        setTimeout(() => {
+          fetchUserData(currentSession.user.id);
+          trackLoginSession();
+        }, 0);
       } else {
         // No session found, user is anonymous - this is normal
         console.log('useAuthState - No session found, setting loading to false');
@@ -95,6 +100,15 @@ export const useAuthState = () => {
     } finally {
       console.log('useAuthState - Setting loading to false after fetchUserData');
       setIsLoading(false);
+    }
+  };
+
+  const trackLoginSession = async () => {
+    try {
+      const { UserActionsService } = await import('@/services/UserActionsService');
+      await UserActionsService.trackLogin();
+    } catch (error) {
+      console.error('Error tracking login session:', error);
     }
   };
 
