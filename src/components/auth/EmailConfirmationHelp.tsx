@@ -57,7 +57,7 @@ const EmailConfirmationHelp = () => {
               
               <p className="mt-4"><strong>Conseils pour éviter les spams :</strong></p>
               <ul className="list-disc list-inside ml-4 space-y-1">
-                <li>Ajoutez <code>noreply@capria.fr</code> à vos contacts</li>
+                <li>Ajoutez <code>noreply@senior-digital-mentor.com</code> à vos contacts</li>
                 <li>Marquez nos emails comme "Non spam" si nécessaire</li>
                 <li>Vérifiez les filtres de votre messagerie</li>
               </ul>
