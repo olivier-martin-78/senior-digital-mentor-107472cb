@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
+
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import EmailConfirmationHelp from '@/components/auth/EmailConfirmationHelp';
 import { Loader2, Mail, CheckCircle } from 'lucide-react';
@@ -78,7 +78,6 @@ const ResendConfirmation = () => {
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <Header />
         <div className="container mx-auto px-4 py-16 flex justify-center">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -127,7 +126,6 @@ const ResendConfirmation = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <Header />
       <div className="container mx-auto px-4 py-16 flex justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
