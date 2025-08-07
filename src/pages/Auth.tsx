@@ -208,6 +208,20 @@ const Auth = () => {
               </button>
             </div>
           )}
+          {isSignUp && (
+            <div className="mt-2 text-center">
+              <p className="text-xs text-gray-500">
+                Problème avec l'email de confirmation ?{' '}
+                <button 
+                  type="button"
+                  onClick={() => window.location.href = '/resend-confirmation'}
+                  className="text-primary hover:underline"
+                >
+                  Recevoir un nouveau lien
+                </button>
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

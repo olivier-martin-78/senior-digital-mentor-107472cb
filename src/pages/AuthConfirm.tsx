@@ -5,7 +5,7 @@ import { supabase, checkAuthConnection } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Mail } from 'lucide-react';
 import Header from '@/components/Header';
 
 const AuthConfirm = () => {
@@ -281,15 +281,30 @@ const AuthConfirm = () => {
                   <XCircle className="h-4 w-4" />
                   <AlertDescription>
                     {message}
+                    {message.toLowerCase().includes('invalid') && (
+                      <div className="mt-2 text-sm">
+                        Ce lien a peut-être expiré. Les liens de confirmation sont valables 24 heures.
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
                 <div className="flex flex-col gap-2">
-                  <Button 
-                    onClick={handleRetry}
-                    className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
-                  >
-                    Réessayer
-                  </Button>
+                  {message.toLowerCase().includes('invalid') ? (
+                    <Button 
+                      onClick={() => navigate('/resend-confirmation')}
+                      className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      Recevoir un nouveau lien
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleRetry}
+                      className="w-full bg-tranches-sage hover:bg-tranches-sage/90"
+                    >
+                      Réessayer
+                    </Button>
+                  )}
                   <Button 
                     onClick={handleReturnToAuth}
                     variant="outline"
