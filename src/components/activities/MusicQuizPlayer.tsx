@@ -221,7 +221,7 @@ export function MusicQuizPlayer({
 
         {/* Question */}
         <div className="text-center">
-          <h4 className="text-xl font-medium mb-6">{currentQuestion.question}</h4>
+          <h4 className="text-xl font-medium mb-6 text-white neon-glow-text">{currentQuestion.question}</h4>
         </div>
 
         {/* Réponses */}
