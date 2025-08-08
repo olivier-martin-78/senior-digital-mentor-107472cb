@@ -125,7 +125,7 @@ export default {
 					'serif': ['Playfair Display', 'serif'],
 					'sans': ['Inter', 'sans-serif'],
 				},
-			}
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
