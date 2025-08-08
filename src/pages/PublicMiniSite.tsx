@@ -235,6 +235,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   };
 
   const fetchReviews = async (userId: string) => {
+    console.log('🔍 Début fetchReviews pour userId:', userId);
     try {
       const { data, error } = await supabase
         .from('intervention_reports')
@@ -244,17 +245,31 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      console.log('📊 Données récupérées:', { data, error, count: data?.length });
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error);
+        throw error;
+      }
       
       // Filtrer les avis valides côté client
-      const validReviews = (data || []).filter(review => 
-        (review.client_rating && review.client_rating >= 4) || 
-        (review.client_comments && review.client_comments.trim() !== '')
-      );
+      const validReviews = (data || []).filter(review => {
+        const hasRating = review.client_rating && review.client_rating >= 4;
+        const hasComment = review.client_comments && review.client_comments.trim() !== '';
+        console.log('🔍 Review check:', { 
+          patient: review.patient_name, 
+          rating: review.client_rating, 
+          hasComment, 
+          hasRating,
+          valid: hasRating || hasComment 
+        });
+        return hasRating || hasComment;
+      });
       
+      console.log('✅ Avis valides filtrés:', validReviews.length, validReviews);
       setReviews(validReviews);
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      console.error('❌ Erreur generale fetchReviews:', error);
     }
   };
 
