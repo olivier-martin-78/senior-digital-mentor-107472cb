@@ -19,21 +19,39 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ url }) => {
   }, [url]);
 
   const generateQRCode = async () => {
-    if (!canvasRef.current || !url) return;
+    if (!canvasRef.current || !url) {
+      console.log('QR Code generation skipped:', { canvas: !!canvasRef.current, url });
+      return;
+    }
 
     const canvas = canvasRef.current;
     
+    // Ensure URL has proper protocol
+    let fullUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      fullUrl = `https://${url}`;
+    }
+    
+    console.log('Generating QR Code for URL:', fullUrl);
+    
     try {
-      await QRCode.toCanvas(canvas, url, {
+      await QRCode.toCanvas(canvas, fullUrl, {
         width: 200,
         margin: 2,
         color: {
           dark: '#000000',
           light: '#FFFFFF'
-        }
+        },
+        errorCorrectionLevel: 'M'
       });
+      console.log('QR Code generated successfully');
     } catch (error) {
       console.error('Erreur lors de la génération du QR Code:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le QR Code",
+        variant: "destructive"
+      });
     }
   };
 
