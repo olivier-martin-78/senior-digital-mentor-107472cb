@@ -56,6 +56,72 @@ const colorThemes = {
     secondary: 'from-pink-100 to-pink-200',
     accent: 'text-pink-600',
     button: 'bg-pink-600 hover:bg-pink-700'
+  },
+  orange: {
+    primary: 'from-orange-600 to-orange-800',
+    secondary: 'from-orange-100 to-orange-200',
+    accent: 'text-orange-600',
+    button: 'bg-orange-600 hover:bg-orange-700'
+  },
+  teal: {
+    primary: 'from-teal-600 to-teal-800',
+    secondary: 'from-teal-100 to-teal-200',
+    accent: 'text-teal-600',
+    button: 'bg-teal-600 hover:bg-teal-700'
+  },
+  red: {
+    primary: 'from-red-600 to-red-800',
+    secondary: 'from-red-100 to-red-200',
+    accent: 'text-red-600',
+    button: 'bg-red-600 hover:bg-red-700'
+  },
+  indigo: {
+    primary: 'from-indigo-600 to-indigo-800',
+    secondary: 'from-indigo-100 to-indigo-200',
+    accent: 'text-indigo-600',
+    button: 'bg-indigo-600 hover:bg-indigo-700'
+  },
+  yellow: {
+    primary: 'from-yellow-600 to-yellow-800',
+    secondary: 'from-yellow-100 to-yellow-200',
+    accent: 'text-yellow-600',
+    button: 'bg-yellow-600 hover:bg-yellow-700'
+  },
+  gray: {
+    primary: 'from-gray-600 to-gray-800',
+    secondary: 'from-gray-100 to-gray-200',
+    accent: 'text-gray-600',
+    button: 'bg-gray-600 hover:bg-gray-700'
+  },
+  emerald: {
+    primary: 'from-emerald-600 to-emerald-800',
+    secondary: 'from-emerald-100 to-emerald-200',
+    accent: 'text-emerald-600',
+    button: 'bg-emerald-600 hover:bg-emerald-700'
+  },
+  cyan: {
+    primary: 'from-cyan-600 to-cyan-800',
+    secondary: 'from-cyan-100 to-cyan-200',
+    accent: 'text-cyan-600',
+    button: 'bg-cyan-600 hover:bg-cyan-700'
+  },
+  rose: {
+    primary: 'from-rose-600 to-rose-800',
+    secondary: 'from-rose-100 to-rose-200',
+    accent: 'text-rose-600',
+    button: 'bg-rose-600 hover:bg-rose-700'
+  },
+  amber: {
+    primary: 'from-amber-600 to-amber-800',
+    secondary: 'from-amber-100 to-amber-200',
+    accent: 'text-amber-600',
+    button: 'bg-amber-600 hover:bg-amber-700'
+  },
+  slate: {
+    primary: 'from-slate-600 to-slate-800',
+    secondary: 'from-slate-100 to-slate-200',
+    accent: 'text-slate-600',
+    button: 'bg-slate-600 hover:bg-slate-700'
   }
 };
 
