@@ -982,6 +982,163 @@ export type Database = {
         }
         Relationships: []
       }
+      mini_site_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          link_url: string | null
+          media_url: string
+          mini_site_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          link_url?: string | null
+          media_url: string
+          mini_site_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          link_url?: string | null
+          media_url?: string
+          mini_site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_site_media_mini_site_id_fkey"
+            columns: ["mini_site_id"]
+            isOneToOne: false
+            referencedRelation: "mini_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mini_site_social_links: {
+        Row: {
+          created_at: string
+          id: string
+          mini_site_id: string
+          platform: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mini_site_id: string
+          platform: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mini_site_id?: string
+          platform?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_site_social_links_mini_site_id_fkey"
+            columns: ["mini_site_id"]
+            isOneToOne: false
+            referencedRelation: "mini_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mini_sites: {
+        Row: {
+          about_me: string | null
+          activity_start_date: string | null
+          availability_schedule: string | null
+          color_palette: string | null
+          created_at: string
+          design_style: string | null
+          email: string
+          first_name: string
+          id: string
+          intervention_radius: string | null
+          is_published: boolean | null
+          last_name: string
+          logo_size: number | null
+          logo_url: string | null
+          phone: string | null
+          postal_code: string | null
+          profession: string | null
+          professional_networks: string | null
+          services_description: string | null
+          site_name: string
+          site_subtitle: string | null
+          skills_and_qualities: string | null
+          slug: string | null
+          updated_at: string
+          user_id: string
+          why_this_profession: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          activity_start_date?: string | null
+          availability_schedule?: string | null
+          color_palette?: string | null
+          created_at?: string
+          design_style?: string | null
+          email: string
+          first_name: string
+          id?: string
+          intervention_radius?: string | null
+          is_published?: boolean | null
+          last_name: string
+          logo_size?: number | null
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          profession?: string | null
+          professional_networks?: string | null
+          services_description?: string | null
+          site_name: string
+          site_subtitle?: string | null
+          skills_and_qualities?: string | null
+          slug?: string | null
+          updated_at?: string
+          user_id: string
+          why_this_profession?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          activity_start_date?: string | null
+          availability_schedule?: string | null
+          color_palette?: string | null
+          created_at?: string
+          design_style?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          intervention_radius?: string | null
+          is_published?: boolean | null
+          last_name?: string
+          logo_size?: number | null
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          profession?: string | null
+          professional_networks?: string | null
+          services_description?: string | null
+          site_name?: string
+          site_subtitle?: string | null
+          skills_and_qualities?: string | null
+          slug?: string | null
+          updated_at?: string
+          user_id?: string
+          why_this_profession?: string | null
+        }
+        Relationships: []
+      }
       notification_subscriptions: {
         Row: {
           author_id: string
@@ -1623,6 +1780,14 @@ export type Database = {
       fix_existing_invitation_permissions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_mini_site_slug: {
+        Args: {
+          p_first_name: string
+          p_last_name: string
+          p_postal_code: string
+        }
+        Returns: string
       }
       get_admin_users_with_auth_data: {
         Args: Record<PropertyKey, never>
