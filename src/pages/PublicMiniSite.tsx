@@ -105,23 +105,60 @@ const colorThemes = {
     accent: 'text-cyan-600',
     button: 'bg-cyan-600 hover:bg-cyan-700'
   },
-  rose: {
-    primary: 'from-rose-600 to-rose-800',
-    secondary: 'from-rose-100 to-rose-200',
-    accent: 'text-rose-600',
-    button: 'bg-rose-600 hover:bg-rose-700'
-  },
   amber: {
     primary: 'from-amber-600 to-amber-800',
     secondary: 'from-amber-100 to-amber-200',
     accent: 'text-amber-600',
     button: 'bg-amber-600 hover:bg-amber-700'
   },
+  lime: {
+    primary: 'from-lime-600 to-lime-800',
+    secondary: 'from-lime-100 to-lime-200',
+    accent: 'text-lime-600',
+    button: 'bg-lime-600 hover:bg-lime-700'
+  },
   slate: {
     primary: 'from-slate-600 to-slate-800',
     secondary: 'from-slate-100 to-slate-200',
     accent: 'text-slate-600',
     button: 'bg-slate-600 hover:bg-slate-700'
+  }
+};
+
+const designStyles = {
+  feminine: {
+    containerClass: 'bg-gradient-to-br from-pink-50 via-purple-50 to-rose-50',
+    headerStyle: 'rounded-b-3xl shadow-lg relative overflow-hidden',
+    cardStyle: 'rounded-2xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-pink-300',
+    titleFont: 'font-serif text-4xl md:text-5xl',
+    subtitleFont: 'font-light italic text-xl',
+    sectionTitleFont: 'font-serif text-2xl',
+    buttonStyle: 'rounded-full px-8 py-3 font-medium transition-all hover:scale-105',
+    decorativeElement: (
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-pink-200/30 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+    )
+  },
+  masculine: {
+    containerClass: 'bg-gradient-to-br from-slate-100 via-blue-50 to-gray-100',
+    headerStyle: 'shadow-xl relative overflow-hidden',
+    cardStyle: 'shadow-md hover:shadow-xl transition-shadow border-l-4 border-blue-500',
+    titleFont: 'font-bold text-4xl md:text-5xl tracking-tight',
+    subtitleFont: 'font-medium text-xl',
+    sectionTitleFont: 'font-bold text-2xl tracking-wide',
+    buttonStyle: 'px-6 py-3 font-bold uppercase tracking-wide transition-all hover:scale-105',
+    decorativeElement: (
+      <div className="absolute top-0 right-0 w-0 h-0 border-l-[100px] border-b-[100px] border-l-transparent border-b-blue-600/10" />
+    )
+  },
+  neutral: {
+    containerClass: 'bg-gradient-to-br from-gray-50 via-white to-slate-50',
+    headerStyle: 'shadow-lg',
+    cardStyle: 'rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-gray-400',
+    titleFont: 'font-semibold text-4xl md:text-5xl',
+    subtitleFont: 'font-normal text-xl',
+    sectionTitleFont: 'font-semibold text-2xl',
+    buttonStyle: 'rounded-md px-6 py-3 font-medium transition-all hover:scale-105',
+    decorativeElement: null
   }
 };
 
@@ -241,28 +278,30 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   }
 
   const theme = colorThemes[siteData.color_palette as keyof typeof colorThemes] || colorThemes.blue;
+  const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${style.containerClass}`}>
       {/* Header */}
-      <header className={`bg-gradient-to-r ${theme.primary} text-white`}>
-        <div className="container mx-auto px-4 py-12">
+      <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle}`}>
+        {style.decorativeElement}
+        <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-8">
             {siteData.logo_url && (
               <img
                 src={siteData.logo_url}
                 alt="Logo"
-                className="rounded-full bg-white p-2"
+                className="rounded-full bg-white p-2 shadow-lg"
                 style={{ width: siteData.logo_size, height: siteData.logo_size }}
               />
             )}
             <div className="text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold mb-2">
+              <h1 className={`${style.titleFont} mb-2`}>
                 {siteData.site_name}
               </h1>
               {siteData.site_subtitle && (
-                <p className="text-xl opacity-90">{siteData.site_subtitle}</p>
+                <p className={`${style.subtitleFont} opacity-90`}>{siteData.site_subtitle}</p>
               )}
             </div>
           </div>
@@ -304,9 +343,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           <div className="lg:col-span-2 space-y-8">
             {/* About */}
             {siteData.about_me && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Qui suis-je ?
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -320,9 +359,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Why this profession */}
             {siteData.why_this_profession && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Pourquoi j'ai choisi ce métier ?
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -336,9 +375,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Skills and qualities */}
             {siteData.skills_and_qualities && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Mes compétences et qualités
                   </h2>
                   <div className="prose prose-gray max-w-none mb-4">
@@ -357,9 +396,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Services */}
             {siteData.services_description && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Mes offres
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -373,9 +412,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Availability */}
             {(siteData.availability_schedule || siteData.intervention_radius) && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Mes disponibilités
                   </h2>
                   {siteData.availability_schedule && (
@@ -404,9 +443,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Reviews */}
             {reviews.length > 0 && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h2 className={`text-2xl font-bold mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
                     Avis clients
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -448,9 +487,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Contact Card */}
-            <Card className="sticky top-4">
+            <Card className={`sticky top-4 ${style.cardStyle}`}>
               <CardContent className="p-6">
-                <h2 className={`text-2xl font-bold mb-6 ${theme.accent}`}>
+                <h2 className={`${style.sectionTitleFont} mb-6 ${theme.accent}`}>
                   Me contacter
                 </h2>
                 
@@ -496,7 +535,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   </div>
 
                   <Button 
-                    className={`w-full ${theme.button} text-white`}
+                    className={`w-full ${theme.button} text-white ${style.buttonStyle}`}
                     onClick={() => window.location.href = `mailto:${siteData.email}`}
                   >
                     <Mail className="w-4 h-4 mr-2" />
@@ -530,9 +569,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Professional networks */}
             {siteData.professional_networks && (
-              <Card>
+              <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h3 className={`font-semibold mb-3 ${theme.accent}`}>
+                  <h3 className={`${style.sectionTitleFont} mb-3 ${theme.accent}`}>
                     Réseaux professionnels
                   </h3>
                   <div className="prose prose-sm prose-gray max-w-none">
