@@ -10,7 +10,10 @@ export const MiniSitePreview: React.FC = () => {
     const storedData = sessionStorage.getItem('miniSitePreview');
     if (storedData) {
       try {
-        setPreviewData(JSON.parse(storedData));
+        const parsedData = JSON.parse(storedData);
+        console.log('Preview data loaded:', parsedData);
+        console.log('Color palette from preview:', parsedData.color_palette);
+        setPreviewData(parsedData);
       } catch (error) {
         console.error('Error parsing preview data:', error);
       }
@@ -37,7 +40,7 @@ export const MiniSitePreview: React.FC = () => {
           🔍 Mode Prévisualisation - Ce mini-site n'est pas encore publié
         </span>
       </div>
-      <PublicMiniSite data={previewData} isPreview />
+      <PublicMiniSite data={previewData} isPreview={true} />
     </div>
   );
 };

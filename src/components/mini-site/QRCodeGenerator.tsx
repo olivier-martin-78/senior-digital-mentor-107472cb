@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import QRCode from 'qrcode';
 
 interface QRCodeGeneratorProps {
   url: string;
@@ -21,46 +22,19 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ url }) => {
     if (!canvasRef.current || !url) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // For production, you would use a QR code library like qrcode or qr.js
-    // For now, we'll create a simple placeholder
-    canvas.width = 200;
-    canvas.height = 200;
     
-    // Clear canvas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 200, 200);
-    
-    // Create a simple pattern (this is not a real QR code)
-    ctx.fillStyle = '#000000';
-    for (let i = 0; i < 20; i++) {
-      for (let j = 0; j < 20; j++) {
-        if (Math.random() > 0.5) {
-          ctx.fillRect(i * 10, j * 10, 10, 10);
+    try {
+      await QRCode.toCanvas(canvas, url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
         }
-      }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la génération du QR Code:', error);
     }
-
-    // Add corners (typical QR code feature)
-    const cornerSize = 30;
-    // Top-left corner
-    ctx.fillRect(0, 0, cornerSize, cornerSize);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(10, 10, 10, 10);
-    
-    // Top-right corner
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(170, 0, cornerSize, cornerSize);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(180, 10, 10, 10);
-    
-    // Bottom-left corner
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 170, cornerSize, cornerSize);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(10, 180, 10, 10);
   };
 
   const downloadQRCode = () => {
