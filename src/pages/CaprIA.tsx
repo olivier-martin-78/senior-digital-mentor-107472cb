@@ -28,7 +28,7 @@ const CaprIA = () => {
       icon: <Users className="w-8 h-8 text-blue-400" />,
       title: "Lien social",
       description: "Blog, albums photo, souhaits partagés avec vos proches",
-      benefits: ["Rompt l'isolement", "Renforce les liens familiaux", "Crée du partage"]
+      benefits: ["Rompts l'isolement", "Renforce les liens familiaux", "Crée du partage"]
     },
     {
       icon: <Heart className="w-8 h-8 text-red-400" />,
