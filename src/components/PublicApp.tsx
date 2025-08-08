@@ -9,6 +9,7 @@ import AuthConfirm from '@/pages/AuthConfirm';
 import ResendConfirmation from '@/pages/ResendConfirmation';
 import PublicSubscription from '@/pages/PublicSubscription';
 import ProfessionalModule from '@/pages/ProfessionalModule';
+import { PublicMiniSite } from '@/pages/PublicMiniSite';
 
 const PublicApp: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const PublicApp: React.FC = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/subscription" element={<PublicSubscription />} />
         <Route path="/module-pro" element={<ProfessionalModule />} />
+        <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
       </Routes>
     </>
   );
