@@ -138,8 +138,6 @@ const PrivateApp: React.FC = () => {
 
           {/* Routes publiques pour les mini-sites */}
           <Route path="/mini-site/preview" element={<MiniSitePreview />} />
-          <Route path="/mini-site/public/:slug" element={<PublicMiniSite />} />
-          <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
 
           {/* Activity creator routes - require activity creation permissions */}
           <Route element={<ActivityCreatorRoute />}>

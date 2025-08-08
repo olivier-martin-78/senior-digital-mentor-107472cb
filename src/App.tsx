@@ -9,6 +9,7 @@ import PrivateApp from "./components/PrivateApp";
 import PublicApp from "./components/PublicApp";
 import { useOptionalAuth } from "@/hooks/useOptionalAuth";
 import { SecurityMonitor } from "@/components/security/SecurityMonitor";
+import { PublicMiniSite } from "@/pages/PublicMiniSite";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,12 @@ const AppContent = () => {
 
   return (
     <>
-      {user ? <PrivateApp /> : <PublicApp />}
+      <Routes>
+        {/* Public mini-site route - accessible without authentication */}
+        <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
+        {/* All other routes go through auth-based routing */}
+        <Route path="/*" element={user ? <PrivateApp /> : <PublicApp />} />
+      </Routes>
       <SecurityMonitor />
     </>
   );
