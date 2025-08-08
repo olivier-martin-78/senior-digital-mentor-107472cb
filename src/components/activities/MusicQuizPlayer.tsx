@@ -109,12 +109,12 @@ export function MusicQuizPlayer({
 
   return (
     <Card className={cn(
-      "w-full max-w-2xl mx-auto transition-all duration-300",
-      gameState === 'playing' && "ring-2 ring-blue-500",
-      gameState === 'answered' && showAnswer && "ring-2 ring-green-500"
+      "w-full max-w-2xl mx-auto transition-all duration-300 neon-surface neon-glow",
+      gameState === 'playing' && "ring-2 ring-[hsl(var(--neon-2))]",
+      gameState === 'answered' && showAnswer && "ring-2 ring-[hsl(var(--neon-3))]"
     )}>
       <CardHeader>
-        <CardTitle className="text-center">{quizData.title}</CardTitle>
+        <CardTitle className="text-center text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--neon-4))] to-[hsl(var(--neon-2))]">{quizData.title}</CardTitle>
         <div className="text-center">
           <Badge variant={gameState === 'answered' ? 'default' : 'secondary'}>
             {gameState === 'waiting' && <Clock className="h-3 w-3 mr-1" />}
@@ -151,14 +151,14 @@ export function MusicQuizPlayer({
                   console.error('Invalid YouTube URL:', error);
                 }
               }
-              return <div className="flex items-center justify-center h-full text-gray-500">Vidéo non disponible</div>;
+               return <div className="flex items-center justify-center h-full neon-text opacity-80">Vidéo non disponible</div>;
             })()}
           </div>
         )}
 
         {/* Image pour le type "illustrations" */}
         {quizData.quizType === 'illustrations' && currentQuestion.imageUrl && (
-          <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+          <div className="relative aspect-video rounded-lg overflow-hidden neon-surface">
             <img 
               src={currentQuestion.imageUrl} 
               alt="Illustration de la question"
@@ -178,13 +178,13 @@ export function MusicQuizPlayer({
             />
             
             {/* Contrôles audio personnalisés */}
-            <div className="flex items-center justify-center space-x-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-center space-x-4 p-4 neon-surface rounded-lg neon-glow">
               <Button
                 variant="ghost"
                 size="lg"
                 onClick={handlePlay}
                 disabled={gameState !== 'playing'}
-                className="w-16 h-16 rounded-full"
+                className="w-16 h-16 rounded-full neon-glow"
               >
                 {isPlaying ? (
                   <Pause className="h-6 w-6" />
@@ -194,8 +194,8 @@ export function MusicQuizPlayer({
               </Button>
               
               <div className="flex items-center space-x-2">
-                <Volume2 className="h-5 w-5 text-gray-500" />
-                <span className="text-sm text-gray-600">
+                <Volume2 className="h-5 w-5 text-[hsl(var(--neon-2))] opacity-80" />
+                <span className="text-sm neon-text opacity-90">
                   {isPlaying ? 'En cours de lecture...' : 'Audio'}
                 </span>
               </div>
@@ -205,8 +205,8 @@ export function MusicQuizPlayer({
 
         {/* Consigne si disponible et non vide */}
         {currentQuestion.instruction && currentQuestion.instruction.trim() && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 font-medium text-center">
+          <div className="p-4 rounded-lg bg-[hsl(var(--neon-2)/0.08)] border border-[hsl(var(--neon-2)/0.35)]">
+            <p className="font-medium text-center neon-text">
               {currentQuestion.instruction}
             </p>
           </div>
@@ -215,7 +215,7 @@ export function MusicQuizPlayer({
         {/* Nom de l'artiste et titre pour le type "videos" seulement */}
         {quizData.quizType === 'videos' && currentQuestion.artistTitle && currentQuestion.artistTitle.trim() && (
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold">{currentQuestion.artistTitle}</h3>
+            <h3 className="text-lg font-semibold neon-text">{currentQuestion.artistTitle}</h3>
           </div>
         )}
 
@@ -240,7 +240,7 @@ export function MusicQuizPlayer({
                 disabled={gameState !== 'playing'}
                 className={cn(
                   "w-full justify-start p-4 h-auto text-left",
-                  isCorrect && "bg-green-500 hover:bg-green-600 text-white"
+                  isCorrect && "bg-[hsl(var(--neon-3))] hover:brightness-110 text-[hsl(var(--neon-foreground))] shadow-[0_0_20px_hsl(var(--neon-3)/0.5)]"
                 )}
               >
                 <span className="font-bold mr-3">{letter}.</span>
@@ -252,8 +252,8 @@ export function MusicQuizPlayer({
 
         {/* Réponse correcte */}
         {showAnswer && (
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 font-medium">
+          <div className="text-center p-4 rounded-lg bg-[hsl(var(--neon-3)/0.08)] border border-[hsl(var(--neon-3)/0.35)]">
+            <p className="font-medium text-[hsl(var(--neon-3))]">
               Réponse correcte : {currentQuestion.correctAnswer} - {currentQuestion[`answer${currentQuestion.correctAnswer}` as keyof Question]}
             </p>
           </div>
@@ -261,8 +261,8 @@ export function MusicQuizPlayer({
 
         {/* Message si pas d'audio ni vidéo ni image */}
         {!currentQuestion.audioUrl && !currentQuestion.youtubeEmbed && !currentQuestion.imageUrl && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 text-center">
+          <div className="p-3 rounded-lg bg-[hsl(var(--neon-4)/0.08)] border border-[hsl(var(--neon-4)/0.35)]">
+            <p className="text-sm text-center text-[hsl(var(--neon-4))]">
               Aucun média disponible pour cette question
             </p>
           </div>

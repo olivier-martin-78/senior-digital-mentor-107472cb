@@ -43,6 +43,15 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Neon palette tokens */
+    --neon-1: 280 100% 60%; /* electric purple */
+    --neon-2: 200 100% 55%; /* cyan */
+    --neon-3: 140 95% 55%;  /* neon green */
+    --neon-4: 330 100% 62%; /* hot pink */
+    --neon-bg: 240 22% 10%;
+    --neon-card: 240 16% 14%;
+    --neon-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -82,6 +91,15 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Neon palette tokens (dark) */
+    --neon-1: 280 100% 60%;
+    --neon-2: 200 100% 55%;
+    --neon-3: 140 95% 55%;
+    --neon-4: 330 100% 62%;
+    --neon-bg: 240 24% 6%;
+    --neon-card: 240 18% 10%;
+    --neon-foreground: 0 0% 100%;
   }
 }
 
@@ -118,3 +136,27 @@
     @apply animate-fade-in;
   }
 }
+
+@layer utilities {
+  .neon-quiz-bg {
+    background-image:
+      radial-gradient(1200px 600px at 50% -10%, hsl(var(--neon-4) / 0.25), transparent),
+      radial-gradient(800px 400px at 10% 110%, hsl(var(--neon-2) / 0.2), transparent),
+      linear-gradient(180deg, hsl(var(--neon-bg)), hsl(var(--background)));
+  }
+
+  .neon-surface {
+    background-color: hsl(var(--neon-card));
+    border: 1px solid hsl(var(--neon-1) / 0.35);
+    box-shadow: 0 0 20px hsl(var(--neon-1) / 0.2), 0 0 40px hsl(var(--neon-2) / 0.15);
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 20px hsl(var(--neon-1) / 0.25), 0 0 40px hsl(var(--neon-2) / 0.2);
+  }
+
+  .neon-text {
+    color: hsl(var(--neon-2));
+  }
+}
+

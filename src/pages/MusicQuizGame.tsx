@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -19,6 +19,10 @@ const MusicQuizGame: React.FC = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  
+  useEffect(() => {
+    document.title = 'Quiz musical – Mode Joueur';
+  }, []);
   
   const quizData = location.state?.quizData as QuizData;
 
@@ -94,7 +98,7 @@ const MusicQuizGame: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen neon-quiz-bg">
       <div className="p-4 flex justify-between items-center">
         <Button onClick={handleExit} variant="outline" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -106,10 +110,13 @@ const MusicQuizGame: React.FC = () => {
           <span className="text-muted-foreground">
             Question {currentQuestionIndex + 1} / {quizData.questions.length}
           </span>
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-[hsl(var(--neon-2))]">
             Score: {score} / {quizData.questions.length}
           </span>
         </div>
+      </div>
+      <div className="px-4 py-2 text-center">
+        <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--neon-4))] to-[hsl(var(--neon-2))]">Quiz musical</h1>
       </div>
       
       <MusicQuizPlayer
