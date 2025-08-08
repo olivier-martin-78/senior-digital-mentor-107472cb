@@ -284,8 +284,24 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   return (
     <div className={`min-h-screen ${style.containerClass}`}>
       {/* Header */}
-      <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative`}>
+      <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
+        {/* Motif en filigrane */}
+        <div className="absolute inset-0 opacity-10">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="watermark" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                <circle cx="20" cy="20" r="2" fill="currentColor" opacity="0.3"/>
+                <circle cx="80" cy="80" r="1.5" fill="currentColor" opacity="0.2"/>
+                <circle cx="50" cy="70" r="1" fill="currentColor" opacity="0.4"/>
+                <circle cx="70" cy="30" r="1.5" fill="currentColor" opacity="0.25"/>
+                <path d="M10,10 Q30,5 50,10 T90,10" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15"/>
+                <path d="M10,90 Q30,85 50,90 T90,90" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#watermark)"/>
+          </svg>
+        </div>
         {style.decorativeElement}
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-8">
