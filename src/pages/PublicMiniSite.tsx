@@ -240,15 +240,19 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         .from('intervention_reports')
         .select('client_rating, client_comments, created_at, patient_name')
         .eq('professional_id', userId)
-        .not('client_rating', 'is', null)
-        .not('client_comments', 'is', null)
-        .neq('client_comments', '')
-        .gte('client_rating', 4) // Seulement les bonnes notes (4 et 5 étoiles)
+        .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
-        .limit(6);
+        .limit(20);
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Filtrer les avis valides côté client
+      const validReviews = (data || []).filter(review => 
+        (review.client_rating && review.client_rating >= 4) || 
+        (review.client_comments && review.client_comments.trim() !== '')
+      );
+      
+      setReviews(validReviews);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
