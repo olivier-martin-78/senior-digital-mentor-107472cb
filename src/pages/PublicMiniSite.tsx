@@ -286,17 +286,19 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       {/* Header */}
       <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
-        {/* Motif en filigrane */}
-        <div className="absolute inset-0 opacity-10">
+        {/* Motif en filigrane plus visible */}
+        <div className="absolute inset-0 opacity-20">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern id="watermark" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                <circle cx="20" cy="20" r="2" fill="currentColor" opacity="0.3"/>
-                <circle cx="80" cy="80" r="1.5" fill="currentColor" opacity="0.2"/>
-                <circle cx="50" cy="70" r="1" fill="currentColor" opacity="0.4"/>
-                <circle cx="70" cy="30" r="1.5" fill="currentColor" opacity="0.25"/>
-                <path d="M10,10 Q30,5 50,10 T90,10" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15"/>
-                <path d="M10,90 Q30,85 50,90 T90,90" stroke="currentColor" strokeWidth="0.5" fill="none" opacity="0.15"/>
+              <pattern id="watermark" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+                <circle cx="15" cy="15" r="3" fill="white" opacity="0.6"/>
+                <circle cx="65" cy="65" r="2" fill="white" opacity="0.4"/>
+                <circle cx="40" cy="60" r="1.5" fill="white" opacity="0.7"/>
+                <circle cx="60" cy="25" r="2.5" fill="white" opacity="0.5"/>
+                <circle cx="25" cy="50" r="1" fill="white" opacity="0.6"/>
+                <path d="M5,15 Q25,10 45,15 T85,15" stroke="white" strokeWidth="1" fill="none" opacity="0.3"/>
+                <path d="M5,65 Q25,60 45,65 T85,65" stroke="white" strokeWidth="0.8" fill="none" opacity="0.25"/>
+                <polygon points="30,35 35,30 40,35 35,40" fill="white" opacity="0.4"/>
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#watermark)"/>
