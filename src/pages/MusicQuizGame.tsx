@@ -115,9 +115,6 @@ const MusicQuizGame: React.FC = () => {
           </span>
         </div>
       </div>
-      <div className="px-4 py-2 text-center">
-        <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--neon-4))] to-[hsl(var(--neon-2))]">Quiz musical</h1>
-      </div>
       
       <MusicQuizPlayer
         quizData={quizData}
