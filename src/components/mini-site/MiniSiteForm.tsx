@@ -541,7 +541,7 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                     <Label>URL du mini-site</Label>
                     <div className="text-sm text-muted-foreground">
                       {formData.is_published 
-                        ? `https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com/mini-site/${formData.slug}`
+                        ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
                         : `${window.location.origin}/mini-site/public/${formData.slug}`
                       }
                     </div>
@@ -551,7 +551,7 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 {miniSite && formData.slug && (
                   <QRCodeGenerator 
                     url={formData.is_published 
-                      ? `https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com/mini-site/${formData.slug}`
+                      ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
                       : `${window.location.origin}/mini-site/public/${formData.slug}`
                     }
                   />
