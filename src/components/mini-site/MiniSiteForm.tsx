@@ -540,14 +540,20 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                   <div>
                     <Label>URL du mini-site</Label>
                     <div className="text-sm text-muted-foreground">
-                      https://senior-digital-mentor.com/mini-site/{formData.slug}
+                      {formData.is_published 
+                        ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
+                        : `${window.location.origin}/mini-site/public/${formData.slug}`
+                      }
                     </div>
                   </div>
                 )}
 
-                {miniSite && (
+                {miniSite && formData.slug && (
                   <QRCodeGenerator 
-                    url={`https://senior-digital-mentor.com/mini-site/${formData.slug}`}
+                    url={formData.is_published 
+                      ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
+                      : `${window.location.origin}/mini-site/public/${formData.slug}`
+                    }
                   />
                 )}
               </CardContent>
