@@ -57,9 +57,9 @@ export const useMiniSite = (userId?: string) => {
         .from('mini_sites')
         .select('*')
         .eq('user_id', targetUserId)
-        .single();
+        .maybeSingle();
 
-      if (siteError && siteError.code !== 'PGRST116') {
+      if (siteError) {
         throw siteError;
       }
 
