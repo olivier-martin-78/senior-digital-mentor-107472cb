@@ -175,8 +175,22 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   useEffect(() => {
     if (!propData && slug) {
       fetchSiteData();
+    } else if (propData && isPreview) {
+      // En mode preview, récupérer les avis depuis les données de session
+      const storedPreviewData = sessionStorage.getItem('miniSitePreview');
+      if (storedPreviewData) {
+        try {
+          const parsedData = JSON.parse(storedPreviewData);
+          if (parsedData.user_id) {
+            console.log('🔍 Mode preview - récupération des avis pour:', parsedData.user_id);
+            fetchReviews(parsedData.user_id);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la lecture des données de preview:', error);
+        }
+      }
     }
-  }, [slug, propData]);
+  }, [slug, propData, isPreview]);
 
   useEffect(() => {
     if (siteData?.media && siteData.media.length > 1) {
