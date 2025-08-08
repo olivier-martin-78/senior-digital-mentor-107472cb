@@ -184,7 +184,7 @@ export function MusicQuizPlayer({
                 size="lg"
                 onClick={handlePlay}
                 disabled={gameState !== 'playing'}
-                className="w-16 h-16 rounded-full neon-glow"
+                className="w-16 h-16 rounded-full neon-button"
               >
                 {isPlaying ? (
                   <Pause className="h-6 w-6" />
@@ -225,7 +225,7 @@ export function MusicQuizPlayer({
         </div>
 
         {/* Réponses */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-4">
           {(['A', 'B', 'C'] as const).map((letter) => {
             const answerKey = `answer${letter}` as keyof Question;
             const answer = currentQuestion[answerKey] as string;
@@ -234,17 +234,17 @@ export function MusicQuizPlayer({
             return (
               <Button
                 key={letter}
-                variant={isCorrect ? "default" : "outline"}
+                variant="outline"
                 size="lg"
                 onClick={() => handleAnswerClick(letter)}
                 disabled={gameState !== 'playing'}
                 className={cn(
-                  "w-full justify-start p-4 h-auto text-left",
-                  isCorrect && "bg-[hsl(var(--neon-3))] hover:brightness-110 text-[hsl(var(--neon-foreground))] shadow-[0_0_20px_hsl(var(--neon-3)/0.5)]"
+                  "w-full justify-start p-4 h-auto text-left neon-answer-button",
+                  isCorrect && "neon-correct"
                 )}
               >
-                <span className="font-bold mr-3">{letter}.</span>
-                <span>{answer}</span>
+                <span className="font-bold mr-3 text-lg">{letter}.</span>
+                <span className="text-base">{answer}</span>
               </Button>
             );
           })}

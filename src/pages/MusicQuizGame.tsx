@@ -100,7 +100,7 @@ const MusicQuizGame: React.FC = () => {
   return (
     <div className="min-h-screen neon-quiz-bg">
       <div className="p-4 flex justify-between items-center">
-        <Button onClick={handleExit} variant="outline" size="sm">
+        <Button onClick={handleExit} variant="outline" size="sm" className="neon-button">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Retour
         </Button>
@@ -110,7 +110,7 @@ const MusicQuizGame: React.FC = () => {
           <span className="text-muted-foreground">
             Question {currentQuestionIndex + 1} / {quizData.questions.length}
           </span>
-          <span className="font-semibold text-[hsl(var(--neon-2))]">
+          <span className="font-semibold neon-text text-lg">
             Score: {score} / {quizData.questions.length}
           </span>
         </div>

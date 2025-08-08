@@ -72,13 +72,15 @@ export default {
 					warmgray: "#A9A29D",
 					charcoal: "#4A4A4A",
 				},
-				// Neon palette mapped to CSS vars
+				// Neon palette mapped to CSS vars - Version ultra-vive
 				neon: {
 					DEFAULT: 'hsl(var(--neon-1))',
 					foreground: 'hsl(var(--neon-foreground))',
 					secondary: 'hsl(var(--neon-2))',
 					accent: 'hsl(var(--neon-3))',
 					pink: 'hsl(var(--neon-4))',
+					yellow: 'hsl(var(--neon-5))',
+					orange: 'hsl(var(--neon-6))',
 					bg: 'hsl(var(--neon-bg))',
 					card: 'hsl(var(--neon-card))',
 				}

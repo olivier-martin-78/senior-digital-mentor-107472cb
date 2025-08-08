@@ -44,13 +44,15 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Neon palette tokens */
-    --neon-1: 280 100% 60%; /* electric purple */
-    --neon-2: 200 100% 55%; /* cyan */
-    --neon-3: 140 95% 55%;  /* neon green */
-    --neon-4: 330 100% 62%; /* hot pink */
-    --neon-bg: 240 22% 10%;
-    --neon-card: 240 16% 14%;
+    /* Neon palette tokens - Version ultra-vive */
+    --neon-1: 290 100% 70%; /* electric purple plus vif */
+    --neon-2: 180 100% 60%; /* cyan électrique */
+    --neon-3: 120 100% 60%; /* vert néon ultra-vif */
+    --neon-4: 320 100% 70%; /* rose choquant */
+    --neon-5: 60 100% 65%;  /* jaune électrique */
+    --neon-6: 30 100% 65%;  /* orange vif */
+    --neon-bg: 240 25% 8%;
+    --neon-card: 240 20% 12%;
     --neon-foreground: 0 0% 100%;
   }
 
@@ -92,13 +94,15 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Neon palette tokens (dark) */
-    --neon-1: 280 100% 60%;
-    --neon-2: 200 100% 55%;
-    --neon-3: 140 95% 55%;
-    --neon-4: 330 100% 62%;
-    --neon-bg: 240 24% 6%;
-    --neon-card: 240 18% 10%;
+    /* Neon palette tokens (dark) - Version ultra-vive */
+    --neon-1: 290 100% 70%;
+    --neon-2: 180 100% 60%;
+    --neon-3: 120 100% 60%;
+    --neon-4: 320 100% 70%;
+    --neon-5: 60 100% 65%;
+    --neon-6: 30 100% 65%;
+    --neon-bg: 240 28% 5%;
+    --neon-card: 240 22% 8%;
     --neon-foreground: 0 0% 100%;
   }
 }
@@ -140,23 +144,134 @@
 @layer utilities {
   .neon-quiz-bg {
     background-image:
-      radial-gradient(1200px 600px at 50% -10%, hsl(var(--neon-4) / 0.25), transparent),
-      radial-gradient(800px 400px at 10% 110%, hsl(var(--neon-2) / 0.2), transparent),
+      radial-gradient(1000px 500px at 70% -5%, hsl(var(--neon-4) / 0.35), transparent),
+      radial-gradient(800px 400px at 20% 120%, hsl(var(--neon-2) / 0.3), transparent),
+      radial-gradient(600px 300px at 90% 80%, hsl(var(--neon-5) / 0.25), transparent),
       linear-gradient(180deg, hsl(var(--neon-bg)), hsl(var(--background)));
+    animation: neon-bg-pulse 4s ease-in-out infinite alternate;
   }
 
   .neon-surface {
-    background-color: hsl(var(--neon-card));
-    border: 1px solid hsl(var(--neon-1) / 0.35);
-    box-shadow: 0 0 20px hsl(var(--neon-1) / 0.2), 0 0 40px hsl(var(--neon-2) / 0.15);
+    background: linear-gradient(135deg, hsl(var(--neon-card)), hsl(var(--neon-card) / 0.8));
+    border: 2px solid;
+    border-image: linear-gradient(45deg, hsl(var(--neon-1)), hsl(var(--neon-2)), hsl(var(--neon-4))) 1;
+    box-shadow: 
+      0 0 25px hsl(var(--neon-1) / 0.4), 
+      0 0 50px hsl(var(--neon-2) / 0.25),
+      inset 0 0 25px hsl(var(--neon-1) / 0.1);
   }
 
   .neon-glow {
-    box-shadow: 0 0 20px hsl(var(--neon-1) / 0.25), 0 0 40px hsl(var(--neon-2) / 0.2);
+    box-shadow: 
+      0 0 30px hsl(var(--neon-1) / 0.5), 
+      0 0 60px hsl(var(--neon-2) / 0.3),
+      0 0 90px hsl(var(--neon-4) / 0.2);
+    animation: neon-pulse 2s ease-in-out infinite alternate;
   }
 
   .neon-text {
-    color: hsl(var(--neon-2));
+    background: linear-gradient(90deg, hsl(var(--neon-2)), hsl(var(--neon-1)), hsl(var(--neon-4)));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: neon-text-glow 3s ease-in-out infinite alternate;
+  }
+
+  .neon-button {
+    background: linear-gradient(135deg, hsl(var(--neon-1) / 0.2), hsl(var(--neon-2) / 0.2));
+    border: 2px solid hsl(var(--neon-1) / 0.6);
+    color: hsl(var(--neon-foreground));
+    text-shadow: 0 0 10px hsl(var(--neon-1) / 0.8);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .neon-button:hover {
+    background: linear-gradient(135deg, hsl(var(--neon-1) / 0.4), hsl(var(--neon-2) / 0.4));
+    border-color: hsl(var(--neon-1));
+    box-shadow: 
+      0 0 20px hsl(var(--neon-1) / 0.6),
+      0 0 40px hsl(var(--neon-2) / 0.4);
+    transform: translateY(-2px);
+  }
+
+  .neon-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--neon-foreground) / 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .neon-button:hover::before {
+    left: 100%;
+  }
+
+  .neon-answer-button {
+    background: linear-gradient(135deg, hsl(var(--neon-card)), hsl(var(--neon-card) / 0.8));
+    border: 2px solid hsl(var(--neon-1) / 0.4);
+    color: hsl(var(--neon-foreground));
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .neon-answer-button:hover {
+    border-color: hsl(var(--neon-2));
+    box-shadow: 
+      0 0 15px hsl(var(--neon-2) / 0.5),
+      inset 0 0 15px hsl(var(--neon-2) / 0.1);
+    transform: scale(1.02);
+  }
+
+  .neon-correct {
+    background: linear-gradient(135deg, hsl(var(--neon-3) / 0.8), hsl(var(--neon-3) / 0.6)) !important;
+    border-color: hsl(var(--neon-3)) !important;
+    box-shadow: 
+      0 0 25px hsl(var(--neon-3) / 0.8),
+      0 0 50px hsl(var(--neon-3) / 0.4) !important;
+    animation: neon-correct-pulse 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes neon-bg-pulse {
+    0% { filter: brightness(1) saturate(1); }
+    100% { filter: brightness(1.1) saturate(1.2); }
+  }
+
+  @keyframes neon-pulse {
+    0% { 
+      box-shadow: 
+        0 0 30px hsl(var(--neon-1) / 0.5), 
+        0 0 60px hsl(var(--neon-2) / 0.3),
+        0 0 90px hsl(var(--neon-4) / 0.2);
+    }
+    100% { 
+      box-shadow: 
+        0 0 40px hsl(var(--neon-1) / 0.7), 
+        0 0 80px hsl(var(--neon-2) / 0.5),
+        0 0 120px hsl(var(--neon-4) / 0.3);
+    }
+  }
+
+  @keyframes neon-text-glow {
+    0% { text-shadow: 0 0 10px hsl(var(--neon-2) / 0.8); }
+    100% { text-shadow: 0 0 20px hsl(var(--neon-1) / 0.9), 0 0 30px hsl(var(--neon-4) / 0.6); }
+  }
+
+  @keyframes neon-correct-pulse {
+    0% { 
+      box-shadow: 
+        0 0 25px hsl(var(--neon-3) / 0.8),
+        0 0 50px hsl(var(--neon-3) / 0.4);
+    }
+    100% { 
+      box-shadow: 
+        0 0 35px hsl(var(--neon-3) / 1),
+        0 0 70px hsl(var(--neon-3) / 0.6);
+    }
   }
 }
 
