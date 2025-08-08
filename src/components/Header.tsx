@@ -20,7 +20,8 @@ import {
   Menu,
   X,
   Shield,
-  BarChart3
+  BarChart3,
+  Globe2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -238,6 +239,12 @@ const Header = () => {
                       <Link to="/my-invitation-groups" className="flex items-center">
                         <Users className="mr-2 h-4 w-4" />
                         Invités
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/mini-site/builder" className="flex items-center">
+                        <Globe2 className="mr-2 h-4 w-4" />
+                        Mon mini site
                       </Link>
                     </DropdownMenuItem>
                     

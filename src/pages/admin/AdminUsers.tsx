@@ -12,6 +12,7 @@ import InviteUserDialog from '@/components/InviteUserDialog';
 import DeleteUserDialog from '@/components/admin/DeleteUserDialog';
 import UserRoleSelector from '@/components/admin/UserRoleSelector';
 import ActivityCreatorToggle from '@/components/admin/ActivityCreatorToggle';
+import { MiniSiteManager } from '@/components/admin/MiniSiteManager';
 import { PermanentAccessToggle } from '@/components/admin/PermanentAccessToggle';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
@@ -291,13 +292,17 @@ const AdminUsers = () => {
                         <TableCell className="text-center">
                           <Badge variant="secondary">{user.intervention_reports_count}</Badge>
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
-                         <DeleteUserDialog
-                           userId={user.id}
-                           userEmail={user.email}
-                           onUserDeleted={handleUserDeleted}
-                         />
-                       </TableCell>
+                         <TableCell className="text-right space-x-2">
+                          <MiniSiteManager 
+                            userId={user.id} 
+                            userName={user.display_name || user.email} 
+                          />
+                          <DeleteUserDialog
+                            userId={user.id}
+                            userEmail={user.email}
+                            onUserDeleted={handleUserDeleted}
+                          />
+                        </TableCell>
                      </TableRow>
                   ))
                 ) : (

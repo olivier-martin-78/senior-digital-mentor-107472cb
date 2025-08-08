@@ -50,6 +50,9 @@ import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Caregivers from '@/pages/Caregivers';
+import { MiniSiteBuilder } from '@/pages/MiniSiteBuilder';
+import { MiniSitePreview } from '@/pages/MiniSitePreview';
+import { PublicMiniSite } from '@/pages/PublicMiniSite';
 import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
@@ -130,7 +133,12 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
             <Route path="/caregivers" element={<Caregivers />} />
+            <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           </Route>
+
+          {/* Routes publiques pour les mini-sites */}
+          <Route path="/mini-site/preview" element={<MiniSitePreview />} />
+          <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
 
           {/* Activity creator routes - require activity creation permissions */}
           <Route element={<ActivityCreatorRoute />}>

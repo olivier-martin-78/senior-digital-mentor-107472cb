@@ -135,10 +135,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     try {
       const { data, error } = await supabase
         .from('intervention_reports')
-        .select('client_rating, client_comments, created_at')
+        .select('client_rating, client_comments, created_at, patient_name')
         .eq('professional_id', userId)
         .not('client_rating', 'is', null)
         .not('client_comments', 'is', null)
+        .neq('client_comments', '')
+        .gte('client_rating', 4) // Seulement les bonnes notes (4 et 5 étoiles)
         .order('created_at', { ascending: false })
         .limit(6);
 
@@ -343,25 +345,32 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {reviews.map((review, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.client_rating
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
+                      <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < review.client_rating
+                                    ? 'text-yellow-400 fill-current'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            {new Date(review.created_at).toLocaleDateString('fr-FR')}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-gray-700 mb-2 italic">
                           "{review.client_comments}"
                         </p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(review.created_at).toLocaleDateString('fr-FR')}
-                        </p>
+                        {review.patient_name && (
+                          <p className="text-xs text-gray-500">
+                            - {review.patient_name}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
