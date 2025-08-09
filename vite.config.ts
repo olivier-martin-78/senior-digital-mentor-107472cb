@@ -20,8 +20,16 @@ export default defineConfig(({ mode }) => ({
     react(),
     legacy({
       targets: ['defaults', 'not IE 11', 'iOS >= 10', 'Safari >= 10'],
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-      modernPolyfills: ['es.global-this']
+      modernTargets: ['Edge >= 79', 'Firefox >= 67', 'Chrome >= 64', 'Safari >= 12'],
+      renderLegacyChunks: true,
+      polyfills: ['es.global-this', 'es.promise', 'es.symbol', 'es.array.iterator'],
+      additionalLegacyPolyfills: [
+        'regenerator-runtime/runtime',
+        'core-js/features/global-this',
+        'core-js/features/promise',
+        'core-js/features/symbol'
+      ],
+      modernPolyfills: ['es.global-this', 'es.promise']
     }),
     mode === 'development' &&
     componentTagger(),

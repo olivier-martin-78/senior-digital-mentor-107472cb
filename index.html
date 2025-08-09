@@ -31,11 +31,24 @@
     </div>
     
     <script>
+      // Emergency polyfills for iOS Safari
+      if (typeof globalThis === 'undefined') {
+        console.log('🔥 POLYFILL: globalThis manquant, création...');
+        window.globalThis = window;
+      }
+      
+      // Promise polyfill for older Safari
+      if (typeof Promise === 'undefined') {
+        console.log('🔥 POLYFILL: Promise manquant');
+      }
+      
       // Log immédiat
       console.log('🔥 INLINE: Page chargée, timestamp:', Date.now());
+      console.log('🔥 INLINE: globalThis disponible:', typeof globalThis !== 'undefined');
+      console.log('🔥 INLINE: User Agent:', navigator.userAgent);
       
       // Update status
-      document.getElementById('debug-status').innerHTML = 'JS inline OK';
+      document.getElementById('debug-status').innerHTML = 'JS inline OK + polyfills';
       
       // Test module loading
       window.addEventListener('error', function(e) {
