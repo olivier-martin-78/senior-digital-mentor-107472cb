@@ -146,8 +146,17 @@ const PrivateApp: React.FC = () => {
             <Route path="/caregivers" element={<Caregivers />} />
           </Route>
 
-          {/* Routes publiques pour les mini-sites */}
+          {/* Routes publiques pour les mini-sites - accessibles même quand connecté */}
           <Route path="/mini-site/preview" element={<MiniSitePreview />} />
+          <Route 
+            path="/mini-site/:slug" 
+            element={
+              (() => {
+                console.log('🔥 [PRIVATE_APP_DEBUG] Route /mini-site/:slug matchée dans PrivateApp');
+                return <PublicMiniSite />;
+              })()
+            } 
+          />
 
           {/* Activity creator routes - require activity creation permissions */}
           <Route element={<ActivityCreatorRoute />}>
