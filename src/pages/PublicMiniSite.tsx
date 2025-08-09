@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileDebugPanel } from '@/components/MobileDebugPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -167,7 +168,19 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   data: propData, 
   isPreview = false 
 }) => {
+  // LOGS TRÈS BASIQUES POUR DEBUG MOBILE
+  console.log('🚀 [MOBILE_DEBUG] Component PublicMiniSite démarré');
+  console.log('🚀 [MOBILE_DEBUG] Navigator info:', {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+    cookieEnabled: navigator.cookieEnabled,
+    onLine: navigator.onLine
+  });
+  
   const { slug } = useParams();
+  console.log('🚀 [MOBILE_DEBUG] Slug récupéré:', slug);
+  
   const [siteData, setSiteData] = useState<MiniSiteData | null>(propData || null);
   const [loading, setLoading] = useState(!propData);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -175,12 +188,29 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [retryCount, setRetryCount] = useState(0);
   
-  const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
+  console.log('🚀 [MOBILE_DEBUG] État initial défini');
+  
+  // Test hook mobile avec try/catch
+  let mobilehookData;
+  try {
+    mobilehookData = useIsMobile();
+    console.log('🚀 [MOBILE_DEBUG] Hook mobile OK:', mobilehookData);
+  } catch (error) {
+    console.error('❌ [MOBILE_DEBUG] Erreur hook mobile:', error);
+    mobilehookData = { isMobileDevice: false, isMobileViewport: false, connectionInfo: { online: true } };
+  }
+  
+  const { isMobileDevice, isMobileViewport, connectionInfo } = mobilehookData;
 
   useEffect(() => {
+    console.log('🚀 [MOBILE_DEBUG] Premier useEffect exécuté');
+    console.log('🚀 [MOBILE_DEBUG] Conditions:', { propData: !!propData, slug, isPreview });
+    
     if (!propData && slug) {
+      console.log('🚀 [MOBILE_DEBUG] Appel fetchSiteData');
       fetchSiteData();
     } else if (propData && isPreview) {
+      console.log('🚀 [MOBILE_DEBUG] Mode preview détecté');
       // En mode preview, récupérer les avis depuis les données de session
       const storedPreviewData = sessionStorage.getItem('miniSitePreview');
       if (storedPreviewData) {
@@ -198,7 +228,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   }, [slug, propData, isPreview]);
 
   useEffect(() => {
+    console.log('🚀 [MOBILE_DEBUG] Deuxième useEffect (carousel) exécuté');
     if (siteData?.media && siteData.media.length > 1) {
+      console.log('🚀 [MOBILE_DEBUG] Démarrage carousel avec', siteData.media.length, 'images');
       const interval = setInterval(() => {
         setCurrentImageIndex(prev => 
           prev >= (siteData.media?.length || 1) - 1 ? 0 : prev + 1
@@ -210,7 +242,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   }, [siteData?.media]);
 
   const fetchSiteData = async (retryAttempt = 0) => {
-    if (!slug) return;
+    console.log('🚀 [MOBILE_DEBUG] fetchSiteData appelé, tentative:', retryAttempt);
+    if (!slug) {
+      console.log('🚀 [MOBILE_DEBUG] Pas de slug, arrêt');
+      return;
+    }
 
     // Logs détaillés pour debugging mobile vs desktop
     console.log('🔍 [FETCH_SITE_DATA] Début récupération:', {
@@ -439,6 +475,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
   return (
     <div className={`min-h-screen ${style.containerClass}`}>
+      <MobileDebugPanel />
       {/* Header */}
       <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
