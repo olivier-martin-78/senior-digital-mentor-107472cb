@@ -541,8 +541,8 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                     <Label>URL du mini-site</Label>
                     <div className="text-sm text-muted-foreground">
                       {formData.is_published 
-                        ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
-                        : `${window.location.origin}/mini-site/${formData.slug}`
+                        ? `https://senior-digital-mentor.com/mini-site/${(formData.slug || '').replace(/\./g,'-')}`
+                        : `${window.location.origin}/mini-site/${(formData.slug || '').replace(/\./g,'-')}`
                       }
                     </div>
                   </div>
@@ -551,8 +551,8 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 {miniSite && formData.slug && (
                   <QRCodeGenerator 
                     url={formData.is_published 
-                      ? `https://senior-digital-mentor.com/mini-site/${formData.slug}`
-                      : `${window.location.origin}/mini-site/${formData.slug}`
+                      ? `https://senior-digital-mentor.com/mini-site/${(formData.slug || '').replace(/\./g,'-')}`
+                      : `${window.location.origin}/mini-site/${(formData.slug || '').replace(/\./g,'-')}`
                     }
                   />
                 )}

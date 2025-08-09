@@ -25,6 +25,23 @@
   </head>
 
   <body>
+    <script>
+      (function() {
+        try {
+          var path = window.location.pathname || '';
+          if (path.indexOf('/mini-site/') === 0) {
+            var last = path.substring('/mini-site/'.length);
+            if (last && last.indexOf('.') !== -1) {
+              var normalized = last.replace(/\./g, '-');
+              var newUrl = '/mini-site/' + normalized + window.location.search + window.location.hash;
+              if (newUrl !== window.location.href) {
+                window.location.replace(newUrl);
+              }
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!-- Debug ultra-basique - doit s'afficher même si tout plante -->
     <div id="debug-status" style="position:fixed;top:0;left:0;background:lime;color:black;z-index:9999;padding:5px;font-size:12px;">
       HTML chargé

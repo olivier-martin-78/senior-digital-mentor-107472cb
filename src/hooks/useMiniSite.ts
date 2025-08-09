@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { sanitizeSlug } from '@/utils/slugUtils';
 
 export interface MiniSiteData {
   id?: string;
@@ -272,10 +273,10 @@ export const useMiniSite = (userId?: string) => {
 
     if (error) {
       console.error('Error generating slug:', error);
-      return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${postalCode}`;
+      return sanitizeSlug(`${firstName.toLowerCase()}.${lastName.toLowerCase()}.${postalCode}`);
     }
 
-    return data;
+    return sanitizeSlug(String(data));
   };
 
   useEffect(() => {

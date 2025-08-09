@@ -180,6 +180,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   
   const { slug } = useParams();
   console.log('🚀 [MOBILE_DEBUG] Slug récupéré:', slug);
+  const normalizedSlug = (slug || '').replace(/\./g, '-');
   
   const [siteData, setSiteData] = useState<MiniSiteData | null>(propData || null);
   const [loading, setLoading] = useState(!propData);
@@ -201,6 +202,14 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   }
   
   const { isMobileDevice, isMobileViewport, connectionInfo } = mobilehookData;
+
+  // Redirection immédiate si le slug contient des points
+  useEffect(() => {
+    if (slug && slug.includes('.')) {
+      const newUrl = window.location.pathname.replace(slug, normalizedSlug) + window.location.search + window.location.hash;
+      window.location.replace(newUrl);
+    }
+  }, [slug, normalizedSlug]);
 
   useEffect(() => {
     console.log('🚀 [MOBILE_DEBUG] Premier useEffect exécuté');
@@ -280,7 +289,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           mini_site_media(*),
           mini_site_social_links(*)
         `)
-        .eq('slug', slug)
+        .eq('slug', normalizedSlug)
         .eq('is_published', true)
         .abortSignal(abortController.signal)
         .single();
