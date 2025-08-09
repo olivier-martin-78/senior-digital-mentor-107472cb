@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,11 +91,14 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     }
   };
 
-  const updateQuestion = (id: string, field: keyof Question, value: string) => {
-    setQuestions(questions.map(q => 
-      q.id === id ? { ...q, [field]: value } : q
-    ));
-  };
+  const updateQuestion = useCallback((id: string, field: keyof Question, value: string) => {
+    console.log('🔍 [QUIZ_FORM_DEBUG] Mise à jour question:', id, field, value);
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => 
+        q.id === id ? { ...q, [field]: value } : q
+      )
+    );
+  }, []);
 
   const handleAudioUpload = async (questionId: string, file: File | undefined) => {
     if (!file || !user) return;
@@ -179,12 +182,15 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     return '';
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔍 [QUIZ_FORM_DEBUG] Début soumission formulaire');
+    console.log('🔍 [QUIZ_FORM_DEBUG] DÉBUT SOUMISSION FORMULAIRE');
+    console.log('🔍 [QUIZ_FORM_DEBUG] User connecté:', !!user);
     console.log('🔍 [QUIZ_FORM_DEBUG] Nombre de questions:', questions.length);
-    console.log('🔍 [QUIZ_FORM_DEBUG] Questions:', questions);
+    console.log('🔍 [QUIZ_FORM_DEBUG] Titre du quiz:', formData.title);
+    console.log('🔍 [QUIZ_FORM_DEBUG] Type de quiz:', quizType);
+    console.log('🔍 [QUIZ_FORM_DEBUG] Questions détaillées:', JSON.stringify(questions, null, 2));
     
     if (!user) {
       console.log('🔍 [QUIZ_FORM_DEBUG] Erreur: utilisateur non connecté');
@@ -219,32 +225,48 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     }
 
     try {
+      console.log('🔍 [QUIZ_FORM_DEBUG] Construction des données quiz...');
+      
       const quizData = {
         type: 'music_quiz',
         title: formData.title,
-        questions: questions,
+        questions: completeQuestions, // Utilise seulement les questions complètes
         quizType: quizType,
         showInstructionAfterAnswer: formData.showInstructionAfterAnswer,
       };
 
+      console.log('🔍 [QUIZ_FORM_DEBUG] Quiz data créée:', quizData);
+      console.log('🔍 [QUIZ_FORM_DEBUG] Taille JSON:', JSON.stringify(quizData).length, 'caractères');
+
       // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
-      const firstAudioUrl = questions.find(q => q.audioUrl)?.audioUrl || null;
+      const firstAudioUrl = completeQuestions.find(q => q.audioUrl)?.audioUrl || null;
+
+      console.log('🔍 [QUIZ_FORM_DEBUG] Insertion en base de données...');
+      
+      const activityData = {
+        activity_type: 'games',
+        title: formData.title,
+        link: '',
+        thumbnail_url: formData.thumbnail_url || null,
+        audio_url: firstAudioUrl,
+        iframe_code: JSON.stringify(quizData),
+        sub_activity_tag_id: selectedSubTagId,
+        created_by: user.id,
+        shared_globally: formData.shared_globally,
+      };
+
+      console.log('🔍 [QUIZ_FORM_DEBUG] Données activité:', activityData);
 
       const { error } = await supabase
         .from('activities')
-        .insert([{
-          activity_type: 'games',
-          title: formData.title,
-          link: '',
-          thumbnail_url: formData.thumbnail_url || null,
-          audio_url: firstAudioUrl,
-          iframe_code: JSON.stringify(quizData),
-          sub_activity_tag_id: selectedSubTagId,
-          created_by: user.id,
-          shared_globally: formData.shared_globally,
-        }]);
+        .insert([activityData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔍 [QUIZ_FORM_DEBUG] Erreur Supabase:', error);
+        throw error;
+      }
+      
+      console.log('🔍 [QUIZ_FORM_DEBUG] ✅ Insertion réussie');
 
       // Track quiz creation
       UserActionsService.trackCreate('activity', 'music-quiz-created', formData.title, {
@@ -262,14 +284,18 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
 
       onSuccess();
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      console.error('🔍 [QUIZ_FORM_DEBUG] ❌ Erreur lors de la création:', error);
+      console.error('🔍 [QUIZ_FORM_DEBUG] ❌ Type d\'erreur:', typeof error);
+      console.error('🔍 [QUIZ_FORM_DEBUG] ❌ Message d\'erreur:', error?.message || 'Message non disponible');
+      console.error('🔍 [QUIZ_FORM_DEBUG] ❌ Stack trace:', error?.stack || 'Stack non disponible');
+      
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer le quiz musical',
+        description: `Impossible de créer le quiz musical: ${error?.message || 'Erreur inconnue'}`,
         variant: 'destructive',
       });
     }
-  };
+  }, [user, questions, formData, quizType, selectedSubTagId, toast, onSuccess]);
 
   const canShareGlobally = user?.email === 'olivier.martin.78000@gmail.com';
 
@@ -555,7 +581,12 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit">Créer le quiz</Button>
+            <Button 
+              type="submit"
+              onClick={() => console.log('🔍 [QUIZ_FORM_DEBUG] 🖱️ Bouton "Créer le quiz" cliqué')}
+            >
+              Créer le quiz
+            </Button>
             <Button type="button" variant="outline" onClick={onCancel}>
               Annuler
             </Button>
