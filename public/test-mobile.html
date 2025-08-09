@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TEST MOBILE SIMPLE</title>
+  </head>
+  <body>
+    <h1>Test Mobile - JavaScript</h1>
+    <div id="status">En cours de test...</div>
+    
+    <script>
+      console.log('TEST SIMPLE: JavaScript fonctionne');
+      document.getElementById('status').innerHTML = 'JavaScript fonctionne !';
+      
+      // Test fetch simple
+      fetch('https://httpbin.org/json')
+        .then(response => response.json())
+        .then(data => {
+          console.log('TEST SIMPLE: Fetch OK', data);
+          document.getElementById('status').innerHTML += '<br>Fetch OK';
+        })
+        .catch(error => {
+          console.error('TEST SIMPLE: Fetch erreur', error);
+          document.getElementById('status').innerHTML += '<br>Fetch erreur: ' + error.message;
+        });
+    </script>
+  </body>
+</html>
