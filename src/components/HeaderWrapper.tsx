@@ -9,6 +9,11 @@ const HeaderWrapper = () => {
   const location = useLocation();
   const { user, isLoading } = useOptionalAuth();
   
+  // Ne pas afficher de header sur les routes de mini-site (preview et consultation)
+  if (location.pathname.startsWith('/mini-site/') && location.pathname !== '/mini-site/builder') {
+    return null;
+  }
+  
   // Si on charge encore l'auth, afficher le header public pour éviter les erreurs
   if (isLoading) {
     return <PublicHeader />;
