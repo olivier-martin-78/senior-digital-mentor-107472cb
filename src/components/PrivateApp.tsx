@@ -83,9 +83,6 @@ const PrivateApp: React.FC = () => {
       <HeaderWrapper />
       <div className="min-h-screen">
         <Routes>
-          {/* Page d'accueil pour les utilisateurs connectés */}
-          <Route path="/" element={<Index />} />
-          
           {/* Page module professionnel - accessible à tous */}
           <Route path="/module-pro" element={<ProfessionalModule />} />
           
@@ -98,6 +95,9 @@ const PrivateApp: React.FC = () => {
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           </Route>
+
+          {/* Page d'accueil pour les utilisateurs connectés */}
+          <Route path="/" element={<Index />} />
 
           {/* Fully protected routes - require authentication and account access */}
           <Route element={<ProtectedRoute />}>
