@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>TEST iOS SIMPLE</title>
+    <style>
+      body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+      .status { background: lime; color: black; padding: 10px; margin: 10px 0; border: 2px solid black; }
+    </style>
+  </head>
+  <body>
+    <div class="status">HTML statique fonctionne</div>
+    <div id="js-test" class="status" style="background: red; color: white;">JavaScript ne fonctionne pas</div>
+    
+    <script>
+      // Test ultra-basique
+      try {
+        document.getElementById('js-test').innerHTML = 'JavaScript fonctionne !';
+        document.getElementById('js-test').style.background = 'green';
+        console.log('TEST iOS: JavaScript OK');
+      } catch(e) {
+        console.error('TEST iOS: Erreur JS', e);
+      }
+    </script>
+    
+    <div class="status">Version: 1.0 - Timestamp: <?php echo time(); ?></div>
+  </body>
+</html>
