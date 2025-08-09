@@ -39,43 +39,12 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        {/* Mini-site builder route - explicit route for builder */}
-        <Route 
-          path="/mini-site/builder" 
-          element={
-            (() => {
-              console.log('🔥 [APP_DEBUG] Route builder explicite matchée');
-              return user ? <PrivateApp /> : <PublicApp />;
-            })()
-          } 
-        />
-        {/* Mini-site preview route - accessible without authentication */}
-        <Route 
-          path="/mini-site/preview" 
-          element={
-            (() => {
-              console.log('🔥 [APP_DEBUG] Route preview matchée');
-              return <MiniSitePreview />;
-            })()
-          } 
-        />
-        {/* Public mini-site route - accessible without authentication, excluding reserved slugs */}
-        <Route 
-          path="/mini-site/:slug" 
-          element={
-            (() => {
-              const slug = window.location.pathname.split('/')[2];
-              console.log('🔥 [APP_DEBUG] Route public mini-site matchée avec slug:', slug);
-              return <PublicMiniSite />;
-            })()
-          } 
-        />
-        {/* All other routes go through auth-based routing */}
+        {/* Simplified routing - let PrivateApp and PublicApp handle specific routes */}
         <Route 
           path="/*" 
           element={
             (() => {
-              console.log('🔥 [APP_DEBUG] Route fallback matchée');
+              console.log('🔥 [APP_DEBUG] Routing vers', user ? 'PrivateApp' : 'PublicApp', 'pour path:', window.location.pathname);
               return user ? <PrivateApp /> : <PublicApp />;
             })()
           } 

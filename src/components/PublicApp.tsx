@@ -16,6 +16,35 @@ const PublicApp: React.FC = () => {
     <>
       <HeaderWrapper />
       <Routes>
+        {/* Mini-site routes - accessible without authentication */}
+        <Route 
+          path="/mini-site/builder" 
+          element={
+            (() => {
+              console.log('🔥 [PUBLIC_APP_DEBUG] Route /mini-site/builder matchée - redirection vers /auth');
+              return <Auth />;
+            })()
+          } 
+        />
+        <Route 
+          path="/mini-site/preview" 
+          element={
+            (() => {
+              console.log('🔥 [PUBLIC_APP_DEBUG] Route /mini-site/preview matchée');
+              return <PublicMiniSite />;
+            })()
+          } 
+        />
+        <Route 
+          path="/mini-site/:slug" 
+          element={
+            (() => {
+              console.log('🔥 [PUBLIC_APP_DEBUG] Route /mini-site/:slug matchée');
+              return <PublicMiniSite />;
+            })()
+          } 
+        />
+        
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth/confirm" element={<AuthConfirm />} />

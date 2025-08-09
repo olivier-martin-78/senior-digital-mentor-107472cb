@@ -83,6 +83,17 @@ const PrivateApp: React.FC = () => {
       <HeaderWrapper />
       <div className="min-h-screen">
         <Routes>
+          {/* Mini-site builder route - TOP PRIORITY */}
+          <Route 
+            path="/mini-site/builder" 
+            element={
+              (() => {
+                console.log('🔥 [PRIVATE_APP_DEBUG] Route /mini-site/builder matchée');
+                return <MiniSiteBuilder />;
+              })()
+            } 
+          />
+          
           {/* Page module professionnel - accessible à tous */}
           <Route path="/module-pro" element={<ProfessionalModule />} />
           
@@ -93,7 +104,6 @@ const PrivateApp: React.FC = () => {
           <Route element={<ProtectedRoute requiresFullAccess={false} />}>
             <Route path="/account/subscription" element={<Subscription />} />
             <Route path="/subscription" element={<Subscription />} />
-            <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           </Route>
 
           {/* Page d'accueil pour les utilisateurs connectés */}
