@@ -96,6 +96,7 @@ const PrivateApp: React.FC = () => {
           <Route element={<ProtectedRoute requiresFullAccess={false} />}>
             <Route path="/account/subscription" element={<Subscription />} />
             <Route path="/subscription" element={<Subscription />} />
+            <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           </Route>
 
           {/* Fully protected routes - require authentication and account access */}
@@ -133,7 +134,6 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
             <Route path="/caregivers" element={<Caregivers />} />
-            <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           </Route>
 
           {/* Routes publiques pour les mini-sites */}
