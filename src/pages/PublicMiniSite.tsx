@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileDebugPanel } from '@/components/MobileDebugPanel';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -484,7 +484,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
   return (
     <div className={`min-h-screen ${style.containerClass}`}>
-      <MobileDebugPanel />
+      
       {/* Header */}
       <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
