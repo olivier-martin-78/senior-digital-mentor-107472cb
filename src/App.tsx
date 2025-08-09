@@ -49,16 +49,6 @@ const AppContent = () => {
             })()
           } 
         />
-        {/* Mini-site builder route - requires authentication */}
-        <Route 
-          path="/mini-site/builder" 
-          element={
-            (() => {
-              console.log('🔥 [APP_DEBUG] Route builder matchée');
-              return user ? <PrivateApp /> : <PublicApp />;
-            })()
-          } 
-        />
         {/* Public mini-site route - accessible without authentication */}
         <Route 
           path="/mini-site/:slug" 
