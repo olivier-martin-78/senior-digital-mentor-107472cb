@@ -221,8 +221,8 @@ export function MusicQuizPlayer({
           </div>
         )}
 
-        {/* Consigne si disponible et non vide */}
-        {currentQuestion.instruction && currentQuestion.instruction.trim() && (
+        {/* Consigne si disponible et non vide - seulement si showInstructionAfterAnswer n'est pas activé */}
+        {currentQuestion.instruction && currentQuestion.instruction.trim() && !quizData.showInstructionAfterAnswer && (
           <div className="p-4 rounded-lg bg-[hsl(var(--neon-2)/0.08)] border border-[hsl(var(--neon-2)/0.35)]">
             <p className="font-medium text-center neon-text">
               {currentQuestion.instruction}
