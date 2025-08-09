@@ -191,25 +191,22 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
       return;
     }
 
-    // Validation selon le type de quiz
-    if (quizType === 'videos') {
-      if (questions.some(q => (!q.audioUrl && !q.youtubeEmbed) || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
-        toast({
-          title: 'Erreur',
-          description: 'Veuillez fournir un fichier audio ou un code YouTube et remplir tous les champs pour chaque question',
-          variant: 'destructive',
-        });
-        return;
+    // Validation : au moins une question complète
+    const completeQuestions = questions.filter(q => {
+      if (quizType === 'videos') {
+        return (q.audioUrl || q.youtubeEmbed) && q.question && q.answerA && q.answerB && q.answerC;
+      } else {
+        return q.imageUrl && q.question && q.answerA && q.answerB && q.answerC;
       }
-    } else {
-      if (questions.some(q => !q.imageUrl || !q.question || !q.answerA || !q.answerB || !q.answerC)) {
-        toast({
-          title: 'Erreur',
-          description: 'Veuillez fournir une illustration et remplir tous les champs pour chaque question',
-          variant: 'destructive',
-        });
-        return;
-      }
+    });
+
+    if (completeQuestions.length === 0) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez compléter au moins une question entièrement',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
