@@ -20,14 +20,17 @@ export const useAuthStateManager = (options: AuthStateManagerOptions = {}) => {
   const [retryCount, setRetryCount] = useState(0);
 
   const handleAuthError = useCallback((error: Error) => {
+    console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Auth error detected:', error);
     console.error('Auth error:', error);
     setAuthError(error);
     onAuthError?.(error);
     
     // Attempt recovery if enabled and within retry limits
     if (enableRecovery && retryCount < maxRetries) {
+      console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Attempting recovery, retry:', retryCount + 1);
       setRetryCount(prev => prev + 1);
       attemptAuthRecovery().then((recovered) => {
+        console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Recovery result:', recovered);
         if (!recovered) {
           toast({
             title: 'Problème de connexion',
@@ -83,12 +86,13 @@ export const useAuthStateManager = (options: AuthStateManagerOptions = {}) => {
 
     const initializeAuth = async () => {
       try {
+        console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Initializing auth');
         // Set up auth state listener first (only once)
         const { data } = supabase.auth.onAuthStateChange(
           (event, session) => {
             if (!mounted) return;
 
-            console.log('Auth state change:', event, session?.user?.id);
+            console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Auth state change:', event, session?.user?.id);
             
             // Prevent multiple rapid updates
             if (event === 'INITIAL_SESSION') {
@@ -113,9 +117,11 @@ export const useAuthStateManager = (options: AuthStateManagerOptions = {}) => {
         authSubscription = data.subscription;
 
         // Check for existing session only once
+        console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Getting initial session');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
+          console.log('🔥 [AUTH_STATE_MANAGER_DEBUG] Initial session result:', { session: !!session, error: !!error });
           if (error) {
             handleAuthError(error);
           } else {

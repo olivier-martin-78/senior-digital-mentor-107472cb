@@ -50,9 +50,14 @@ export const useMiniSite = (userId?: string) => {
   const targetUserId = userId || user?.id;
 
   const fetchMiniSite = async () => {
+    console.log('🔥 [MINI_SITE_DEBUG] fetchMiniSite called', { isAuthLoading, targetUserId });
     // Ne pas essayer de charger si l'auth est encore en cours ou si pas d'utilisateur
-    if (isAuthLoading || !targetUserId) return;
+    if (isAuthLoading || !targetUserId) {
+      console.log('🔥 [MINI_SITE_DEBUG] Skipping fetch - auth loading or no user');
+      return;
+    }
     
+    console.log('🔥 [MINI_SITE_DEBUG] Starting mini site fetch');
     setLoading(true);
     try {
       const { data: siteData, error: siteError } = await supabase
@@ -99,7 +104,7 @@ export const useMiniSite = (userId?: string) => {
         setMiniSite(null);
       }
     } catch (error) {
-      console.error('Error fetching mini site:', error);
+      console.error('🔥 [MINI_SITE_DEBUG] Error fetching mini site:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger le mini-site",
@@ -281,8 +286,10 @@ export const useMiniSite = (userId?: string) => {
   };
 
   useEffect(() => {
+    console.log('🔥 [MINI_SITE_DEBUG] useEffect triggered', { targetUserId, isAuthLoading });
     // Ne charger qu'une fois l'auth initialisée
     if (!isAuthLoading) {
+      console.log('🔥 [MINI_SITE_DEBUG] Auth loaded, calling fetchMiniSite');
       fetchMiniSite();
     }
   }, [targetUserId, isAuthLoading]);

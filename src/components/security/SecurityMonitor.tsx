@@ -19,6 +19,7 @@ export const SecurityMonitor: React.FC = () => {
   
   const { authError, isRecovering, refreshSession, secureSignOut } = useAuthStateManager({
     onAuthError: (error) => {
+      console.log('🔥 [SECURITY_MONITOR_DEBUG] Auth error detected:', error);
       addSecurityEvent({
         type: 'auth_error',
         message: `Erreur d'authentification: ${error.message}`,
@@ -29,6 +30,7 @@ export const SecurityMonitor: React.FC = () => {
   });
 
   const addSecurityEvent = (event: Omit<SecurityEvent, 'id' | 'timestamp'>) => {
+    console.log('🔥 [SECURITY_MONITOR_DEBUG] Adding security event:', event);
     const newEvent: SecurityEvent = {
       ...event,
       id: Date.now().toString(),
