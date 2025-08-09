@@ -9,6 +9,7 @@ interface QuizData {
   title: string;
   questions: any[];
   quizType: 'videos' | 'illustrations';
+  showInstructionAfterAnswer?: boolean;
 }
 
 const MusicQuizGame: React.FC = () => {
@@ -19,10 +20,18 @@ const MusicQuizGame: React.FC = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [showInstruction, setShowInstruction] = useState(false);
   
   useEffect(() => {
     document.title = 'Quiz musical – Mode Joueur';
   }, []);
+
+  // Réinitialiser les states lors du changement de question
+  useEffect(() => {
+    setShowInstruction(false);
+    setShowAnswer(false);
+    setGameState('playing');
+  }, [currentQuestionIndex]);
   
   const quizData = location.state?.quizData as QuizData;
 
@@ -41,15 +50,29 @@ const MusicQuizGame: React.FC = () => {
     setShowAnswer(true);
     setGameState('answered');
     
-    setTimeout(() => {
-      if (currentQuestionIndex < quizData.questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setShowAnswer(false);
-        setGameState('playing');
-      } else {
-        setIsFinished(true);
-      }
-    }, 2000);
+    if (quizData.showInstructionAfterAnswer && currentQuestion.instruction) {
+      setShowInstruction(true);
+    } else {
+      setTimeout(() => {
+        proceedToNext();
+      }, 2000);
+    }
+  };
+
+  const proceedToNext = () => {
+    if (currentQuestionIndex < quizData.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setShowAnswer(false);
+      setShowInstruction(false);
+      setGameState('playing');
+    } else {
+      setIsFinished(true);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    setShowInstruction(false);
+    proceedToNext();
   };
 
   if (!quizData) {
@@ -122,6 +145,8 @@ const MusicQuizGame: React.FC = () => {
         currentQuestionIndex={currentQuestionIndex}
         gameState={gameState}
         showAnswer={showAnswer}
+        showInstruction={showInstruction}
+        onNextQuestion={handleNextQuestion}
       />
     </div>
   );

@@ -35,6 +35,7 @@ interface QuizData {
   title: string;
   questions: Question[];
   quizType?: 'videos' | 'illustrations';
+  showInstructionAfterAnswer?: boolean;
 }
 
 interface EditMusicQuizFormProps {
@@ -51,6 +52,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
     title: activity.title,
     thumbnail_url: activity.thumbnail_url || '',
     shared_globally: activity.shared_globally || false,
+    showInstructionAfterAnswer: false,
   });
   
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(activity.sub_activity_tag_id);
@@ -65,6 +67,10 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
         if (quizData.type === 'music_quiz' && quizData.questions) {
           setQuestions(quizData.questions);
           setQuizType(quizData.quizType || 'videos');
+          setFormData(prev => ({
+            ...prev,
+            showInstructionAfterAnswer: quizData.showInstructionAfterAnswer || false
+          }));
         }
       } catch (error) {
         console.error('Erreur lors du parsing des données du quiz:', error);
@@ -221,6 +227,7 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
         title: formData.title,
         questions: questions,
         quizType: quizType,
+        showInstructionAfterAnswer: formData.showInstructionAfterAnswer,
       };
 
       // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
@@ -324,6 +331,19 @@ const EditMusicQuizForm = ({ activity, onSave, onCancel }: EditMusicQuizFormProp
               selectedSubTagId={selectedSubTagId}
               onSubTagChange={setSelectedSubTagId}
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="showInstructionAfterAnswer"
+              checked={formData.showInstructionAfterAnswer}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, showInstructionAfterAnswer: checked as boolean })
+              }
+            />
+            <Label htmlFor="showInstructionAfterAnswer" className="text-sm font-medium">
+              Affiche la consigne après la réponse
+            </Label>
           </div>
 
           {canShareGlobally && (

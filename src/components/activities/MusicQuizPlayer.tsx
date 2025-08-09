@@ -25,6 +25,7 @@ interface QuizData {
   title: string;
   questions: Question[];
   quizType?: 'videos' | 'illustrations';
+  showInstructionAfterAnswer?: boolean;
 }
 
 interface MusicQuizPlayerProps {
@@ -33,6 +34,8 @@ interface MusicQuizPlayerProps {
   currentQuestionIndex: number;
   gameState: 'waiting' | 'playing' | 'answered';
   showAnswer?: boolean;
+  showInstruction?: boolean;
+  onNextQuestion?: () => void;
 }
 
 export function MusicQuizPlayer({ 
@@ -40,7 +43,9 @@ export function MusicQuizPlayer({
   onAnswer, 
   currentQuestionIndex, 
   gameState, 
-  showAnswer 
+  showAnswer,
+  showInstruction = false,
+  onNextQuestion 
 }: MusicQuizPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -106,6 +111,19 @@ export function MusicQuizPlayer({
       audioRef.current.pause();
     }
   }, [gameState, isPlaying]);
+
+  // Gestion des touches du clavier pour passer à la question suivante
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && showInstruction && onNextQuestion) {
+        event.preventDefault();
+        onNextQuestion();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [showInstruction, onNextQuestion]);
 
   return (
     <Card className={cn(
@@ -265,6 +283,33 @@ export function MusicQuizPlayer({
             <p className="text-sm text-center text-[hsl(var(--neon-4))]">
               Aucun média disponible pour cette question
             </p>
+          </div>
+        )}
+
+        {/* Affichage de l'explication après la réponse */}
+        {showInstruction && currentQuestion.instruction && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-lg bg-[hsl(var(--neon-3)/0.1)] border-2 border-[hsl(var(--neon-3)/0.5)]">
+              <h3 className="text-lg font-bold text-center mb-4 text-[hsl(var(--neon-3))]">
+                Explication à propos de la bonne réponse
+              </h3>
+              <p className="text-base text-center neon-text leading-relaxed">
+                {currentQuestion.instruction}
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <Button
+                onClick={onNextQuestion}
+                className="neon-button"
+                size="lg"
+              >
+                Question suivante
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2">
+                Appuyez sur la barre d'espace pour continuer
+              </p>
+            </div>
           </div>
         )}
       </CardContent>

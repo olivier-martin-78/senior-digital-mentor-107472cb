@@ -34,6 +34,7 @@ interface QuizData {
   title: string;
   questions: Question[];
   quizType: 'videos' | 'illustrations';
+  showInstructionAfterAnswer?: boolean;
 }
 
 interface CreateMusicQuizFormProps {
@@ -49,6 +50,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
     title: '',
     thumbnail_url: '',
     shared_globally: false,
+    showInstructionAfterAnswer: false,
   });
   
   const [quizType, setQuizType] = useState<'videos' | 'illustrations'>('videos');
@@ -216,6 +218,7 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
         title: formData.title,
         questions: questions,
         quizType: quizType,
+        showInstructionAfterAnswer: formData.showInstructionAfterAnswer,
       };
 
       // Si toutes les questions ont un audio, on peut utiliser le premier comme audio principal
@@ -330,6 +333,19 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
               selectedSubTagId={selectedSubTagId}
               onSubTagChange={setSelectedSubTagId}
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="showInstructionAfterAnswer"
+              checked={formData.showInstructionAfterAnswer}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, showInstructionAfterAnswer: checked as boolean })
+              }
+            />
+            <Label htmlFor="showInstructionAfterAnswer" className="text-sm font-medium">
+              Affiche la consigne après la réponse
+            </Label>
           </div>
 
           {canShareGlobally && (
