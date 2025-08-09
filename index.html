@@ -22,15 +22,43 @@
   </head>
 
   <body>
-    <!-- Test ultra-basique pour vérifier si JavaScript s'exécute -->
+    <!-- Debug ultra-basique - doit s'afficher même si tout plante -->
+    <div id="debug-status" style="position:fixed;top:0;left:0;background:lime;color:black;z-index:9999;padding:5px;font-size:12px;">
+      HTML chargé
+    </div>
+    
     <script>
-      alert('TEST MOBILE: JavaScript s\'exécute');
-      console.log('TEST MOBILE INLINE: JavaScript fonctionne');
-      document.write('<div style="position:fixed;top:0;left:0;background:red;color:white;z-index:9999;padding:10px;">JS OK</div>');
+      // Log immédiat
+      console.log('🔥 INLINE: Page chargée, timestamp:', Date.now());
+      
+      // Update status
+      document.getElementById('debug-status').innerHTML = 'JS inline OK';
+      
+      // Test module loading
+      window.addEventListener('error', function(e) {
+        console.error('🔥 GLOBAL ERROR:', e.error, e.filename, e.lineno);
+        document.getElementById('debug-status').innerHTML = 'ERREUR: ' + e.message;
+        document.getElementById('debug-status').style.background = 'red';
+        document.getElementById('debug-status').style.color = 'white';
+      });
+      
+      // Test unhandled promise rejections  
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('🔥 UNHANDLED REJECTION:', e.reason);
+        document.getElementById('debug-status').innerHTML = 'PROMISE ERREUR: ' + e.reason;
+        document.getElementById('debug-status').style.background = 'orange';
+      });
+      
+      // Test si les modules se chargent
+      setTimeout(() => {
+        console.log('🔥 TIMEOUT 2S: Vérification chargement modules');
+        if (!window.React) {
+          document.getElementById('debug-status').innerHTML = 'Module non chargé après 2s';
+          document.getElementById('debug-status').style.background = 'yellow';
+        }
+      }, 2000);
     </script>
     
-    <!-- Script de debug mobile ultra-basique -->
-    <script src="/src/debug-mobile.js"></script>
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
