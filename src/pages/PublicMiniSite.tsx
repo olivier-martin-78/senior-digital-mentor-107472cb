@@ -534,7 +534,14 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       {/* Carousel */}
       {siteData.media && siteData.media.length > 0 && (
-        <section className={`relative h-64 md:h-96 overflow-hidden ${!isMobileDevice ? 'z-10' : ''}`}>
+        <section 
+          className={`relative h-64 md:h-96 overflow-hidden ${!isMobileDevice ? 'md:pt-16' : ''}`}
+          style={{
+            marginTop: !isMobileDevice ? '64px' : '0',
+            position: 'relative',
+            zIndex: 1
+          }}
+        >
           <img
             src={currentImage?.media_url}
             alt={currentImage?.caption || "Photo du carrousel"}
