@@ -12,15 +12,22 @@ export const useOptionalAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
+    console.log('🔥 [AUTH_DEBUG] useOptionalAuth hook démarré');
+    
     const initAuth = async () => {
       try {
+        console.log('🔥 [AUTH_DEBUG] Tentative import client Supabase');
         // Import dynamique pour éviter les erreurs sur les routes publiques
         const { supabase } = await import('@/integrations/supabase/client');
+        console.log('🔥 [AUTH_DEBUG] Client Supabase importé avec succès');
         
         // Vérifier s'il y a une session existante
+        console.log('🔥 [AUTH_DEBUG] Vérification session existante');
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('🔥 [AUTH_DEBUG] Session récupérée:', !!currentSession);
         
         if (currentSession?.user) {
+          console.log('🔥 [AUTH_DEBUG] Utilisateur trouvé, mise à jour states');
           setSession(currentSession);
           setUser(currentSession.user);
           
@@ -46,13 +53,15 @@ export const useOptionalAuth = () => {
               setRoles(rolesData.map(r => r.role));
             }
           } catch (error) {
-            console.log('Erreur lors de la récupération du profil:', error);
+            console.log('🔥 [AUTH_DEBUG] Erreur lors de la récupération du profil:', error);
           }
         }
         
         // Écouter les changements d'auth
+        console.log('🔥 [AUTH_DEBUG] Configuration listener auth state change');
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, session) => {
+            console.log('🔥 [AUTH_DEBUG] Auth state change:', event, !!session);
             setSession(session);
             setUser(session?.user ?? null);
             
@@ -63,11 +72,12 @@ export const useOptionalAuth = () => {
           }
         );
         
+        console.log('🔥 [AUTH_DEBUG] Fin initialisation auth, loading = false');
         setIsLoading(false);
         
         return () => subscription.unsubscribe();
       } catch (error) {
-        console.log('Auth non disponible sur cette route');
+        console.log('🔥 [AUTH_DEBUG] Auth non disponible sur cette route - erreur:', error);
         setIsLoading(false);
       }
     };

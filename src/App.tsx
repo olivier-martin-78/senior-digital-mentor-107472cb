@@ -16,9 +16,17 @@ import { MiniSitePreview } from "@/pages/MiniSitePreview";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  // LOGS DE DEBUG TRÈS BASIQUES POUR INVESTIGUER LE PROBLÈME MOBILE
+  console.log('🔥 [APP_DEBUG] AppContent démarré - timestamp:', Date.now());
+  console.log('🔥 [APP_DEBUG] URL actuelle:', window.location.href);
+  console.log('🔥 [APP_DEBUG] User agent:', navigator.userAgent);
+  
   const { user, isLoading } = useOptionalAuth();
+  
+  console.log('🔥 [APP_DEBUG] Hook auth result:', { user: !!user, isLoading });
 
   if (isLoading) {
+    console.log('🔥 [APP_DEBUG] Affichage écran de chargement');
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -26,35 +34,75 @@ const AppContent = () => {
     );
   }
 
+  console.log('🔥 [APP_DEBUG] Rendu des routes - user:', !!user);
+  
   return (
     <>
       <Routes>
         {/* Mini-site builder route - requires authentication */}
-        <Route path="/mini-site/builder" element={user ? <MiniSiteBuilder /> : <PublicApp />} />
+        <Route 
+          path="/mini-site/builder" 
+          element={
+            (() => {
+              console.log('🔥 [APP_DEBUG] Route builder matchée');
+              return user ? <MiniSiteBuilder /> : <PublicApp />;
+            })()
+          } 
+        />
         {/* Mini-site preview route - accessible without authentication */}
-        <Route path="/mini-site/preview" element={<MiniSitePreview />} />
+        <Route 
+          path="/mini-site/preview" 
+          element={
+            (() => {
+              console.log('🔥 [APP_DEBUG] Route preview matchée');
+              return <MiniSitePreview />;
+            })()
+          } 
+        />
         {/* Public mini-site route - accessible without authentication */}
-        <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
+        <Route 
+          path="/mini-site/:slug" 
+          element={
+            (() => {
+              console.log('🔥 [APP_DEBUG] Route public mini-site matchée avec slug');
+              return <PublicMiniSite />;
+            })()
+          } 
+        />
         {/* All other routes go through auth-based routing */}
-        <Route path="/*" element={user ? <PrivateApp /> : <PublicApp />} />
+        <Route 
+          path="/*" 
+          element={
+            (() => {
+              console.log('🔥 [APP_DEBUG] Route fallback matchée');
+              return user ? <PrivateApp /> : <PublicApp />;
+            })()
+          } 
+        />
       </Routes>
       <SecurityMonitor />
     </>
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  console.log('🔥 [APP_DEBUG] App principal démarré');
+  console.log('🔥 [APP_DEBUG] Document ready state:', document.readyState);
+  console.log('🔥 [APP_DEBUG] Window loaded:', document.readyState === 'complete');
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
