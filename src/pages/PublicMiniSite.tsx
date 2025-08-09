@@ -507,22 +507,25 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           </svg>
         </div>
         {style.decorativeElement}
-        <div className="container mx-auto px-4 py-9 relative z-10">
-          <div className="flex flex-col md:flex-row items-center gap-8">
+        <div className="container mx-auto px-4 py-5 relative z-10">
+          <div className="flex flex-col md:flex-row items-center gap-5">
             {siteData.logo_url && (
               <img
                 src={siteData.logo_url}
                 alt="Logo"
-                className="rounded-full bg-white p-2 shadow-lg"
-                style={{ width: siteData.logo_size, height: siteData.logo_size }}
+                className="rounded-full bg-white p-1.5 shadow-lg"
+                style={{ 
+                  width: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px', 
+                  height: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px' 
+                }}
               />
             )}
             <div className="text-center md:text-left">
-              <h1 className={`${style.titleFont} mb-2`}>
+              <h1 className={`${style.titleFont.replace('text-4xl md:text-5xl', 'text-2xl md:text-3xl').replace('text-5xl', 'text-3xl')} mb-1`}>
                 {siteData.site_name}
               </h1>
               {siteData.site_subtitle && (
-                <p className={`${style.subtitleFont} opacity-90`}>{siteData.site_subtitle}</p>
+                <p className={`${style.subtitleFont.replace('text-xl', 'text-lg')} opacity-90`}>{siteData.site_subtitle}</p>
               )}
             </div>
           </div>
