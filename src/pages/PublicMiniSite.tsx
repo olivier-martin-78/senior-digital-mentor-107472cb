@@ -507,7 +507,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           </svg>
         </div>
         {style.decorativeElement}
-        <div className="container mx-auto px-4 py-12 relative z-10">
+        <div className="container mx-auto px-4 py-9 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-8">
             {siteData.logo_url && (
               <img
