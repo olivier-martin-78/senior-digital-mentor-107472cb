@@ -31,24 +31,57 @@
     </div>
     
     <script>
-      // Emergency polyfills for iOS Safari
-      if (typeof globalThis === 'undefined') {
-        console.log('🔥 POLYFILL: globalThis manquant, création...');
-        window.globalThis = window;
-      }
-      
-      // Promise polyfill for older Safari
-      if (typeof Promise === 'undefined') {
-        console.log('🔥 POLYFILL: Promise manquant');
-      }
-      
-      // Log immédiat
-      console.log('🔥 INLINE: Page chargée, timestamp:', Date.now());
-      console.log('🔥 INLINE: globalThis disponible:', typeof globalThis !== 'undefined');
-      console.log('🔥 INLINE: User Agent:', navigator.userAgent);
-      
-      // Update status
-      document.getElementById('debug-status').innerHTML = 'JS inline OK + polyfills';
+      // Emergency polyfills AVANT TOUT
+      (function() {
+        console.log('🔥 EMERGENCY: Script de secours iOS Safari');
+        
+        // globalThis polyfill
+        if (typeof globalThis === 'undefined') {
+          console.log('🔥 EMERGENCY: globalThis manquant, création');
+          try {
+            Object.defineProperty(Object.prototype, '__magic__', {
+              get: function() { return this; },
+              configurable: true
+            });
+            __magic__.globalThis = __magic__;
+            delete Object.prototype.__magic__;
+          } catch(e) {
+            window.globalThis = window;
+          }
+        }
+        
+        // Promise.allSettled polyfill pour Safari < 13
+        if (!Promise.allSettled) {
+          Promise.allSettled = function(promises) {
+            return Promise.all(promises.map(p => 
+              Promise.resolve(p).then(value => ({
+                status: 'fulfilled',
+                value: value
+              }), error => ({
+                status: 'rejected',
+                reason: error
+              }))
+            ));
+          };
+        }
+        
+        console.log('🔥 EMERGENCY: Polyfills installés');
+        console.log('🔥 EMERGENCY: globalThis disponible:', typeof globalThis !== 'undefined');
+        console.log('🔥 EMERGENCY: Promise.allSettled disponible:', typeof Promise.allSettled === 'function');
+        console.log('🔥 EMERGENCY: User Agent:', navigator.userAgent);
+        
+        // Détection iOS spécifique
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        console.log('🔥 EMERGENCY: iOS détecté:', isIOS);
+        
+        // Update status avec plus d'infos
+        var debugEl = document.getElementById('debug-status');
+        if (debugEl) {
+          debugEl.innerHTML = 'Emergency polyfills OK - iOS: ' + isIOS;
+          debugEl.style.background = isIOS ? 'orange' : 'lime';
+        }
+      })();
       
       // Test module loading
       window.addEventListener('error', function(e) {
@@ -76,8 +109,31 @@
     </script>
     
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- Scripts avec fallback iOS -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module" onerror="console.error('🔥 EMERGENCY: Échec chargement gptengineer.js')"></script>
+    <script type="module" src="/src/main.tsx" onerror="console.error('🔥 EMERGENCY: Échec chargement main.tsx'); document.getElementById('debug-status').innerHTML = 'ERREUR: main.tsx non chargé'; document.getElementById('debug-status').style.background = 'red';"></script>
+    
+    <!-- Fallback absolu pour iOS si modules échouent -->
+    <script>
+      setTimeout(function() {
+        if (!window.React && !document.querySelector('#root > *')) {
+          console.error('🔥 EMERGENCY: Aucun contenu chargé après 3s');
+          var debugEl = document.getElementById('debug-status');
+          if (debugEl) {
+            debugEl.innerHTML = 'ÉCHEC TOTAL - iOS Safari incompatible';
+            debugEl.style.background = 'red';
+            debugEl.style.color = 'white';
+            debugEl.style.fontSize = '14px';
+            debugEl.style.padding = '10px';
+          }
+          
+          // Affichage d'urgence
+          var root = document.getElementById('root');
+          if (root && !root.innerHTML.trim()) {
+            root.innerHTML = '<div style="padding:20px;font-family:Arial;background:#f0f0f0;margin:20px;border-radius:8px;"><h2 style="color:#d32f2f;">Problème de compatibilité iOS Safari</h2><p>Cette page n\'est temporairement pas compatible avec votre navigateur iOS.</p><p>Essayez d\'ouvrir le lien dans un autre navigateur ou sur un ordinateur.</p><p style="font-size:12px;color:#666;">User Agent: ' + navigator.userAgent + '</p></div>';
+          }
+        }
+      }, 3000);
+    </script>
   </body>
 </html>
