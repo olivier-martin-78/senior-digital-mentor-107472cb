@@ -182,7 +182,12 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔍 [QUIZ_FORM_DEBUG] Début soumission formulaire');
+    console.log('🔍 [QUIZ_FORM_DEBUG] Nombre de questions:', questions.length);
+    console.log('🔍 [QUIZ_FORM_DEBUG] Questions:', questions);
+    
     if (!user) {
+      console.log('🔍 [QUIZ_FORM_DEBUG] Erreur: utilisateur non connecté');
       toast({
         title: 'Erreur',
         description: 'Vous devez être connecté pour créer un quiz musical',
@@ -193,14 +198,18 @@ const CreateMusicQuizForm = ({ onSuccess, onCancel }: CreateMusicQuizFormProps) 
 
     // Validation : au moins une question complète
     const completeQuestions = questions.filter(q => {
-      if (quizType === 'videos') {
-        return (q.audioUrl || q.youtubeEmbed) && q.question && q.answerA && q.answerB && q.answerC;
-      } else {
-        return q.imageUrl && q.question && q.answerA && q.answerB && q.answerC;
-      }
+      const isComplete = quizType === 'videos' 
+        ? (q.audioUrl || q.youtubeEmbed) && q.question && q.answerA && q.answerB && q.answerC
+        : q.imageUrl && q.question && q.answerA && q.answerB && q.answerC;
+      
+      console.log('🔍 [QUIZ_FORM_DEBUG] Question', q.id, 'complète:', isComplete, q);
+      return isComplete;
     });
 
+    console.log('🔍 [QUIZ_FORM_DEBUG] Questions complètes:', completeQuestions.length);
+
     if (completeQuestions.length === 0) {
+      console.log('🔍 [QUIZ_FORM_DEBUG] Erreur: aucune question complète');
       toast({
         title: 'Erreur',
         description: 'Veuillez compléter au moins une question entièrement',
