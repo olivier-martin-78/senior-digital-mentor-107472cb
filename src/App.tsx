@@ -39,16 +39,6 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        {/* Mini-site builder route - requires authentication - MUST be before /:slug */}
-        <Route 
-          path="/mini-site/builder" 
-          element={
-            (() => {
-              console.log('🔥 [APP_DEBUG] Route builder matchée');
-              return user ? <PrivateApp /> : <PublicApp />;
-            })()
-          } 
-        />
         {/* Mini-site preview route - accessible without authentication */}
         <Route 
           path="/mini-site/preview" 
