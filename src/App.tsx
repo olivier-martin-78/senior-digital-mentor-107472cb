@@ -39,6 +39,16 @@ const AppContent = () => {
   return (
     <>
       <Routes>
+        {/* Mini-site builder route - explicit route for builder */}
+        <Route 
+          path="/mini-site/builder" 
+          element={
+            (() => {
+              console.log('🔥 [APP_DEBUG] Route builder explicite matchée');
+              return user ? <PrivateApp /> : <PublicApp />;
+            })()
+          } 
+        />
         {/* Mini-site preview route - accessible without authentication */}
         <Route 
           path="/mini-site/preview" 
@@ -55,11 +65,6 @@ const AppContent = () => {
           element={
             (() => {
               const slug = window.location.pathname.split('/')[2];
-              // Rediriger les slugs réservés vers le bon composant
-              if (slug === 'builder' || slug === 'preview') {
-                console.log('🔥 [APP_DEBUG] Slug réservé détecté, redirection vers PrivateApp/PublicApp');
-                return user ? <PrivateApp /> : <PublicApp />;
-              }
               console.log('🔥 [APP_DEBUG] Route public mini-site matchée avec slug:', slug);
               return <PublicMiniSite />;
             })()
