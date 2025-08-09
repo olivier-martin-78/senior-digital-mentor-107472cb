@@ -43,14 +43,15 @@ export interface MiniSiteData {
 }
 
 export const useMiniSite = (userId?: string) => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [miniSite, setMiniSite] = useState<MiniSiteData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const targetUserId = userId || user?.id;
 
   const fetchMiniSite = async () => {
-    if (!targetUserId) return;
+    // Ne pas essayer de charger si l'auth est encore en cours ou si pas d'utilisateur
+    if (isAuthLoading || !targetUserId) return;
     
     setLoading(true);
     try {
@@ -110,7 +111,7 @@ export const useMiniSite = (userId?: string) => {
   };
 
   const saveMiniSite = async (data: MiniSiteData) => {
-    if (!targetUserId) return;
+    if (isAuthLoading || !targetUserId) return;
 
     setLoading(true);
     try {
@@ -280,8 +281,11 @@ export const useMiniSite = (userId?: string) => {
   };
 
   useEffect(() => {
-    fetchMiniSite();
-  }, [targetUserId]);
+    // Ne charger qu'une fois l'auth initialisée
+    if (!isAuthLoading) {
+      fetchMiniSite();
+    }
+  }, [targetUserId, isAuthLoading]);
 
   return {
     miniSite,
