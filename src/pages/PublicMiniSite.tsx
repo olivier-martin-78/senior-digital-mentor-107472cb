@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -171,6 +172,10 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const [loading, setLoading] = useState(!propData);
   const [reviews, setReviews] = useState<any[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [retryCount, setRetryCount] = useState(0);
+  
+  const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
 
   useEffect(() => {
     if (!propData && slug) {
@@ -204,11 +209,34 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     }
   }, [siteData?.media]);
 
-  const fetchSiteData = async () => {
+  const fetchSiteData = async (retryAttempt = 0) => {
     if (!slug) return;
 
+    // Logs détaillés pour debugging mobile vs desktop
+    console.log('🔍 [FETCH_SITE_DATA] Début récupération:', {
+      slug,
+      retryAttempt,
+      isMobileDevice,
+      isMobileViewport,
+      connectionInfo,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+
     setLoading(true);
+    setConnectionStatus('checking');
+    
     try {
+      // Configuration spécifique mobile pour éviter les timeouts
+      const timeoutDuration = isMobileDevice ? 15000 : 10000;
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
+
+      console.log('🔍 [FETCH_SITE_DATA] Configuration requête:', {
+        timeout: timeoutDuration,
+        cacheStrategy: isMobileDevice ? 'no-cache' : 'default'
+      });
+
       const { data: siteData, error } = await supabase
         .from('mini_sites')
         .select(`
@@ -218,9 +246,29 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         `)
         .eq('slug', slug)
         .eq('is_published', true)
+        .abortSignal(abortController.signal)
         .single();
 
-      if (error) throw error;
+      clearTimeout(timeoutId);
+
+      console.log('🔍 [FETCH_SITE_DATA] Réponse Supabase:', {
+        dataExists: !!siteData,
+        error: error?.message,
+        dataId: siteData?.id,
+        isPublished: siteData?.is_published
+      });
+
+      if (error) {
+        console.error('❌ [FETCH_SITE_DATA] Erreur Supabase:', error);
+        throw error;
+      }
+
+      if (!siteData) {
+        console.warn('⚠️ [FETCH_SITE_DATA] Aucune donnée trouvée pour le slug:', slug);
+        throw new Error('Site non trouvé');
+      }
+
+      setConnectionStatus('connected');
 
       setSiteData({
         ...siteData,
@@ -241,25 +289,58 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       // Fetch reviews from intervention reports
       fetchReviews(siteData.user_id);
+      
     } catch (error) {
-      console.error('Error fetching site data:', error);
+      console.error('❌ [FETCH_SITE_DATA] Erreur générale:', error);
+      setConnectionStatus('error');
+      
+      // Logique de retry avec backoff exponentiel
+      const maxRetries = 3;
+      const backoffDelay = Math.min(1000 * Math.pow(2, retryAttempt), 8000);
+      
+      if (retryAttempt < maxRetries) {
+        console.log(`🔄 [FETCH_SITE_DATA] Tentative ${retryAttempt + 1}/${maxRetries} dans ${backoffDelay}ms`);
+        setRetryCount(retryAttempt + 1);
+        
+        setTimeout(() => {
+          fetchSiteData(retryAttempt + 1);
+        }, backoffDelay);
+        return;
+      }
+      
+      console.error('💥 [FETCH_SITE_DATA] Échec définitif après', maxRetries, 'tentatives');
+      
     } finally {
-      setLoading(false);
+      if (retryAttempt === 0) {
+        setLoading(false);
+      }
     }
   };
 
-  const fetchReviews = async (userId: string) => {
-    console.log('🔍 Début fetchReviews pour userId:', userId);
+  const fetchReviews = async (userId: string, retryAttempt = 0) => {
+    console.log('🔍 [FETCH_REVIEWS] Début pour userId:', userId, {
+      retryAttempt,
+      isMobileDevice,
+      connectionInfo
+    });
+    
     try {
+      // Configuration robuste pour mobile
+      const timeoutDuration = isMobileDevice ? 12000 : 8000;
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
+
       const { data, error } = await supabase
         .from('intervention_reports')
         .select('client_rating, client_comments, created_at, patient_name')
         .eq('professional_id', userId)
         .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(20)
+        .abortSignal(abortController.signal);
 
-      console.log('📊 Données récupérées:', { data, error, count: data?.length });
+      clearTimeout(timeoutId);
+      console.log('📊 [FETCH_REVIEWS] Données récupérées:', { data, error, count: data?.length });
 
       if (error) {
         console.error('❌ Erreur Supabase:', error);
@@ -280,18 +361,41 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         return hasRating || hasComment;
       });
       
-      console.log('✅ Avis valides filtrés:', validReviews.length, validReviews);
+      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length, validReviews);
       setReviews(validReviews);
+      
     } catch (error) {
-      console.error('❌ Erreur generale fetchReviews:', error);
+      console.error('❌ [FETCH_REVIEWS] Erreur:', error);
+      
+      // Retry logic pour les avis aussi
+      const maxRetries = 2;
+      if (retryAttempt < maxRetries && error.name !== 'AbortError') {
+        console.log(`🔄 [FETCH_REVIEWS] Retry ${retryAttempt + 1}/${maxRetries}`);
+        setTimeout(() => {
+          fetchReviews(userId, retryAttempt + 1);
+        }, 2000);
+      }
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-lg font-medium">Chargement du mini-site...</div>
+        <div className="text-center space-y-4">
+          <div className="text-lg font-medium">
+            {connectionStatus === 'checking' && 'Chargement du mini-site...'}
+            {connectionStatus === 'error' && retryCount > 0 && `Reconnexion en cours (${retryCount}/3)...`}
+          </div>
+          {isMobileDevice && (
+            <div className="text-sm text-muted-foreground">
+              Optimisation mobile en cours...
+            </div>
+          )}
+          {connectionStatus === 'error' && retryCount > 0 && (
+            <div className="text-sm text-yellow-600">
+              Connexion instable détectée, tentative de reconnexion...
+            </div>
+          )}
         </div>
       </div>
     );
@@ -300,11 +404,30 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   if (!siteData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Mini-site non trouvé</h1>
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold mb-4">
+            {connectionStatus === 'error' ? 'Erreur de connexion' : 'Mini-site non trouvé'}
+          </h1>
           <p className="text-muted-foreground">
-            Ce mini-site n'existe pas ou n'est pas publié.
+            {connectionStatus === 'error' 
+              ? 'Impossible de charger le mini-site. Vérifiez votre connexion.'
+              : 'Ce mini-site n\'existe pas ou n\'est pas publié.'
+            }
           </p>
+          {connectionStatus === 'error' && (
+            <Button 
+              onClick={() => fetchSiteData(0)} 
+              className="mt-4"
+              variant="outline"
+            >
+              Réessayer
+            </Button>
+          )}
+          {isMobileDevice && connectionStatus === 'error' && (
+            <div className="text-xs text-muted-foreground mt-2">
+              Problème de connexion mobile détecté
+            </div>
+          )}
         </div>
       </div>
     );
