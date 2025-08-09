@@ -21,6 +21,24 @@ try {
   
   console.log('🔥 [MAIN_DEBUG] Render App...');
   root.render(<App />);
+
+  // Charger gptengineer.js uniquement après le rendu et hors iOS
+  try {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+    if (!isIOS) {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.gpteng.co/gptengineer.js';
+      s.type = 'module';
+      s.defer = true;
+      s.onerror = (e) => console.warn('gptengineer.js failed to load', e);
+      document.head.appendChild(s);
+      console.log('🔥 [MAIN_DEBUG] gptengineer.js ajouté (non-iOS)');
+    } else {
+      console.log('🔥 [MAIN_DEBUG] gptengineer.js ignoré sur iOS');
+    }
+  } catch (e) {
+    console.warn('🔥 [MAIN_DEBUG] Erreur injection gptengineer.js', e);
+  }
   
   console.log('🔥 [MAIN_DEBUG] App rendu avec succès');
 } catch (error) {

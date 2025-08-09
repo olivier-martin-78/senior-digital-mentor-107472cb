@@ -31,6 +31,14 @@
     </div>
     
     <script>
+      // Test de compatibilité syntaxique (optional chaining)
+      (function(){
+        var supportsOptionalChaining = (function(){ try { new Function('var x={a:1}; return x?.a')(); return true; } catch(e){ return false; }})();
+        if (!supportsOptionalChaining) {
+          var ds = document.getElementById('debug-status');
+          if (ds) { ds.innerHTML = 'JS trop moderne (?.) non supporté'; ds.style.background = 'red'; ds.style.color = 'white'; }
+        }
+      })();
       // Emergency polyfills AVANT TOUT
       (function() {
         console.log('🔥 EMERGENCY: Script de secours iOS Safari');
@@ -110,7 +118,7 @@
     
     <div id="root"></div>
     <!-- Scripts avec fallback iOS -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module" onerror="console.error('🔥 EMERGENCY: Échec chargement gptengineer.js')"></script>
+    <!-- gptengineer.js chargé dynamiquement depuis main.tsx -->
     <script type="module" src="/src/main.tsx" onerror="console.error('🔥 EMERGENCY: Échec chargement main.tsx'); document.getElementById('debug-status').innerHTML = 'ERREUR: main.tsx non chargé'; document.getElementById('debug-status').style.background = 'red';"></script>
     
     <!-- Fallback absolu pour iOS si modules échouent -->

@@ -40,9 +40,16 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    exclude: ['fsevents']
+    exclude: ['fsevents'],
+    esbuildOptions: {
+      target: 'es2018'
+    }
+  },
+  esbuild: {
+    target: 'es2018'
   },
   build: {
+    target: ['es2018', 'safari12'],
     rollupOptions: {
       external: ['fsevents']
     }
