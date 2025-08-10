@@ -701,8 +701,9 @@ export type Database = {
           created_by: string
           display_order: number
           id: string
-          image_url: string
           is_active: boolean
+          media_type: string | null
+          media_url: string
           title: string
           updated_at: string
         }
@@ -713,8 +714,9 @@ export type Database = {
           created_by: string
           display_order?: number
           id?: string
-          image_url: string
           is_active?: boolean
+          media_type?: string | null
+          media_url: string
           title: string
           updated_at?: string
         }
@@ -725,8 +727,9 @@ export type Database = {
           created_by?: string
           display_order?: number
           id?: string
-          image_url?: string
           is_active?: boolean
+          media_type?: string | null
+          media_url?: string
           title?: string
           updated_at?: string
         }

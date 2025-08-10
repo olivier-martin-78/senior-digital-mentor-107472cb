@@ -90,14 +90,28 @@ const HeroSection = () => {
           {slides.map((slide) => (
             <CarouselItem key={slide.id} className="h-screen">
               <div className="relative h-full w-full">
-                <div 
-                  className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-                  style={{ 
-                    backgroundImage: `url('${slide.image_url}')`,
-                  }}
-                >
-                  <div className="absolute inset-0 bg-black/20"></div>
-                </div>
+                {slide.media_type === 'image' ? (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+                    style={{ 
+                      backgroundImage: `url('${slide.media_url}')`,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/20"></div>
+                  </div>
+                ) : (
+                  <>
+                    <video 
+                      src={slide.media_url}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                    <div className="absolute inset-0 bg-black/20"></div>
+                  </>
+                )}
                 
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-20">
                   <div className="max-w-3xl">

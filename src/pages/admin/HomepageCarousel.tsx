@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, GripVertical, Image as ImageIcon, Video, FileImage, FileVideo } from 'lucide-react';
 import { HomepageSlide } from '@/hooks/useHomepageSlides';
 
 const HomepageCarousel = () => {
@@ -23,7 +23,8 @@ const HomepageCarousel = () => {
 
   const [formData, setFormData] = useState<CreateSlideData>({
     title: '',
-    image_url: '',
+    media_url: '',
+    media_type: 'image',
     button_text: '',
     button_link: '',
     display_order: 0,
@@ -33,18 +34,25 @@ const HomepageCarousel = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const isVideo = file.type.startsWith('video/');
+    const mediaType = isVideo ? 'video' : 'image';
+
     try {
       setIsSubmitting(true);
-      const imageUrl = await homepageSlideService.uploadImage(file);
-      setFormData(prev => ({ ...prev, image_url: imageUrl }));
+      const mediaUrl = await homepageSlideService.uploadMedia(file);
+      setFormData(prev => ({ 
+        ...prev, 
+        media_url: mediaUrl,
+        media_type: mediaType
+      }));
       toast({
-        title: "Image uploadée",
-        description: "L'image a été uploadée avec succès.",
+        title: `${isVideo ? 'Vidéo' : 'Image'} uploadée`,
+        description: `${isVideo ? 'La vidéo' : "L'image"} a été uploadée avec succès.`,
       });
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Erreur lors de l'upload de l'image.",
+        description: `Erreur lors de l'upload ${isVideo ? 'de la vidéo' : "de l'image"}.`,
         variant: "destructive",
       });
     } finally {
@@ -81,7 +89,8 @@ const HomepageCarousel = () => {
       setEditingSlide(null);
       setFormData({
         title: '',
-        image_url: '',
+        media_url: '',
+        media_type: 'image',
         button_text: '',
         button_link: '',
         display_order: 0,
@@ -139,7 +148,8 @@ const HomepageCarousel = () => {
     setEditingSlide(slide);
     setFormData({
       title: slide.title,
-      image_url: slide.image_url,
+      media_url: slide.media_url,
+      media_type: slide.media_type,
       button_text: slide.button_text || '',
       button_link: slide.button_link || '',
       display_order: slide.display_order,
@@ -161,7 +171,8 @@ const HomepageCarousel = () => {
               setEditingSlide(null);
               setFormData({
                 title: '',
-                image_url: '',
+                media_url: '',
+                media_type: 'image',
                 button_text: '',
                 button_link: '',
                 display_order: 0,
@@ -190,27 +201,46 @@ const HomepageCarousel = () => {
               </div>
 
               <div>
-                <Label htmlFor="image">Image</Label>
+                <Label htmlFor="media">Média (Image ou Vidéo)</Label>
                 <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    {formData.media_type === 'image' ? (
+                      <FileImage className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <FileVideo className="h-4 w-4 text-purple-600" />
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      Type: {formData.media_type === 'image' ? 'Image' : 'Vidéo'}
+                    </span>
+                  </div>
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     onChange={handleFileUpload}
                     disabled={isSubmitting}
                   />
-                  {formData.image_url && (
+                  {formData.media_url && (
                     <div className="relative">
-                      <img 
-                        src={formData.image_url} 
-                        alt="Aperçu" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
+                      {formData.media_type === 'image' ? (
+                        <img 
+                          src={formData.media_url} 
+                          alt="Aperçu" 
+                          className="w-full h-32 object-cover rounded-md"
+                        />
+                      ) : (
+                        <video 
+                          src={formData.media_url} 
+                          className="w-full h-32 object-cover rounded-md"
+                          controls
+                          muted
+                        />
+                      )}
                     </div>
                   )}
                   <Input
-                    value={formData.image_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                    placeholder="Ou saisissez l'URL de l'image directement"
+                    value={formData.media_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, media_url: e.target.value }))}
+                    placeholder="Ou saisissez l'URL du média directement"
                   />
                 </div>
               </div>
@@ -243,7 +273,7 @@ const HomepageCarousel = () => {
                 >
                   Annuler
                 </Button>
-                <Button type="submit" disabled={isSubmitting || !formData.title || !formData.image_url}>
+                <Button type="submit" disabled={isSubmitting || !formData.title || !formData.media_url}>
                   {isSubmitting ? 'Enregistrement...' : (editingSlide ? 'Modifier' : 'Créer')}
                 </Button>
               </div>
@@ -293,11 +323,20 @@ const HomepageCarousel = () => {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <img 
-                    src={slide.image_url} 
-                    alt={slide.title}
-                    className="w-full h-48 object-cover rounded-md"
-                  />
+                  {slide.media_type === 'image' ? (
+                    <img 
+                      src={slide.media_url} 
+                      alt={slide.title}
+                      className="w-full h-48 object-cover rounded-md"
+                    />
+                  ) : (
+                    <video 
+                      src={slide.media_url} 
+                      className="w-full h-48 object-cover rounded-md"
+                      controls
+                      muted
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <div>

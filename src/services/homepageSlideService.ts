@@ -3,7 +3,8 @@ import { HomepageSlide } from "@/hooks/useHomepageSlides";
 
 export interface CreateSlideData {
   title: string;
-  image_url: string;
+  media_url: string;
+  media_type: 'image' | 'video';
   button_text?: string;
   button_link?: string;
   display_order: number;
@@ -25,7 +26,7 @@ export const homepageSlideService = {
       .single();
 
     if (error) throw error;
-    return slide;
+    return slide as HomepageSlide;
   },
 
   update: async (id: string, data: UpdateSlideData): Promise<HomepageSlide> => {
@@ -37,7 +38,7 @@ export const homepageSlideService = {
       .single();
 
     if (error) throw error;
-    return slide;
+    return slide as HomepageSlide;
   },
 
   delete: async (id: string): Promise<void> => {
@@ -65,7 +66,7 @@ export const homepageSlideService = {
     }
   },
 
-  uploadImage: async (file: File): Promise<string> => {
+  uploadMedia: async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `homepage-slides/${fileName}`;
@@ -81,5 +82,10 @@ export const homepageSlideService = {
       .getPublicUrl(filePath);
 
     return data.publicUrl;
+  },
+
+  // Méthode legacy pour compatibilité
+  uploadImage: async (file: File): Promise<string> => {
+    return homepageSlideService.uploadMedia(file);
   },
 };
