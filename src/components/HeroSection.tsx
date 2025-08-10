@@ -3,6 +3,7 @@ import React from 'react';
 import { useHomepageSlides } from '@/hooks/useHomepageSlides';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
+import Autoplay from 'embla-carousel-autoplay';
 
 const HeroSection = () => {
   const { data: slides, isLoading } = useHomepageSlides();
@@ -76,7 +77,15 @@ const HeroSection = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      <Carousel className="h-screen">
+      <Carousel 
+        className="h-screen"
+        plugins={[
+          Autoplay({
+            delay: 3000,
+            stopOnInteraction: true,
+          }),
+        ]}
+      >
         <CarouselContent className="h-screen">
           {slides.map((slide) => (
             <CarouselItem key={slide.id} className="h-screen">
