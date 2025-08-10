@@ -30,27 +30,42 @@ const HeroSection = () => {
   if (isLoading || !slides || slides.length === 0) {
     // Fallback to original static content while loading or if no slides
     return (
-      <div className="relative h-screen w-full overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-          style={{ 
-            backgroundImage: "url('/lovable-uploads/268baaf6-cc72-4fd0-b786-6c48d7ee83bc11.png')",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/20"></div>
-        </div>
-        
-        <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-20">
-          <div className="max-w-3xl">
-            <p className="text-xl md:text-2xl text-white mb-8">
-              Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="relative min-h-screen w-full overflow-hidden">
+        <div className="h-screen">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+            style={{ 
+              backgroundImage: "url('/lovable-uploads/268baaf6-cc72-4fd0-b786-6c48d7ee83bc11.png')",
+            }}
+          >
+            <div className="absolute inset-0 bg-black/20"></div>
+          </div>
+          
+          <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-20">
+            <div className="max-w-3xl">
+              <p className="text-xl md:text-2xl text-white mb-8">
+                Offrez-leur le digital, ils vous offriront leurs plus belles histoires.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  onClick={scrollToActivities}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-white text-tranches-charcoal hover:bg-tranches-cream text-lg px-8"
+                >
+                  Partager mes souvenirs<br/>et mes photos sur un blog
+                </button>
+              </div>
+            </div>
+            
+            {/* Scroll indicator */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
               <button 
                 onClick={scrollToActivities}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-white text-tranches-charcoal hover:bg-tranches-cream text-lg px-8"
+                className="text-white/80 hover:text-white transition-colors"
+                aria-label="Scroll to content"
               >
-                Partager mes souvenirs<br/>et mes photos sur un blog
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
               </button>
             </div>
           </div>
@@ -60,11 +75,11 @@ const HeroSection = () => {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      <Carousel className="h-full">
-        <CarouselContent className="h-full">
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <Carousel className="h-screen">
+        <CarouselContent className="h-screen">
           {slides.map((slide) => (
-            <CarouselItem key={slide.id} className="h-full">
+            <CarouselItem key={slide.id} className="h-screen">
               <div className="relative h-full w-full">
                 <div 
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
@@ -90,6 +105,19 @@ const HeroSection = () => {
                         </Button>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Scroll indicator */}
+                  <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                    <button 
+                      onClick={scrollToActivities}
+                      className="text-white/80 hover:text-white transition-colors"
+                      aria-label="Scroll to content"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
