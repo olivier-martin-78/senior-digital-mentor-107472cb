@@ -699,6 +699,7 @@ export type Database = {
           button_text: string | null
           created_at: string
           created_by: string
+          display_duration_seconds: number
           display_order: number
           id: string
           is_active: boolean
@@ -712,6 +713,7 @@ export type Database = {
           button_text?: string | null
           created_at?: string
           created_by: string
+          display_duration_seconds?: number
           display_order?: number
           id?: string
           is_active?: boolean
@@ -725,6 +727,7 @@ export type Database = {
           button_text?: string | null
           created_at?: string
           created_by?: string
+          display_duration_seconds?: number
           display_order?: number
           id?: string
           is_active?: boolean

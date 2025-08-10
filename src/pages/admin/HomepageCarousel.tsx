@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, GripVertical, Image as ImageIcon, Video, FileImage, FileVideo } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, GripVertical, Image as ImageIcon, Video, FileImage, FileVideo, ChevronUp, ChevronDown } from 'lucide-react';
 import { HomepageSlide } from '@/hooks/useHomepageSlides';
 
 const HomepageCarousel = () => {
@@ -28,6 +28,7 @@ const HomepageCarousel = () => {
     button_text: '',
     button_link: '',
     display_order: 0,
+    display_duration_seconds: 3,
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +95,7 @@ const HomepageCarousel = () => {
         button_text: '',
         button_link: '',
         display_order: 0,
+        display_duration_seconds: 3,
       });
     } catch (error) {
       toast({
@@ -144,6 +146,24 @@ const HomepageCarousel = () => {
     }
   };
 
+  const handleMoveSlide = async (slideId: string, direction: 'up' | 'down') => {
+    try {
+      await homepageSlideService.updateSlideOrder(slideId, direction);
+      queryClient.invalidateQueries({ queryKey: ["homepage-slides"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage-slides-admin"] });
+      toast({
+        title: "Ordre modifié",
+        description: "L'ordre des slides a été mis à jour.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la modification de l'ordre.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const openEditDialog = (slide: HomepageSlide) => {
     setEditingSlide(slide);
     setFormData({
@@ -153,6 +173,7 @@ const HomepageCarousel = () => {
       button_text: slide.button_text || '',
       button_link: slide.button_link || '',
       display_order: slide.display_order,
+      display_duration_seconds: slide.display_duration_seconds,
     });
     setIsCreateDialogOpen(true);
   };
@@ -176,6 +197,7 @@ const HomepageCarousel = () => {
                 button_text: '',
                 button_link: '',
                 display_order: 0,
+                display_duration_seconds: 3,
               });
             }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -265,6 +287,19 @@ const HomepageCarousel = () => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="display_duration">Durée d'affichage (secondes)</Label>
+                <Input
+                  id="display_duration"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={formData.display_duration_seconds}
+                  onChange={(e) => setFormData(prev => ({ ...prev, display_duration_seconds: parseInt(e.target.value) || 3 }))}
+                  placeholder="3"
+                />
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button 
                   type="button" 
@@ -299,6 +334,26 @@ const HomepageCarousel = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleMoveSlide(slide.id, 'up')}
+                      disabled={index === 0}
+                      className="h-6 px-2"
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleMoveSlide(slide.id, 'down')}
+                      disabled={index === (slides?.length || 0) - 1}
+                      className="h-6 px-2"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <Switch
                     checked={slide.is_active}
                     onCheckedChange={() => handleToggleActive(slide)}
@@ -354,6 +409,10 @@ const HomepageCarousel = () => {
                   <div>
                     <strong>Ordre:</strong>
                     <p className="text-sm text-muted-foreground">{slide.display_order}</p>
+                  </div>
+                  <div>
+                    <strong>Durée d'affichage:</strong>
+                    <p className="text-sm text-muted-foreground">{slide.display_duration_seconds} secondes</p>
                   </div>
                 </div>
               </div>

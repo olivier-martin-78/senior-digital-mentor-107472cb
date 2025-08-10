@@ -81,7 +81,7 @@ const HeroSection = () => {
         className="h-screen"
         plugins={[
           Autoplay({
-            delay: 3000,
+            delay: slides[0]?.display_duration_seconds ? slides[0].display_duration_seconds * 1000 : 3000,
             stopOnInteraction: true,
           }),
         ]}

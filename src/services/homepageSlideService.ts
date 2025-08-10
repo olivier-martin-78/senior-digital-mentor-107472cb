@@ -8,6 +8,7 @@ export interface CreateSlideData {
   button_text?: string;
   button_link?: string;
   display_order: number;
+  display_duration_seconds?: number;
 }
 
 export interface UpdateSlideData extends Partial<CreateSlideData> {
@@ -82,6 +83,35 @@ export const homepageSlideService = {
       .getPublicUrl(filePath);
 
     return data.publicUrl;
+  },
+
+  updateSlideOrder: async (slideId: string, direction: 'up' | 'down'): Promise<void> => {
+    const { data: slides } = await supabase
+      .from('homepage_slides')
+      .select('*')
+      .order('display_order');
+    
+    if (!slides) return;
+    
+    const currentIndex = slides.findIndex(s => s.id === slideId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= slides.length) return;
+    
+    // Échanger les ordres
+    const currentSlide = slides[currentIndex];
+    const targetSlide = slides[newIndex];
+    
+    await supabase
+      .from('homepage_slides')
+      .update({ display_order: targetSlide.display_order })
+      .eq('id', currentSlide.id);
+      
+    await supabase
+      .from('homepage_slides')
+      .update({ display_order: currentSlide.display_order })
+      .eq('id', targetSlide.id);
   },
 
   // Méthode legacy pour compatibilité

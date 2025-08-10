@@ -9,6 +9,7 @@ export interface HomepageSlide {
   button_text?: string;
   button_link?: string;
   display_order: number;
+  display_duration_seconds: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
