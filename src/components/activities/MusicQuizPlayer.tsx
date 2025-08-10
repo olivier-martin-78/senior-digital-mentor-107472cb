@@ -291,7 +291,7 @@ export function MusicQuizPlayer({
           <div className="space-y-4">
             <div className="p-6 rounded-lg bg-[hsl(var(--neon-3)/0.1)] border-2 border-[hsl(var(--neon-3)/0.5)]">
               <h3 className="text-lg font-bold text-center mb-4 text-[hsl(var(--neon-3))]">
-                Explication à propos de la bonne réponse
+                Explications
               </h3>
               <p className="text-base text-center neon-text leading-relaxed">
                 {currentQuestion.instruction}
