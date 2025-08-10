@@ -21,7 +21,8 @@ import {
   X,
   Shield,
   BarChart3,
-  Globe2
+  Globe2,
+  Image
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -273,6 +274,12 @@ const Header = () => {
                           <Link to="/admin/activities" className="flex items-center">
                             <Activity className="mr-2 h-4 w-4" />
                             Admin - Activités
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/homepage-carousel" className="flex items-center">
+                            <Image className="mr-2 h-4 w-4" />
+                            Édition carrousel
                           </Link>
                         </DropdownMenuItem>
                       </>
