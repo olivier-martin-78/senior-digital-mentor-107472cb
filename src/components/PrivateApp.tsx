@@ -14,6 +14,7 @@ import AdminWishAlbums from '@/pages/admin/AdminWishAlbums';
 import AdminDiary from '@/pages/admin/AdminDiary';
 import AdminLifeStories from '@/pages/admin/AdminLifeStories';
 import AdminActivities from '@/pages/admin/AdminActivities';
+import HomepageCarousel from '@/pages/admin/HomepageCarousel';
 import Subscription from '@/pages/Subscription';
 import PublicSubscription from '@/pages/PublicSubscription';
 import Recent from '@/pages/Recent';
@@ -179,6 +180,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/life-stories" element={<AdminLifeStories />} />
             <Route path="/admin/activities" element={<AdminActivities />} />
             <Route path="/admin/activities/:type" element={<AdminActivities />} />
+            <Route path="/admin/homepage-carousel" element={<HomepageCarousel />} />
             <Route path="/admin/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
