@@ -205,13 +205,13 @@ export const DecoderGamePlayer: React.FC = () => {
     <div
       key={d}
       className={cn(
-        'rounded-xl border p-3 text-center select-none transition-all duration-200 hover:scale-105 hover:shadow-lg',
+        'rounded-xl border p-2 text-center select-none transition-all duration-200 hover:scale-105 hover:shadow-lg',
         'bg-gradient-to-br from-indigo-50 to-purple-50 border-transparent'
       )}
       aria-label={`Touche ${d}${letters ? ` (${letters.split('').join(', ')})` : ''}`}
     >
-      <div className="text-lg font-bold">{d}</div>
-      {letters && <div className="text-xs opacity-70 tracking-widest">{letters}</div>}
+      <div className="text-base font-bold">{d}</div>
+      {letters && <div className="text-[10px] opacity-70 tracking-widest">{letters}</div>}
     </div>
   );
 
@@ -219,12 +219,12 @@ export const DecoderGamePlayer: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Card className="mb-6 overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-indigo-50 via-fuchsia-50 to-sky-50 rounded-2xl">
-        <CardHeader className="text-center bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white rounded-t-2xl">
-          <CardTitle className="text-2xl">Mot à décoder</CardTitle>
+      <Card className="mb-4 overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-indigo-50 via-fuchsia-50 to-sky-50 rounded-2xl">
+        <CardHeader className="text-center bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white rounded-t-2xl py-3">
+          <CardTitle className="text-xl">Mot à décoder</CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-2 mb-6">
+        <CardContent className="pt-4">
+          <div className="flex flex-col items-center gap-1 mb-3">
             <div className="text-sm opacity-80">Thématique</div>
             <div className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 font-semibold text-sm shadow-sm">
               {current.theme}
@@ -234,16 +234,16 @@ export const DecoderGamePlayer: React.FC = () => {
             </div>
           </div>
 
-          <div className="mb-6 text-center">
+          <div className="mb-4 text-center">
             <p className="text-muted-foreground mb-2">Mot chiffré (pavé T9)</p>
-            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl px-5 py-3 text-2xl font-extrabold tracking-widest shadow-md">
+            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl px-3 py-2 text-xl font-bold tracking-widest shadow-md">
               {current.digits.split('').join(' ')}
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <p className="text-center text-sm text-muted-foreground mb-2">Votre proposition</p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1">
               {Array.from({ length: current.word.length }).map((_, i) => (
                 <input
                   key={i}
@@ -253,7 +253,7 @@ export const DecoderGamePlayer: React.FC = () => {
                   value={guess[i] || ''}
                   onChange={(e) => onChangeLetter(i, e.target.value)}
                   className={cn(
-                    'w-10 h-12 text-center text-xl font-semibold rounded-md border-2 focus:outline-none focus:ring-2 transition-colors',
+                    'w-9 h-10 text-center text-lg font-semibold rounded-md border-2 focus:outline-none focus:ring-2 transition-colors',
                     'bg-white text-foreground border-purple-200 hover:border-purple-400',
                     revealed.has(i) ? 'ring-2 ring-purple-400' : 'focus:ring-purple-500'
                   )}
@@ -263,30 +263,30 @@ export const DecoderGamePlayer: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             {keypad.map((k) => keypadTile(k.d, k.letters))}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button onClick={handleCheck} className="min-w-[180px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+            <Button onClick={handleCheck} className="min-w-[180px] py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all">
               Vérifier
             </Button>
-            <Button onClick={handleHelp} variant="secondary" className="min-w-[180px] bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all">
+            <Button onClick={handleHelp} variant="secondary" className="min-w-[180px] py-2 bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all">
               Aide-moi
             </Button>
-            <Button onClick={startNew} variant="outline" className="min-w-[180px] border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50">
+            <Button onClick={startNew} variant="outline" className="min-w-[180px] py-2 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50">
               Nouveau mot
             </Button>
           </div>
 
           {checked !== null && (
             <div className={cn(
-              'mt-6 text-center font-semibold p-4 rounded-xl border-0',
+              'mt-4 text-center font-semibold p-4 rounded-xl border-0',
               checked ? 'bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 text-green-800' : 'bg-gradient-to-r from-red-100 via-pink-100 to-orange-100 text-red-800'
             )}>
               {checked ? (
                 <div>
-                  <div className="text-5xl mb-2">🎉</div>
+                  <div className="text-3xl mb-1">🎉</div>
                   <div className="text-xl">Félicitations ! Vous avez décodé le mot.</div>
                   <div className="text-sm mt-1 opacity-80">Temps {formatTime(elapsed)} • Score {score ?? 0}</div>
                 </div>

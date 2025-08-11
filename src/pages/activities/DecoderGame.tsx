@@ -17,19 +17,19 @@ const DecoderGame: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <header className="container mx-auto px-4 pt-6">
+      <header className="container mx-auto px-4 pt-4">
         <Link to="/activities/games" className="inline-flex items-center gap-2 text-muted-foreground hover:underline">
           <ArrowLeft className="w-4 h-4" />
           Retour aux jeux
         </Link>
         <div className="mt-4 flex items-center gap-3">
           <KeySquare className="w-8 h-8 text-purple-600" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">Mot à décoder</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">Mot à décoder</h1>
         </div>
         <p className="text-muted-foreground mt-1">Décoder un mot chiffré à l’aide du pavé T9. Indice thématique et aide progressive.</p>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4">
         <DecoderGamePlayer />
       </main>
     </div>
