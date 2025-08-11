@@ -164,7 +164,9 @@ export const DecoderGamePlayer: React.FC = () => {
     if (isOk) {
       if (!finished) setFinished(true);
       const base = 1000;
-      const s = Math.max(0, base - elapsed * 10 - helpCount * 100);
+      const timePenalty = Math.floor(elapsed * 2); // plus progressif
+      const helpPenalty = helpCount * 60; // aides moins pénalisantes
+      const s = Math.max(100, base - timePenalty - helpPenalty);
       setScore(s);
       toast({ title: 'Excellent ! 🎉', description: `Mot ${current.word} décodé en ${formatTime(elapsed)} • Score ${s} 🌟` });
     } else {
