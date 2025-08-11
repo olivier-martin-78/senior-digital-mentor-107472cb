@@ -925,8 +925,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     Avis clients
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {reviews.map((review, index) => (
-                      <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+                     {reviews.map((review, index) => (
+                       <div key={index} className={`border rounded-lg p-4 shadow-sm ${siteData.design_style === 'masculine' ? theme.lightBg : 'bg-white'}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center">
                             {[...Array(5)].map((_, i) => (
