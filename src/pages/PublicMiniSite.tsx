@@ -794,11 +794,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       {/* Carousel */}
       {siteData.media && siteData.media.length > 0 && (
-        <section className={`relative h-64 md:h-96 overflow-hidden ${!isMobileDevice ? 'z-10' : ''}`}>
+        <section className={`relative h-[20.8rem] md:h-[31.2rem] overflow-hidden ${!isMobileDevice ? 'z-10' : ''}`}>
           {currentImage?.media_type === 'video' ? (
             <video
               src={currentImage.media_url}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain object-center"
               autoPlay
               muted
               loop
@@ -808,7 +808,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             <img
               src={currentImage?.media_url}
               alt={currentImage?.caption || "Photo du carrousel"}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain object-center"
             />
           )}
           {currentImage?.caption && (
