@@ -904,7 +904,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             {shouldShowReviews && (
               <Card className={`${style.cardStyle} ${
                 siteData.design_style === 'feminine' 
-                  ? 'feminine-card-enter animate-on-scroll bg-gradient-to-br from-white/90 via-pink-50/60 to-rose-50/40 border-2 border-pink-200/60 shadow-xl hover:shadow-2xl hover:shadow-pink-500/20' 
+                  ? 'bg-gradient-to-br from-white/90 via-pink-50/60 to-rose-50/40 border-2 border-pink-200/60 shadow-xl hover:shadow-2xl hover:shadow-pink-500/20' 
                   : siteData.design_style === 'masculine' 
                     ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` 
                     : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`
