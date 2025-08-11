@@ -6,39 +6,64 @@ export const MiniSitePreview: React.FC = () => {
   const [previewData, setPreviewData] = useState<MiniSiteData | null>(null);
 
   useEffect(() => {
-    // Load preview data from localStorage (works across tabs)
-    const storedData = localStorage.getItem('miniSitePreview');
-    const timestamp = localStorage.getItem('miniSitePreviewTimestamp');
-    
-    console.log('🔍 [PREVIEW_DEBUG] Loading preview data...', { 
-      timestamp,
-      hasStoredData: !!storedData,
-      storedDataLength: storedData?.length || 0
-    });
-    
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData);
-        console.log('🔍 [PREVIEW_DEBUG] Preview data parsed successfully:', {
-          hasData: !!parsedData,
-          designStyle: parsedData?.design_style,
-          colorPalette: parsedData?.color_palette,
-          hasReviews: parsedData?.reviews?.length || 0,
-          dataKeys: Object.keys(parsedData || {})
-        });
-        
-        // Force a small delay to ensure CSS is loaded
-        setTimeout(() => {
-          console.log('🔍 [PREVIEW_DEBUG] Setting preview data to state');
-          setPreviewData(parsedData);
-        }, 100);
-      } catch (error) {
-        console.error('🚨 [PREVIEW_DEBUG] Error parsing preview data:', error);
-        console.log('🚨 [PREVIEW_DEBUG] Raw stored data:', storedData);
+    const loadPreviewData = () => {
+      console.log('🔍 [PREVIEW_DEBUG] Starting preview data load process');
+      console.log('🔍 [PREVIEW_DEBUG] localStorage available:', typeof(Storage) !== "undefined");
+      console.log('🔍 [PREVIEW_DEBUG] All localStorage keys:', Object.keys(localStorage));
+      
+      const storedData = localStorage.getItem('miniSitePreview');
+      const timestamp = localStorage.getItem('miniSitePreviewTimestamp');
+      
+      console.log('🔍 [PREVIEW_DEBUG] Raw retrieval results:', { 
+        timestamp,
+        hasStoredData: !!storedData,
+        storedDataLength: storedData?.length || 0,
+        storedDataType: typeof storedData,
+        firstChars: storedData?.substring(0, 100) || 'none'
+      });
+      
+      if (storedData) {
+        try {
+          const parsedData = JSON.parse(storedData);
+          console.log('🔍 [PREVIEW_DEBUG] Preview data parsed successfully:', {
+            hasData: !!parsedData,
+            designStyle: parsedData?.design_style,
+            colorPalette: parsedData?.color_palette,
+            hasReviews: parsedData?.reviews?.length || 0,
+            dataKeys: Object.keys(parsedData || {}),
+            parsedType: typeof parsedData
+          });
+          
+          if (parsedData && typeof parsedData === 'object') {
+            console.log('✅ [PREVIEW_DEBUG] Setting valid preview data to state');
+            setPreviewData(parsedData);
+            return;
+          } else {
+            console.error('🚨 [PREVIEW_DEBUG] Parsed data is not a valid object:', parsedData);
+          }
+        } catch (error) {
+          console.error('🚨 [PREVIEW_DEBUG] Error parsing preview data:', error);
+          console.log('🚨 [PREVIEW_DEBUG] Raw stored data:', storedData);
+        }
+      } else {
+        console.log('🚨 [PREVIEW_DEBUG] No stored data found in localStorage');
       }
-    } else {
-      console.log('🚨 [PREVIEW_DEBUG] No stored data found in localStorage');
-    }
+      
+      // If we get here, no valid data was found
+      console.log('🚨 [PREVIEW_DEBUG] No valid preview data found, will show error message');
+    };
+
+    // Try loading immediately
+    loadPreviewData();
+    
+    // Retry mechanism - try again after a short delay
+    const retryTimeout = setTimeout(() => {
+      console.log('🔄 [PREVIEW_DEBUG] Retrying data load after delay...');
+      loadPreviewData();
+    }, 500);
+    
+    // Cleanup timeout
+    return () => clearTimeout(retryTimeout);
   }, []);
 
   if (!previewData) {
