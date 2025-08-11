@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
@@ -389,6 +389,24 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const [isComponentMounted, setIsComponentMounted] = useState(false);
   
   const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
+
+  // Memoized logic for reviews display with debug logging separated
+  const shouldShowReviews = useMemo(() => {
+    const hasReviews = reviews.length > 0;
+    
+    return hasReviews;
+  }, [reviews.length]);
+
+  // Debug logging separated from render logic
+  useEffect(() => {
+    console.log('🎯 [REVIEWS_RENDER] Reviews state updated:', {
+      reviewsLength: reviews.length,
+      siteDataId: siteData?.id || propData?.id,
+      designStyle: siteData?.design_style || propData?.design_style,
+      shouldShow: shouldShowReviews,
+      reviewsArray: reviews
+    });
+  }, [reviews, siteData, propData, shouldShowReviews]);
 
   // Redirection immédiate si le slug contient des points
   useEffect(() => {
@@ -883,15 +901,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             )}
 
             {/* Reviews */}
-            {(() => {
-              console.log('🎯 [REVIEWS_RENDER] Vérification affichage:', {
-                reviewsLength: reviews.length,
-                siteDataId: siteData?.id,
-                designStyle: siteData?.design_style,
-                reviewsArray: reviews
-              });
-              return reviews.length > 0;
-            })() && (
+            {shouldShowReviews && (
               <Card className={`${style.cardStyle} ${
                 siteData.design_style === 'feminine' 
                   ? 'feminine-card-enter animate-on-scroll bg-gradient-to-br from-white/90 via-pink-50/60 to-rose-50/40 border-2 border-pink-200/60 shadow-xl hover:shadow-2xl hover:shadow-pink-500/20' 
