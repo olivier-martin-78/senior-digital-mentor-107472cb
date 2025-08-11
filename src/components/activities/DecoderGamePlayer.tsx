@@ -68,6 +68,16 @@ export const DecoderGamePlayer: React.FC = () => {
   const [guess, setGuess] = useState<string[]>([]);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [checked, setChecked] = useState<null | boolean>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [helpCount, setHelpCount] = useState(0);
+  const [score, setScore] = useState<number | null>(null);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  };
 
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -96,6 +106,10 @@ export const DecoderGamePlayer: React.FC = () => {
     setGuess(Array(chosen.word.length).fill(''));
     setRevealed(new Set());
     setChecked(null);
+    setElapsed(0);
+    setFinished(false);
+    setHelpCount(0);
+    setScore(null);
     // SEO - title and meta update
     document.title = 'Mot à décoder | Jeux cognitifs';
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -117,6 +131,12 @@ export const DecoderGamePlayer: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Timer that runs while the word is not finished
+  useEffect(() => {
+    if (!current || finished) return;
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [current, finished]);
   const onChangeLetter = (index: number, value: string) => {
     const v = value.toUpperCase().replace(/[^A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸ]/g, '');
     const letter = v.charAt(0) || '';
@@ -142,12 +162,15 @@ export const DecoderGamePlayer: React.FC = () => {
     const isOk = user.length === current.word.length && user === current.word;
     setChecked(isOk);
     if (isOk) {
-      toast({ title: 'Bravo !', description: 'Vous avez décodé le mot 🎉' });
+      if (!finished) setFinished(true);
+      const base = 1000;
+      const s = Math.max(0, base - elapsed * 10 - helpCount * 100);
+      setScore(s);
+      toast({ title: 'Excellent ! 🎉', description: `Mot ${current.word} décodé en ${formatTime(elapsed)} • Score ${s} 🌟` });
     } else {
-      toast({ title: 'Encore !', description: 'Ce n\'est pas tout à fait ça. Réessayez.' });
+      toast({ title: 'Continuez !', description: 'Ce n\'est pas encore ça, essayez une autre combinaison.' });
     }
   };
-
   const handleHelp = () => {
     if (!current) return;
     // pick a non revealed and non-correct index
@@ -168,6 +191,7 @@ export const DecoderGamePlayer: React.FC = () => {
     const r = new Set(revealed);
     r.add(idx);
     setRevealed(r);
+    setHelpCount((c) => c + 1);
     setChecked(null);
     toast({ title: 'Aide utilisée', description: `La lettre #${idx + 1} a été révélée.` });
     // focus next empty
@@ -200,10 +224,13 @@ export const DecoderGamePlayer: React.FC = () => {
           <CardTitle className="text-2xl">Mot à décoder</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-4 mb-6">
+          <div className="flex flex-col items-center gap-2 mb-6">
             <div className="text-sm opacity-80">Thématique</div>
             <div className="px-3 py-1 rounded-full bg-primary/15 text-primary font-semibold text-sm">
               {current.theme}
+            </div>
+            <div className="text-xs text-muted-foreground" role="status" aria-live="polite">
+              Chrono: <span className="font-semibold text-foreground">{formatTime(elapsed)}</span>
             </div>
           </div>
 

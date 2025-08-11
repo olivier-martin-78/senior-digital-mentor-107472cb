@@ -208,6 +208,32 @@ const ActivityPage = () => {
         </Card>
       },
       {
+        key: "decoder",
+        subTagId: remueMeningesId || null,
+        card: <Card key="decoder" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/decoder" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'decoder', 'Mot à décoder')}
+          >
+            <div className="h-48 bg-gradient-to-br from-lime-400 to-cyan-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <KeySquare className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Mot à décoder</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Mot à décoder</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Retrouvez le mot grâce au pavé T9. Indice thématique et aide possible.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
         key: "quiz70s",
         subTagId: remueMeningesId || null,
         card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
