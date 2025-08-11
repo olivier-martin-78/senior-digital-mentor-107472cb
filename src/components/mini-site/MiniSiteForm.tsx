@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MiniSiteData, useMiniSite } from '@/hooks/useMiniSite';
 import { MediaUploader } from './MediaUploader';
+import { MediaOrderManager } from './MediaOrderManager';
 import { ColorPalette } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { Eye, Save, Trash2 } from 'lucide-react';
@@ -223,60 +224,30 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 </div>
 
                 <div>
-                  <Label>Photos du carrousel</Label>
+                  <Label>Photos et vidéos du carrousel</Label>
                   <MediaUploader
                     value=""
-                    onChange={(url) => {
+                    onChange={(url, mediaType = 'image') => {
                       const newMedia = {
                         media_url: url,
                         caption: '',
                         link_url: '',
-                        display_order: (formData.media?.length || 0)
+                        display_order: (formData.media?.length || 0),
+                        media_type: mediaType
                       };
                       handleInputChange('media', [...(formData.media || []), newMedia]);
                     }}
-                    accept="image/*"
+                    accept="image/*,video/*"
                     multiple
-                    maxSize={5}
+                    maxSize={10}
                   />
                   
                   {formData.media && formData.media.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {formData.media.map((media, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                          <img src={media.media_url} alt="" className="w-16 h-16 object-cover rounded" />
-                          <div className="flex-1 space-y-2">
-                            <Input
-                              placeholder="Texte de la photo"
-                              value={media.caption}
-                              onChange={(e) => {
-                                const newMedia = [...(formData.media || [])];
-                                newMedia[index].caption = e.target.value;
-                                handleInputChange('media', newMedia);
-                              }}
-                            />
-                            <Input
-                              placeholder="Lien de la photo (optionnel)"
-                              value={media.link_url}
-                              onChange={(e) => {
-                                const newMedia = [...(formData.media || [])];
-                                newMedia[index].link_url = e.target.value;
-                                handleInputChange('media', newMedia);
-                              }}
-                            />
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              const newMedia = formData.media?.filter((_, i) => i !== index);
-                              handleInputChange('media', newMedia);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="mt-4">
+                      <MediaOrderManager
+                        media={formData.media}
+                        onMediaChange={(newMedia) => handleInputChange('media', newMedia)}
+                      />
                     </div>
                   )}
                 </div>

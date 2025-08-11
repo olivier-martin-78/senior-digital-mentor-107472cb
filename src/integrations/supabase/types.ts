@@ -1034,6 +1034,7 @@ export type Database = {
           display_order: number | null
           id: string
           link_url: string | null
+          media_type: string | null
           media_url: string
           mini_site_id: string
         }
@@ -1043,6 +1044,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           link_url?: string | null
+          media_type?: string | null
           media_url: string
           mini_site_id: string
         }
@@ -1052,6 +1054,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           link_url?: string | null
+          media_type?: string | null
           media_url?: string
           mini_site_id?: string
         }

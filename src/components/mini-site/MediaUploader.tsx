@@ -9,7 +9,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface MediaUploaderProps {
   value: string;
-  onChange: (url: string) => void;
+  onChange: (url: string, mediaType?: 'image' | 'video') => void;
   accept?: string;
   multiple?: boolean;
   maxSize?: number; // MB
@@ -25,7 +25,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File): Promise<{ url: string; mediaType: 'image' | 'video' } | null> => {
     if (!user) {
       toast({
         title: "Erreur",
@@ -45,8 +45,12 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     }
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Déterminer le type de média
+      const mediaType: 'image' | 'video' = 
+        ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt || '') ? 'image' : 'video';
 
       const { data, error } = await supabase.storage
         .from('mini-sites-media')
@@ -58,7 +62,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         .from('mini-sites-media')
         .getPublicUrl(data.path);
 
-      return publicUrl;
+      return { url: publicUrl, mediaType };
     } catch (error) {
       console.error('Error uploading file:', error);
       toast({
@@ -79,15 +83,15 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     try {
       if (multiple) {
         for (const file of Array.from(files)) {
-          const url = await uploadFile(file);
-          if (url) {
-            onChange(url);
+          const result = await uploadFile(file);
+          if (result) {
+            onChange(result.url, result.mediaType);
           }
         }
       } else {
-        const url = await uploadFile(files[0]);
-        if (url) {
-          onChange(url);
+        const result = await uploadFile(files[0]);
+        if (result) {
+          onChange(result.url, result.mediaType);
         }
       }
     } finally {
@@ -125,11 +129,20 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       {value && (
         <div className="relative inline-block">
-          <img
-            src={value}
-            alt="Preview"
-            className="w-24 h-24 object-cover rounded border"
-          />
+          {value.match(/\.(mp4|webm|ogg)$/i) ? (
+            <video
+              src={value}
+              className="w-24 h-24 object-cover rounded border"
+              controls
+              muted
+            />
+          ) : (
+            <img
+              src={value}
+              alt="Preview"
+              className="w-24 h-24 object-cover rounded border"
+            />
+          )}
           <Button
             type="button"
             variant="destructive"

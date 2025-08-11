@@ -443,22 +443,23 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       setConnectionStatus('connected');
 
-      setSiteData({
-        ...siteData,
-        design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
-        media: (siteData.mini_site_media || []).map(media => ({
-          id: media.id,
-          media_url: media.media_url,
-          caption: media.caption || '',
-          link_url: media.link_url || '',
-          display_order: media.display_order || 0
-        })),
-        social_links: (siteData.mini_site_social_links || []).map(link => ({
-          id: link.id,
-          platform: link.platform as 'facebook' | 'tiktok' | 'linkedin' | 'instagram' | 'x' | 'youtube',
-          url: link.url
-        }))
-      });
+        setSiteData({
+          ...siteData,
+          design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
+          media: (siteData.mini_site_media || []).map(media => ({
+            id: media.id,
+            media_url: media.media_url,
+            caption: media.caption || '',
+            link_url: media.link_url || '',
+            display_order: media.display_order || 0,
+            media_type: media.media_type as 'image' | 'video' || 'image'
+          })),
+          social_links: (siteData.mini_site_social_links || []).map(link => ({
+            id: link.id,
+            platform: link.platform as 'facebook' | 'tiktok' | 'linkedin' | 'instagram' | 'x' | 'youtube',
+            url: link.url
+          }))
+        });
 
       // Fetch reviews from intervention reports
       fetchReviews(siteData.user_id);
@@ -664,11 +665,22 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       {/* Carousel */}
       {siteData.media && siteData.media.length > 0 && (
         <section className={`relative h-64 md:h-96 overflow-hidden ${!isMobileDevice ? 'z-10' : ''}`}>
-          <img
-            src={currentImage?.media_url}
-            alt={currentImage?.caption || "Photo du carrousel"}
-            className="w-full h-full object-cover"
-          />
+          {currentImage?.media_type === 'video' ? (
+            <video
+              src={currentImage.media_url}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            <img
+              src={currentImage?.media_url}
+              alt={currentImage?.caption || "Photo du carrousel"}
+              className="w-full h-full object-cover"
+            />
+          )}
           {currentImage?.caption && (
             <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded">
               {currentImage.caption}

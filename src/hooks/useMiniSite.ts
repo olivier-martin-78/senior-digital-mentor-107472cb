@@ -34,6 +34,7 @@ export interface MiniSiteData {
     caption: string;
     link_url: string;
     display_order: number;
+    media_type: 'image' | 'video';
   }>;
   social_links?: Array<{
     id?: string;
@@ -92,7 +93,8 @@ export const useMiniSite = (userId?: string) => {
             media_url: media.media_url,
             caption: media.caption || '',
             link_url: media.link_url || '',
-            display_order: media.display_order || 0
+            display_order: media.display_order || 0,
+            media_type: media.media_type as 'image' | 'video' || 'image'
           })),
           social_links: (socialData || []).map(link => ({
             id: link.id,
@@ -186,7 +188,8 @@ export const useMiniSite = (userId?: string) => {
             media_url: media.media_url,
             caption: media.caption,
             link_url: media.link_url,
-            display_order: index
+            display_order: index,
+            media_type: media.media_type || 'image'
           }));
 
           const { error: mediaError } = await supabase
