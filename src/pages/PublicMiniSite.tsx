@@ -693,6 +693,14 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
+  // Debug logs pour la section avis clients
+  console.log('🔍 [AVIS_CLIENTS_DEBUG] État actuel:', {
+    reviewsLength: reviews.length,
+    designStyle: siteData.design_style,
+    siteDataExists: !!siteData,
+    shouldShowReviews: reviews.length > 0
+  });
+
   return (
     <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
       <ScrollAnimation />
@@ -904,15 +912,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             )}
 
             {/* Reviews */}
-            {(() => {
-              console.log('🔍 [AVIS_CLIENTS_DEBUG] Reviews check:', { 
-                reviewsLength: reviews.length, 
-                designStyle: siteData.design_style,
-                reviews: reviews,
-                shouldShow: reviews.length > 0 
-              });
-              return null;
-            })()}
             {reviews.length > 0 && (
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
