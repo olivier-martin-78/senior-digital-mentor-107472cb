@@ -801,7 +801,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Availability */}
             {(siteData.availability_schedule || siteData.intervention_radius) && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} mb-6 border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${reviews.length > 0 ? 'mb-6' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
