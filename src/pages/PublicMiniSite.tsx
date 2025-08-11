@@ -579,10 +579,38 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
 
+      // D'abord, récupérer l'email du propriétaire du mini-site
+      const { data: ownerProfile, error: ownerError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (ownerError || !ownerProfile?.email) {
+        console.error('❌ Impossible de récupérer l\'email du propriétaire:', ownerError);
+        throw ownerError || new Error('Owner email not found');
+      }
+
+      console.log('👤 Email du propriétaire du mini-site:', ownerProfile.email);
+
+      // Ensuite, récupérer les avis avec filtrage par email de l'intervenant
       const { data, error } = await supabase
         .from('intervention_reports')
-        .select('client_rating, client_comments, created_at, patient_name')
+        .select(`
+          client_rating, 
+          client_comments, 
+          created_at, 
+          patient_name,
+          appointment_id,
+          appointments!inner(
+            intervenant_id,
+            intervenants!inner(
+              email
+            )
+          )
+        `)
         .eq('professional_id', userId)
+        .eq('appointments.intervenants.email', ownerProfile.email)
         .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
         .limit(20)
