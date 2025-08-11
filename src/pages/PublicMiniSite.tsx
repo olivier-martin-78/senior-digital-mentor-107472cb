@@ -429,8 +429,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       fetchSiteData();
     } else if (propData && isPreview) {
       console.log('🚀 [MOBILE_DEBUG] Mode preview détecté');
-      // En mode preview, récupérer les avis depuis les données de session
-      const storedPreviewData = sessionStorage.getItem('miniSitePreview');
+      // En mode preview, récupérer les avis depuis les données de localStorage
+      const storedPreviewData = localStorage.getItem('miniSitePreview');
       if (storedPreviewData) {
         try {
           const parsedData = JSON.parse(storedPreviewData);

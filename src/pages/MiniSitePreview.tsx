@@ -6,9 +6,9 @@ export const MiniSitePreview: React.FC = () => {
   const [previewData, setPreviewData] = useState<MiniSiteData | null>(null);
 
   useEffect(() => {
-    // Load preview data from sessionStorage
-    const storedData = sessionStorage.getItem('miniSitePreview');
-    const timestamp = sessionStorage.getItem('miniSitePreviewTimestamp');
+    // Load preview data from localStorage (works across tabs)
+    const storedData = localStorage.getItem('miniSitePreview');
+    const timestamp = localStorage.getItem('miniSitePreviewTimestamp');
     
     console.log('🔍 [PREVIEW_DEBUG] Loading preview data...', { 
       timestamp,
@@ -37,7 +37,7 @@ export const MiniSitePreview: React.FC = () => {
         console.log('🚨 [PREVIEW_DEBUG] Raw stored data:', storedData);
       }
     } else {
-      console.log('🚨 [PREVIEW_DEBUG] No stored data found in sessionStorage');
+      console.log('🚨 [PREVIEW_DEBUG] No stored data found in localStorage');
     }
   }, []);
 
