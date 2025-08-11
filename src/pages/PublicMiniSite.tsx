@@ -40,91 +40,196 @@ const colorThemes = {
     primary: 'from-blue-600 to-blue-800',
     secondary: 'from-blue-100 to-blue-200',
     accent: 'text-blue-600',
-    button: 'bg-blue-600 hover:bg-blue-700'
+    button: 'bg-blue-600 hover:bg-blue-700',
+    lightBg: 'bg-blue-50',
+    border: 'border-blue-200',
+    iconBg: 'bg-blue-100',
+    iconText: 'text-blue-600',
+    hoverBg: 'hover:bg-blue-50',
+    cardBorder: 'border-l-blue-500',
+    gradient: 'from-blue-50 via-blue-100 to-blue-50'
   },
   green: {
     primary: 'from-green-600 to-green-800',
     secondary: 'from-green-100 to-green-200',
     accent: 'text-green-600',
-    button: 'bg-green-600 hover:bg-green-700'
+    button: 'bg-green-600 hover:bg-green-700',
+    lightBg: 'bg-green-50',
+    border: 'border-green-200',
+    iconBg: 'bg-green-100',
+    iconText: 'text-green-600',
+    hoverBg: 'hover:bg-green-50',
+    cardBorder: 'border-l-green-500',
+    gradient: 'from-green-50 via-green-100 to-green-50'
   },
   purple: {
     primary: 'from-purple-600 to-purple-800',
     secondary: 'from-purple-100 to-purple-200',
     accent: 'text-purple-600',
-    button: 'bg-purple-600 hover:bg-purple-700'
+    button: 'bg-purple-600 hover:bg-purple-700',
+    lightBg: 'bg-purple-50',
+    border: 'border-purple-200',
+    iconBg: 'bg-purple-100',
+    iconText: 'text-purple-600',
+    hoverBg: 'hover:bg-purple-50',
+    cardBorder: 'border-l-purple-500',
+    gradient: 'from-purple-50 via-purple-100 to-purple-50'
   },
   pink: {
     primary: 'from-pink-600 to-pink-800',
     secondary: 'from-pink-100 to-pink-200',
     accent: 'text-pink-600',
-    button: 'bg-pink-600 hover:bg-pink-700'
+    button: 'bg-pink-600 hover:bg-pink-700',
+    lightBg: 'bg-pink-50',
+    border: 'border-pink-200',
+    iconBg: 'bg-pink-100',
+    iconText: 'text-pink-600',
+    hoverBg: 'hover:bg-pink-50',
+    cardBorder: 'border-l-pink-500',
+    gradient: 'from-pink-50 via-pink-100 to-pink-50'
   },
   orange: {
     primary: 'from-orange-600 to-orange-800',
     secondary: 'from-orange-100 to-orange-200',
     accent: 'text-orange-600',
-    button: 'bg-orange-600 hover:bg-orange-700'
+    button: 'bg-orange-600 hover:bg-orange-700',
+    lightBg: 'bg-orange-50',
+    border: 'border-orange-200',
+    iconBg: 'bg-orange-100',
+    iconText: 'text-orange-600',
+    hoverBg: 'hover:bg-orange-50',
+    cardBorder: 'border-l-orange-500',
+    gradient: 'from-orange-50 via-orange-100 to-orange-50'
   },
   teal: {
     primary: 'from-teal-600 to-teal-800',
     secondary: 'from-teal-100 to-teal-200',
     accent: 'text-teal-600',
-    button: 'bg-teal-600 hover:bg-teal-700'
+    button: 'bg-teal-600 hover:bg-teal-700',
+    lightBg: 'bg-teal-50',
+    border: 'border-teal-200',
+    iconBg: 'bg-teal-100',
+    iconText: 'text-teal-600',
+    hoverBg: 'hover:bg-teal-50',
+    cardBorder: 'border-l-teal-500',
+    gradient: 'from-teal-50 via-teal-100 to-teal-50'
   },
   red: {
     primary: 'from-red-600 to-red-800',
     secondary: 'from-red-100 to-red-200',
     accent: 'text-red-600',
-    button: 'bg-red-600 hover:bg-red-700'
+    button: 'bg-red-600 hover:bg-red-700',
+    lightBg: 'bg-red-50',
+    border: 'border-red-200',
+    iconBg: 'bg-red-100',
+    iconText: 'text-red-600',
+    hoverBg: 'hover:bg-red-50',
+    cardBorder: 'border-l-red-500',
+    gradient: 'from-red-50 via-red-100 to-red-50'
   },
   indigo: {
     primary: 'from-indigo-600 to-indigo-800',
     secondary: 'from-indigo-100 to-indigo-200',
     accent: 'text-indigo-600',
-    button: 'bg-indigo-600 hover:bg-indigo-700'
+    button: 'bg-indigo-600 hover:bg-indigo-700',
+    lightBg: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    iconBg: 'bg-indigo-100',
+    iconText: 'text-indigo-600',
+    hoverBg: 'hover:bg-indigo-50',
+    cardBorder: 'border-l-indigo-500',
+    gradient: 'from-indigo-50 via-indigo-100 to-indigo-50'
   },
   yellow: {
     primary: 'from-yellow-600 to-yellow-800',
     secondary: 'from-yellow-100 to-yellow-200',
     accent: 'text-yellow-600',
-    button: 'bg-yellow-600 hover:bg-yellow-700'
+    button: 'bg-yellow-600 hover:bg-yellow-700',
+    lightBg: 'bg-yellow-50',
+    border: 'border-yellow-200',
+    iconBg: 'bg-yellow-100',
+    iconText: 'text-yellow-600',
+    hoverBg: 'hover:bg-yellow-50',
+    cardBorder: 'border-l-yellow-500',
+    gradient: 'from-yellow-50 via-yellow-100 to-yellow-50'
   },
   gray: {
     primary: 'from-gray-600 to-gray-800',
     secondary: 'from-gray-100 to-gray-200',
     accent: 'text-gray-600',
-    button: 'bg-gray-600 hover:bg-gray-700'
+    button: 'bg-gray-600 hover:bg-gray-700',
+    lightBg: 'bg-gray-50',
+    border: 'border-gray-200',
+    iconBg: 'bg-gray-100',
+    iconText: 'text-gray-600',
+    hoverBg: 'hover:bg-gray-50',
+    cardBorder: 'border-l-gray-500',
+    gradient: 'from-gray-50 via-gray-100 to-gray-50'
   },
   emerald: {
     primary: 'from-emerald-600 to-emerald-800',
     secondary: 'from-emerald-100 to-emerald-200',
     accent: 'text-emerald-600',
-    button: 'bg-emerald-600 hover:bg-emerald-700'
+    button: 'bg-emerald-600 hover:bg-emerald-700',
+    lightBg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    iconBg: 'bg-emerald-100',
+    iconText: 'text-emerald-600',
+    hoverBg: 'hover:bg-emerald-50',
+    cardBorder: 'border-l-emerald-500',
+    gradient: 'from-emerald-50 via-emerald-100 to-emerald-50'
   },
   cyan: {
     primary: 'from-cyan-600 to-cyan-800',
     secondary: 'from-cyan-100 to-cyan-200',
     accent: 'text-cyan-600',
-    button: 'bg-cyan-600 hover:bg-cyan-700'
+    button: 'bg-cyan-600 hover:bg-cyan-700',
+    lightBg: 'bg-cyan-50',
+    border: 'border-cyan-200',
+    iconBg: 'bg-cyan-100',
+    iconText: 'text-cyan-600',
+    hoverBg: 'hover:bg-cyan-50',
+    cardBorder: 'border-l-cyan-500',
+    gradient: 'from-cyan-50 via-cyan-100 to-cyan-50'
   },
   amber: {
     primary: 'from-amber-600 to-amber-800',
     secondary: 'from-amber-100 to-amber-200',
     accent: 'text-amber-600',
-    button: 'bg-amber-600 hover:bg-amber-700'
+    button: 'bg-amber-600 hover:bg-amber-700',
+    lightBg: 'bg-amber-50',
+    border: 'border-amber-200',
+    iconBg: 'bg-amber-100',
+    iconText: 'text-amber-600',
+    hoverBg: 'hover:bg-amber-50',
+    cardBorder: 'border-l-amber-500',
+    gradient: 'from-amber-50 via-amber-100 to-amber-50'
   },
   lime: {
     primary: 'from-lime-600 to-lime-800',
     secondary: 'from-lime-100 to-lime-200',
     accent: 'text-lime-600',
-    button: 'bg-lime-600 hover:bg-lime-700'
+    button: 'bg-lime-600 hover:bg-lime-700',
+    lightBg: 'bg-lime-50',
+    border: 'border-lime-200',
+    iconBg: 'bg-lime-100',
+    iconText: 'text-lime-600',
+    hoverBg: 'hover:bg-lime-50',
+    cardBorder: 'border-l-lime-500',
+    gradient: 'from-lime-50 via-lime-100 to-lime-50'
   },
   slate: {
     primary: 'from-slate-600 to-slate-800',
     secondary: 'from-slate-100 to-slate-200',
     accent: 'text-slate-600',
-    button: 'bg-slate-600 hover:bg-slate-700'
+    button: 'bg-slate-600 hover:bg-slate-700',
+    lightBg: 'bg-slate-50',
+    border: 'border-slate-200',
+    iconBg: 'bg-slate-100',
+    iconText: 'text-slate-600',
+    hoverBg: 'hover:bg-slate-50',
+    cardBorder: 'border-l-slate-500',
+    gradient: 'from-slate-50 via-slate-100 to-slate-50'
   }
 };
 
@@ -506,7 +611,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const currentImage = siteData.media?.[currentImageIndex];
 
   return (
-    <div className={`min-h-screen ${style.containerClass}`}>
+    <div className={`min-h-screen ${style.containerClass} bg-gradient-to-br ${theme.gradient}`}>
       <ScrollAnimation />
       
       {/* Header */}
@@ -591,15 +696,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           <div className="lg:col-span-2 space-y-8">
             {/* About */}
             {siteData.about_me && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-pink-400">✨</span>
                     )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>👤</span>
+                    </div>
                     Qui suis-je ?
                   </h2>
-                  <div className="prose prose-gray max-w-none">
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
                     {siteData.about_me.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -610,15 +718,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Why this profession */}
             {siteData.why_this_profession && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-rose-400">💝</span>
                     )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>💼</span>
+                    </div>
                     Pourquoi j'ai choisi ce métier ?
                   </h2>
-                  <div className="prose prose-gray max-w-none">
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
                     {siteData.why_this_profession.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -629,21 +740,24 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Skills and qualities */}
             {siteData.skills_and_qualities && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-purple-400">🌸</span>
                     )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>⭐</span>
+                    </div>
                     Mes compétences et qualités
                   </h2>
-                  <div className="prose prose-gray max-w-none mb-4">
+                  <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
                     {siteData.skills_and_qualities.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
                   </div>
                   {siteData.activity_start_date && (
-                    <Badge variant="outline" className={`mt-2 ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
+                    <Badge variant="outline" className={`mt-2 ${theme.border} ${theme.iconText} ${theme.lightBg} ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
                       Depuis {siteData.activity_start_date}
                     </Badge>
                   )}
@@ -653,15 +767,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Services */}
             {siteData.services_description && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-rose-400">🎁</span>
                     )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>🛍️</span>
+                    </div>
                     Mes offres
                   </h2>
-                  <div className="prose prose-gray max-w-none">
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
                     {siteData.services_description.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -672,17 +789,20 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Availability */}
             {(siteData.availability_schedule || siteData.intervention_radius) && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} mb-6`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} mb-6 border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-pink-400">📅</span>
                     )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>📅</span>
+                    </div>
                     Mes disponibilités
                   </h2>
                   {siteData.availability_schedule && (
-                    <div className="mb-4">
-                      <h3 className="font-semibold mb-2">Planning</h3>
+                    <div className={`mb-4 p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                      <h3 className={`font-semibold mb-2 ${theme.accent}`}>Planning</h3>
                       <div className="prose prose-gray max-w-none">
                         {siteData.availability_schedule.split('\n').map((paragraph, index) => (
                           <p key={index} className="mb-2">{paragraph}</p>
@@ -691,8 +811,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     </div>
                   )}
                   {siteData.intervention_radius && (
-                    <div>
-                      <h3 className="font-semibold mb-2">Zone d'intervention</h3>
+                    <div className={`p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                      <h3 className={`font-semibold mb-2 ${theme.accent}`}>Zone d'intervention</h3>
                       <div className="prose prose-gray max-w-none">
                         {siteData.intervention_radius.split('\n').map((paragraph, index) => (
                           <p key={index} className="mb-2">{paragraph}</p>
@@ -770,22 +890,26 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-gray-400" />
+                    <div className={`flex items-center gap-3 p-3 rounded-lg ${theme.lightBg} ${theme.border} border transition-all duration-300 ${theme.hoverBg}`}>
+                      <div className={`p-2 rounded-full ${theme.iconBg}`}>
+                        <Mail className={`w-5 h-5 ${theme.iconText}`} />
+                      </div>
                       <a 
                         href={`mailto:${siteData.email}`}
-                        className="text-gray-700 hover:underline"
+                        className={`${theme.accent} hover:underline font-medium flex-1`}
                       >
                         {siteData.email}
                       </a>
                     </div>
                     
                     {siteData.phone && (
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-gray-400" />
+                      <div className={`flex items-center gap-3 p-3 rounded-lg ${theme.lightBg} ${theme.border} border transition-all duration-300 ${theme.hoverBg}`}>
+                        <div className={`p-2 rounded-full ${theme.iconBg}`}>
+                          <Phone className={`w-5 h-5 ${theme.iconText}`} />
+                        </div>
                         <a 
                           href={`tel:${siteData.phone}`}
-                          className="text-gray-700 hover:underline"
+                          className={`${theme.accent} hover:underline font-medium flex-1`}
                         >
                           {siteData.phone}
                         </a>
@@ -793,9 +917,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     )}
                     
                     {siteData.postal_code && (
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-5 h-5 text-gray-400" />
-                        <span className="text-gray-700">{siteData.postal_code}</span>
+                      <div className={`flex items-center gap-3 p-3 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                        <div className={`p-2 rounded-full ${theme.iconBg}`}>
+                          <MapPin className={`w-5 h-5 ${theme.iconText}`} />
+                        </div>
+                        <span className={`${theme.accent} font-medium flex-1`}>{siteData.postal_code}</span>
                       </div>
                     )}
                   </div>
