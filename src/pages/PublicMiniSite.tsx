@@ -577,18 +577,27 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         throw error || new Error('Component unmounted');
       }
       
-      // Filtrer les avis valides côté client
+      console.log('📊 [FETCH_REVIEWS] Données récupérées:', data?.length || 0, 'avis bruts');
+      
+      // Filtrer les avis valides côté client - accepter tous les avis avec rating ou commentaire
       const validReviews = (data || []).filter(review => {
-        const hasRating = review.client_rating && review.client_rating >= 4;
+        const hasRating = review.client_rating && review.client_rating >= 1; // Accepter toutes les notes >=1
         const hasComment = review.client_comments && review.client_comments.trim() !== '';
+        console.log('🔍 Review check:', {
+          patient: review.patient_name,
+          rating: review.client_rating,
+          hasComment: !!review.client_comments,
+          valid: hasRating || hasComment
+        });
         return hasRating || hasComment;
       });
       
-      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length);
+      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length, validReviews);
       console.log('🎨 [FETCH_REVIEWS] Design style current:', siteData?.design_style || propData?.design_style);
       
       if (isComponentMounted) {
         setReviews(validReviews);
+        console.log('🔄 [FETCH_REVIEWS] State reviews mis à jour avec:', validReviews.length, 'avis');
       }
       
     } catch (error) {
@@ -874,7 +883,15 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             )}
 
             {/* Reviews */}
-            {reviews.length > 0 && (
+            {(() => {
+              console.log('🎯 [REVIEWS_RENDER] Vérification affichage:', {
+                reviewsLength: reviews.length,
+                siteDataId: siteData?.id,
+                designStyle: siteData?.design_style,
+                reviewsArray: reviews
+              });
+              return reviews.length > 0;
+            })() && (
               <Card className={`${style.cardStyle} ${
                 siteData.design_style === 'feminine' 
                   ? 'feminine-card-enter animate-on-scroll bg-gradient-to-br from-white/90 via-pink-50/60 to-rose-50/40 border-2 border-pink-200/60 shadow-xl hover:shadow-2xl hover:shadow-pink-500/20' 
