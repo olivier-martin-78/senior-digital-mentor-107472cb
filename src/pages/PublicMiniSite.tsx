@@ -573,6 +573,13 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     if (!userId || !isComponentMounted) return;
     
     console.log('🔍 [FETCH_REVIEWS] Start for userId:', userId, { retryAttempt });
+
+    const normalize = (str: string) =>
+      (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
     
     try {
       const timeoutDuration = isMobileDevice ? 12000 : 8000;
@@ -581,7 +588,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       const { data, error } = await supabase
         .from('intervention_reports')
-        .select('client_rating, client_comments, created_at, patient_name')
+        .select('client_rating, client_comments, created_at, patient_name, auxiliary_name')
         .eq('professional_id', userId)
         .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
@@ -593,16 +600,40 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       if (error) throw error;
       if (!isComponentMounted) throw new Error('Component unmounted');
 
-      console.log('📊 [FETCH_REVIEWS] Raw count:', (data || []).length);
+      const raw = data || [];
+      console.log('📊 [FETCH_REVIEWS] Raw count:', raw.length);
 
-      const validReviews = (data || []).filter(review => {
-        const hasRating = typeof review.client_rating === 'number' && review.client_rating >= 1;
-        const hasComment = typeof review.client_comments === 'string' && review.client_comments.trim() !== '';
+      const validReviews = raw.filter(r => {
+        const hasRating = typeof r.client_rating === 'number' && r.client_rating >= 1;
+        const hasComment = typeof r.client_comments === 'string' && r.client_comments.trim() !== '';
         return hasRating || hasComment;
       });
 
-      console.log('✅ [FETCH_REVIEWS] Valid reviews:', validReviews.length);
-      setReviews(validReviews);
+      const ownerFirst = siteData?.first_name || propData?.first_name || '';
+      const ownerLast = siteData?.last_name || propData?.last_name || '';
+      const ownerFullName = `${ownerFirst} ${ownerLast}`.trim();
+
+      let filtered = validReviews;
+      if (ownerFullName) {
+        const ownerNorm = normalize(ownerFullName);
+        filtered = validReviews.filter(r => normalize(r.auxiliary_name || '') === ownerNorm);
+        console.log('✅ [FETCH_REVIEWS] Filtered by owner name:', {
+          ownerFullName,
+          before: validReviews.length,
+          after: filtered.length
+        });
+        if (validReviews.length !== filtered.length) {
+          const discarded = validReviews
+            .filter(r => normalize(r.auxiliary_name || '') !== ownerNorm)
+            .slice(0, 5)
+            .map(r => ({ auxiliary_name: r.auxiliary_name, patient_name: r.patient_name, created_at: r.created_at }));
+          console.log('🧹 [FETCH_REVIEWS] Discarded (sample):', discarded);
+        }
+      } else {
+        console.warn('⚠️ [FETCH_REVIEWS] Owner name missing; skipping auxiliary_name filter');
+      }
+
+      setReviews(filtered);
     } catch (error: any) {
       console.error('❌ [FETCH_REVIEWS] Error:', error);
       const maxRetries = 2;
