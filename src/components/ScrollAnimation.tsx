@@ -19,10 +19,21 @@ const ScrollAnimation = () => {
       threshold: 0.1
     });
 
+    // Elements for general scroll animations
     const elements = document.querySelectorAll('.animate-on-scroll');
     elements.forEach((element) => {
       if (observerRef.current) {
         observerRef.current.observe(element);
+      }
+    });
+
+    // Special animations for feminine style elements
+    const feminineCards = document.querySelectorAll('.feminine-card-enter');
+    feminineCards.forEach((element, index) => {
+      if (observerRef.current) {
+        observerRef.current.observe(element);
+        // Add staggered animation delay
+        element.setAttribute('data-delay', (index * 0.1).toString());
       }
     });
 

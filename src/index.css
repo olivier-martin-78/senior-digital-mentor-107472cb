@@ -104,6 +104,14 @@
     --neon-bg: 240 28% 5%;
     --neon-card: 240 22% 8%;
     --neon-foreground: 0 0% 100%;
+
+    /* Feminine Design Tokens */
+    --feminine-primary: 330 81% 60%;
+    --feminine-secondary: 340 100% 95%;
+    --feminine-accent: 315 70% 75%;
+    --feminine-gradient: linear-gradient(135deg, hsl(330, 81%, 60%), hsl(280, 100%, 70%));
+    --feminine-glow: 0 0 30px hsl(330, 81%, 60%, 0.3);
+    --feminine-shadow: 0 10px 40px -10px hsl(330, 81%, 60%, 0.4);
   }
 }
 
@@ -272,6 +280,105 @@
         0 0 35px hsl(var(--neon-3) / 1),
         0 0 70px hsl(var(--neon-3) / 0.6);
     }
+  }
+
+  /* Feminine Style Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* Feminine animation classes */
+  .feminine-card-enter {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .feminine-card-enter.animated {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feminine-card-enter[data-delay="0.1"].animated {
+    transition-delay: 0.1s;
+  }
+
+  .feminine-card-enter[data-delay="0.2"].animated {
+    transition-delay: 0.2s;
+  }
+
+  .feminine-card-enter[data-delay="0.3"].animated {
+    transition-delay: 0.3s;
+  }
+
+  .feminine-card-enter[data-delay="0.4"].animated {
+    transition-delay: 0.4s;
+  }
+
+  .feminine-card-enter[data-delay="0.5"].animated {
+    transition-delay: 0.5s;
+  }
+
+  /* Decorative elements */
+  .floating-element {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .sparkle-element {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  /* Gradient text effect */
+  .gradient-text {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6, #ef4444);
+    background-size: 200% 200%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  /* Enhanced card styles for feminine design */
+  .feminine-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feminine-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.8s;
+  }
+
+  .feminine-card:hover::before {
+    left: 100%;
   }
 }
 

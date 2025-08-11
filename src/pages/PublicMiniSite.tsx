@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ScrollAnimation from '@/components/ScrollAnimation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -129,15 +130,37 @@ const colorThemes = {
 
 const designStyles = {
   feminine: {
-    containerClass: 'bg-gradient-to-br from-pink-50 via-purple-50 to-rose-50',
-    headerStyle: 'rounded-b-3xl shadow-lg relative overflow-hidden',
-    cardStyle: 'rounded-2xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-pink-300',
-    titleFont: 'font-serif text-4xl md:text-5xl',
-    subtitleFont: 'font-light italic text-xl',
-    sectionTitleFont: 'font-serif text-2xl',
-    buttonStyle: 'rounded-full px-8 py-3 font-medium transition-all hover:scale-105',
+    containerClass: 'bg-gradient-to-br from-rose-100 via-pink-100 to-purple-100 relative overflow-hidden',
+    headerStyle: 'rounded-b-3xl shadow-2xl relative overflow-hidden border-b-4 border-gradient-to-r from-pink-400 to-purple-400',
+    cardStyle: 'rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-pink-200/50 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm hover:scale-[1.02] hover:-translate-y-1',
+    titleFont: 'font-serif text-4xl md:text-6xl bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent',
+    subtitleFont: 'font-light italic text-xl text-pink-700/80',
+    sectionTitleFont: 'font-serif text-3xl text-pink-800 relative inline-block after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-gradient-to-r after:from-pink-400 after:to-purple-400 after:rounded-full',
+    buttonStyle: 'rounded-full px-10 py-4 font-medium transition-all duration-300 hover:scale-110 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:shadow-pink-500/25 transform hover:-translate-y-1',
     decorativeElement: (
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-pink-200/30 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floral pattern background */}
+        <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <defs>
+              <pattern id="floral" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="10" cy="10" r="2" fill="currentColor" className="text-pink-400" />
+                <path d="M10 5 Q15 10 10 15 Q5 10 10 5" fill="currentColor" className="text-rose-400" />
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#floral)" />
+          </svg>
+        </div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-10 right-10 w-8 h-8 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0s', animationDuration: '3s'}} />
+        <div className="absolute top-32 right-32 w-6 h-6 bg-gradient-to-br from-rose-300 to-pink-300 rounded-full opacity-50 animate-bounce" style={{animationDelay: '1s', animationDuration: '4s'}} />
+        <div className="absolute top-20 right-48 w-4 h-4 bg-gradient-to-br from-purple-300 to-rose-300 rounded-full opacity-40 animate-bounce" style={{animationDelay: '2s', animationDuration: '5s'}} />
+        
+        {/* Decorative border elements */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-pink-200/20 to-transparent rounded-full transform -translate-x-16 -translate-y-16" />
+        <div className="absolute bottom-0 right-0 w-40 h-40 bg-gradient-to-tl from-purple-200/20 to-transparent rounded-full transform translate-x-20 translate-y-20" />
+      </div>
     )
   },
   masculine: {
@@ -484,6 +507,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
   return (
     <div className={`min-h-screen ${style.containerClass}`}>
+      <ScrollAnimation />
       
       {/* Header */}
       <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
@@ -567,9 +591,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           <div className="lg:col-span-2 space-y-8">
             {/* About */}
             {siteData.about_me && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-pink-400">✨</span>
+                    )}
                     Qui suis-je ?
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -583,9 +610,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Why this profession */}
             {siteData.why_this_profession && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-rose-400">💝</span>
+                    )}
                     Pourquoi j'ai choisi ce métier ?
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -599,9 +629,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Skills and qualities */}
             {siteData.skills_and_qualities && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-purple-400">🌸</span>
+                    )}
                     Mes compétences et qualités
                   </h2>
                   <div className="prose prose-gray max-w-none mb-4">
@@ -610,7 +643,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     ))}
                   </div>
                   {siteData.activity_start_date && (
-                    <Badge variant="outline" className="mt-2">
+                    <Badge variant="outline" className={`mt-2 ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
                       Depuis {siteData.activity_start_date}
                     </Badge>
                   )}
@@ -620,9 +653,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Services */}
             {siteData.services_description && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-rose-400">🎁</span>
+                    )}
                     Mes offres
                   </h2>
                   <div className="prose prose-gray max-w-none">
@@ -636,9 +672,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Availability */}
             {(siteData.availability_schedule || siteData.intervention_radius) && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-pink-400">📅</span>
+                    )}
                     Mes disponibilités
                   </h2>
                   {siteData.availability_schedule && (
@@ -667,9 +706,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Reviews */}
             {reviews.length > 0 && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent}`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                    {siteData.design_style === 'feminine' && (
+                      <span className="text-yellow-400">⭐</span>
+                    )}
                     Avis clients
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
