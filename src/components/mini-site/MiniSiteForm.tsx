@@ -112,8 +112,9 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
       onPreview(formData);
     } else {
       try {
-        // Encode preview data as URL parameter
-        const encodedData = btoa(JSON.stringify(formData));
+        // Encode preview data as URL parameter with proper Unicode handling
+        const jsonString = JSON.stringify(formData);
+        const encodedData = btoa(encodeURIComponent(jsonString));
         const previewUrl = `/mini-site/preview?data=${encodeURIComponent(encodedData)}`;
         
         window.open(previewUrl, '_blank');

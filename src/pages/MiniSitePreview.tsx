@@ -13,7 +13,7 @@ export const MiniSitePreview: React.FC = () => {
         const encodedData = urlParams.get('data');
         
         if (encodedData) {
-          const decodedData = atob(decodeURIComponent(encodedData));
+          const decodedData = decodeURIComponent(atob(decodeURIComponent(encodedData)));
           const data = JSON.parse(decodedData);
           setPreviewData(data);
           return true;
