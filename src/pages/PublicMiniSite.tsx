@@ -446,7 +446,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             
             if (previewData.user_id && !isCancelled) {
               console.log('🔍 Mode preview - récupération des avis pour:', previewData.user_id);
-              await fetchReviews(previewData.user_id);
+              await fetchReviews(previewData.user_id, 0, previewData.email || undefined);
             }
           }
         } catch (error) {
@@ -539,7 +539,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         });
 
         // Fetch reviews from intervention reports
-        await fetchReviews(siteData.user_id);
+        await fetchReviews(siteData.user_id, 0, siteData.email || undefined);
       }
       
     } catch (error) {
@@ -569,7 +569,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     }
   };
 
-  const fetchReviews = async (userId: string, retryAttempt = 0) => {
+  const fetchReviews = async (userId: string, retryAttempt = 0, ownerEmailParam?: string) => {
     if (!userId || !isComponentMounted) return;
     
     console.log('🔍 [FETCH_REVIEWS] Début pour userId:', userId, { retryAttempt });
@@ -579,15 +579,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
 
-      // Utiliser l'email du mini-site au lieu de faire une nouvelle requête
-      const ownerEmail = siteData?.email;
+      // Source de vérité: email du mini-site (prop/state) ou param explicite
+      const ownerEmailRaw = ownerEmailParam || siteData?.email || propData?.email || '';
+      const ownerEmail = ownerEmailRaw.trim().toLowerCase();
       
       if (!ownerEmail) {
-        console.error('❌ Email du propriétaire non disponible dans les données du mini-site');
-        throw new Error('Owner email not found in site data');
+        console.warn('ℹ️ [FETCH_REVIEWS] Email propriétaire manquant - on n\'affiche pas d\'avis');
+        clearTimeout(timeoutId);
+        if (isComponentMounted) setReviews([]);
+        return;
       }
 
-      console.log('👤 Email du propriétaire du mini-site:', ownerEmail);
+      console.log('👤 Email du propriétaire du mini-site (normalisé):', ownerEmail);
 
       // Récupérer les avis avec les emails des intervenants
       const { data: rawData, error } = await supabase
@@ -612,11 +615,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       if (error) throw error;
 
       // Filtrer côté client pour ne garder que les avis de l'intervenant avec le bon email
-      const data = rawData?.filter(review => {
-        const interventEmail = review.appointments?.intervenants?.email;
-        console.log('🔍 Comparaison emails:', { interventEmail, ownerEmail });
-        return interventEmail === ownerEmail;
-      }) || [];
+      const data = (rawData || []).filter(review => {
+        const interventEmail = (review.appointments?.intervenants?.email || '').trim().toLowerCase();
+        const match = interventEmail && interventEmail === ownerEmail;
+        console.log('🔍 Comparaison emails (normalisée):', { interventEmail, ownerEmail, match });
+        return match;
+      });
 
       clearTimeout(timeoutId);
       
@@ -655,7 +659,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       if (retryAttempt < maxRetries && error.name !== 'AbortError' && isComponentMounted) {
         console.log(`🔄 [FETCH_REVIEWS] Retry ${retryAttempt + 1}/${maxRetries}`);
         setTimeout(() => {
-          fetchReviews(userId, retryAttempt + 1);
+          fetchReviews(userId, retryAttempt + 1, ownerEmailParam);
         }, 2000);
       }
     }
