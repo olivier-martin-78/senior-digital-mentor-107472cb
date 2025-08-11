@@ -8,12 +8,21 @@ export const MiniSitePreview: React.FC = () => {
   useEffect(() => {
     // Load preview data from sessionStorage
     const storedData = sessionStorage.getItem('miniSitePreview');
+    const timestamp = sessionStorage.getItem('miniSitePreviewTimestamp');
+    
+    console.log('Loading preview data...', { timestamp });
+    
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
         console.log('Preview data loaded:', parsedData);
+        console.log('Design style from preview:', parsedData.design_style);
         console.log('Color palette from preview:', parsedData.color_palette);
-        setPreviewData(parsedData);
+        
+        // Force a small delay to ensure CSS is loaded
+        setTimeout(() => {
+          setPreviewData(parsedData);
+        }, 100);
       } catch (error) {
         console.error('Error parsing preview data:', error);
       }

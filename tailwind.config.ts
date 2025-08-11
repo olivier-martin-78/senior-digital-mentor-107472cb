@@ -126,6 +126,8 @@ export default {
 			fontFamily: {
 				'serif': ['Playfair Display', 'serif'],
 				'sans': ['Inter', 'sans-serif'],
+				'playfair': ['Playfair Display', 'serif'],
+				'dancing': ['Dancing Script', 'cursive'],
 			},
 		}
 	},

@@ -112,7 +112,10 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
     } else {
       // Store in sessionStorage for preview
       console.log('Preview data being stored:', formData);
+      console.log('Design style in preview data:', formData.design_style);
       sessionStorage.setItem('miniSitePreview', JSON.stringify(formData));
+      // Force clear cache for preview
+      sessionStorage.setItem('miniSitePreviewTimestamp', Date.now().toString());
       window.open('/mini-site/preview', '_blank');
     }
   };
