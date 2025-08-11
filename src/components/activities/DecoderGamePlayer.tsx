@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DECODER_WORDS } from '@/data/decoderWords';
 
 // T9 keypad mapping
 const T9: Record<string, string[]> = {
@@ -24,31 +25,7 @@ const LETTER_TO_T9: Record<string, string> = Object.entries(T9).reduce(
   {} as Record<string, string>
 );
 
-// A small French dataset with themes (UPPERCASE)
-const WORDS: { word: string; theme: string }[] = [
-  { word: 'MAISON', theme: 'Habitation' },
-  { word: 'JARDIN', theme: 'Habitation' },
-  { word: 'ANIMAL', theme: 'Animaux' },
-  { word: 'CHEVAL', theme: 'Animaux' },
-  { word: 'SINGE', theme: 'Animaux' },
-  { word: 'LIVRES', theme: 'Objets' },
-  { word: 'TABLE', theme: 'Objets' },
-  { word: 'CHAIR', theme: 'Objets' },
-  { word: 'AVION', theme: 'Transports' },
-  { word: 'TRAIN', theme: 'Transports' },
-  { word: 'POMMES', theme: 'Nourriture' },
-  { word: 'FROMAGE', theme: 'Nourriture' },
-  { word: 'CAFE', theme: 'Boisson' },
-  { word: 'THE', theme: 'Boisson' },
-  { word: 'POMPIER', theme: 'Métiers' },
-  { word: 'MEDECIN', theme: 'Métiers' },
-  { word: 'CHANTEUR', theme: 'Métiers' },
-  { word: 'MER', theme: 'Nature' },
-  { word: 'FORET', theme: 'Nature' },
-  { word: 'MONTAGNE', theme: 'Nature' },
-  { word: 'AMITIE', theme: 'Sentiments' },
-  { word: 'BONHEUR', theme: 'Sentiments' },
-];
+// Dataset déplacé vers src/data/decoderWords.ts
 
 function encodeToDigits(word: string): string {
   return word
@@ -100,7 +77,7 @@ export const DecoderGamePlayer: React.FC = () => {
   );
 
   const startNew = () => {
-    const chosen = randomChoice(WORDS);
+    const chosen = randomChoice(DECODER_WORDS);
     const digits = encodeToDigits(chosen.word);
     setCurrent({ word: chosen.word, theme: chosen.theme, digits });
     setGuess(Array(chosen.word.length).fill(''));
