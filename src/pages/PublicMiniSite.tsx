@@ -377,18 +377,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   data: propData, 
   isPreview = false 
 }) => {
-  // LOGS TRÈS BASIQUES POUR DEBUG MOBILE
-  console.log('🚀 [MOBILE_DEBUG] Component PublicMiniSite démarré');
-  console.log('🚀 [MOBILE_DEBUG] Navigator info:', {
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language,
-    cookieEnabled: navigator.cookieEnabled,
-    onLine: navigator.onLine
-  });
-  
   const { slug } = useParams();
-  console.log('🚀 [MOBILE_DEBUG] Slug récupéré:', slug);
   const normalizedSlug = (slug || '').replace(/\./g, '-');
   
   const [siteData, setSiteData] = useState<MiniSiteData | null>(propData || null);
@@ -397,20 +386,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [retryCount, setRetryCount] = useState(0);
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
   
-  console.log('🚀 [MOBILE_DEBUG] État initial défini');
-  
-  // Test hook mobile avec try/catch
-  let mobilehookData;
-  try {
-    mobilehookData = useIsMobile();
-    console.log('🚀 [MOBILE_DEBUG] Hook mobile OK:', mobilehookData);
-  } catch (error) {
-    console.error('❌ [MOBILE_DEBUG] Erreur hook mobile:', error);
-    mobilehookData = { isMobileDevice: false, isMobileViewport: false, connectionInfo: { online: true } };
-  }
-  
-  const { isMobileDevice, isMobileViewport, connectionInfo } = mobilehookData;
+  const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
 
   // Redirection immédiate si le slug contient des points
   useEffect(() => {
@@ -420,76 +398,83 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     }
   }, [slug, normalizedSlug]);
 
+  // Effect to mark component as mounted and prevent race conditions
   useEffect(() => {
-    console.log('🚀 [MOBILE_DEBUG] Premier useEffect exécuté');
-    console.log('🚀 [MOBILE_DEBUG] Conditions:', { propData: !!propData, slug, isPreview });
+    setIsComponentMounted(true);
+    return () => setIsComponentMounted(false);
+  }, []);
+
+  // Main data fetching effect with cleanup
+  useEffect(() => {
+    let isCancelled = false;
     
-    if (!propData && slug) {
-      console.log('🚀 [MOBILE_DEBUG] Appel fetchSiteData');
-      fetchSiteData();
-    } else if (propData && isPreview) {
-      console.log('🚀 [MOBILE_DEBUG] Mode preview détecté');
-      // En mode preview, récupérer les avis depuis les données de localStorage
-      const storedPreviewData = localStorage.getItem('miniSitePreview');
-      if (storedPreviewData) {
+    const loadData = async () => {
+      if (!isComponentMounted || isCancelled) return;
+      
+      if (!propData && slug) {
+        await fetchSiteData();
+      } else if (propData && isPreview) {
+        // Mode preview: get URL data first, then fetch reviews
         try {
-          const parsedData = JSON.parse(storedPreviewData);
-          if (parsedData.user_id) {
-            console.log('🔍 Mode preview - récupération des avis pour:', parsedData.user_id);
-            fetchReviews(parsedData.user_id);
+          const urlParams = new URLSearchParams(window.location.search);
+          const encodedData = urlParams.get('data');
+          
+          if (encodedData && !isCancelled) {
+            const decodedData = decodeURIComponent(atob(decodeURIComponent(encodedData)));
+            const previewData = JSON.parse(decodedData);
+            console.log('🔍 [PREVIEW_DEBUG] Preview data loaded:', previewData);
+            console.log('🎨 [PREVIEW_DEBUG] Design style from preview:', previewData?.design_style);
+            console.log('🎨 [PREVIEW_DEBUG] Color palette from preview:', previewData?.color_palette);
+            
+            if (previewData.user_id && !isCancelled) {
+              console.log('🔍 Mode preview - récupération des avis pour:', previewData.user_id);
+              await fetchReviews(previewData.user_id);
+            }
           }
         } catch (error) {
           console.error('Erreur lors de la lecture des données de preview:', error);
         }
       }
+    };
+    
+    if (isComponentMounted) {
+      loadData();
     }
-  }, [slug, propData, isPreview]);
+    
+    return () => {
+      isCancelled = true;
+    };
+  }, [slug, propData, isPreview, isComponentMounted]);
 
+  // Carousel effect with cleanup
   useEffect(() => {
-    console.log('🚀 [MOBILE_DEBUG] Deuxième useEffect (carousel) exécuté');
-    if (siteData?.media && siteData.media.length > 1) {
-      console.log('🚀 [MOBILE_DEBUG] Démarrage carousel avec', siteData.media.length, 'images');
-      const interval = setInterval(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (siteData?.media && siteData.media.length > 1 && isComponentMounted) {
+      interval = setInterval(() => {
         setCurrentImageIndex(prev => 
           prev >= (siteData.media?.length || 1) - 1 ? 0 : prev + 1
         );
       }, 5000);
-
-      return () => clearInterval(interval);
     }
-  }, [siteData?.media]);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [siteData?.media, isComponentMounted]);
 
   const fetchSiteData = async (retryAttempt = 0) => {
-    console.log('🚀 [MOBILE_DEBUG] fetchSiteData appelé, tentative:', retryAttempt);
-    if (!slug) {
-      console.log('🚀 [MOBILE_DEBUG] Pas de slug, arrêt');
-      return;
-    }
-
-    // Logs détaillés pour debugging mobile vs desktop
-    console.log('🔍 [FETCH_SITE_DATA] Début récupération:', {
-      slug,
-      retryAttempt,
-      isMobileDevice,
-      isMobileViewport,
-      connectionInfo,
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
-    });
+    if (!slug || !isComponentMounted) return;
 
     setLoading(true);
     setConnectionStatus('checking');
     
     try {
-      // Configuration spécifique mobile pour éviter les timeouts
+      if (!isComponentMounted) return;
+      
       const timeoutDuration = isMobileDevice ? 15000 : 10000;
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
-
-      console.log('🔍 [FETCH_SITE_DATA] Configuration requête:', {
-        timeout: timeoutDuration,
-        cacheStrategy: isMobileDevice ? 'no-cache' : 'default'
-      });
 
       const { data: siteData, error } = await supabase
         .from('mini_sites')
@@ -505,25 +490,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       clearTimeout(timeoutId);
 
-      console.log('🔍 [FETCH_SITE_DATA] Réponse Supabase:', {
-        dataExists: !!siteData,
-        error: error?.message,
-        dataId: siteData?.id,
-        isPublished: siteData?.is_published
-      });
-
       if (error) {
         console.error('❌ [FETCH_SITE_DATA] Erreur Supabase:', error);
         throw error;
       }
 
-      if (!siteData) {
-        console.warn('⚠️ [FETCH_SITE_DATA] Aucune donnée trouvée pour le slug:', slug);
+      if (!siteData || !isComponentMounted) {
         throw new Error('Site non trouvé');
       }
 
       setConnectionStatus('connected');
 
+      if (isComponentMounted) {
         setSiteData({
           ...siteData,
           design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
@@ -542,8 +520,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           }))
         });
 
-      // Fetch reviews from intervention reports
-      fetchReviews(siteData.user_id);
+        // Fetch reviews from intervention reports
+        await fetchReviews(siteData.user_id);
+      }
       
     } catch (error) {
       console.error('❌ [FETCH_SITE_DATA] Erreur générale:', error);
@@ -573,14 +552,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   };
 
   const fetchReviews = async (userId: string, retryAttempt = 0) => {
-    console.log('🔍 [FETCH_REVIEWS] Début pour userId:', userId, {
-      retryAttempt,
-      isMobileDevice,
-      connectionInfo
-    });
+    if (!userId || !isComponentMounted) return;
+    
+    console.log('🔍 [FETCH_REVIEWS] Début pour userId:', userId, { retryAttempt });
     
     try {
-      // Configuration robuste pour mobile
       const timeoutDuration = isMobileDevice ? 12000 : 8000;
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
@@ -595,37 +571,31 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         .abortSignal(abortController.signal);
 
       clearTimeout(timeoutId);
-      console.log('📊 [FETCH_REVIEWS] Données récupérées:', { data, error, count: data?.length });
-
-      if (error) {
-        console.error('❌ Erreur Supabase:', error);
-        throw error;
+      
+      if (error || !isComponentMounted) {
+        if (error) console.error('❌ Erreur Supabase:', error);
+        throw error || new Error('Component unmounted');
       }
       
       // Filtrer les avis valides côté client
       const validReviews = (data || []).filter(review => {
         const hasRating = review.client_rating && review.client_rating >= 4;
         const hasComment = review.client_comments && review.client_comments.trim() !== '';
-        console.log('🔍 Review check:', { 
-          patient: review.patient_name, 
-          rating: review.client_rating, 
-          hasComment, 
-          hasRating,
-          valid: hasRating || hasComment 
-        });
         return hasRating || hasComment;
       });
       
-      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length, validReviews);
-      console.log('🎨 [FETCH_REVIEWS] Style de design lors de la récupération:', siteData?.design_style);
-      setReviews(validReviews);
+      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length);
+      console.log('🎨 [FETCH_REVIEWS] Design style current:', siteData?.design_style || propData?.design_style);
+      
+      if (isComponentMounted) {
+        setReviews(validReviews);
+      }
       
     } catch (error) {
       console.error('❌ [FETCH_REVIEWS] Erreur:', error);
       
-      // Retry logic pour les avis aussi
       const maxRetries = 2;
-      if (retryAttempt < maxRetries && error.name !== 'AbortError') {
+      if (retryAttempt < maxRetries && error.name !== 'AbortError' && isComponentMounted) {
         console.log(`🔄 [FETCH_REVIEWS] Retry ${retryAttempt + 1}/${maxRetries}`);
         setTimeout(() => {
           fetchReviews(userId, retryAttempt + 1);
@@ -905,39 +875,83 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Reviews */}
             {reviews.length > 0 && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${
+                siteData.design_style === 'feminine' 
+                  ? 'feminine-card-enter animate-on-scroll bg-gradient-to-br from-white/90 via-pink-50/60 to-rose-50/40 border-2 border-pink-200/60 shadow-xl hover:shadow-2xl hover:shadow-pink-500/20' 
+                  : siteData.design_style === 'masculine' 
+                    ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` 
+                    : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`
+              } transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
-                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
-                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>⭐</span>
+                  <h2 className={`${style.sectionTitleFont} mb-6 ${
+                    siteData.design_style === 'feminine'
+                      ? 'text-2xl font-serif bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent'
+                      : siteData.design_style === 'masculine' 
+                        ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` 
+                        : theme.accent
+                  } flex items-center gap-2`}>
+                    <div className={`p-3 rounded-full ${
+                      siteData.design_style === 'feminine'
+                        ? 'bg-gradient-to-br from-pink-100 to-purple-100 border-2 border-pink-200'
+                        : siteData.design_style === 'masculine' 
+                          ? `bg-gradient-to-br ${theme.masculineAccent} text-white` 
+                          : theme.iconBg
+                    } mr-2`}>
+                      <span className={`${
+                        siteData.design_style === 'feminine'
+                          ? 'text-2xl'
+                          : siteData.design_style === 'masculine' 
+                            ? 'text-white' 
+                            : theme.iconText
+                      } font-bold`}>⭐</span>
                     </div>
                     Avis clients
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      {reviews.map((review, index) => (
-                       <div key={index} className={`border rounded-lg p-4 shadow-sm ${siteData.design_style === 'masculine' ? theme.lightBg : 'bg-white'}`}>
-                        <div className="flex items-center justify-between mb-2">
+                       <div key={index} className={`${
+                         siteData.design_style === 'feminine'
+                           ? 'bg-gradient-to-br from-white/80 to-pink-50/60 border-2 border-pink-200/50 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-pink-500/10 hover:scale-[1.02] transition-all duration-300'
+                           : siteData.design_style === 'masculine' 
+                             ? `${theme.lightBg} border rounded-lg shadow-sm` 
+                             : 'bg-white border rounded-lg shadow-sm'
+                       } p-4`}>
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
                                 className={`w-4 h-4 ${
                                   i < review.client_rating
-                                    ? 'text-yellow-400 fill-current'
+                                    ? siteData.design_style === 'feminine' 
+                                      ? 'text-pink-400 fill-current' 
+                                      : 'text-yellow-400 fill-current'
                                     : 'text-gray-300'
                                 }`}
                               />
                             ))}
                           </div>
-                          <p className="text-xs text-gray-400">
+                          <p className={`text-xs ${
+                            siteData.design_style === 'feminine' 
+                              ? 'text-pink-400/80' 
+                              : 'text-gray-400'
+                          }`}>
                             {new Date(review.created_at).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-700 mb-2 italic">
+                        <p className={`text-sm mb-3 italic leading-relaxed ${
+                          siteData.design_style === 'feminine'
+                            ? 'text-gray-700 font-light text-base'
+                            : 'text-gray-700'
+                        }`}>
                           "{review.client_comments}"
                         </p>
                         {review.patient_name && (
-                          <p className="text-xs text-gray-500">
+                          <p className={`text-xs font-medium ${
+                            siteData.design_style === 'feminine'
+                              ? 'text-pink-600/80'
+                              : 'text-gray-500'
+                          }`}>
                             - {review.patient_name}
                           </p>
                         )}
