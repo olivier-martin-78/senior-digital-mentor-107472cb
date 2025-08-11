@@ -885,9 +885,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll mb-6' : ''} ${reviews.length > 0 ? 'mb-6' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
-                    {siteData.design_style === 'feminine' && (
-                      <span className="text-pink-400">📅</span>
-                    )}
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📅</span>
                     </div>
@@ -922,9 +919,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
-                    {siteData.design_style === 'feminine' && (
-                      <span className="text-yellow-400">⭐</span>
-                    )}
+                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
+                      <span className={`${theme.iconText} font-bold`}>⭐</span>
+                    </div>
                     Avis clients
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
