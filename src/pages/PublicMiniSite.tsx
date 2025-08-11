@@ -47,7 +47,11 @@ const colorThemes = {
     iconText: 'text-blue-600',
     hoverBg: 'hover:bg-blue-50',
     cardBorder: 'border-l-blue-500',
-    gradient: 'from-blue-50 via-blue-100 to-blue-50'
+    gradient: 'from-blue-50 via-blue-100 to-blue-50',
+    masculineGradient: 'from-blue-900/20 via-blue-600/10 to-blue-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-blue-50/50 to-white/80',
+    masculineAccent: 'from-blue-600 to-blue-800',
+    masculineShadow: 'shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20'
   },
   green: {
     primary: 'from-green-600 to-green-800',
@@ -60,7 +64,11 @@ const colorThemes = {
     iconText: 'text-green-600',
     hoverBg: 'hover:bg-green-50',
     cardBorder: 'border-l-green-500',
-    gradient: 'from-green-50 via-green-100 to-green-50'
+    gradient: 'from-green-50 via-green-100 to-green-50',
+    masculineGradient: 'from-green-900/20 via-green-600/10 to-green-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-green-50/50 to-white/80',
+    masculineAccent: 'from-green-600 to-green-800',
+    masculineShadow: 'shadow-lg shadow-green-500/10 hover:shadow-xl hover:shadow-green-500/20'
   },
   purple: {
     primary: 'from-purple-600 to-purple-800',
@@ -73,7 +81,11 @@ const colorThemes = {
     iconText: 'text-purple-600',
     hoverBg: 'hover:bg-purple-50',
     cardBorder: 'border-l-purple-500',
-    gradient: 'from-purple-50 via-purple-100 to-purple-50'
+    gradient: 'from-purple-50 via-purple-100 to-purple-50',
+    masculineGradient: 'from-purple-900/20 via-purple-600/10 to-purple-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-purple-50/50 to-white/80',
+    masculineAccent: 'from-purple-600 to-purple-800',
+    masculineShadow: 'shadow-lg shadow-purple-500/10 hover:shadow-xl hover:shadow-purple-500/20'
   },
   pink: {
     primary: 'from-pink-600 to-pink-800',
@@ -86,7 +98,11 @@ const colorThemes = {
     iconText: 'text-pink-600',
     hoverBg: 'hover:bg-pink-50',
     cardBorder: 'border-l-pink-500',
-    gradient: 'from-pink-50 via-pink-100 to-pink-50'
+    gradient: 'from-pink-50 via-pink-100 to-pink-50',
+    masculineGradient: 'from-pink-900/20 via-pink-600/10 to-pink-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-pink-50/50 to-white/80',
+    masculineAccent: 'from-pink-600 to-pink-800',
+    masculineShadow: 'shadow-lg shadow-pink-500/10 hover:shadow-xl hover:shadow-pink-500/20'
   },
   orange: {
     primary: 'from-orange-600 to-orange-800',
@@ -99,7 +115,11 @@ const colorThemes = {
     iconText: 'text-orange-600',
     hoverBg: 'hover:bg-orange-50',
     cardBorder: 'border-l-orange-500',
-    gradient: 'from-orange-50 via-orange-100 to-orange-50'
+    gradient: 'from-orange-50 via-orange-100 to-orange-50',
+    masculineGradient: 'from-orange-900/20 via-orange-600/10 to-orange-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-orange-50/50 to-white/80',
+    masculineAccent: 'from-orange-600 to-orange-800',
+    masculineShadow: 'shadow-lg shadow-orange-500/10 hover:shadow-xl hover:shadow-orange-500/20'
   },
   teal: {
     primary: 'from-teal-600 to-teal-800',
@@ -112,7 +132,11 @@ const colorThemes = {
     iconText: 'text-teal-600',
     hoverBg: 'hover:bg-teal-50',
     cardBorder: 'border-l-teal-500',
-    gradient: 'from-teal-50 via-teal-100 to-teal-50'
+    gradient: 'from-teal-50 via-teal-100 to-teal-50',
+    masculineGradient: 'from-teal-900/20 via-teal-600/10 to-teal-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-teal-50/50 to-white/80',
+    masculineAccent: 'from-teal-600 to-teal-800',
+    masculineShadow: 'shadow-lg shadow-teal-500/10 hover:shadow-xl hover:shadow-teal-500/20'
   },
   red: {
     primary: 'from-red-600 to-red-800',
@@ -125,7 +149,11 @@ const colorThemes = {
     iconText: 'text-red-600',
     hoverBg: 'hover:bg-red-50',
     cardBorder: 'border-l-red-500',
-    gradient: 'from-red-50 via-red-100 to-red-50'
+    gradient: 'from-red-50 via-red-100 to-red-50',
+    masculineGradient: 'from-red-900/20 via-red-600/10 to-red-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-red-50/50 to-white/80',
+    masculineAccent: 'from-red-600 to-red-800',
+    masculineShadow: 'shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20'
   },
   indigo: {
     primary: 'from-indigo-600 to-indigo-800',
@@ -138,7 +166,11 @@ const colorThemes = {
     iconText: 'text-indigo-600',
     hoverBg: 'hover:bg-indigo-50',
     cardBorder: 'border-l-indigo-500',
-    gradient: 'from-indigo-50 via-indigo-100 to-indigo-50'
+    gradient: 'from-indigo-50 via-indigo-100 to-indigo-50',
+    masculineGradient: 'from-indigo-900/20 via-indigo-600/10 to-indigo-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-indigo-50/50 to-white/80',
+    masculineAccent: 'from-indigo-600 to-indigo-800',
+    masculineShadow: 'shadow-lg shadow-indigo-500/10 hover:shadow-xl hover:shadow-indigo-500/20'
   },
   yellow: {
     primary: 'from-yellow-600 to-yellow-800',
@@ -151,7 +183,11 @@ const colorThemes = {
     iconText: 'text-yellow-600',
     hoverBg: 'hover:bg-yellow-50',
     cardBorder: 'border-l-yellow-500',
-    gradient: 'from-yellow-50 via-yellow-100 to-yellow-50'
+    gradient: 'from-yellow-50 via-yellow-100 to-yellow-50',
+    masculineGradient: 'from-yellow-900/20 via-yellow-600/10 to-yellow-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-yellow-50/50 to-white/80',
+    masculineAccent: 'from-yellow-600 to-yellow-800',
+    masculineShadow: 'shadow-lg shadow-yellow-500/10 hover:shadow-xl hover:shadow-yellow-500/20'
   },
   gray: {
     primary: 'from-gray-600 to-gray-800',
@@ -164,7 +200,11 @@ const colorThemes = {
     iconText: 'text-gray-600',
     hoverBg: 'hover:bg-gray-50',
     cardBorder: 'border-l-gray-500',
-    gradient: 'from-gray-50 via-gray-100 to-gray-50'
+    gradient: 'from-gray-50 via-gray-100 to-gray-50',
+    masculineGradient: 'from-gray-900/20 via-gray-600/10 to-gray-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-gray-50/50 to-white/80',
+    masculineAccent: 'from-gray-600 to-gray-800',
+    masculineShadow: 'shadow-lg shadow-gray-500/10 hover:shadow-xl hover:shadow-gray-500/20'
   },
   emerald: {
     primary: 'from-emerald-600 to-emerald-800',
@@ -177,7 +217,11 @@ const colorThemes = {
     iconText: 'text-emerald-600',
     hoverBg: 'hover:bg-emerald-50',
     cardBorder: 'border-l-emerald-500',
-    gradient: 'from-emerald-50 via-emerald-100 to-emerald-50'
+    gradient: 'from-emerald-50 via-emerald-100 to-emerald-50',
+    masculineGradient: 'from-emerald-900/20 via-emerald-600/10 to-emerald-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-emerald-50/50 to-white/80',
+    masculineAccent: 'from-emerald-600 to-emerald-800',
+    masculineShadow: 'shadow-lg shadow-emerald-500/10 hover:shadow-xl hover:shadow-emerald-500/20'
   },
   cyan: {
     primary: 'from-cyan-600 to-cyan-800',
@@ -190,7 +234,11 @@ const colorThemes = {
     iconText: 'text-cyan-600',
     hoverBg: 'hover:bg-cyan-50',
     cardBorder: 'border-l-cyan-500',
-    gradient: 'from-cyan-50 via-cyan-100 to-cyan-50'
+    gradient: 'from-cyan-50 via-cyan-100 to-cyan-50',
+    masculineGradient: 'from-cyan-900/20 via-cyan-600/10 to-cyan-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-cyan-50/50 to-white/80',
+    masculineAccent: 'from-cyan-600 to-cyan-800',
+    masculineShadow: 'shadow-lg shadow-cyan-500/10 hover:shadow-xl hover:shadow-cyan-500/20'
   },
   amber: {
     primary: 'from-amber-600 to-amber-800',
@@ -203,7 +251,11 @@ const colorThemes = {
     iconText: 'text-amber-600',
     hoverBg: 'hover:bg-amber-50',
     cardBorder: 'border-l-amber-500',
-    gradient: 'from-amber-50 via-amber-100 to-amber-50'
+    gradient: 'from-amber-50 via-amber-100 to-amber-50',
+    masculineGradient: 'from-amber-900/20 via-amber-600/10 to-amber-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-amber-50/50 to-white/80',
+    masculineAccent: 'from-amber-600 to-amber-800',
+    masculineShadow: 'shadow-lg shadow-amber-500/10 hover:shadow-xl hover:shadow-amber-500/20'
   },
   lime: {
     primary: 'from-lime-600 to-lime-800',
@@ -216,7 +268,11 @@ const colorThemes = {
     iconText: 'text-lime-600',
     hoverBg: 'hover:bg-lime-50',
     cardBorder: 'border-l-lime-500',
-    gradient: 'from-lime-50 via-lime-100 to-lime-50'
+    gradient: 'from-lime-50 via-lime-100 to-lime-50',
+    masculineGradient: 'from-lime-900/20 via-lime-600/10 to-lime-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-lime-50/50 to-white/80',
+    masculineAccent: 'from-lime-600 to-lime-800',
+    masculineShadow: 'shadow-lg shadow-lime-500/10 hover:shadow-xl hover:shadow-lime-500/20'
   },
   slate: {
     primary: 'from-slate-600 to-slate-800',
@@ -229,7 +285,11 @@ const colorThemes = {
     iconText: 'text-slate-600',
     hoverBg: 'hover:bg-slate-50',
     cardBorder: 'border-l-slate-500',
-    gradient: 'from-slate-50 via-slate-100 to-slate-50'
+    gradient: 'from-slate-50 via-slate-100 to-slate-50',
+    masculineGradient: 'from-slate-900/20 via-slate-600/10 to-slate-800/15',
+    masculineCard: 'bg-gradient-to-br from-white/90 via-slate-50/50 to-white/80',
+    masculineAccent: 'from-slate-600 to-slate-800',
+    masculineShadow: 'shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20'
   }
 };
 
@@ -269,15 +329,36 @@ const designStyles = {
     )
   },
   masculine: {
-    containerClass: 'bg-gradient-to-br from-slate-100 via-blue-50 to-gray-100',
-    headerStyle: 'shadow-xl relative overflow-hidden',
-    cardStyle: 'shadow-md hover:shadow-xl transition-shadow border-l-4 border-blue-500',
-    titleFont: 'font-bold text-4xl md:text-5xl tracking-tight',
-    subtitleFont: 'font-medium text-xl',
-    sectionTitleFont: 'font-bold text-2xl tracking-wide',
-    buttonStyle: 'px-6 py-3 font-bold uppercase tracking-wide transition-all hover:scale-105',
+    containerClass: 'bg-gradient-to-br from-slate-900/5 via-slate-600/10 to-slate-800/8 relative overflow-hidden',
+    headerStyle: 'shadow-2xl relative overflow-hidden bg-gradient-to-r from-slate-800/20 to-slate-600/15 backdrop-blur-sm',
+    cardStyle: 'rounded-lg shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200/50 hover:border-slate-300/70 backdrop-blur-sm hover:scale-[1.02] hover:-translate-y-1 transform-gpu',
+    titleFont: 'font-bold text-4xl md:text-6xl tracking-tight bg-gradient-to-r from-slate-800 via-slate-600 to-slate-700 bg-clip-text text-transparent',
+    subtitleFont: 'font-medium text-xl text-slate-700',
+    sectionTitleFont: 'font-bold text-3xl tracking-wide bg-gradient-to-r from-slate-700 to-slate-600 bg-clip-text text-transparent relative inline-block after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-gradient-to-r after:from-slate-500 after:to-slate-600 after:rounded-full',
+    buttonStyle: 'px-8 py-4 font-bold uppercase tracking-wide transition-all duration-300 hover:scale-110 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-lg hover:shadow-xl hover:shadow-slate-500/25 transform hover:-translate-y-1 rounded-lg',
     decorativeElement: (
-      <div className="absolute top-0 right-0 w-0 h-0 border-l-[100px] border-b-[100px] border-l-transparent border-b-blue-600/10" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Geometric pattern background */}
+        <div className="absolute top-0 right-0 w-64 h-64 opacity-5">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <defs>
+              <pattern id="geometric" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="5" height="5" fill="currentColor" className="text-slate-600" />
+                <rect x="5" y="5" width="5" height="5" fill="currentColor" className="text-slate-700" />
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#geometric)" />
+          </svg>
+        </div>
+        
+        {/* Angular elements */}
+        <div className="absolute top-0 right-0 w-0 h-0 border-l-[200px] border-b-[200px] border-l-transparent border-b-slate-600/5" />
+        <div className="absolute bottom-0 left-0 w-0 h-0 border-r-[150px] border-t-[150px] border-r-transparent border-t-slate-700/5" />
+        
+        {/* Subtle gradient overlays */}
+        <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-slate-600/10 to-transparent rounded-full transform -translate-x-20 -translate-y-20" />
+        <div className="absolute bottom-0 right-0 w-48 h-48 bg-gradient-to-tl from-slate-700/10 to-transparent rounded-full transform translate-x-24 translate-y-24" />
+      </div>
     )
   },
   neutral: {
@@ -612,7 +693,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const currentImage = siteData.media?.[currentImageIndex];
 
   return (
-    <div className={`min-h-screen ${style.containerClass} bg-gradient-to-br ${theme.gradient}`}>
+    <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
       <ScrollAnimation />
       
       {/* Header */}
@@ -708,18 +789,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           <div className="lg:col-span-2 space-y-8">
             {/* About */}
             {siteData.about_me && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-pink-400">✨</span>
                     )}
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>👤</span>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>👤</span>
                     </div>
                     Qui suis-je ?
                   </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     {siteData.about_me.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -730,18 +811,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Why this profession */}
             {siteData.why_this_profession && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-rose-400">💝</span>
                     )}
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>💼</span>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>💼</span>
                     </div>
                     Pourquoi j'ai choisi ce métier ?
                   </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     {siteData.why_this_profession.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -752,24 +833,24 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Skills and qualities */}
             {siteData.skills_and_qualities && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-purple-400">🌸</span>
                     )}
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>⭐</span>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>⭐</span>
                     </div>
                     Mes compétences et qualités
                   </h2>
-                  <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                  <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     {siteData.skills_and_qualities.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
                   </div>
                   {siteData.activity_start_date && (
-                    <Badge variant="outline" className={`mt-2 ${theme.border} ${theme.iconText} ${theme.lightBg} ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
+                    <Badge variant="outline" className={`mt-2 ${siteData.design_style === 'masculine' ? `border-slate-300 text-slate-700 bg-gradient-to-br ${theme.masculineGradient}` : `${theme.border} ${theme.iconText} ${theme.lightBg}`} ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
                       Depuis {siteData.activity_start_date}
                     </Badge>
                   )}
@@ -779,18 +860,18 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Services */}
             {siteData.services_description && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-rose-400">🎁</span>
                     )}
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>🛍️</span>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🛍️</span>
                     </div>
                     Mes offres
                   </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     {siteData.services_description.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">{paragraph}</p>
                     ))}
@@ -801,20 +882,20 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Availability */}
             {(siteData.availability_schedule || siteData.intervention_radius) && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${reviews.length > 0 ? 'mb-6' : ''} border-l-4 ${theme.cardBorder} ${theme.lightBg} transition-all duration-300 ${theme.hoverBg}`}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${reviews.length > 0 ? 'mb-6' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     {siteData.design_style === 'feminine' && (
                       <span className="text-pink-400">📅</span>
                     )}
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>📅</span>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📅</span>
                     </div>
                     Mes disponibilités
                   </h2>
                   {siteData.availability_schedule && (
-                    <div className={`mb-4 p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
-                      <h3 className={`font-semibold mb-2 ${theme.accent}`}>Planning</h3>
+                    <div className={`mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                      <h3 className={`font-semibold mb-2 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent}`}>Planning</h3>
                       <div className="prose prose-gray max-w-none">
                         {siteData.availability_schedule.split('\n').map((paragraph, index) => (
                           <p key={index} className="mb-2">{paragraph}</p>
@@ -823,8 +904,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     </div>
                   )}
                   {siteData.intervention_radius && (
-                    <div className={`p-4 rounded-lg ${theme.lightBg} ${theme.border} border`}>
-                      <h3 className={`font-semibold mb-2 ${theme.accent}`}>Zone d'intervention</h3>
+                    <div className={`p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                      <h3 className={`font-semibold mb-2 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent}`}>Zone d'intervention</h3>
                       <div className="prose prose-gray max-w-none">
                         {siteData.intervention_radius.split('\n').map((paragraph, index) => (
                           <p key={index} className="mb-2">{paragraph}</p>
