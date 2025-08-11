@@ -579,19 +579,15 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
 
-      // D'abord, récupérer l'email du propriétaire du mini-site
-      const { data: ownerProfile, error: ownerError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', userId)
-        .single();
-
-      if (ownerError || !ownerProfile?.email) {
-        console.error('❌ Impossible de récupérer l\'email du propriétaire:', ownerError);
-        throw ownerError || new Error('Owner email not found');
+      // Utiliser l'email du mini-site au lieu de faire une nouvelle requête
+      const ownerEmail = siteData?.email;
+      
+      if (!ownerEmail) {
+        console.error('❌ Email du propriétaire non disponible dans les données du mini-site');
+        throw new Error('Owner email not found in site data');
       }
 
-      console.log('👤 Email du propriétaire du mini-site:', ownerProfile.email);
+      console.log('👤 Email du propriétaire du mini-site:', ownerEmail);
 
       // Récupérer les avis avec les emails des intervenants
       const { data: rawData, error } = await supabase
@@ -618,8 +614,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       // Filtrer côté client pour ne garder que les avis de l'intervenant avec le bon email
       const data = rawData?.filter(review => {
         const interventEmail = review.appointments?.intervenants?.email;
-        console.log('🔍 Comparaison emails:', { interventEmail, ownerEmail: ownerProfile.email });
-        return interventEmail === ownerProfile.email;
+        console.log('🔍 Comparaison emails:', { interventEmail, ownerEmail });
+        return interventEmail === ownerEmail;
       }) || [];
 
       clearTimeout(timeoutId);
