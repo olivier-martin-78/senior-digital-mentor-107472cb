@@ -29,6 +29,7 @@ const HomepageCarousel = () => {
     button_link: '',
     display_order: 0,
     display_duration_seconds: 3,
+    title_color: '#ffffff',
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +97,7 @@ const HomepageCarousel = () => {
         button_link: '',
         display_order: 0,
         display_duration_seconds: 3,
+        title_color: '#ffffff',
       });
     } catch (error) {
       toast({
@@ -174,6 +176,7 @@ const HomepageCarousel = () => {
       button_link: slide.button_link || '',
       display_order: slide.display_order,
       display_duration_seconds: slide.display_duration_seconds,
+      title_color: slide.title_color || '#ffffff',
     });
     setIsCreateDialogOpen(true);
   };
@@ -198,6 +201,7 @@ const HomepageCarousel = () => {
                 button_link: '',
                 display_order: 0,
                 display_duration_seconds: 3,
+                title_color: '#ffffff',
               });
             }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -219,6 +223,16 @@ const HomepageCarousel = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Texte principal à afficher sur la slide"
                   required
+                />
+              </div>
+              <div>
+                <Label htmlFor="title_color">Couleur du titre</Label>
+                <Input
+                  id="title_color"
+                  type="color"
+                  value={formData.title_color || '#ffffff'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title_color: e.target.value }))}
+                  aria-label="Choisir la couleur du titre"
                 />
               </div>
 

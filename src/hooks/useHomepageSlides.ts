@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface HomepageSlide {
   id: string;
   title: string;
+  title_color?: string;
   media_url: string;
   media_type: 'image' | 'video';
   button_text?: string;

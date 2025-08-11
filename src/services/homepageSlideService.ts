@@ -9,6 +9,7 @@ export interface CreateSlideData {
   button_link?: string;
   display_order: number;
   display_duration_seconds?: number;
+  title_color?: string;
 }
 
 export interface UpdateSlideData extends Partial<CreateSlideData> {

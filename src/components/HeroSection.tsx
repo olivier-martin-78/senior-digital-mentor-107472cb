@@ -115,7 +115,7 @@ const HeroSection = () => {
                 
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-20">
                   <div className="max-w-3xl">
-                    <p className="text-xl md:text-2xl text-white mb-8">
+                    <p className="text-xl md:text-2xl mb-8" style={{ color: slide.title_color || '#ffffff' }}>
                       {slide.title}
                     </p>
                     {slide.button_text && (

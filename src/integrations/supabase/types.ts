@@ -706,6 +706,7 @@ export type Database = {
           media_type: string | null
           media_url: string
           title: string
+          title_color: string | null
           updated_at: string
         }
         Insert: {
@@ -720,6 +721,7 @@ export type Database = {
           media_type?: string | null
           media_url: string
           title: string
+          title_color?: string | null
           updated_at?: string
         }
         Update: {
@@ -734,6 +736,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string
           title?: string
+          title_color?: string | null
           updated_at?: string
         }
         Relationships: []
