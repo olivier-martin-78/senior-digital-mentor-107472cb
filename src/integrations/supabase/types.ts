@@ -786,6 +786,7 @@ export type Database = {
           appointment_id: string | null
           audio_url: string | null
           auxiliary_name: string
+          client_city: string | null
           client_comments: string | null
           client_rating: number | null
           created_at: string
@@ -819,6 +820,7 @@ export type Database = {
           appointment_id?: string | null
           audio_url?: string | null
           auxiliary_name: string
+          client_city?: string | null
           client_comments?: string | null
           client_rating?: number | null
           created_at?: string
@@ -852,6 +854,7 @@ export type Database = {
           appointment_id?: string | null
           audio_url?: string | null
           auxiliary_name?: string
+          client_city?: string | null
           client_comments?: string | null
           client_rating?: number | null
           created_at?: string

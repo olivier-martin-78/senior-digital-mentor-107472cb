@@ -588,7 +588,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
       const { data, error } = await supabase
         .from('intervention_reports')
-        .select('client_rating, client_comments, created_at, patient_name, auxiliary_name')
+        .select('client_rating, client_comments, created_at, patient_name, auxiliary_name, client_city')
         .eq('professional_id', userId)
         .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
@@ -1030,7 +1030,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                               ? 'text-pink-600/80'
                               : 'text-gray-500'
                           }`}>
-                            - {review.patient_name}
+                            - {review.patient_name}{review.client_city ? `, ${review.client_city}` : ''}
                           </p>
                         )}
                       </div>
