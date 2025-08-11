@@ -953,7 +953,10 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             {/* Contact Card */}
             <Card className={`sticky top-4 ${style.cardStyle}`}>
               <CardContent className="p-6">
-                <h2 className={`${style.sectionTitleFont} mb-6 ${theme.accent}`}>
+                <h2 className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
+                  <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                    <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📞</span>
+                  </div>
                   Me contacter
                 </h2>
                 
@@ -1041,7 +1044,10 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             {siteData.professional_networks && (
               <Card className={style.cardStyle}>
                 <CardContent className="p-6">
-                  <h3 className={`${style.sectionTitleFont} mb-3 ${theme.accent}`}>
+                  <h3 className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🌐</span>
+                    </div>
                     Réseaux professionnels
                   </h3>
                   <div className="prose prose-sm prose-gray max-w-none">
