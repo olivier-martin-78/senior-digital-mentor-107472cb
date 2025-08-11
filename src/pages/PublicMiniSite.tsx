@@ -569,98 +569,47 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     }
   };
 
-  const fetchReviews = async (userId: string, retryAttempt = 0, ownerEmailParam?: string) => {
+  const fetchReviews = async (userId: string, retryAttempt = 0, _ownerEmailParam?: string) => {
     if (!userId || !isComponentMounted) return;
     
-    console.log('🔍 [FETCH_REVIEWS] Début pour userId:', userId, { retryAttempt });
+    console.log('🔍 [FETCH_REVIEWS] Start for userId:', userId, { retryAttempt });
     
     try {
       const timeoutDuration = isMobileDevice ? 12000 : 8000;
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
 
-      // Source de vérité: email du mini-site (prop/state) ou param explicite
-      const ownerEmailRaw = ownerEmailParam || siteData?.email || propData?.email || '';
-      const ownerEmail = ownerEmailRaw.trim().toLowerCase();
-      
-      if (!ownerEmail) {
-        console.warn('ℹ️ [FETCH_REVIEWS] Email propriétaire manquant - on n\'affiche pas d\'avis');
-        clearTimeout(timeoutId);
-        if (isComponentMounted) setReviews([]);
-        return;
-      }
-
-      console.log('👤 Email du propriétaire du mini-site (normalisé):', ownerEmail);
-
-      // Récupérer les avis avec les emails des intervenants
-      const { data: rawData, error } = await supabase
+      const { data, error } = await supabase
         .from('intervention_reports')
-        .select(`
-          client_rating, 
-          client_comments, 
-          created_at, 
-          patient_name,
-          appointments!inner(
-            intervenants!inner(
-              email
-            )
-          )
-        `)
+        .select('client_rating, client_comments, created_at, patient_name')
         .eq('professional_id', userId)
         .or('client_rating.not.is.null,client_comments.not.is.null')
         .order('created_at', { ascending: false })
         .limit(50)
         .abortSignal(abortController.signal);
 
-      if (error) throw error;
-
-      // Filtrer côté client pour ne garder que les avis de l'intervenant avec le bon email
-      const data = (rawData || []).filter(review => {
-        const interventEmail = (review.appointments?.intervenants?.email || '').trim().toLowerCase();
-        const match = interventEmail && interventEmail === ownerEmail;
-        console.log('🔍 Comparaison emails (normalisée):', { interventEmail, ownerEmail, match });
-        return match;
-      });
-
       clearTimeout(timeoutId);
-      
-      if (error || !isComponentMounted) {
-        if (error) console.error('❌ Erreur Supabase:', error);
-        throw error || new Error('Component unmounted');
-      }
-      
-      console.log('📊 [FETCH_REVIEWS] Données récupérées:', data?.length || 0, 'avis bruts');
-      
-      // Filtrer les avis valides côté client - accepter tous les avis avec rating ou commentaire
+
+      if (error) throw error;
+      if (!isComponentMounted) throw new Error('Component unmounted');
+
+      console.log('📊 [FETCH_REVIEWS] Raw count:', (data || []).length);
+
       const validReviews = (data || []).filter(review => {
-        const hasRating = review.client_rating && review.client_rating >= 1; // Accepter toutes les notes >=1
-        const hasComment = review.client_comments && review.client_comments.trim() !== '';
-        console.log('🔍 Review check:', {
-          patient: review.patient_name,
-          rating: review.client_rating,
-          hasComment: !!review.client_comments,
-          valid: hasRating || hasComment
-        });
+        const hasRating = typeof review.client_rating === 'number' && review.client_rating >= 1;
+        const hasComment = typeof review.client_comments === 'string' && review.client_comments.trim() !== '';
         return hasRating || hasComment;
       });
-      
-      console.log('✅ [FETCH_REVIEWS] Avis valides filtrés:', validReviews.length, validReviews);
-      console.log('🎨 [FETCH_REVIEWS] Design style current:', siteData?.design_style || propData?.design_style);
-      
-      if (isComponentMounted) {
-        setReviews(validReviews);
-        console.log('🔄 [FETCH_REVIEWS] State reviews mis à jour avec:', validReviews.length, 'avis');
-      }
-      
-    } catch (error) {
-      console.error('❌ [FETCH_REVIEWS] Erreur:', error);
-      
+
+      console.log('✅ [FETCH_REVIEWS] Valid reviews:', validReviews.length);
+      setReviews(validReviews);
+    } catch (error: any) {
+      console.error('❌ [FETCH_REVIEWS] Error:', error);
       const maxRetries = 2;
       if (retryAttempt < maxRetries && error.name !== 'AbortError' && isComponentMounted) {
-        console.log(`🔄 [FETCH_REVIEWS] Retry ${retryAttempt + 1}/${maxRetries}`);
-        setTimeout(() => {
-          fetchReviews(userId, retryAttempt + 1, ownerEmailParam);
-        }, 2000);
+        setTimeout(() => fetchReviews(userId, retryAttempt + 1, _ownerEmailParam), 2000);
+      } else if (isComponentMounted) {
+        setReviews([]);
       }
     }
   };
