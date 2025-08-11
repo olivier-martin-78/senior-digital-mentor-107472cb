@@ -10,26 +10,39 @@ export const MiniSitePreview: React.FC = () => {
     const storedData = sessionStorage.getItem('miniSitePreview');
     const timestamp = sessionStorage.getItem('miniSitePreviewTimestamp');
     
-    console.log('Loading preview data...', { timestamp });
+    console.log('🔍 [PREVIEW_DEBUG] Loading preview data...', { 
+      timestamp,
+      hasStoredData: !!storedData,
+      storedDataLength: storedData?.length || 0
+    });
     
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
-        console.log('Preview data loaded:', parsedData);
-        console.log('Design style from preview:', parsedData.design_style);
-        console.log('Color palette from preview:', parsedData.color_palette);
+        console.log('🔍 [PREVIEW_DEBUG] Preview data parsed successfully:', {
+          hasData: !!parsedData,
+          designStyle: parsedData?.design_style,
+          colorPalette: parsedData?.color_palette,
+          hasReviews: parsedData?.reviews?.length || 0,
+          dataKeys: Object.keys(parsedData || {})
+        });
         
         // Force a small delay to ensure CSS is loaded
         setTimeout(() => {
+          console.log('🔍 [PREVIEW_DEBUG] Setting preview data to state');
           setPreviewData(parsedData);
         }, 100);
       } catch (error) {
-        console.error('Error parsing preview data:', error);
+        console.error('🚨 [PREVIEW_DEBUG] Error parsing preview data:', error);
+        console.log('🚨 [PREVIEW_DEBUG] Raw stored data:', storedData);
       }
+    } else {
+      console.log('🚨 [PREVIEW_DEBUG] No stored data found in sessionStorage');
     }
   }, []);
 
   if (!previewData) {
+    console.log('🔍 [PREVIEW_DEBUG] PreviewData is null, showing error message');
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
@@ -41,6 +54,11 @@ export const MiniSitePreview: React.FC = () => {
       </div>
     );
   }
+
+  console.log('🔍 [PREVIEW_DEBUG] Rendering preview with data:', {
+    hasData: !!previewData,
+    designStyle: previewData?.design_style
+  });
 
   return (
     <div className="min-h-screen">
