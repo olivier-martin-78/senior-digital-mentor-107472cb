@@ -111,56 +111,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
     if (onPreview) {
       onPreview(formData);
     } else {
-      // Enhanced localStorage debugging and robust storage
-      console.log('🔧 [STORAGE_DEBUG] Starting preview data storage process');
-      console.log('🔧 [STORAGE_DEBUG] localStorage available:', typeof(Storage) !== "undefined");
-      console.log('🔧 [STORAGE_DEBUG] Current localStorage keys:', Object.keys(localStorage));
-      
       try {
-        const timestamp = Date.now().toString();
-        const dataToStore = JSON.stringify(formData);
+        // Encode preview data as URL parameter
+        const encodedData = btoa(JSON.stringify(formData));
+        const previewUrl = `/mini-site/preview?data=${encodeURIComponent(encodedData)}`;
         
-        console.log('🔧 [STORAGE_DEBUG] Data to store:', {
-          size: dataToStore.length,
-          designStyle: formData.design_style,
-          timestamp: timestamp
-        });
-        
-        // Clear any existing preview data first
-        localStorage.removeItem('miniSitePreview');
-        localStorage.removeItem('miniSitePreviewTimestamp');
-        
-        // Store new data
-        localStorage.setItem('miniSitePreview', dataToStore);
-        localStorage.setItem('miniSitePreviewTimestamp', timestamp);
-        
-        // Immediate verification
-        const storedData = localStorage.getItem('miniSitePreview');
-        const storedTimestamp = localStorage.getItem('miniSitePreviewTimestamp');
-        
-        console.log('🔧 [STORAGE_DEBUG] Storage verification:', {
-          dataStored: !!storedData,
-          timestampStored: !!storedTimestamp,
-          dataMatches: storedData === dataToStore,
-          timestampMatches: storedTimestamp === timestamp,
-          newKeys: Object.keys(localStorage)
-        });
-        
-        if (!storedData || storedData !== dataToStore) {
-          throw new Error('Data verification failed - stored data does not match');
-        }
-        
-        console.log('✅ [STORAGE_DEBUG] Data successfully stored and verified');
-        
-        // Add small delay to ensure data is fully written
-        setTimeout(() => {
-          console.log('🚀 [STORAGE_DEBUG] Opening preview window');
-          window.open('/mini-site/preview', '_blank');
-        }, 100);
-        
+        window.open(previewUrl, '_blank');
       } catch (error) {
-        console.error('🚨 [STORAGE_DEBUG] Error storing preview data:', error);
-        alert('Erreur lors du stockage des données de prévisualisation. Veuillez réessayer.');
+        console.error('Error preparing preview:', error);
+        alert('Erreur lors de la préparation de l\'aperçu. Veuillez réessayer.');
       }
     }
   };
