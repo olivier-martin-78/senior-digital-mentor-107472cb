@@ -906,9 +906,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             {reviews.length > 0 && (
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2 className={`${style.sectionTitleFont} mb-4 ${theme.accent} flex items-center gap-2`}>
-                    <div className={`p-2 rounded-full ${theme.iconBg} mr-2`}>
-                      <span className={`${theme.iconText} font-bold`}>⭐</span>
+                  <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>⭐</span>
                     </div>
                     Avis clients
                   </h2>
