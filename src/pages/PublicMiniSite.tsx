@@ -693,14 +693,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
-  // Debug logs pour la section avis clients
-  console.log('🔍 [AVIS_CLIENTS_DEBUG] État actuel:', {
-    reviewsLength: reviews.length,
-    designStyle: siteData.design_style,
-    siteDataExists: !!siteData,
-    shouldShowReviews: reviews.length > 0
-  });
-
   return (
     <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
       <ScrollAnimation />

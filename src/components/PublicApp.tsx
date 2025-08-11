@@ -10,6 +10,7 @@ import ResendConfirmation from '@/pages/ResendConfirmation';
 import PublicSubscription from '@/pages/PublicSubscription';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import { PublicMiniSite } from '@/pages/PublicMiniSite';
+import { MiniSitePreview } from '@/pages/MiniSitePreview';
 
 const PublicApp: React.FC = () => {
   return (
@@ -31,7 +32,7 @@ const PublicApp: React.FC = () => {
           element={
             (() => {
               console.log('🔥 [PUBLIC_APP_DEBUG] Route /mini-site/preview matchée');
-              return <PublicMiniSite />;
+              return <MiniSitePreview />;
             })()
           } 
         />
