@@ -16,7 +16,7 @@ const DecoderGame: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <header className="container mx-auto px-4 pt-6">
         <Link to="/activities/games" className="inline-flex items-center gap-2 text-muted-foreground hover:underline">
           <ArrowLeft className="w-4 h-4" />

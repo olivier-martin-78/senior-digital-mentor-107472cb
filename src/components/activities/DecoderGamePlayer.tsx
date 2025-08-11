@@ -205,8 +205,8 @@ export const DecoderGamePlayer: React.FC = () => {
     <div
       key={d}
       className={cn(
-        'rounded-xl border shadow-sm p-3 text-center select-none',
-        'bg-card text-foreground border-border'
+        'rounded-xl border shadow-sm p-3 text-center select-none transition-colors',
+        'bg-card text-foreground border-border hover:bg-accent/10 hover:border-accent/50'
       )}
       aria-label={`Touche ${d}${letters ? ` (${letters.split('').join(', ')})` : ''}`}
     >
@@ -253,9 +253,9 @@ export const DecoderGamePlayer: React.FC = () => {
                   value={guess[i] || ''}
                   onChange={(e) => onChangeLetter(i, e.target.value)}
                   className={cn(
-                    'w-10 h-12 text-center text-xl font-semibold rounded-md border focus:outline-none focus:ring-2',
-                    'bg-background text-foreground border-border',
-                    revealed.has(i) ? 'ring-2 ring-primary/60' : 'focus:ring-primary/60'
+                    'w-10 h-12 text-center text-xl font-semibold rounded-md border focus:outline-none focus:ring-2 transition-colors',
+                    'bg-background text-foreground border-border hover:border-accent/50',
+                    revealed.has(i) ? 'ring-2 ring-accent/60' : 'focus:ring-accent/60'
                   )}
                   aria-label={`Lettre ${i + 1}`}
                 />
@@ -268,23 +268,23 @@ export const DecoderGamePlayer: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button onClick={handleCheck} className="min-w-[180px] bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700">
+            <Button onClick={handleCheck} className="min-w-[180px] bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90">
               Vérifier
             </Button>
-            <Button onClick={handleHelp} variant="secondary" className="min-w-[180px] bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white hover:from-fuchsia-600 hover:to-pink-700">
+            <Button onClick={handleHelp} variant="secondary" className="min-w-[180px] bg-gradient-to-r from-accent to-primary text-primary-foreground hover:from-accent/90 hover:to-primary/90">
               Aide-moi
             </Button>
-            <Button onClick={startNew} variant="outline" className="min-w-[180px]">
+            <Button onClick={startNew} variant="outline" className="min-w-[180px] hover:border-accent/60">
               Nouveau mot
             </Button>
           </div>
 
           {checked !== null && (
             <div className={cn(
-              'mt-6 text-center font-semibold p-3 rounded-lg',
-              checked ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-rose-100 text-rose-700 border border-rose-300'
+              'mt-6 text-center font-semibold p-3 rounded-lg border',
+              checked ? 'bg-primary/10 text-primary border-primary/30' : 'bg-destructive/10 text-destructive border-destructive/30'
             )}>
-              {checked ? 'Correct ! 🎉' : 'Incorrect, continuez à essayer.'}
+              {checked ? 'Bravo, mot trouvé ! 🌟 Continuez sur cette lancée.' : 'Incorrect, continuez à essayer.'}
             </div>
           )}
         </CardContent>
