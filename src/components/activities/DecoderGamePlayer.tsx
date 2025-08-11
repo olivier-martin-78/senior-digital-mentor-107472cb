@@ -205,13 +205,13 @@ export const DecoderGamePlayer: React.FC = () => {
     <div
       key={d}
       className={cn(
-        'rounded-xl border p-2 text-center select-none transition-all duration-200 hover:scale-105 hover:shadow-lg',
-        'bg-gradient-to-br from-indigo-50 to-purple-50 border-transparent'
+        'rounded-xl border-2 p-3 text-center select-none transition-all duration-200 hover:scale-105 hover:shadow-lg',
+        'bg-gradient-to-br from-indigo-50 to-purple-50 border-purple-200 hover:border-purple-400'
       )}
       aria-label={`Touche ${d}${letters ? ` (${letters.split('').join(', ')})` : ''}`}
     >
-      <div className="text-base font-bold">{d}</div>
-      {letters && <div className="text-[10px] opacity-70 tracking-widest">{letters}</div>}
+      <div className="text-lg font-extrabold">{d}</div>
+      {letters && <div className="text-sm opacity-80 tracking-widest font-semibold">{letters}</div>}
     </div>
   );
 
