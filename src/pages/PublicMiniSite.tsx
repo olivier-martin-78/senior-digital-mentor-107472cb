@@ -609,31 +609,68 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         return hasRating || hasComment;
       });
 
+      // Build candidates set for filtering
+      const candidates = new Set<string>();
+      
+      // Add mini-site owner's public name
       const ownerFirst = siteData?.first_name || propData?.first_name || '';
       const ownerLast = siteData?.last_name || propData?.last_name || '';
       const ownerFullName = `${ownerFirst} ${ownerLast}`.trim();
-
-      let filtered = validReviews;
       if (ownerFullName) {
-        const ownerNorm = normalize(ownerFullName);
-        filtered = validReviews.filter(r => normalize(r.auxiliary_name || '') === ownerNorm);
-        console.log('✅ [FETCH_REVIEWS] Filtered by owner name:', {
-          ownerFullName,
-          before: validReviews.length,
-          after: filtered.length
+        candidates.add(normalize(ownerFullName));
+      }
+
+      // Try to get intervenant's actual name by email
+      const ownerEmail = siteData?.email || propData?.email;
+      if (ownerEmail) {
+        try {
+          const { data: intervenantData } = await supabase
+            .from('intervenants')
+            .select('first_name, last_name')
+            .eq('email', ownerEmail)
+            .maybeSingle();
+          
+          if (intervenantData) {
+            const intervenantFullName = `${intervenantData.first_name} ${intervenantData.last_name}`.trim();
+            if (intervenantFullName) {
+              candidates.add(normalize(intervenantFullName));
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ [FETCH_REVIEWS] Could not fetch intervenant by email:', error);
+        }
+      }
+
+      // Filter reviews
+      let allowedReviews = validReviews;
+      if (candidates.size > 0) {
+        allowedReviews = validReviews.filter(r => {
+          const auxName = r.auxiliary_name || '';
+          // Allow empty auxiliary_name OR matching candidates
+          return !auxName || candidates.has(normalize(auxName));
         });
-        if (validReviews.length !== filtered.length) {
+        
+        console.log('✅ [FETCH_REVIEWS] Filtered reviews:', {
+          candidates: Array.from(candidates),
+          before: validReviews.length,
+          after: allowedReviews.length
+        });
+        
+        if (validReviews.length !== allowedReviews.length) {
           const discarded = validReviews
-            .filter(r => normalize(r.auxiliary_name || '') !== ownerNorm)
+            .filter(r => {
+              const auxName = r.auxiliary_name || '';
+              return auxName && !candidates.has(normalize(auxName));
+            })
             .slice(0, 5)
             .map(r => ({ auxiliary_name: r.auxiliary_name, patient_name: r.patient_name, created_at: r.created_at }));
           console.log('🧹 [FETCH_REVIEWS] Discarded (sample):', discarded);
         }
       } else {
-        console.warn('⚠️ [FETCH_REVIEWS] Owner name missing; skipping auxiliary_name filter');
+        console.warn('⚠️ [FETCH_REVIEWS] No filtering candidates; allowing all valid reviews');
       }
 
-      setReviews(filtered);
+      setReviews(allowedReviews);
     } catch (error: any) {
       console.error('❌ [FETCH_REVIEWS] Error:', error);
       const maxRetries = 2;
