@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { MediaUploader } from './MediaUploader';
 
 interface MediaItem {
   id?: string;
@@ -105,40 +106,55 @@ export const MediaOrderManager: React.FC<MediaOrderManagerProps> = ({
             />
           </div>
 
-          {/* Contrôles de réordonnancement */}
-          <div className="flex flex-col gap-1">
+          {/* Contrôles et remplacement */}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => moveUp(index)}
+                disabled={index === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => moveDown(index)}
+                disabled={index === media.length - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Remplacer ce média */}
+            <div className="px-2">
+              <MediaUploader
+                value=""
+                accept="image/*,video/*"
+                onChange={(url, mediaType = 'image') => {
+                  const newMedia = [...media];
+                  newMedia[index] = { ...newMedia[index], media_url: url, media_type: mediaType };
+                  onMediaChange(newMedia);
+                }}
+              />
+            </div>
+
+            {/* Bouton de suppression */}
             <Button
               type="button"
-              variant="outline"
+              variant="destructive"
               size="sm"
-              onClick={() => moveUp(index)}
-              disabled={index === 0}
+              onClick={() => removeMedia(index)}
               className="h-8 w-8 p-0"
             >
-              <ChevronUp className="w-4 h-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => moveDown(index)}
-              disabled={index === media.length - 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronDown className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-
-          {/* Bouton de suppression */}
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => removeMedia(index)}
-            className="h-8 w-8 p-0"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
         </div>
       ))}
     </div>

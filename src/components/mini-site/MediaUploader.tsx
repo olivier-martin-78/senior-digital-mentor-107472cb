@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 }) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-
+  const inputId = useId();
   const uploadFile = async (file: File): Promise<{ url: string; mediaType: 'image' | 'video' } | null> => {
     if (!user) {
       toast({
@@ -115,9 +115,9 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           onChange={handleFileChange}
           disabled={uploading}
           className="hidden"
-          id="media-upload"
+          id={inputId}
         />
-        <Label htmlFor="media-upload" className="cursor-pointer">
+        <Label htmlFor={inputId} className="cursor-pointer">
           <Button type="button" variant="outline" disabled={uploading} asChild>
             <span>
               <Upload className="w-4 h-4 mr-2" />
