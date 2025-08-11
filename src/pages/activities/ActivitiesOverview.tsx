@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Brain, Gamepad2, Dumbbell, Languages } from 'lucide-react';
+import { Sparkles, Brain, Gamepad2, Dumbbell, Languages, KeySquare } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';

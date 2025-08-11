@@ -42,6 +42,7 @@ import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
 import TranslationGame from '@/pages/activities/TranslationGame';
+import DecoderGame from '@/pages/activities/DecoderGame';
 import DictationGamePage from '@/pages/activities/DictationGamePage';
 import ReverseDictionaryGamePage from '@/pages/activities/ReverseDictionaryGamePage';
 import { SpotDifferencesGamePage } from '@/pages/activities/SpotDifferencesGame';
@@ -137,6 +138,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/sudoku" element={<SudokuGame />} />
             <Route path="/activities/crossword" element={<CrosswordGame />} />
             <Route path="/activities/translation" element={<TranslationGame />} />
+            <Route path="/activities/decoder" element={<DecoderGame />} />
             <Route path="/activities/dictation/:id" element={<DictationGamePage />} />
             <Route path="/activities/reverse-dictionary/:id" element={<ReverseDictionaryGamePage />} />
             <Route path="/activities/spot-differences/:id" element={<SpotDifferencesGamePage />} />
