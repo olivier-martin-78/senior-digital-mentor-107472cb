@@ -1811,6 +1811,18 @@ export type Database = {
         Args: { intervenant_id_param: string }
         Returns: boolean
       }
+      can_user_view_appointment: {
+        Args: { appointment_id_param: string }
+        Returns: boolean
+      }
+      can_user_view_caregiver: {
+        Args: { caregiver_id_param: string }
+        Returns: boolean
+      }
+      can_user_view_client: {
+        Args: { client_id_param: string }
+        Returns: boolean
+      }
       can_view_group: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
@@ -1894,7 +1906,7 @@ export type Database = {
         Returns: string
       }
       get_user_role: {
-        Args: { user_id: string }
+        Args: { user_id_param: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_subscription_plan: {
@@ -1918,6 +1930,10 @@ export type Database = {
       }
       is_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_client_created_by_auth_user: {
+        Args: { client_id_param: string }
         Returns: boolean
       }
       is_email_confirmed: {
