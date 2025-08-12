@@ -26,6 +26,15 @@ const defaultFormData: MiniSiteData = {
   site_subtitle: '',
   title_color: '',
   subtitle_color: '',
+  // Titres de section personnalisables
+  section_title_about_me: '',
+  section_title_why_this_profession: '',
+  section_title_skills_and_qualities: '',
+  section_title_services: '',
+  section_title_availability: '',
+  section_title_contact: '',
+  section_title_follow_me: '',
+  section_title_professional_networks: '',
   logo_url: '',
   logo_size: 150,
   professional_networks: '',
@@ -255,6 +264,16 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
+                  <Label htmlFor="section_title_professional_networks">Titre de section (Réseaux professionnels)</Label>
+                  <Input
+                    id="section_title_professional_networks"
+                    value={formData.section_title_professional_networks || ''}
+                    onChange={(e) => handleInputChange('section_title_professional_networks', e.target.value)}
+                    placeholder="Réseaux professionnels"
+                  />
+                </div>
+
+                <div>
                   <Label htmlFor="professional_networks">Je suis membre des réseaux professionnels</Label>
                   <Textarea
                     id="professional_networks"
@@ -303,6 +322,24 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 3 : Me contacter</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="section_title_contact">Titre de section (Me contacter)</Label>
+                  <Input
+                    id="section_title_contact"
+                    value={formData.section_title_contact || ''}
+                    onChange={(e) => handleInputChange('section_title_contact', e.target.value)}
+                    placeholder="Me contacter"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="section_title_follow_me">Titre de section (Suivez-moi)</Label>
+                  <Input
+                    id="section_title_follow_me"
+                    value={formData.section_title_follow_me || ''}
+                    onChange={(e) => handleInputChange('section_title_follow_me', e.target.value)}
+                    placeholder="Suivez-moi"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="first_name">Prénom *</Label>
@@ -413,6 +450,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 4 : Qui suis-je</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Label htmlFor="section_title_about_me">Titre de section (Qui suis-je ?)</Label>
+                  <Input
+                    id="section_title_about_me"
+                    value={formData.section_title_about_me || ''}
+                    onChange={(e) => handleInputChange('section_title_about_me', e.target.value)}
+                    placeholder="Qui suis-je ?"
+                  />
+                </div>
                 <Label htmlFor="about_me">Qui suis-je</Label>
                 <RichTextEditor
                   id="about_me"
@@ -428,6 +474,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 5 : Pourquoi j'ai choisi ce métier ?</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Label htmlFor="section_title_why_this_profession">Titre de section (Pourquoi j'ai choisi ce métier ?)</Label>
+                  <Input
+                    id="section_title_why_this_profession"
+                    value={formData.section_title_why_this_profession || ''}
+                    onChange={(e) => handleInputChange('section_title_why_this_profession', e.target.value)}
+                    placeholder={"Pourquoi j'ai choisi ce métier ?"}
+                  />
+                </div>
                 <Label htmlFor="why_this_profession">Ma raison d'être</Label>
                 <RichTextEditor
                   id="why_this_profession"
@@ -443,6 +498,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 6 : Mes compétences et qualités</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="section_title_skills_and_qualities">Titre de section (Mes compétences et qualités)</Label>
+                  <Input
+                    id="section_title_skills_and_qualities"
+                    value={formData.section_title_skills_and_qualities || ''}
+                    onChange={(e) => handleInputChange('section_title_skills_and_qualities', e.target.value)}
+                    placeholder="Mes compétences et qualités"
+                  />
+                </div>
                 <div>
                   <Label htmlFor="skills_and_qualities">Mes compétences et qualités clés</Label>
                   <RichTextEditor
@@ -469,6 +533,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 7 : Mes offres</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Label htmlFor="section_title_services">Titre de section (Mes offres)</Label>
+                  <Input
+                    id="section_title_services"
+                    value={formData.section_title_services || ''}
+                    onChange={(e) => handleInputChange('section_title_services', e.target.value)}
+                    placeholder="Mes offres"
+                  />
+                </div>
                 <Label htmlFor="services_description">Présentation de mes services et formules</Label>
                 <RichTextEditor
                   id="services_description"
@@ -484,6 +557,15 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                 <CardTitle>Section 8 : Mes disponibilités</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="section_title_availability">Titre de section (Mes disponibilités)</Label>
+                  <Input
+                    id="section_title_availability"
+                    value={formData.section_title_availability || ''}
+                    onChange={(e) => handleInputChange('section_title_availability', e.target.value)}
+                    placeholder="Mes disponibilités"
+                  />
+                </div>
                 <div>
                   <Label htmlFor="availability_schedule">Les disponibilités de mon planning</Label>
                   <RichTextEditor

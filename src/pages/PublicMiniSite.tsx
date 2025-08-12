@@ -887,7 +887,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>👤</span>
                     </div>
-                    Qui suis-je ?
+                    {siteData.section_title_about_me || 'Qui suis-je ?'}
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.about_me) }} />
@@ -904,7 +904,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>💼</span>
                     </div>
-                    Pourquoi j'ai choisi ce métier ?
+                    {siteData.section_title_why_this_profession || "Pourquoi j'ai choisi ce métier ?"}
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.why_this_profession) }} />
@@ -921,7 +921,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <Award className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
                     </div>
-                    Mes compétences et qualités
+                    {siteData.section_title_skills_and_qualities || 'Mes compétences et qualités'}
                   </h2>
                   <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.skills_and_qualities) }} />
@@ -943,7 +943,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🛍️</span>
                     </div>
-                    Mes offres
+                    {siteData.section_title_services || 'Mes offres'}
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.services_description) }} />
@@ -960,7 +960,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📅</span>
                     </div>
-                    Mes disponibilités
+                    {siteData.section_title_availability || 'Mes disponibilités'}
                   </h2>
                   {siteData.availability_schedule && (
                     <div className={`mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
@@ -1075,7 +1075,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                     <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📞</span>
                   </div>
-                  Me contacter
+                  {siteData.section_title_contact || 'Me contacter'}
                 </h2>
                 
                 <div className="space-y-4">
@@ -1135,7 +1135,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
                   {siteData.social_links && siteData.social_links.length > 0 && (
                     <div>
-                      <h4 className="font-semibold mb-3">Suivez-moi</h4>
+                      <h4 className="font-semibold mb-3">{siteData.section_title_follow_me || 'Suivez-moi'}</h4>
                       <div className="flex gap-3">
                         {siteData.social_links.map((link, index) => {
                           const IconComponent = socialIcons[link.platform];
@@ -1166,7 +1166,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🌐</span>
                     </div>
-                    Réseaux professionnels
+                    {siteData.section_title_professional_networks || 'Réseaux professionnels'}
                   </h3>
                   <div className="prose prose-sm prose-gray max-w-none">
                     {siteData.professional_networks.split('\n').map((paragraph, index) => (

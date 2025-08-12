@@ -10,6 +10,15 @@ export interface MiniSiteData {
   site_subtitle: string;
   title_color?: string;
   subtitle_color?: string;
+  // Customizable section titles
+  section_title_about_me?: string;
+  section_title_why_this_profession?: string;
+  section_title_skills_and_qualities?: string;
+  section_title_services?: string;
+  section_title_availability?: string;
+  section_title_contact?: string;
+  section_title_follow_me?: string;
+  section_title_professional_networks?: string;
   logo_url: string;
   logo_size: number;
   professional_networks: string;
@@ -133,6 +142,15 @@ export const useMiniSite = (userId?: string) => {
         site_subtitle: data.site_subtitle,
         title_color: data.title_color || null,
         subtitle_color: data.subtitle_color || null,
+        // Customizable section titles
+        section_title_about_me: data.section_title_about_me || null,
+        section_title_why_this_profession: data.section_title_why_this_profession || null,
+        section_title_skills_and_qualities: data.section_title_skills_and_qualities || null,
+        section_title_services: data.section_title_services || null,
+        section_title_availability: data.section_title_availability || null,
+        section_title_contact: data.section_title_contact || null,
+        section_title_follow_me: data.section_title_follow_me || null,
+        section_title_professional_networks: data.section_title_professional_networks || null,
         logo_url: data.logo_url,
         logo_size: data.logo_size,
         professional_networks: data.professional_networks,

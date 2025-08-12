@@ -1126,6 +1126,14 @@ export type Database = {
           postal_code: string | null
           profession: string | null
           professional_networks: string | null
+          section_title_about_me: string | null
+          section_title_availability: string | null
+          section_title_contact: string | null
+          section_title_follow_me: string | null
+          section_title_professional_networks: string | null
+          section_title_services: string | null
+          section_title_skills_and_qualities: string | null
+          section_title_why_this_profession: string | null
           services_description: string | null
           site_name: string
           site_subtitle: string | null
@@ -1156,6 +1164,14 @@ export type Database = {
           postal_code?: string | null
           profession?: string | null
           professional_networks?: string | null
+          section_title_about_me?: string | null
+          section_title_availability?: string | null
+          section_title_contact?: string | null
+          section_title_follow_me?: string | null
+          section_title_professional_networks?: string | null
+          section_title_services?: string | null
+          section_title_skills_and_qualities?: string | null
+          section_title_why_this_profession?: string | null
           services_description?: string | null
           site_name: string
           site_subtitle?: string | null
@@ -1186,6 +1202,14 @@ export type Database = {
           postal_code?: string | null
           profession?: string | null
           professional_networks?: string | null
+          section_title_about_me?: string | null
+          section_title_availability?: string | null
+          section_title_contact?: string | null
+          section_title_follow_me?: string | null
+          section_title_professional_networks?: string | null
+          section_title_services?: string | null
+          section_title_skills_and_qualities?: string | null
+          section_title_why_this_profession?: string | null
           services_description?: string | null
           site_name?: string
           site_subtitle?: string | null
