@@ -1878,6 +1878,17 @@ export type Database = {
           email: string
         }[]
       }
+      get_public_mini_site_reviews: {
+        Args: { p_slug: string }
+        Returns: {
+          client_rating: number
+          client_comments: string
+          created_at: string
+          patient_name: string
+          auxiliary_name: string
+          client_city: string
+        }[]
+      }
       get_user_access_status: {
         Args: { user_id_param: string }
         Returns: string
