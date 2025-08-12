@@ -12,7 +12,8 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  Star, 
+  Star,
+  Award, 
   ExternalLink,
   Facebook,
   Instagram,
@@ -913,7 +914,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                 <CardContent className="p-6">
                   <h2 className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent} flex items-center gap-2`}>
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
-                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>⭐</span>
+                      <Award className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
                     </div>
                     Mes compétences et qualités
                   </h2>
@@ -1008,13 +1009,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                           ? `bg-gradient-to-br ${theme.masculineAccent} text-white` 
                           : theme.iconBg
                     } mr-2`}>
-                      <span className={`${
-                        siteData.design_style === 'feminine'
-                          ? 'text-2xl'
-                          : siteData.design_style === 'masculine' 
-                            ? 'text-white' 
-                            : theme.iconText
-                      } font-bold`}>⭐</span>
+                      <Star className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
                     </div>
                     Avis clients
                   </h2>
