@@ -12,9 +12,11 @@ interface RichTextEditorProps {
 
 const modules = {
   toolbar: [
-    [{ header: [2, 3, false] }],
+    [{ header: [1, 2, 3, 4, false] }, { size: ['small', false, 'large', 'huge'] }],
     ['bold', 'italic', 'underline', 'strike'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+    [{ align: [] }],
     ['blockquote', 'code-block'],
     ['link'],
     ['clean']
@@ -22,9 +24,11 @@ const modules = {
 };
 
 const formats = [
-  'header',
+  'header', 'size',
   'bold', 'italic', 'underline', 'strike',
-  'list', 'bullet',
+  'color', 'background',
+  'list', 'bullet', 'indent',
+  'align',
   'blockquote', 'code-block',
   'link'
 ];
