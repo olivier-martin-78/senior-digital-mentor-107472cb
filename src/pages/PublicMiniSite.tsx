@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MiniSiteData } from '@/hooks/useMiniSite';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ScrollAnimation from '@/components/ScrollAnimation';
+import { sanitizeHtml } from '@/utils/safeHtml';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -889,9 +890,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     Qui suis-je ?
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
-                    {siteData.about_me.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-3">{paragraph}</p>
-                    ))}
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.about_me) }} />
                   </div>
                 </CardContent>
               </Card>
@@ -908,9 +907,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     Pourquoi j'ai choisi ce métier ?
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
-                    {siteData.why_this_profession.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-3">{paragraph}</p>
-                    ))}
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.why_this_profession) }} />
                   </div>
                 </CardContent>
               </Card>
@@ -927,9 +924,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     Mes compétences et qualités
                   </h2>
                   <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
-                    {siteData.skills_and_qualities.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-3">{paragraph}</p>
-                    ))}
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.skills_and_qualities) }} />
                   </div>
                   {siteData.activity_start_date && (
                     <Badge variant="outline" className={`mt-2 ${siteData.design_style === 'masculine' ? `border-slate-300 text-slate-700 bg-gradient-to-br ${theme.masculineGradient}` : `${theme.border} ${theme.iconText} ${theme.lightBg}`} ${siteData.design_style === 'feminine' ? 'border-pink-300 text-pink-700 bg-pink-50' : ''}`}>
@@ -951,9 +946,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     Mes offres
                   </h2>
                   <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
-                    {siteData.services_description.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-3">{paragraph}</p>
-                    ))}
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.services_description) }} />
                   </div>
                 </CardContent>
               </Card>
@@ -973,9 +966,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                       <h3 className={`font-semibold mb-2 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent}`}>Planning</h3>
                       <div className="prose prose-gray max-w-none">
-                        {siteData.availability_schedule.split('\n').map((paragraph, index) => (
-                          <p key={index} className="mb-2">{paragraph}</p>
-                        ))}
+                        <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.availability_schedule) }} />
                       </div>
                     </div>
                   )}
@@ -983,9 +974,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     <div className={`p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
                       <h3 className={`font-semibold mb-2 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : theme.accent}`}>Zone d'intervention</h3>
                       <div className="prose prose-gray max-w-none">
-                        {siteData.intervention_radius.split('\n').map((paragraph, index) => (
-                          <p key={index} className="mb-2">{paragraph}</p>
-                        ))}
+                        <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.intervention_radius) }} />
                       </div>
                     </div>
                   )}

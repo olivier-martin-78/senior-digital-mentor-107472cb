@@ -13,6 +13,7 @@ import { MediaOrderManager } from './MediaOrderManager';
 import { ColorPalette } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { Eye, Save, Trash2 } from 'lucide-react';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { useNavigate } from 'react-router-dom';
 
 interface MiniSiteFormProps {
@@ -413,12 +414,11 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               </CardHeader>
               <CardContent>
                 <Label htmlFor="about_me">Qui suis-je</Label>
-                <Textarea
+                <RichTextEditor
                   id="about_me"
                   value={formData.about_me}
-                  onChange={(e) => handleInputChange('about_me', e.target.value)}
+                  onChange={(val) => handleInputChange('about_me', val)}
                   placeholder="Présentez-vous..."
-                  rows={4}
                 />
               </CardContent>
             </Card>
@@ -429,12 +429,11 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               </CardHeader>
               <CardContent>
                 <Label htmlFor="why_this_profession">Ma raison d'être</Label>
-                <Textarea
+                <RichTextEditor
                   id="why_this_profession"
                   value={formData.why_this_profession}
-                  onChange={(e) => handleInputChange('why_this_profession', e.target.value)}
+                  onChange={(val) => handleInputChange('why_this_profession', val)}
                   placeholder="Expliquez votre motivation..."
-                  rows={4}
                 />
               </CardContent>
             </Card>
@@ -446,12 +445,11 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="skills_and_qualities">Mes compétences et qualités clés</Label>
-                  <Textarea
+                  <RichTextEditor
                     id="skills_and_qualities"
                     value={formData.skills_and_qualities}
-                    onChange={(e) => handleInputChange('skills_and_qualities', e.target.value)}
+                    onChange={(val) => handleInputChange('skills_and_qualities', val)}
                     placeholder="Listez vos compétences..."
-                    rows={4}
                   />
                 </div>
                 <div>
@@ -472,12 +470,11 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               </CardHeader>
               <CardContent>
                 <Label htmlFor="services_description">Présentation de mes services et formules</Label>
-                <Textarea
+                <RichTextEditor
                   id="services_description"
                   value={formData.services_description}
-                  onChange={(e) => handleInputChange('services_description', e.target.value)}
+                  onChange={(val) => handleInputChange('services_description', val)}
                   placeholder="Décrivez vos services..."
-                  rows={4}
                 />
               </CardContent>
             </Card>
@@ -489,22 +486,20 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="availability_schedule">Les disponibilités de mon planning</Label>
-                  <Textarea
+                  <RichTextEditor
                     id="availability_schedule"
                     value={formData.availability_schedule}
-                    onChange={(e) => handleInputChange('availability_schedule', e.target.value)}
+                    onChange={(val) => handleInputChange('availability_schedule', val)}
                     placeholder="Lundi-Vendredi : 8h-18h..."
-                    rows={3}
                   />
                 </div>
                 <div>
                   <Label htmlFor="intervention_radius">Mon rayon d'intervention</Label>
-                  <Textarea
+                  <RichTextEditor
                     id="intervention_radius"
                     value={formData.intervention_radius}
-                    onChange={(e) => handleInputChange('intervention_radius', e.target.value)}
+                    onChange={(val) => handleInputChange('intervention_radius', val)}
                     placeholder="20km autour de Paris..."
-                    rows={2}
                   />
                 </div>
               </CardContent>
