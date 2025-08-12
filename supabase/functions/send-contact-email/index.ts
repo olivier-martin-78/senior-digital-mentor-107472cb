@@ -9,7 +9,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('Fonction send-contact-email initialisée');
+// Rate limiting to prevent abuse
+const rateLimit = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX = 3; // 3 requests per minute per IP
+
+// Input sanitization function
+function sanitizeInput(input: string): string {
+  if (!input) return '';
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .trim()
+    .substring(0, 5000); // Limit length
+}
+
+console.log('Fonction send-contact-email initialisée avec sécurité renforcée');
 
 serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -18,6 +35,27 @@ serve(async (req: Request) => {
   }
   
   try {
+    // Rate limiting check
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    const userLimit = rateLimit.get(clientIP);
+    
+    if (userLimit) {
+      if (now < userLimit.resetTime) {
+        if (userLimit.count >= RATE_LIMIT_MAX) {
+          console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Trop de requêtes. Veuillez réessayer plus tard.' }),
+            { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+        userLimit.count++;
+      } else {
+        rateLimit.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+      }
+    } else {
+      rateLimit.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    }
     console.log('=== DÉBUT TRAITEMENT REQUÊTE ===');
     console.log('Method:', req.method);
     console.log('Headers:', Object.fromEntries(req.headers.entries()));
@@ -45,19 +83,28 @@ serve(async (req: Request) => {
     }
     
     const { firstName, lastName, email, phone, message, thematiques, attachmentUrl } = parsedData;
-    console.log('Données extraites:', { 
-      firstName: firstName ? '✓' : '✗', 
-      lastName: lastName ? '✓' : '✗', 
-      email: email ? '✓' : '✗',
-      phone: phone ? '✓' : '✗',
-      message: message ? '✓' : '✗', 
-      hasThematiques: thematiques && thematiques.length > 0 ? '✓' : '✗',
+    
+    // Sanitize all inputs to prevent XSS
+    const cleanFirstName = sanitizeInput(firstName);
+    const cleanLastName = sanitizeInput(lastName);
+    const cleanEmail = sanitizeInput(email);
+    const cleanPhone = sanitizeInput(phone);
+    const cleanMessage = sanitizeInput(message);
+    const cleanThematiques = Array.isArray(thematiques) ? thematiques.map(t => sanitizeInput(t)).slice(0, 10) : [];
+    
+    console.log('Données extraites et nettoyées:', { 
+      firstName: cleanFirstName ? '✓' : '✗', 
+      lastName: cleanLastName ? '✓' : '✗', 
+      email: cleanEmail ? '✓' : '✗',
+      phone: cleanPhone ? '✓' : '✗',
+      message: cleanMessage ? '✓' : '✗', 
+      hasThematiques: cleanThematiques.length > 0 ? '✓' : '✗',
       hasAttachment: !!attachmentUrl 
     });
     
-    // Validation des champs requis
-    if (!firstName || !lastName || !email || !message) {
-      console.error('Champs manquants:', { firstName: !!firstName, lastName: !!lastName, email: !!email, message: !!message });
+    // Validation des champs requis avec données nettoyées
+    if (!cleanFirstName || !cleanLastName || !cleanEmail || !cleanMessage) {
+      console.error('Champs manquants après nettoyage');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -67,10 +114,10 @@ serve(async (req: Request) => {
       );
     }
 
-    // Valider le format de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.error('Email invalide:', email);
+    // Validation stricte de l'email et longueur
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleanEmail) || cleanEmail.length > 254) {
+      console.error('Email invalide ou trop long');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -79,29 +126,40 @@ serve(async (req: Request) => {
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
+
+    // Validation des longueurs
+    if (cleanFirstName.length > 50 || cleanLastName.length > 50 || cleanMessage.length > 5000) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Les données dépassent la longueur maximale autorisée' 
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
     
-    const fullName = `${firstName} ${lastName}`;
+    const fullName = `${cleanFirstName} ${cleanLastName}`;
     
-    // Construire le contenu de l'email
+    // Construire le contenu de l'email avec données nettoyées
     const emailSubject = `Nouvelle demande de contact de ${fullName}`;
     let emailContent = `
       <h1>Nouvelle demande de contact</h1>
-      <p><strong>Prénom:</strong> ${firstName}</p>
-      <p><strong>Nom:</strong> ${lastName}</p>
-      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Prénom:</strong> ${cleanFirstName}</p>
+      <p><strong>Nom:</strong> ${cleanLastName}</p>
+      <p><strong>Email:</strong> ${cleanEmail}</p>
     `;
     
     // Ajouter le téléphone si fourni
-    if (phone && phone.trim()) {
-      emailContent += `<p><strong>Téléphone:</strong> ${phone}</p>`;
+    if (cleanPhone && cleanPhone.trim()) {
+      emailContent += `<p><strong>Téléphone:</strong> ${cleanPhone}</p>`;
     }
     
     // Ajouter les thématiques si présentes
-    if (thematiques && thematiques.length > 0) {
+    if (cleanThematiques.length > 0) {
       emailContent += `
         <p><strong>Thématiques sélectionnées:</strong></p>
         <ul>
-          ${thematiques.map((theme: string) => `<li>${theme}</li>`).join('')}
+          ${cleanThematiques.map((theme: string) => `<li>${theme}</li>`).join('')}
         </ul>
       `;
     }
@@ -109,7 +167,7 @@ serve(async (req: Request) => {
     emailContent += `
       <p><strong>Message:</strong></p>
       <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
-        ${message.replace(/\n/g, '<br/>')}
+        ${cleanMessage.replace(/\n/g, '<br/>')}
       </div>
     `;
     
@@ -136,7 +194,7 @@ serve(async (req: Request) => {
       to: 'contact@senior-digital-mentor.com',
       subject: emailSubject,
       html: emailContent,
-      reply_to: email,
+      reply_to: cleanEmail,
     });
     
     console.log('✓ Résultat notification:', notificationResult);
@@ -147,10 +205,10 @@ serve(async (req: Request) => {
     
     const confirmationResult = await resend.emails.send({
       from: 'contact@senior-digital-mentor.com',
-      to: [email],
+      to: [cleanEmail],
       subject: 'Nous avons bien reçu votre message - Senior Digital Mentor',
       html: `
-        <h1>Bonjour ${firstName},</h1>
+        <h1>Bonjour ${cleanFirstName},</h1>
         <p>Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés.</p>
         <p>Nous reviendrons vers vous dans les plus brefs délais.</p>
         <br>

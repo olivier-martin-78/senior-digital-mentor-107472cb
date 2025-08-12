@@ -1839,6 +1839,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      debug_user_access: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       delete_user_completely: {
         Args: { user_id_to_delete: string }
         Returns: undefined
