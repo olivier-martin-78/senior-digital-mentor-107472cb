@@ -781,7 +781,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       <ScrollAnimation />
       
       {/* Header */}
-      <header className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}>
+      <header 
+        className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}
+        style={(siteData.header_gradient_from || siteData.header_gradient_to) ? {
+          backgroundImage: `linear-gradient(to right, ${siteData.header_gradient_from || siteData.header_gradient_to}, ${siteData.header_gradient_to || siteData.header_gradient_from})`
+        } : undefined}
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
         {/* Motif en filigrane plus visible */}
         <div className="absolute inset-0 opacity-20">
@@ -888,8 +893,16 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>👤</span>
                     </div>
                     {siteData.section_title_about_me || 'Qui suis-je ?'}
-                  </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                </h2>
+                {(siteData.section_title_divider_from || siteData.section_title_divider_to) && (
+                  <div
+                    className="h-1 w-full rounded-full mb-4"
+                    style={{
+                      backgroundImage: `linear-gradient(to right, ${siteData.section_title_divider_from || siteData.section_title_divider_to}, ${siteData.section_title_divider_to || siteData.section_title_divider_from})`
+                    }}
+                  />
+                )}
+                <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`} style={{ color: siteData.section_text_color || undefined }}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.about_me) }} />
                   </div>
                 </CardContent>
@@ -905,8 +918,16 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>💼</span>
                     </div>
                     {siteData.section_title_why_this_profession || "Pourquoi j'ai choisi ce métier ?"}
-                  </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                </h2>
+                {(siteData.section_title_divider_from || siteData.section_title_divider_to) && (
+                  <div
+                    className="h-1 w-full rounded-full mb-4"
+                    style={{
+                      backgroundImage: `linear-gradient(to right, ${siteData.section_title_divider_from || siteData.section_title_divider_to}, ${siteData.section_title_divider_to || siteData.section_title_divider_from})`
+                    }}
+                  />
+                )}
+                <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`} style={{ color: siteData.section_text_color || undefined }}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.why_this_profession) }} />
                   </div>
                 </CardContent>
@@ -922,8 +943,16 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                       <Award className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
                     </div>
                     {siteData.section_title_skills_and_qualities || 'Mes compétences et qualités'}
-                  </h2>
-                  <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                </h2>
+                {(siteData.section_title_divider_from || siteData.section_title_divider_to) && (
+                  <div
+                    className="h-1 w-full rounded-full mb-4"
+                    style={{
+                      backgroundImage: `linear-gradient(to right, ${siteData.section_title_divider_from || siteData.section_title_divider_to}, ${siteData.section_title_divider_to || siteData.section_title_divider_from})`
+                    }}
+                  />
+                )}
+                <div className={`prose prose-gray max-w-none mb-4 p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`} style={{ color: siteData.section_text_color || undefined }}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.skills_and_qualities) }} />
                   </div>
                   {siteData.activity_start_date && (
@@ -945,7 +974,15 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     </div>
                     {siteData.section_title_services || 'Mes offres'}
                   </h2>
-                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`}>
+                  {(siteData.section_title_divider_from || siteData.section_title_divider_to) && (
+                    <div
+                      className="h-1 w-full rounded-full mb-4"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, ${siteData.section_title_divider_from || siteData.section_title_divider_to}, ${siteData.section_title_divider_to || siteData.section_title_divider_from})`
+                      }}
+                    />
+                  )}
+                  <div className={`prose prose-gray max-w-none p-4 rounded-lg ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient} border border-slate-200/30` : `${theme.lightBg} ${theme.border} border`}`} style={{ color: siteData.section_text_color || undefined }}>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteData.services_description) }} />
                   </div>
                 </CardContent>

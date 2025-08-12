@@ -1116,6 +1116,8 @@ export type Database = {
           design_style: string | null
           email: string
           first_name: string
+          header_gradient_from: string | null
+          header_gradient_to: string | null
           id: string
           intervention_radius: string | null
           is_published: boolean | null
@@ -1126,9 +1128,12 @@ export type Database = {
           postal_code: string | null
           profession: string | null
           professional_networks: string | null
+          section_text_color: string | null
           section_title_about_me: string | null
           section_title_availability: string | null
           section_title_contact: string | null
+          section_title_divider_from: string | null
+          section_title_divider_to: string | null
           section_title_follow_me: string | null
           section_title_professional_networks: string | null
           section_title_services: string | null
@@ -1154,6 +1159,8 @@ export type Database = {
           design_style?: string | null
           email: string
           first_name: string
+          header_gradient_from?: string | null
+          header_gradient_to?: string | null
           id?: string
           intervention_radius?: string | null
           is_published?: boolean | null
@@ -1164,9 +1171,12 @@ export type Database = {
           postal_code?: string | null
           profession?: string | null
           professional_networks?: string | null
+          section_text_color?: string | null
           section_title_about_me?: string | null
           section_title_availability?: string | null
           section_title_contact?: string | null
+          section_title_divider_from?: string | null
+          section_title_divider_to?: string | null
           section_title_follow_me?: string | null
           section_title_professional_networks?: string | null
           section_title_services?: string | null
@@ -1192,6 +1202,8 @@ export type Database = {
           design_style?: string | null
           email?: string
           first_name?: string
+          header_gradient_from?: string | null
+          header_gradient_to?: string | null
           id?: string
           intervention_radius?: string | null
           is_published?: boolean | null
@@ -1202,9 +1214,12 @@ export type Database = {
           postal_code?: string | null
           profession?: string | null
           professional_networks?: string | null
+          section_text_color?: string | null
           section_title_about_me?: string | null
           section_title_availability?: string | null
           section_title_contact?: string | null
+          section_title_divider_from?: string | null
+          section_title_divider_to?: string | null
           section_title_follow_me?: string | null
           section_title_professional_networks?: string | null
           section_title_services?: string | null

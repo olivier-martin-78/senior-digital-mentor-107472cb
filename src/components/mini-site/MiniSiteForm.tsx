@@ -26,6 +26,12 @@ const defaultFormData: MiniSiteData = {
   site_subtitle: '',
   title_color: '',
   subtitle_color: '',
+  // Advanced color customizations
+  header_gradient_from: '',
+  header_gradient_to: '',
+  section_text_color: '',
+  section_title_divider_from: '',
+  section_title_divider_to: '',
   // Titres de section personnalisables
   section_title_about_me: '',
   section_title_why_this_profession: '',
@@ -600,6 +606,96 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                     value={formData.color_palette}
                     onChange={(palette) => handleInputChange('color_palette', palette)}
                   />
+                </div>
+
+                {/* Personnalisation avancée des couleurs */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="header_gradient_from">Bandeau dégradé – début</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Input
+                          id="header_gradient_from"
+                          type="color"
+                          value={formData.header_gradient_from || '#4f46e5'}
+                          onChange={(e) => handleInputChange('header_gradient_from', e.target.value)}
+                          className="h-10 w-16 p-1"
+                          aria-label="Choisir la première couleur du bandeau"
+                        />
+                        <Button type="button" variant="outline" onClick={() => handleInputChange('header_gradient_from', '')}>
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="header_gradient_to">Bandeau dégradé – fin</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Input
+                          id="header_gradient_to"
+                          type="color"
+                          value={formData.header_gradient_to || '#1e40af'}
+                          onChange={(e) => handleInputChange('header_gradient_to', e.target.value)}
+                          className="h-10 w-16 p-1"
+                          aria-label="Choisir la deuxième couleur du bandeau"
+                        />
+                        <Button type="button" variant="outline" onClick={() => handleInputChange('header_gradient_to', '')}>
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="section_text_color">Couleur du texte des sections</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <Input
+                        id="section_text_color"
+                        type="color"
+                        value={formData.section_text_color || '#374151'}
+                        onChange={(e) => handleInputChange('section_text_color', e.target.value)}
+                        className="h-10 w-16 p-1"
+                        aria-label="Choisir la couleur du texte des sections"
+                      />
+                      <Button type="button" variant="outline" onClick={() => handleInputChange('section_text_color', '')}>
+                        Réinitialiser
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="section_title_divider_from">Ligne sous titre – début</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Input
+                          id="section_title_divider_from"
+                          type="color"
+                          value={formData.section_title_divider_from || '#ec4899'}
+                          onChange={(e) => handleInputChange('section_title_divider_from', e.target.value)}
+                          className="h-10 w-16 p-1"
+                          aria-label="Choisir la première couleur de la ligne"
+                        />
+                        <Button type="button" variant="outline" onClick={() => handleInputChange('section_title_divider_from', '')}>
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="section_title_divider_to">Ligne sous titre – fin</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Input
+                          id="section_title_divider_to"
+                          type="color"
+                          value={formData.section_title_divider_to || '#8b5cf6'}
+                          onChange={(e) => handleInputChange('section_title_divider_to', e.target.value)}
+                          className="h-10 w-16 p-1"
+                          aria-label="Choisir la deuxième couleur de la ligne"
+                        />
+                        <Button type="button" variant="outline" onClick={() => handleInputChange('section_title_divider_to', '')}>
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
