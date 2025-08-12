@@ -1131,6 +1131,7 @@ export type Database = {
           site_subtitle: string | null
           skills_and_qualities: string | null
           slug: string | null
+          subtitle_color: string | null
           updated_at: string
           user_id: string
           why_this_profession: string | null
@@ -1159,6 +1160,7 @@ export type Database = {
           site_subtitle?: string | null
           skills_and_qualities?: string | null
           slug?: string | null
+          subtitle_color?: string | null
           updated_at?: string
           user_id: string
           why_this_profession?: string | null
@@ -1187,6 +1189,7 @@ export type Database = {
           site_subtitle?: string | null
           skills_and_qualities?: string | null
           slug?: string | null
+          subtitle_color?: string | null
           updated_at?: string
           user_id?: string
           why_this_profession?: string | null

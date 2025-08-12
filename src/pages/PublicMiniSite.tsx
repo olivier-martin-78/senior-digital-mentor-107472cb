@@ -815,11 +815,19 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               />
             )}
             <div className="text-center md:text-left">
-              <h1 className={`${style.titleFont.replace('text-4xl md:text-5xl', 'text-2xl md:text-3xl').replace('text-5xl', 'text-3xl')} mb-1`}>
+              <h1
+                className={`${style.titleFont.replace('text-4xl md:text-5xl', 'text-2xl md:text-3xl').replace('text-5xl', 'text-3xl')} mb-1`}
+                style={{ color: siteData.title_color || undefined }}
+              >
                 {siteData.site_name}
               </h1>
               {siteData.site_subtitle && (
-                <p className={`${style.subtitleFont.replace('text-xl', 'text-lg')} opacity-90`}>{siteData.site_subtitle}</p>
+                <p
+                  className={`${style.subtitleFont.replace('text-xl', 'text-lg')} opacity-90`}
+                  style={{ color: siteData.subtitle_color || undefined }}
+                >
+                  {siteData.site_subtitle}
+                </p>
               )}
             </div>
           </div>

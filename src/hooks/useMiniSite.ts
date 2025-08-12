@@ -8,6 +8,8 @@ export interface MiniSiteData {
   id?: string;
   site_name: string;
   site_subtitle: string;
+  title_color?: string;
+  subtitle_color?: string;
   logo_url: string;
   logo_size: number;
   professional_networks: string;
@@ -129,6 +131,8 @@ export const useMiniSite = (userId?: string) => {
         user_id: targetUserId,
         site_name: data.site_name,
         site_subtitle: data.site_subtitle,
+        title_color: data.title_color || null,
+        subtitle_color: data.subtitle_color || null,
         logo_url: data.logo_url,
         logo_size: data.logo_size,
         professional_networks: data.professional_networks,

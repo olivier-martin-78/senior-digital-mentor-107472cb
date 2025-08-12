@@ -23,6 +23,8 @@ interface MiniSiteFormProps {
 const defaultFormData: MiniSiteData = {
   site_name: '',
   site_subtitle: '',
+  title_color: '',
+  subtitle_color: '',
   logo_url: '',
   logo_size: 150,
   professional_networks: '',
@@ -183,6 +185,41 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                     onChange={(e) => handleInputChange('site_subtitle', e.target.value)}
                     placeholder="Professionnel au service des seniors"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title_color">Couleur du titre (optionnel)</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="title_color"
+                        type="color"
+                        value={formData.title_color || '#ffffff'}
+                        onChange={(e) => handleInputChange('title_color', e.target.value)}
+                        aria-label="Choisir la couleur du titre"
+                        className="h-10 w-16 p-1"
+                      />
+                      <Button type="button" variant="outline" onClick={() => handleInputChange('title_color', '')}>
+                        Réinitialiser
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="subtitle_color">Couleur du sous-titre (optionnel)</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="subtitle_color"
+                        type="color"
+                        value={formData.subtitle_color || '#ffffff'}
+                        onChange={(e) => handleInputChange('subtitle_color', e.target.value)}
+                        aria-label="Choisir la couleur du sous-titre"
+                        className="h-10 w-16 p-1"
+                      />
+                      <Button type="button" variant="outline" onClick={() => handleInputChange('subtitle_color', '')}>
+                        Réinitialiser
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
