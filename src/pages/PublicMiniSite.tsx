@@ -538,10 +538,10 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           }))
         });
 
-        // Fetch reviews from intervention reports
-        await fetchReviews(siteData.user_id, 0, siteData.email || undefined);
+        // Fetch reviews via RPC filtered by mini-site owner (public mode)
+        await fetchPublicReviews(normalizedSlug, 0);
       }
-      
+
     } catch (error) {
       console.error('❌ [FETCH_SITE_DATA] Erreur générale:', error);
       setConnectionStatus('error');
@@ -676,6 +676,39 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       const maxRetries = 2;
       if (retryAttempt < maxRetries && error.name !== 'AbortError' && isComponentMounted) {
         setTimeout(() => fetchReviews(userId, retryAttempt + 1, _ownerEmailParam), 2000);
+      } else if (isComponentMounted) {
+        setReviews([]);
+      }
+    }
+  };
+
+  const fetchPublicReviews = async (slugParam: string, retryAttempt = 0) => {
+    if (!slugParam || !isComponentMounted) return;
+
+    console.log('🔎 [RPC_REVIEWS] Start for slug:', slugParam, { retryAttempt });
+
+    try {
+      const timeoutDuration = isMobileDevice ? 12000 : 8000;
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
+
+      const { data, error } = await supabase
+        .rpc('get_public_mini_site_reviews', { p_slug: slugParam })
+        .abortSignal(abortController.signal);
+
+      clearTimeout(timeoutId);
+
+      if (error) throw error;
+      if (!isComponentMounted) return;
+
+      const rows = data || [];
+      console.log('📡 [RPC_REVIEWS] Received:', rows.length, { slug: slugParam });
+      setReviews(rows);
+    } catch (error: any) {
+      console.error('❌ [RPC_REVIEWS] Error:', error);
+      const maxRetries = 2;
+      if (retryAttempt < maxRetries && error?.name !== 'AbortError' && isComponentMounted) {
+        setTimeout(() => fetchPublicReviews(slugParam, retryAttempt + 1), 2000);
       } else if (isComponentMounted) {
         setReviews([]);
       }
