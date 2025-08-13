@@ -14,6 +14,7 @@ export interface MiniSiteData {
   header_gradient_from?: string; // e.g. #123456
   header_gradient_to?: string;   // e.g. #654321
   section_text_color?: string;   // color for section body text
+  section_title_color?: string;  // color for section titles
   section_title_divider_from?: string; // gradient start for divider under titles
   section_title_divider_to?: string;   // gradient end for divider under titles
   // Customizable section titles
@@ -151,6 +152,7 @@ export const useMiniSite = (userId?: string) => {
         header_gradient_from: data.header_gradient_from || null,
         header_gradient_to: data.header_gradient_to || null,
         section_text_color: data.section_text_color || null,
+        section_title_color: data.section_title_color || null,
         section_title_divider_from: data.section_title_divider_from || null,
         section_title_divider_to: data.section_title_divider_to || null,
         // Customizable section titles

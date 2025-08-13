@@ -30,6 +30,7 @@ const defaultFormData: MiniSiteData = {
   header_gradient_from: '',
   header_gradient_to: '',
   section_text_color: '',
+  section_title_color: '',
   section_title_divider_from: '',
   section_title_divider_to: '',
   // Titres de section personnalisables
@@ -677,6 +678,23 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                         aria-label="Choisir la couleur du texte des sections"
                       />
                       <Button type="button" variant="outline" onClick={() => handleInputChange('section_text_color', '')}>
+                        Réinitialiser
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="section_title_color">Couleur des titres de section</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <Input
+                        id="section_title_color"
+                        type="color"
+                        value={formData.section_title_color || '#111827'}
+                        onChange={(e) => handleInputChange('section_title_color', e.target.value)}
+                        className="h-10 w-16 p-1"
+                        aria-label="Choisir la couleur des titres de section"
+                      />
+                      <Button type="button" variant="outline" onClick={() => handleInputChange('section_title_color', '')}>
                         Réinitialiser
                       </Button>
                     </div>

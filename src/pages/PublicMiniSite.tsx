@@ -918,8 +918,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>👤</span>
@@ -946,8 +946,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>💼</span>
@@ -974,8 +974,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <Award className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
@@ -1007,8 +1007,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                     className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                     className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🛍️</span>
@@ -1035,8 +1035,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll mb-6' : ''} ${reviews.length > 0 ? 'mb-6' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📅</span>
@@ -1076,12 +1076,12 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   <h2
                     className={`${style.sectionTitleFont} mb-6 ${
                       siteData.design_style === 'feminine'
-                        ? (siteData.title_color ? '' : 'text-2xl font-serif bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent')
+                        ? (siteData.section_title_color ? '' : 'text-2xl font-serif bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent')
                         : siteData.design_style === 'masculine' 
-                          ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`)
-                          : (siteData.title_color ? '' : theme.accent)
+                          ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`)
+                          : (siteData.section_title_color ? '' : theme.accent)
                     } flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-3 rounded-full ${
                       siteData.design_style === 'feminine'
@@ -1142,8 +1142,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             <Card className={`sticky top-4 ${style.cardStyle}`}>
               <CardContent className="p-6">
                 <h2
-                  className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                  style={{ color: siteData.title_color || undefined }}
+                  className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                  style={{ color: siteData.section_title_color || undefined }}
                 >
                   <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                     <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>📞</span>
@@ -1237,8 +1237,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h3
-                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.title_color || undefined }}
+                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
                       <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🌐</span>
