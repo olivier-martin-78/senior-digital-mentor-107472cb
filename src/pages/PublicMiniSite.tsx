@@ -567,9 +567,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         setSiteData({
           ...siteData,
           // Add missing properties for compatibility
-          professional_networks: '',
-          email: siteData.contact_info === 'contact via formulaire' ? 'contact' : '',
-          phone: '',
           is_published: true,
           design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
           media: (mediaData || []).map(media => ({
