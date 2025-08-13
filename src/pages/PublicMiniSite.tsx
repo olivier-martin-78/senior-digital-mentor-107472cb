@@ -10,6 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { 
   Mail, 
   Phone, 
   MapPin, 
@@ -389,6 +397,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [retryCount, setRetryCount] = useState(0);
   const [isComponentMounted, setIsComponentMounted] = useState(false);
+  // Reviews pagination and filtering states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState(0);
+  const reviewsPerPage = 6;
   
   const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
 
@@ -424,12 +437,36 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
     return undefined;
   }, [siteData?.header_gradient_from, siteData?.header_gradient_to]);
 
-  // Memoized logic for reviews display with debug logging separated
+  // Reviews filtering and pagination logic
+  const getFilteredReviews = useMemo(() => {
+    if (selectedRatingFilter === 0) {
+      return reviews;
+    }
+    return reviews.filter(review => review.client_rating === selectedRatingFilter);
+  }, [reviews, selectedRatingFilter]);
+
+  const getPaginatedReviews = useMemo(() => {
+    if (showAllReviews) {
+      return getFilteredReviews;
+    }
+    const startIndex = (currentPage - 1) * reviewsPerPage;
+    const endIndex = startIndex + reviewsPerPage;
+    return getFilteredReviews.slice(startIndex, endIndex);
+  }, [getFilteredReviews, currentPage, reviewsPerPage, showAllReviews]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(getFilteredReviews.length / reviewsPerPage);
+  }, [getFilteredReviews.length, reviewsPerPage]);
+
   const shouldShowReviews = useMemo(() => {
     const hasReviews = reviews.length > 0;
-    
     return hasReviews;
   }, [reviews.length]);
+
+  // Reset current page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedRatingFilter]);
 
   // Debug logging separated from render logic
   useEffect(() => {
@@ -1099,58 +1136,170 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                     : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`
               } transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
-                  <h2
-                    className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.section_title_color || undefined }}
-                  >
-                    <div className={`p-3 rounded-full ${
-                      siteData.design_style === 'feminine'
-                        ? 'bg-gradient-to-br from-pink-100 to-purple-100 border-2 border-pink-200'
-                        : siteData.design_style === 'masculine' 
-                          ? `bg-gradient-to-br ${theme.masculineAccent} text-white` 
-                          : theme.iconBg
-                    } mr-2`}>
-                      <Star className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
-                    </div>
-                    Avis clients
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     {reviews.map((review, index) => (
-                       <div key={index} className={`${
-                         siteData.design_style === 'feminine'
-                           ? 'bg-gradient-to-br from-white/80 to-pink-50/60 border-2 border-pink-200/50 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-pink-500/10 hover:scale-[1.02] transition-all duration-300'
-                           : siteData.design_style === 'masculine' 
-                             ? `${theme.lightBg} border rounded-lg shadow-sm` 
-                             : 'bg-white border rounded-lg shadow-sm'
-                       } p-4`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${i < (review.client_rating || 0) ? `fill-current ${darkestTextClass}` : 'text-gray-300'}`}
-                              />
-                            ))}
-                          </div>
-                          <p className={`text-xs ${darkestTextClass}`}>
-                            {new Date(review.created_at).toLocaleDateString('fr-FR')}
-                          </p>
-                        </div>
-                        <p className={`text-sm mb-3 italic leading-relaxed ${
-                          siteData.design_style === 'feminine'
-                            ? 'text-gray-700 font-light text-base'
-                            : 'text-gray-700'
-                        }`}>
-                          "{review.client_comments}"
-                        </p>
-                          {review.patient_name && (
-                            <p className={`text-xs font-medium ${darkestTextClass}`}>
-                              - {review.patient_name}{review.client_city ? `, ${review.client_city}` : ''}
+                   <h2
+                     className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                     style={{ color: siteData.section_title_color || undefined }}
+                   >
+                     <div className={`p-3 rounded-full ${
+                       siteData.design_style === 'feminine'
+                         ? 'bg-gradient-to-br from-pink-100 to-purple-100 border-2 border-pink-200'
+                         : siteData.design_style === 'masculine' 
+                           ? `bg-gradient-to-br ${theme.masculineAccent} text-white` 
+                           : theme.iconBg
+                     } mr-2`}>
+                       <Star className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} w-5 h-5`} />
+                     </div>
+                     Avis clients
+                   </h2>
+
+                   {/* Reviews counter */}
+                   <div className="mb-4">
+                     <p className={`text-sm ${theme.accent} font-medium`}>
+                       {showAllReviews 
+                         ? `${getFilteredReviews.length} avis au total${selectedRatingFilter > 0 ? ` (${selectedRatingFilter} étoile${selectedRatingFilter > 1 ? 's' : ''})` : ''}`
+                         : `Affichage ${Math.min((currentPage - 1) * reviewsPerPage + 1, getFilteredReviews.length)}-${Math.min(currentPage * reviewsPerPage, getFilteredReviews.length)} sur ${getFilteredReviews.length} avis`
+                       }
+                     </p>
+                   </div>
+
+                   {/* Show All Reviews mode - Rating filters */}
+                   {showAllReviews && (
+                     <div className="mb-6">
+                       <div className="flex flex-wrap gap-2 mb-4">
+                         <Button
+                           variant={selectedRatingFilter === 0 ? "default" : "outline"}
+                           size="sm"
+                           onClick={() => setSelectedRatingFilter(0)}
+                           className={selectedRatingFilter === 0 ? `text-white ${style.buttonStyle} bg-none` : ''}
+                           style={selectedRatingFilter === 0 ? headerGradientStyle : undefined}
+                         >
+                           Tous les avis
+                         </Button>
+                         {[5, 4, 3, 2, 1].map((rating) => (
+                           <Button
+                             key={rating}
+                             variant={selectedRatingFilter === rating ? "default" : "outline"}
+                             size="sm"
+                             onClick={() => setSelectedRatingFilter(rating)}
+                             className={`flex items-center gap-1 ${selectedRatingFilter === rating ? `text-white ${style.buttonStyle} bg-none` : ''}`}
+                             style={selectedRatingFilter === rating ? headerGradientStyle : undefined}
+                           >
+                             {rating} <Star className="w-3 h-3 fill-current" />
+                           </Button>
+                         ))}
+                       </div>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => {
+                           setShowAllReviews(false);
+                           setSelectedRatingFilter(0);
+                           setCurrentPage(1);
+                         }}
+                         className="mb-4"
+                       >
+                         Retour à la pagination
+                       </Button>
+                     </div>
+                   )}
+
+                   {/* Reviews grid */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {getPaginatedReviews.length > 0 ? (
+                       getPaginatedReviews.map((review, index) => (
+                         <div key={index} className={`${
+                           siteData.design_style === 'feminine'
+                             ? 'bg-gradient-to-br from-white/80 to-pink-50/60 border-2 border-pink-200/50 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-pink-500/10 hover:scale-[1.02] transition-all duration-300'
+                             : siteData.design_style === 'masculine' 
+                               ? `${theme.lightBg} border rounded-lg shadow-sm` 
+                               : 'bg-white border rounded-lg shadow-sm'
+                         } p-4`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${i < (review.client_rating || 0) ? `fill-current ${darkestTextClass}` : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                            <p className={`text-xs ${darkestTextClass}`}>
+                              {new Date(review.created_at).toLocaleDateString('fr-FR')}
                             </p>
-                          )}
-                      </div>
-                    ))}
-                  </div>
+                          </div>
+                          <p className={`text-sm mb-3 italic leading-relaxed ${
+                            siteData.design_style === 'feminine'
+                              ? 'text-gray-700 font-light text-base'
+                              : 'text-gray-700'
+                          }`}>
+                            "{review.client_comments}"
+                          </p>
+                            {review.patient_name && (
+                              <p className={`text-xs font-medium ${darkestTextClass}`}>
+                                - {review.patient_name}{review.client_city ? `, ${review.client_city}` : ''}
+                              </p>
+                            )}
+                        </div>
+                       ))
+                     ) : (
+                       <div className="col-span-full text-center py-8">
+                         <p className={`text-gray-500 ${siteData.design_style === 'feminine' ? 'text-base font-light' : 'text-sm'}`}>
+                           {selectedRatingFilter > 0 
+                             ? `Aucun avis avec ${selectedRatingFilter} étoile${selectedRatingFilter > 1 ? 's' : ''} trouvé.`
+                             : 'Aucun avis à afficher.'
+                           }
+                         </p>
+                       </div>
+                     )}
+                   </div>
+
+                   {/* Pagination controls - only show in pagination mode */}
+                   {!showAllReviews && getFilteredReviews.length > reviewsPerPage && (
+                     <div className="mt-8 flex flex-col items-center gap-4">
+                       <Pagination>
+                         <PaginationContent>
+                           {currentPage > 1 && (
+                             <PaginationItem>
+                               <PaginationPrevious 
+                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                 className="cursor-pointer"
+                               />
+                             </PaginationItem>
+                           )}
+                           
+                           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                             <PaginationItem key={page}>
+                               <PaginationLink
+                                 onClick={() => setCurrentPage(page)}
+                                 isActive={currentPage === page}
+                                 className="cursor-pointer"
+                               >
+                                 {page}
+                               </PaginationLink>
+                             </PaginationItem>
+                           ))}
+                           
+                           {currentPage < totalPages && (
+                             <PaginationItem>
+                               <PaginationNext 
+                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                 className="cursor-pointer"
+                               />
+                             </PaginationItem>
+                           )}
+                         </PaginationContent>
+                       </Pagination>
+                       
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => setShowAllReviews(true)}
+                         className={`${theme.accent} hover:underline`}
+                       >
+                         Voir tous les avis ({reviews.length})
+                       </Button>
+                     </div>
+                   )}
                 </CardContent>
               </Card>
             )}
