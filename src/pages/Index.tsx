@@ -6,7 +6,6 @@ import ProblemSolutionSection from '@/components/homepage/ProblemSolutionSection
 import FeaturesSection from '@/components/homepage/FeaturesSection';
 import ActivitiesSection from '@/components/homepage/ActivitiesSection';
 import TestimonialsSection from '@/components/homepage/TestimonialsSection';
-import ProfessionalSection from '@/components/homepage/ProfessionalSection';
 import FAQSection from '@/components/homepage/FAQSection';
 import CTASection from '@/components/homepage/CTASection';
 
@@ -18,10 +17,9 @@ const Index = () => {
       <FeaturesSection />
       <ActivitiesSection />
       <TestimonialsSection />
-      <ProfessionalSection />
       <FAQSection />
       <CTASection />
-      <Footer />   
+      <Footer />
     </div>
   );
 };
