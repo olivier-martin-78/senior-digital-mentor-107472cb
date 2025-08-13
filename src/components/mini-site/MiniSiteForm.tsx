@@ -110,6 +110,24 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePaletteChange = (paletteName: string) => {
+    const palette = colorPalettes.find((p) => p.name === paletteName);
+    if (!palette) {
+      setFormData(prev => ({ ...prev, color_palette: paletteName }));
+      return;
+    }
+    const darkest = palette.colors[0];
+    const lightest = palette.colors[palette.colors.length - 1];
+    setFormData(prev => ({
+      ...prev,
+      color_palette: paletteName,
+      header_gradient_from: darkest,
+      header_gradient_to: lightest,
+      section_title_divider_from: darkest,
+      section_title_divider_to: lightest,
+    }));
+  };
+
   const handleSocialLinksChange = (platform: string, checked: boolean, url?: string) => {
     setFormData(prev => {
       const currentLinks = prev.social_links || [];
@@ -625,7 +643,7 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                   <Label>Palette de couleurs</Label>
                   <ColorPalette
                     value={formData.color_palette}
-                    onChange={(palette) => handleInputChange('color_palette', palette)}
+                    onChange={handlePaletteChange}
                   />
                 </div>
 
