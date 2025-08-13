@@ -84,13 +84,21 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
   const [activeTab, setActiveTab] = useState('header');
   const [useProfilePhoto, setUseProfilePhoto] = useState(false);
   const [targetUserProfile, setTargetUserProfile] = useState<any>(null);
+  const [customLogoUrl, setCustomLogoUrl] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     if (miniSite) {
       setFormData(miniSite);
+      // Initialize custom logo URL and profile photo state
+      const currentProfile = targetUserProfile || profile;
+      const isUsingProfilePhoto = miniSite.logo_url && currentProfile?.avatar_url === miniSite.logo_url;
+      setUseProfilePhoto(isUsingProfilePhoto);
+      if (!isUsingProfilePhoto) {
+        setCustomLogoUrl(miniSite.logo_url || '');
+      }
     }
-  }, [miniSite]);
+  }, [miniSite, targetUserProfile, profile]);
 
   // Récupérer le profil de l'utilisateur cible si différent de l'utilisateur courant
   useEffect(() => {
@@ -312,15 +320,24 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                   <div className="space-y-4">
                     <div>
                       <Label>Logo</Label>
-                      <MediaUploader
-                        value={useProfilePhoto ? '' : formData.logo_url}
-                        onChange={(url) => {
-                          handleInputChange('logo_url', url);
-                          setUseProfilePhoto(false);
-                        }}
-                        accept="image/*"
-                        maxSize={2}
-                      />
+                      <div className={useProfilePhoto ? "opacity-50 pointer-events-none" : ""}>
+                        <MediaUploader
+                          value={customLogoUrl}
+                          onChange={(url) => {
+                            setCustomLogoUrl(url);
+                            if (!useProfilePhoto) {
+                              handleInputChange('logo_url', url);
+                            }
+                          }}
+                          accept="image/*"
+                          maxSize={2}
+                        />
+                      </div>
+                      {useProfilePhoto && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Le logo est désactivé car vous utilisez votre photo de profil.
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -350,6 +367,13 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                               const currentProfile = targetUserProfile || profile;
                               if (currentProfile?.avatar_url) {
                                 handleInputChange('logo_url', currentProfile.avatar_url);
+                              }
+                            } else {
+                              // Restore custom logo when unchecking
+                              if (customLogoUrl) {
+                                handleInputChange('logo_url', customLogoUrl);
+                              } else {
+                                handleInputChange('logo_url', '');
                               }
                             }
                           }}

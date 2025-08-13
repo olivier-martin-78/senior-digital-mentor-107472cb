@@ -844,7 +844,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <img
                 src={siteData.logo_url}
                 alt="Logo"
-                className="rounded-full bg-white p-1.5 shadow-lg"
+                className="rounded-full bg-white p-1.5 shadow-lg object-cover"
                 style={{ 
                   width: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px', 
                   height: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px' 
