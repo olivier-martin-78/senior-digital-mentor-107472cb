@@ -776,6 +776,37 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
+  const paletteKey = (siteData.color_palette as keyof typeof colorThemes) || 'blue';
+  const darkestTextClass = useMemo(() => {
+    const map: Record<string, string> = {
+      blue: 'text-blue-800',
+      green: 'text-green-800',
+      purple: 'text-purple-800',
+      pink: 'text-pink-800',
+      orange: 'text-orange-800',
+      teal: 'text-teal-800',
+      red: 'text-red-800',
+      indigo: 'text-indigo-800',
+      yellow: 'text-yellow-800',
+      gray: 'text-gray-800',
+      emerald: 'text-emerald-800',
+      cyan: 'text-cyan-800',
+      amber: 'text-amber-800',
+      lime: 'text-lime-800',
+      slate: 'text-slate-800',
+    };
+    return map[paletteKey] || 'text-slate-800';
+  }, [paletteKey]);
+
+  const headerGradientStyle = useMemo(() => {
+    const from = siteData.header_gradient_from;
+    const to = siteData.header_gradient_to;
+    if (from || to) {
+      return { backgroundImage: `linear-gradient(to right, ${from || to}, ${to || from})` } as React.CSSProperties;
+    }
+    return undefined;
+  }, [siteData.header_gradient_from, siteData.header_gradient_to]);
+
   return (
     <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
       <ScrollAnimation />
@@ -783,9 +814,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       {/* Header */}
       <header 
         className={`bg-gradient-to-r ${theme.primary} text-white ${style.headerStyle} relative overflow-hidden`}
-        style={(siteData.header_gradient_from || siteData.header_gradient_to) ? {
-          backgroundImage: `linear-gradient(to right, ${siteData.header_gradient_from || siteData.header_gradient_to}, ${siteData.header_gradient_to || siteData.header_gradient_from})`
-        } : undefined}
+        style={headerGradientStyle}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
         {/* Motif en filigrane plus visible */}
@@ -1079,21 +1108,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-4 h-4 ${
-                                  i < review.client_rating
-                                    ? siteData.design_style === 'feminine' 
-                                      ? 'text-pink-400 fill-current' 
-                                      : 'text-yellow-400 fill-current'
-                                    : 'text-gray-300'
-                                }`}
+                                className={`w-4 h-4 ${i < (review.client_rating || 0) ? `fill-current ${darkestTextClass}` : 'text-gray-300'}`}
                               />
                             ))}
                           </div>
-                          <p className={`text-xs ${
-                            siteData.design_style === 'feminine' 
-                              ? 'text-pink-400/80' 
-                              : 'text-gray-400'
-                          }`}>
+                          <p className={`text-xs ${darkestTextClass}`}>
                             {new Date(review.created_at).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
@@ -1104,15 +1123,11 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                         }`}>
                           "{review.client_comments}"
                         </p>
-                        {review.patient_name && (
-                          <p className={`text-xs font-medium ${
-                            siteData.design_style === 'feminine'
-                              ? 'text-pink-600/80'
-                              : 'text-gray-500'
-                          }`}>
-                            - {review.patient_name}{review.client_city ? `, ${review.client_city}` : ''}
-                          </p>
-                        )}
+                          {review.patient_name && (
+                            <p className={`text-xs font-medium ${darkestTextClass}`}>
+                              - {review.patient_name}{review.client_city ? `, ${review.client_city}` : ''}
+                            </p>
+                          )}
                       </div>
                     ))}
                   </div>
@@ -1184,7 +1199,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                   </div>
 
                   <Button 
-                    className={`w-full ${theme.button} text-white ${style.buttonStyle}`}
+                    className={`w-full text-white ${style.buttonStyle} bg-none`}
+                    style={headerGradientStyle}
                     onClick={() => window.location.href = `mailto:${siteData.email}`}
                   >
                     <Mail className="w-4 h-4 mr-2" />
