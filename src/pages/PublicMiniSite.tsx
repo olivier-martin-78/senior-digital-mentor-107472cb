@@ -528,19 +528,13 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
 
+      // Fetch main site data from public view
       const { data: siteData, error } = await supabase
-        .from('mini_sites')
-        .select(`
-          *,
-          mini_site_media(*),
-          mini_site_social_links(*)
-        `)
+        .from('mini_sites_public')
+        .select('*')
         .eq('slug', normalizedSlug)
-        .eq('is_published', true)
         .abortSignal(abortController.signal)
         .single();
-
-      clearTimeout(timeoutId);
 
       if (error) {
         console.error('❌ [FETCH_SITE_DATA] Erreur Supabase:', error);
@@ -551,13 +545,34 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         throw new Error('Site non trouvé');
       }
 
+      // Fetch related data separately for published mini-sites
+      const [{ data: mediaData }, { data: socialLinksData }] = await Promise.all([
+        supabase
+          .from('mini_site_media')
+          .select('*')
+          .eq('mini_site_id', siteData.id)
+          .abortSignal(abortController.signal),
+        supabase
+          .from('mini_site_social_links')
+          .select('*')
+          .eq('mini_site_id', siteData.id)
+          .abortSignal(abortController.signal)
+      ]);
+
+      clearTimeout(timeoutId);
+
       setConnectionStatus('connected');
 
       if (isComponentMounted) {
         setSiteData({
           ...siteData,
+          // Add missing properties for compatibility
+          professional_networks: '',
+          email: siteData.contact_info === 'contact via formulaire' ? 'contact' : '',
+          phone: '',
+          is_published: true,
           design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
-          media: (siteData.mini_site_media || []).map(media => ({
+          media: (mediaData || []).map(media => ({
             id: media.id,
             media_url: media.media_url,
             caption: media.caption || '',
@@ -565,7 +580,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             display_order: media.display_order || 0,
             media_type: media.media_type as 'image' | 'video' || 'image'
           })),
-          social_links: (siteData.mini_site_social_links || []).map(link => ({
+          social_links: (socialLinksData || []).map(link => ({
             id: link.id,
             platform: link.platform as 'facebook' | 'tiktok' | 'linkedin' | 'instagram' | 'x' | 'youtube',
             url: link.url
