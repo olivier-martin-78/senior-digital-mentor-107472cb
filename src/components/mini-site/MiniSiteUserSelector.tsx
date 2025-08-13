@@ -83,7 +83,7 @@ export const MiniSiteUserSelector: React.FC<MiniSiteUserSelectorProps> = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0">
-            <Command>
+            <Command shouldFilter={false}>
               <CommandInput
                 placeholder="Rechercher un utilisateur..."
                 value={searchQuery}
@@ -97,6 +97,7 @@ export const MiniSiteUserSelector: React.FC<MiniSiteUserSelectorProps> = ({
                     onSelect={() => {
                       onUserChange(null);
                       setOpen(false);
+                      setSearchQuery('');
                     }}
                   >
                     <Check
@@ -110,10 +111,11 @@ export const MiniSiteUserSelector: React.FC<MiniSiteUserSelectorProps> = ({
                   {filteredUsers.map((user) => (
                     <CommandItem
                       key={user.id}
-                      value={user.id}
+                      value={`user-${user.id}`}
                       onSelect={() => {
                         onUserChange(user.id === selectedUserId ? null : user.id);
                         setOpen(false);
+                        setSearchQuery('');
                       }}
                     >
                       <Check
