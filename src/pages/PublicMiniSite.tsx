@@ -302,7 +302,7 @@ const designStyles = {
     cardStyle: 'rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-pink-200/50 bg-gradient-to-br from-white/80 to-pink-50/50 backdrop-blur-sm hover:scale-[1.02] hover:-translate-y-1',
     titleFont: 'font-serif text-4xl md:text-6xl bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent',
     subtitleFont: 'font-light italic text-xl text-pink-700/80',
-    sectionTitleFont: 'font-serif text-3xl text-pink-800 relative inline-block after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-gradient-to-r after:from-pink-400 after:to-purple-400 after:rounded-full',
+    sectionTitleFont: 'font-serif text-3xl text-pink-800 relative inline-block',
     buttonStyle: 'rounded-full px-10 py-4 font-medium transition-all duration-300 hover:scale-110 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:shadow-pink-500/25 transform hover:-translate-y-1',
     decorativeElement: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -336,7 +336,7 @@ const designStyles = {
     cardStyle: 'rounded-lg shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200/50 hover:border-slate-300/70 backdrop-blur-sm hover:scale-[1.02] hover:-translate-y-1 transform-gpu',
     titleFont: 'font-bold text-4xl md:text-6xl tracking-tight bg-gradient-to-r from-slate-800 via-slate-600 to-slate-700 bg-clip-text text-transparent',
     subtitleFont: 'font-medium text-xl text-slate-700',
-    sectionTitleFont: 'font-bold text-3xl tracking-wide bg-gradient-to-r from-slate-700 to-slate-600 bg-clip-text text-transparent relative inline-block after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-gradient-to-r after:from-slate-500 after:to-slate-600 after:rounded-full',
+    sectionTitleFont: 'font-bold text-3xl tracking-wide bg-gradient-to-r from-slate-700 to-slate-600 bg-clip-text text-transparent relative inline-block',
     buttonStyle: 'px-8 py-4 font-bold uppercase tracking-wide transition-all duration-300 hover:scale-110 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-lg hover:shadow-xl hover:shadow-slate-500/25 transform hover:-translate-y-1 rounded-lg',
     decorativeElement: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
