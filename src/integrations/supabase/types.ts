@@ -2195,6 +2195,23 @@ export type Database = {
           client_city: string
         }[]
       }
+      get_review_request_by_token: {
+        Args: { token_param: string }
+        Returns: {
+          id: string
+          professional_id: string
+          client_id: string
+          caregiver_id: string
+          review_date: string
+          satisfaction_rating: number
+          city: string
+          status: string
+          expires_at: string
+          professional_name: string
+          client_name: string
+          caregiver_name: string
+        }[]
+      }
       get_user_access_status: {
         Args: { user_id_param: string }
         Returns: string

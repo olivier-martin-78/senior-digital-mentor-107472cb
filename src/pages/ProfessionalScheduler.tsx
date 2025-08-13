@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Appointment, Client, Intervenant, Caregiver } from '@/types/appointments';
-import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock } from 'lucide-react';
+import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock, Star } from 'lucide-react';
+import { ReviewRequestForm } from '@/components/review/ReviewRequestForm';
 
 const ProfessionalScheduler = () => {
   const { user } = useAuth();
@@ -31,6 +32,7 @@ const ProfessionalScheduler = () => {
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const [isIntervenantManagerOpen, setIsIntervenantManagerOpen] = useState(false);
   const [isCaregiverManagerOpen, setIsCaregiverManagerOpen] = useState(false);
+  const [isReviewRequestFormOpen, setIsReviewRequestFormOpen] = useState(false);
   const [filterClientId, setFilterClientId] = useState<string | null>(null);
   const [filterIntervenantId, setFilterIntervenantId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
@@ -235,6 +237,14 @@ const ProfessionalScheduler = () => {
     setFilterStatus(null);
   };
 
+  const handleOpenReviewRequestForm = () => {
+    setIsReviewRequestFormOpen(true);
+  };
+
+  const handleCloseReviewRequestForm = () => {
+    setIsReviewRequestFormOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -301,7 +311,7 @@ const ProfessionalScheduler = () => {
           </TabsContent>
           
           <TabsContent value="managers">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -328,6 +338,21 @@ const ProfessionalScheduler = () => {
                 <CardContent>
                   <Button onClick={handleOpenIntervenantManager} className="w-full">
                     Gérer les Intervenants
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    Gestion des avis clients
+                  </CardTitle>
+                  <CardDescription>Sollicitez des avis de vos clients.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={handleOpenReviewRequestForm} className="w-full">
+                    Solliciter un avis
                   </Button>
                 </CardContent>
               </Card>
@@ -376,6 +401,11 @@ const ProfessionalScheduler = () => {
             clientId={selectedClientForCaregivers}
           />
         )}
+
+        <ReviewRequestForm
+          isOpen={isReviewRequestFormOpen}
+          onClose={handleCloseReviewRequestForm}
+        />
       </div>
     </div>
   );
