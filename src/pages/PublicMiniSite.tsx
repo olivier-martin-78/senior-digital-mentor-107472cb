@@ -849,15 +849,19 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
         <div className="container mx-auto px-4 py-5 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-5">
             {siteData.logo_url && (
-              <img
-                src={siteData.logo_url}
-                alt="Logo"
-                className="rounded-full bg-white p-1.5 shadow-lg object-cover"
+              <div 
+                className="rounded-full bg-white p-1.5 shadow-lg"
                 style={{ 
                   width: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px', 
                   height: siteData.logo_size ? `${Math.round(parseInt(siteData.logo_size.toString()) * 0.6)}px` : '60px' 
                 }}
-              />
+              >
+                <img
+                  src={siteData.logo_url}
+                  alt="Logo"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              </div>
             )}
             <div className="text-center md:text-left">
               <h1
