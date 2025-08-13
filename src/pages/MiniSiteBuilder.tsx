@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MiniSiteForm } from '@/components/mini-site/MiniSiteForm';
+import { MiniSiteUserSelector } from '@/components/mini-site/MiniSiteUserSelector';
 import { useOptionalAuth } from '@/hooks/useOptionalAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export const MiniSiteBuilder: React.FC = () => {
   console.log('🔥 [MINI_SITE_BUILDER_DEBUG] Composant MiniSiteBuilder rendu');
   const { user, isLoading } = useOptionalAuth();
+  const { hasRole } = useAuth();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   console.log('🔥 [MINI_SITE_BUILDER_DEBUG] État auth:', { user: !!user, isLoading });
 
@@ -26,5 +30,16 @@ export const MiniSiteBuilder: React.FC = () => {
   }
 
   console.log('🔥 [MINI_SITE_BUILDER_DEBUG] Rendu MiniSiteForm');
-  return <MiniSiteForm />;
+  
+  return (
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      {hasRole('admin') && (
+        <MiniSiteUserSelector 
+          selectedUserId={selectedUserId}
+          onUserChange={setSelectedUserId}
+        />
+      )}
+      <MiniSiteForm userId={selectedUserId || undefined} />
+    </div>
+  );
 };
