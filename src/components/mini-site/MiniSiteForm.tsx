@@ -7,14 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MiniSiteData, useMiniSite } from '@/hooks/useMiniSite';
 import { MediaUploader } from './MediaUploader';
 import { MediaOrderManager } from './MediaOrderManager';
 import { ColorPalette, colorPalettes } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
-import { Eye, Save, Trash2 } from 'lucide-react';
+import { Eye, Save, Trash2, User } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MiniSiteFormProps {
   userId?: string;
@@ -76,8 +79,11 @@ const socialPlatforms = [
 
 export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview }) => {
   const { miniSite, loading, saveMiniSite, deleteMiniSite } = useMiniSite(userId);
+  const { profile } = useAuth();
   const [formData, setFormData] = useState<MiniSiteData>(defaultFormData);
   const [activeTab, setActiveTab] = useState('header');
+  const [useProfilePhoto, setUseProfilePhoto] = useState(false);
+  const [targetUserProfile, setTargetUserProfile] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,6 +91,30 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
       setFormData(miniSite);
     }
   }, [miniSite]);
+
+  // Récupérer le profil de l'utilisateur cible si différent de l'utilisateur courant
+  useEffect(() => {
+    const fetchTargetUserProfile = async () => {
+      if (userId && userId !== profile?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, display_name, email, avatar_url')
+            .eq('id', userId)
+            .single();
+
+          if (error) throw error;
+          setTargetUserProfile(data);
+        } catch (error) {
+          console.error('Erreur lors de la récupération du profil utilisateur:', error);
+        }
+      } else {
+        setTargetUserProfile(null);
+      }
+    };
+
+    fetchTargetUserProfile();
+  }, [userId, profile?.id]);
 
   // Initialize default header gradient and divider from palette (darkest -> lightest)
   useEffect(() => {
@@ -277,26 +307,88 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
                   </div>
                 </div>
 
-                <div>
-                  <Label>Logo</Label>
-                  <MediaUploader
-                    value={formData.logo_url}
-                    onChange={(url) => handleInputChange('logo_url', url)}
-                    accept="image/*"
-                    maxSize={2}
-                  />
-                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Section Logo */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Logo</Label>
+                      <MediaUploader
+                        value={useProfilePhoto ? '' : formData.logo_url}
+                        onChange={(url) => {
+                          handleInputChange('logo_url', url);
+                          setUseProfilePhoto(false);
+                        }}
+                        accept="image/*"
+                        maxSize={2}
+                      />
+                    </div>
 
-                <div>
-                  <Label htmlFor="logo_size">Taille du logo (pixels)</Label>
-                  <Input
-                    id="logo_size"
-                    type="number"
-                    value={formData.logo_size}
-                    onChange={(e) => handleInputChange('logo_size', parseInt(e.target.value) || 150)}
-                    min="50"
-                    max="300"
-                  />
+                    <div>
+                      <Label htmlFor="logo_size">Taille du logo/photo (pixels)</Label>
+                      <Input
+                        id="logo_size"
+                        type="number"
+                        value={formData.logo_size}
+                        onChange={(e) => handleInputChange('logo_size', parseInt(e.target.value) || 150)}
+                        min="50"
+                        max="300"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section Photo de profil alternative */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Alternative : Utiliser ma photo de profil</Label>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Checkbox
+                          id="use_profile_photo"
+                          checked={useProfilePhoto}
+                          onCheckedChange={(checked) => {
+                            setUseProfilePhoto(checked as boolean);
+                            if (checked) {
+                              const currentProfile = targetUserProfile || profile;
+                              if (currentProfile?.avatar_url) {
+                                handleInputChange('logo_url', currentProfile.avatar_url);
+                              }
+                            }
+                          }}
+                        />
+                        <Label htmlFor="use_profile_photo" className="text-sm">
+                          Utiliser ma photo de profil au lieu du logo
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Aperçu de la photo de profil */}
+                    <div className="space-y-2">
+                      <Label>Aperçu de la photo de profil</Label>
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-16 h-16">
+                          <AvatarImage 
+                            src={(targetUserProfile || profile)?.avatar_url || ''} 
+                            alt="Photo de profil" 
+                          />
+                          <AvatarFallback className="bg-muted">
+                            <User className="w-8 h-8 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-sm text-muted-foreground">
+                          {(targetUserProfile || profile)?.avatar_url ? (
+                            <p>Photo de profil disponible</p>
+                          ) : (
+                            <p>Aucune photo de profil. <br />Uploadez-en une dans votre page de profil.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {useProfilePhoto && !(targetUserProfile || profile)?.avatar_url && (
+                      <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
+                        Aucune photo de profil disponible. Veuillez en uploader une dans votre page de profil d'abord.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
