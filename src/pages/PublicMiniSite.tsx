@@ -392,6 +392,38 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   
   const { isMobileDevice, isMobileViewport, connectionInfo } = useIsMobile();
 
+  // Palette et styles (déclarés avant tout return conditionnel pour garantir l'ordre des hooks)
+  const paletteKey = (siteData?.color_palette as keyof typeof colorThemes) || 'blue';
+  const darkestTextClass = useMemo(() => {
+    const map: Record<string, string> = {
+      blue: 'text-blue-800',
+      green: 'text-green-800',
+      purple: 'text-purple-800',
+      pink: 'text-pink-800',
+      orange: 'text-orange-800',
+      teal: 'text-teal-800',
+      red: 'text-red-800',
+      indigo: 'text-indigo-800',
+      yellow: 'text-yellow-800',
+      gray: 'text-gray-800',
+      emerald: 'text-emerald-800',
+      cyan: 'text-cyan-800',
+      amber: 'text-amber-800',
+      lime: 'text-lime-800',
+      slate: 'text-slate-800',
+    };
+    return map[paletteKey] || 'text-slate-800';
+  }, [paletteKey]);
+
+  const headerGradientStyle = useMemo(() => {
+    const from = siteData?.header_gradient_from;
+    const to = siteData?.header_gradient_to;
+    if (from || to) {
+      return { backgroundImage: `linear-gradient(to right, ${from || to}, ${to || from})` } as React.CSSProperties;
+    }
+    return undefined;
+  }, [siteData?.header_gradient_from, siteData?.header_gradient_to]);
+
   // Memoized logic for reviews display with debug logging separated
   const shouldShowReviews = useMemo(() => {
     const hasReviews = reviews.length > 0;
@@ -776,36 +808,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
-  const paletteKey = (siteData.color_palette as keyof typeof colorThemes) || 'blue';
-  const darkestTextClass = useMemo(() => {
-    const map: Record<string, string> = {
-      blue: 'text-blue-800',
-      green: 'text-green-800',
-      purple: 'text-purple-800',
-      pink: 'text-pink-800',
-      orange: 'text-orange-800',
-      teal: 'text-teal-800',
-      red: 'text-red-800',
-      indigo: 'text-indigo-800',
-      yellow: 'text-yellow-800',
-      gray: 'text-gray-800',
-      emerald: 'text-emerald-800',
-      cyan: 'text-cyan-800',
-      amber: 'text-amber-800',
-      lime: 'text-lime-800',
-      slate: 'text-slate-800',
-    };
-    return map[paletteKey] || 'text-slate-800';
-  }, [paletteKey]);
-
-  const headerGradientStyle = useMemo(() => {
-    const from = siteData.header_gradient_from;
-    const to = siteData.header_gradient_to;
-    if (from || to) {
-      return { backgroundImage: `linear-gradient(to right, ${from || to}, ${to || from})` } as React.CSSProperties;
-    }
-    return undefined;
-  }, [siteData.header_gradient_from, siteData.header_gradient_to]);
 
   return (
     <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
