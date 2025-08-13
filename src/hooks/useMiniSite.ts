@@ -17,6 +17,7 @@ export interface MiniSiteData {
   section_title_color?: string;  // color for section titles
   section_title_divider_from?: string; // gradient start for divider under titles
   section_title_divider_to?: string;   // gradient end for divider under titles
+  background_color?: string;           // custom background color for the page
   // Customizable section titles
   section_title_about_me?: string;
   section_title_why_this_profession?: string;
@@ -155,6 +156,7 @@ export const useMiniSite = (userId?: string) => {
         section_title_color: data.section_title_color || null,
         section_title_divider_from: data.section_title_divider_from || null,
         section_title_divider_to: data.section_title_divider_to || null,
+        background_color: data.background_color || null,
         // Customizable section titles
         section_title_about_me: data.section_title_about_me || null,
         section_title_why_this_profession: data.section_title_why_this_profession || null,

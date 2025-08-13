@@ -40,6 +40,7 @@ const defaultFormData: MiniSiteData = {
   section_title_color: '',
   section_title_divider_from: '',
   section_title_divider_to: '',
+  background_color: '',
   // Titres de section personnalisables
   section_title_about_me: '',
   section_title_why_this_profession: '',
@@ -887,6 +888,26 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
                         </Button>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="background_color">Couleur de fond de la page</Label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <Input
+                      id="background_color"
+                      type="color"
+                      value={formData.background_color || '#f8fafc'}
+                      onChange={(e) => handleInputChange('background_color', e.target.value)}
+                      className="h-10 w-16 p-1"
+                      aria-label="Choisir la couleur de fond de la page"
+                    />
+                    <Button type="button" variant="outline" onClick={() => handleInputChange('background_color', '')}>
+                      Réinitialiser
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Cette couleur remplacera l'arrière-plan par défaut lié au style
+                    </span>
                   </div>
                 </div>
 

@@ -808,9 +808,17 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
   const style = designStyles[siteData.design_style] || designStyles.neutral;
   const currentImage = siteData.media?.[currentImageIndex];
 
+  // Custom background or default design style background
+  const backgroundStyle = siteData.background_color 
+    ? { backgroundColor: siteData.background_color }
+    : {};
+  
+  const containerClassName = siteData.background_color 
+    ? 'min-h-screen' 
+    : `min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`;
 
   return (
-    <div className={`min-h-screen ${style.containerClass} ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineGradient}` : `bg-gradient-to-br ${theme.gradient}`}`}>
+    <div className={containerClassName} style={backgroundStyle}>
       <ScrollAnimation />
       
       {/* Header */}
