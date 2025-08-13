@@ -1088,13 +1088,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               } transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-6 ${
-                      siteData.design_style === 'feminine'
-                        ? (siteData.section_title_color ? '' : 'text-2xl font-serif bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent')
-                        : siteData.design_style === 'masculine' 
-                          ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`)
-                          : (siteData.section_title_color ? '' : theme.accent)
-                    } flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.section_title_color || undefined }}
                   >
                     <div className={`p-3 rounded-full ${
