@@ -36,6 +36,7 @@ export interface MiniSiteData {
   email: string;
   phone: string;
   postal_code: string;
+  city: string;
   about_me: string;
   why_this_profession: string;
   skills_and_qualities: string;
@@ -175,6 +176,7 @@ export const useMiniSite = (userId?: string) => {
         email: data.email,
         phone: data.phone,
         postal_code: data.postal_code,
+        city: data.city,
         about_me: data.about_me,
         why_this_profession: data.why_this_profession,
         skills_and_qualities: data.skills_and_qualities,

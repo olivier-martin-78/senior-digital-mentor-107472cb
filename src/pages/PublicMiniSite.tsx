@@ -606,6 +606,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
           // Add missing properties for compatibility
           is_published: true,
           design_style: siteData.design_style as 'feminine' | 'masculine' | 'neutral',
+          city: (siteData as any).city || '',
           media: (mediaData || []).map(media => ({
             id: media.id,
             media_url: media.media_url,

@@ -59,6 +59,7 @@ const defaultFormData: MiniSiteData = {
   email: '',
   phone: '',
   postal_code: '',
+  city: '',
   about_me: '',
   why_this_profession: '',
   skills_and_qualities: '',
@@ -571,13 +572,23 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="postal_code">Code postal</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code}
-                    onChange={(e) => handleInputChange('postal_code', e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="postal_code">Code postal</Label>
+                    <Input
+                      id="postal_code"
+                      value={formData.postal_code}
+                      onChange={(e) => handleInputChange('postal_code', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="city">Ville</Label>
+                    <Input
+                      id="city"
+                      value={formData.city || ''}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div>
