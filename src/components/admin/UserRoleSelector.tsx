@@ -85,12 +85,46 @@ const UserRoleSelector: React.FC<UserRoleSelectorProps> = ({
       // Log de sécurité pour audit
       console.log(`[AUDIT] Role change attempt: ${currentRole} -> ${selectedRole} for user ${userId} by admin ${user?.id} at ${new Date().toISOString()}`);
 
-      const { error } = await supabase
+      // Vérifier si le nouveau rôle existe déjà pour éviter la duplication
+      const { data: existingRoles, error: checkError } = await supabase
         .from('user_roles')
-        .update({ role: selectedRole })
+        .select('role')
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (checkError) throw checkError;
+
+      const hasNewRole = existingRoles?.some(r => r.role === selectedRole);
+      
+      if (hasNewRole) {
+        // Si le nouveau rôle existe déjà, supprimer l'ancien rôle seulement
+        const { error: deleteError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', currentRole);
+
+        if (deleteError) throw deleteError;
+      } else {
+        // Stratégie DELETE + INSERT pour éviter les conflits de contrainte unique
+        // 1. Supprimer l'ancien rôle spécifique
+        const { error: deleteError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', currentRole);
+
+        if (deleteError) throw deleteError;
+
+        // 2. Insérer le nouveau rôle
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: selectedRole
+          });
+
+        if (insertError) throw insertError;
+      }
 
       // Log de succès
       console.log(`[AUDIT] Role updated successfully: ${currentRole} -> ${selectedRole} for user ${userId}`);
