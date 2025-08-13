@@ -1072,6 +1072,13 @@ export type Database = {
             referencedRelation: "mini_sites"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mini_site_media_mini_site_id_fkey"
+            columns: ["mini_site_id"]
+            isOneToOne: false
+            referencedRelation: "mini_sites_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mini_site_social_links: {
@@ -1102,6 +1109,13 @@ export type Database = {
             columns: ["mini_site_id"]
             isOneToOne: false
             referencedRelation: "mini_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mini_site_social_links_mini_site_id_fkey"
+            columns: ["mini_site_id"]
+            isOneToOne: false
+            referencedRelation: "mini_sites_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1843,7 +1857,105 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mini_sites_public: {
+        Row: {
+          about_me: string | null
+          activity_start_date: string | null
+          availability_schedule: string | null
+          background_color: string | null
+          color_palette: string | null
+          contact_info: string | null
+          created_at: string | null
+          design_style: string | null
+          first_name: string | null
+          header_gradient_from: string | null
+          header_gradient_to: string | null
+          id: string | null
+          intervention_radius: string | null
+          last_name: string | null
+          logo_size: number | null
+          logo_url: string | null
+          postal_code: string | null
+          profession: string | null
+          section_text_color: string | null
+          section_title_color: string | null
+          section_title_divider_from: string | null
+          section_title_divider_to: string | null
+          services_description: string | null
+          site_name: string | null
+          site_subtitle: string | null
+          skills_and_qualities: string | null
+          slug: string | null
+          subtitle_color: string | null
+          title_color: string | null
+          why_this_profession: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          activity_start_date?: string | null
+          availability_schedule?: string | null
+          background_color?: string | null
+          color_palette?: string | null
+          contact_info?: never
+          created_at?: string | null
+          design_style?: string | null
+          first_name?: string | null
+          header_gradient_from?: string | null
+          header_gradient_to?: string | null
+          id?: string | null
+          intervention_radius?: string | null
+          last_name?: string | null
+          logo_size?: number | null
+          logo_url?: string | null
+          postal_code?: string | null
+          profession?: string | null
+          section_text_color?: string | null
+          section_title_color?: string | null
+          section_title_divider_from?: string | null
+          section_title_divider_to?: string | null
+          services_description?: string | null
+          site_name?: string | null
+          site_subtitle?: string | null
+          skills_and_qualities?: string | null
+          slug?: string | null
+          subtitle_color?: string | null
+          title_color?: string | null
+          why_this_profession?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          activity_start_date?: string | null
+          availability_schedule?: string | null
+          background_color?: string | null
+          color_palette?: string | null
+          contact_info?: never
+          created_at?: string | null
+          design_style?: string | null
+          first_name?: string | null
+          header_gradient_from?: string | null
+          header_gradient_to?: string | null
+          id?: string | null
+          intervention_radius?: string | null
+          last_name?: string | null
+          logo_size?: number | null
+          logo_url?: string | null
+          postal_code?: string | null
+          profession?: string | null
+          section_text_color?: string | null
+          section_title_color?: string | null
+          section_title_divider_from?: string | null
+          section_title_divider_to?: string | null
+          services_description?: string | null
+          site_name?: string | null
+          site_subtitle?: string | null
+          skills_and_qualities?: string | null
+          slug?: string | null
+          subtitle_color?: string | null
+          title_color?: string | null
+          why_this_profession?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_access_invitation_groups: {
