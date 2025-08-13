@@ -458,6 +458,44 @@ export type Database = {
           },
         ]
       }
+      client_reviews: {
+        Row: {
+          comments: string | null
+          completed_at: string
+          created_at: string
+          id: string
+          rating: number
+          review_request_id: string
+          reviewer_name: string | null
+        }
+        Insert: {
+          comments?: string | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_request_id: string
+          reviewer_name?: string | null
+        }
+        Update: {
+          comments?: string | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_request_id?: string
+          reviewer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reviews_review_request_id_fkey"
+            columns: ["review_request_id"]
+            isOneToOne: false
+            referencedRelation: "review_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string
@@ -1366,6 +1404,54 @@ export type Database = {
         }
         Relationships: []
       }
+      review_requests: {
+        Row: {
+          caregiver_id: string | null
+          city: string | null
+          client_id: string | null
+          created_at: string
+          email_sent_at: string | null
+          expires_at: string
+          id: string
+          professional_id: string
+          review_date: string
+          satisfaction_rating: number | null
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          caregiver_id?: string | null
+          city?: string | null
+          client_id?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          expires_at?: string
+          id?: string
+          professional_id: string
+          review_date: string
+          satisfaction_rating?: number | null
+          status?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          caregiver_id?: string | null
+          city?: string | null
+          client_id?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          expires_at?: string
+          id?: string
+          professional_id?: string
+          review_date?: string
+          satisfaction_rating?: number | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           billing_interval: string
@@ -2057,6 +2143,10 @@ export type Database = {
           p_last_name: string
           p_postal_code: string
         }
+        Returns: string
+      }
+      generate_review_token: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_admin_users_with_auth_data: {
