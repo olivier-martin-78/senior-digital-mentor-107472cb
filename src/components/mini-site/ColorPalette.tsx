@@ -6,7 +6,7 @@ interface ColorPaletteProps {
   onChange: (palette: string) => void;
 }
 
-const colorPalettes = [
+export const colorPalettes = [
   {
     name: 'blue',
     label: 'Bleu Océan',

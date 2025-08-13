@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MiniSiteData, useMiniSite } from '@/hooks/useMiniSite';
 import { MediaUploader } from './MediaUploader';
 import { MediaOrderManager } from './MediaOrderManager';
-import { ColorPalette } from './ColorPalette';
+import { ColorPalette, colorPalettes } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { Eye, Save, Trash2 } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -84,6 +84,20 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
       setFormData(miniSite);
     }
   }, [miniSite]);
+
+  // Initialize default header gradient from palette (darkest -> lightest)
+  useEffect(() => {
+    const palette = colorPalettes.find((p) => p.name === formData.color_palette);
+    if (!palette) return;
+    const darkest = palette.colors[0];
+    const lightest = palette.colors[palette.colors.length - 1];
+    setFormData((prev) => {
+      if (!prev.header_gradient_from && !prev.header_gradient_to) {
+        return { ...prev, header_gradient_from: darkest, header_gradient_to: lightest };
+      }
+      return prev;
+    });
+  }, [formData.color_palette]);
 
   const handleInputChange = (field: keyof MiniSiteData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));

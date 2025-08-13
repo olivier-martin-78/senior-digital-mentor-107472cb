@@ -889,7 +889,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -917,7 +917,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -945,7 +945,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -978,7 +978,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                     className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -1006,7 +1006,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
               <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll mb-6' : ''} ${reviews.length > 0 ? 'mb-6' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h2
-                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-4 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -1049,7 +1049,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                       siteData.design_style === 'feminine'
                         ? (siteData.title_color ? '' : 'text-2xl font-serif bg-gradient-to-r from-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent')
                         : siteData.design_style === 'masculine' 
-                          ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` 
+                          ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`)
                           : (siteData.title_color ? '' : theme.accent)
                     } flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
@@ -1127,7 +1127,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             <Card className={`sticky top-4 ${style.cardStyle}`}>
               <CardContent className="p-6">
                 <h2
-                  className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                  className={`${style.sectionTitleFont} mb-6 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                   style={{ color: siteData.title_color || undefined }}
                 >
                   <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
@@ -1218,10 +1218,10 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
             {/* Professional networks */}
             {siteData.professional_networks && (
-              <Card className={style.cardStyle}>
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
                 <CardContent className="p-6">
                   <h3
-                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent` : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? (siteData.title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.title_color ? '' : theme.accent)} flex items-center gap-2`}
                     style={{ color: siteData.title_color || undefined }}
                   >
                     <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
