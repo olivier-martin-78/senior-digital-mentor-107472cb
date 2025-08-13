@@ -1958,6 +1958,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_healthcare_data: {
+        Args: { target_professional_id: string; target_appointment_id?: string }
+        Returns: boolean
+      }
       can_access_invitation_groups: {
         Args: { user_id_param: string; group_id_param?: string }
         Returns: boolean
