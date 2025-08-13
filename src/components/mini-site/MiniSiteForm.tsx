@@ -85,17 +85,23 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
     }
   }, [miniSite]);
 
-  // Initialize default header gradient from palette (darkest -> lightest)
+  // Initialize default header gradient and divider from palette (darkest -> lightest)
   useEffect(() => {
     const palette = colorPalettes.find((p) => p.name === formData.color_palette);
     if (!palette) return;
     const darkest = palette.colors[0];
     const lightest = palette.colors[palette.colors.length - 1];
     setFormData((prev) => {
+      const updates: Partial<MiniSiteData> = {};
       if (!prev.header_gradient_from && !prev.header_gradient_to) {
-        return { ...prev, header_gradient_from: darkest, header_gradient_to: lightest };
+        updates.header_gradient_from = darkest;
+        updates.header_gradient_to = lightest;
       }
-      return prev;
+      if (!prev.section_title_divider_from && !prev.section_title_divider_to) {
+        updates.section_title_divider_from = darkest;
+        updates.section_title_divider_to = lightest;
+      }
+      return Object.keys(updates).length ? { ...prev, ...updates } : prev;
     });
   }, [formData.color_palette]);
 
