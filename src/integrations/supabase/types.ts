@@ -1408,6 +1408,7 @@ export type Database = {
         Row: {
           caregiver_id: string | null
           city: string | null
+          client_comment: string | null
           client_id: string | null
           created_at: string
           email_sent_at: string | null
@@ -1423,6 +1424,7 @@ export type Database = {
         Insert: {
           caregiver_id?: string | null
           city?: string | null
+          client_comment?: string | null
           client_id?: string | null
           created_at?: string
           email_sent_at?: string | null
@@ -1438,6 +1440,7 @@ export type Database = {
         Update: {
           caregiver_id?: string | null
           city?: string | null
+          client_comment?: string | null
           client_id?: string | null
           created_at?: string
           email_sent_at?: string | null

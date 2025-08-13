@@ -20,6 +20,7 @@ interface FormData {
   selectedContact: ClientCaregiverOption | null;
   satisfactionRating: number;
   city: string;
+  clientComment: string;
 }
 
 export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
@@ -35,7 +36,8 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
     reviewDate: new Date().toISOString().split('T')[0],
     selectedContact: null,
     satisfactionRating: 0,
-    city: ''
+    city: '',
+    clientComment: ''
   });
 
   const handleContactChange = (contactId: string) => {
@@ -82,7 +84,8 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
         professional_id: session?.user?.id,
         review_date: formData.reviewDate,
         satisfaction_rating: formData.satisfactionRating,
-        city: formData.city
+        city: formData.city,
+        client_comment: formData.clientComment || null
       };
 
       // Ajouter soit client_id soit caregiver_id
@@ -131,7 +134,8 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
         reviewDate: new Date().toISOString().split('T')[0],
         selectedContact: null,
         satisfactionRating: 0,
-        city: ''
+        city: '',
+        clientComment: ''
       });
 
       onClose();
@@ -226,6 +230,19 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
               readOnly
               className="bg-muted"
               placeholder="Sélectionnez un contact pour voir la ville"
+            />
+          </div>
+
+          {/* Commentaire client */}
+          <div>
+            <Label htmlFor="clientComment">Commentaire client (optionnel)</Label>
+            <textarea
+              id="clientComment"
+              value={formData.clientComment}
+              onChange={(e) => setFormData(prev => ({ ...prev, clientComment: e.target.value }))}
+              className="w-full px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md resize-none"
+              rows={3}
+              placeholder="Ajoutez un commentaire pour le client (visible dans l'email)"
             />
           </div>
 
