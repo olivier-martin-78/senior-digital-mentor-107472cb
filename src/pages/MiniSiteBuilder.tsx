@@ -32,14 +32,13 @@ export const MiniSiteBuilder: React.FC = () => {
   console.log('🔥 [MINI_SITE_BUILDER_DEBUG] Rendu MiniSiteForm');
   
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      {hasRole('admin') && (
-        <MiniSiteUserSelector 
-          selectedUserId={selectedUserId}
-          onUserChange={setSelectedUserId}
-        />
-      )}
-      <MiniSiteForm userId={selectedUserId || undefined} />
+    <div className="container mx-auto px-4 py-8">
+      <MiniSiteForm 
+        userId={selectedUserId || undefined}
+        showUserSelector={hasRole('admin')}
+        selectedUserId={selectedUserId}
+        onUserChange={setSelectedUserId}
+      />
     </div>
   );
 };

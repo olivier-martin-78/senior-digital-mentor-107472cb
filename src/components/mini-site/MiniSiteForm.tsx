@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MiniSiteData, useMiniSite } from '@/hooks/useMiniSite';
 import { MediaUploader } from './MediaUploader';
 import { MediaOrderManager } from './MediaOrderManager';
+import { MiniSiteUserSelector } from './MiniSiteUserSelector';
 import { ColorPalette, colorPalettes } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { Eye, Save, Trash2, User } from 'lucide-react';
@@ -22,6 +23,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface MiniSiteFormProps {
   userId?: string;
   onPreview?: (data: MiniSiteData) => void;
+  showUserSelector?: boolean;
+  selectedUserId?: string | null;
+  onUserChange?: (userId: string | null) => void;
 }
 
 const defaultFormData: MiniSiteData = {
@@ -77,7 +81,13 @@ const socialPlatforms = [
   { value: 'youtube', label: 'YouTube' }
 ];
 
-export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview }) => {
+export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ 
+  userId, 
+  onPreview, 
+  showUserSelector = false, 
+  selectedUserId, 
+  onUserChange 
+}) => {
   const { miniSite, loading, saveMiniSite, deleteMiniSite } = useMiniSite(userId);
   const { profile } = useAuth();
   const [formData, setFormData] = useState<MiniSiteData>(defaultFormData);
@@ -244,6 +254,16 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({ userId, onPreview })
             )}
           </div>
         </div>
+
+        {/* Sélecteur d'utilisateur pour les admins */}
+        {showUserSelector && (
+          <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-dashed">
+            <MiniSiteUserSelector 
+              selectedUserId={selectedUserId || null}
+              onUserChange={onUserChange || (() => {})}
+            />
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5">
