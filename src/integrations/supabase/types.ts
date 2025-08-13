@@ -1131,6 +1131,7 @@ export type Database = {
           section_text_color: string | null
           section_title_about_me: string | null
           section_title_availability: string | null
+          section_title_color: string | null
           section_title_contact: string | null
           section_title_divider_from: string | null
           section_title_divider_to: string | null
@@ -1174,6 +1175,7 @@ export type Database = {
           section_text_color?: string | null
           section_title_about_me?: string | null
           section_title_availability?: string | null
+          section_title_color?: string | null
           section_title_contact?: string | null
           section_title_divider_from?: string | null
           section_title_divider_to?: string | null
@@ -1217,6 +1219,7 @@ export type Database = {
           section_text_color?: string | null
           section_title_about_me?: string | null
           section_title_availability?: string | null
+          section_title_color?: string | null
           section_title_contact?: string | null
           section_title_divider_from?: string | null
           section_title_divider_to?: string | null
