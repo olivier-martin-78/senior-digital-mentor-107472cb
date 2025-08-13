@@ -1111,6 +1111,7 @@ export type Database = {
           about_me: string | null
           activity_start_date: string | null
           availability_schedule: string | null
+          background_color: string | null
           color_palette: string | null
           created_at: string
           design_style: string | null
@@ -1155,6 +1156,7 @@ export type Database = {
           about_me?: string | null
           activity_start_date?: string | null
           availability_schedule?: string | null
+          background_color?: string | null
           color_palette?: string | null
           created_at?: string
           design_style?: string | null
@@ -1199,6 +1201,7 @@ export type Database = {
           about_me?: string | null
           activity_start_date?: string | null
           availability_schedule?: string | null
+          background_color?: string | null
           color_palette?: string | null
           created_at?: string
           design_style?: string | null
