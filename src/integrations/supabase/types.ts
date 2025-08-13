@@ -1864,9 +1864,9 @@ export type Database = {
           availability_schedule: string | null
           background_color: string | null
           color_palette: string | null
-          contact_info: string | null
           created_at: string | null
           design_style: string | null
+          email: string | null
           first_name: string | null
           header_gradient_from: string | null
           header_gradient_to: string | null
@@ -1875,12 +1875,22 @@ export type Database = {
           last_name: string | null
           logo_size: number | null
           logo_url: string | null
+          phone: string | null
           postal_code: string | null
           profession: string | null
+          professional_networks: string | null
           section_text_color: string | null
+          section_title_about_me: string | null
+          section_title_availability: string | null
           section_title_color: string | null
+          section_title_contact: string | null
           section_title_divider_from: string | null
           section_title_divider_to: string | null
+          section_title_follow_me: string | null
+          section_title_professional_networks: string | null
+          section_title_services: string | null
+          section_title_skills_and_qualities: string | null
+          section_title_why_this_profession: string | null
           services_description: string | null
           site_name: string | null
           site_subtitle: string | null
@@ -1896,9 +1906,9 @@ export type Database = {
           availability_schedule?: string | null
           background_color?: string | null
           color_palette?: string | null
-          contact_info?: never
           created_at?: string | null
           design_style?: string | null
+          email?: string | null
           first_name?: string | null
           header_gradient_from?: string | null
           header_gradient_to?: string | null
@@ -1907,12 +1917,22 @@ export type Database = {
           last_name?: string | null
           logo_size?: number | null
           logo_url?: string | null
+          phone?: string | null
           postal_code?: string | null
           profession?: string | null
+          professional_networks?: string | null
           section_text_color?: string | null
+          section_title_about_me?: string | null
+          section_title_availability?: string | null
           section_title_color?: string | null
+          section_title_contact?: string | null
           section_title_divider_from?: string | null
           section_title_divider_to?: string | null
+          section_title_follow_me?: string | null
+          section_title_professional_networks?: string | null
+          section_title_services?: string | null
+          section_title_skills_and_qualities?: string | null
+          section_title_why_this_profession?: string | null
           services_description?: string | null
           site_name?: string | null
           site_subtitle?: string | null
@@ -1928,9 +1948,9 @@ export type Database = {
           availability_schedule?: string | null
           background_color?: string | null
           color_palette?: string | null
-          contact_info?: never
           created_at?: string | null
           design_style?: string | null
+          email?: string | null
           first_name?: string | null
           header_gradient_from?: string | null
           header_gradient_to?: string | null
@@ -1939,12 +1959,22 @@ export type Database = {
           last_name?: string | null
           logo_size?: number | null
           logo_url?: string | null
+          phone?: string | null
           postal_code?: string | null
           profession?: string | null
+          professional_networks?: string | null
           section_text_color?: string | null
+          section_title_about_me?: string | null
+          section_title_availability?: string | null
           section_title_color?: string | null
+          section_title_contact?: string | null
           section_title_divider_from?: string | null
           section_title_divider_to?: string | null
+          section_title_follow_me?: string | null
+          section_title_professional_networks?: string | null
+          section_title_services?: string | null
+          section_title_skills_and_qualities?: string | null
+          section_title_why_this_profession?: string | null
           services_description?: string | null
           site_name?: string | null
           site_subtitle?: string | null
