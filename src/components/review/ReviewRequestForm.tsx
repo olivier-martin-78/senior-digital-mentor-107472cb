@@ -111,13 +111,34 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
         client_comment: formData.clientComment || null
       };
 
-      // Ajouter soit client_id soit caregiver_id seulement pour les contacts existants
+      // Gestion des contacts existants vs nouveaux
       if (formData.contactMode === 'existing' && formData.selectedContact) {
         if (formData.selectedContact.type === 'client') {
           insertData.client_id = formData.selectedContact.id;
         } else {
           insertData.caregiver_id = formData.selectedContact.id;
         }
+      } else if (formData.contactMode === 'new') {
+        // Pour les nouveaux clients, créer d'abord un client temporaire
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({
+            first_name: formData.newContactName?.split(' ')[0] || 'Client',
+            last_name: formData.newContactName?.split(' ').slice(1).join(' ') || 'Temporaire',
+            email: formData.newContactEmail,
+            address: 'Adresse temporaire',
+            city: formData.newContactCity,
+            created_by: session?.user?.id
+          })
+          .select()
+          .single();
+
+        if (clientError) {
+          console.error('❌ Erreur lors de la création du client:', clientError);
+          throw clientError;
+        }
+
+        insertData.client_id = newClient.id;
       }
 
       console.log('💾 Données à insérer:', insertData);
