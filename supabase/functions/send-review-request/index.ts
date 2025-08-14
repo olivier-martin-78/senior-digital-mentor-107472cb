@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
       city
     });
 
-    // Construire l'URL de la page d'avis
+    // Construire l'URL de la page d'avis - URL mise à jour vers Lovable
     const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     const reviewUrl = `${baseUrl}/avis/${token}`;
 
