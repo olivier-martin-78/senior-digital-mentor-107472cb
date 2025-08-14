@@ -125,6 +125,8 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Envoyer l'email
+    console.log('📤 Tentative d\'envoi email vers:', contactEmail);
+    
     const result = await resend.emails.send({
       from: "Senior Digital Mentor <onboarding@resend.dev>", // Utilisation de l'adresse par défaut de Resend
       to: [contactEmail],
@@ -132,8 +134,25 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHTML
     });
 
+    console.log('📋 Réponse complète de Resend:', JSON.stringify(result, null, 2));
+    console.log('🔍 Détails result.data:', result.data);
+    console.log('🔍 Détails result.error:', result.error);
+
+    // Vérifier s'il y a une erreur dans la réponse Resend
+    if (result.error) {
+      console.error('❌ Erreur Resend:', result.error);
+      throw new Error(`Erreur Resend: ${result.error.message || JSON.stringify(result.error)}`);
+    }
+
+    // Vérifier si l'email a bien été accepté (doit avoir un ID)
+    if (!result.data || !result.data.id) {
+      console.error('❌ Email non accepté par Resend - pas d\'ID retourné');
+      console.error('❌ Data reçue:', result.data);
+      throw new Error('Email non accepté par Resend - aucun ID retourné');
+    }
+
     console.log('✅ Email envoyé avec succès:', {
-      id: result.data?.id,
+      id: result.data.id,
       to: contactEmail
     });
 
