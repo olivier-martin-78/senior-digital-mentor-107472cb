@@ -166,10 +166,19 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
 
       onClose();
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de la demande d\'avis:', error);
+      console.error('❌ ERREUR DÉTAILLÉE:', error);
+      console.error('❌ Message d\'erreur:', error?.message);
+      console.error('❌ Stack trace:', error?.stack);
+      console.error('❌ Détails complets:', JSON.stringify(error, null, 2));
+      
+      let errorMessage = "Impossible d'envoyer la demande d'avis";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer la demande d'avis",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
