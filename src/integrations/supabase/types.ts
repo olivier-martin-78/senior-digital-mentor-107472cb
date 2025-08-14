@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2081,11 +2081,11 @@ export type Database = {
     }
     Functions: {
       can_access_healthcare_data: {
-        Args: { target_professional_id: string; target_appointment_id?: string }
+        Args: { target_appointment_id?: string; target_professional_id: string }
         Returns: boolean
       }
       can_access_invitation_groups: {
-        Args: { user_id_param: string; group_id_param?: string }
+        Args: { group_id_param?: string; user_id_param: string }
         Returns: boolean
       }
       can_create_activities: {
@@ -2155,20 +2155,20 @@ export type Database = {
       get_admin_users_with_auth_data: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          created_at: string
-          last_sign_in_at: string
-          display_name: string
-          role: Database["public"]["Enums"]["app_role"]
-          blog_posts_count: number
-          diary_entries_count: number
-          wish_posts_count: number
-          clients_count: number
-          appointments_count: number
-          intervention_reports_count: number
           access_status: string
+          appointments_count: number
+          blog_posts_count: number
+          clients_count: number
+          created_at: string
+          diary_entries_count: number
+          display_name: string
+          email: string
+          id: string
+          intervention_reports_count: number
+          last_sign_in_at: string
           permanent_access: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          wish_posts_count: number
         }[]
       }
       get_current_user_email: {
@@ -2182,37 +2182,37 @@ export type Database = {
       get_professional_users: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
           display_name: string
           email: string
+          id: string
         }[]
       }
       get_public_mini_site_reviews: {
         Args: { p_slug: string }
         Returns: {
-          client_rating: number
-          client_comments: string
-          created_at: string
-          patient_name: string
           auxiliary_name: string
           client_city: string
+          client_comments: string
+          client_rating: number
+          created_at: string
+          patient_name: string
         }[]
       }
       get_review_request_by_token: {
         Args: { token_param: string }
         Returns: {
+          caregiver_id: string
+          caregiver_name: string
+          city: string
+          client_id: string
+          client_name: string
+          expires_at: string
           id: string
           professional_id: string
-          client_id: string
-          caregiver_id: string
+          professional_name: string
           review_date: string
           satisfaction_rating: number
-          city: string
           status: string
-          expires_at: string
-          professional_name: string
-          client_name: string
-          caregiver_name: string
         }[]
       }
       get_user_access_status: {
@@ -2233,8 +2233,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          user_id: string
           required_role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Returns: boolean
       }
