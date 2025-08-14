@@ -53,8 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
       city
     });
 
-    // Construire l'URL de la page d'avis - URL mise à jour vers Lovable
-    const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
+    // Construire l'URL de la page d'avis - URL mise à jour vers le domaine principal
+    const baseUrl = 'https://senior-digital-mentor.com';
     const reviewUrl = `${baseUrl}/avis/${token}`;
 
     // Formatage de la date
