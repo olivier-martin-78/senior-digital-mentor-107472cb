@@ -503,7 +503,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
       if (!propData && slug) {
         await fetchSiteData();
       } else if (propData && isPreview) {
-        // Mode preview: get URL data first, then fetch reviews
+        // Mode preview: get URL data first, then fetch reviews using slug like public mode
         try {
           const urlParams = new URLSearchParams(window.location.search);
           const encodedData = urlParams.get('data');
@@ -515,9 +515,9 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             console.log('🎨 [PREVIEW_DEBUG] Design style from preview:', previewData?.design_style);
             console.log('🎨 [PREVIEW_DEBUG] Color palette from preview:', previewData?.color_palette);
             
-            if (previewData.user_id && !isCancelled) {
-              console.log('🔍 Mode preview - récupération des avis pour:', previewData.user_id);
-              await fetchReviews(previewData.user_id, 0, previewData.email || undefined);
+            if (previewData.slug && !isCancelled) {
+              console.log('🔍 Mode preview - récupération des avis pour slug:', previewData.slug);
+              await fetchPublicReviews(previewData.slug);
             }
           }
         } catch (error) {
