@@ -15,6 +15,7 @@ interface ReviewRequestData {
   reviewDate: string;
   city: string;
   token: string;
+  professionalName: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -41,7 +42,8 @@ const handler = async (req: Request): Promise<Response> => {
       contactType,
       reviewDate,
       city,
-      token
+      token,
+      professionalName
     }: ReviewRequestData = await req.json();
 
     console.log('📧 Envoi demande avis:', {
@@ -114,6 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Je vous remercie par avance pour le temps que vous consacrerez à cette évaluation.</p>
             
             <p>Bien cordialement,<br>
+            <strong>${professionalName}</strong><br>
             Votre auxiliaire de vie</p>
           </div>
           

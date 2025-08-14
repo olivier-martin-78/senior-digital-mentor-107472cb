@@ -120,6 +120,15 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
       console.log('✅ Insertion réussie, reviewRequest:', reviewRequest);
       console.log('🔑 Token généré:', reviewRequest.token);
 
+      // Récupérer le nom du professionnel
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', session?.user?.id)
+        .single();
+
+      const professionalName = profile?.display_name || 'Votre auxiliaire de vie';
+
       // Paramètres pour la fonction edge
       const edgeFunctionParams = {
         reviewRequestId: reviewRequest.id,
@@ -128,7 +137,8 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
         contactType: formData.selectedContact.type,
         reviewDate: formData.reviewDate,
         city: formData.city,
-        token: reviewRequest.token
+        token: reviewRequest.token,
+        professionalName: professionalName
       };
 
       console.log('📧 Appel de la fonction edge avec les paramètres:', edgeFunctionParams);
