@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Star, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 
 interface ReviewRequest {
   id: string;
@@ -34,6 +35,7 @@ export const PublicReviewForm: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoading: authLoading } = useOptionalAuth();
   
   const [reviewRequest, setReviewRequest] = useState<ReviewRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,12 +60,19 @@ export const PublicReviewForm: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
+      // Créer un client Supabase anonyme pour les requêtes publiques
+      const publicSupabase = supabase;
+
       // Appeler la fonction pour récupérer la demande d'avis
-      const { data, error } = await supabase.rpc('get_review_request_by_token', {
+      const { data, error } = await publicSupabase.rpc('get_review_request_by_token', {
         token_param: token
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur RPC:', error);
+        setError('Ce lien d\'avis n\'est plus valide ou a expiré.');
+        return;
+      }
 
       if (!data || data.length === 0) {
         setError('Ce lien d\'avis n\'est plus valide ou a expiré.');
@@ -138,7 +147,7 @@ export const PublicReviewForm: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
