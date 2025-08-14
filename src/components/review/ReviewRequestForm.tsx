@@ -53,7 +53,12 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Début de la soumission du formulaire');
+    console.log('📋 Données du formulaire:', formData);
+    console.log('👤 Session utilisateur:', session?.user?.id);
+    
     if (!formData.selectedContact) {
+      console.log('❌ Aucun contact sélectionné');
       toast({
         title: "Contact requis",
         description: "Veuillez sélectionner un contact",
@@ -63,6 +68,7 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
     }
 
     if (!formData.selectedContact.email) {
+      console.log('❌ Pas d\'email pour le contact:', formData.selectedContact);
       toast({
         title: "Email manquant",
         description: "Le contact sélectionné n'a pas d'adresse email",
@@ -71,6 +77,7 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
       return;
     }
 
+    console.log('✅ Validation passée, début de l\'insertion');
     setIsSubmitting(true);
 
     try {
@@ -90,28 +97,53 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
         insertData.caregiver_id = formData.selectedContact.id;
       }
 
+      console.log('💾 Données à insérer:', insertData);
+
       const { data: reviewRequest, error: insertError } = await supabase
         .from('review_requests')
         .insert(insertData)
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      console.log('📊 Résultat de l\'insertion:', { reviewRequest, insertError });
+
+      if (insertError) {
+        console.error('❌ Erreur lors de l\'insertion:', insertError);
+        throw insertError;
+      }
+
+      if (!reviewRequest) {
+        console.error('❌ Aucune donnée retournée après insertion');
+        throw new Error('Aucune donnée retournée après insertion');
+      }
+
+      console.log('✅ Insertion réussie, reviewRequest:', reviewRequest);
+      console.log('🔑 Token généré:', reviewRequest.token);
+
+      // Paramètres pour la fonction edge
+      const edgeFunctionParams = {
+        reviewRequestId: reviewRequest.id,
+        contactEmail: formData.selectedContact.email,
+        contactName: formData.selectedContact.name,
+        contactType: formData.selectedContact.type,
+        reviewDate: formData.reviewDate,
+        city: formData.city,
+        token: reviewRequest.token
+      };
+
+      console.log('📧 Appel de la fonction edge avec les paramètres:', edgeFunctionParams);
 
       // Envoyer l'email via l'edge function
-      const { error: emailError } = await supabase.functions.invoke('send-review-request', {
-        body: {
-          reviewRequestId: reviewRequest.id,
-          contactEmail: formData.selectedContact.email,
-          contactName: formData.selectedContact.name,
-          contactType: formData.selectedContact.type,
-          reviewDate: formData.reviewDate,
-          city: formData.city,
-          token: reviewRequest.token
-        }
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-review-request', {
+        body: edgeFunctionParams
       });
 
-      if (emailError) throw emailError;
+      console.log('📬 Résultat de l\'envoi d\'email:', { emailData, emailError });
+
+      if (emailError) {
+        console.error('❌ Erreur lors de l\'envoi d\'email:', emailError);
+        throw emailError;
+      }
 
       // Mettre à jour la date d'envoi
       await supabase
