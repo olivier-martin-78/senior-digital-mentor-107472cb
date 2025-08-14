@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Construire l'URL de la page d'avis
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://cvcebcisijjmmmwuedcv.supabase.co';
+    const baseUrl = 'https://a2978196-c5c0-456b-9958-c4dc20b52bea.lovableproject.com';
     const reviewUrl = `${baseUrl}/avis/${token}`;
 
     // Formatage de la date
