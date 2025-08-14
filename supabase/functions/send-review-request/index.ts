@@ -125,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer l'email
     const result = await resend.emails.send({
-      from: "Senior Digital Mentor <no-reply@senior-digital-mentor.com>",
+      from: "Senior Digital Mentor <onboarding@resend.dev>", // Utilisation de l'adresse par défaut de Resend
       to: [contactEmail],
       subject: "Votre avis nous intéresse - Évaluation de prestation",
       html: emailHTML

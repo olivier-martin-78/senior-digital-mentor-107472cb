@@ -18,7 +18,6 @@ interface ReviewRequestFormProps {
 interface FormData {
   reviewDate: string;
   selectedContact: ClientCaregiverOption | null;
-  satisfactionRating: number;
   city: string;
   clientComment: string;
 }
@@ -35,7 +34,6 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
   const [formData, setFormData] = useState<FormData>({
     reviewDate: new Date().toISOString().split('T')[0],
     selectedContact: null,
-    satisfactionRating: 0,
     city: '',
     clientComment: ''
   });
@@ -51,17 +49,14 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
     }
   };
 
-  const handleRatingChange = (rating: number) => {
-    setFormData(prev => ({ ...prev, satisfactionRating: rating }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.selectedContact || formData.satisfactionRating === 0) {
+    if (!formData.selectedContact) {
       toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: "Contact requis",
+        description: "Veuillez sélectionner un contact",
         variant: "destructive"
       });
       return;
@@ -83,7 +78,7 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
       const insertData: any = {
         professional_id: session?.user?.id,
         review_date: formData.reviewDate,
-        satisfaction_rating: formData.satisfactionRating,
+        satisfaction_rating: null, // Sera renseigné par le client
         city: formData.city,
         client_comment: formData.clientComment || null
       };
@@ -133,7 +128,6 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
       setFormData({
         reviewDate: new Date().toISOString().split('T')[0],
         selectedContact: null,
-        satisfactionRating: 0,
         city: '',
         clientComment: ''
       });
@@ -195,31 +189,6 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
             </Select>
           </div>
 
-          {/* Note de satisfaction */}
-          <div>
-            <Label>Note de satisfaction *</Label>
-            <div className="flex items-center gap-2 mt-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => handleRatingChange(star)}
-                  className={`text-2xl transition-colors ${
-                    star <= formData.satisfactionRating 
-                      ? 'text-yellow-500 hover:text-yellow-600' 
-                      : 'text-gray-300 hover:text-gray-400'
-                  }`}
-                >
-                  ★
-                </button>
-              ))}
-              {formData.satisfactionRating > 0 && (
-                <span className="text-sm text-muted-foreground ml-2">
-                  {formData.satisfactionRating}/5 étoile{formData.satisfactionRating > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-          </div>
 
           {/* Ville */}
           <div>
@@ -253,7 +222,7 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting || !formData.selectedContact || formData.satisfactionRating === 0}
+              disabled={isSubmitting || !formData.selectedContact}
               className="flex items-center gap-2"
             >
               <Send className="h-4 w-4" />
