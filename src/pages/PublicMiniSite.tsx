@@ -1304,7 +1304,28 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                 </CardContent>
               </Card>
             )}
-          </div>
+            {/* Professional networks */}
+            {siteData.professional_networks && (
+              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
+                <CardContent className="p-6">
+                  <h3
+                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
+                    style={{ color: siteData.section_title_color || undefined }}
+                  >
+                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
+                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🌐</span>
+                    </div>
+                    {siteData.section_title_professional_networks || 'Réseaux professionnels'}
+                  </h3>
+                  <div className="prose prose-sm prose-gray max-w-none">
+                    {siteData.professional_networks.split('\n').map((paragraph, index) => (
+                      <p key={index} className="mb-2">{paragraph}</p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -1401,28 +1422,6 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                 </div>
               </CardContent>
             </Card>
-
-            {/* Professional networks */}
-            {siteData.professional_networks && (
-              <Card className={`${style.cardStyle} ${siteData.design_style === 'feminine' ? 'feminine-card-enter animate-on-scroll' : ''} ${siteData.design_style === 'masculine' ? `${theme.masculineCard} ${theme.masculineShadow} border-l-4 border-l-gradient-to-b ${theme.masculineAccent}` : `border-l-4 ${theme.cardBorder} ${theme.lightBg}`} transition-all duration-300 ${theme.hoverBg}`}>
-                <CardContent className="p-6">
-                  <h3
-                    className={`${style.sectionTitleFont} mb-3 ${siteData.design_style === 'masculine' ? (siteData.section_title_color ? '' : `bg-gradient-to-r ${theme.masculineAccent} bg-clip-text text-transparent`) : (siteData.section_title_color ? '' : theme.accent)} flex items-center gap-2`}
-                    style={{ color: siteData.section_title_color || undefined }}
-                  >
-                    <div className={`p-2 rounded-full ${siteData.design_style === 'masculine' ? `bg-gradient-to-br ${theme.masculineAccent} text-white` : theme.iconBg} mr-2`}>
-                      <span className={`${siteData.design_style === 'masculine' ? 'text-white' : theme.iconText} font-bold`}>🌐</span>
-                    </div>
-                    {siteData.section_title_professional_networks || 'Réseaux professionnels'}
-                  </h3>
-                  <div className="prose prose-sm prose-gray max-w-none">
-                    {siteData.professional_networks.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-2">{paragraph}</p>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
