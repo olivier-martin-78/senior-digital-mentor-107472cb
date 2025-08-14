@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('📤 Tentative d\'envoi email vers:', contactEmail);
     
     const result = await resend.emails.send({
-      from: "Senior Digital Mentor <onboarding@resend.dev>", // Utilisation de l'adresse par défaut de Resend
+      from: "Senior Digital Mentor <noreply@senior-digital-mentor.com>", // Changez par votre domaine vérifié
       to: [contactEmail],
       subject: "Votre avis nous intéresse - Évaluation de prestation",
       html: emailHTML
