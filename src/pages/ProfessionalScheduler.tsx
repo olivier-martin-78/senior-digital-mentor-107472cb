@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Appointment, Client, Intervenant, Caregiver } from '@/types/appointments';
 import { CalendarDays, Users, UserCheck, Phone, Plus, Download, Clock, Star } from 'lucide-react';
 import { ReviewRequestForm } from '@/components/review/ReviewRequestForm';
+import ReviewsManager from '@/components/review/ReviewsManager';
 
 const ProfessionalScheduler = () => {
   const { user } = useAuth();
@@ -272,6 +273,10 @@ const ProfessionalScheduler = () => {
               <Users className="w-4 h-4 mr-2" />
               Gestion des contacts
             </TabsTrigger>
+            <TabsTrigger value="reviews" className="data-[state=active]:bg-tranches-mauve/50">
+              <Star className="w-4 h-4 mr-2" />
+              Avis clients
+            </TabsTrigger>
             <TabsTrigger value="export" className="data-[state=active]:bg-tranches-mauve/50">
               <Download className="w-4 h-4 mr-2" />
               Exporter
@@ -357,6 +362,18 @@ const ProfessionalScheduler = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="reviews">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestion des Avis Clients</CardTitle>
+                <CardDescription>Consultez et gérez les demandes d'avis et les retours de vos clients.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReviewsManager />
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="export">
