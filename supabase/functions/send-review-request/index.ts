@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Vérifier s'il y a une erreur dans la réponse Resend
     if (result.error) {
       console.error('❌ Erreur Resend:', result.error);
-      throw new Error(`Erreur Resend: ${result.error.message || JSON.stringify(result.error)}`);
+      throw new Error(`Erreur Resend: ${result.error.error || result.error.message || JSON.stringify(result.error)}`);
     }
 
     // Vérifier si l'email a bien été accepté (doit avoir un ID)
