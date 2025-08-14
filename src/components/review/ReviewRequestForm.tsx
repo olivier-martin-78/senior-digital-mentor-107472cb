@@ -133,16 +133,31 @@ export const ReviewRequestForm: React.FC<ReviewRequestFormProps> = ({
 
       console.log('📧 Appel de la fonction edge avec les paramètres:', edgeFunctionParams);
 
-      // Envoyer l'email via l'edge function
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-review-request', {
-        body: edgeFunctionParams
+      // Envoyer l'email via l'edge function avec fetch direct
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cvcebcisijjmmmwuedcv.supabase.co';
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y2ViY2lzaWpqbW1td3VlZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTE5MTEsImV4cCI6MjA2MjcyNzkxMX0.ajg0CHVdVC6QenC9CVDN_5vikA6-JoUxXeX3yz64AUE';
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-review-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey
+        },
+        body: JSON.stringify(edgeFunctionParams)
       });
 
-      console.log('📬 Résultat de l\'envoi d\'email:', { emailData, emailError });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-      if (emailError) {
-        console.error('❌ Erreur lors de l\'envoi d\'email:', emailError);
-        throw emailError;
+      const emailData = await response.json();
+
+      console.log('📬 Résultat de l\'envoi d\'email:', emailData);
+
+      if (!emailData.success) {
+        console.error('❌ Erreur dans la réponse:', emailData);
+        throw new Error(emailData.error || 'Erreur inconnue lors de l\'envoi');
       }
 
       // Mettre à jour la date d'envoi
