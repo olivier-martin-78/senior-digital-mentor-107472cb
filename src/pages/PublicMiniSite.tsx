@@ -537,20 +537,23 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
 
   // Carousel effect with cleanup
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let timeout: NodeJS.Timeout;
     
     if (siteData?.media && siteData.media.length > 1 && isComponentMounted) {
-      interval = setInterval(() => {
+      const currentMedia = siteData.media[currentImageIndex];
+      const duration = (currentMedia?.duration || 5) * 1000; // Convert seconds to milliseconds
+      
+      timeout = setTimeout(() => {
         setCurrentImageIndex(prev => 
           prev >= (siteData.media?.length || 1) - 1 ? 0 : prev + 1
         );
-      }, 5000);
+      }, duration);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
     };
-  }, [siteData?.media, isComponentMounted]);
+  }, [siteData?.media, currentImageIndex, isComponentMounted]);
 
   const fetchSiteData = async (retryAttempt = 0) => {
     if (!slug || !isComponentMounted) return;
@@ -613,7 +616,8 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             caption: media.caption || '',
             link_url: media.link_url || '',
             display_order: media.display_order || 0,
-            media_type: media.media_type as 'image' | 'video' || 'image'
+            media_type: media.media_type as 'image' | 'video' || 'image',
+            duration: media.duration || 5
           })),
           social_links: (socialLinksData || []).map(link => ({
             id: link.id,
