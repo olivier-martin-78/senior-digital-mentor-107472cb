@@ -72,7 +72,7 @@ export const GameResults = ({ result, onRestart, onBackToSetup }: GameResultsPro
                 </div>
                 <div className="bg-muted/50 rounded-lg p-3">
                   <p className="font-medium text-foreground">Question bonus</p>
-                  <p className="text-2xl font-bold text-secondary">
+                  <p className={`text-2xl font-bold ${result.bonusCorrect ? 'text-green-600' : 'text-red-600'}`}>
                     {result.bonusCorrect ? '✓ +4' : '✗ +0'}
                   </p>
                 </div>
