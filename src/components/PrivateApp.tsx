@@ -47,6 +47,7 @@ import DictationGamePage from '@/pages/activities/DictationGamePage';
 import ReverseDictionaryGamePage from '@/pages/activities/ReverseDictionaryGamePage';
 import { SpotDifferencesGamePage } from '@/pages/activities/SpotDifferencesGame';
 import Quiz70sGame from '@/pages/activities/Quiz70sGame';
+import IllusionistGame from '@/pages/activities/IllusionistGame';
 import MusicQuizGame from '@/pages/MusicQuizGame';
 import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
@@ -143,6 +144,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/reverse-dictionary/:id" element={<ReverseDictionaryGamePage />} />
             <Route path="/activities/spot-differences/:id" element={<SpotDifferencesGamePage />} />
             <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
+            <Route path="/activities/games/illusionist" element={<IllusionistGame />} />
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />

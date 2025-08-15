@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Brain, Gamepad2, Dumbbell, Languages, KeySquare } from 'lucide-react';
+import { Sparkles, Brain, Gamepad2, Dumbbell, Languages, KeySquare, Eye } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';
@@ -239,6 +239,32 @@ const ActivitiesOverview = () => {
             <CardContent>
               <p className="text-sm text-gray-600">
                 Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "illusionist",
+        subTagId: remueMeningesId,
+        card: <Card key="illusionist" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/illusionist" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'illusionist-game', 'L\'Illusionniste').catch(console.error)}
+          >
+            <div className="h-48 bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Eye className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">L'Illusionniste</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">L'Illusionniste</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Entraînez votre attention avec l'effet Stroop ! Identifiez le mot, pas la couleur affichée.
               </p>
             </CardContent>
           </Link>
