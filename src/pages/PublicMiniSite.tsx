@@ -1379,12 +1379,15 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
                       </div>
                     )}
                     
-                    {siteData.postal_code && (
+                    {(siteData.postal_code || siteData.city) && (
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${theme.lightBg} ${theme.border} border`}>
                         <div className={`p-2 rounded-full ${theme.iconBg}`}>
                           <MapPin className={`w-5 h-5 ${theme.iconText}`} />
                         </div>
-                        <span className={`${theme.accent} font-medium flex-1`}>{siteData.postal_code}</span>
+                        <div className={`${theme.accent} font-medium flex-1 flex gap-2`}>
+                          {siteData.postal_code && <span>{siteData.postal_code}</span>}
+                          {siteData.city && <span>{siteData.city}</span>}
+                        </div>
                       </div>
                     )}
                   </div>
