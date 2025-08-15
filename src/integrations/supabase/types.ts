@@ -1076,6 +1076,7 @@ export type Database = {
           caption: string | null
           created_at: string
           display_order: number | null
+          duration: number | null
           id: string
           link_url: string | null
           media_type: string | null
@@ -1086,6 +1087,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           display_order?: number | null
+          duration?: number | null
           id?: string
           link_url?: string | null
           media_type?: string | null
@@ -1096,6 +1098,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           display_order?: number | null
+          duration?: number | null
           id?: string
           link_url?: string | null
           media_type?: string | null

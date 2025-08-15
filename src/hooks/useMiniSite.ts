@@ -115,7 +115,8 @@ export const useMiniSite = (userId?: string) => {
             caption: media.caption || '',
             link_url: media.link_url || '',
             display_order: media.display_order || 0,
-            media_type: media.media_type as 'image' | 'video' || 'image'
+            media_type: media.media_type as 'image' | 'video' || 'image',
+            duration: media.duration || 5 // Valeur par défaut de 5 secondes
           })),
           social_links: (socialData || []).map(link => ({
             id: link.id,
