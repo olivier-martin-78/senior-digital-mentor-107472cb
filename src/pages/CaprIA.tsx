@@ -44,7 +44,7 @@ const CaprIA = () => {
     },    
     {
       icon: <Activity className="w-8 h-8 text-green-400" />,
-      title: "Activités physiques",
+      title: "Activités physiques ",
       description: "Gym douce, yoga, exercices adaptés depuis chez vous",
       benefits: ["Améliore la circulation", "Réduit les chutes", "Libère les endorphines"]
     }
