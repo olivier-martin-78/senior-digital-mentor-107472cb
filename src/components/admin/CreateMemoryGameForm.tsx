@@ -98,6 +98,13 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
     setIsUploading(true);
 
     try {
+      // Vérifier l'authentification d'abord
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('Utilisateur non authentifié');
+      }
+
       // Upload all images
       const imageUrls = await Promise.all(
         selectedFiles.map(file => uploadImageToStorage(file))
@@ -127,7 +134,7 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
           iframe_code: JSON.stringify(gameData),
           thumbnail_url: thumbnailUrl,
           sub_activity_tag_id: selectedSubTagId,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: user.id,
           shared_globally: sharedGlobally
         });
 
