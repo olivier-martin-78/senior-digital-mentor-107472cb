@@ -1,0 +1,48 @@
+-- Mise à jour de la vue mini_sites_public pour inclure le champ city
+DROP VIEW IF EXISTS mini_sites_public;
+
+CREATE VIEW mini_sites_public AS 
+SELECT 
+    mini_sites.id,
+    mini_sites.site_name,
+    mini_sites.site_subtitle,
+    mini_sites.logo_url,
+    mini_sites.first_name,
+    mini_sites.last_name,
+    mini_sites.profession,
+    mini_sites.email,
+    mini_sites.phone,
+    mini_sites.postal_code,
+    mini_sites.city,
+    mini_sites.about_me,
+    mini_sites.why_this_profession,
+    mini_sites.skills_and_qualities,
+    mini_sites.activity_start_date,
+    mini_sites.services_description,
+    mini_sites.availability_schedule,
+    mini_sites.intervention_radius,
+    mini_sites.professional_networks,
+    mini_sites.color_palette,
+    mini_sites.design_style,
+    mini_sites.slug,
+    mini_sites.created_at,
+    mini_sites.section_title_about_me,
+    mini_sites.section_title_why_this_profession,
+    mini_sites.section_title_skills_and_qualities,
+    mini_sites.section_title_services,
+    mini_sites.section_title_availability,
+    mini_sites.section_title_contact,
+    mini_sites.section_title_follow_me,
+    mini_sites.section_title_professional_networks,
+    mini_sites.title_color,
+    mini_sites.header_gradient_from,
+    mini_sites.header_gradient_to,
+    mini_sites.section_title_color,
+    mini_sites.section_text_color,
+    mini_sites.subtitle_color,
+    mini_sites.background_color,
+    mini_sites.section_title_divider_from,
+    mini_sites.section_title_divider_to,
+    mini_sites.logo_size
+FROM mini_sites
+WHERE mini_sites.is_published = true;

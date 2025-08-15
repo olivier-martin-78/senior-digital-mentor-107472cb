@@ -1958,6 +1958,7 @@ export type Database = {
           activity_start_date: string | null
           availability_schedule: string | null
           background_color: string | null
+          city: string | null
           color_palette: string | null
           created_at: string | null
           design_style: string | null
@@ -2000,6 +2001,7 @@ export type Database = {
           activity_start_date?: string | null
           availability_schedule?: string | null
           background_color?: string | null
+          city?: string | null
           color_palette?: string | null
           created_at?: string | null
           design_style?: string | null
@@ -2042,6 +2044,7 @@ export type Database = {
           activity_start_date?: string | null
           availability_schedule?: string | null
           background_color?: string | null
+          city?: string | null
           color_palette?: string | null
           created_at?: string | null
           design_style?: string | null
