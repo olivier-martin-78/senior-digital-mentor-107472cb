@@ -477,7 +477,8 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
                         caption: '',
                         link_url: '',
                         display_order: (formData.media?.length || 0),
-                        media_type: mediaType
+                        media_type: mediaType,
+                        duration: 5 // Valeur par défaut de 5 secondes
                       };
                       handleInputChange('media', [...(formData.media || []), newMedia]);
                     }}

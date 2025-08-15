@@ -55,6 +55,7 @@ export interface MiniSiteData {
     link_url: string;
     display_order: number;
     media_type: 'image' | 'video';
+    duration?: number; // Durée d'affichage en secondes
   }>;
   social_links?: Array<{
     id?: string;
@@ -228,7 +229,8 @@ export const useMiniSite = (userId?: string) => {
             caption: media.caption,
             link_url: media.link_url,
             display_order: index,
-            media_type: media.media_type || 'image'
+            media_type: media.media_type || 'image',
+            duration: media.duration || 5 // Valeur par défaut de 5 secondes
           }));
 
           const { error: mediaError } = await supabase

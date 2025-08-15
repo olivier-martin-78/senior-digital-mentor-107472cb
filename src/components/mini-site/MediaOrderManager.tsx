@@ -11,6 +11,7 @@ interface MediaItem {
   link_url: string;
   display_order: number;
   media_type: 'image' | 'video';
+  duration?: number; // Durée d'affichage en secondes
 }
 
 interface MediaOrderManagerProps {
@@ -53,6 +54,12 @@ export const MediaOrderManager: React.FC<MediaOrderManagerProps> = ({
   const updateLink = (index: number, link_url: string) => {
     const newMedia = [...media];
     newMedia[index].link_url = link_url;
+    onMediaChange(newMedia);
+  };
+
+  const updateDuration = (index: number, duration: number) => {
+    const newMedia = [...media];
+    newMedia[index].duration = duration;
     onMediaChange(newMedia);
   };
 
@@ -104,6 +111,18 @@ export const MediaOrderManager: React.FC<MediaOrderManagerProps> = ({
               onChange={(e) => updateLink(index, e.target.value)}
               className="text-sm"
             />
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="Durée (sec)"
+                value={item.duration || 5}
+                onChange={(e) => updateDuration(index, parseInt(e.target.value) || 5)}
+                className="text-sm w-24"
+                min="1"
+                max="60"
+              />
+              <span className="text-xs text-muted-foreground">seconde(s)</span>
+            </div>
           </div>
 
           {/* Contrôles et remplacement */}
