@@ -957,7 +957,7 @@ export const PublicMiniSite: React.FC<PublicMiniSiteProps> = ({
             />
           )}
           {currentImage?.caption && (
-            <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded text-center">
               {currentImage.caption}
             </div>
           )}
