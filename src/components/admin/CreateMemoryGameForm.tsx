@@ -98,11 +98,33 @@ export const CreateMemoryGameForm: React.FC<CreateMemoryGameFormProps> = ({
     setIsUploading(true);
 
     try {
-      // Vérifier l'authentification d'abord
+      // Import des fonctions de récupération auth
+      const { detectAuthDesync, forceAuthReconnection, redirectToAuth } = await import('@/utils/authRecovery');
+      
+      // Détecter la désynchronisation
+      const isDesync = await detectAuthDesync();
+      console.log('🔍 Désynchronisation détectée:', isDesync);
+      
+      if (isDesync) {
+        console.log('🔄 Tentative de reconnexion forcée...');
+        const recovered = await forceAuthReconnection();
+        
+        if (!recovered) {
+          console.log('❌ Échec de la reconnexion, redirection vers auth');
+          redirectToAuth();
+          return;
+        }
+        
+        console.log('✅ Reconnexion réussie, nouvelle tentative...');
+      }
+      
+      // Vérifier l'authentification après récupération
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        throw new Error('Utilisateur non authentifié');
+        console.log('❌ Utilisateur toujours non authentifié après récupération');
+        redirectToAuth();
+        return;
       }
 
       // Upload all images
