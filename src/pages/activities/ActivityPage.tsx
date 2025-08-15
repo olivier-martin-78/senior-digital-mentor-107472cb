@@ -284,6 +284,32 @@ const ActivityPage = () => {
             </CardContent>
           </Link>
         </Card>
+      },
+      {
+        key: "memory-count",
+        subTagId: remueMeningesId || null,
+        card: <Card key="memory-count" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/memory-count" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'memory-count-game', 'Combien de fois...')}
+          >
+            <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Brain className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Combien de fois...</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Combien de fois...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Mémorisez le nombre d'occurrences de chaque image durant le défilement.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
       }
     ];
 
