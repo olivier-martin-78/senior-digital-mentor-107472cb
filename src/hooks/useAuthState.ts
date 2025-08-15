@@ -95,11 +95,45 @@ export const useAuthState = () => {
       const userRoles = await AuthService.fetchUserRoles(userId);
       console.log('🔐 User roles fetched:', userRoles);
       setRoles(userRoles);
+
+      // Vérifier la désynchronisation après avoir récupéré les données
+      setTimeout(() => {
+        checkAuthDesynchronization(userId);
+      }, 100);
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
     } finally {
       console.log('useAuthState - Setting loading to false after fetchUserData');
       setIsLoading(false);
+    }
+  };
+
+  // Fonction pour détecter et corriger la désynchronisation d'authentification
+  const checkAuthDesynchronization = async (userId: string) => {
+    try {
+      // Vérifier si on a des données utilisateur mais pas de session localStorage
+      const localStorageSession = localStorage.getItem('sb-cvcebcisijjmmmwuedcv-auth-token');
+      
+      if (!localStorageSession && userId) {
+        console.log('🔧 Auth Recovery - Désynchronisation détectée: données user présentes mais pas de localStorage');
+        
+        // Import dynamique pour éviter les dépendances circulaires
+        const { detectAuthDesync, forceAuthReconnection } = await import('@/utils/authRecovery');
+        
+        const isDesync = await detectAuthDesync();
+        if (isDesync) {
+          console.log('🔄 Auth Recovery - Tentative de récupération automatique...');
+          const recovered = await forceAuthReconnection();
+          
+          if (recovered) {
+            console.log('✅ Auth Recovery - Récupération réussie');
+          } else {
+            console.warn('⚠️ Auth Recovery - Récupération échouée, l\'utilisateur devra se reconnecter manuellement');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('🔧 Auth Recovery - Erreur lors de la vérification:', error);
     }
   };
 
