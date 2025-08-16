@@ -298,12 +298,14 @@ const ActivitiesOverview = () => {
       }
     ];
 
-    // Filtrer par sous-activité si un filtre est appliqué
-    if (filter && filter !== '') {
-      return games.filter(game => game.subTagId === filter).map(game => game.card);
+    // Si aucun filtre n'est appliqué ou si le filtre est vide, afficher tous les jeux
+    if (!filter || filter === '' || filter === 'all') {
+      return games.map(game => game.card);
     }
     
-    return games.map(game => game.card);
+    // Filtrer par sous-activité si un filtre spécifique est appliqué
+    // Afficher seulement les jeux qui correspondent au filtre ET qui ont un subTagId valide
+    return games.filter(game => game.subTagId && game.subTagId === filter).map(game => game.card);
   };
 
   return (
