@@ -277,16 +277,16 @@ const ActivitiesOverview = () => {
           <Link 
             to="/cognitive-puzzle" 
             className="block"
-            onClick={() => UserActionsService.trackView('activity', 'cognitive-puzzle-game', 'Puzzle Cognitif').catch(console.error)}
+            onClick={() => UserActionsService.trackView('activity', 'cognitive-puzzle-game', 'Activité spatio-temporelle').catch(console.error)}
           >
             <div className="h-48 bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
               <div className="text-center text-white">
                 <Brain className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Puzzle Cognitif</h3>
+                <h3 className="text-xl font-bold">Activité spatio-temporelle</h3>
               </div>
             </div>
             <CardHeader>
-              <CardTitle className="text-lg">Puzzle Cognitif</CardTitle>
+              <CardTitle className="text-lg">Activité spatio-temporelle</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">
