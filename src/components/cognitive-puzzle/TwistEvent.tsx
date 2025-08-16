@@ -28,12 +28,14 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
   // Show adaptation choices if needed
   if (showChoices && twist.adaptationChoices) {
     return (
-      <AdaptationChoices
-        choices={twist.adaptationChoices}
-        onChoiceSelect={onChoiceSelect}
-        onSpeak={onSpeak}
-        accessibilityMode={accessibilityMode}
-      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AdaptationChoices
+          choices={twist.adaptationChoices}
+          onChoiceSelect={onChoiceSelect}
+          onSpeak={onSpeak}
+          accessibilityMode={accessibilityMode}
+        />
+      </div>
     );
   }
 
