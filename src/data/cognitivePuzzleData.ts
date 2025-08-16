@@ -12,10 +12,10 @@ export const homeScenario: GameScenario = {
       description: 'Placez les activités dans les bons lieux de la maison',
       enableTimeline: false,
       activities: [
-        { id: 'breakfast', name: 'Petit-déjeuner', icon: '🥞', category: 'activity' },
+        { id: 'breakfast', name: 'Petit-déjeuner', icon: '🍳', category: 'activity' },
         { id: 'newspaper', name: 'Lecture du journal', icon: '📰', category: 'activity' },
         { id: 'nap', name: 'Sieste', icon: '😴', category: 'activity' },
-        { id: 'dinner', name: 'Dîner', icon: '🥗', category: 'activity' },
+        { id: 'dinner', name: 'Dîner', icon: '🍽️', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
@@ -46,10 +46,10 @@ export const homeScenario: GameScenario = {
       description: 'Connectez les activités aux lieux ET aux moments appropriés',
       enableTimeline: true,
       activities: [
-        { id: 'cooking', name: 'Prendre ma douche', icon: '🧼', category: 'activity' },
-        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '👨‍🍳', category: 'activity' },
-        { id: 'plants', name: 'Changer mes draps de literie', icon: '🧺', category: 'activity' },
-        { id: 'laundry', name: 'Réparer la voiture', icon: '🔧', category: 'activity' },
+        { id: 'cooking', name: 'Prendre ma douche', icon: '🚿', category: 'activity' },
+        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍳', category: 'activity' },
+        { id: 'plants', name: 'Réparer mon lit', icon: '🔨', category: 'activity' },
+        { id: 'laundry', name: 'Réparer la voiture à la nuit tombée', icon: '🔧', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
@@ -106,10 +106,10 @@ export const homeScenario: GameScenario = {
       description: 'Construisez une journée parfaite malgré les imprévus',
       enableTimeline: true,
       activities: [
-        { id: 'tv', name: 'Tartiner mes biscottes', icon: '🧈', category: 'activity' },
-        { id: 'reading', name: 'Ranger ma table de nuit avant de me coucher', icon: '📚', category: 'activity' },
-        { id: 'music', name: 'Écoute musique en déjeunant', icon: '🎵', category: 'activity' },
-        { id: 'crafts', name: 'Bricoler comme il pleut', icon: '🛠️', category: 'activity' },
+        { id: 'tv', name: 'Tartiner mes biscottes', icon: '📺', category: 'activity' },
+        { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
+        { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
+        { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
@@ -176,9 +176,9 @@ export const cityScenario: GameScenario = {
       enableTimeline: false,
       activities: [
         { id: 'shopping', name: 'Courses au marché', icon: '🛒', category: 'activity' },
-        { id: 'cafe', name: 'Café avec ami', icon: '🫖', category: 'activity' },
+        { id: 'cafe', name: 'Café avec ami', icon: '☕', category: 'activity' },
         { id: 'dog-walk', name: 'Promenade du chien', icon: '🐕', category: 'activity' },
-        { id: 'home-return', name: 'Retour à la maison', icon: '🚪', category: 'activity' },
+        { id: 'home-return', name: 'Retour à la maison', icon: '🏠', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'market', label: 'Marché', icon: '🏪', x: 20, y: 20 },
@@ -208,10 +208,10 @@ export const cityScenario: GameScenario = {
       description: 'Organisez votre sortie dans le temps',
       enableTimeline: true,
       activities: [
-        { id: 'library', name: 'Echanger mes livres à partir de 14h', icon: '📖', category: 'activity' },
-        { id: 'pharmacy', name: 'Acheter des  médicaments vers 10h', icon: '💉', category: 'activity' },
-        { id: 'bank', name: 'Aller au distributeur de billets à 12h', icon: '💳', category: 'activity' },
-        { id: 'grocery', name: 'Faire les courses pour le dîner à 18h', icon: '🛍️', category: 'activity' },
+        { id: 'library', name: 'Echanger mes livres à partir de 14h', icon: '📚', category: 'activity' },
+        { id: 'pharmacy', name: 'Acheter des  médicaments vers 10h', icon: '💊', category: 'activity' },
+        { id: 'bank', name: 'Aller au distributeur de billets à 12h', icon: '🏦', category: 'activity' },
+        { id: 'grocery', name: 'Faire les courses pour le dîner à 18h', icon: '🥬', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'library', label: 'Bibliothèque', icon: '📚', x: 20, y: 20 },
@@ -269,10 +269,10 @@ export const cityScenario: GameScenario = {
       description: 'Maîtrisez une sortie complexe avec adaptations',
       enableTimeline: true,
       activities: [
-        { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🎨', category: 'activity' },
-        { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍕', category: 'activity' },
-        { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🥖', category: 'activity' },
-        { id: 'gym', name: 'Déjeuner avec une amie', icon: '👥', category: 'activity' },
+        { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🏛️', category: 'activity' },
+        { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍽️', category: 'activity' },
+        { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🥐', category: 'activity' },
+        { id: 'gym', name: 'Déjeuner avec une amie', icon: '🍽️', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'museum', label: 'Musée', icon: '🏛️', x: 20, y: 20 },
