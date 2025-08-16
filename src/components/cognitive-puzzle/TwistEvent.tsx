@@ -25,6 +25,17 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
+  useEffect(() => {
+    // Animate in
+    const timer = setTimeout(() => setIsVisible(true), 100);
+
+    // Removed auto-speak - now only on demand
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [twist.description]);
+
   // Show adaptation choices if needed
   if (showChoices && twist.adaptationChoices) {
     return (
@@ -38,17 +49,6 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
       </div>
     );
   }
-
-  useEffect(() => {
-    // Animate in
-    const timer = setTimeout(() => setIsVisible(true), 100);
-
-    // Removed auto-speak - now only on demand
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [twist.description]);
 
   const getIcon = () => {
     switch (twist.type) {
