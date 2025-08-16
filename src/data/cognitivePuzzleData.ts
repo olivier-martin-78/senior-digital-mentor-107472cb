@@ -48,7 +48,7 @@ export const homeScenario: GameScenario = {
       activities: [
         { id: 'cooking', name: 'Prendre ma douche', icon: '🚿', category: 'activity' },
         { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍳', category: 'activity' },
-        { id: 'plants', name: 'Arrosage des plantes', icon: '🪴', category: 'activity' },
+        { id: 'plants', name: 'Changer mes draps de literie', icon: '🛏️', category: 'activity' },
         { id: 'laundry', name: 'Réparer la voiture', icon: '🔧', category: 'activity' },
       ],
       spatialSlots: [
@@ -106,8 +106,8 @@ export const homeScenario: GameScenario = {
       description: 'Construisez une journée parfaite malgré les imprévus',
       enableTimeline: true,
       activities: [
-        { id: 'tv', name: 'Télévision', icon: '📺', category: 'activity' },
-        { id: 'reading', name: 'Lecture', icon: '📚', category: 'activity' },
+        { id: 'tv', name: 'Tartiner mes biscottes', icon: '📺', category: 'activity' },
+        { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
         { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
         { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
       ],
@@ -272,7 +272,7 @@ export const cityScenario: GameScenario = {
         { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🏛️', category: 'activity' },
         { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍽️', category: 'activity' },
         { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🥐', category: 'activity' },
-        { id: 'gym', name: 'Déjeuner avec mon amie', icon: '🍽️', category: 'activity' },
+        { id: 'gym', name: 'Déjeuner avec une amie', icon: '🍽️', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'museum', label: 'Musée', icon: '🏛️', x: 20, y: 20 },
