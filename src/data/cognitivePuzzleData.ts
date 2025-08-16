@@ -46,16 +46,16 @@ export const homeScenario: GameScenario = {
       description: 'Connectez les activités aux lieux ET aux moments appropriés',
       enableTimeline: true,
       activities: [
-        { id: 'cooking', name: 'Prendre ma douche', icon: '👩‍🍳', category: 'activity' },
-        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🧹', category: 'activity' },
+        { id: 'cooking', name: 'Prendre ma douche', icon: '🚿', category: 'activity' },
+        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍳', category: 'activity' },
         { id: 'plants', name: 'Arrosage des plantes', icon: '🪴', category: 'activity' },
-        { id: 'laundry', name: 'Réparer la voiture', icon: '👕', category: 'activity' },
+        { id: 'laundry', name: 'Réparer la voiture', icon: '🔧', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
-        { id: 'living', label: 'Salle de bain', icon: '🛋️', x: 60, y: 30 },
+        { id: 'living', label: 'Salle de bain', icon: '🚿', x: 60, y: 30 },
         { id: 'bedroom', label: 'Chambre', icon: '🛏️', x: 20, y: 70 },
-        { id: 'garden', label: 'Garage', icon: '🌱', x: 60, y: 70 },
+        { id: 'garden', label: 'Garage', icon: '🚗', x: 60, y: 70 },
       ],
       timeSlots: [
         { id: 'morning', label: 'Matin', icon: '🌅', period: 'morning' },
@@ -271,14 +271,14 @@ export const cityScenario: GameScenario = {
       activities: [
         { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🏛️', category: 'activity' },
         { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍽️', category: 'activity' },
-        { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🎬', category: 'activity' },
-        { id: 'gym', name: 'Déjeuner avec mon amie', icon: '🏋️', category: 'activity' },
+        { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🥐', category: 'activity' },
+        { id: 'gym', name: 'Déjeuner avec mon amie', icon: '🍽️', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'museum', label: 'Musée', icon: '🏛️', x: 20, y: 20 },
         { id: 'restaurant', label: 'Restaurant', icon: '🍽️', x: 70, y: 20 },
-        { id: 'cinema', label: 'Boulangerie', icon: '🎬', x: 20, y: 70 },
-        { id: 'gym', label: 'Brasserie', icon: '🏋️', x: 70, y: 70 },
+        { id: 'cinema', label: 'Boulangerie', icon: '🥐', x: 20, y: 70 },
+        { id: 'gym', label: 'Brasserie', icon: '🍽️', x: 70, y: 70 },
       ],
       timeSlots: [
         { id: 'morning', label: 'Matin', icon: '🕘', period: 'morning' },
