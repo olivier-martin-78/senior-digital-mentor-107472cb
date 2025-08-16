@@ -340,6 +340,15 @@ export const useMiniSite = (userId?: string) => {
   }, [targetUserId, isAuthLoading]);
 
   const importMiniSite = async (sourceMiniSiteId: string, targetUserId: string) => {
+    if (!targetUserId) {
+      toast({
+        title: "Erreur",
+        description: "Utilisateur cible non spécifié pour l'import",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Fetch source mini-site data

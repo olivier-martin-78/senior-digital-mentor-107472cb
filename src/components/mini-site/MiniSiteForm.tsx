@@ -20,6 +20,7 @@ import { RichTextEditor } from '@/components/RichTextEditor';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface MiniSiteFormProps {
   userId?: string;
@@ -234,8 +235,20 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
   };
 
   const handleImport = async (sourceMiniSiteId: string) => {
-    if (!selectedUserId) return;
-    await importMiniSite(sourceMiniSiteId, selectedUserId);
+    if (!selectedUserId) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un utilisateur avant d'importer un mini-site",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      await importMiniSite(sourceMiniSiteId, selectedUserId);
+    } catch (error) {
+      // L'erreur est déjà gérée dans le hook useMiniSite
+      console.error('Import failed:', error);
+    }
   };
 
   return (
@@ -246,12 +259,12 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
             {miniSite ? 'Modifier mon mini-site' : 'Créer mon mini-site'}
           </h1>
           <div className="flex gap-2">
-            {hasRole('admin') && selectedUserId && (
+            {hasRole('admin') && (
               <MiniSiteImportDialog
                 onImport={handleImport}
                 targetUserId={selectedUserId}
                 targetUserName={targetUserProfile?.display_name}
-                disabled={loading}
+                disabled={loading || !selectedUserId}
               />
             )}
             <Button onClick={handlePreview} variant="outline">
