@@ -107,9 +107,9 @@ export const homeScenario: GameScenario = {
       enableTimeline: true,
       activities: [
         { id: 'tv', name: 'Tartiner mes biscottes', icon: '📺', category: 'activity' },
-        { id: 'reading', name: 'Ranger ma table de nuit avant de m\'endormir', icon: '📚', category: 'activity' },
-        { id: 'music', name: 'Écouter la radio en préparant le déjeuner', icon: '🎵', category: 'activity' },
-        { id: 'crafts', name: 'Bricoler entre 14h et 17h', icon: '🔨', category: 'activity' },
+        { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
+        { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
+        { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
