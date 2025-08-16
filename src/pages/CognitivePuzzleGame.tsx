@@ -25,6 +25,8 @@ const CognitivePuzzleGame: React.FC = () => {
     speak,
     acceptTwist,
     rejectTwist,
+    selectActivity,
+    placeSelectedActivity,
   } = useCognitivePuzzle();
 
   React.useEffect(() => {

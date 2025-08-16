@@ -5,18 +5,22 @@ import { ActivityItem as ActivityItemType, PlacedItem } from '@/types/cognitiveP
 interface DragDropZoneProps {
   activities: ActivityItemType[];
   placedItems: PlacedItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
   onDragStart: (activity: ActivityItemType) => void;
   onDragEnd: () => void;
+  onSelectActivity: (activityId: string) => void;
   onSpeak: (text: string) => void;
 }
 
 export const DragDropZone: React.FC<DragDropZoneProps> = ({
   activities,
   placedItems,
+  selectedActivity,
   accessibilityMode,
   onDragStart,
   onDragEnd,
+  onSelectActivity,
   onSpeak,
 }) => {
   const [draggedActivity, setDraggedActivity] = React.useState<string | null>(null);
@@ -60,9 +64,11 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
             activity={activity}
             isPlaced={isActivityPlaced(activity.id)}
             isDragging={draggedActivity === activity.id}
+            isSelected={selectedActivity === activity.id}
             accessibilityMode={accessibilityMode}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onSelect={onSelectActivity}
             onSpeak={onSpeak}
           />
         ))}
@@ -74,7 +80,7 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
           text-muted-foreground font-medium
           ${accessibilityMode ? 'text-base' : 'text-sm'}
         `}>
-          💡 Glissez les activités vers les zones appropriées
+          💡 Glissez les activités ou cliquez puis cliquez sur une zone
         </p>
         
         {/* Progress Summary */}

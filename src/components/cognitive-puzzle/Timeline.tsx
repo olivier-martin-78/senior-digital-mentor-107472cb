@@ -5,8 +5,10 @@ interface TimelineProps {
   timeSlots: TimeSlot[];
   placedItems: PlacedItem[];
   activities: ActivityItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
   onDrop: (timeSlotId: string, activityId: string) => void;
+  onPlaceSelected: (timeSlotId: string) => void;
   onRemove: (activityId: string) => void;
   onSpeak: (text: string) => void;
 }
@@ -15,8 +17,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   timeSlots,
   placedItems,
   activities,
+  selectedActivity,
   accessibilityMode,
   onDrop,
+  onPlaceSelected,
   onRemove,
   onSpeak,
 }) => {
@@ -73,7 +77,13 @@ export const Timeline: React.FC<TimelineProps> = ({
               onDragOver={(e) => handleDragOver(e, slot.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, slot.id)}
-              onClick={() => onSpeak(`Créneau ${slot.label}`)}
+              onClick={() => {
+                if (selectedActivity && !placedActivity) {
+                  onPlaceSelected(slot.id);
+                } else {
+                  onSpeak(`Créneau ${slot.label}`);
+                }
+              }}
             >
               {/* Time Slot */}
               <div className={`
@@ -83,6 +93,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 hover:shadow-lg hover:scale-105
                 ${isDraggedOver ? 'border-primary bg-primary/10 scale-105' : 'border-blue-200'}
                 ${placedActivity ? 'border-solid border-green-400 bg-green-50' : ''}
+                ${selectedActivity && !placedActivity ? 'border-primary bg-primary/5 ring-2 ring-primary ring-opacity-30' : ''}
               `}>
                 {/* Time Icon & Label */}
                 <div className={`text-center mb-3 ${accessibilityMode ? 'mb-4' : ''}`}>
@@ -120,7 +131,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   </div>
                 ) : (
                   <div className={`text-center text-muted-foreground ${accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                    Glissez une activité ici
+                    {selectedActivity ? 'Cliquez pour placer!' : 'Glissez une activité ici'}
                   </div>
                 )}
 

@@ -18,6 +18,7 @@ const initialState: GameState = {
 
 export const useCognitivePuzzle = () => {
   const [gameState, setGameState] = useState<GameState>(initialState);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   
   // Load progress from localStorage
   useEffect(() => {
@@ -224,8 +225,44 @@ export const useCognitivePuzzle = () => {
     speak('Défi refusé. Vous continuez le niveau normalement.');
   }, [speak]);
 
+  const selectActivity = useCallback((activityId: string) => {
+    setSelectedActivity(prev => prev === activityId ? null : activityId);
+    const scenario = getScenario(gameState.currentScenario);
+    const level = scenario?.levels.find(l => l.id === gameState.currentLevel);
+    const activity = level?.activities.find(a => a.id === activityId);
+    
+    if (activity) {
+      if (selectedActivity === activityId) {
+        speak(`${activity.name} désélectionné`);
+      } else {
+        speak(`${activity.name} sélectionné. Cliquez maintenant sur un lieu ou un moment pour le placer.`);
+      }
+    }
+  }, [gameState.currentScenario, gameState.currentLevel, selectedActivity, speak]);
+
+  const placeSelectedActivity = useCallback((spatialSlotId?: string, timeSlotId?: string) => {
+    if (!selectedActivity) return;
+    
+    placeItem(selectedActivity, spatialSlotId, timeSlotId);
+    setSelectedActivity(null);
+    
+    const scenario = getScenario(gameState.currentScenario);
+    const level = scenario?.levels.find(l => l.id === gameState.currentLevel);
+    const activity = level?.activities.find(a => a.id === selectedActivity);
+    const spatialSlot = level?.spatialSlots.find(s => s.id === spatialSlotId);
+    const timeSlot = level?.timeSlots.find(t => t.id === timeSlotId);
+    
+    if (activity) {
+      let message = `${activity.name} placé`;
+      if (spatialSlot) message += ` dans ${spatialSlot.label}`;
+      if (timeSlot) message += ` au ${timeSlot.label}`;
+      speak(message);
+    }
+  }, [selectedActivity, placeItem, gameState.currentScenario, gameState.currentLevel, speak]);
+
   return {
     gameState,
+    selectedActivity,
     selectScenario,
     startLevel,
     placeItem,
@@ -239,6 +276,8 @@ export const useCognitivePuzzle = () => {
     speak,
     acceptTwist,
     rejectTwist,
+    selectActivity,
+    placeSelectedActivity,
   };
 };
 

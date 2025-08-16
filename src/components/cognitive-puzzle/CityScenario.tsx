@@ -10,6 +10,7 @@ import { ArrowLeft, Volume2, VolumeX, Accessibility, CheckCircle } from 'lucide-
 
 interface CityScenarioProps {
   gameState: GameState;
+  selectedActivity: string | null;
   onPlaceItem: (activityId: string, spatialSlotId?: string, timeSlotId?: string) => void;
   onRemoveItem: (activityId: string) => void;
   onCheckCompletion: () => boolean;
@@ -17,11 +18,14 @@ interface CityScenarioProps {
   onNextLevel: () => void;
   onStartLevel: () => void;
   onBackToMenu: () => void;
+  onSelectActivity: (activityId: string) => void;
+  onPlaceSelected: (spatialSlotId?: string, timeSlotId?: string) => void;
   onSpeak: (text: string) => void;
 }
 
 export const CityScenario: React.FC<CityScenarioProps> = ({
   gameState,
+  selectedActivity,
   onPlaceItem,
   onRemoveItem,
   onCheckCompletion,
@@ -29,6 +33,8 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
   onNextLevel,
   onStartLevel,
   onBackToMenu,
+  onSelectActivity,
+  onPlaceSelected,
   onSpeak,
 }) => {
   const [draggedActivity, setDraggedActivity] = React.useState<string | null>(null);
@@ -47,81 +53,94 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
   }
 
   const handleSpatialDrop = (spatialSlotId: string, activityId: string) => {
-    const currentPlacement = gameState.placedItems.find(item => item.activityId === activityId);
-    onPlaceItem(activityId, spatialSlotId, currentPlacement?.timeSlotId);
+    onPlaceItem(activityId, spatialSlotId);
   };
 
   const handleTimeDrop = (timeSlotId: string, activityId: string) => {
-    const currentPlacement = gameState.placedItems.find(item => item.activityId === activityId);
-    onPlaceItem(activityId, currentPlacement?.spatialSlotId, timeSlotId);
+    onPlaceItem(activityId, undefined, timeSlotId);
+  };
+
+  const handleSpatialClick = (spatialSlotId: string) => {
+    onPlaceSelected(spatialSlotId);
+  };
+
+  const handleTimeClick = (timeSlotId: string) => {
+    onPlaceSelected(undefined, timeSlotId);
   };
 
   const handleCheckLevel = () => {
-    if (onCheckCompletion()) {
+    const isComplete = onCheckCompletion();
+    if (isComplete) {
       onCompleteLevel();
+      onSpeak('Excellente organisation ! Sortie en ville réussie !');
     } else {
-      onSpeak('Il manque encore quelques éléments à placer correctement');
+      onSpeak('Quelques ajustements sont encore nécessaires pour optimiser votre sortie.');
     }
   };
 
   const renderInstructions = () => (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 p-4">
-      <div className="max-w-4xl mx-auto text-center">
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 mb-8">
-          <div className="text-6xl mb-6 animate-bounce">🏙️</div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
+          <div className="text-6xl mb-6">🏙️</div>
           
-          <h2 className={`
-            font-bold text-foreground mb-4
-            ${gameState.accessibilityMode ? 'text-3xl' : 'text-2xl'}
-          `}>
+          <h1 className={`font-bold text-foreground mb-4 ${gameState.accessibilityMode ? 'text-3xl' : 'text-2xl'}`}>
             {currentLevel.name}
-          </h2>
+          </h1>
           
-          <p className={`
-            text-muted-foreground mb-6 leading-relaxed
-            ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}
-          `}>
+          <p className={`text-muted-foreground mb-8 leading-relaxed ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}`}>
             {currentLevel.description}
           </p>
 
-          {/* Level-specific Instructions */}
-          <div className="bg-sky-50 rounded-2xl p-6 mb-6">
-            <h3 className={`font-semibold text-sky-800 mb-3 ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}`}>
-              📋 Instructions
-            </h3>
-            
-            {currentLevel.id === 1 && (
-              <p className={`text-sky-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Planifiez votre sortie en ville en plaçant chaque activité au bon endroit.
-                {currentLevel.enableTimeline && ' Organisez aussi dans le temps !'}
-              </p>
-            )}
-            
-            {currentLevel.id === 2 && (
-              <p className={`text-sky-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Maintenant, organisez votre sortie dans l'espace ET dans le temps. 
-                Optimisez vos déplacements en ville !
-              </p>
-            )}
-            
-            {currentLevel.id === 3 && (
-              <p className={`text-sky-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Maîtrisez une sortie complexe ! Gérez tous vos rendez-vous et déplacements. 
-                Adaptez-vous aux imprévus urbains comme la pluie ou les embouteillages !
-              </p>
-            )}
+          {/* Level-specific instructions */}
+          <div className="bg-sky-50 rounded-2xl p-6 mb-8">
+            <div className="text-2xl mb-3">🗺️</div>
+            <div className={`text-left space-y-3 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
+              {currentLevel.id === 1 && (
+                <div>
+                  <p className="font-semibold text-sky-800 mb-2">Instructions :</p>
+                  <ul className="text-sky-700 space-y-1">
+                    <li>• Choisissez les bons lieux pour chaque activité</li>
+                    <li>• Glissez les activités vers les zones du quartier</li>
+                    <li>• Pensez logique : courses → marché, café → café...</li>
+                  </ul>
+                </div>
+              )}
+              {currentLevel.id === 2 && (
+                <div>
+                  <p className="font-semibold text-sky-800 mb-2">Instructions :</p>
+                  <ul className="text-sky-700 space-y-1">
+                    <li>• Organisez votre sortie dans l'ESPACE ET le TEMPS</li>
+                    <li>• Placez dans les lieux ET planifiez les moments</li>
+                    <li>• Optimisez vos déplacements et votre emploi du temps</li>
+                  </ul>
+                </div>
+              )}
+              {currentLevel.id === 3 && (
+                <div>
+                  <p className="font-semibold text-sky-800 mb-2">Instructions :</p>
+                  <ul className="text-sky-700 space-y-1">
+                    <li>• Maîtrisez une sortie complexe avec de nombreuses activités</li>
+                    <li>• Adaptez-vous aux imprévus qui peuvent survenir</li>
+                    <li>• Chaque activité doit avoir un lieu ET un moment précis</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
-          <Button
-            onClick={() => {
-              onSpeak(`Début du niveau ${currentLevel.id} : ${currentLevel.name}`);
-              onStartLevel();
-            }}
+          <Button 
+            onClick={onStartLevel}
             size={gameState.accessibilityMode ? 'lg' : 'default'}
-            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+            className={`
+              bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700
+              text-white font-semibold px-8 py-3 rounded-2xl
+              transform hover:scale-105 transition-all duration-200
+              shadow-lg hover:shadow-xl
+              ${gameState.accessibilityMode ? 'text-lg px-12 py-4' : ''}
+            `}
           >
-            <span className="mr-2">🎯</span>
-            Commencer le Niveau
+            Commencer le niveau
           </Button>
         </div>
       </div>
@@ -129,48 +148,51 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
   );
 
   const renderGameplay = () => (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={onBackToMenu}
-              variant="outline"
-              size={gameState.accessibilityMode ? 'lg' : 'default'}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Menu
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏙️</span>
-              <div>
-                <h1 className={`font-bold text-foreground ${gameState.accessibilityMode ? 'text-xl' : 'text-lg'}`}>
-                  {currentLevel.name}
-                </h1>
-                <p className={`text-muted-foreground ${gameState.accessibilityMode ? 'text-sm' : 'text-xs'}`}>
-                  Niveau {currentLevel.id}/3
-                </p>
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBackToMenu}
+                className="hover:bg-white/50"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Menu
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🏙️</div>
+                <div>
+                  <h2 className={`font-bold text-foreground ${gameState.accessibilityMode ? 'text-xl' : 'text-lg'}`}>
+                    {currentLevel.name}
+                  </h2>
+                  <p className={`text-muted-foreground ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
+                    Niveau {gameState.currentLevel}/3
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-2">
-              <span className={`font-semibold text-foreground ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Score: {gameState.score}
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full font-semibold">
+                ⭐ {gameState.score} points
+              </div>
+              <Button
+                onClick={handleCheckLevel}
+                className={`
+                  bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
+                  text-white font-semibold rounded-2xl
+                  transform hover:scale-105 transition-all duration-200
+                  ${gameState.accessibilityMode ? 'px-6 py-3 text-lg' : 'px-4 py-2'}
+                `}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Vérifier
+              </Button>
             </div>
-            
-            <Button
-              onClick={handleCheckLevel}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              size={gameState.accessibilityMode ? 'lg' : 'default'}
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Vérifier
-            </Button>
           </div>
         </div>
 
@@ -182,8 +204,10 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
               timeSlots={currentLevel.timeSlots}
               placedItems={gameState.placedItems}
               activities={currentLevel.activities}
+              selectedActivity={selectedActivity}
               accessibilityMode={gameState.accessibilityMode}
               onDrop={handleTimeDrop}
+              onPlaceSelected={handleTimeClick}
               onRemove={onRemoveItem}
               onSpeak={onSpeak}
             />
@@ -194,9 +218,11 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
             spatialSlots={currentLevel.spatialSlots}
             placedItems={gameState.placedItems}
             activities={currentLevel.activities}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             scenario="city"
             onDrop={handleSpatialDrop}
+            onPlaceSelected={handleSpatialClick}
             onRemove={onRemoveItem}
             onSpeak={onSpeak}
           />
@@ -205,12 +231,14 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
           <DragDropZone
             activities={currentLevel.activities}
             placedItems={gameState.placedItems}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             onDragStart={(activity) => {
               setDraggedActivity(activity.id);
               onSpeak(`Début du déplacement de ${activity.name}`);
             }}
             onDragEnd={() => setDraggedActivity(null)}
+            onSelectActivity={onSelectActivity}
             onSpeak={onSpeak}
           />
         </div>
@@ -218,27 +246,20 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
     </div>
   );
 
-  // Render based on game phase
+  // Render different views based on game phase
   if (gameState.gamePhase === 'instructions') {
     return renderInstructions();
   }
 
   if (gameState.gamePhase === 'success') {
-    const isLastLevel = currentLevel.id === cityScenario.levels.length;
     return (
       <GameSuccess
-        level={currentLevel}
         score={gameState.score}
-        hadTwist={!!gameState.activeTwist}
+        levelName={currentLevel.name}
         onNextLevel={onNextLevel}
-        onReplay={() => {
-          // In a real implementation, restart current level
-          onSpeak('Redémarrage du niveau');
-        }}
-        onMenu={onBackToMenu}
-        onSpeak={onSpeak}
+        onBackToMenu={onBackToMenu}
         accessibilityMode={gameState.accessibilityMode}
-        isLastLevel={isLastLevel}
+        onSpeak={onSpeak}
       />
     );
   }

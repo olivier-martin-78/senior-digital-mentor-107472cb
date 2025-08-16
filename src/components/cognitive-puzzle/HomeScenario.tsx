@@ -10,6 +10,7 @@ import { ArrowLeft, Volume2, VolumeX, Accessibility, CheckCircle } from 'lucide-
 
 interface HomeScenarioProps {
   gameState: GameState;
+  selectedActivity: string | null;
   onPlaceItem: (activityId: string, spatialSlotId?: string, timeSlotId?: string) => void;
   onRemoveItem: (activityId: string) => void;
   onCheckCompletion: () => boolean;
@@ -17,11 +18,14 @@ interface HomeScenarioProps {
   onNextLevel: () => void;
   onStartLevel: () => void;
   onBackToMenu: () => void;
+  onSelectActivity: (activityId: string) => void;
+  onPlaceSelected: (spatialSlotId?: string, timeSlotId?: string) => void;
   onSpeak: (text: string) => void;
 }
 
 export const HomeScenario: React.FC<HomeScenarioProps> = ({
   gameState,
+  selectedActivity,
   onPlaceItem,
   onRemoveItem,
   onCheckCompletion,
@@ -29,6 +33,8 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
   onNextLevel,
   onStartLevel,
   onBackToMenu,
+  onSelectActivity,
+  onPlaceSelected,
   onSpeak,
 }) => {
   const [draggedActivity, setDraggedActivity] = React.useState<string | null>(null);
@@ -47,81 +53,94 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
   }
 
   const handleSpatialDrop = (spatialSlotId: string, activityId: string) => {
-    const currentPlacement = gameState.placedItems.find(item => item.activityId === activityId);
-    onPlaceItem(activityId, spatialSlotId, currentPlacement?.timeSlotId);
+    onPlaceItem(activityId, spatialSlotId);
   };
 
   const handleTimeDrop = (timeSlotId: string, activityId: string) => {
-    const currentPlacement = gameState.placedItems.find(item => item.activityId === activityId);
-    onPlaceItem(activityId, currentPlacement?.spatialSlotId, timeSlotId);
+    onPlaceItem(activityId, undefined, timeSlotId);
+  };
+
+  const handleSpatialClick = (spatialSlotId: string) => {
+    onPlaceSelected(spatialSlotId);
+  };
+
+  const handleTimeClick = (timeSlotId: string) => {
+    onPlaceSelected(undefined, timeSlotId);
   };
 
   const handleCheckLevel = () => {
-    if (onCheckCompletion()) {
+    const isComplete = onCheckCompletion();
+    if (isComplete) {
       onCompleteLevel();
+      onSpeak('Félicitations ! Niveau terminé avec succès !');
     } else {
-      onSpeak('Il manque encore quelques éléments à placer correctement');
+      onSpeak('Il manque encore quelques placements pour terminer ce niveau.');
     }
   };
 
   const renderInstructions = () => (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4">
-      <div className="max-w-4xl mx-auto text-center">
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 mb-8">
-          <div className="text-6xl mb-6 animate-bounce">🏠</div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
+          <div className="text-6xl mb-6">🏠</div>
           
-          <h2 className={`
-            font-bold text-foreground mb-4
-            ${gameState.accessibilityMode ? 'text-3xl' : 'text-2xl'}
-          `}>
+          <h1 className={`font-bold text-foreground mb-4 ${gameState.accessibilityMode ? 'text-3xl' : 'text-2xl'}`}>
             {currentLevel.name}
-          </h2>
+          </h1>
           
-          <p className={`
-            text-muted-foreground mb-6 leading-relaxed
-            ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}
-          `}>
+          <p className={`text-muted-foreground mb-8 leading-relaxed ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}`}>
             {currentLevel.description}
           </p>
 
-          {/* Level-specific Instructions */}
-          <div className="bg-amber-50 rounded-2xl p-6 mb-6">
-            <h3 className={`font-semibold text-amber-800 mb-3 ${gameState.accessibilityMode ? 'text-lg' : 'text-base'}`}>
-              📋 Instructions
-            </h3>
-            
-            {currentLevel.id === 1 && (
-              <p className={`text-amber-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Glissez chaque activité vers le bon endroit de la maison. 
-                {currentLevel.enableTimeline && ' Organisez aussi dans le temps !'}
-              </p>
-            )}
-            
-            {currentLevel.id === 2 && (
-              <p className={`text-amber-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Maintenant, placez les activités dans l'espace ET dans le temps. 
-                Chaque activité doit avoir un lieu et un moment appropriés.
-              </p>
-            )}
-            
-            {currentLevel.id === 3 && (
-              <p className={`text-amber-700 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Créez une journée parfaite ! Organisez toutes les activités dans l'espace et le temps. 
-                Attention aux surprises qui peuvent modifier vos plans !
-              </p>
-            )}
+          {/* Level-specific instructions */}
+          <div className="bg-blue-50 rounded-2xl p-6 mb-8">
+            <div className="text-2xl mb-3">💡</div>
+            <div className={`text-left space-y-3 ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
+              {currentLevel.id === 1 && (
+                <div>
+                  <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
+                  <ul className="text-blue-700 space-y-1">
+                    <li>• Placez chaque activité dans la bonne pièce de la maison</li>
+                    <li>• Glissez les activités vers les zones appropriées</li>
+                    <li>• Utilisez la logique : petit-déjeuner → cuisine, sieste → chambre...</li>
+                  </ul>
+                </div>
+              )}
+              {currentLevel.id === 2 && (
+                <div>
+                  <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
+                  <ul className="text-blue-700 space-y-1">
+                    <li>• Organisez les activités dans l'ESPACE ET le TEMPS</li>
+                    <li>• Placez d'abord dans les pièces, puis dans les moments</li>
+                    <li>• Réfléchissez à l'ordre logique de votre journée</li>
+                  </ul>
+                </div>
+              )}
+              {currentLevel.id === 3 && (
+                <div>
+                  <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
+                  <ul className="text-blue-700 space-y-1">
+                    <li>• Construisez une journée parfaite avec toutes les activités</li>
+                    <li>• Soyez prêt à vous adapter aux imprévus</li>
+                    <li>• Double placement : lieu ET moment pour chaque activité</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
-          <Button
-            onClick={() => {
-              onSpeak(`Début du niveau ${currentLevel.id} : ${currentLevel.name}`);
-              onStartLevel();
-            }}
+          <Button 
+            onClick={onStartLevel}
             size={gameState.accessibilityMode ? 'lg' : 'default'}
-            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+            className={`
+              bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
+              text-white font-semibold px-8 py-3 rounded-2xl
+              transform hover:scale-105 transition-all duration-200
+              shadow-lg hover:shadow-xl
+              ${gameState.accessibilityMode ? 'text-lg px-12 py-4' : ''}
+            `}
           >
-            <span className="mr-2">🎯</span>
-            Commencer le Niveau
+            Commencer le niveau
           </Button>
         </div>
       </div>
@@ -129,48 +148,51 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
   );
 
   const renderGameplay = () => (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={onBackToMenu}
-              variant="outline"
-              size={gameState.accessibilityMode ? 'lg' : 'default'}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Menu
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏠</span>
-              <div>
-                <h1 className={`font-bold text-foreground ${gameState.accessibilityMode ? 'text-xl' : 'text-lg'}`}>
-                  {currentLevel.name}
-                </h1>
-                <p className={`text-muted-foreground ${gameState.accessibilityMode ? 'text-sm' : 'text-xs'}`}>
-                  Niveau {currentLevel.id}/3
-                </p>
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBackToMenu}
+                className="hover:bg-white/50"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Menu
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🏠</div>
+                <div>
+                  <h2 className={`font-bold text-foreground ${gameState.accessibilityMode ? 'text-xl' : 'text-lg'}`}>
+                    {currentLevel.name}
+                  </h2>
+                  <p className={`text-muted-foreground ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
+                    Niveau {gameState.currentLevel}/3
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-2">
-              <span className={`font-semibold text-foreground ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                Score: {gameState.score}
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full font-semibold">
+                ⭐ {gameState.score} points
+              </div>
+              <Button
+                onClick={handleCheckLevel}
+                className={`
+                  bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
+                  text-white font-semibold rounded-2xl
+                  transform hover:scale-105 transition-all duration-200
+                  ${gameState.accessibilityMode ? 'px-6 py-3 text-lg' : 'px-4 py-2'}
+                `}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Vérifier
+              </Button>
             </div>
-            
-            <Button
-              onClick={handleCheckLevel}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              size={gameState.accessibilityMode ? 'lg' : 'default'}
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Vérifier
-            </Button>
           </div>
         </div>
 
@@ -182,8 +204,10 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
               timeSlots={currentLevel.timeSlots}
               placedItems={gameState.placedItems}
               activities={currentLevel.activities}
+              selectedActivity={selectedActivity}
               accessibilityMode={gameState.accessibilityMode}
               onDrop={handleTimeDrop}
+              onPlaceSelected={handleTimeClick}
               onRemove={onRemoveItem}
               onSpeak={onSpeak}
             />
@@ -194,9 +218,11 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
             spatialSlots={currentLevel.spatialSlots}
             placedItems={gameState.placedItems}
             activities={currentLevel.activities}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             scenario="home"
             onDrop={handleSpatialDrop}
+            onPlaceSelected={handleSpatialClick}
             onRemove={onRemoveItem}
             onSpeak={onSpeak}
           />
@@ -205,12 +231,14 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
           <DragDropZone
             activities={currentLevel.activities}
             placedItems={gameState.placedItems}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             onDragStart={(activity) => {
               setDraggedActivity(activity.id);
               onSpeak(`Début du déplacement de ${activity.name}`);
             }}
             onDragEnd={() => setDraggedActivity(null)}
+            onSelectActivity={onSelectActivity}
             onSpeak={onSpeak}
           />
         </div>
@@ -218,27 +246,20 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
     </div>
   );
 
-  // Render based on game phase
+  // Render different views based on game phase
   if (gameState.gamePhase === 'instructions') {
     return renderInstructions();
   }
 
   if (gameState.gamePhase === 'success') {
-    const isLastLevel = currentLevel.id === homeScenario.levels.length;
     return (
       <GameSuccess
-        level={currentLevel}
         score={gameState.score}
-        hadTwist={!!gameState.activeTwist}
-        onNextLevel={onNextLevel}
-        onReplay={() => {
-          // In a real implementation, restart current level
-          onSpeak('Redémarrage du niveau');
-        }}
-        onMenu={onBackToMenu}
-        onSpeak={onSpeak}
+        levelName={currentLevel.name}
+        onNextLevel={nextLevel}
+        onBackToMenu={onBackToMenu}
         accessibilityMode={gameState.accessibilityMode}
-        isLastLevel={isLastLevel}
+        onSpeak={onSpeak}
       />
     );
   }

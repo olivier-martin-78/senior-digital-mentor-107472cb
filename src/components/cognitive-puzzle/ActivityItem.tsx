@@ -5,9 +5,11 @@ interface ActivityItemProps {
   activity: ActivityItemType;
   isPlaced: boolean;
   isDragging: boolean;
+  isSelected: boolean;
   accessibilityMode: boolean;
   onDragStart: (e: React.DragEvent, activity: ActivityItemType) => void;
   onDragEnd: () => void;
+  onSelect: (activityId: string) => void;
   onSpeak: (text: string) => void;
 }
 
@@ -15,13 +17,18 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
   activity,
   isPlaced,
   isDragging,
+  isSelected,
   accessibilityMode,
   onDragStart,
   onDragEnd,
+  onSelect,
   onSpeak,
 }) => {
   const handleClick = () => {
-    onSpeak(`${activity.name}. ${isPlaced ? 'Déjà placé' : 'À placer'}`);
+    if (!isPlaced) {
+      onSelect(activity.id);
+    }
+    onSpeak(`${activity.name}. ${isPlaced ? 'Déjà placé' : isSelected ? 'Sélectionné' : 'Cliquez pour sélectionner'}`);
   };
 
   return (
@@ -31,6 +38,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         transition-all duration-300 transform
         ${isDragging ? 'scale-110 rotate-2 z-50' : 'hover:scale-105'}
         ${isPlaced ? 'opacity-50 pointer-events-none' : ''}
+        ${isSelected ? 'scale-105 ring-4 ring-primary ring-opacity-50' : ''}
         ${accessibilityMode ? 'min-w-[120px] min-h-[120px]' : 'min-w-[80px] min-h-[80px]'}
       `}
       draggable={!isPlaced}
@@ -39,15 +47,15 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
       onClick={handleClick}
       tabIndex={0}
       role="button"
-      aria-label={`${activity.name} - ${isPlaced ? 'déjà placé' : 'glissez pour placer'}`}
+      aria-label={`${activity.name} - ${isPlaced ? 'déjà placé' : isSelected ? 'sélectionné' : 'cliquez pour sélectionner'}`}
     >
       {/* Item Card */}
       <div className={`
-        bg-white rounded-2xl shadow-lg border-2 border-primary/20
-        p-4 text-center transition-all duration-300
+        bg-white rounded-2xl shadow-lg border-2 transition-all duration-300
         hover:shadow-xl hover:border-primary/40
-        ${isDragging ? 'shadow-2xl border-primary' : ''}
-        ${accessibilityMode ? 'p-6' : ''}
+        ${isDragging ? 'shadow-2xl border-primary' : 'border-primary/20'}
+        ${isSelected ? 'border-primary bg-primary/5' : ''}
+        ${accessibilityMode ? 'p-6' : 'p-4'}
       `}>
         {/* Icon */}
         <div className={`
@@ -79,10 +87,10 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         <div className={`
           absolute -bottom-8 left-1/2 transform -translate-x-1/2
           text-xs text-muted-foreground opacity-0 group-hover:opacity-100
-          transition-opacity duration-200 pointer-events-none
+          transition-opacity duration-200 pointer-events-none text-center
           ${accessibilityMode ? 'text-sm -bottom-10' : ''}
         `}>
-          Glissez-moi !
+          {isSelected ? 'Cliquez sur un lieu!' : 'Glissez ou cliquez!'}
         </div>
       )}
 

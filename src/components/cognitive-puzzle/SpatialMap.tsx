@@ -5,9 +5,11 @@ interface SpatialMapProps {
   spatialSlots: SpatialSlot[];
   placedItems: PlacedItem[];
   activities: ActivityItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
   scenario: 'home' | 'city';
   onDrop: (spatialSlotId: string, activityId: string) => void;
+  onPlaceSelected: (spatialSlotId: string) => void;
   onRemove: (activityId: string) => void;
   onSpeak: (text: string) => void;
 }
@@ -16,9 +18,11 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
   spatialSlots,
   placedItems,
   activities,
+  selectedActivity,
   accessibilityMode,
   scenario,
   onDrop,
+  onPlaceSelected,
   onRemove,
   onSpeak,
 }) => {
@@ -91,7 +95,13 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
               onDragOver={(e) => handleDragOver(e, slot.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, slot.id)}
-              onClick={() => onSpeak(`Zone ${slot.label}`)}
+              onClick={() => {
+                if (selectedActivity && !placedActivity) {
+                  onPlaceSelected(slot.id);
+                } else {
+                  onSpeak(`Zone ${slot.label}`);
+                }
+              }}
             >
               <div className={`
                 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg 
@@ -100,6 +110,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                 hover:shadow-xl hover:scale-105 hover:bg-white/90
                 ${isDraggedOver ? 'border-primary bg-primary/10 scale-110' : 'border-gray-300'}
                 ${placedActivity ? 'border-solid border-green-400 bg-green-50/90' : ''}
+                ${selectedActivity && !placedActivity ? 'border-primary bg-primary/5 ring-2 ring-primary ring-opacity-30' : ''}
                 ${accessibilityMode ? 'min-w-[140px] min-h-[120px] p-4' : 'min-w-[120px] min-h-[100px] p-3'}
               `}>
                 {/* Location Icon & Label */}
@@ -135,7 +146,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                   </div>
                 ) : (
                   <div className={`text-center text-muted-foreground ${accessibilityMode ? 'text-xs' : 'text-[10px]'}`}>
-                    Zone libre
+                    {selectedActivity ? 'Cliquez pour placer!' : 'Zone libre'}
                   </div>
                 )}
 
