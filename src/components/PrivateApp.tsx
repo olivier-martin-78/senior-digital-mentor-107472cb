@@ -52,6 +52,7 @@ import { MemoryCountGame } from '@/pages/activities/MemoryCountGame';
 import MusicQuizGame from '@/pages/MusicQuizGame';
 import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
+import CognitivePuzzleGame from '@/pages/CognitivePuzzleGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Caregivers from '@/pages/Caregivers';
 import { MiniSiteBuilder } from '@/pages/MiniSiteBuilder';
@@ -150,6 +151,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />
+            <Route path="/cognitive-puzzle" element={<CognitivePuzzleGame />} />
             <Route path="/caregivers" element={<Caregivers />} />
           </Route>
 
