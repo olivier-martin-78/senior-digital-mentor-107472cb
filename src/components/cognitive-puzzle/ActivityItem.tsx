@@ -4,6 +4,7 @@ import { ActivityItem as ActivityItemType } from '@/types/cognitivePuzzle';
 interface ActivityItemProps {
   activity: ActivityItemType;
   isPlaced: boolean;
+  isPartiallyPlaced?: boolean;
   isDragging: boolean;
   isSelected: boolean;
   accessibilityMode: boolean;
@@ -16,6 +17,7 @@ interface ActivityItemProps {
 export const ActivityItem: React.FC<ActivityItemProps> = ({
   activity,
   isPlaced,
+  isPartiallyPlaced = false,
   isDragging,
   isSelected,
   accessibilityMode,
@@ -38,6 +40,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         transition-all duration-300 transform
         ${isDragging ? 'scale-110 rotate-2 z-50' : 'hover:scale-105'}
         ${isPlaced ? 'opacity-50 pointer-events-none' : ''}
+        ${isPartiallyPlaced ? 'opacity-75' : ''}
         ${isSelected ? 'scale-105 ring-4 ring-primary ring-opacity-50' : ''}
         ${accessibilityMode ? 'min-w-[120px] min-h-[120px]' : 'min-w-[80px] min-h-[80px]'}
       `}
@@ -47,7 +50,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
       onClick={handleClick}
       tabIndex={0}
       role="button"
-      aria-label={`${activity.name} - ${isPlaced ? 'déjà placé' : isSelected ? 'sélectionné' : 'cliquez pour sélectionner'}`}
+      aria-label={`${activity.name} - ${isPlaced ? 'déjà placé' : isPartiallyPlaced ? 'partiellement placé' : isSelected ? 'sélectionné' : 'cliquez pour sélectionner'}`}
     >
       {/* Item Card */}
       <div className={`
@@ -55,6 +58,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         hover:shadow-xl hover:border-primary/40
         ${isDragging ? 'shadow-2xl border-primary' : 'border-primary/20'}
         ${isSelected ? 'border-primary bg-primary/5' : ''}
+        ${isPartiallyPlaced ? 'border-amber-400 bg-amber-50' : ''}
         ${accessibilityMode ? 'p-6' : 'p-4'}
       `}>
         {/* Icon */}
@@ -90,7 +94,17 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
           transition-opacity duration-200 pointer-events-none text-center
           ${accessibilityMode ? 'text-sm -bottom-10' : ''}
         `}>
-          {isSelected ? 'Cliquez sur un lieu!' : 'Glissez ou cliquez!'}
+          {isSelected ? 'Cliquez sur un lieu!' : isPartiallyPlaced ? 'Continuez le placement!' : 'Glissez ou cliquez!'}
+        </div>
+      )}
+
+      {/* Partial Placement Indicator */}
+      {isPartiallyPlaced && !isPlaced && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-amber-400/10 rounded-2xl animate-pulse" />
+          <div className="absolute top-1 right-1 text-amber-500 animate-bounce">
+            ⚡
+          </div>
         </div>
       )}
 

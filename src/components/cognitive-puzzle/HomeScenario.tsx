@@ -250,6 +250,7 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
             placedItems={gameState.placedItems}
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
+            enableTimeline={currentLevel.enableTimeline}
             onDragStart={(activity) => {
               setDraggedActivity(activity.id);
               // Removed automatic speech - now only on demand
