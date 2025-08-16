@@ -57,6 +57,7 @@ export const homeScenario: GameScenario = {
         { id: 'living', label: 'Salon', icon: '🛋️', x: 60, y: 30 },
         { id: 'bedroom', label: 'Chambre', icon: '🛏️', x: 20, y: 70 },
         { id: 'garden', label: 'Jardin', icon: '🌱', x: 80, y: 50 },
+        { id: 'dining', label: 'Salle à manger', icon: '🍽️', x: 60, y: 70 },
       ],
       timeSlots: [
         { id: 'morning', label: 'Matin', icon: '🌅', period: 'morning' },
@@ -178,6 +179,7 @@ export const cityScenario: GameScenario = {
         { id: 'cafe-spot', label: 'Café', icon: '☕', x: 70, y: 20 },
         { id: 'park', label: 'Parc', icon: '🌳', x: 20, y: 70 },
         { id: 'post', label: 'Bureau de poste', icon: '📮', x: 50, y: 50 },
+        { id: 'home', label: 'Maison', icon: '🏠', x: 70, y: 70 },
       ],
       timeSlots: [
         { id: 'morning', label: 'Matin', icon: '🕘', period: 'morning' },
