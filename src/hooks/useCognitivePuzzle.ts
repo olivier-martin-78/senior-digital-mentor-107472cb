@@ -223,10 +223,15 @@ export const useCognitivePuzzle = () => {
   }, [gameState.voiceEnabled]);
 
   const acceptTwist = useCallback(() => {
-    setGameState(prev => ({
-      ...prev,
-      twistChoicePhase: prev.activeTwist?.adaptationChoices ? true : false,
-    }));
+    setGameState(prev => {
+      if (prev.activeTwist?.adaptationChoices) {
+        return { ...prev, twistChoicePhase: true };
+      } else {
+        // For twists without choices, apply effect immediately and clear twist
+        return { ...prev, activeTwist: null, twistChoicePhase: false };
+      }
+    });
+    
     if (!gameState.activeTwist?.adaptationChoices) {
       speak('Défi accepté ! Continuez à jouer avec cette adaptation.');
     }
