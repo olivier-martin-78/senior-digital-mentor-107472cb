@@ -42,7 +42,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
     const activityId = e.dataTransfer.getData('activityId');
     if (activityId) {
       onDrop(slotId, activityId);
-      onSpeak(`${activities.find(a => a.id === activityId)?.name} placé dans ${spatialSlots.find(s => s.id === slotId)?.label}`);
+      // Removed automatic speech - now only on demand
     }
     setDragOver(null);
   };
@@ -99,7 +99,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                 if (selectedActivity && !placedActivity) {
                   onPlaceSelected(slot.id);
                 } else {
-                  onSpeak(`Zone ${slot.label}`);
+                  // Removed automatic speech - now only on demand
                 }
               }}
             >
@@ -134,7 +134,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemove(placedActivity.id);
-                      onSpeak(`${placedActivity.name} retiré de ${slot.label}`);
+                      // Removed automatic speech - now only on demand
                     }}
                   >
                     <div className={accessibilityMode ? 'text-lg' : 'text-base'}>

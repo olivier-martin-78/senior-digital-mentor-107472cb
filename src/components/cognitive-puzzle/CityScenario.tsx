@@ -6,6 +6,7 @@ import { DragDropZone } from './DragDropZone';
 import { SpatialMap } from './SpatialMap';
 import { Timeline } from './Timeline';
 import { GameSuccess } from './GameSuccess';
+import { VoiceHelpButton } from './VoiceHelpButton';
 import { ArrowLeft, Volume2, VolumeX, Accessibility, CheckCircle } from 'lucide-react';
 
 interface CityScenarioProps {
@@ -72,9 +73,9 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
     const isComplete = onCheckCompletion();
     if (isComplete) {
       onCompleteLevel();
-      onSpeak('Excellente organisation ! Sortie en ville réussie !');
+      // Removed automatic speech - now only on demand
     } else {
-      onSpeak('Quelques ajustements sont encore nécessaires pour optimiser votre sortie.');
+      // Removed automatic speech - now only on demand
     }
   };
 
@@ -142,6 +143,15 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
           >
             Commencer le niveau
           </Button>
+
+          {/* Voice Help Button */}
+          <div className="mt-4">
+            <VoiceHelpButton
+              onSpeak={onSpeak}
+              helpText={`Niveau ${currentLevel.id} : ${currentLevel.name}. ${currentLevel.description} Pour ce niveau, vous devez ${currentLevel.id === 1 ? 'choisir les bons lieux pour chaque activité de votre sortie en ville' : currentLevel.id === 2 ? 'organiser votre sortie dans l\'espace et le temps en planifiant les lieux et les moments' : 'maîtriser une sortie complexe avec de nombreuses activités et vous adapter aux imprévus'}. Utilisez le glisser-déplacer ou cliquez sur une activité puis sur une zone.`}
+              accessibilityMode={gameState.accessibilityMode}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -180,6 +190,12 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
               <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full font-semibold">
                 ⭐ {gameState.score} points
               </div>
+              <VoiceHelpButton
+                onSpeak={onSpeak}
+                helpText={`Vous êtes dans le niveau ${gameState.currentLevel} : ${currentLevel.name}. ${selectedActivity ? `Vous avez sélectionné l'activité ${currentLevel.activities.find(a => a.id === selectedActivity)?.name}. Cliquez maintenant sur une zone pour la placer.` : 'Vous pouvez glisser les activités vers les zones ou cliquer sur une activité puis sur une zone.'} ${currentLevel.enableTimeline ? 'N\'oubliez pas de placer les activités dans l\'espace ET dans le temps.' : 'Placez chaque activité dans la bonne zone.'} ${gameState.placedItems.length} activités déjà placées sur ${currentLevel.activities.length}.`}
+                accessibilityMode={gameState.accessibilityMode}
+                className="mr-2"
+              />
               <Button
                 onClick={handleCheckLevel}
                 className={`
@@ -235,7 +251,7 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
             accessibilityMode={gameState.accessibilityMode}
             onDragStart={(activity) => {
               setDraggedActivity(activity.id);
-              onSpeak(`Début du déplacement de ${activity.name}`);
+              // Removed automatic speech - now only on demand
             }}
             onDragEnd={() => setDraggedActivity(null)}
             onSelectActivity={onSelectActivity}

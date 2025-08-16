@@ -29,7 +29,7 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
     e.dataTransfer.setData('activityId', activity.id);
     setDraggedActivity(activity.id);
     onDragStart(activity);
-    onSpeak(`Début du déplacement de ${activity.name}`);
+    // Removed automatic speech - now only on demand
   };
 
   const handleDragEnd = () => {

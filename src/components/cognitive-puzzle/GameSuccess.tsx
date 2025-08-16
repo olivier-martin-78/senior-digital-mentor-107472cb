@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { GameLevel } from '@/types/cognitivePuzzle';
+import { VoiceHelpButton } from './VoiceHelpButton';
 
 interface GameSuccessProps {
   level: GameLevel;
@@ -26,12 +27,8 @@ export const GameSuccess: React.FC<GameSuccessProps> = ({
   isLastLevel,
 }) => {
   useEffect(() => {
-    const message = isLastLevel 
-      ? `Félicitations ! Vous avez terminé le scénario ! Score final : ${score} points`
-      : `Bravo ! Niveau ${level.id} réussi ! Score : ${score} points`;
-    
-    onSpeak(message);
-  }, [level.id, score, isLastLevel, onSpeak]);
+    // Removed auto-speak - now only on demand
+  }, [level.id, score, isLastLevel]);
 
   const getEncouragementMessage = () => {
     if (hadTwist) {
@@ -124,13 +121,22 @@ export const GameSuccess: React.FC<GameSuccessProps> = ({
           </p>
         </div>
 
+        {/* Voice Help Button */}
+        <div className="text-center mb-6">
+          <VoiceHelpButton
+            onSpeak={onSpeak}
+            helpText={`${isLastLevel ? 'Félicitations ! Vous avez terminé le scénario !' : `Bravo ! Niveau ${level.id} réussi !`} Score : ${score} points. ${getEncouragementMessage()} ${hadTwist ? 'Vous avez brillamment géré l\'imprévu et reçu un bonus de 50 points.' : ''} ${isLastLevel ? 'Vous pouvez rejouer le niveau ou retourner au menu principal.' : 'Vous pouvez passer au niveau suivant, rejouer ce niveau ou retourner au menu principal.'}`}
+            accessibilityMode={accessibilityMode}
+          />
+        </div>
+
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-center gap-4">
           {!isLastLevel && (
             <Button
               onClick={() => {
                 onNextLevel();
-                onSpeak('Passage au niveau suivant');
+                // Removed automatic speech - now only on demand
               }}
               size={accessibilityMode ? 'lg' : 'default'}
               className={`
@@ -144,13 +150,13 @@ export const GameSuccess: React.FC<GameSuccessProps> = ({
             </Button>
           )}
           
-          <Button
-            onClick={() => {
-              onReplay();
-              onSpeak('Redémarrage du niveau');
-            }}
-            variant="outline"
-            size={accessibilityMode ? 'lg' : 'default'}
+            <Button
+              onClick={() => {
+                onReplay();
+                // Removed automatic speech - now only on demand
+              }}
+              variant="outline"
+              size={accessibilityMode ? 'lg' : 'default'}
             className={`
               hover:shadow-lg transform hover:scale-105 transition-all duration-200
               ${accessibilityMode ? 'px-8 py-4 text-lg' : 'px-6 py-3'}
@@ -160,13 +166,13 @@ export const GameSuccess: React.FC<GameSuccessProps> = ({
             Rejouer
           </Button>
           
-          <Button
-            onClick={() => {
-              onMenu();
-              onSpeak('Retour au menu principal');
-            }}
-            variant="outline"
-            size={accessibilityMode ? 'lg' : 'default'}
+            <Button
+              onClick={() => {
+                onMenu();
+                // Removed automatic speech - now only on demand  
+              }}
+              variant="outline"
+              size={accessibilityMode ? 'lg' : 'default'}
             className={`
               hover:shadow-lg transform hover:scale-105 transition-all duration-200
               ${accessibilityMode ? 'px-8 py-4 text-lg' : 'px-6 py-3'}

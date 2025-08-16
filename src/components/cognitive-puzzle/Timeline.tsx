@@ -40,7 +40,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     const activityId = e.dataTransfer.getData('activityId');
     if (activityId) {
       onDrop(slotId, activityId);
-      onSpeak(`${activities.find(a => a.id === activityId)?.name} placé au ${timeSlots.find(s => s.id === slotId)?.label}`);
+      // Removed automatic speech - now only on demand
     }
     setDragOver(null);
   };
@@ -81,7 +81,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 if (selectedActivity && !placedActivity) {
                   onPlaceSelected(slot.id);
                 } else {
-                  onSpeak(`Créneau ${slot.label}`);
+                  // Removed automatic speech - now only on demand
                 }
               }}
             >
@@ -116,7 +116,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemove(placedActivity.id);
-                      onSpeak(`${placedActivity.name} retiré du ${slot.label}`);
+                      // Removed automatic speech - now only on demand
                     }}
                   >
                     <div className={accessibilityMode ? 'text-2xl' : 'text-xl'}>

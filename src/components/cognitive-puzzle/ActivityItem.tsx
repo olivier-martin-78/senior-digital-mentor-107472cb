@@ -28,7 +28,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
     if (!isPlaced) {
       onSelect(activity.id);
     }
-    onSpeak(`${activity.name}. ${isPlaced ? 'Déjà placé' : isSelected ? 'Sélectionné' : 'Cliquez pour sélectionner'}`);
+    // Removed automatic speech - now only on demand
   };
 
   return (

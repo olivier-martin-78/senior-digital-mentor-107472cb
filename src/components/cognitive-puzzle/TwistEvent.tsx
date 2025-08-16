@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TwistEvent as TwistEventType } from '@/types/cognitivePuzzle';
 import { Button } from '@/components/ui/button';
+import { VoiceHelpButton } from './VoiceHelpButton';
 
 interface TwistEventProps {
   twist: TwistEventType;
@@ -22,17 +23,13 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
   useEffect(() => {
     // Animate in
     const timer = setTimeout(() => setIsVisible(true), 100);
-    
-    // Auto-speak the twist
-    const speakTimer = setTimeout(() => {
-      onSpeak(`Événement imprévu ! ${twist.description}`);
-    }, 500);
+
+    // Removed auto-speak - now only on demand
 
     return () => {
       clearTimeout(timer);
-      clearTimeout(speakTimer);
     };
-  }, [twist.description, onSpeak]);
+  }, [twist.description]);
 
   const getIcon = () => {
     switch (twist.type) {
@@ -131,14 +128,23 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
           )}
         </div>
 
+        {/* Voice Help Button */}
+        <div className="text-center mb-6">
+          <VoiceHelpButton
+            onSpeak={onSpeak}
+            helpText={`Événement imprévu ! ${twist.description} Vous pouvez soit accepter ce défi pour gagner des points bonus, soit le refuser et continuer normalement. Que choisissez-vous ?`}
+            accessibilityMode={accessibilityMode}
+          />
+        </div>
+
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
-          <Button
-            onClick={() => {
-              onAccept();
-              onSpeak('Défi accepté ! Adaptation en cours');
-            }}
-            size={accessibilityMode ? 'lg' : 'default'}
+            <Button
+              onClick={() => {
+                onAccept();
+                // Removed automatic speech - now only on demand
+              }}
+              size={accessibilityMode ? 'lg' : 'default'}
             className={`
               bg-gradient-to-r ${getBackgroundColor()} hover:shadow-lg
               transform hover:scale-105 transition-all duration-200
@@ -149,13 +155,13 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
             J'accepte le défi !
           </Button>
           
-          <Button
-            onClick={() => {
-              onReject();
-              onSpeak('Défi refusé. Vous continuez normalement');
-            }}
-            variant="outline"
-            size={accessibilityMode ? 'lg' : 'default'}
+            <Button
+              onClick={() => {
+                onReject();
+                // Removed automatic speech - now only on demand
+              }}
+              variant="outline"
+              size={accessibilityMode ? 'lg' : 'default'}
             className={`
               border-2 hover:bg-muted
               transform hover:scale-105 transition-all duration-200
