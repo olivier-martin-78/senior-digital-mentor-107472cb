@@ -351,7 +351,7 @@ const ProfessionalScheduler = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="w-4 h-4" />
-                    Gestion des avis clients
+                    Avis clients
                   </CardTitle>
                   <CardDescription>Sollicitez des avis de vos clients.</CardDescription>
                 </CardHeader>

@@ -292,7 +292,7 @@ const AdminActivities = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowSpotDifferencesForm(!showSpotDifferencesForm)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Créer jeu des 7 erreurs
+                      Créer jeu des 7 différences
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowReverseDictionary(!showReverseDictionary)}>
                       <Plus className="h-4 w-4 mr-2" />
