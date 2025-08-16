@@ -269,8 +269,8 @@ export const cityScenario: GameScenario = {
       description: 'Maîtrisez une sortie complexe avec adaptations',
       enableTimeline: true,
       activities: [
-        { id: 'museum', name: 'Aller voir l''exposition Picasso', icon: '🏛️', category: 'activity' },
-        { id: 'restaurant', name: 'Aller dîner à la pizzeria, icon: '🍽️', category: 'activity' },
+        { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🏛️', category: 'activity' },
+        { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍽️', category: 'activity' },
         { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🎬', category: 'activity' },
         { id: 'gym', name: 'Déjeuner avec mon amie', icon: '🏋️', category: 'activity' },
       ],
