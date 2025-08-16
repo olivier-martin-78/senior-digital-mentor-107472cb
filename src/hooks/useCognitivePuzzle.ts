@@ -86,7 +86,19 @@ export const useCognitivePuzzle = () => {
   const placeItem = useCallback((activityId: string, spatialSlotId?: string, timeSlotId?: string) => {
     setGameState(prev => {
       const existingIndex = prev.placedItems.findIndex(item => item.activityId === activityId);
-      const newPlacement: PlacedItem = { activityId, spatialSlotId, timeSlotId };
+      
+      let newPlacement: PlacedItem;
+      if (existingIndex >= 0) {
+        // Merge with existing placement to preserve both spatial and temporal data
+        const existing = prev.placedItems[existingIndex];
+        newPlacement = {
+          activityId,
+          spatialSlotId: spatialSlotId ?? existing.spatialSlotId,
+          timeSlotId: timeSlotId ?? existing.timeSlotId,
+        };
+      } else {
+        newPlacement = { activityId, spatialSlotId, timeSlotId };
+      }
       
       let newPlacedItems;
       if (existingIndex >= 0) {

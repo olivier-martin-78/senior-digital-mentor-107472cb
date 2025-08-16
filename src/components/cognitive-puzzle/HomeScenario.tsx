@@ -111,9 +111,10 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
                 <div>
                   <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
                   <ul className="text-blue-700 space-y-1">
-                    <li>• Organisez les activités dans l'ESPACE ET le TEMPS</li>
-                    <li>• Placez d'abord dans les pièces, puis dans les moments</li>
-                    <li>• Réfléchissez à l'ordre logique de votre journée</li>
+                    <li>• ⚠️ IMPORTANT : Chaque activité doit être placée dans une PIÈCE ET un MOMENT</li>
+                    <li>• Glissez d'abord l'activité vers une pièce de la maison</li>
+                    <li>• Puis glissez la MÊME activité vers un moment de la journée</li>
+                    <li>• Une activité doit apparaître dans les deux sections pour être valide</li>
                   </ul>
                 </div>
               )}
