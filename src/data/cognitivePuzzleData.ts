@@ -48,8 +48,8 @@ export const homeScenario: GameScenario = {
       activities: [
         { id: 'cooking', name: 'Prendre ma douche', icon: '🚿', category: 'activity' },
         { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍳', category: 'activity' },
-        { id: 'plants', name: 'Réparer mon lit', icon: '🔨', category: 'activity' },
-        { id: 'laundry', name: 'Réparer la voiture à la nuit tombée', icon: '🔧', category: 'activity' },
+        { id: 'plants', name: 'Changer mes draps de literie', icon: '🛏️', category: 'activity' },
+        { id: 'laundry', name: 'Réparer la voiture', icon: '🔧', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
@@ -107,9 +107,9 @@ export const homeScenario: GameScenario = {
       enableTimeline: true,
       activities: [
         { id: 'tv', name: 'Tartiner mes biscottes', icon: '📺', category: 'activity' },
-        { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
-        { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
-        { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
+        { id: 'reading', name: 'Ranger ma table de nuit avant de m\'endormir', icon: '📚', category: 'activity' },
+        { id: 'music', name: 'Écouter la radio en préparant le déjeuner', icon: '🎵', category: 'activity' },
+        { id: 'crafts', name: 'Bricoler entre 14h et 17h', icon: '🔨', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
