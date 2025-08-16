@@ -269,6 +269,32 @@ const ActivitiesOverview = () => {
             </CardContent>
           </Link>
         </Card>
+      },
+      {
+        key: "cognitive-puzzle",
+        subTagId: remueMeningesId,
+        card: <Card key="cognitive-puzzle" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/cognitive-puzzle" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'cognitive-puzzle-game', 'Puzzle Cognitif').catch(console.error)}
+          >
+            <div className="h-48 bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Brain className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Puzzle Cognitif</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Puzzle Cognitif</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Développez vos capacités cognitives avec des scénarios immersifs. Gérez les imprévus et prenez des décisions adaptées.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
       }
     ];
 
