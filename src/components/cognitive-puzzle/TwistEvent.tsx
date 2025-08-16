@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 interface TwistEventProps {
   twist: TwistEventType;
   onAccept: () => void;
+  onReject: () => void;
   onSpeak: (text: string) => void;
   accessibilityMode: boolean;
 }
@@ -12,6 +13,7 @@ interface TwistEventProps {
 export const TwistEvent: React.FC<TwistEventProps> = ({
   twist,
   onAccept,
+  onReject,
   onSpeak,
   accessibilityMode,
 }) => {
@@ -145,6 +147,23 @@ export const TwistEvent: React.FC<TwistEventProps> = ({
           >
             <span className="mr-2">🎯</span>
             J'accepte le défi !
+          </Button>
+          
+          <Button
+            onClick={() => {
+              onReject();
+              onSpeak('Défi refusé. Vous continuez normalement');
+            }}
+            variant="outline"
+            size={accessibilityMode ? 'lg' : 'default'}
+            className={`
+              border-2 hover:bg-muted
+              transform hover:scale-105 transition-all duration-200
+              ${accessibilityMode ? 'px-8 py-4 text-lg' : 'px-6 py-3'}
+            `}
+          >
+            <span className="mr-2">❌</span>
+            Non merci
           </Button>
         </div>
 

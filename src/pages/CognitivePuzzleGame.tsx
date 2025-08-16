@@ -23,6 +23,8 @@ const CognitivePuzzleGame: React.FC = () => {
     toggleAccessibility,
     toggleVoice,
     speak,
+    acceptTwist,
+    rejectTwist,
   } = useCognitivePuzzle();
 
   React.useEffect(() => {
@@ -269,10 +271,8 @@ const CognitivePuzzleGame: React.FC = () => {
       {gameState.activeTwist && (
         <TwistEvent
           twist={gameState.activeTwist}
-          onAccept={() => {
-            // Handle twist acceptance - could modify game state
-            speak('Événement géré avec succès !');
-          }}
+          onAccept={acceptTwist}
+          onReject={rejectTwist}
           onSpeak={speak}
           accessibilityMode={gameState.accessibilityMode}
         />

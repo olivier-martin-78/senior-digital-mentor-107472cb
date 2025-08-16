@@ -208,6 +208,22 @@ export const useCognitivePuzzle = () => {
     }
   }, [gameState.voiceEnabled]);
 
+  const acceptTwist = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      activeTwist: null,
+    }));
+    speak('Défi accepté ! Continuez à jouer avec cette adaptation.');
+  }, [speak]);
+
+  const rejectTwist = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      activeTwist: null,
+    }));
+    speak('Défi refusé. Vous continuez le niveau normalement.');
+  }, [speak]);
+
   return {
     gameState,
     selectScenario,
@@ -221,6 +237,8 @@ export const useCognitivePuzzle = () => {
     toggleAccessibility,
     toggleVoice,
     speak,
+    acceptTwist,
+    rejectTwist,
   };
 };
 
