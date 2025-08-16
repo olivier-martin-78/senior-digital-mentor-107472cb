@@ -64,6 +64,7 @@ export const homeScenario: GameScenario = {
         { id: 'noon', label: 'Midi', icon: '☀️', period: 'noon' },
         { id: 'afternoon', label: 'Après-midi', icon: '🌤️', period: 'afternoon' },
         { id: 'evening', label: 'Soir', icon: '🌙', period: 'evening' },
+        { id: 'night', label: 'Fin de soirée', icon: '🌃', period: 'evening' },
       ],
       twistEvents: [
         {
@@ -186,6 +187,7 @@ export const cityScenario: GameScenario = {
         { id: 'noon', label: 'Midi', icon: '🕛', period: 'noon' },
         { id: 'afternoon', label: 'Après-midi', icon: '🕐', period: 'afternoon' },
         { id: 'evening', label: 'Soir', icon: '🕕', period: 'evening' },
+        { id: 'night', label: 'Fin de soirée', icon: '🌃', period: 'evening' },
       ],
       twistEvents: [
         {
