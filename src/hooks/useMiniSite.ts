@@ -382,11 +382,11 @@ export const useMiniSite = (userId?: string) => {
 
       if (!targetProfile) throw new Error('Target user not found');
 
-      // Generate new slug for target user
+      // Generate new slug for target user using target user's profile data
       const slug = await generateSlug(
-        sourceData.first_name, 
-        sourceData.last_name, 
-        sourceData.postal_code
+        targetProfile.display_name?.split(' ')[0] || 'user',
+        targetProfile.display_name?.split(' ').slice(1).join(' ') || 'name',
+        '75000' // Default postal code since profile doesn't have it
       );
 
       // Prepare site data for target user
