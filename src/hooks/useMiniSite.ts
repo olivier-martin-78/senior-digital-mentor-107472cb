@@ -144,16 +144,22 @@ export const useMiniSite = (userId?: string) => {
 
     setLoading(true);
     try {
-      // Generate slug only for new mini-sites, keep existing slug for updates
+      // For updates, always keep the existing slug to avoid conflicts
       let slug;
       if (data.id) {
-        // For existing mini-sites, keep the current slug
+        // For existing mini-sites, keep the current slug from the database
         const { data: existingSite } = await supabase
           .from('mini_sites')
           .select('slug')
           .eq('id', data.id)
           .single();
-        slug = existingSite?.slug || await generateSlug(data.first_name, data.last_name, data.postal_code);
+        
+        if (existingSite?.slug) {
+          slug = existingSite.slug;
+        } else {
+          // Fallback if no existing slug found
+          slug = await generateSlug(data.first_name, data.last_name, data.postal_code);
+        }
       } else {
         // For new mini-sites, generate a new slug
         slug = await generateSlug(data.first_name, data.last_name, data.postal_code);
