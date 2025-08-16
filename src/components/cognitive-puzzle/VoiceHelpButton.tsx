@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Volume2 } from 'lucide-react';
 
 interface VoiceHelpButtonProps {
-  onSpeak: (text: string) => void;
+  onSpeak: (text: string, forceSpeak?: boolean) => void;
   helpText: string;
   accessibilityMode: boolean;
   className?: string;
@@ -16,7 +16,7 @@ export const VoiceHelpButton: React.FC<VoiceHelpButtonProps> = ({
   className = '',
 }) => {
   const handleClick = () => {
-    onSpeak(helpText);
+    onSpeak(helpText, true); // Force speak even if voice is disabled
   };
 
   return (

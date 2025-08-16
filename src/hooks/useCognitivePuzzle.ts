@@ -195,8 +195,8 @@ export const useCognitivePuzzle = () => {
     });
   }, [saveProgress]);
 
-  const speak = useCallback((text: string) => {
-    if (!gameState.voiceEnabled) return;
+  const speak = useCallback((text: string, forceSpeak: boolean = false) => {
+    if (!gameState.voiceEnabled && !forceSpeak) return;
     
     try {
       const utterance = new SpeechSynthesisUtterance(text);
