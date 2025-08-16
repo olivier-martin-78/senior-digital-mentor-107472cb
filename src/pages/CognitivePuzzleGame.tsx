@@ -12,6 +12,7 @@ const CognitivePuzzleGame: React.FC = () => {
   const navigate = useNavigate();
   const {
     gameState,
+    selectedActivity,
     selectScenario,
     startLevel,
     placeItem,
@@ -284,6 +285,7 @@ const CognitivePuzzleGame: React.FC = () => {
       {gameState.currentScenario === 'home' && (
         <HomeScenario
           gameState={gameState}
+          selectedActivity={selectedActivity}
           onPlaceItem={placeItem}
           onRemoveItem={removeItem}
           onCheckCompletion={checkLevelCompletion}
@@ -294,6 +296,8 @@ const CognitivePuzzleGame: React.FC = () => {
             resetGame();
             speak('Retour au menu principal');
           }}
+          onSelectActivity={selectActivity}
+          onPlaceSelected={placeSelectedActivity}
           onSpeak={speak}
         />
       )}
@@ -301,6 +305,7 @@ const CognitivePuzzleGame: React.FC = () => {
       {gameState.currentScenario === 'city' && (
         <CityScenario
           gameState={gameState}
+          selectedActivity={selectedActivity}
           onPlaceItem={placeItem}
           onRemoveItem={removeItem}
           onCheckCompletion={checkLevelCompletion}
@@ -311,6 +316,8 @@ const CognitivePuzzleGame: React.FC = () => {
             resetGame();
             speak('Retour au menu principal');
           }}
+          onSelectActivity={selectActivity}
+          onPlaceSelected={placeSelectedActivity}
           onSpeak={speak}
         />
       )}

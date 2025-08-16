@@ -254,11 +254,14 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
   if (gameState.gamePhase === 'success') {
     return (
       <GameSuccess
+        level={currentLevel}
         score={gameState.score}
-        levelName={currentLevel.name}
+        hadTwist={gameState.activeTwist !== null}
         onNextLevel={onNextLevel}
-        onBackToMenu={onBackToMenu}
+        onReplay={onStartLevel}
+        onMenu={onBackToMenu}
         accessibilityMode={gameState.accessibilityMode}
+        isLastLevel={currentLevel.id === 3}
         onSpeak={onSpeak}
       />
     );
