@@ -287,6 +287,7 @@ const CognitivePuzzleGame: React.FC = () => {
           onCheckCompletion={checkLevelCompletion}
           onCompleteLevel={completeLevel}
           onNextLevel={nextLevel}
+          onStartLevel={startLevel}
           onBackToMenu={() => {
             resetGame();
             speak('Retour au menu principal');
@@ -303,6 +304,7 @@ const CognitivePuzzleGame: React.FC = () => {
           onCheckCompletion={checkLevelCompletion}
           onCompleteLevel={completeLevel}
           onNextLevel={nextLevel}
+          onStartLevel={startLevel}
           onBackToMenu={() => {
             resetGame();
             speak('Retour au menu principal');

@@ -15,6 +15,7 @@ interface CityScenarioProps {
   onCheckCompletion: () => boolean;
   onCompleteLevel: () => void;
   onNextLevel: () => void;
+  onStartLevel: () => void;
   onBackToMenu: () => void;
   onSpeak: (text: string) => void;
 }
@@ -26,6 +27,7 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
   onCheckCompletion,
   onCompleteLevel,
   onNextLevel,
+  onStartLevel,
   onBackToMenu,
   onSpeak,
 }) => {
@@ -113,7 +115,7 @@ export const CityScenario: React.FC<CityScenarioProps> = ({
           <Button
             onClick={() => {
               onSpeak(`Début du niveau ${currentLevel.id} : ${currentLevel.name}`);
-              // In a real implementation, you'd update the game state to 'playing'
+              onStartLevel();
             }}
             size={gameState.accessibilityMode ? 'lg' : 'default'}
             className="bg-gradient-to-r from-sky-500 to-blue-600 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
