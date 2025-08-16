@@ -67,8 +67,9 @@ export const useCognitivePuzzle = () => {
       const scenario = getScenario(prev.currentScenario);
       if (!scenario) return prev;
 
-      // 20% chance of twist activation after first few moves
-      const shouldHaveTwist = Math.random() < 0.2;
+      // Ne pas proposer d'imprévu pour le niveau 1 (déroutant pour débuter)
+      // 20% chance of twist activation pour les niveaux suivants
+      const shouldHaveTwist = prev.currentLevel > 1 && Math.random() < 0.2;
       const level = scenario.levels.find(l => l.id === prev.currentLevel);
       const twist = shouldHaveTwist && level?.twistEvents.length 
         ? level.twistEvents[Math.floor(Math.random() * level.twistEvents.length)]
