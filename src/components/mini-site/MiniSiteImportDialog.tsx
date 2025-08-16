@@ -47,7 +47,8 @@ export const MiniSiteImportDialog: React.FC<MiniSiteImportDialogProps> = ({
   const { data: miniSites, isLoading } = useQuery({
     queryKey: ['all-mini-sites'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer d'abord les mini-sites
+      const { data: miniSitesData, error: miniSitesError } = await supabase
         .from('mini_sites')
         .select(`
           id,
@@ -57,20 +58,33 @@ export const MiniSiteImportDialog: React.FC<MiniSiteImportDialogProps> = ({
           profession,
           city,
           is_published,
-          user_id,
-          profiles!inner(display_name, email)
+          user_id
         `)
         .neq('user_id', targetUserId || '') // Exclure l'utilisateur cible
         .order('first_name', { ascending: true })
         .order('last_name', { ascending: true });
 
-      if (error) throw error;
+      if (miniSitesError) throw miniSitesError;
+      if (!miniSitesData) return [];
 
-      return data?.map(site => ({
-        ...site,
-        display_name: (site.profiles as any)?.display_name || '',
-        email: (site.profiles as any)?.email || ''
-      })) || [];
+      // Récupérer les profils correspondants
+      const userIds = miniSitesData.map(site => site.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combiner les données
+      return miniSitesData.map(site => {
+        const profile = profilesData?.find(p => p.id === site.user_id);
+        return {
+          ...site,
+          display_name: profile?.display_name || '',
+          email: profile?.email || ''
+        };
+      });
     },
     enabled: isOpen
   });
