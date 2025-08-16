@@ -68,7 +68,29 @@ export const homeScenario: GameScenario = {
         {
           id: 'lost-keys',
           type: 'call',
-          description: 'Oubli des clés ! Adaptation nécessaire',
+          description: 'J\'ai oublié mes clés ! Que dois-je faire ?',
+          adaptationChoices: [
+            {
+              id: 'stay-home',
+              description: 'Renoncer à sortir pour ne pas laisser la maison ouverte',
+              effect: { moveActivity: 'cleaning' }
+            },
+            {
+              id: 'call-helper',
+              description: 'Appeler mon auxiliaire de vie pour qu\'elle m\'aide à chercher mes clés',
+              effect: { moveActivity: 'cleaning' }
+            },
+            {
+              id: 'search-everywhere',
+              description: 'Je décide de les chercher partout dans la maison',
+              effect: { moveActivity: 'cleaning' }
+            },
+            {
+              id: 'neighbor-keys',
+              description: 'Aller chercher mon double de clés chez la voisine',
+              effect: { moveActivity: 'cleaning' }
+            }
+          ],
           effect: {
             moveActivity: 'cleaning',
           },
@@ -106,7 +128,29 @@ export const homeScenario: GameScenario = {
         {
           id: 'unexpected-visitor',
           type: 'visitor',
-          description: 'Visiteur inattendu ! Thé avec le voisin',
+          description: 'Visiteur inattendu ! Comment réagissez-vous ?',
+          adaptationChoices: [
+            {
+              id: 'welcome-visitor',
+              description: 'Accueillir chaleureusement le visiteur avec un thé',
+              effect: { addActivity: { id: 'tea', name: 'Thé avec voisin', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'quick-chat',
+              description: 'Discuter rapidement à la porte puis reprendre mes activités',
+              effect: { addActivity: { id: 'tea', name: 'Thé avec voisin', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'invite-later',
+              description: 'Proposer de se voir plus tard quand j\'aurai fini',
+              effect: { addActivity: { id: 'tea', name: 'Thé avec voisin', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'polite-decline',
+              description: 'M\'excuser poliment car je suis occupé aujourd\'hui',
+              effect: { addActivity: { id: 'tea', name: 'Thé avec voisin', icon: '☕', category: 'twist' } }
+            }
+          ],
           effect: {
             addActivity: { id: 'tea', name: 'Thé avec voisin', icon: '☕', category: 'twist' },
           },
@@ -186,7 +230,29 @@ export const cityScenario: GameScenario = {
         {
           id: 'traffic-jam',
           type: 'traffic',
-          description: 'Embouteillages ! Retard prévu',
+          description: 'Embouteillages ! Que vais-je faire ?',
+          adaptationChoices: [
+            {
+              id: 'postpone',
+              description: 'Reporter ma sortie au lendemain',
+              effect: { moveActivity: 'pharmacy', newTime: 'afternoon' }
+            },
+            {
+              id: 'turn-back',
+              description: 'Faire demi-tour et ressortir à une heure plus calme de la journée',
+              effect: { moveActivity: 'pharmacy', newTime: 'afternoon' }
+            },
+            {
+              id: 'wait-patiently',
+              description: 'Prendre mon mal en patience et attendre dans les embouteillages',
+              effect: { moveActivity: 'pharmacy', newTime: 'afternoon' }
+            },
+            {
+              id: 'ask-helper',
+              description: 'Rentrer à la maison et demander à mon auxiliaire de vie de m\'emmener',
+              effect: { moveActivity: 'pharmacy', newTime: 'afternoon' }
+            }
+          ],
           effect: {
             moveActivity: 'pharmacy',
             newTime: 'afternoon',
@@ -225,7 +291,29 @@ export const cityScenario: GameScenario = {
         {
           id: 'sudden-rain',
           type: 'rain',
-          description: 'Pluie soudaine ! Adaptez-vous',
+          description: 'Pluie soudaine ! Comment vous adaptez-vous ?',
+          adaptationChoices: [
+            {
+              id: 'wait-inside',
+              description: 'Attendre dans un café en regardant un film',
+              effect: { moveActivity: 'cinema', newLocation: 'restaurant', addActivity: { id: 'coffee', name: 'Café d\'attente', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'umbrella-continue',
+              description: 'Continuer avec un parapluie, la pluie ne m\'arrête pas',
+              effect: { moveActivity: 'cinema', newLocation: 'restaurant', addActivity: { id: 'coffee', name: 'Café d\'attente', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'indoor-activities',
+              description: 'Changer pour des activités en intérieur seulement',
+              effect: { moveActivity: 'cinema', newLocation: 'restaurant', addActivity: { id: 'coffee', name: 'Café d\'attente', icon: '☕', category: 'twist' } }
+            },
+            {
+              id: 'postpone-outing',
+              description: 'Reporter la sortie et rentrer chez moi',
+              effect: { moveActivity: 'cinema', newLocation: 'restaurant', addActivity: { id: 'coffee', name: 'Café d\'attente', icon: '☕', category: 'twist' } }
+            }
+          ],
           effect: {
             moveActivity: 'cinema',
             newLocation: 'restaurant',

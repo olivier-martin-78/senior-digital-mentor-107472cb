@@ -26,10 +26,22 @@ export interface PlacedItem {
   timeSlotId?: string;
 }
 
+export interface AdaptationChoice {
+  id: string;
+  description: string;
+  effect: {
+    moveActivity?: string;
+    newLocation?: string;
+    newTime?: string;
+    addActivity?: ActivityItem;
+  };
+}
+
 export interface TwistEvent {
   id: string;
   type: 'call' | 'visitor' | 'rain' | 'traffic' | 'meeting';
   description: string;
+  adaptationChoices?: AdaptationChoice[];
   effect: {
     moveActivity?: string;
     newLocation?: string;
@@ -68,6 +80,7 @@ export interface GameState {
   score: number;
   completedLevels: string[];
   activeTwist: TwistEvent | null;
+  twistChoicePhase: boolean;
   gamePhase: 'menu' | 'playing' | 'success' | 'instructions';
   accessibilityMode: boolean;
   voiceEnabled: boolean;

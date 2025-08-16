@@ -26,6 +26,7 @@ const CognitivePuzzleGame: React.FC = () => {
     speak,
     acceptTwist,
     rejectTwist,
+    makeAdaptationChoice,
     selectActivity,
     placeSelectedActivity,
   } = useCognitivePuzzle();
@@ -276,8 +277,10 @@ const CognitivePuzzleGame: React.FC = () => {
           twist={gameState.activeTwist}
           onAccept={acceptTwist}
           onReject={rejectTwist}
+          onChoiceSelect={makeAdaptationChoice}
           onSpeak={speak}
           accessibilityMode={gameState.accessibilityMode}
+          showChoices={gameState.twistChoicePhase}
         />
       )}
 

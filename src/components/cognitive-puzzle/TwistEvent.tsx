@@ -2,23 +2,40 @@ import React, { useEffect, useState } from 'react';
 import { TwistEvent as TwistEventType } from '@/types/cognitivePuzzle';
 import { Button } from '@/components/ui/button';
 import { VoiceHelpButton } from './VoiceHelpButton';
+import { AdaptationChoices } from './AdaptationChoices';
 
 interface TwistEventProps {
   twist: TwistEventType;
   onAccept: () => void;
   onReject: () => void;
+  onChoiceSelect: (choiceId: string) => void;
   onSpeak: (text: string) => void;
   accessibilityMode: boolean;
+  showChoices: boolean;
 }
 
 export const TwistEvent: React.FC<TwistEventProps> = ({
   twist,
   onAccept,
   onReject,
+  onChoiceSelect,
   onSpeak,
   accessibilityMode,
+  showChoices,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+
+  // Show adaptation choices if needed
+  if (showChoices && twist.adaptationChoices) {
+    return (
+      <AdaptationChoices
+        choices={twist.adaptationChoices}
+        onChoiceSelect={onChoiceSelect}
+        onSpeak={onSpeak}
+        accessibilityMode={accessibilityMode}
+      />
+    );
+  }
 
   useEffect(() => {
     // Animate in

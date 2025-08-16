@@ -11,6 +11,7 @@ const initialState: GameState = {
   score: 0,
   completedLevels: [],
   activeTwist: null,
+  twistChoicePhase: false,
   gamePhase: 'menu',
   accessibilityMode: false,
   voiceEnabled: false,
@@ -224,15 +225,27 @@ export const useCognitivePuzzle = () => {
   const acceptTwist = useCallback(() => {
     setGameState(prev => ({
       ...prev,
-      activeTwist: null,
+      twistChoicePhase: prev.activeTwist?.adaptationChoices ? true : false,
     }));
-    speak('Défi accepté ! Continuez à jouer avec cette adaptation.');
+    if (!gameState.activeTwist?.adaptationChoices) {
+      speak('Défi accepté ! Continuez à jouer avec cette adaptation.');
+    }
+  }, [speak, gameState.activeTwist]);
+
+  const makeAdaptationChoice = useCallback((choiceId: string) => {
+    setGameState(prev => ({
+      ...prev,
+      activeTwist: null,
+      twistChoicePhase: false,
+    }));
+    speak('Choix d\'adaptation confirmé ! Continuez à jouer.');
   }, [speak]);
 
   const rejectTwist = useCallback(() => {
     setGameState(prev => ({
       ...prev,
       activeTwist: null,
+      twistChoicePhase: false,
     }));
     speak('Défi refusé. Vous continuez le niveau normalement.');
   }, [speak]);
@@ -288,6 +301,7 @@ export const useCognitivePuzzle = () => {
     speak,
     acceptTwist,
     rejectTwist,
+    makeAdaptationChoice,
     selectActivity,
     placeSelectedActivity,
   };
