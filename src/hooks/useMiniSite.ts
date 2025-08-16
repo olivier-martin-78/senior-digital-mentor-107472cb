@@ -339,11 +339,159 @@ export const useMiniSite = (userId?: string) => {
     }
   }, [targetUserId, isAuthLoading]);
 
+  const importMiniSite = async (sourceMiniSiteId: string, targetUserId: string) => {
+    setLoading(true);
+    try {
+      // Fetch source mini-site data
+      const { data: sourceData, error: sourceError } = await supabase
+        .from('mini_sites')
+        .select('*')
+        .eq('id', sourceMiniSiteId)
+        .single();
+
+      if (sourceError) throw sourceError;
+
+      // Fetch source media
+      const { data: sourceMedia } = await supabase
+        .from('mini_site_media')
+        .select('*')
+        .eq('mini_site_id', sourceMiniSiteId)
+        .order('display_order');
+
+      // Fetch source social links
+      const { data: sourceSocial } = await supabase
+        .from('mini_site_social_links')
+        .select('*')
+        .eq('mini_site_id', sourceMiniSiteId);
+
+      // Get target user profile for slug generation
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', targetUserId)
+        .single();
+
+      if (!targetProfile) throw new Error('Target user not found');
+
+      // Generate new slug for target user
+      const slug = await generateSlug(
+        sourceData.first_name, 
+        sourceData.last_name, 
+        sourceData.postal_code
+      );
+
+      // Prepare site data for target user
+      const importedSiteData = {
+        ...sourceData,
+        user_id: targetUserId,
+        slug,
+        created_at: undefined, // Let database set new timestamp
+        updated_at: undefined, // Let database set new timestamp
+        id: undefined // Remove ID to create new record or update existing
+      };
+
+      // Check if target user already has a mini-site
+      const { data: existingMiniSite } = await supabase
+        .from('mini_sites')
+        .select('id')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+
+      let miniSiteId: string;
+
+      if (existingMiniSite) {
+        // Update existing mini-site
+        const { error: updateError } = await supabase
+          .from('mini_sites')
+          .update(importedSiteData)
+          .eq('id', existingMiniSite.id);
+        
+        if (updateError) throw updateError;
+        miniSiteId = existingMiniSite.id;
+      } else {
+        // Create new mini-site
+        const { data: newSite, error: insertError } = await supabase
+          .from('mini_sites')
+          .insert(importedSiteData)
+          .select()
+          .single();
+        
+        if (insertError) throw insertError;
+        miniSiteId = newSite.id;
+      }
+
+      // Delete existing media and social links for target
+      await Promise.all([
+        supabase
+          .from('mini_site_media')
+          .delete()
+          .eq('mini_site_id', miniSiteId),
+        supabase
+          .from('mini_site_social_links')
+          .delete()
+          .eq('mini_site_id', miniSiteId)
+      ]);
+
+      // Import media if any
+      if (sourceMedia && sourceMedia.length > 0) {
+        const mediaData = sourceMedia.map(media => ({
+          mini_site_id: miniSiteId,
+          media_url: media.media_url,
+          caption: media.caption,
+          link_url: media.link_url,
+          display_order: media.display_order,
+          media_type: media.media_type,
+          duration: media.duration
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('mini_site_media')
+          .insert(mediaData);
+
+        if (mediaError) throw mediaError;
+      }
+
+      // Import social links if any
+      if (sourceSocial && sourceSocial.length > 0) {
+        const socialData = sourceSocial.map(link => ({
+          mini_site_id: miniSiteId,
+          platform: link.platform,
+          url: link.url
+        }));
+
+        const { error: socialError } = await supabase
+          .from('mini_site_social_links')
+          .insert(socialData);
+
+        if (socialError) throw socialError;
+      }
+
+      toast({
+        title: "Succès",
+        description: "Mini-site importé avec succès"
+      });
+
+      // Refresh the mini-site data
+      fetchMiniSite();
+    } catch (error) {
+      console.error('Error importing mini site:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'importer le mini-site",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     miniSite,
     loading,
     saveMiniSite,
     deleteMiniSite,
-    fetchMiniSite
+    fetchMiniSite,
+    importMiniSite
   };
 };

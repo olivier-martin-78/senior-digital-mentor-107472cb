@@ -12,6 +12,7 @@ import { MiniSiteData, useMiniSite } from '@/hooks/useMiniSite';
 import { MediaUploader } from './MediaUploader';
 import { MediaOrderManager } from './MediaOrderManager';
 import { MiniSiteUserSelector } from './MiniSiteUserSelector';
+import { MiniSiteImportDialog } from './MiniSiteImportDialog';
 import { ColorPalette, colorPalettes } from './ColorPalette';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { Eye, Save, Trash2, User } from 'lucide-react';
@@ -90,8 +91,8 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
   selectedUserId, 
   onUserChange 
 }) => {
-  const { miniSite, loading, saveMiniSite, deleteMiniSite } = useMiniSite(userId);
-  const { profile } = useAuth();
+  const { miniSite, loading, saveMiniSite, deleteMiniSite, importMiniSite } = useMiniSite(userId);
+  const { profile, hasRole } = useAuth();
   const [formData, setFormData] = useState<MiniSiteData>(defaultFormData);
   const [activeTab, setActiveTab] = useState('header');
   const [useProfilePhoto, setUseProfilePhoto] = useState(false);
@@ -232,6 +233,11 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
     }
   };
 
+  const handleImport = async (sourceMiniSiteId: string) => {
+    if (!selectedUserId) return;
+    await importMiniSite(sourceMiniSiteId, selectedUserId);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -240,6 +246,14 @@ export const MiniSiteForm: React.FC<MiniSiteFormProps> = ({
             {miniSite ? 'Modifier mon mini-site' : 'Créer mon mini-site'}
           </h1>
           <div className="flex gap-2">
+            {hasRole('admin') && selectedUserId && (
+              <MiniSiteImportDialog
+                onImport={handleImport}
+                targetUserId={selectedUserId}
+                targetUserName={targetUserProfile?.display_name}
+                disabled={loading}
+              />
+            )}
             <Button onClick={handlePreview} variant="outline">
               <Eye className="w-4 h-4 mr-2" />
               Prévisualiser
