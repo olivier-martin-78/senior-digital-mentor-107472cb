@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
     const result = await resend.emails.send({
       from: "Senior Digital Mentor <contact@senior-digital-mentor.com>", // Domaine vérifié
       to: [contactEmail],
-      subject: "Votre avis nous intéresse - Évaluation de prestation",
+      subject: `Votre avis m'intéresse - Message de ${professionalName}`,
       html: emailHTML
     });
 
