@@ -113,7 +113,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
 
   return (
     <Dialog open onOpenChange={onCancel}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl w-[95vw] max-w-[95vw] sm:w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {client ? 'Modifier le client' : 'Nouveau client'}
@@ -121,7 +121,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="first_name">Prénom *</Label>
               <Input
@@ -152,7 +152,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="postal_code">Code postal</Label>
               <Input
@@ -173,7 +173,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="phone">Téléphone</Label>
               <Input
@@ -242,11 +242,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
               Annuler
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? 'Sauvegarde...' : 'Sauvegarder'}
             </Button>
           </div>
