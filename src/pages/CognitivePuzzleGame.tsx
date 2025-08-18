@@ -33,7 +33,7 @@ const CognitivePuzzleGame: React.FC = () => {
 
   React.useEffect(() => {
     document.title = 'Puzzle de Connexions Spatio-Temporelles';
-    speak('Bienvenue dans le jeu Puzzle de Connexions Spatio-Temporelles');
+    speak('Bienvenue dans le jeu de Connexions Spatio-Temporelles');
   }, [speak]);
 
   const renderMenu = () => (
@@ -103,7 +103,7 @@ const CognitivePuzzleGame: React.FC = () => {
             `}
             onClick={() => {
               selectScenario('home');
-              speak('Scénario Journée à la Maison sélectionné');
+              speak('Vous avez sélectionné le Scénario : Journée à la Maison');
             }}
           >
             <div className="text-center">
@@ -157,7 +157,7 @@ const CognitivePuzzleGame: React.FC = () => {
             `}
             onClick={() => {
               selectScenario('city');
-              speak('Scénario Sortie en Ville sélectionné');
+              speak('Vous avez sélectionné le Scénario : Sortie en Ville');
             }}
           >
             <div className="text-center">
