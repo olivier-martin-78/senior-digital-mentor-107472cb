@@ -106,7 +106,7 @@ export const homeScenario: GameScenario = {
       description: 'Construisez une journée parfaite malgré les imprévus',
       enableTimeline: true,
       activities: [
-        { id: 'tv', name: 'Tartiner mes biscottes', icon: '📺', category: 'activity' },
+        { id: 'tv', name: 'Tartiner mes biscottes', icon: '🍳', category: 'activity' },
         { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
         { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
         { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
