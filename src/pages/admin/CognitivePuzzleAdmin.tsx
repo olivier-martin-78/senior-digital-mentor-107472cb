@@ -37,7 +37,13 @@ const CognitivePuzzleAdmin: React.FC = () => {
   const [levels, setLevels] = useState<{ [scenarioId: string]: Level[] }>({});
   const [loading, setLoading] = useState(true);
   const [editingScenario, setEditingScenario] = useState<string | null>(null);
+  const [editingLevel, setEditingLevel] = useState<string | null>(null);
   const [newScenario, setNewScenario] = useState({
+    name: '',
+    description: '',
+    thumbnail: ''
+  });
+  const [editFormData, setEditFormData] = useState({
     name: '',
     description: '',
     thumbnail: ''
@@ -132,6 +138,53 @@ const CognitivePuzzleAdmin: React.FC = () => {
         variant: 'destructive'
       });
     }
+  };
+
+  const startEditScenario = (scenario: Scenario) => {
+    setEditingScenario(scenario.id);
+    setEditFormData({
+      name: scenario.name,
+      description: scenario.description,
+      thumbnail: scenario.thumbnail
+    });
+  };
+
+  const saveScenarioEdit = async () => {
+    if (!editingScenario) return;
+
+    try {
+      const { error } = await supabase
+        .from('cognitive_puzzle_scenarios')
+        .update({
+          name: editFormData.name,
+          description: editFormData.description,
+          thumbnail: editFormData.thumbnail || '🎯'
+        })
+        .eq('id', editingScenario);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Scénario modifié avec succès'
+      });
+
+      setEditingScenario(null);
+      loadScenarios();
+    } catch (error) {
+      console.error('Erreur lors de la modification du scénario:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le scénario',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingScenario(null);
+    setEditingLevel(null);
+    setEditFormData({ name: '', description: '', thumbnail: '' });
   };
 
   const deleteScenario = async (id: string) => {
@@ -251,37 +304,82 @@ const CognitivePuzzleAdmin: React.FC = () => {
         ) : (
           <div className="grid gap-6">
             {scenarios.map((scenario) => (
-              <Card key={scenario.id}>
+                <Card key={scenario.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">{scenario.thumbnail}</div>
+                  {editingScenario === scenario.id ? (
+                    // Mode édition
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label>Nom du scénario</Label>
+                          <Input
+                            value={editFormData.name}
+                            onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label>Emoji/Icône</Label>
+                          <Input
+                            value={editFormData.thumbnail}
+                            onChange={(e) => setEditFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                          />
+                        </div>
+                      </div>
                       <div>
-                        <CardTitle className="text-xl">{scenario.name}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {scenario.description}
-                        </CardDescription>
+                        <Label>Description</Label>
+                        <Textarea
+                          value={editFormData.description}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                          rows={2}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={saveScenarioEdit} size="sm">
+                          <Save className="w-4 h-4 mr-1" />
+                          Sauvegarder
+                        </Button>
+                        <Button onClick={cancelEdit} variant="outline" size="sm">
+                          <X className="w-4 h-4 mr-1" />
+                          Annuler
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        {levels[scenario.id]?.length || 0} niveaux
-                      </Badge>
-                      <Button variant="outline" size="sm">
-                        <Edit2 className="w-4 h-4 mr-1" />
-                        Modifier
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteScenario(scenario.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Supprimer
-                      </Button>
+                  ) : (
+                    // Mode affichage
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">{scenario.thumbnail}</div>
+                        <div>
+                          <CardTitle className="text-xl">{scenario.name}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {scenario.description}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {levels[scenario.id]?.length || 0} niveaux
+                        </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => startEditScenario(scenario)}
+                        >
+                          <Edit2 className="w-4 h-4 mr-1" />
+                          Modifier
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteScenario(scenario.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Supprimer
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardHeader>
                 
                 {levels[scenario.id] && levels[scenario.id].length > 0 && (
