@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { GameState } from '@/types/cognitivePuzzle';
-import { homeScenario } from '@/data/cognitivePuzzleData';
+import { GameState, GameScenario } from '@/types/cognitivePuzzle';
 import { DragDropZone } from './DragDropZone';
 import { SpatialMap } from './SpatialMap';
 import { Timeline } from './Timeline';
@@ -12,6 +11,7 @@ import { ArrowLeft, Volume2, VolumeX, Accessibility, CheckCircle } from 'lucide-
 interface HomeScenarioProps {
   gameState: GameState;
   selectedActivity: string | null;
+  scenario: GameScenario;
   onPlaceItem: (activityId: string, spatialSlotId?: string, timeSlotId?: string) => void;
   onRemoveItem: (activityId: string) => void;
   onCheckCompletion: () => boolean;
@@ -27,6 +27,7 @@ interface HomeScenarioProps {
 export const HomeScenario: React.FC<HomeScenarioProps> = ({
   gameState,
   selectedActivity,
+  scenario,
   onPlaceItem,
   onRemoveItem,
   onCheckCompletion,
@@ -40,7 +41,7 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
 }) => {
   const [draggedActivity, setDraggedActivity] = React.useState<string | null>(null);
   
-  const currentLevel = homeScenario.levels.find(l => l.id === gameState.currentLevel);
+  const currentLevel = scenario.levels.find(l => l.id === gameState.currentLevel);
   
   if (!currentLevel) {
     return (
@@ -83,7 +84,7 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-2xl mx-auto text-center">
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
-          <div className="text-6xl mb-6">🏠</div>
+          <div className="text-6xl mb-6">{scenario.thumbnail}</div>
           
           <h1 className={`font-bold text-foreground mb-4 ${gameState.accessibilityMode ? 'text-3xl' : 'text-2xl'}`}>
             {currentLevel.name}
@@ -174,13 +175,13 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
                 Menu
               </Button>
               <div className="flex items-center gap-3">
-                <div className="text-2xl">🏠</div>
+                <div className="text-2xl">{scenario.thumbnail}</div>
                 <div>
                   <h2 className={`font-bold text-foreground ${gameState.accessibilityMode ? 'text-xl' : 'text-lg'}`}>
                     {currentLevel.name}
                   </h2>
                   <p className={`text-muted-foreground ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}`}>
-                    Niveau {gameState.currentLevel}/3
+                    Niveau {gameState.currentLevel}/{scenario.levels.length}
                   </p>
                 </div>
               </div>
@@ -236,7 +237,7 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
             activities={currentLevel.activities}
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
-            scenario="home"
+            scenario={scenario.id as 'home' | 'city'}
             onDrop={handleSpatialDrop}
             onPlaceSelected={handleSpatialClick}
             onRemove={onRemoveItem}
@@ -278,7 +279,7 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
         onReplay={onStartLevel}
         onMenu={onBackToMenu}
         accessibilityMode={gameState.accessibilityMode}
-        isLastLevel={currentLevel.id === 3}
+        isLastLevel={currentLevel.id === scenario.levels.length}
         onSpeak={onSpeak}
       />
     );

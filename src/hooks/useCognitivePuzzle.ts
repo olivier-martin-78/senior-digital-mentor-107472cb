@@ -1,6 +1,16 @@
-import { useState, useCallback, useEffect } from 'react';
-import { GameState, GameScenario, PlacedItem, TwistEvent } from '@/types/cognitivePuzzle';
-import { homeScenario, cityScenario } from '@/data/cognitivePuzzleData';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { 
+  GameScenario, 
+  GameLevel, 
+  GameState, 
+  PlacedItem, 
+  TwistEvent, 
+  AdaptationChoice,
+  ActivityItem,
+  SpatialSlot,
+  TimeSlot
+} from '@/types/cognitivePuzzle';
 
 const STORAGE_KEY = 'cognitive-puzzle-progress';
 
@@ -20,6 +30,152 @@ const initialState: GameState = {
 export const useCognitivePuzzle = () => {
   const [gameState, setGameState] = useState<GameState>(initialState);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [scenarios, setScenarios] = useState<GameScenario[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Load scenarios from Supabase
+  const loadScenarios = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch scenarios
+      const { data: scenariosData, error: scenariosError } = await supabase
+        .from('cognitive_puzzle_scenarios')
+        .select('*')
+        .order('created_at');
+      
+      if (scenariosError) throw scenariosError;
+      
+      if (!scenariosData || scenariosData.length === 0) {
+        setScenarios([]);
+        return;
+      }
+      
+      // For each scenario, load its levels and related data
+      const scenariosWithLevels = await Promise.all(
+        scenariosData.map(async (scenario) => {
+          // Load levels for this scenario
+          const { data: levelsData, error: levelsError } = await supabase
+            .from('cognitive_puzzle_levels')
+            .select('*')
+            .eq('scenario_id', scenario.id)
+            .order('level_number');
+          
+          if (levelsError) throw levelsError;
+          
+          const levelsWithData = await Promise.all(
+            (levelsData || []).map(async (level) => {
+              // Load activities
+              const { data: activities, error: activitiesError } = await supabase
+                .from('cognitive_puzzle_activities')
+                .select('*')
+                .eq('level_id', level.id);
+              
+              if (activitiesError) throw activitiesError;
+              
+              // Load spatial slots
+              const { data: spatialSlots, error: spatialError } = await supabase
+                .from('cognitive_puzzle_spatial_slots')
+                .select('*')
+                .eq('level_id', level.id);
+              
+              if (spatialError) throw spatialError;
+              
+              // Load time slots
+              const { data: timeSlots, error: timeError } = await supabase
+                .from('cognitive_puzzle_time_slots')
+                .select('*')
+                .eq('level_id', level.id);
+              
+              if (timeError) throw timeError;
+              
+              // Load twist events
+              const { data: twistEvents, error: twistError } = await supabase
+                .from('cognitive_puzzle_twist_events')
+                .select('*')
+                .eq('level_id', level.id);
+              
+              if (twistError) throw twistError;
+              
+              // For each twist event, load adaptation choices
+              const twistEventsWithChoices = await Promise.all(
+                (twistEvents || []).map(async (twist) => {
+                  const { data: choices, error: choicesError } = await supabase
+                    .from('cognitive_puzzle_adaptation_choices')
+                    .select('*')
+                    .eq('twist_event_id', twist.id);
+                  
+                  if (choicesError) throw choicesError;
+                  
+                  return {
+                    id: twist.id,
+                    type: twist.event_type as TwistEvent['type'],
+                    description: twist.description,
+                    effect: twist.effect as TwistEvent['effect'],
+                    adaptationChoices: (choices || []).map(choice => ({
+                      id: choice.id,
+                      description: choice.description,
+                      effect: choice.effect as AdaptationChoice['effect']
+                    }))
+                  };
+                })
+              );
+              
+              return {
+                id: level.level_number,
+                name: level.name,
+                description: level.description,
+                activities: (activities || []).map(activity => ({
+                  id: activity.id,
+                  name: activity.name,
+                  icon: activity.icon,
+                  category: activity.category as ActivityItem['category']
+                })),
+                spatialSlots: (spatialSlots || []).map(slot => ({
+                  id: slot.id,
+                  label: slot.label,
+                  icon: slot.icon,
+                  x: slot.x_position,
+                  y: slot.y_position
+                })),
+                timeSlots: (timeSlots || []).map(slot => ({
+                  id: slot.id,
+                  label: slot.label,
+                  icon: slot.icon,
+                  period: slot.period as TimeSlot['period']
+                })),
+                enableTimeline: level.enable_timeline,
+                twistEvents: twistEventsWithChoices,
+                successCriteria: {
+                  spatialRequired: level.spatial_required,
+                  temporalRequired: level.temporal_required
+                }
+              } as GameLevel;
+            })
+          );
+          
+          return {
+            id: scenario.id,
+            name: scenario.name,
+            description: scenario.description,
+            thumbnail: scenario.thumbnail,
+            levels: levelsWithData
+          } as GameScenario;
+        })
+      );
+      
+      setScenarios(scenariosWithLevels);
+    } catch (error) {
+      console.error('Error loading cognitive puzzle data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  // Load scenarios on mount
+  useEffect(() => {
+    loadScenarios();
+  }, [loadScenarios]);
   
   // Load progress from localStorage
   useEffect(() => {
@@ -47,6 +203,11 @@ export const useCognitivePuzzle = () => {
       console.warn('Failed to save progress:', error);
     }
   }, []);
+
+  const getScenario = useCallback((scenarioId: string | null): GameScenario | null => {
+    if (!scenarioId) return null;
+    return scenarios.find(s => s.id === scenarioId) || null;
+  }, [scenarios]);
 
   const selectScenario = useCallback((scenarioId: string) => {
     setGameState(prev => {
@@ -83,7 +244,7 @@ export const useCognitivePuzzle = () => {
       };
       return newState;
     });
-  }, []);
+  }, [getScenario]);
 
   const placeItem = useCallback((activityId: string, spatialSlotId?: string, timeSlotId?: string) => {
     setGameState(prev => {
@@ -136,7 +297,7 @@ export const useCognitivePuzzle = () => {
 
     return spatialPlacements >= level.successCriteria.spatialRequired &&
            temporalPlacements >= level.successCriteria.temporalRequired;
-  }, [gameState]);
+  }, [gameState, getScenario]);
 
   const completeLevel = useCallback(() => {
     setGameState(prev => {
@@ -186,7 +347,7 @@ export const useCognitivePuzzle = () => {
         };
       }
     });
-  }, []);
+  }, [getScenario]);
 
   const resetGame = useCallback(() => {
     setGameState(initialState);
@@ -269,7 +430,7 @@ export const useCognitivePuzzle = () => {
         speak(`${activity.name} sélectionné. Cliquez maintenant sur un lieu ou un moment pour le placer.`);
       }
     }
-  }, [gameState.currentScenario, gameState.currentLevel, selectedActivity, speak]);
+  }, [gameState.currentScenario, gameState.currentLevel, selectedActivity, speak, getScenario]);
 
   const placeSelectedActivity = useCallback((spatialSlotId?: string, timeSlotId?: string) => {
     if (!selectedActivity) return;
@@ -289,11 +450,13 @@ export const useCognitivePuzzle = () => {
       if (timeSlot) message += ` au ${timeSlot.label}`;
       speak(message);
     }
-  }, [selectedActivity, placeItem, gameState.currentScenario, gameState.currentLevel, speak]);
+  }, [selectedActivity, placeItem, gameState.currentScenario, gameState.currentLevel, speak, getScenario]);
 
   return {
     gameState,
     selectedActivity,
+    scenarios,
+    loading,
     selectScenario,
     startLevel,
     placeItem,
@@ -310,16 +473,6 @@ export const useCognitivePuzzle = () => {
     makeAdaptationChoice,
     selectActivity,
     placeSelectedActivity,
+    loadScenarios,
   };
-};
-
-const getScenario = (scenarioId: string | null): GameScenario | null => {
-  switch (scenarioId) {
-    case 'home':
-      return homeScenario;
-    case 'city':
-      return cityScenario;
-    default:
-      return null;
-  }
 };

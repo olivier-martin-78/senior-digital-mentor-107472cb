@@ -1,11 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useCognitivePuzzle } from '@/hooks/useCognitivePuzzle';
-import { homeScenario, cityScenario } from '@/data/cognitivePuzzleData';
 import { HomeScenario } from '@/components/cognitive-puzzle/HomeScenario';
 import { CityScenario } from '@/components/cognitive-puzzle/CityScenario';
 import { TwistEvent } from '@/components/cognitive-puzzle/TwistEvent';
-import { ArrowLeft, Volume2, VolumeX, Accessibility } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Accessibility, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CognitivePuzzleGame: React.FC = () => {
@@ -13,6 +12,8 @@ const CognitivePuzzleGame: React.FC = () => {
   const {
     gameState,
     selectedActivity,
+    scenarios,
+    loading,
     selectScenario,
     startLevel,
     placeItem,
@@ -33,8 +34,10 @@ const CognitivePuzzleGame: React.FC = () => {
 
   React.useEffect(() => {
     document.title = 'Puzzle de Connexions Spatio-Temporelles';
-    speak('Bienvenue dans le jeu de Connexions Spatio-Temporelles');
-  }, [speak]);
+    if (!loading) {
+      speak('Bienvenue dans le jeu de Connexions Spatio-Temporelles');
+    }
+  }, [speak, loading]);
 
   const renderMenu = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 p-4">
@@ -90,116 +93,81 @@ const CognitivePuzzleGame: React.FC = () => {
           </p>
         </div>
 
-        {/* Scenario Selection */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Home Scenario */}
-          <div 
-            className={`
-              bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl 
-              border-2 border-transparent hover:border-amber-200
-              transition-all duration-300 cursor-pointer group
-              hover:shadow-2xl hover:scale-105
-              ${gameState.accessibilityMode ? 'p-10' : ''}
-            `}
-            onClick={() => {
-              selectScenario('home');
-              speak('Vous avez sélectionné le Scénario : Journée à la Maison');
-            }}
-          >
-            <div className="text-center">
-              <div className={`
-                text-amber-600 group-hover:animate-bounce mb-6
-                ${gameState.accessibilityMode ? 'text-8xl' : 'text-6xl'}
-              `}>
-                🏠
-              </div>
-              
-              <h2 className={`
-                font-bold text-foreground mb-4
-                ${gameState.accessibilityMode ? 'text-2xl' : 'text-xl'}
-              `}>
-                Journée à la Maison
-              </h2>
-              
-              <p className={`
-                text-muted-foreground mb-6 leading-relaxed
-                ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}
-              `}>
-                Organisez votre journée à domicile : petit-déjeuner, lecture, sieste...
-                Adaptez-vous aux appels imprévus et aux visiteurs !
-              </p>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 text-amber-600">
-                  <span>📍</span>
-                  <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
-                    3 niveaux progressifs
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-amber-600">
-                  <span>🏆</span>
-                  <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
-                    Défis d'adaptation
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center mb-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Chargement des scénarios...</p>
           </div>
+        )}
 
-          {/* City Scenario */}
-          <div 
-            className={`
-              bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl 
-              border-2 border-transparent hover:border-sky-200
-              transition-all duration-300 cursor-pointer group
-              hover:shadow-2xl hover:scale-105
-              ${gameState.accessibilityMode ? 'p-10' : ''}
-            `}
-            onClick={() => {
-              selectScenario('city');
-              speak('Vous avez sélectionné le Scénario : Sortie en Ville');
-            }}
-          >
-            <div className="text-center">
-              <div className={`
-                text-sky-600 group-hover:animate-bounce mb-6
-                ${gameState.accessibilityMode ? 'text-8xl' : 'text-6xl'}
-              `}>
-                🏙️
-              </div>
-              
-              <h2 className={`
-                font-bold text-foreground mb-4
-                ${gameState.accessibilityMode ? 'text-2xl' : 'text-xl'}
-              `}>
-                Sortie en Ville
-              </h2>
-              
-              <p className={`
-                text-muted-foreground mb-6 leading-relaxed
-                ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}
-              `}>
-                Planifiez votre sortie : marché, café, promenade...
-                Gérez les embouteillages et la pluie avec souplesse !
-              </p>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sky-600">
-                  <span>🗺️</span>
-                  <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
-                    3 niveaux progressifs
-                  </span>
+        {/* Scenario Selection */}
+        {!loading && (
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {scenarios.map((scenario) => (
+              <div 
+                key={scenario.id}
+                className={`
+                  bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl 
+                  border-2 border-transparent hover:border-primary/30
+                  transition-all duration-300 cursor-pointer group
+                  hover:shadow-2xl hover:scale-105
+                  ${gameState.accessibilityMode ? 'p-10' : ''}
+                `}
+                onClick={() => {
+                  selectScenario(scenario.id);
+                  speak(`Vous avez sélectionné le Scénario : ${scenario.name}`);
+                }}
+              >
+                <div className="text-center">
+                  <div className={`
+                    text-primary group-hover:animate-bounce mb-6
+                    ${gameState.accessibilityMode ? 'text-8xl' : 'text-6xl'}
+                  `}>
+                    {scenario.thumbnail}
+                  </div>
+                  
+                  <h2 className={`
+                    font-bold text-foreground mb-4
+                    ${gameState.accessibilityMode ? 'text-2xl' : 'text-xl'}
+                  `}>
+                    {scenario.name}
+                  </h2>
+                  
+                  <p className={`
+                    text-muted-foreground mb-6 leading-relaxed
+                    ${gameState.accessibilityMode ? 'text-base' : 'text-sm'}
+                  `}>
+                    {scenario.description}
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-primary">
+                      <span>📍</span>
+                      <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
+                        {scenario.levels.length} niveaux progressifs
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-primary">
+                      <span>🏆</span>
+                      <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
+                        Défis d'adaptation
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sky-600">
-                  <span>⚡</span>
-                  <span className={gameState.accessibilityMode ? 'text-sm' : 'text-xs'}>
-                    Imprévus urbains
-                  </span>
-                </div>
               </div>
-            </div>
+            ))}
           </div>
-        </div>
+        )}
+
+        {/* No scenarios available */}
+        {!loading && scenarios.length === 0 && (
+          <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-4">Aucun scénario disponible pour le moment.</p>
+            <p className="text-sm text-muted-foreground">Veuillez contacter l'administrateur pour ajouter du contenu.</p>
+          </div>
+        )}
 
         {/* Game Features */}
         <div className="mt-16 max-w-4xl mx-auto">
@@ -285,45 +253,31 @@ const CognitivePuzzleGame: React.FC = () => {
       )}
 
       {/* Render Current Scenario */}
-      {gameState.currentScenario === 'home' && (
-        <HomeScenario
-          gameState={gameState}
-          selectedActivity={selectedActivity}
-          onPlaceItem={placeItem}
-          onRemoveItem={removeItem}
-          onCheckCompletion={checkLevelCompletion}
-          onCompleteLevel={completeLevel}
-          onNextLevel={nextLevel}
-          onStartLevel={startLevel}
-          onBackToMenu={() => {
-            resetGame();
-            speak('Retour au menu principal');
-          }}
-          onSelectActivity={selectActivity}
-          onPlaceSelected={placeSelectedActivity}
-          onSpeak={speak}
-        />
-      )}
-
-      {gameState.currentScenario === 'city' && (
-        <CityScenario
-          gameState={gameState}
-          selectedActivity={selectedActivity}
-          onPlaceItem={placeItem}
-          onRemoveItem={removeItem}
-          onCheckCompletion={checkLevelCompletion}
-          onCompleteLevel={completeLevel}
-          onNextLevel={nextLevel}
-          onStartLevel={startLevel}
-          onBackToMenu={() => {
-            resetGame();
-            speak('Retour au menu principal');
-          }}
-          onSelectActivity={selectActivity}
-          onPlaceSelected={placeSelectedActivity}
-          onSpeak={speak}
-        />
-      )}
+      {(() => {
+        const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
+        if (!currentScenario) return null;
+        
+        return (
+          <HomeScenario
+            gameState={gameState}
+            selectedActivity={selectedActivity}
+            scenario={currentScenario}
+            onPlaceItem={placeItem}
+            onRemoveItem={removeItem}
+            onCheckCompletion={checkLevelCompletion}
+            onCompleteLevel={completeLevel}
+            onNextLevel={nextLevel}
+            onStartLevel={startLevel}
+            onBackToMenu={() => {
+              resetGame();
+              speak('Retour au menu principal');
+            }}
+            onSelectActivity={selectActivity}
+            onPlaceSelected={placeSelectedActivity}
+            onSpeak={speak}
+          />
+        );
+      })()}
     </div>
   );
 };
