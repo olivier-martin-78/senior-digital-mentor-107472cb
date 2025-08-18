@@ -550,6 +550,258 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_puzzle_activities: {
+        Row: {
+          category: string
+          created_at: string
+          icon: string
+          id: string
+          level_id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          icon: string
+          id?: string
+          level_id: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          level_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_activities_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cognitive_puzzle_adaptation_choices: {
+        Row: {
+          created_at: string
+          description: string
+          effect: Json
+          id: string
+          twist_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          effect?: Json
+          id?: string
+          twist_event_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          effect?: Json
+          id?: string
+          twist_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_adaptation_choices_twist_event_id_fkey"
+            columns: ["twist_event_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_twist_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cognitive_puzzle_levels: {
+        Row: {
+          created_at: string
+          description: string
+          enable_timeline: boolean
+          id: string
+          level_number: number
+          name: string
+          scenario_id: string
+          spatial_required: number
+          temporal_required: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          enable_timeline?: boolean
+          id?: string
+          level_number: number
+          name: string
+          scenario_id: string
+          spatial_required?: number
+          temporal_required?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enable_timeline?: boolean
+          id?: string
+          level_number?: number
+          name?: string
+          scenario_id?: string
+          spatial_required?: number
+          temporal_required?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_levels_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cognitive_puzzle_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          thumbnail: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          description: string
+          id?: string
+          name: string
+          thumbnail: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          thumbnail?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cognitive_puzzle_spatial_slots: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          label: string
+          level_id: string
+          x_position: number
+          y_position: number
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          label: string
+          level_id: string
+          x_position: number
+          y_position: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          label?: string
+          level_id?: string
+          x_position?: number
+          y_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_spatial_slots_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cognitive_puzzle_time_slots: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          label: string
+          level_id: string
+          period: string
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          label: string
+          level_id: string
+          period: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          label?: string
+          level_id?: string
+          period?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_time_slots_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cognitive_puzzle_twist_events: {
+        Row: {
+          created_at: string
+          description: string
+          effect: Json
+          event_type: string
+          id: string
+          level_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          effect?: Json
+          event_type: string
+          id?: string
+          level_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          effect?: Json
+          event_type?: string
+          id?: string
+          level_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_puzzle_twist_events_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diary_entries: {
         Row: {
           activities: string | null
