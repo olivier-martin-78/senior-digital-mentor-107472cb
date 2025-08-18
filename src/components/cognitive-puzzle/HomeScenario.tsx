@@ -111,10 +111,9 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
                 <div>
                   <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
                   <ul className="text-blue-700 space-y-1">
-                    <li>• ⚠️ IMPORTANT : Chaque activité doit être placée dans une PIÈCE ET un MOMENT</li>
-                    <li>• Glissez d'abord l'activité vers une pièce de la maison</li>
-                    <li>• Puis glissez la MÊME activité vers un moment de la journée</li>
-                    <li>• Une activité doit apparaître dans les deux sections pour être valide</li>
+                    <li>• Sélectionnez d'abord l'activité puis une pièce de la maison</li>
+                    <li>• Sélectionnez ensuite à nouveau la MÊME activité puis un moment de la journée en hat de la page</li>
+                    <li>• ⚠️ IMPORTANT : Une activité doit apparaître dans une PIÈCE de la maison ET un MOMENT de la journée pour être valide</li>
                   </ul>
                 </div>
               )}
@@ -123,8 +122,8 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
                   <p className="font-semibold text-blue-800 mb-2">Instructions :</p>
                   <ul className="text-blue-700 space-y-1">
                     <li>• Construisez une journée parfaite avec toutes les activités</li>
-                    <li>• Soyez prêt à vous adapter aux imprévus</li>
-                    <li>• Double placement : lieu ET moment pour chaque activité</li>
+                    <li>• Soyez prêt à vous adapter au cas où un imprévu survient</li>
+                    <li>• Double placement de chaque activité : une pièce de la maison ET uen plus n moment de la journée</li>
                   </ul>
                 </div>
               )}
