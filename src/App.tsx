@@ -25,7 +25,15 @@ const AppContent = () => {
   
   console.log('🔥 [APP_DEBUG] Hook auth result:', { user: !!user, isLoading });
 
-  if (isLoading) {
+  // Routes qui doivent TOUJOURS être publiques, même si l'utilisateur est connecté
+  const isStrictPublicRoute = () => {
+    const path = window.location.pathname;
+    return path.startsWith('/avis/') || 
+           (path.startsWith('/mini-site/') && path !== '/mini-site/builder') ||
+           path === '/mini-site/preview';
+  };
+
+  if (isLoading && !isStrictPublicRoute()) {
     console.log('🔥 [APP_DEBUG] Affichage écran de chargement');
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -34,7 +42,10 @@ const AppContent = () => {
     );
   }
 
-  console.log('🔥 [APP_DEBUG] Rendu des routes - user:', !!user);
+  // Force l'utilisation de PublicApp pour les routes publiques strictes
+  const shouldUsePublicApp = isStrictPublicRoute() || !user;
+
+  console.log('🔥 [APP_DEBUG] Rendu des routes - user:', !!user, 'isStrictPublic:', isStrictPublicRoute(), 'usePublicApp:', shouldUsePublicApp);
   
   return (
     <>
@@ -44,8 +55,8 @@ const AppContent = () => {
           path="/*" 
           element={
             (() => {
-              console.log('🔥 [APP_DEBUG] Routing vers', user ? 'PrivateApp' : 'PublicApp', 'pour path:', window.location.pathname);
-              return user ? <PrivateApp /> : <PublicApp />;
+              console.log('🔥 [APP_DEBUG] Routing vers', shouldUsePublicApp ? 'PublicApp' : 'PrivateApp', 'pour path:', window.location.pathname);
+              return shouldUsePublicApp ? <PublicApp /> : <PrivateApp />;
             })()
           } 
         />
