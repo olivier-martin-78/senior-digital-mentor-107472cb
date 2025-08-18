@@ -84,15 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
             <p>Bonjour <strong>${contactName}</strong>,</p>
             
-            <p>J'espère que vous allez bien. Je vous contacte aujourd'hui pour recueillir votre avis sur la prestation que j'ai réalisée.</p>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-              <h3 style="margin-top: 0; color: #667eea;">Détails de l'intervention</h3>
-              <p><strong>Date :</strong> ${formattedDate}</p>
-              <p><strong>Ville :</strong> ${city}</p>
-              <p><strong>Type de contact :</strong> ${contactType === 'client' ? 'Client' : 'Proche aidant'}</p>
-            </div>
-            
+            <p>C'est ${professionalName}, j'espère que vous allez bien. Je vous contacte aujourd'hui pour recueillir votre avis sur les prestations que je réalise à ${city}.</p>
+        
             <p>Votre retour est très important pour moi et m'aide à améliorer constamment la qualité de mes services. Cela ne vous prendra que quelques minutes.</p>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -115,9 +108,8 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Je vous remercie par avance pour le temps que vous consacrerez à cette évaluation.</p>
             
-            <p>Bien cordialement,<br>
-            <strong>${professionalName}</strong><br>
-            Votre auxiliaire de vie</p>
+            <p>Bien à vous,<br>
+            <strong>${professionalName}</strong><br></p>
           </div>
           
           <div style="text-align: center; padding: 20px; font-size: 12px; color: #666;">
