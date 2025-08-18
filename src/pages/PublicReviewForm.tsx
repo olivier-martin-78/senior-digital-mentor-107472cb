@@ -201,7 +201,7 @@ export const PublicReviewForm: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Évaluation de prestation</CardTitle>
+            <CardTitle className="text-2xl">Évaluation des prestations</CardTitle>
             <p className="text-muted-foreground">
               Votre avis nous aide à améliorer nos services
             </p>
@@ -210,10 +210,9 @@ export const PublicReviewForm: React.FC = () => {
           <CardContent className="space-y-6">
             {/* Informations de l'intervention */}
             <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Détails de l'intervention</h3>
+              <h3 className="font-semibold mb-2">Détails des interventions</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <p><strong>Professionnel :</strong> {reviewRequest?.professional_name}</p>
-                <p><strong>Date :</strong> {new Date(reviewRequest?.review_date || '').toLocaleDateString('fr-FR')}</p>
                 <p><strong>Ville :</strong> {reviewRequest?.city}</p>
                 <p><strong>Note initiale :</strong> {reviewRequest?.satisfaction_rating}/5 ⭐</p>
               </div>
@@ -224,7 +223,7 @@ export const PublicReviewForm: React.FC = () => {
               <div>
                 <Label className="text-base font-semibold">Note de satisfaction *</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Comment évaluez-vous cette prestation ?
+                  Comment évaluez-vous mes prestations ?
                 </p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -238,7 +237,7 @@ export const PublicReviewForm: React.FC = () => {
                           : 'text-gray-300 hover:text-gray-400'
                       }`}
                     >
-                      ⭐
+                      ★
                     </button>
                   ))}
                   {formData.rating > 0 && (
@@ -252,7 +251,7 @@ export const PublicReviewForm: React.FC = () => {
               {/* Commentaires */}
               <div>
                 <Label htmlFor="comments" className="text-base font-semibold">
-                  Commentaires (optionnel)
+                  Commentaires (obligatoire)
                 </Label>
                 <p className="text-sm text-muted-foreground mb-3">
                   Partagez votre expérience en quelques mots
