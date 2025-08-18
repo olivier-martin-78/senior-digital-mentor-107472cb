@@ -55,6 +55,13 @@ const CognitivePuzzleAdmin: React.FC = () => {
     spatial_required: 0,
     temporal_required: 0
   });
+  const [levelActivities, setLevelActivities] = useState<any[]>([]);
+  const [levelSpatialSlots, setLevelSpatialSlots] = useState<any[]>([]);
+  const [levelTimeSlots, setLevelTimeSlots] = useState<any[]>([]);
+  const [spatialSectionTitle, setSpatialSectionTitle] = useState('');
+  const [spatialSectionIcon, setSpatialSectionIcon] = useState('');
+  const [temporalSectionTitle, setTemporalSectionTitle] = useState('');
+  const [temporalSectionIcon, setTemporalSectionIcon] = useState('');
 
   // Vérifier les permissions admin
   if (!hasRole('admin')) {
@@ -188,7 +195,7 @@ const CognitivePuzzleAdmin: React.FC = () => {
     }
   };
 
-  const startEditLevel = (level: Level) => {
+  const startEditLevel = async (level: Level) => {
     setEditingLevel(level.id);
     setLevelEditData({
       name: level.name,
@@ -197,18 +204,103 @@ const CognitivePuzzleAdmin: React.FC = () => {
       spatial_required: level.spatial_required,
       temporal_required: level.temporal_required
     });
+
+    // Charger les activités, slots spatiaux et temporels
+    try {
+      const [activitiesRes, spatialRes, temporalRes] = await Promise.all([
+        supabase
+          .from('cognitive_puzzle_activities')
+          .select('*')
+          .eq('level_id', level.id),
+        supabase
+          .from('cognitive_puzzle_spatial_slots')
+          .select('*')
+          .eq('level_id', level.id),
+        supabase
+          .from('cognitive_puzzle_time_slots')
+          .select('*')
+          .eq('level_id', level.id)
+      ]);
+
+      setLevelActivities(activitiesRes.data || []);
+      setLevelSpatialSlots(spatialRes.data || []);
+      setLevelTimeSlots(temporalRes.data || []);
+
+      // Définir les titres par défaut selon le scénario
+      const scenarioId = level.scenario_id;
+      const scenario = scenarios.find(s => s.id === scenarioId);
+      if (scenario?.name === 'Journée type') {
+        setSpatialSectionTitle('Pièces de la maison');
+        setSpatialSectionIcon('🏠');
+      } else if (scenario?.name === 'Sortie en ville') {
+        setSpatialSectionTitle('Lieux en ville');
+        setSpatialSectionIcon('🏙️');
+      }
+      setTemporalSectionTitle('Organiser votre temps');
+      setTemporalSectionIcon('⏰');
+    } catch (error) {
+      console.error('Erreur lors du chargement des données du niveau:', error);
+    }
   };
 
   const saveLevelEdit = async () => {
     if (!editingLevel) return;
 
     try {
-      const { error } = await supabase
+      // Mise à jour du niveau
+      const { error: levelError } = await supabase
         .from('cognitive_puzzle_levels')
         .update(levelEditData)
         .eq('id', editingLevel);
 
-      if (error) throw error;
+      if (levelError) throw levelError;
+
+      // Supprimer les anciennes données
+      await Promise.all([
+        supabase.from('cognitive_puzzle_activities').delete().eq('level_id', editingLevel),
+        supabase.from('cognitive_puzzle_spatial_slots').delete().eq('level_id', editingLevel),
+        supabase.from('cognitive_puzzle_time_slots').delete().eq('level_id', editingLevel)
+      ]);
+
+      // Insérer les nouvelles activités
+      if (levelActivities.length > 0) {
+        const { error: activitiesError } = await supabase
+          .from('cognitive_puzzle_activities')
+          .insert(levelActivities.map(activity => ({
+            level_id: editingLevel,
+            name: activity.name,
+            icon: activity.icon,
+            category: activity.category
+          })));
+        if (activitiesError) throw activitiesError;
+      }
+
+      // Insérer les nouveaux slots spatiaux
+      if (levelSpatialSlots.length > 0) {
+        const { error: spatialError } = await supabase
+          .from('cognitive_puzzle_spatial_slots')
+          .insert(levelSpatialSlots.map(slot => ({
+            level_id: editingLevel,
+            label: slot.label,
+            icon: slot.icon,
+            x_position: slot.x_position,
+            y_position: slot.y_position
+          })));
+        if (spatialError) throw spatialError;
+      }
+
+      // Insérer les nouveaux slots temporels
+      if (levelTimeSlots.length > 0) {
+        const { error: temporalError } = await supabase
+          .from('cognitive_puzzle_time_slots')
+          .insert(levelTimeSlots.map(slot => ({
+            level_id: editingLevel,
+            label: slot.label,
+            icon: slot.icon,
+            period: slot.period
+          })));
+        if (temporalError) throw temporalError;
+      }
 
       toast({
         title: 'Succès',
@@ -238,6 +330,13 @@ const CognitivePuzzleAdmin: React.FC = () => {
       spatial_required: 0, 
       temporal_required: 0 
     });
+    setLevelActivities([]);
+    setLevelSpatialSlots([]);
+    setLevelTimeSlots([]);
+    setSpatialSectionTitle('');
+    setSpatialSectionIcon('');
+    setTemporalSectionTitle('');
+    setTemporalSectionIcon('');
   };
 
   const deleteScenario = async (id: string) => {
@@ -446,65 +545,305 @@ const CognitivePuzzleAdmin: React.FC = () => {
                          >
                            {editingLevel === level.id ? (
                              // Mode édition du niveau
-                             <div className="space-y-4">
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                 <div>
-                                   <Label>Nom du niveau</Label>
-                                   <Input
-                                     value={levelEditData.name}
-                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, name: e.target.value }))}
-                                   />
-                                 </div>
-                                 <div className="flex items-center space-x-2">
-                                   <input
-                                     type="checkbox"
-                                     id={`timeline-${level.id}`}
-                                     checked={levelEditData.enable_timeline}
-                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, enable_timeline: e.target.checked }))}
-                                     className="rounded"
-                                   />
-                                   <Label htmlFor={`timeline-${level.id}`}>Timeline activée</Label>
-                                 </div>
-                               </div>
-                               <div>
-                                 <Label>Description</Label>
-                                 <Textarea
-                                   value={levelEditData.description}
-                                   onChange={(e) => setLevelEditData(prev => ({ ...prev, description: e.target.value }))}
-                                   rows={2}
-                                 />
-                               </div>
-                               <div className="grid grid-cols-2 gap-4">
-                                 <div>
-                                   <Label>Critères spatiaux requis</Label>
-                                   <Input
-                                     type="number"
-                                     min="0"
-                                     value={levelEditData.spatial_required}
-                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, spatial_required: parseInt(e.target.value) || 0 }))}
-                                   />
-                                 </div>
-                                 <div>
-                                   <Label>Critères temporels requis</Label>
-                                   <Input
-                                     type="number"
-                                     min="0"
-                                     value={levelEditData.temporal_required}
-                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, temporal_required: parseInt(e.target.value) || 0 }))}
-                                   />
-                                 </div>
-                               </div>
-                               <div className="flex gap-2">
-                                 <Button onClick={saveLevelEdit} size="sm">
-                                   <Save className="w-4 h-4 mr-1" />
-                                   Sauvegarder
-                                 </Button>
-                                 <Button onClick={cancelEdit} variant="outline" size="sm">
-                                   <X className="w-4 h-4 mr-1" />
-                                   Annuler
-                                 </Button>
-                               </div>
-                             </div>
+                              <div className="space-y-6">
+                                {/* Informations générales du niveau */}
+                                <div className="space-y-4">
+                                  <h5 className="font-medium text-lg">Informations générales</h5>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Nom du niveau</Label>
+                                      <Input
+                                        value={levelEditData.name}
+                                        onChange={(e) => setLevelEditData(prev => ({ ...prev, name: e.target.value }))}
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="checkbox"
+                                        id={`timeline-${level.id}`}
+                                        checked={levelEditData.enable_timeline}
+                                        onChange={(e) => setLevelEditData(prev => ({ ...prev, enable_timeline: e.target.checked }))}
+                                        className="rounded"
+                                      />
+                                      <Label htmlFor={`timeline-${level.id}`}>Timeline activée</Label>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label>Description</Label>
+                                    <Textarea
+                                      value={levelEditData.description}
+                                      onChange={(e) => setLevelEditData(prev => ({ ...prev, description: e.target.value }))}
+                                      rows={2}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Critères spatiaux requis</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={levelEditData.spatial_required}
+                                        onChange={(e) => setLevelEditData(prev => ({ ...prev, spatial_required: parseInt(e.target.value) || 0 }))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Critères temporels requis</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={levelEditData.temporal_required}
+                                        onChange={(e) => setLevelEditData(prev => ({ ...prev, temporal_required: parseInt(e.target.value) || 0 }))}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Configuration des sections */}
+                                <div className="space-y-4">
+                                  <h5 className="font-medium text-lg">Configuration des sections</h5>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Titre section spatiale</Label>
+                                      <Input
+                                        value={spatialSectionTitle}
+                                        onChange={(e) => setSpatialSectionTitle(e.target.value)}
+                                        placeholder="Ex: Pièces de la maison"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Icône section spatiale</Label>
+                                      <Input
+                                        value={spatialSectionIcon}
+                                        onChange={(e) => setSpatialSectionIcon(e.target.value)}
+                                        placeholder="🏠"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Titre section temporelle</Label>
+                                      <Input
+                                        value={temporalSectionTitle}
+                                        onChange={(e) => setTemporalSectionTitle(e.target.value)}
+                                        placeholder="Organiser votre temps"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Icône section temporelle</Label>
+                                      <Input
+                                        value={temporalSectionIcon}
+                                        onChange={(e) => setTemporalSectionIcon(e.target.value)}
+                                        placeholder="⏰"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Activités */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h5 className="font-medium text-lg">Activités ({levelActivities.length})</h5>
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => setLevelActivities([...levelActivities, { name: '', icon: '', category: 'activity' }])}
+                                    >
+                                      <Plus className="w-4 h-4 mr-1" />
+                                      Ajouter
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto">
+                                    {levelActivities.map((activity, index) => (
+                                      <div key={index} className="p-3 border rounded-lg space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <Badge variant="outline" className="text-xs">
+                                            {activity.category === 'activity' ? 'Activité' : 'Imprévu'}
+                                          </Badge>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setLevelActivities(levelActivities.filter((_, i) => i !== index))}
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        </div>
+                                        <Input
+                                          placeholder="Nom de l'activité"
+                                          value={activity.name}
+                                          onChange={(e) => {
+                                            const updated = [...levelActivities];
+                                            updated[index].name = e.target.value;
+                                            setLevelActivities(updated);
+                                          }}
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <Input
+                                            placeholder="🎯"
+                                            value={activity.icon}
+                                            onChange={(e) => {
+                                              const updated = [...levelActivities];
+                                              updated[index].icon = e.target.value;
+                                              setLevelActivities(updated);
+                                            }}
+                                          />
+                                          <select
+                                            value={activity.category}
+                                            onChange={(e) => {
+                                              const updated = [...levelActivities];
+                                              updated[index].category = e.target.value;
+                                              setLevelActivities(updated);
+                                            }}
+                                            className="px-3 py-2 border rounded-md text-sm"
+                                          >
+                                            <option value="activity">Activité</option>
+                                            <option value="twist">Imprévu</option>
+                                          </select>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Slots spatiaux */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h5 className="font-medium text-lg">Lieux ({levelSpatialSlots.length})</h5>
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => setLevelSpatialSlots([...levelSpatialSlots, { label: '', icon: '', x_position: 0, y_position: 0 }])}
+                                    >
+                                      <Plus className="w-4 h-4 mr-1" />
+                                      Ajouter
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+                                    {levelSpatialSlots.map((slot, index) => (
+                                      <div key={index} className="p-3 border rounded-lg space-y-2">
+                                        <div className="flex justify-end">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setLevelSpatialSlots(levelSpatialSlots.filter((_, i) => i !== index))}
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        </div>
+                                        <Input
+                                          placeholder="Nom du lieu"
+                                          value={slot.label}
+                                          onChange={(e) => {
+                                            const updated = [...levelSpatialSlots];
+                                            updated[index].label = e.target.value;
+                                            setLevelSpatialSlots(updated);
+                                          }}
+                                        />
+                                        <Input
+                                          placeholder="🏠"
+                                          value={slot.icon}
+                                          onChange={(e) => {
+                                            const updated = [...levelSpatialSlots];
+                                            updated[index].icon = e.target.value;
+                                            setLevelSpatialSlots(updated);
+                                          }}
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <Input
+                                            placeholder="X"
+                                            type="number"
+                                            value={slot.x_position}
+                                            onChange={(e) => {
+                                              const updated = [...levelSpatialSlots];
+                                              updated[index].x_position = parseInt(e.target.value) || 0;
+                                              setLevelSpatialSlots(updated);
+                                            }}
+                                          />
+                                          <Input
+                                            placeholder="Y"
+                                            type="number"
+                                            value={slot.y_position}
+                                            onChange={(e) => {
+                                              const updated = [...levelSpatialSlots];
+                                              updated[index].y_position = parseInt(e.target.value) || 0;
+                                              setLevelSpatialSlots(updated);
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Slots temporels */}
+                                {levelEditData.enable_timeline && (
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="font-medium text-lg">Moments de la journée ({levelTimeSlots.length})</h5>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => setLevelTimeSlots([...levelTimeSlots, { label: '', icon: '', period: 'morning' }])}
+                                      >
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Ajouter
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+                                      {levelTimeSlots.map((slot, index) => (
+                                        <div key={index} className="p-3 border rounded-lg space-y-2">
+                                          <div className="flex justify-end">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => setLevelTimeSlots(levelTimeSlots.filter((_, i) => i !== index))}
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                          <Input
+                                            placeholder="Nom du moment"
+                                            value={slot.label}
+                                            onChange={(e) => {
+                                              const updated = [...levelTimeSlots];
+                                              updated[index].label = e.target.value;
+                                              setLevelTimeSlots(updated);
+                                            }}
+                                          />
+                                          <Input
+                                            placeholder="🌅"
+                                            value={slot.icon}
+                                            onChange={(e) => {
+                                              const updated = [...levelTimeSlots];
+                                              updated[index].icon = e.target.value;
+                                              setLevelTimeSlots(updated);
+                                            }}
+                                          />
+                                          <select
+                                            value={slot.period}
+                                            onChange={(e) => {
+                                              const updated = [...levelTimeSlots];
+                                              updated[index].period = e.target.value;
+                                              setLevelTimeSlots(updated);
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-md text-sm"
+                                          >
+                                            <option value="morning">Matin</option>
+                                            <option value="noon">Midi</option>
+                                            <option value="afternoon">Après-midi</option>
+                                            <option value="evening">Soir</option>
+                                          </select>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex gap-2 pt-4 border-t">
+                                  <Button onClick={saveLevelEdit} size="sm">
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Sauvegarder
+                                  </Button>
+                                  <Button onClick={cancelEdit} variant="outline" size="sm">
+                                    <X className="w-4 h-4 mr-1" />
+                                    Annuler
+                                  </Button>
+                                </div>
+                              </div>
                            ) : (
                              // Mode affichage du niveau
                              <div className="flex items-center justify-between">
