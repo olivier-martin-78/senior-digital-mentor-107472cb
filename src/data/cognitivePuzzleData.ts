@@ -13,7 +13,7 @@ export const homeScenario: GameScenario = {
       enableTimeline: false,
       activities: [
         { id: 'breakfast', name: 'Petit-déjeuner', icon: '🍳', category: 'activity' },
-        { id: 'newspaper', name: 'Lecture du journal', icon: '📰', category: 'activity' },
+        { id: 'newspaper', name: 'Lecture du journal dans le canapé', icon: '📰', category: 'activity' },
         { id: 'nap', name: 'Sieste', icon: '😴', category: 'activity' },
         { id: 'dinner', name: 'Dîner', icon: '🍽️', category: 'activity' },
       ],
@@ -47,15 +47,15 @@ export const homeScenario: GameScenario = {
       enableTimeline: true,
       activities: [
         { id: 'cooking', name: 'Prendre ma douche', icon: '🚿', category: 'activity' },
-        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍳', category: 'activity' },
-        { id: 'plants', name: 'Changer mes draps de literie', icon: '🛏️', category: 'activity' },
-        { id: 'laundry', name: 'Réparer la voiture', icon: '🔧', category: 'activity' },
+        { id: 'cleaning', name: 'Préparer le déjeuner', icon: '🍗', category: 'activity' },
+        { id: 'plants', name: 'Dernière promenade du chien avant de dormir', icon: '🐕', category: 'activity' },
+        { id: 'laundry', name: 'Réparer la voiture à 15h', icon: '🚗', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
         { id: 'living', label: 'Salle de bain', icon: '🚿', x: 60, y: 30 },
         { id: 'bedroom', label: 'Chambre', icon: '🛏️', x: 20, y: 70 },
-        { id: 'garden', label: 'Garage', icon: '🚗', x: 60, y: 70 },
+        { id: 'garden', label: 'Garage', icon: '🧑‍🔧', x: 60, y: 70 },
       ],
       timeSlots: [
         { id: 'morning', label: 'Matin', icon: '🌅', period: 'morning' },
@@ -106,13 +106,13 @@ export const homeScenario: GameScenario = {
       description: 'Construisez une journée parfaite malgré les imprévus',
       enableTimeline: true,
       activities: [
-        { id: 'tv', name: 'Tartiner mes biscottes', icon: '🍳', category: 'activity' },
-        { id: 'reading', name: 'Ranger ma table de nuit', icon: '📚', category: 'activity' },
-        { id: 'music', name: 'Écoute musique', icon: '🎵', category: 'activity' },
-        { id: 'crafts', name: 'Bricolage', icon: '🔨', category: 'activity' },
+        { id: 'tv', name: 'Préparer mes tartines', icon: '🍞', category: 'activity' },
+        { id: 'reading', name: 'Lire au lit avant de m\'endormir', icon: '📖', category: 'activity' },
+        { id: 'music', name: 'Écouter le journal de 13h', icon: '📺', category: 'activity' },
+        { id: 'crafts', name: 'Bricoler après déjeuner', icon: '🔨', category: 'activity' },
       ],
       spatialSlots: [
-        { id: 'kitchen', label: 'Cuisine', icon: '🍳', x: 20, y: 30 },
+        { id: 'kitchen', label: 'Cuisine', icon: '🥘', x: 20, y: 30 },
         { id: 'living', label: 'Salon', icon: '🛋️', x: 60, y: 30 },
         { id: 'bedroom', label: 'Chambre', icon: '🛏️', x: 20, y: 70 },
         { id: 'workshop', label: 'Atelier', icon: '🔨', x: 60, y: 70 },
@@ -182,9 +182,10 @@ export const cityScenario: GameScenario = {
       ],
       spatialSlots: [
         { id: 'market', label: 'Marché', icon: '🏪', x: 20, y: 20 },
-        { id: 'cafe-spot', label: 'Café', icon: '☕', x: 70, y: 20 },
-        { id: 'park', label: 'Parc', icon: '🌳', x: 20, y: 70 },
-        { id: 'home', label: 'Maison', icon: '🏠', x: 70, y: 70 },
+        { id: 'home', label: 'Maison', icon: '🏠', x: 70, y: 20 },
+        { id: 'cafe-spot', label: 'Café', icon: '☕', x: 20, y: 70 },
+        { id: 'park', label: 'Parc', icon: '🌳', x: 70, y: 70 },
+
       ],
       timeSlots: [],
       twistEvents: [
@@ -220,10 +221,10 @@ export const cityScenario: GameScenario = {
         { id: 'grocery', label: 'Épicerie', icon: '🥬', x: 70, y: 70 },
       ],
       timeSlots: [
-        { id: 'morning', label: 'Matin', icon: '🕘', period: 'morning' },
-        { id: 'noon', label: 'Midi', icon: '🕛', period: 'noon' },
-        { id: 'afternoon', label: 'Après-midi', icon: '🕐', period: 'afternoon' },
-        { id: 'evening', label: 'Soir', icon: '🕕', period: 'evening' },
+        { id: 'morning', label: 'Matin', icon: '🌅', period: 'morning' },
+        { id: 'noon', label: 'Midi', icon: '☀️', period: 'noon' },
+        { id: 'afternoon', label: 'Après-midi', icon: '🌤️', period: 'afternoon' },
+        { id: 'evening', label: 'Soir', icon: '🌙', period: 'evening' },
       ],
       twistEvents: [
         {
@@ -269,22 +270,22 @@ export const cityScenario: GameScenario = {
       description: 'Maîtrisez une sortie complexe avec adaptations',
       enableTimeline: true,
       activities: [
-        { id: 'museum', name: 'Aller voir l\'exposition Picasso', icon: '🏛️', category: 'activity' },
-        { id: 'restaurant', name: 'Aller dîner à la pizzeria', icon: '🍽️', category: 'activity' },
-        { id: 'cinema', name: 'Acheter des croissants avant le PDJ', icon: '🥐', category: 'activity' },
-        { id: 'gym', name: 'Déjeuner avec une amie', icon: '🍽️', category: 'activity' },
+        { id: 'museum', name: 'Voir l\'exposition Picasso à 15h', icon: '🏛️', category: 'activity' },
+        { id: 'restaurant', name: 'Aller au cinéma à 20h', icon: '🎦', category: 'activity' },
+        { id: 'cinema', name: 'Manger des croissants au petit-déjeuner', icon: '🥐', category: 'activity' },
+        { id: 'gym', name: 'Déjeuner à 12h au restaurant', icon: '🍽️', category: 'activity' },
       ],
       spatialSlots: [
         { id: 'museum', label: 'Musée', icon: '🏛️', x: 20, y: 20 },
-        { id: 'restaurant', label: 'Restaurant', icon: '🍽️', x: 70, y: 20 },
+        { id: 'restaurant', label: 'Cinema', icon: '🍽️', x: 70, y: 20 },
         { id: 'cinema', label: 'Boulangerie', icon: '🥐', x: 20, y: 70 },
-        { id: 'gym', label: 'Brasserie', icon: '🍽️', x: 70, y: 70 },
+        { id: 'gym', label: 'Restaurant', icon: '🍽️', x: 70, y: 70 },
       ],
       timeSlots: [
-        { id: 'morning', label: 'Matin', icon: '🕘', period: 'morning' },
-        { id: 'noon', label: 'Midi', icon: '🕛', period: 'noon' },
-        { id: 'afternoon', label: 'Après-midi', icon: '🕐', period: 'afternoon' },
-        { id: 'evening', label: 'Soir', icon: '🕕', period: 'evening' },
+        { id: 'morning', label: 'Matin', icon: '🌅', period: 'morning' },
+        { id: 'noon', label: 'Midi', icon: '☀️', period: 'noon' },
+        { id: 'afternoon', label: 'Après-midi', icon: '🌤️', period: 'afternoon' },
+        { id: 'evening', label: 'Soir', icon: '🌙', period: 'evening' },
       ],
       twistEvents: [
         {
