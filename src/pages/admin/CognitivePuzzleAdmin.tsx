@@ -48,6 +48,13 @@ const CognitivePuzzleAdmin: React.FC = () => {
     description: '',
     thumbnail: ''
   });
+  const [levelEditData, setLevelEditData] = useState({
+    name: '',
+    description: '',
+    enable_timeline: false,
+    spatial_required: 0,
+    temporal_required: 0
+  });
 
   // Vérifier les permissions admin
   if (!hasRole('admin')) {
@@ -181,10 +188,56 @@ const CognitivePuzzleAdmin: React.FC = () => {
     }
   };
 
+  const startEditLevel = (level: Level) => {
+    setEditingLevel(level.id);
+    setLevelEditData({
+      name: level.name,
+      description: level.description,
+      enable_timeline: level.enable_timeline,
+      spatial_required: level.spatial_required,
+      temporal_required: level.temporal_required
+    });
+  };
+
+  const saveLevelEdit = async () => {
+    if (!editingLevel) return;
+
+    try {
+      const { error } = await supabase
+        .from('cognitive_puzzle_levels')
+        .update(levelEditData)
+        .eq('id', editingLevel);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Niveau modifié avec succès'
+      });
+
+      setEditingLevel(null);
+      loadScenarios();
+    } catch (error) {
+      console.error('Erreur lors de la modification du niveau:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le niveau',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const cancelEdit = () => {
     setEditingScenario(null);
     setEditingLevel(null);
     setEditFormData({ name: '', description: '', thumbnail: '' });
+    setLevelEditData({ 
+      name: '', 
+      description: '', 
+      enable_timeline: false, 
+      spatial_required: 0, 
+      temporal_required: 0 
+    });
   };
 
   const deleteScenario = async (id: string) => {
@@ -384,41 +437,111 @@ const CognitivePuzzleAdmin: React.FC = () => {
                 
                 {levels[scenario.id] && levels[scenario.id].length > 0 && (
                   <CardContent>
-                    <h4 className="font-medium mb-3">Niveaux configurés :</h4>
-                    <div className="space-y-2">
-                      {levels[scenario.id].map((level) => (
-                        <div
-                          key={level.id}
-                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              Niveau {level.level_number}: {level.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {level.description}
-                            </p>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs">
-                                Spatial: {level.spatial_required}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Temporel: {level.temporal_required}
-                              </Badge>
-                              {level.enable_timeline && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Timeline activée
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm">
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                     <h4 className="font-medium mb-3">Niveaux configurés :</h4>
+                     <div className="space-y-2">
+                       {levels[scenario.id].map((level) => (
+                         <div
+                           key={level.id}
+                           className="p-3 bg-muted rounded-lg"
+                         >
+                           {editingLevel === level.id ? (
+                             // Mode édition du niveau
+                             <div className="space-y-4">
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 <div>
+                                   <Label>Nom du niveau</Label>
+                                   <Input
+                                     value={levelEditData.name}
+                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, name: e.target.value }))}
+                                   />
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                   <input
+                                     type="checkbox"
+                                     id={`timeline-${level.id}`}
+                                     checked={levelEditData.enable_timeline}
+                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, enable_timeline: e.target.checked }))}
+                                     className="rounded"
+                                   />
+                                   <Label htmlFor={`timeline-${level.id}`}>Timeline activée</Label>
+                                 </div>
+                               </div>
+                               <div>
+                                 <Label>Description</Label>
+                                 <Textarea
+                                   value={levelEditData.description}
+                                   onChange={(e) => setLevelEditData(prev => ({ ...prev, description: e.target.value }))}
+                                   rows={2}
+                                 />
+                               </div>
+                               <div className="grid grid-cols-2 gap-4">
+                                 <div>
+                                   <Label>Critères spatiaux requis</Label>
+                                   <Input
+                                     type="number"
+                                     min="0"
+                                     value={levelEditData.spatial_required}
+                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, spatial_required: parseInt(e.target.value) || 0 }))}
+                                   />
+                                 </div>
+                                 <div>
+                                   <Label>Critères temporels requis</Label>
+                                   <Input
+                                     type="number"
+                                     min="0"
+                                     value={levelEditData.temporal_required}
+                                     onChange={(e) => setLevelEditData(prev => ({ ...prev, temporal_required: parseInt(e.target.value) || 0 }))}
+                                   />
+                                 </div>
+                               </div>
+                               <div className="flex gap-2">
+                                 <Button onClick={saveLevelEdit} size="sm">
+                                   <Save className="w-4 h-4 mr-1" />
+                                   Sauvegarder
+                                 </Button>
+                                 <Button onClick={cancelEdit} variant="outline" size="sm">
+                                   <X className="w-4 h-4 mr-1" />
+                                   Annuler
+                                 </Button>
+                               </div>
+                             </div>
+                           ) : (
+                             // Mode affichage du niveau
+                             <div className="flex items-center justify-between">
+                               <div>
+                                 <p className="font-medium">
+                                   Niveau {level.level_number}: {level.name}
+                                 </p>
+                                 <p className="text-sm text-muted-foreground">
+                                   {level.description}
+                                 </p>
+                                 <div className="flex gap-2 mt-1">
+                                   <Badge variant="secondary" className="text-xs">
+                                     Spatial: {level.spatial_required}
+                                   </Badge>
+                                   <Badge variant="secondary" className="text-xs">
+                                     Temporel: {level.temporal_required}
+                                   </Badge>
+                                   {level.enable_timeline && (
+                                     <Badge variant="secondary" className="text-xs">
+                                       Timeline activée
+                                     </Badge>
+                                   )}
+                                 </div>
+                               </div>
+                               <div className="flex gap-1">
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm"
+                                   onClick={() => startEditLevel(level)}
+                                 >
+                                   <Edit2 className="w-3 h-3" />
+                                 </Button>
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       ))}
                     </div>
                   </CardContent>
                 )}
