@@ -8,6 +8,8 @@ interface SpatialMapProps {
   selectedActivity: string | null;
   accessibilityMode: boolean;
   scenario: 'home' | 'city';
+  spatialTitle?: string;
+  spatialIcon?: string;
   onDrop: (spatialSlotId: string, activityId: string) => void;
   onPlaceSelected: (spatialSlotId: string) => void;
   onRemove: (activityId: string) => void;
@@ -21,6 +23,8 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
   selectedActivity,
   accessibilityMode,
   scenario,
+  spatialTitle = 'Plan du quartier',
+  spatialIcon = '🏙️',
   onDrop,
   onPlaceSelected,
   onRemove,
@@ -62,9 +66,9 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
       <div className="flex items-center gap-4 mb-6">
-        <div className="text-3xl">{scenario === 'home' ? '🏠' : '🏙️'}</div>
+        <div className="text-3xl">{spatialIcon}</div>
         <h3 className={`font-bold text-foreground ${accessibilityMode ? 'text-2xl' : 'text-xl'}`}>
-          {scenario === 'home' ? 'Plan de la maison' : 'Plan du quartier'}
+          {spatialTitle}
         </h3>
       </div>
 
@@ -72,7 +76,7 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
       <div className={`
         relative ${getBackgroundStyle()} rounded-2xl border-2 border-dashed border-primary/20
         transition-all duration-300 overflow-hidden
-        ${accessibilityMode ? 'min-h-[500px]' : 'min-h-[400px]'}
+        ${accessibilityMode ? 'min-h-[250px]' : 'min-h-[200px]'}
       `}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">

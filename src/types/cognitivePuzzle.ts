@@ -59,6 +59,10 @@ export interface GameLevel {
   timeSlots: TimeSlot[];
   enableTimeline: boolean;
   twistEvents: TwistEvent[];
+  spatialTitle?: string;
+  spatialIcon?: string;
+  temporalTitle?: string;
+  temporalIcon?: string;
   successCriteria: {
     spatialRequired: number;
     temporalRequired: number;

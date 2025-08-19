@@ -57,7 +57,7 @@ export const useCognitivePuzzle = () => {
           // Load levels for this scenario
           const { data: levelsData, error: levelsError } = await supabase
             .from('cognitive_puzzle_levels')
-            .select('*')
+            .select('*, spatial_title, spatial_icon, temporal_title, temporal_icon')
             .eq('scenario_id', scenario.id)
             .order('level_number');
           
@@ -125,6 +125,10 @@ export const useCognitivePuzzle = () => {
                 id: level.level_number,
                 name: level.name,
                 description: level.description,
+                spatialTitle: level.spatial_title || 'Plan du quartier',
+                spatialIcon: level.spatial_icon || '🏙️',
+                temporalTitle: level.temporal_title || 'Organiser votre temps', 
+                temporalIcon: level.temporal_icon || '⏰',
                 activities: (activities || []).map(activity => ({
                   id: activity.id,
                   name: activity.name,

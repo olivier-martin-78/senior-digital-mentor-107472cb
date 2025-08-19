@@ -626,8 +626,12 @@ export type Database = {
           level_number: number
           name: string
           scenario_id: string
+          spatial_icon: string | null
           spatial_required: number
+          spatial_title: string | null
+          temporal_icon: string | null
           temporal_required: number
+          temporal_title: string | null
           updated_at: string
         }
         Insert: {
@@ -638,8 +642,12 @@ export type Database = {
           level_number: number
           name: string
           scenario_id: string
+          spatial_icon?: string | null
           spatial_required?: number
+          spatial_title?: string | null
+          temporal_icon?: string | null
           temporal_required?: number
+          temporal_title?: string | null
           updated_at?: string
         }
         Update: {
@@ -650,8 +658,12 @@ export type Database = {
           level_number?: number
           name?: string
           scenario_id?: string
+          spatial_icon?: string | null
           spatial_required?: number
+          spatial_title?: string | null
+          temporal_icon?: string | null
           temporal_required?: number
+          temporal_title?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -226,18 +226,25 @@ const CognitivePuzzleAdmin: React.FC = () => {
       setLevelSpatialSlots(spatialRes.data || []);
       setLevelTimeSlots(temporalRes.data || []);
 
-      // Définir les titres par défaut selon le scénario
-      const scenarioId = level.scenario_id;
-      const scenario = scenarios.find(s => s.id === scenarioId);
-      if (scenario?.name === 'Journée type') {
-        setSpatialSectionTitle('Pièces de la maison');
-        setSpatialSectionIcon('🏠');
-      } else if (scenario?.name === 'Sortie en ville') {
-        setSpatialSectionTitle('Lieux en ville');
+      // Charger les titres existants depuis la base de données
+      const { data: levelData } = await supabase
+        .from('cognitive_puzzle_levels')
+        .select('spatial_title, spatial_icon, temporal_title, temporal_icon')
+        .eq('id', level.id)
+        .single();
+
+      if (levelData) {
+        setSpatialSectionTitle(levelData.spatial_title || 'Plan du quartier');
+        setSpatialSectionIcon(levelData.spatial_icon || '🏙️');
+        setTemporalSectionTitle(levelData.temporal_title || 'Organiser votre temps');
+        setTemporalSectionIcon(levelData.temporal_icon || '⏰');
+      } else {
+        // Titres par défaut si pas de données
+        setSpatialSectionTitle('Plan du quartier');
         setSpatialSectionIcon('🏙️');
+        setTemporalSectionTitle('Organiser votre temps');
+        setTemporalSectionIcon('⏰');
       }
-      setTemporalSectionTitle('Organiser votre temps');
-      setTemporalSectionIcon('⏰');
     } catch (error) {
       console.error('Erreur lors du chargement des données du niveau:', error);
     }
@@ -247,10 +254,16 @@ const CognitivePuzzleAdmin: React.FC = () => {
     if (!editingLevel) return;
 
     try {
-      // Mise à jour du niveau
+      // Mise à jour du niveau avec les titres de sections
       const { error: levelError } = await supabase
         .from('cognitive_puzzle_levels')
-        .update(levelEditData)
+        .update({
+          ...levelEditData,
+          spatial_title: spatialSectionTitle || 'Plan du quartier',
+          spatial_icon: spatialSectionIcon || '🏙️',
+          temporal_title: temporalSectionTitle || 'Organiser votre temps',
+          temporal_icon: temporalSectionIcon || '⏰'
+        })
         .eq('id', editingLevel);
 
       if (levelError) throw levelError;

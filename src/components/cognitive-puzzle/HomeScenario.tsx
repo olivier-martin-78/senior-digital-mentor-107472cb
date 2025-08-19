@@ -76,7 +76,15 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
       onCompleteLevel();
       // Removed automatic speech - now only on demand
     } else {
-      // Removed automatic speech - now only on demand
+      // Show feedback when verification fails
+      const spatialCount = gameState.placedItems.filter(item => item.spatialSlotId).length;
+      const temporalCount = gameState.placedItems.filter(item => item.timeSlotId).length;
+      const message = `Il vous manque encore des activités à placer. ${currentLevel.enableTimeline ? 
+        `Spatial: ${spatialCount}/${currentLevel.successCriteria.spatialRequired}, Temporel: ${temporalCount}/${currentLevel.successCriteria.temporalRequired}` : 
+        `Activités placées: ${spatialCount}/${currentLevel.successCriteria.spatialRequired}`}`;
+      
+      // You can add a toast here if you have access to it, or speak the message
+      onSpeak(message);
     }
   };
 
@@ -238,6 +246,8 @@ export const HomeScenario: React.FC<HomeScenarioProps> = ({
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             scenario={scenario.id as 'home' | 'city'}
+            spatialTitle={currentLevel.spatialTitle}
+            spatialIcon={currentLevel.spatialIcon}
             onDrop={handleSpatialDrop}
             onPlaceSelected={handleSpatialClick}
             onRemove={onRemoveItem}
