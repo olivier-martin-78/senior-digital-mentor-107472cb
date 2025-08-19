@@ -289,6 +289,20 @@ export const useCognitivePuzzle = () => {
     }));
   }, []);
 
+  const speak = useCallback((text: string, forceSpeak: boolean = false) => {
+    if (!gameState.voiceEnabled && !forceSpeak) return;
+    
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.8;
+      utterance.pitch = 1.0;
+      speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.warn('Speech synthesis not supported:', error);
+    }
+  }, [gameState.voiceEnabled]);
+
   const checkLevelCompletion = useCallback(() => {
     const scenario = getScenario(gameState.currentScenario);
     if (!scenario) return false;
@@ -299,9 +313,20 @@ export const useCognitivePuzzle = () => {
     const spatialPlacements = gameState.placedItems.filter(item => item.spatialSlotId).length;
     const temporalPlacements = gameState.placedItems.filter(item => item.timeSlotId).length;
 
-    return spatialPlacements >= level.successCriteria.spatialRequired &&
+    const isComplete = spatialPlacements >= level.successCriteria.spatialRequired &&
            temporalPlacements >= level.successCriteria.temporalRequired;
-  }, [gameState, getScenario]);
+    
+    if (!isComplete) {
+      // Provide feedback when verification fails
+      const message = `Il vous manque encore des activités à placer. ${level.enableTimeline ? 
+        `Spatial: ${spatialPlacements}/${level.successCriteria.spatialRequired}, Temporel: ${temporalPlacements}/${level.successCriteria.temporalRequired}` : 
+        `Activités placées: ${spatialPlacements}/${level.successCriteria.spatialRequired}`}`;
+      
+      speak(message);
+    }
+    
+    return isComplete;
+  }, [gameState, getScenario, speak]);
 
   const completeLevel = useCallback(() => {
     setGameState(prev => {
@@ -373,20 +398,6 @@ export const useCognitivePuzzle = () => {
       return newState;
     });
   }, [saveProgress]);
-
-  const speak = useCallback((text: string, forceSpeak: boolean = false) => {
-    if (!gameState.voiceEnabled && !forceSpeak) return;
-    
-    try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.8;
-      utterance.pitch = 1.0;
-      speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.warn('Speech synthesis not supported:', error);
-    }
-  }, [gameState.voiceEnabled]);
 
   const acceptTwist = useCallback(() => {
     setGameState(prev => {
