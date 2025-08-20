@@ -313,8 +313,15 @@ export const useCognitivePuzzle = () => {
     const spatialPlacements = gameState.placedItems.filter(item => item.spatialSlotId).length;
     const temporalPlacements = gameState.placedItems.filter(item => item.timeSlotId).length;
 
-    const isComplete = spatialPlacements >= level.successCriteria.spatialRequired &&
-           temporalPlacements >= level.successCriteria.temporalRequired;
+    // Check if spatial requirement is met
+    const spatialComplete = spatialPlacements >= level.successCriteria.spatialRequired;
+    
+    // Check if temporal requirement is met (only if timeline is enabled)
+    const temporalComplete = level.enableTimeline ? 
+      temporalPlacements >= level.successCriteria.temporalRequired : 
+      true; // If no timeline, temporal is always complete
+
+    const isComplete = spatialComplete && temporalComplete;
     
     if (!isComplete) {
       // Provide feedback when verification fails
@@ -323,6 +330,9 @@ export const useCognitivePuzzle = () => {
         `Activités placées: ${spatialPlacements}/${level.successCriteria.spatialRequired}`}`;
       
       speak(message);
+    } else {
+      // Provide success feedback
+      speak('Bravo ! Vous avez réussi ce niveau !');
     }
     
     return isComplete;
