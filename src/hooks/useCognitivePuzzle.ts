@@ -12,6 +12,12 @@ import type {
   TimeSlot
 } from '@/types/cognitivePuzzle';
 
+// Interface pour les dialogues
+interface Dialogue {
+  dialogue_key: string;
+  text_content: string;
+}
+
 const STORAGE_KEY = 'cognitive-puzzle-progress';
 
 const initialState: GameState = {
@@ -31,12 +37,36 @@ export const useCognitivePuzzle = () => {
   const [gameState, setGameState] = useState<GameState>(initialState);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<GameScenario[]>([]);
+  const [dialogues, setDialogues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   
+  // Load dialogues from Supabase
+  const loadDialogues = useCallback(async () => {
+    try {
+      const { data: dialoguesData, error } = await supabase
+        .from('cognitive_puzzle_dialogues')
+        .select('dialogue_key, text_content');
+      
+      if (error) throw error;
+      
+      const dialoguesMap = (dialoguesData || []).reduce((acc, dialogue) => {
+        acc[dialogue.dialogue_key] = dialogue.text_content;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setDialogues(dialoguesMap);
+    } catch (error) {
+      console.error('Error loading dialogues:', error);
+    }
+  }, []);
+
   // Load scenarios from Supabase
   const loadScenarios = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Load dialogues first
+      await loadDialogues();
       
       // Fetch scenarios
       const { data: scenariosData, error: scenariosError } = await supabase
@@ -289,6 +319,15 @@ export const useCognitivePuzzle = () => {
     }));
   }, []);
 
+  // Helper function to get dialogue text with variable replacement
+  const getDialogueText = useCallback((key: string, variables: Record<string, string | number> = {}) => {
+    let text = dialogues[key] || key;
+    Object.entries(variables).forEach(([variable, value]) => {
+      text = text.replace(new RegExp(`{${variable}}`, 'g'), String(value));
+    });
+    return text;
+  }, [dialogues]);
+
   const speak = useCallback((text: string, forceSpeak: boolean = false) => {
     if (!gameState.voiceEnabled && !forceSpeak) return;
     
@@ -325,14 +364,19 @@ export const useCognitivePuzzle = () => {
     
     if (!isComplete) {
       // Provide feedback when verification fails
-      const message = `Il vous manque encore des activités à placer. ${level.enableTimeline ? 
-        `Spatial: ${spatialPlacements}/${level.successCriteria.spatialRequired}, Temporel: ${temporalPlacements}/${level.successCriteria.temporalRequired}` : 
-        `Activités placées: ${spatialPlacements}/${level.successCriteria.spatialRequired}`}`;
+      const messageKey = level.enableTimeline ? 'level_incomplete_with_timeline' : 'level_incomplete_without_timeline';
+      const message = getDialogueText(messageKey, {
+        spatial_current: spatialPlacements,
+        spatial_required: level.successCriteria.spatialRequired,
+        temporal_current: temporalPlacements,
+        temporal_required: level.successCriteria.temporalRequired
+      });
       
       speak(message);
     } else {
       // Provide success feedback
-      speak('Bravo ! Vous avez réussi ce niveau !');
+      const successMessage = getDialogueText('level_success');
+      speak(successMessage);
     }
     
     return isComplete;
@@ -420,7 +464,8 @@ export const useCognitivePuzzle = () => {
     });
     
     if (!gameState.activeTwist?.adaptationChoices) {
-      speak('Défi accepté ! Continuez à jouer avec cette adaptation.');
+      const message = getDialogueText('twist_accepted');
+      speak(message);
     }
   }, [speak, gameState.activeTwist]);
 
@@ -430,7 +475,8 @@ export const useCognitivePuzzle = () => {
       activeTwist: null,
       twistChoicePhase: false,
     }));
-    speak('Choix d\'adaptation confirmé ! Continuez à jouer.');
+    const message = getDialogueText('adaptation_choice_confirmed');
+    speak(message);
   }, [speak]);
 
   const rejectTwist = useCallback(() => {
@@ -439,7 +485,8 @@ export const useCognitivePuzzle = () => {
       activeTwist: null,
       twistChoicePhase: false,
     }));
-    speak('Défi refusé. Vous continuez le niveau normalement.');
+    const message = getDialogueText('twist_rejected');
+    speak(message);
   }, [speak]);
 
   const selectActivity = useCallback((activityId: string) => {
@@ -450,9 +497,11 @@ export const useCognitivePuzzle = () => {
     
     if (activity) {
       if (selectedActivity === activityId) {
-        speak(`${activity.name} désélectionné`);
+        const message = getDialogueText('activity_deselected', { activity_name: activity.name });
+        speak(message);
       } else {
-        speak(`${activity.name} sélectionné. Cliquez maintenant sur un lieu ou un moment pour le placer.`);
+        const message = getDialogueText('activity_selected', { activity_name: activity.name });
+        speak(message);
       }
     }
   }, [gameState.currentScenario, gameState.currentLevel, selectedActivity, speak, getScenario]);
@@ -470,9 +519,22 @@ export const useCognitivePuzzle = () => {
     const timeSlot = level?.timeSlots.find(t => t.id === timeSlotId);
     
     if (activity) {
-      let message = `${activity.name} placé`;
-      if (spatialSlot) message += ` dans ${spatialSlot.label}`;
-      if (timeSlot) message += ` au ${timeSlot.label}`;
+      let messageKey = 'activity_placed_spatial_only';
+      const variables: Record<string, string> = { activity_name: activity.name };
+      
+      if (spatialSlot && timeSlot) {
+        messageKey = 'activity_placed_both';
+        variables.spatial_slot = spatialSlot.label;
+        variables.time_slot = timeSlot.label;
+      } else if (spatialSlot) {
+        messageKey = 'activity_placed_spatial_only';
+        variables.spatial_slot = spatialSlot.label;
+      } else if (timeSlot) {
+        messageKey = 'activity_placed_temporal_only';
+        variables.time_slot = timeSlot.label;
+      }
+      
+      const message = getDialogueText(messageKey, variables);
       speak(message);
     }
   }, [selectedActivity, placeItem, gameState.currentScenario, gameState.currentLevel, speak, getScenario]);

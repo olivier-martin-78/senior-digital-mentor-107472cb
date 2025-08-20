@@ -114,10 +114,10 @@ const CognitivePuzzleGame: React.FC = () => {
                   hover:shadow-2xl hover:scale-105
                   ${gameState.accessibilityMode ? 'p-10' : ''}
                 `}
-                onClick={() => {
-                  selectScenario(scenario.id);
-                  speak(`Vous avez sélectionné le Scénario : ${scenario.name}`);
-                }}
+                  onClick={() => {
+                    selectScenario(scenario.id);
+                    speak(`Vous avez sélectionné le Scénario : ${scenario.name}`);
+                  }}
               >
                 <div className="text-center">
                   <div className={`

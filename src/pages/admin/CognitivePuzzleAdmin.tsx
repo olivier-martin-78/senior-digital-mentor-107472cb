@@ -31,13 +31,24 @@ interface Level {
   temporal_required: number;
 }
 
+interface Dialogue {
+  id: string;
+  dialogue_key: string;
+  text_content: string;
+  description: string;
+  category: string;
+}
+
 const CognitivePuzzleAdmin: React.FC = () => {
   const { hasRole } = useAuth();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [levels, setLevels] = useState<{ [scenarioId: string]: Level[] }>({});
+  const [dialogues, setDialogues] = useState<Dialogue[]>([]);
+  const [activeTab, setActiveTab] = useState<'scenarios' | 'dialogues'>('scenarios');
   const [loading, setLoading] = useState(true);
   const [editingScenario, setEditingScenario] = useState<string | null>(null);
   const [editingLevel, setEditingLevel] = useState<string | null>(null);
+  const [editingDialogue, setEditingDialogue] = useState<string | null>(null);
   const [newScenario, setNewScenario] = useState({
     name: '',
     description: '',
@@ -47,6 +58,10 @@ const CognitivePuzzleAdmin: React.FC = () => {
     name: '',
     description: '',
     thumbnail: ''
+  });
+  const [dialogueEditData, setDialogueEditData] = useState({
+    text_content: '',
+    description: ''
   });
   const [levelEditData, setLevelEditData] = useState({
     name: '',
@@ -113,6 +128,26 @@ const CognitivePuzzleAdmin: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDialogues = async () => {
+    try {
+      const { data: dialoguesData, error } = await supabase
+        .from('cognitive_puzzle_dialogues')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+
+      setDialogues(dialoguesData || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des dialogues:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les dialogues',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -332,10 +367,51 @@ const CognitivePuzzleAdmin: React.FC = () => {
     }
   };
 
+  const startEditDialogue = (dialogue: Dialogue) => {
+    setEditingDialogue(dialogue.id);
+    setDialogueEditData({
+      text_content: dialogue.text_content,
+      description: dialogue.description || ''
+    });
+  };
+
+  const saveDialogueEdit = async () => {
+    if (!editingDialogue) return;
+
+    try {
+      const { error } = await supabase
+        .from('cognitive_puzzle_dialogues')
+        .update({
+          text_content: dialogueEditData.text_content,
+          description: dialogueEditData.description
+        })
+        .eq('id', editingDialogue);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Dialogue modifié avec succès'
+      });
+
+      setEditingDialogue(null);
+      loadDialogues();
+    } catch (error) {
+      console.error('Erreur lors de la modification du dialogue:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le dialogue',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const cancelEdit = () => {
     setEditingScenario(null);
     setEditingLevel(null);
+    setEditingDialogue(null);
     setEditFormData({ name: '', description: '', thumbnail: '' });
+    setDialogueEditData({ text_content: '', description: '' });
     setLevelEditData({ 
       name: '', 
       description: '', 
@@ -383,6 +459,7 @@ const CognitivePuzzleAdmin: React.FC = () => {
 
   useEffect(() => {
     loadScenarios();
+    loadDialogues();
   }, []);
 
   if (loading) {
@@ -403,72 +480,92 @@ const CognitivePuzzleAdmin: React.FC = () => {
           Administration - Puzzles Cognitifs
         </h1>
         <p className="text-muted-foreground">
-          Gérez les scénarios et niveaux du jeu de puzzle cognitif
+          Gérez les scénarios, niveaux et dialogues du jeu de puzzle cognitif
         </p>
       </div>
 
-      {/* Formulaire de création de scénario */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            Créer un nouveau scénario
-          </CardTitle>
-          <CardDescription>
-            Ajoutez un nouveau scénario de puzzle cognitif
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <Label htmlFor="name">Nom du scénario *</Label>
-              <Input
-                id="name"
-                value={newScenario.name}
-                onChange={(e) => setNewScenario(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: Journée à la maison"
-              />
-            </div>
-            <div>
-              <Label htmlFor="thumbnail">Emoji/Icône</Label>
-              <Input
-                id="thumbnail"
-                value={newScenario.thumbnail}
-                onChange={(e) => setNewScenario(prev => ({ ...prev, thumbnail: e.target.value }))}
-                placeholder="🏠"
-              />
-            </div>
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              value={newScenario.description}
-              onChange={(e) => setNewScenario(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Organisez votre journée à domicile avec soin..."
-              rows={3}
-            />
-          </div>
-          <Button onClick={createScenario} className="w-full md:w-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            Créer le scénario
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Navigation par onglets */}
+      <div className="flex space-x-1 mb-8">
+        <Button
+          variant={activeTab === 'scenarios' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('scenarios')}
+          className="px-6"
+        >
+          Scénarios & Niveaux
+        </Button>
+        <Button
+          variant={activeTab === 'dialogues' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('dialogues')}
+          className="px-6"
+        >
+          Dialogues vocaux
+        </Button>
+      </div>
 
-      {/* Liste des scénarios */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold">Scénarios existants</h2>
-        
-        {scenarios.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">Aucun scénario créé pour le moment.</p>
+      {activeTab === 'scenarios' && (
+        <>
+          {/* Formulaire de création de scénario */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Créer un nouveau scénario
+              </CardTitle>
+              <CardDescription>
+                Ajoutez un nouveau scénario de puzzle cognitif
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="name">Nom du scénario *</Label>
+                  <Input
+                    id="name"
+                    value={newScenario.name}
+                    onChange={(e) => setNewScenario(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Journée à la maison"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="thumbnail">Emoji/Icône</Label>
+                  <Input
+                    id="thumbnail"
+                    value={newScenario.thumbnail}
+                    onChange={(e) => setNewScenario(prev => ({ ...prev, thumbnail: e.target.value }))}
+                    placeholder="🏠"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={newScenario.description}
+                  onChange={(e) => setNewScenario(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Organisez votre journée à domicile avec soin..."
+                  rows={3}
+                />
+              </div>
+              <Button onClick={createScenario} className="w-full md:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Créer le scénario
+              </Button>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid gap-6">
-            {scenarios.map((scenario) => (
+
+          {/* Liste des scénarios */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold">Scénarios existants</h2>
+            
+            {scenarios.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Aucun scénario créé pour le moment.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-6">
+                {scenarios.map((scenario) => (
                 <Card key={scenario.id}>
                 <CardHeader>
                   {editingScenario === scenario.id ? (
@@ -902,6 +999,135 @@ const CognitivePuzzleAdmin: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === 'dialogues' && (
+        <div className="space-y-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold mb-2">Dialogues vocaux</h2>
+            <p className="text-muted-foreground">
+              Personnalisez tous les messages prononcés par la voix off du jeu. 
+              Utilisez {`{variable_name}`} pour insérer des variables dynamiques.
+            </p>
+          </div>
+
+          {dialogues.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">Aucun dialogue configuré.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {['navigation', 'validation', 'activity', 'twist', 'status'].map(category => {
+                const categoryDialogues = dialogues.filter(d => d.category === category);
+                if (categoryDialogues.length === 0) return null;
+
+                const categoryTitles: Record<string, string> = {
+                  navigation: 'Navigation',
+                  validation: 'Validation des niveaux',
+                  activity: 'Interaction avec les activités',
+                  twist: 'Imprévus et défis',
+                  status: 'Messages de statut'
+                };
+
+                return (
+                  <Card key={category}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{categoryTitles[category]}</CardTitle>
+                      <CardDescription>
+                        {categoryDialogues.length} dialogue{categoryDialogues.length > 1 ? 's' : ''}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {categoryDialogues.map((dialogue) => (
+                          <div key={dialogue.id} className="p-4 border rounded-lg">
+                            {editingDialogue === dialogue.id ? (
+                              // Mode édition
+                              <div className="space-y-4">
+                                <div>
+                                  <Label>Clé du dialogue</Label>
+                                  <Input
+                                    value={dialogue.dialogue_key}
+                                    disabled
+                                    className="bg-muted"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Texte prononcé</Label>
+                                  <Textarea
+                                    value={dialogueEditData.text_content}
+                                    onChange={(e) => setDialogueEditData(prev => ({ ...prev, text_content: e.target.value }))}
+                                    rows={3}
+                                    placeholder="Texte à prononcer..."
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Variables disponibles : {dialogue.text_content.match(/{[^}]+}/g)?.join(', ') || 'Aucune'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label>Description (optionnel)</Label>
+                                  <Input
+                                    value={dialogueEditData.description}
+                                    onChange={(e) => setDialogueEditData(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="Description du dialogue..."
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={saveDialogueEdit} size="sm">
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Sauvegarder
+                                  </Button>
+                                  <Button onClick={cancelEdit} variant="outline" size="sm">
+                                    <X className="w-4 h-4 mr-1" />
+                                    Annuler
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // Mode affichage
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {dialogue.dialogue_key}
+                                    </Badge>
+                                  </div>
+                                  <p className="font-medium mb-1">{dialogue.text_content}</p>
+                                  {dialogue.description && (
+                                    <p className="text-sm text-muted-foreground">{dialogue.description}</p>
+                                  )}
+                                  {dialogue.text_content.match(/{[^}]+}/g) && (
+                                    <div className="mt-2">
+                                      <p className="text-xs text-muted-foreground">
+                                        Variables : {dialogue.text_content.match(/{[^}]+}/g)?.join(', ')}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => startEditDialogue(dialogue)}
+                                >
+                                  <Edit2 className="w-4 h-4 mr-1" />
+                                  Modifier
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
