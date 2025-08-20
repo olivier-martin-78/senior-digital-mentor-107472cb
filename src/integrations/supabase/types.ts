@@ -617,6 +617,36 @@ export type Database = {
           },
         ]
       }
+      cognitive_puzzle_dialogues: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          dialogue_key: string
+          id: string
+          text_content: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          dialogue_key: string
+          id?: string
+          text_content: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          dialogue_key?: string
+          id?: string
+          text_content?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cognitive_puzzle_levels: {
         Row: {
           created_at: string
