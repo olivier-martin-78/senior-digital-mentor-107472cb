@@ -1,232 +1,378 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useMemo, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Filter, Play, Calendar, Clock, Brain } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Gamepad2, Plus, Brain, Languages, KeySquare, Eye } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
+import { useActivitySubTags } from '@/hooks/useActivitySubTags';
+import { useAuth } from '@/contexts/AuthContext';
+import ActivityCard from '@/components/activities/ActivityCard';
+import { UserActionsService } from '@/services/UserActionsService';
 
 export default function GamesPage() {
   const navigate = useNavigate();
-  const { activities, loading } = useActivities('games');
-  const [selectedSubTag, setSelectedSubTag] = useState<string>('all');
+  const { user, hasRole } = useAuth();
+  const { activities, loading, canEditActivity } = useActivities('games');
+  const { subTags } = useActivitySubTags('games');
+  const [subTagFilter, setSubTagFilter] = useState<string>('');
 
-  // Jeux intégrés
-  const integratedGames = [
-    {
-      title: 'Jeu des Contraires',
-      description: 'Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.',
-      subTag: 'Jeu des Contraires',
-      path: '/activities/games/opposites'
-    },
-    {
-      title: 'Sudoku',
-      description: 'Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.',
-      subTag: 'Sudoku',
-      path: '/activities/games/sudoku'
-    },
-    {
-      title: 'Mots Croisés Fléchés',
-      description: 'Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.',
-      subTag: 'Mots Croisés Fléchés',
-      path: '/activities/games/crosswords'
-    },
-    {
-      title: 'Jeu de Traduction',
-      description: 'Traduisez 20 mots entre le français et l\'anglais. Deux modes disponibles avec historique des scores.',
-      subTag: 'Jeu de Traduction',
-      path: '/activities/games/translation'
-    },
-    {
-      title: 'Mot à décoder',
-      description: 'Retrouvez le mot grâce au pavé T9. Indice thématique et aide possible.',
-      subTag: 'Mot à décoder',
-      path: '/activities/games/decode'
-    },
-    {
-      title: 'Quiz Années 70',
-      description: 'Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.',
-      subTag: 'Quiz Années 70',
-      path: '/activities/games/quiz-70s'
-    },
-    {
-      title: 'L\'Illusionniste',
-      description: 'Entraînez votre attention avec l\'effet Stroop ! Identifiez le mot, pas la couleur affichée.',
-      subTag: 'L\'Illusionniste',
-      path: '/activities/games/stroop'
-    },
-    {
-      title: 'Combien de fois...',
-      description: 'Mémorisez le nombre d\'occurrences de chaque image durant le défilement.',
-      subTag: 'Combien de fois...',
-      path: '/activities/games/counting'
-    },
-    {
-      title: 'Activité spatio-temporelle',
-      description: 'Développez vos capacités cognitives avec des scénarios immersifs. Gérez les imprévus et prenez des décisions adaptées.',
-      subTag: 'Activité spatio-temporelle',
-      path: '/activities/games/object-assembly'
-    }
-  ];
+  // Vérifier si l'utilisateur peut ajouter des activités
+  const canAddActivity = user && (hasRole('admin') || hasRole('editor') || hasRole('createur_activite'));
 
-  // Obtenir toutes les sous-activités uniques
-  const allSubTags = useMemo(() => {
-    const integratedSubTags = integratedGames.map(game => game.subTag);
-    const activitySubTags = activities
-      .filter(activity => activity.activity_sub_tags?.name)
-      .map(activity => activity.activity_sub_tags.name);
-    
-    return [...new Set([...integratedSubTags, ...activitySubTags])].sort();
-  }, [activities]);
-
-  // Filtrer les jeux
-  const filteredIntegratedGames = selectedSubTag === 'all' 
-    ? integratedGames 
-    : integratedGames.filter(game => game.subTag === selectedSubTag);
-
-  const filteredActivities = selectedSubTag === 'all' 
-    ? activities 
-    : activities.filter(activity => activity.activity_sub_tags?.name === selectedSubTag);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+  const handleEditActivity = (activityId: string) => {
+    navigate(`/create-activities/games?edit=${activityId}`);
   };
 
+  // Jeux intégrés avec les beaux dégradés
+  const getIntegratedGames = () => {
+    const remueMeningesSubTag = subTags.find(tag => tag.name === 'Remue-méninges');
+    const remueMeningesId = remueMeningesSubTag?.id;
+    
+    const games = [
+      {
+        key: "opposites",
+        subTagId: remueMeningesId || null,
+        card: <Card key="opposites" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/opposites" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'opposites', 'Jeu des Contraires')}
+          >
+            <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Jeu des Contraires</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Jeu des Contraires</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "sudoku",
+        subTagId: remueMeningesId || null,
+        card: <Card key="sudoku" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/sudoku" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'sudoku', 'Sudoku')}
+          >
+            <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Sudoku</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Sudoku</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "crossword",
+        subTagId: remueMeningesId || null,
+        card: <Card key="crossword" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/crossword" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'crossword', 'Mots Croisés Fléchés')}
+          >
+            <div className="h-48 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Mots Croisés Fléchés</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Mots Croisés Fléchés</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "translation",
+        subTagId: remueMeningesId || null,
+        card: <Card key="translation" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/translation" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'translation', 'Jeu de Traduction')}
+          >
+            <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Languages className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Jeu de Traduction</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Jeu de Traduction</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Traduisez 20 mots entre le français et l'anglais. Deux modes disponibles avec historique des scores.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "decoder",
+        subTagId: remueMeningesId || null,
+        card: <Card key="decoder" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/decoder" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'decoder', 'Mot à décoder')}
+          >
+            <div className="h-48 bg-gradient-to-br from-lime-400 to-cyan-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <KeySquare className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Mot à décoder</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Mot à décoder</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Retrouvez le mot grâce au pavé T9. Indice thématique et aide possible.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "quiz70s",
+        subTagId: remueMeningesId || null,
+        card: <Card key="quiz70s" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/quiz70s" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'quiz70s', 'Quiz Années 70')}
+          >
+            <div className="h-48 bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Gamepad2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Quiz Années 70</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Quiz Années 70</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "illusionist",
+        subTagId: remueMeningesId || null,
+        card: <Card key="illusionist" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/illusionist" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'illusionist-game', 'L\'Illusionniste')}
+          >
+            <div className="h-48 bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Eye className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">L'Illusionniste</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">L'Illusionniste</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Entraînez votre attention avec l'effet Stroop ! Identifiez le mot, pas la couleur affichée.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "memory-count",
+        subTagId: remueMeningesId || null,
+        card: <Card key="memory-count" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/memory-count" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'memory-count-game', 'Combien de fois...')}
+          >
+            <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Brain className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Combien de fois...</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Combien de fois...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Mémorisez le nombre d'occurrences de chaque image durant le défilement.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "object-assembly",
+        subTagId: remueMeningesId || null,
+        card: <Card key="object-assembly" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/object-assembly" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'object-assembly-game', 'Activité spatio-temporelle')}
+          >
+            <div className="h-48 bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Brain className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Activité spatio-temporelle</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Activité spatio-temporelle</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Développez vos capacités cognitives avec des scénarios immersifs. Gérez les imprévus et prenez des décisions adaptées.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      }
+    ];
+
+    // Filtrer par sous-activité si un filtre est appliqué
+    if (subTagFilter && subTagFilter !== '') {
+      if (subTagFilter === 'null') {
+        return games.filter(game => !game.subTagId).map(game => game.card);
+      }
+      return games.filter(game => game.subTagId === subTagFilter).map(game => game.card);
+    }
+    
+    // Si aucun filtre n'est appliqué, montrer tous les jeux
+    return games.map(game => game.card);
+  };
+
+  const filterActivitiesBySubTag = (activities: any[], filter: string) => {
+    if (!filter) return activities;
+    if (filter === 'null') {
+      return activities.filter(activity => !activity.sub_activity_tag_id);
+    }
+    return activities.filter(activity => activity.sub_activity_tag_id === filter);
+  };
+
+  const filteredActivities = filterActivitiesBySubTag(activities, subTagFilter);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/activities')}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Retour aux activités
-            </Button>
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link to="/activities" className="flex items-center gap-2 text-tranches-dustyblue hover:text-tranches-dustyblue/80 mr-4">
+              <ArrowLeft className="w-5 h-5" />
+              <span>Retour</span>
+            </Link>
+            <div className="flex items-center">
+              <Gamepad2 className="w-8 h-8 text-tranches-dustyblue mr-3" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Jeux cognitifs</h1>
+                <p className="text-gray-600">Jeux ludiques et divertissants pour stimuler l'esprit</p>
+              </div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Jeux Cognitifs</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container py-8">
-        <div className="space-y-8">
-          {/* Page Header */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-primary">
-              Jeux Cognitifs
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Jeux ludiques et divertissants pour stimuler l'esprit
-            </p>
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <Button onClick={() => navigate('/activities/create')} className="gap-2">
-              <Plus className="h-4 w-4" />
+          {canAddActivity && (
+            <Link 
+              to="/create-activities/games"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-primary hover:scale-105"
+            >
+              <Plus className="h-5 w-5" />
               Ajouter une activité
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedSubTag} onValueChange={setSelectedSubTag}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filtrer par sous-activité" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les sous-activités</SelectItem>
-                  {allSubTags.map((subTag) => (
-                    <SelectItem key={subTag} value={subTag}>
-                      {subTag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Games Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Jeux intégrés */}
-            {filteredIntegratedGames.map((game, index) => (
-              <Card key={`integrated-${index}`} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(game.path)}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-lg">{game.title}</CardTitle>
-                      <CardDescription>{game.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{game.subTag}</Badge>
-                    <Button size="sm" className="gap-2">
-                      <Play className="h-4 w-4" />
-                      Jouer
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* Activités de la base de données */}
-            {filteredActivities.map((activity) => (
-              <Card key={activity.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.open(activity.link, '_blank')}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-lg">{activity.title}</CardTitle>
-                      {activity.activity_date && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {formatDate(activity.activity_date)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">
-                      {activity.activity_sub_tags?.name || 'Non catégorisé'}
-                    </Badge>
-                    <Button size="sm" className="gap-2">
-                      <Play className="h-4 w-4" />
-                      Jouer
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {loading && (
-            <div className="text-center text-muted-foreground">
-              Chargement des activités...
-            </div>
-          )}
-
-          {!loading && filteredIntegratedGames.length === 0 && filteredActivities.length === 0 && (
-            <div className="text-center text-muted-foreground">
-              Aucun jeu trouvé pour cette catégorie.
-            </div>
+            </Link>
           )}
         </div>
-      </main>
+
+        {/* Filtre par sous-activité */}
+        <div className="mb-6">
+          <Label htmlFor="sub-tag-filter">Filtrer par sous-activité</Label>
+          <Select
+            value={subTagFilter || 'all'}
+            onValueChange={(value) => setSubTagFilter(value === 'all' ? '' : value)}
+          >
+            <SelectTrigger className="w-80">
+              <SelectValue placeholder="Sélectionner une sous-activité" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les sous-activités</SelectItem>
+              <SelectItem value="null">Non catégorisées</SelectItem>
+              {subTags.map((subTag) => (
+                <SelectItem key={subTag.id} value={subTag.id}>
+                  {subTag.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Chargement des activités...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {/* Ajouter les jeux intégrés en premier */}
+            {getIntegratedGames()}
+            
+            {filteredActivities.map((activity) => {
+              const isYouTube = activity.link?.includes('youtube.com') || activity.link?.includes('youtu.be');
+              return (
+                <ActivityCard
+                  key={activity.id}
+                  title={activity.title}
+                  link={activity.link}
+                  thumbnailUrl={activity.thumbnail_url}
+                  activity={activity}
+                  onEdit={canEditActivity(activity) ? () => handleEditActivity(activity.id) : undefined}
+                  activityDate={activity.activity_date}
+                  isYouTube={isYouTube}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {!loading && filteredActivities.length === 0 && getIntegratedGames().length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Aucun jeu trouvé pour cette catégorie.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
+}
