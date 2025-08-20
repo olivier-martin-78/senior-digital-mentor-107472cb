@@ -1632,6 +1632,105 @@ export type Database = {
         }
         Relationships: []
       }
+      object_assembly_game_assets: {
+        Row: {
+          alt_text: string | null
+          asset_name: string
+          asset_type: string
+          asset_url: string
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          alt_text?: string | null
+          asset_name: string
+          asset_type: string
+          asset_url: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          alt_text?: string | null
+          asset_name?: string
+          asset_type?: string
+          asset_url?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      object_assembly_game_sessions: {
+        Row: {
+          adaptations_triggered: Json | null
+          completion_status: string
+          completion_time: number | null
+          created_at: string
+          current_errors: number
+          hints_used: number
+          id: string
+          level_id: string
+          scenario_id: string
+          score: number
+          session_data: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adaptations_triggered?: Json | null
+          completion_status?: string
+          completion_time?: number | null
+          created_at?: string
+          current_errors?: number
+          hints_used?: number
+          id?: string
+          level_id: string
+          scenario_id: string
+          score?: number
+          session_data?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adaptations_triggered?: Json | null
+          completion_status?: string
+          completion_time?: number | null
+          created_at?: string
+          current_errors?: number
+          hints_used?: number
+          id?: string
+          level_id?: string
+          scenario_id?: string
+          score?: number
+          session_data?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "object_assembly_game_sessions_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "object_assembly_game_sessions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "cognitive_puzzle_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_categories: {
         Row: {
           category_id: string
