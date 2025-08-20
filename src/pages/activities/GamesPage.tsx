@@ -1,56 +1,97 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Brain, Clock, Target } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Plus, Filter, Play, Calendar, Clock, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useActivities } from '@/hooks/useActivities';
 
 export default function GamesPage() {
   const navigate = useNavigate();
+  const { activities, loading } = useActivities('games');
+  const [selectedSubTag, setSelectedSubTag] = useState<string>('all');
 
-  const games = [
+  // Jeux intégrés
+  const integratedGames = [
     {
-      id: 'object-assembly',
-      title: 'Assemblage d\'Objets dans l\'Espace et le Temps',
-      description: 'Stimulez votre mémoire spatiale et temporelle en organisant des objets familiers dans votre maison selon les bonnes séquences.',
-      icon: '🏠🧩',
-      difficulty: 'Adaptatif',
-      duration: '10-30 min',
-      benefits: ['Mémoire spatiale', 'Séquençage temporel', 'Orientation'],
-      scenarios: 5,
-      levels: 15,
-      path: '/activities/games/object-assembly',
-      featured: true
+      title: 'Jeu des Contraires',
+      description: 'Associez les mots contraires entre eux. Plusieurs niveaux de difficulté disponibles.',
+      subTag: 'Jeu des Contraires',
+      path: '/activities/games/opposites'
     },
     {
-      id: 'coming-soon-1',
-      title: 'Mémoire des Visages',
-      description: 'Entraînez votre reconnaissance faciale et votre mémoire des personnes.',
-      icon: '👥💭',
-      difficulty: 'Facile',
-      duration: '5-15 min',
-      benefits: ['Reconnaissance faciale', 'Mémoire des noms'],
-      scenarios: 3,
-      levels: 9,
-      path: '',
-      featured: false,
-      comingSoon: true
+      title: 'Sudoku',
+      description: 'Jeu de logique classique avec 5 niveaux de difficulté. Remplissez la grille 9x9 avec les chiffres de 1 à 9.',
+      subTag: 'Sudoku',
+      path: '/activities/games/sudoku'
     },
     {
-      id: 'coming-soon-2',
-      title: 'Navigation Virtuelle',
-      description: 'Parcourez des environnements virtuels pour renforcer votre orientation spatiale.',
-      icon: '🗺️🧭',
-      difficulty: 'Moyen',
-      duration: '15-45 min',
-      benefits: ['Orientation spatiale', 'Navigation', 'Repères visuels'],
-      scenarios: 4,
-      levels: 12,
-      path: '',
-      featured: false,
-      comingSoon: true
+      title: 'Mots Croisés Fléchés',
+      description: 'Remplissez la grille en suivant les définitions et les flèches. 5 niveaux de difficulté disponibles.',
+      subTag: 'Mots Croisés Fléchés',
+      path: '/activities/games/crosswords'
+    },
+    {
+      title: 'Jeu de Traduction',
+      description: 'Traduisez 20 mots entre le français et l\'anglais. Deux modes disponibles avec historique des scores.',
+      subTag: 'Jeu de Traduction',
+      path: '/activities/games/translation'
+    },
+    {
+      title: 'Mot à décoder',
+      description: 'Retrouvez le mot grâce au pavé T9. Indice thématique et aide possible.',
+      subTag: 'Mot à décoder',
+      path: '/activities/games/decode'
+    },
+    {
+      title: 'Quiz Années 70',
+      description: 'Testez vos connaissances sur cette décennie fascinante ! 15 questions sur les événements marquants des années 70.',
+      subTag: 'Quiz Années 70',
+      path: '/activities/games/quiz-70s'
+    },
+    {
+      title: 'L\'Illusionniste',
+      description: 'Entraînez votre attention avec l\'effet Stroop ! Identifiez le mot, pas la couleur affichée.',
+      subTag: 'L\'Illusionniste',
+      path: '/activities/games/stroop'
+    },
+    {
+      title: 'Combien de fois...',
+      description: 'Mémorisez le nombre d\'occurrences de chaque image durant le défilement.',
+      subTag: 'Combien de fois...',
+      path: '/activities/games/counting'
+    },
+    {
+      title: 'Activité spatio-temporelle',
+      description: 'Développez vos capacités cognitives avec des scénarios immersifs. Gérez les imprévus et prenez des décisions adaptées.',
+      subTag: 'Activité spatio-temporelle',
+      path: '/activities/games/object-assembly'
     }
   ];
+
+  // Obtenir toutes les sous-activités uniques
+  const allSubTags = useMemo(() => {
+    const integratedSubTags = integratedGames.map(game => game.subTag);
+    const activitySubTags = activities
+      .filter(activity => activity.activity_sub_tags?.name)
+      .map(activity => activity.activity_sub_tags.name);
+    
+    return [...new Set([...integratedSubTags, ...activitySubTags])].sort();
+  }, [activities]);
+
+  // Filtrer les jeux
+  const filteredIntegratedGames = selectedSubTag === 'all' 
+    ? integratedGames 
+    : integratedGames.filter(game => game.subTag === selectedSubTag);
+
+  const filteredActivities = selectedSubTag === 'all' 
+    ? activities 
+    : activities.filter(activity => activity.activity_sub_tags?.name === selectedSubTag);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
@@ -82,187 +123,110 @@ export default function GamesPage() {
           {/* Page Header */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold text-primary">
-              Jeux Cognitifs Adaptatifs
+              Jeux Cognitifs
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Des jeux conçus spécialement pour stimuler la mémoire, l'orientation et les fonctions cognitives. 
-              Chaque jeu s'adapte automatiquement à vos performances pour maintenir un défi optimal.
+              Jeux ludiques et divertissants pour stimuler l'esprit
             </p>
           </div>
 
-          {/* Featured Game */}
-          {games.filter(game => game.featured).map((game) => (
-            <Card key={game.id} className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl">{game.icon}</span>
-                      <Badge className="bg-primary text-primary-foreground">
-                        Recommandé
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-2xl">{game.title}</CardTitle>
-                    <CardDescription className="text-lg">
-                      {game.description}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    size="lg"
-                    onClick={() => navigate(game.path)}
-                    className="gap-2"
-                  >
-                    <Play className="h-5 w-5" />
-                    Jouer maintenant
-                  </Button>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>{game.scenarios}</strong> scénarios
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>{game.levels}</strong> niveaux
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{game.duration}</span>
-                  </div>
-                  <div className="text-sm">
-                    <Badge variant="outline">{game.difficulty}</Badge>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Bénéfices cognitifs :
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {game.benefits.map((benefit) => (
-                      <Badge key={benefit} variant="secondary" className="text-xs">
-                        {benefit}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {/* Other Games */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-center">Autres jeux disponibles</h2>
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <Button onClick={() => navigate('/activities/create')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter une activité
+            </Button>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              {games.filter(game => !game.featured).map((game) => (
-                <Card key={game.id} className={game.comingSoon ? "opacity-60" : ""}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-3xl">{game.icon}</span>
-                          {game.comingSoon && (
-                            <Badge variant="outline">Bientôt disponible</Badge>
-                          )}
-                        </div>
-                        <CardTitle className="text-xl">{game.title}</CardTitle>
-                        <CardDescription>{game.description}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          <strong>{game.scenarios}</strong> scénarios
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          <strong>{game.levels}</strong> niveaux
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{game.duration}</span>
-                      </div>
-                      <div className="text-sm">
-                        <Badge variant="outline">{game.difficulty}</Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Bénéfices cognitifs :
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {game.benefits.map((benefit) => (
-                            <Badge key={benefit} variant="secondary" className="text-xs">
-                              {benefit}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <Button
-                        className="w-full"
-                        disabled={game.comingSoon}
-                        onClick={() => !game.comingSoon && navigate(game.path)}
-                      >
-                        {game.comingSoon ? 'Bientôt disponible' : 'Jouer'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedSubTag} onValueChange={setSelectedSubTag}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filtrer par sous-activité" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les sous-activités</SelectItem>
+                  {allSubTags.map((subTag) => (
+                    <SelectItem key={subTag} value={subTag}>
+                      {subTag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Info Section */}
-          <Card className="bg-muted/30">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <h3 className="text-xl font-semibold">Pourquoi ces jeux ?</h3>
-                <div className="grid md:grid-cols-3 gap-6 text-sm">
-                  <div className="space-y-2">
-                    <div className="text-2xl">🧠</div>
-                    <h4 className="font-medium">Scientifiquement validés</h4>
-                    <p className="text-muted-foreground">
-                      Basés sur des recherches en neuropsychologie et adaptés aux besoins spécifiques.
-                    </p>
+          {/* Games Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Jeux intégrés */}
+            {filteredIntegratedGames.map((game, index) => (
+              <Card key={`integrated-${index}`} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(game.path)}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <CardTitle className="text-lg">{game.title}</CardTitle>
+                      <CardDescription>{game.description}</CardDescription>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-2xl">⚡</div>
-                    <h4 className="font-medium">Adaptation en temps réel</h4>
-                    <p className="text-muted-foreground">
-                      La difficulté s'ajuste automatiquement pour maintenir un défi optimal.
-                    </p>
+                </CardHeader>
+                
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">{game.subTag}</Badge>
+                    <Button size="sm" className="gap-2">
+                      <Play className="h-4 w-4" />
+                      Jouer
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-2xl">♿</div>
-                    <h4 className="font-medium">Accessibilité maximale</h4>
-                    <p className="text-muted-foreground">
-                      Modes spéciaux pour malvoyants, grandes zones tactiles, guidance vocale.
-                    </p>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* Activités de la base de données */}
+            {filteredActivities.map((activity) => (
+              <Card key={activity.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.open(activity.link, '_blank')}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <CardTitle className="text-lg">{activity.title}</CardTitle>
+                      {activity.activity_date && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {formatDate(activity.activity_date)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardHeader>
+                
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">
+                      {activity.activity_sub_tags?.name || 'Non catégorisé'}
+                    </Badge>
+                    <Button size="sm" className="gap-2">
+                      <Play className="h-4 w-4" />
+                      Jouer
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {loading && (
+            <div className="text-center text-muted-foreground">
+              Chargement des activités...
+            </div>
+          )}
+
+          {!loading && filteredIntegratedGames.length === 0 && filteredActivities.length === 0 && (
+            <div className="text-center text-muted-foreground">
+              Aucun jeu trouvé pour cette catégorie.
+            </div>
+          )}
         </div>
       </main>
     </div>
   );
-}
+};
+
