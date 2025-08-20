@@ -6,7 +6,14 @@ import { TemporalTimeline } from './TemporalTimeline';
 import { DraggableObjectsList } from './DraggableObjectsList';
 
 export const GameBoard: React.FC = () => {
-  const { gameState, scenarios } = useObjectAssemblyGame();
+  const { 
+    gameState, 
+    selectedActivity, 
+    scenarios, 
+    selectActivity, 
+    placeSelectedActivity, 
+    speak 
+  } = useObjectAssemblyGame();
 
   const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
   const currentLevel = currentScenario?.levels.find(l => l.level_number === gameState.currentLevel);
@@ -43,7 +50,10 @@ export const GameBoard: React.FC = () => {
               timeSlots={currentLevel.timeSlots}
               placedItems={gameState.placedItems}
               activities={currentLevel.activities}
+              selectedActivity={selectedActivity}
               accessibilityMode={gameState.accessibilityMode}
+              onPlaceSelected={(timeSlotId) => placeSelectedActivity(undefined, timeSlotId)}
+              onSpeak={speak}
             />
           </CardContent>
         </Card>
@@ -62,7 +72,10 @@ export const GameBoard: React.FC = () => {
             spatialSlots={currentLevel.spatialSlots}
             placedItems={gameState.placedItems}
             activities={currentLevel.activities}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
+            onPlaceSelected={placeSelectedActivity}
+            onSpeak={speak}
           />
         </CardContent>
       </Card>
@@ -76,8 +89,11 @@ export const GameBoard: React.FC = () => {
           <DraggableObjectsList 
             activities={currentLevel.activities}
             placedItems={gameState.placedItems}
+            selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             adaptationLevel={gameState.adaptationLevel}
+            onSelectActivity={selectActivity}
+            onSpeak={speak}
           />
         </CardContent>
       </Card>
@@ -87,7 +103,7 @@ export const GameBoard: React.FC = () => {
         <CardContent className="pt-6">
           <div className="text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              💡 <strong>Instructions :</strong> Glissez les objets vers les zones appropriées.
+              💡 <strong>Instructions :</strong> Cliquez sur un objet puis sur une zone, ou glissez les objets vers les zones appropriées.
               {currentLevel.enable_timeline && ' Organisez aussi les étapes dans le bon ordre.'}
             </p>
             <div className="flex justify-center gap-4 text-xs text-muted-foreground">

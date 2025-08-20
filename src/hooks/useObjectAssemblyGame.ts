@@ -87,6 +87,7 @@ const initialState: GameState = {
 
 export const useObjectAssemblyGame = () => {
   const [gameState, setGameState] = useState<GameState>(initialState);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<GameScenario[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -351,6 +352,27 @@ export const useObjectAssemblyGame = () => {
     return false;
   }, [scenarios, gameState, speak]);
 
+  const selectActivity = useCallback((activityId: string | null) => {
+    setSelectedActivity(activityId);
+    if (activityId) {
+      const scenario = scenarios.find(s => s.id === gameState.currentScenario);
+      const currentLevel = scenario?.levels.find(l => l.level_number === gameState.currentLevel);
+      const activity = currentLevel?.activities.find(a => a.id === activityId);
+      if (activity) {
+        speak(`${activity.name} sélectionné. Cliquez sur une zone pour le placer.`);
+      }
+    } else {
+      speak('Sélection annulée.');
+    }
+  }, [scenarios, gameState.currentScenario, gameState.currentLevel, speak]);
+
+  const placeSelectedActivity = useCallback((spatialSlotId?: string, timeSlotId?: string) => {
+    if (!selectedActivity) return;
+    
+    placeItem(selectedActivity, spatialSlotId, timeSlotId);
+    setSelectedActivity(null); // Clear selection after placement
+  }, [selectedActivity, placeItem]);
+
   // Initialize
   useEffect(() => {
     loadScenarios();
@@ -365,6 +387,7 @@ export const useObjectAssemblyGame = () => {
 
   return {
     gameState,
+    selectedActivity,
     scenarios,
     loading,
     selectScenario,
@@ -374,5 +397,7 @@ export const useObjectAssemblyGame = () => {
     toggleVoice,
     speak,
     placeItem,
+    selectActivity,
+    placeSelectedActivity,
   };
 };

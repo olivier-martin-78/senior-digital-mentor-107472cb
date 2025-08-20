@@ -7,23 +7,47 @@ import { cn } from '@/lib/utils';
 interface DraggableObjectsListProps {
   activities: ActivityItem[];
   placedItems: PlacedItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
   adaptationLevel: number;
+  onSelectActivity: (activityId: string | null) => void;
+  onSpeak: (text: string) => void;
 }
 
 export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
   activities,
   placedItems,
+  selectedActivity,
   accessibilityMode,
-  adaptationLevel
+  adaptationLevel,
+  onSelectActivity,
+  onSpeak
 }) => {
-  const { speak } = useObjectAssemblyGame();
 
   const handleDragStart = (e: React.DragEvent, activityId: string) => {
     e.dataTransfer.setData('text/plain', activityId);
     const activity = activities.find(a => a.id === activityId);
     if (activity) {
-      speak(`Déplacement de ${activity.name}`);
+      onSpeak(`Déplacement de ${activity.name}`);
+    }
+  };
+
+  const handleActivityClick = (activityId: string) => {
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const status = getActivityStatus(activityId);
+    if (status !== 'not-placed') {
+      onSpeak(`${activity.name} est déjà placé`);
+      return;
+    }
+
+    if (selectedActivity === activityId) {
+      // Deselect if clicking on already selected activity
+      onSelectActivity(null);
+    } else {
+      // Select the activity
+      onSelectActivity(activityId);
     }
   };
 
@@ -79,48 +103,58 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
         {visibleActivities.map((activity) => {
           const status = getActivityStatus(activity.id);
           const isPlaced = status !== 'not-placed';
+          const isSelected = selectedActivity === activity.id;
           
           return (
             <Card
               key={activity.id}
               className={cn(
-                "transition-all duration-200 cursor-grab active:cursor-grabbing",
+                "transition-all duration-200 cursor-pointer",
                 "flex flex-col items-center justify-center p-4 text-center",
                 "hover:shadow-md hover:-translate-y-1",
                 accessibilityMode ? "min-h-[100px]" : "min-h-[80px]",
                 isPlaced && "opacity-60 transform scale-95",
+                isSelected && !isPlaced && "ring-2 ring-primary bg-primary/10 scale-105",
+                !isPlaced && !isSelected && "cursor-grab active:cursor-grabbing hover:bg-accent/50",
                 status === 'fully-placed' && "border-success bg-success/10",
                 status === 'partially-placed' && "border-warning bg-warning/10"
               )}
               draggable={!isPlaced}
               onDragStart={(e) => handleDragStart(e, activity.id)}
-              onClick={() => {
-                speak(`Objet : ${activity.name}. ${isPlaced ? 'Déjà placé' : 'Glissez pour placer'}`);
-              }}
+              onClick={() => handleActivityClick(activity.id)}
             >
-              <div className="text-2xl mb-2">{activity.icon}</div>
-              <p className={cn(
-                "font-medium",
-                accessibilityMode ? "text-sm" : "text-xs"
-              )}>
-                {activity.name}
-              </p>
-              
-              {/* Status indicators */}
-              <div className="mt-2 flex gap-1">
-                {status === 'fully-placed' && (
-                  <Badge variant="default" className="text-xs px-1">✓</Badge>
-                )}
-                {status === 'partially-placed' && (
-                  <Badge variant="secondary" className="text-xs px-1">½</Badge>
-                )}
-              </div>
-              
-              {isPlaced && (
-                <div className="absolute top-1 right-1">
-                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                </div>
+            <div className="text-2xl mb-2">{activity.icon}</div>
+            <p className={cn(
+              "font-medium",
+              accessibilityMode ? "text-sm" : "text-xs"
+            )}>
+              {activity.name}
+            </p>
+            
+            {/* Status indicators */}
+            <div className="mt-2 flex gap-1">
+              {status === 'fully-placed' && (
+                <Badge variant="default" className="text-xs px-1">✓</Badge>
               )}
+              {status === 'partially-placed' && (
+                <Badge variant="secondary" className="text-xs px-1">½</Badge>
+              )}
+              {isSelected && (
+                <Badge variant="default" className="text-xs px-1">📌</Badge>
+              )}
+            </div>
+            
+            {isPlaced && (
+              <div className="absolute top-1 right-1">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+              </div>
+            )}
+            
+            {isSelected && !isPlaced && (
+              <div className="absolute top-1 left-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+              </div>
+            )}
             </Card>
           );
         })}
@@ -132,9 +166,10 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
           "text-muted-foreground",
           accessibilityMode ? "text-base" : "text-sm"
         )}>
-          {placedCount === 0 && "Glissez les objets vers les zones appropriées pour commencer"}
-          {placedCount > 0 && placedCount < totalCount && "Continuez ! Il reste encore des objets à placer"}
-          {placedCount === totalCount && "🎉 Tous les objets sont placés ! Vérifiez si le niveau est terminé"}
+          {selectedActivity && "📌 Objet sélectionné : " + activities.find(a => a.id === selectedActivity)?.name + ". Cliquez sur une zone pour le placer."}
+          {!selectedActivity && placedCount === 0 && "Cliquez sur un objet puis sur une zone, ou glissez les objets vers les zones appropriées"}
+          {!selectedActivity && placedCount > 0 && placedCount < totalCount && "Continuez ! Il reste encore des objets à placer"}
+          {!selectedActivity && placedCount === totalCount && "🎉 Tous les objets sont placés ! Vérifiez si le niveau est terminé"}
         </p>
         
         {adaptationLevel > 0 && (

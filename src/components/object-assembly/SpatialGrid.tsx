@@ -7,14 +7,20 @@ interface SpatialGridProps {
   spatialSlots: SpatialSlot[];
   placedItems: PlacedItem[];
   activities: ActivityItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
+  onPlaceSelected: (spatialSlotId: string) => void;
+  onSpeak: (text: string) => void;
 }
 
 export const SpatialGrid: React.FC<SpatialGridProps> = ({
   spatialSlots,
   placedItems,
   activities,
-  accessibilityMode
+  selectedActivity,
+  accessibilityMode,
+  onPlaceSelected,
+  onSpeak
 }) => {
   const { placeItem, speak } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
@@ -81,7 +87,9 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
               accessibilityMode ? "min-h-[100px]" : "min-h-[80px]",
               isDraggedOver && "border-primary bg-primary/10 scale-105",
               placedActivity && "border-solid border-success bg-success/10",
-              !placedActivity && !isDraggedOver && "border-muted-foreground/30 hover:border-primary/60"
+              selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
+              !placedActivity && !isDraggedOver && !selectedActivity && "border-muted-foreground/30 hover:border-primary/60",
+              !placedActivity && !isDraggedOver && selectedActivity && "border-primary hover:border-primary bg-primary/10"
             )}
             style={{
               gridColumn: slot.x_position + 1,
@@ -91,10 +99,15 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, slot.id)}
             onClick={() => {
-              if (placedActivity) {
-                speak(`${placedActivity.name} placé dans ${slot.label}`);
+              if (selectedActivity && !placedActivity) {
+                onPlaceSelected(slot.id);
+                onSpeak(`${activities.find(a => a.id === selectedActivity)?.name} placé dans ${slot.label}`);
+              } else if (placedActivity) {
+                onSpeak(`${placedActivity.name} placé dans ${slot.label}`);
+              } else if (selectedActivity) {
+                onSpeak(`${slot.label} est déjà occupé`);
               } else {
-                speak(`Zone ${slot.label} disponible`);
+                onSpeak(`Zone ${slot.label} disponible. Sélectionnez un objet d'abord.`);
               }
             }}
           >

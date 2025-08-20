@@ -7,16 +7,22 @@ interface TemporalTimelineProps {
   timeSlots: TimeSlot[];
   placedItems: PlacedItem[];
   activities: ActivityItem[];
+  selectedActivity: string | null;
   accessibilityMode: boolean;
+  onPlaceSelected: (timeSlotId: string) => void;
+  onSpeak: (text: string) => void;
 }
 
 export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
   timeSlots,
   placedItems,
   activities,
-  accessibilityMode
+  selectedActivity,
+  accessibilityMode,
+  onPlaceSelected,
+  onSpeak
 }) => {
-  const { placeItem, speak } = useObjectAssemblyGame();
+  const { placeItem } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {
@@ -77,16 +83,23 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                   accessibilityMode ? "min-w-[140px] min-h-[120px]" : "min-w-[120px] min-h-[100px]",
                   isDraggedOver && "border-primary bg-primary/10 scale-105",
                   placedActivity && "border-solid border-success bg-success/10",
-                  !placedActivity && !isDraggedOver && "border-muted-foreground/30 hover:border-primary/60"
+                  selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
+                  !placedActivity && !isDraggedOver && !selectedActivity && "border-muted-foreground/30 hover:border-primary/60",
+                  !placedActivity && !isDraggedOver && selectedActivity && "border-primary hover:border-primary bg-primary/10"
                 )}
                 onDragOver={(e) => handleDragOver(e, slot.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, slot.id)}
                 onClick={() => {
-                  if (placedActivity) {
-                    speak(`${placedActivity.name} programmé pour ${slot.label}`);
+                  if (selectedActivity && !placedActivity) {
+                    onPlaceSelected(slot.id);
+                    onSpeak(`${activities.find(a => a.id === selectedActivity)?.name} programmé pour ${slot.label}`);
+                  } else if (placedActivity) {
+                    onSpeak(`${placedActivity.name} programmé pour ${slot.label}`);
+                  } else if (selectedActivity) {
+                    onSpeak(`${slot.label} est déjà occupé`);
                   } else {
-                    speak(`Étape ${slot.label} disponible`);
+                    onSpeak(`Étape ${slot.label} disponible. Sélectionnez un objet d'abord.`);
                   }
                 }}
               >
