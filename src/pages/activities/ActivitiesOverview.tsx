@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Sparkles, Brain, Gamepad2, Dumbbell, Languages, KeySquare, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import ActivityCard from '@/components/activities/ActivityCard';
@@ -265,6 +266,44 @@ const ActivitiesOverview = () => {
             <CardContent>
               <p className="text-sm text-gray-600">
                 Entraînez votre attention avec l'effet Stroop ! Identifiez le mot, pas la couleur affichée.
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "object-assembly",
+        subTagId: remueMeningesId,
+        card: <Card key="object-assembly" className="cursor-pointer hover:shadow-lg transition-shadow duration-200 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <Link 
+            to="/activities/games/object-assembly" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'object-assembly-game', 'Assemblage d\'Objets dans l\'Espace et le Temps').catch(console.error)}
+          >
+            <div className="h-48 bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="text-4xl mb-4">🏠🧩</div>
+                <h3 className="text-xl font-bold">Assemblage d'Objets</h3>
+                <p className="text-sm mt-2 opacity-90">Espace & Temps</p>
+              </div>
+            </div>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Assemblage d'Objets dans l'Espace et le Temps</CardTitle>
+                <Badge className="bg-primary text-primary-foreground text-xs">Nouveau</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Stimulez votre mémoire spatiale et temporelle en organisant des objets familiers dans votre maison selon les bonnes séquences.
+              </p>
+              <div className="flex flex-wrap gap-1 mb-3">
+                <Badge variant="secondary" className="text-xs">Mémoire spatiale</Badge>
+                <Badge variant="secondary" className="text-xs">Séquençage temporel</Badge>
+                <Badge variant="secondary" className="text-xs">Adaptatif</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                5 scénarios • 15 niveaux • Sans limite de temps
               </p>
             </CardContent>
           </Link>

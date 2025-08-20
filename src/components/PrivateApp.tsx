@@ -55,6 +55,7 @@ import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
 import CognitivePuzzleGame from '@/pages/CognitivePuzzleGame';
 import ObjectAssemblyGame from '@/pages/activities/games/ObjectAssemblyGame';
+import ObjectAssemblyAdmin from '@/pages/admin/ObjectAssemblyAdmin';
 import GamesPage from '@/pages/activities/GamesPage';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Caregivers from '@/pages/Caregivers';
@@ -194,6 +195,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/activities" element={<AdminActivities />} />
             <Route path="/admin/activities/:type" element={<AdminActivities />} />
             <Route path="/admin/cognitive-puzzle" element={<CognitivePuzzleAdmin />} />
+            <Route path="/admin/object-assembly" element={<ObjectAssemblyAdmin />} />
             <Route path="/admin/homepage-carousel" element={<HomepageCarousel />} />
             <Route path="/admin/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
