@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Gamepad2, Plus, Brain, Languages, KeySquare, Eye } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Plus, Brain, Languages, KeySquare, Eye, Edit, Trash2 } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,19 @@ export default function GamesPage() {
 
   const handleEditActivity = (activityId: string) => {
     navigate(`/create-activities/games?edit=${activityId}`);
+  };
+
+  const handleEditIntegratedGame = (gameType: string) => {
+    if (gameType === 'cognitive-puzzle') {
+      navigate('/admin/cognitive-puzzle');
+    } else if (gameType === 'object-assembly') {
+      navigate('/admin/object-assembly');
+    }
+  };
+
+  const handleDeleteIntegratedGame = (gameName: string) => {
+    // Pour le moment, juste afficher une confirmation
+    console.log(`Demande de suppression du jeu: ${gameName}`);
   };
 
   // Jeux intégrés avec les beaux dégradés
@@ -242,7 +255,7 @@ export default function GamesPage() {
       {
         key: "object-assembly",
         subTagId: remueMeningesId || null,
-        card: <Card key="object-assembly" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+        card: <Card key="object-assembly" className="group cursor-pointer hover:shadow-lg transition-shadow duration-200 relative">
           <Link 
             to="/activities/games/object-assembly" 
             className="block"
@@ -263,12 +276,40 @@ export default function GamesPage() {
               </p>
             </CardContent>
           </Link>
+          {hasRole('admin') && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleEditIntegratedGame('cognitive-puzzle');
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDeleteIntegratedGame('Activité spatio-temporelle');
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </Card>
       },
       {
         key: "object-assembly-spatial",
         subTagId: remueMeningesId || null,
-        card: <Card key="object-assembly-spatial" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+        card: <Card key="object-assembly-spatial" className="group cursor-pointer hover:shadow-lg transition-shadow duration-200 relative">
           <Link 
             to="/activities/games/object-assembly" 
             className="block"
@@ -298,6 +339,34 @@ export default function GamesPage() {
               </div>
             </CardContent>
           </Link>
+          {hasRole('admin') && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleEditIntegratedGame('object-assembly');
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDeleteIntegratedGame('Assemblage d\'Objets dans l\'Espace et le Temps');
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </Card>
       }
     ];
