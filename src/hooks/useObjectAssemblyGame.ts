@@ -95,10 +95,11 @@ export const useObjectAssemblyGame = () => {
     try {
       setLoading(true);
       
-      // Fetch scenarios
+      // Fetch scenarios for object assembly game
       const { data: scenariosData, error: scenariosError } = await supabase
         .from('cognitive_puzzle_scenarios')
         .select('*')
+        .eq('game_type', 'object-assembly')
         .order('created_at');
 
       if (scenariosError) throw scenariosError;

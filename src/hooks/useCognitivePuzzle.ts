@@ -68,10 +68,11 @@ export const useCognitivePuzzle = () => {
       // Load dialogues first
       await loadDialogues();
       
-      // Fetch scenarios
+      // Fetch scenarios for cognitive puzzle game
       const { data: scenariosData, error: scenariosError } = await supabase
         .from('cognitive_puzzle_scenarios')
         .select('*')
+        .eq('game_type', 'cognitive-puzzle')
         .order('created_at');
       
       if (scenariosError) throw scenariosError;
