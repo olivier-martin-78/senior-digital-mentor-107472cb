@@ -264,6 +264,41 @@ export default function GamesPage() {
             </CardContent>
           </Link>
         </Card>
+      },
+      {
+        key: "object-assembly-spatial",
+        subTagId: remueMeningesId || null,
+        card: <Card key="object-assembly-spatial" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/object-assembly" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'object-assembly-spatial-game', 'Assemblage d\'Objets dans l\'Espace et le Temps')}
+          >
+            <div className="h-48 bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="text-4xl mb-4">🏠🧩</div>
+                <h3 className="text-xl font-bold">Assemblage d'Objets</h3>
+                <p className="text-sm mt-2 opacity-90">Espace & Temps</p>
+              </div>
+            </div>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Assemblage d'Objets dans l'Espace et le Temps</CardTitle>
+                <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">Nouveau</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Stimulez votre mémoire spatiale et temporelle en organisant des objets familiers dans votre maison selon les bonnes séquences.
+              </p>
+              <div className="flex flex-wrap gap-1 mb-3">
+                <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">Mémoire spatiale</span>
+                <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">Séquençage temporel</span>
+                <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">Adaptatif</span>
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
       }
     ];
 
