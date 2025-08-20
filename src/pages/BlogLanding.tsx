@@ -450,7 +450,7 @@ const BlogLanding = () => {
                   Combien cela coûte-t-il ?
                 </AccordionTrigger>
                 <AccordionContent>
-                  Les tarifs varient selon la fréquence et la distance (individuel, à domicile ou en extérieur). Des forfaits mensuels d'au moins 2 heures consécutives sont proposés.
+                  CaprIA est gratuit pour tout le monde sans exception.
                 </AccordionContent>
               </AccordionItem>
 
