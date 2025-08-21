@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityItem as ActivityItemType } from '@/types/cognitivePuzzle';
+import { formatTextWithLineBreaks } from '@/lib/utils';
 
 interface ActivityItemProps {
   activity: ActivityItemType;
@@ -72,10 +73,10 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         
         {/* Name */}
         <p className={`
-          font-semibold text-foreground leading-tight
+          font-semibold text-foreground leading-tight whitespace-pre-line text-center
           ${accessibilityMode ? 'text-lg' : 'text-sm'}
         `}>
-          {activity.name}
+          {formatTextWithLineBreaks(activity.name)}
         </p>
 
         {/* Category Badge */}

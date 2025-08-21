@@ -1,5 +1,6 @@
 import React from 'react';
 import { SpatialSlot, PlacedItem, ActivityItem } from '@/types/cognitivePuzzle';
+import { formatTextWithLineBreaks } from '@/lib/utils';
 
 interface SpatialMapProps {
   spatialSlots: SpatialSlot[];
@@ -122,8 +123,8 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                   <div className={`${accessibilityMode ? 'text-3xl mb-2' : 'text-2xl mb-1'}`}>
                     {slot.icon}
                   </div>
-                  <p className={`font-semibold text-foreground leading-tight ${accessibilityMode ? 'text-sm' : 'text-xs'}`}>
-                    {slot.label}
+                  <p className={`font-semibold text-foreground leading-tight whitespace-pre-line text-center ${accessibilityMode ? 'text-sm' : 'text-xs'}`}>
+                    {formatTextWithLineBreaks(slot.label)}
                   </p>
                 </div>
 
@@ -144,8 +145,8 @@ export const SpatialMap: React.FC<SpatialMapProps> = ({
                     <div className={accessibilityMode ? 'text-lg' : 'text-base'}>
                       {placedActivity.icon}
                     </div>
-                    <p className={`text-center font-medium text-foreground leading-tight ${accessibilityMode ? 'text-xs' : 'text-[10px]'}`}>
-                      {placedActivity.name.split(' ')[0]}
+                    <p className={`text-center font-medium text-foreground leading-tight whitespace-pre-line ${accessibilityMode ? 'text-xs' : 'text-[10px]'}`}>
+                      {formatTextWithLineBreaks(placedActivity.name, 15)}
                     </p>
                   </div>
                 ) : (

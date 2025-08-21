@@ -1,5 +1,6 @@
 import React from 'react';
 import { TimeSlot, PlacedItem, ActivityItem } from '@/types/cognitivePuzzle';
+import { formatTextWithLineBreaks } from '@/lib/utils';
 
 interface TimelineProps {
   timeSlots: TimeSlot[];
@@ -100,8 +101,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                   <div className={`${accessibilityMode ? 'text-4xl mb-2' : 'text-3xl mb-1'}`}>
                     {slot.icon}
                   </div>
-                  <p className={`font-semibold text-foreground ${accessibilityMode ? 'text-lg' : 'text-sm'}`}>
-                    {slot.label}
+                  <p className={`font-semibold text-foreground whitespace-pre-line text-center ${accessibilityMode ? 'text-lg' : 'text-sm'}`}>
+                    {formatTextWithLineBreaks(slot.label)}
                   </p>
                 </div>
 
@@ -122,8 +123,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                     <div className={accessibilityMode ? 'text-2xl' : 'text-xl'}>
                       {placedActivity.icon}
                     </div>
-                    <p className={`text-center font-medium text-foreground leading-tight ${accessibilityMode ? 'text-base' : 'text-xs'}`}>
-                      {placedActivity.name}
+                    <p className={`text-center font-medium text-foreground leading-tight whitespace-pre-line ${accessibilityMode ? 'text-base' : 'text-xs'}`}>
+                      {formatTextWithLineBreaks(placedActivity.name)}
                     </p>
                     <div className="text-red-500 text-xs opacity-70">
                       Cliquez pour retirer
