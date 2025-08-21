@@ -36,7 +36,8 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
   const [newTagName, setNewTagName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Effect pour s'assurer que la sélection est appliquée après le chargement des sous-tags
+  // Effect pour s'assurer que la sélection est appliquée après le chargement initial des sous-tags
+  // mais seulement lors du premier chargement, pas lors des changements de sélection
   useEffect(() => {
     console.log('🔍 SubActivitySelector - useEffect détecte changement:', {
       selectedSubTagId,
@@ -45,18 +46,22 @@ const SubActivitySelector: React.FC<SubActivitySelectorProps> = ({
       subTagExists: selectedSubTagId ? subTags.some(tag => tag.id === selectedSubTagId) : false
     });
     
-    // Si on a un selectedSubTagId et que les subTags sont chargés
-    // mais que l'ID sélectionné n'existe pas dans la liste, on appelle onSubTagChange avec null
+    // SEULEMENT valider lors du premier chargement des subTags, pas lors des changements manuels
+    // Si on a un selectedSubTagId ET que c'est la première fois qu'on charge les subTags (non vides)
+    // ET que l'ID sélectionné n'existe pas dans la liste, alors on le reset à null
     if (selectedSubTagId && !loading && subTags.length > 0) {
       const subTagExists = subTags.some(tag => tag.id === selectedSubTagId);
-      if (!subTagExists) {
-        console.log('⚠️ SubActivitySelector - selectedSubTagId non trouvé dans les subTags, reset à null');
+      
+      // Seulement reset si c'est clairement un ID invalide/obsolète
+      // On évite de reset pendant les changements normaux de sélection
+      if (!subTagExists && activityType) {
+        console.log('⚠️ SubActivitySelector - selectedSubTagId invalide détecté lors du chargement initial, reset à null');
         onSubTagChange(null);
-      } else {
+      } else if (subTagExists) {
         console.log('✅ SubActivitySelector - selectedSubTagId trouvé dans les subTags');
       }
     }
-  }, [selectedSubTagId, subTags, loading, onSubTagChange]);
+  }, [subTags, loading, activityType]); // Retiré selectedSubTagId et onSubTagChange des dépendances
 
   const handleCreateSubTag = async () => {
     if (!newTagName.trim() || !activityType) return;
