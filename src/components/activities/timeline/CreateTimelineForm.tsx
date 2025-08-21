@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +50,9 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [selectedSubTagId, setSelectedSubTagId] = useState<string | null>(initialSubActivityTagId || null);
   
+  // Ref pour éviter de remettre la valeur initiale après un changement manuel
+  const hasInitializedSubTagRef = useRef(false);
+  
   console.log('🔍 CreateTimelineForm - État initial selectedSubTagId:', {
     selectedSubTagId,
     initialSubActivityTagId,
@@ -64,19 +67,24 @@ export const CreateTimelineForm: React.FC<CreateTimelineFormProps> = ({ onSubmit
     validateUrl: false
   });
 
-  // useEffect pour surveiller les changements de initialSubActivityTagId
+  // useEffect pour appliquer la valeur initiale SEULEMENT lors du premier chargement
   React.useEffect(() => {
-    console.log('🔍 CreateTimelineForm - useEffect initialSubActivityTagId changé:', {
-      newValue: initialSubActivityTagId,
-      oldSelectedSubTagId: selectedSubTagId,
-      willUpdate: !!initialSubActivityTagId && initialSubActivityTagId !== selectedSubTagId
+    console.log('🔍 CreateTimelineForm - useEffect initialSubActivityTagId:', {
+      initialSubActivityTagId,
+      hasInitialized: hasInitializedSubTagRef.current,
+      currentSelectedSubTagId: selectedSubTagId
     });
     
-    if (initialSubActivityTagId && initialSubActivityTagId !== selectedSubTagId) {
-      console.log('🔍 CreateTimelineForm - Mise à jour selectedSubTagId vers:', initialSubActivityTagId);
+    // Seulement appliquer la valeur initiale une seule fois, lors du premier chargement
+    if (initialSubActivityTagId && !hasInitializedSubTagRef.current) {
+      console.log('🔍 CreateTimelineForm - Application de la valeur initiale:', initialSubActivityTagId);
       setSelectedSubTagId(initialSubActivityTagId);
+      hasInitializedSubTagRef.current = true;
+    } else if (!initialSubActivityTagId && !hasInitializedSubTagRef.current) {
+      // Même si pas de valeur initiale, on marque comme initialisé pour éviter d'écraser les changements manuels
+      hasInitializedSubTagRef.current = true;
     }
-  }, [initialSubActivityTagId, selectedSubTagId]);
+  }, [initialSubActivityTagId]); // Seulement initialSubActivityTagId dans les dépendances
   const [isUploading, setIsUploading] = useState(false);
   const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
 
