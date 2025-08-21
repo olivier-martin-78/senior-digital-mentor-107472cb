@@ -333,6 +333,13 @@ export const useCognitivePuzzle = () => {
     if (!gameState.voiceEnabled && !forceSpeak) return;
     
     try {
+      // Si une synthèse vocale est en cours, l'arrêter
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        return;
+      }
+      
+      // Sinon, lancer la synthèse vocale
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'fr-FR';
       utterance.rate = 0.8;
