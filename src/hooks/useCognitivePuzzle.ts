@@ -447,6 +447,11 @@ export const useCognitivePuzzle = () => {
   }, [saveProgress]);
 
   const toggleVoice = useCallback(() => {
+    // Arrêter toute synthèse vocale en cours
+    if ('speechSynthesis' in window && speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+    }
+    
     setGameState(prev => {
       const newState = { ...prev, voiceEnabled: !prev.voiceEnabled };
       saveProgress(newState);
