@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Music } from 'lucide-react';
 import { MusicQuizPlayer } from '@/components/activities/MusicQuizPlayer';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuizData {
   type: 'music_quiz';
@@ -15,6 +16,7 @@ interface QuizData {
 const MusicQuizGame: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameState, setGameState] = useState<'playing' | 'waiting' | 'answered'>('playing');
   const [showAnswer, setShowAnswer] = useState(false);
@@ -25,6 +27,24 @@ const MusicQuizGame: React.FC = () => {
   useEffect(() => {
     document.title = 'Quiz musical – Mode Joueur';
   }, []);
+
+  // Redirection automatique si pas de données de quiz
+  useEffect(() => {
+    if (!location.state?.quizData) {
+      toast({
+        title: "Accès direct non autorisé",
+        description: "Veuillez sélectionner un quiz depuis la page des activités.",
+        variant: "destructive",
+      });
+      
+      // Redirection après un court délai pour permettre à l'utilisateur de lire le message
+      const timer = setTimeout(() => {
+        navigate('/activities', { replace: true });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, navigate, toast]);
 
   // Réinitialiser les states lors du changement de question
   useEffect(() => {
@@ -78,13 +98,27 @@ const MusicQuizGame: React.FC = () => {
   if (!quizData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Erreur</h1>
-          <p className="text-muted-foreground mb-6">Aucune donnée de quiz trouvée</p>
-          <Button onClick={handleExit} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour
-          </Button>
+        <div className="text-center max-w-md mx-auto">
+          <div className="mb-6">
+            <Music className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-foreground mb-4">Quiz musical non trouvé</h1>
+            <p className="text-muted-foreground mb-2">
+              Vous avez accédé directement à cette page sans sélectionner de quiz.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Redirection automatique vers la page des activités dans quelques secondes...
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button onClick={handleExit} className="w-full">
+              <Music className="w-4 h-4 mr-2" />
+              Voir tous les quiz musicaux
+            </Button>
+            <Button onClick={handleExit} variant="outline" className="w-full">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour aux activités
+            </Button>
+          </div>
         </div>
       </div>
     );
