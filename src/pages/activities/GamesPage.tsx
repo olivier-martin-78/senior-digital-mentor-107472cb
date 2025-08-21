@@ -257,22 +257,23 @@ export default function GamesPage() {
         subTagId: remueMeningesId || null,
         card: <Card key="object-assembly" className="group cursor-pointer hover:shadow-lg transition-shadow duration-200 relative">
           <Link 
-            to="/activities/games/object-assembly" 
+            to="/cognitive-puzzle" 
             className="block"
-            onClick={() => UserActionsService.trackView('activity', 'object-assembly-game', 'Activité spatio-temporelle')}
+            onClick={() => UserActionsService.trackView('activity', 'cognitive-puzzle-game', 'Puzzle de Connexions Spatio-Temporelles')}
           >
             <div className="h-48 bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
               <div className="text-center text-white">
-                <Brain className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Activité spatio-temporelle</h3>
+                <div className="text-4xl mb-4">🧩</div>
+                <h3 className="text-xl font-bold">Puzzle de Connexions</h3>
+                <p className="text-sm mt-2 opacity-90">Spatio-Temporelles</p>
               </div>
             </div>
             <CardHeader>
-              <CardTitle className="text-lg">Activité spatio-temporelle</CardTitle>
+              <CardTitle className="text-lg">Puzzle de Connexions Spatio-Temporelles</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">
-                Développez vos capacités cognitives avec des scénarios immersifs. Gérez les imprévus et prenez des décisions adaptées.
+                Stimulez vos capacités cognitives en organisant vos activités dans l'espace et le temps. Gérez les imprévus avec sérénité !
               </p>
             </CardContent>
           </Link>
