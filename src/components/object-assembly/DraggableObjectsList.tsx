@@ -37,17 +37,27 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
     if (!activity) return;
 
     const status = getActivityStatus(activityId);
-    if (status !== 'not-placed') {
-      onSpeak(`${activity.name} est déjà placé`);
+    if (status === 'fully-placed') {
+      onSpeak(`${activity.name} est complètement placé`);
       return;
     }
 
+    // Allow interaction with partially placed or not placed objects
     if (selectedActivity === activityId) {
       // Deselect if clicking on already selected activity
       onSelectActivity(null);
     } else {
       // Select the activity
       onSelectActivity(activityId);
+      
+      // Provide feedback about current placement status
+      if (status === 'partially-placed') {
+        const placedItem = placedItems.find(item => item.activityId === activityId);
+        const spatialPlaced = placedItem?.spatialSlotId ? 'dans un lieu' : '';
+        const temporalPlaced = placedItem?.timeSlotId ? 'dans un moment' : '';
+        const currentPlacement = [spatialPlaced, temporalPlaced].filter(Boolean).join(' et ');
+        onSpeak(`${activity.name} sélectionné. Déjà placé ${currentPlacement}. Vous pouvez le placer ailleurs.`);
+      }
     }
   };
 
@@ -102,7 +112,7 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
       )}>
         {visibleActivities.map((activity) => {
           const status = getActivityStatus(activity.id);
-          const isPlaced = status !== 'not-placed';
+          const isFullyPlaced = status === 'fully-placed';
           const isSelected = selectedActivity === activity.id;
           
           return (
@@ -113,13 +123,13 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
                 "flex flex-col items-center justify-center p-2 text-center",
                 "hover:shadow-md hover:-translate-y-1",
                 accessibilityMode ? "min-h-[80px]" : "min-h-[60px]",
-                isPlaced && "opacity-60 transform scale-95",
-                isSelected && !isPlaced && "ring-2 ring-primary bg-primary/10 scale-105",
-                !isPlaced && !isSelected && "cursor-grab active:cursor-grabbing hover:bg-accent/50",
+                isFullyPlaced && "opacity-60 transform scale-95",
+                isSelected && "ring-2 ring-primary bg-primary/10 scale-105",
+                !isFullyPlaced && !isSelected && "cursor-grab active:cursor-grabbing hover:bg-accent/50",
                 status === 'fully-placed' && "border-success bg-success/10",
-                status === 'partially-placed' && "border-warning bg-warning/10"
+                status === 'partially-placed' && "border-warning bg-warning/10 ring-1 ring-warning/50"
               )}
-              draggable={!isPlaced}
+              draggable={!isFullyPlaced}
               onDragStart={(e) => handleDragStart(e, activity.id)}
               onClick={() => handleActivityClick(activity.id)}
             >
@@ -134,23 +144,32 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
             {/* Status indicators */}
             <div className="mt-2 flex gap-1">
               {status === 'fully-placed' && (
-                <Badge variant="default" className="text-xs px-1">✓</Badge>
+                <Badge variant="default" className="text-xs px-1">✓ Complet</Badge>
               )}
               {status === 'partially-placed' && (
-                <Badge variant="secondary" className="text-xs px-1">½</Badge>
+                <Badge variant="outline" className="text-xs px-1 border-warning text-warning">
+                  ⚠ Partiel
+                </Badge>
               )}
               {isSelected && (
                 <Badge variant="default" className="text-xs px-1">📌</Badge>
               )}
             </div>
             
-            {isPlaced && (
+            {/* Visual indicators */}
+            {status === 'fully-placed' && (
               <div className="absolute top-1 right-1">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-success rounded-full"></div>
               </div>
             )}
             
-            {isSelected && !isPlaced && (
+            {status === 'partially-placed' && (
+              <div className="absolute top-1 right-1">
+                <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+              </div>
+            )}
+            
+            {isSelected && (
               <div className="absolute top-1 left-1">
                 <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
               </div>
@@ -166,9 +185,15 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
           "text-muted-foreground",
           accessibilityMode ? "text-base" : "text-sm"
         )}>
-          {selectedActivity && "📌 Objet sélectionné : " + activities.find(a => a.id === selectedActivity)?.name + ". Cliquez sur une zone pour le placer."}
+          {selectedActivity && (() => {
+            const selectedActivityData = activities.find(a => a.id === selectedActivity);
+            const status = getActivityStatus(selectedActivity);
+            const statusText = status === 'partially-placed' ? 
+              ' (déjà partiellement placé - peut être placé ailleurs)' : '';
+            return `📌 Objet sélectionné : ${selectedActivityData?.name}${statusText}. Cliquez sur une zone pour le placer.`;
+          })()}
           {!selectedActivity && placedCount === 0 && "Cliquez sur un objet puis sur une zone, ou glissez les objets vers les zones appropriées"}
-          {!selectedActivity && placedCount > 0 && placedCount < totalCount && "Continuez ! Il reste encore des objets à placer"}
+          {!selectedActivity && placedCount > 0 && placedCount < totalCount && "Continuez ! Les objets avec ⚠ peuvent être placés dans d'autres zones"}
           {!selectedActivity && placedCount === totalCount && "🎉 Tous les objets sont placés ! Vérifiez si le niveau est terminé"}
         </p>
         
