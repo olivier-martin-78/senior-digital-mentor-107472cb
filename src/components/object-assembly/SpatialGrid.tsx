@@ -60,7 +60,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
       display: 'grid',
       gridTemplateColumns: `repeat(${maxX + 1}, 1fr)`,
       gridTemplateRows: `repeat(${maxY + 1}, 1fr)`,
-      gap: '8px', // Same as gap-2 in Tailwind, harmonized with DraggableObjectsList
+      gap: '4px', // Reduced spacing for better visual alignment
     };
   };
 
