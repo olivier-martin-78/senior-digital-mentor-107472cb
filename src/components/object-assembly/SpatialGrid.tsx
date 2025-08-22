@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useObjectAssemblyGame, SpatialSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
+import { SpatialSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
 import { cn } from '@/lib/utils';
 
 interface SpatialGridProps {
@@ -12,6 +12,7 @@ interface SpatialGridProps {
   accessibilityMode: boolean;
   onPlaceSelected: (spatialSlotId: string) => void;
   onRemoveItem: (activityId: string, type: 'spatial' | 'temporal') => void;
+  placeItem: (activityId: string, spatialSlotId?: string, timeSlotId?: string) => void;
   onSpeak: (text: string) => void;
 }
 
@@ -23,9 +24,9 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
   accessibilityMode,
   onPlaceSelected,
   onRemoveItem,
+  placeItem,
   onSpeak
 }) => {
-  const { placeItem } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {

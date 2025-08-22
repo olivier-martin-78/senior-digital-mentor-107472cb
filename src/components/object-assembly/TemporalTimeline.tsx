@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useObjectAssemblyGame, TimeSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
+import { TimeSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
 import { cn } from '@/lib/utils';
 
 interface TemporalTimelineProps {
@@ -11,6 +11,8 @@ interface TemporalTimelineProps {
   selectedActivity: string | null;
   accessibilityMode: boolean;
   onPlaceSelected: (timeSlotId: string) => void;
+  onRemoveItem: (activityId: string, type: 'spatial' | 'temporal') => void;
+  placeItem: (activityId: string, spatialSlotId?: string, timeSlotId?: string) => void;
   onSpeak: (text: string) => void;
 }
 
@@ -21,9 +23,10 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
   selectedActivity,
   accessibilityMode,
   onPlaceSelected,
+  onRemoveItem,
+  placeItem,
   onSpeak
 }) => {
-  const { placeItem, removeItem } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {
@@ -125,7 +128,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                       className="absolute -top-1 -right-1 w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeItem(placedActivity.id, 'temporal');
+                        onRemoveItem(placedActivity.id, 'temporal');
                         onSpeak(`${placedActivity.name} retiré de ${slot.label}`);
                       }}
                     >
