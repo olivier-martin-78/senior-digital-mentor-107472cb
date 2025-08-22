@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useObjectAssemblyGame, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
-import { cn } from '@/lib/utils';
+import { cn, formatTextWithLineBreaks } from '@/lib/utils';
 
 interface DraggableObjectsListProps {
   activities: ActivityItem[];
@@ -135,10 +135,10 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
             >
             <div className="text-lg mb-1">{activity.icon}</div>
             <p className={cn(
-              "font-medium truncate",
+              "font-medium whitespace-pre-line text-center",
               accessibilityMode ? "text-xs" : "text-xs"
             )}>
-              {activity.name}
+              {formatTextWithLineBreaks(activity.name)}
             </p>
             
             {/* Status indicators */}

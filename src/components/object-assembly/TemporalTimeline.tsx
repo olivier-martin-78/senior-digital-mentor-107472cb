@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TimeSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
-import { cn } from '@/lib/utils';
+import { cn, formatTextWithLineBreaks } from '@/lib/utils';
 
 interface TemporalTimelineProps {
   timeSlots: TimeSlot[];
@@ -121,7 +121,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 {placedActivity && (
                   <div className="mt-1 p-1 bg-background rounded border animate-fade-in relative group">
                     <div className="text-sm">{placedActivity.icon}</div>
-                    <p className="text-xs font-medium truncate">{placedActivity.name}</p>
+                    <p className="text-xs font-medium whitespace-pre-line text-center">{formatTextWithLineBreaks(placedActivity.name)}</p>
                     <Button
                       size="sm"
                       variant="destructive"
