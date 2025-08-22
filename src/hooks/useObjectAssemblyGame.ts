@@ -90,6 +90,12 @@ export const useObjectAssemblyGame = () => {
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<GameScenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gameSettings, setGameSettings] = useState<{
+    error_threshold: number;
+    object_reduction: number;
+    default_accessibility_mode: boolean;
+    default_voice_enabled: boolean;
+  } | null>(null);
 
   // Load scenarios and game data
   const loadScenarios = useCallback(async () => {
@@ -167,6 +173,16 @@ export const useObjectAssemblyGame = () => {
       );
 
       setScenarios(scenariosWithLevels);
+      
+      // Load game settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('game_settings')
+        .select('*')
+        .single();
+      
+      if (!settingsError && settingsData) {
+        setGameSettings(settingsData);
+      }
     } catch (error) {
       console.error('Error loading scenarios:', error);
       toast.error('Erreur lors du chargement des scénarios');
@@ -330,10 +346,11 @@ export const useObjectAssemblyGame = () => {
     } else {
       setGameState(prev => {
         const newErrors = prev.currentErrors + 1;
+        const errorThreshold = gameSettings?.error_threshold || 3;
         const newState = {
           ...prev,
           currentErrors: newErrors,
-          adaptationLevel: newErrors > 3 ? prev.adaptationLevel + 1 : prev.adaptationLevel,
+          adaptationLevel: newErrors >= errorThreshold ? prev.adaptationLevel + 1 : prev.adaptationLevel,
         };
         saveProgress(newState);
         return newState;
@@ -474,6 +491,34 @@ export const useObjectAssemblyGame = () => {
     }
   }, [scenarios, gameState, speak, startLevel]);
 
+  // Get current level activities, potentially reduced for adaptation
+  const getCurrentLevelActivities = useCallback(() => {
+    const scenario = scenarios.find(s => s.id === gameState.currentScenario);
+    if (!scenario) return [];
+
+    const currentLevel = scenario.levels.find(l => l.level_number === gameState.currentLevel);
+    if (!currentLevel) return [];
+
+    let activities = [...currentLevel.activities];
+    
+    // Apply object reduction if adaptation is active
+    if (gameState.adaptationLevel > 0 && gameSettings) {
+      const objectsToRemove = gameSettings.object_reduction;
+      const totalObjects = activities.length;
+      const objectsToKeep = Math.max(1, totalObjects - objectsToRemove); // Keep at least 1 object
+      
+      // Remove objects from the end (could be made more intelligent)
+      activities = activities.slice(0, objectsToKeep);
+      
+      if (gameState.adaptationLevel === 1) {
+        // First time adaptation is triggered
+        speak(`Mode adapté activé. ${objectsToRemove} objets ont été retirés pour simplifier l'exercice.`);
+      }
+    }
+    
+    return activities;
+  }, [scenarios, gameState, gameSettings, speak]);
+
   return {
     gameState,
     selectedActivity,
@@ -490,5 +535,6 @@ export const useObjectAssemblyGame = () => {
     selectActivity,
     placeSelectedActivity,
     completeLevel,
+    getCurrentLevelActivities,
   };
 };

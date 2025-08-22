@@ -14,11 +14,13 @@ export const GameBoard: React.FC = () => {
     selectActivity, 
     placeSelectedActivity, 
     speak,
-    completeLevel
+    completeLevel,
+    getCurrentLevelActivities
   } = useObjectAssemblyGame();
 
   const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
   const currentLevel = currentScenario?.levels.find(l => l.level_number === gameState.currentLevel);
+  const adaptedActivities = getCurrentLevelActivities();
 
   if (!currentScenario || !currentLevel) {
     return (
@@ -89,7 +91,7 @@ export const GameBoard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <DraggableObjectsList 
-            activities={currentLevel.activities}
+            activities={adaptedActivities}
             placedItems={gameState.placedItems}
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}

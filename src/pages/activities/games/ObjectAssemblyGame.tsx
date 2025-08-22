@@ -139,6 +139,7 @@ export default function ObjectAssemblyGame() {
             level={gameState.currentLevel}
             errors={gameState.currentErrors}
             hintsUsed={gameState.hintsUsed}
+            adaptationActive={gameState.adaptationLevel > 0}
           />
         )}
         

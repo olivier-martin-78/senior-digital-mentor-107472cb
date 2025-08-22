@@ -63,6 +63,14 @@ interface TimeSlot {
   period: string;
 }
 
+interface GameSettings {
+  id: string;
+  error_threshold: number;
+  object_reduction: number;
+  default_accessibility_mode: boolean;
+  default_voice_enabled: boolean;
+}
+
 export default function ObjectAssemblyAdmin() {
   const navigate = useNavigate();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -70,6 +78,8 @@ export default function ObjectAssemblyAdmin() {
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('scenarios');
+  const [settings, setSettings] = useState<GameSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   // Modal states
   const [activityModal, setActivityModal] = useState<{
@@ -96,7 +106,49 @@ export default function ObjectAssemblyAdmin() {
 
   useEffect(() => {
     loadData();
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('game_settings')
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      setSettings(data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      toast.error('Erreur lors du chargement des paramètres');
+    }
+  };
+
+  const saveSettings = async () => {
+    if (!settings) return;
+    
+    try {
+      setSettingsLoading(true);
+      const { error } = await supabase
+        .from('game_settings')
+        .update({
+          error_threshold: settings.error_threshold,
+          object_reduction: settings.object_reduction,
+          default_accessibility_mode: settings.default_accessibility_mode,
+          default_voice_enabled: settings.default_voice_enabled,
+        })
+        .eq('id', settings.id);
+
+      if (error) throw error;
+      
+      toast.success('Paramètres sauvegardés avec succès');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Erreur lors de la sauvegarde des paramètres');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -594,46 +646,74 @@ export default function ObjectAssemblyAdmin() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Adaptation automatique</h4>
-                  <div className="space-y-2">
-                    <Label>Seuil d'erreurs pour adaptation</Label>
-                    <Input type="number" defaultValue="3" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Réduction d'objets en mode adapté</Label>
-                    <Select defaultValue="2">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">-1 objet</SelectItem>
-                        <SelectItem value="2">-2 objets</SelectItem>
-                        <SelectItem value="3">-3 objets</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                 <div className="space-y-4">
+                   <h4 className="font-medium">Adaptation automatique</h4>
+                   <div className="space-y-2">
+                     <Label>Seuil d'erreurs pour adaptation</Label>
+                     <Input 
+                       type="number" 
+                       min="1"
+                       max="10"
+                       value={settings?.error_threshold || 3}
+                       onChange={(e) => setSettings(prev => prev ? { ...prev, error_threshold: parseInt(e.target.value) || 3 } : null)}
+                     />
+                     <p className="text-xs text-muted-foreground">
+                       Après ce nombre d'erreurs, le mode adapté se déclenche automatiquement
+                     </p>
+                   </div>
+                   <div className="space-y-2">
+                     <Label>Réduction d'objets en mode adapté</Label>
+                     <Select 
+                       value={settings?.object_reduction?.toString() || "2"}
+                       onValueChange={(value) => setSettings(prev => prev ? { ...prev, object_reduction: parseInt(value) } : null)}
+                     >
+                       <SelectTrigger>
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="1">-1 objet</SelectItem>
+                         <SelectItem value="2">-2 objets</SelectItem>
+                         <SelectItem value="3">-3 objets</SelectItem>
+                         <SelectItem value="4">-4 objets</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <p className="text-xs text-muted-foreground">
+                       Nombre d'objets retirés automatiquement en mode adapté
+                     </p>
+                   </div>
+                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-medium">Accessibilité</h4>
-                  <div className="flex items-center justify-between">
-                    <Label>Mode accessibilité par défaut</Label>
-                    <input type="checkbox" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>Synthèse vocale activée</Label>
-                    <input type="checkbox" defaultChecked />
-                  </div>
-                </div>
+                 <div className="space-y-4">
+                   <h4 className="font-medium">Accessibilité</h4>
+                   <div className="flex items-center justify-between">
+                     <Label>Mode accessibilité par défaut</Label>
+                     <input 
+                       type="checkbox" 
+                       checked={settings?.default_accessibility_mode || false}
+                       onChange={(e) => setSettings(prev => prev ? { ...prev, default_accessibility_mode: e.target.checked } : null)}
+                     />
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <Label>Synthèse vocale activée par défaut</Label>
+                     <input 
+                       type="checkbox" 
+                       checked={settings?.default_voice_enabled || true}
+                       onChange={(e) => setSettings(prev => prev ? { ...prev, default_voice_enabled: e.target.checked } : null)}
+                     />
+                   </div>
+                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <Button className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Sauvegarder les paramètres
-                </Button>
-              </div>
+               <div className="pt-4 border-t">
+                 <Button 
+                   onClick={saveSettings}
+                   disabled={settingsLoading || !settings}
+                   className="gap-2"
+                 >
+                   <Save className="h-4 w-4" />
+                   {settingsLoading ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
+                 </Button>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>

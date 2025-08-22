@@ -8,13 +8,15 @@ interface GameHUDProps {
   level: number;
   errors: number;
   hintsUsed: number;
+  adaptationActive?: boolean;
 }
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   score,
   level,
   errors,
-  hintsUsed
+  hintsUsed,
+  adaptationActive = false
 }) => {
   return (
     <Card className="mb-6">
@@ -61,10 +63,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         </div>
 
         {/* Adaptation Warning */}
-        {errors > 3 && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <p className="text-amber-800 text-sm text-center">
-              💡 Mode d'aide activé : Le jeu s'adapte pour vous aider à réussir
+        {adaptationActive && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-md">
+            <p className="text-green-800 text-sm text-center font-medium">
+              🎯 Mode adapté activé : Certains objets ont été retirés pour simplifier l'exercice
             </p>
           </div>
         )}

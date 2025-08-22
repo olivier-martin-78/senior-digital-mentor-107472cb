@@ -949,6 +949,36 @@ export type Database = {
         }
         Relationships: []
       }
+      game_settings: {
+        Row: {
+          created_at: string
+          default_accessibility_mode: boolean
+          default_voice_enabled: boolean
+          error_threshold: number
+          id: string
+          object_reduction: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_accessibility_mode?: boolean
+          default_voice_enabled?: boolean
+          error_threshold?: number
+          id?: string
+          object_reduction?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_accessibility_mode?: boolean
+          default_voice_enabled?: boolean
+          error_threshold?: number
+          id?: string
+          object_reduction?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       group_invitation: {
         Row: {
           confirmation_date: string | null
