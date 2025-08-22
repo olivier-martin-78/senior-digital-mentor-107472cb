@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useObjectAssemblyGame } from '@/hooks/useObjectAssemblyGame';
 import { SpatialGrid } from './SpatialGrid';
 import { TemporalTimeline } from './TemporalTimeline';
@@ -98,6 +99,45 @@ export const GameBoard: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Validation Button */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="pt-6">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center gap-4 text-sm text-muted-foreground">
+              <span>✅ Placés : {gameState.placedItems.filter(item => item.spatialSlotId).length}/{currentLevel.spatial_required}</span>
+              {currentLevel.enable_timeline && (
+                <span>⏰ Étapes : {gameState.placedItems.filter(item => item.timeSlotId).length}/{currentLevel.temporal_required}</span>
+              )}
+            </div>
+            <Button 
+              onClick={() => {
+                const spatialPlacements = gameState.placedItems.filter(item => item.spatialSlotId).length;
+                const temporalPlacements = gameState.placedItems.filter(item => item.timeSlotId).length;
+                const spatialComplete = spatialPlacements >= currentLevel.spatial_required;
+                const temporalComplete = !currentLevel.enable_timeline || temporalPlacements >= currentLevel.temporal_required;
+
+                if (spatialComplete && temporalComplete) {
+                  speak('Félicitations ! Niveau terminé avec succès.');
+                  // Trigger level completion manually
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('checkLevelCompletion'));
+                  }, 500);
+                } else {
+                  const missing = [];
+                  if (!spatialComplete) missing.push('placement spatial');
+                  if (!temporalComplete) missing.push('étapes temporelles');
+                  speak(`Il manque encore : ${missing.join(' et ')}`);
+                }
+              }}
+              className="px-8 py-3 text-lg font-semibold"
+              disabled={gameState.placedItems.length === 0}
+            >
+              🎯 Vérifier mes réponses
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Instructions */}
       <Card className="bg-muted/30">
         <CardContent className="pt-6">
@@ -106,12 +146,6 @@ export const GameBoard: React.FC = () => {
               💡 <strong>Instructions :</strong> Cliquez sur un objet puis sur une zone, ou glissez les objets vers les zones appropriées.
               {currentLevel.enable_timeline && ' Organisez aussi les étapes dans le bon ordre.'}
             </p>
-            <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-              <span>✅ Placement spatial requis : {currentLevel.spatial_required}</span>
-              {currentLevel.enable_timeline && (
-                <span>⏰ Étapes temporelles requises : {currentLevel.temporal_required}</span>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>

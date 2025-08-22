@@ -390,6 +390,18 @@ export const useObjectAssemblyGame = () => {
     }
   }, [gameState.placedItems, checkLevelCompletion, gameState.gamePhase]);
 
+  // Listen for manual level completion check
+  useEffect(() => {
+    const handleManualCheck = () => {
+      if (checkLevelCompletion()) {
+        // Level completed successfully
+      }
+    };
+    
+    window.addEventListener('checkLevelCompletion', handleManualCheck);
+    return () => window.removeEventListener('checkLevelCompletion', handleManualCheck);
+  }, [checkLevelCompletion]);
+
   return {
     gameState,
     selectedActivity,
