@@ -15,6 +15,7 @@ export default function ObjectAssemblyGame() {
     gameState,
     scenarios,
     loading,
+    settingsLoaded,
     selectScenario,
     startLevel,
     resetGame,
@@ -25,10 +26,14 @@ export default function ObjectAssemblyGame() {
 
   React.useEffect(() => {
     document.title = 'Assemblage d\'Objets dans l\'Espace et le Temps';
-    speak('Bienvenue dans le jeu Assemblage d\'Objets. Choisissez un scénario pour commencer.');
-  }, [speak]);
+    
+    // Only trigger welcome message after settings are loaded and if voice is enabled
+    if (settingsLoaded && gameState?.voiceEnabled) {
+      speak('Bienvenue dans le jeu Assemblage d\'Objets. Choisissez un scénario pour commencer.');
+    }
+  }, [speak, settingsLoaded, gameState?.voiceEnabled]);
 
-  if (loading) {
+  if (loading || !settingsLoaded || !gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -101,7 +106,7 @@ export default function ObjectAssemblyGame() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => speak('Cliquez sur les objets pour les faire glisser vers les zones appropriées.')}
+              onClick={() => gameState.voiceEnabled && speak('Cliquez sur les objets pour les faire glisser vers les zones appropriées.')}
               className="gap-2"
             >
               <HelpCircle className="h-4 w-4" />

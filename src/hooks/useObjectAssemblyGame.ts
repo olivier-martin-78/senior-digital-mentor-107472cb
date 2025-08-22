@@ -71,7 +71,12 @@ export interface GameState {
 
 const STORAGE_KEY = 'object-assembly-game-progress';
 
-const initialState: GameState = {
+const getInitialState = (gameSettings?: {
+  error_threshold: number;
+  object_reduction: number;
+  default_accessibility_mode: boolean;
+  default_voice_enabled: boolean;
+} | null): GameState => ({
   currentScenario: null,
   currentLevel: 1,
   placedItems: [],
@@ -79,17 +84,18 @@ const initialState: GameState = {
   currentErrors: 0,
   hintsUsed: 0,
   gamePhase: 'menu',
-  accessibilityMode: false,
-  voiceEnabled: true,
+  accessibilityMode: gameSettings?.default_accessibility_mode ?? false,
+  voiceEnabled: gameSettings?.default_voice_enabled ?? true,
   adaptationLevel: 0,
   sessionId: null,
-};
+});
 
 export const useObjectAssemblyGame = () => {
-  const [gameState, setGameState] = useState<GameState>(initialState);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<GameScenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [gameSettings, setGameSettings] = useState<{
     error_threshold: number;
     object_reduction: number;
@@ -182,6 +188,53 @@ export const useObjectAssemblyGame = () => {
       
       if (!settingsError && settingsData) {
         setGameSettings(settingsData);
+        
+        // Initialize game state with loaded settings
+        const savedProgress = localStorage.getItem(STORAGE_KEY);
+        let initialGameState = getInitialState(settingsData);
+        
+        if (savedProgress) {
+          try {
+            const progress = JSON.parse(savedProgress);
+            // Apply saved progress but use current database defaults for voice/accessibility if not in saved data
+            initialGameState = {
+              ...initialGameState,
+              ...progress,
+              // Override with database defaults if these settings weren't in saved progress
+              voiceEnabled: progress.voiceEnabled !== undefined ? progress.voiceEnabled : settingsData.default_voice_enabled,
+              accessibilityMode: progress.accessibilityMode !== undefined ? progress.accessibilityMode : settingsData.default_accessibility_mode,
+            };
+          } catch (error) {
+            console.error('Error loading saved progress:', error);
+          }
+        }
+        
+        setGameState(initialGameState);
+        setSettingsLoaded(true);
+      } else {
+        // Fallback if no settings found
+        const fallbackSettings = {
+          error_threshold: 3,
+          object_reduction: 2,
+          default_accessibility_mode: false,
+          default_voice_enabled: true
+        };
+        setGameSettings(fallbackSettings);
+        
+        const savedProgress = localStorage.getItem(STORAGE_KEY);
+        let initialGameState = getInitialState(fallbackSettings);
+        
+        if (savedProgress) {
+          try {
+            const progress = JSON.parse(savedProgress);
+            initialGameState = { ...initialGameState, ...progress };
+          } catch (error) {
+            console.error('Error loading saved progress:', error);
+          }
+        }
+        
+        setGameState(initialGameState);
+        setSettingsLoaded(true);
       }
     } catch (error) {
       console.error('Error loading scenarios:', error);
@@ -191,18 +244,7 @@ export const useObjectAssemblyGame = () => {
     }
   }, []);
 
-  // Load saved game progress
-  useEffect(() => {
-    const savedProgress = localStorage.getItem(STORAGE_KEY);
-    if (savedProgress) {
-      try {
-        const progress = JSON.parse(savedProgress);
-        setGameState(prev => ({ ...prev, ...progress }));
-      } catch (error) {
-        console.error('Error loading saved progress:', error);
-      }
-    }
-  }, []);
+  // Note: Game state initialization is now handled in loadScenarios to wait for settings
 
   // Save game progress
   const saveProgress = useCallback((state: GameState) => {
@@ -218,17 +260,18 @@ export const useObjectAssemblyGame = () => {
 
   // Speech synthesis
   const speak = useCallback((text: string) => {
-    if (!gameState.voiceEnabled || !('speechSynthesis' in window)) return;
+    if (!gameState?.voiceEnabled || !('speechSynthesis' in window)) return;
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.8;
     speechSynthesis.speak(utterance);
-  }, [gameState.voiceEnabled]);
+  }, [gameState?.voiceEnabled]);
 
   // Game actions
   const selectScenario = useCallback((scenarioId: string) => {
     setGameState(prev => {
+      if (!prev) return null;
       const newState = {
         ...prev,
         currentScenario: scenarioId,
@@ -251,6 +294,8 @@ export const useObjectAssemblyGame = () => {
   }, [scenarios, speak, saveProgress]);
 
   const startLevel = useCallback(async () => {
+    if (!gameState) return;
+    
     const scenario = scenarios.find(s => s.id === gameState.currentScenario);
     if (!scenario) return;
 
@@ -259,6 +304,7 @@ export const useObjectAssemblyGame = () => {
 
     if (levelExists) {
       setGameState(prev => {
+        if (!prev) return null;
         const newState = {
           ...prev,
           currentLevel: nextLevel,
@@ -281,9 +327,12 @@ export const useObjectAssemblyGame = () => {
   }, [scenarios, gameState, speak, saveProgress]);
 
   const resetGame = useCallback(() => {
+    if (!gameState) return;
+    
     setGameState(prev => {
+      if (!prev) return null;
       const newState = {
-        ...initialState,
+        ...getInitialState(gameSettings),
         accessibilityMode: prev.accessibilityMode,
         voiceEnabled: prev.voiceEnabled,
       };
@@ -291,10 +340,11 @@ export const useObjectAssemblyGame = () => {
       return newState;
     });
     speak('Retour au menu principal.');
-  }, [speak, saveProgress]);
+  }, [speak, saveProgress, gameState, gameSettings]);
 
   const toggleAccessibility = useCallback(() => {
     setGameState(prev => {
+      if (!prev) return null;
       const newState = { ...prev, accessibilityMode: !prev.accessibilityMode };
       saveProgress(newState);
       return newState;
@@ -308,6 +358,7 @@ export const useObjectAssemblyGame = () => {
     }
     
     setGameState(prev => {
+      if (!prev) return null;
       const newState = { ...prev, voiceEnabled: !prev.voiceEnabled };
       saveProgress(newState);
       return newState;
@@ -315,11 +366,14 @@ export const useObjectAssemblyGame = () => {
   }, [saveProgress]);
 
   const placeItem = useCallback(async (activityId: string, spatialSlotId?: string, timeSlotId?: string) => {
+    if (!gameState) return;
+    
     // Validate placement logic here
     const isCorrectPlacement = true; // TODO: Implement validation logic
 
     if (isCorrectPlacement) {
       setGameState(prev => {
+        if (!prev) return null;
         const existingItem = prev.placedItems.find(item => item.activityId === activityId);
         const newPlacedItems = prev.placedItems.filter(item => item.activityId !== activityId);
         
@@ -345,6 +399,7 @@ export const useObjectAssemblyGame = () => {
       toast.success('Excellent !');
     } else {
       setGameState(prev => {
+        if (!prev) return null;
         const newErrors = prev.currentErrors + 1;
         const errorThreshold = gameSettings?.error_threshold || 3;
         const newState = {
@@ -359,10 +414,11 @@ export const useObjectAssemblyGame = () => {
       speak('Essayez encore, vous y êtes presque !');
       toast.error('Pas tout à fait, réessayez !');
     }
-  }, [speak, saveProgress]);
+  }, [speak, saveProgress, gameState, gameSettings]);
 
   const removeItem = useCallback((activityId: string, removeType?: 'spatial' | 'temporal' | 'both') => {
     setGameState(prev => {
+      if (!prev) return null;
       const existingItem = prev.placedItems.find(item => item.activityId === activityId);
       if (!existingItem) return prev;
 
@@ -395,6 +451,8 @@ export const useObjectAssemblyGame = () => {
   }, [saveProgress, speak]);
 
   const checkLevelCompletion = useCallback(() => {
+    if (!gameState) return false;
+    
     const scenario = scenarios.find(s => s.id === gameState.currentScenario);
     if (!scenario) return false;
 
@@ -408,7 +466,7 @@ export const useObjectAssemblyGame = () => {
     const temporalComplete = !currentLevel.enable_timeline || temporalPlacements >= currentLevel.temporal_required;
 
     if (spatialComplete && temporalComplete) {
-      setGameState(prev => ({ ...prev, gamePhase: 'success' }));
+      setGameState(prev => prev ? { ...prev, gamePhase: 'success' } : null);
       speak('Félicitations ! Niveau terminé avec succès.');
       return true;
     }
@@ -417,6 +475,8 @@ export const useObjectAssemblyGame = () => {
   }, [scenarios, gameState, speak]);
 
   const selectActivity = useCallback((activityId: string | null) => {
+    if (!gameState) return;
+    
     setSelectedActivity(activityId);
     if (activityId) {
       const scenario = scenarios.find(s => s.id === gameState.currentScenario);
@@ -428,7 +488,7 @@ export const useObjectAssemblyGame = () => {
     } else {
       speak('Sélection annulée.');
     }
-  }, [scenarios, gameState.currentScenario, gameState.currentLevel, speak]);
+  }, [scenarios, gameState, speak]);
 
   const placeSelectedActivity = useCallback((spatialSlotId?: string, timeSlotId?: string) => {
     if (!selectedActivity) return;
@@ -444,12 +504,14 @@ export const useObjectAssemblyGame = () => {
 
   // Check for level completion
   useEffect(() => {
-    if (gameState.gamePhase === 'playing') {
+    if (gameState?.gamePhase === 'playing') {
       checkLevelCompletion();
     }
-  }, [gameState.placedItems, checkLevelCompletion, gameState.gamePhase]);
+  }, [gameState?.placedItems, checkLevelCompletion, gameState?.gamePhase]);
 
   const completeLevel = useCallback(() => {
+    if (!gameState) return false;
+    
     const scenario = scenarios.find(s => s.id === gameState.currentScenario);
     if (!scenario) return false;
 
@@ -477,7 +539,7 @@ export const useObjectAssemblyGame = () => {
       } else {
         // Show success screen for scenario completion
         setTimeout(() => {
-          setGameState(prev => ({ ...prev, gamePhase: 'success' }));
+          setGameState(prev => prev ? { ...prev, gamePhase: 'success' } : null);
         }, 1500);
       }
       
@@ -493,6 +555,8 @@ export const useObjectAssemblyGame = () => {
 
   // Get current level activities, potentially reduced for adaptation
   const getCurrentLevelActivities = useCallback(() => {
+    if (!gameState) return [];
+    
     const scenario = scenarios.find(s => s.id === gameState.currentScenario);
     if (!scenario) return [];
 
@@ -524,6 +588,7 @@ export const useObjectAssemblyGame = () => {
     selectedActivity,
     scenarios,
     loading,
+    settingsLoaded,
     speak,
     selectScenario,
     startLevel,
