@@ -685,22 +685,22 @@ export default function ObjectAssemblyAdmin() {
 
                  <div className="space-y-4">
                    <h4 className="font-medium">Accessibilité</h4>
-                   <div className="flex items-center justify-between">
-                     <Label>Mode accessibilité par défaut</Label>
-                     <input 
-                       type="checkbox" 
-                       checked={settings?.default_accessibility_mode || false}
-                       onChange={(e) => setSettings(prev => prev ? { ...prev, default_accessibility_mode: e.target.checked } : null)}
-                     />
-                   </div>
-                   <div className="flex items-center justify-between">
-                     <Label>Synthèse vocale activée par défaut</Label>
-                     <input 
-                       type="checkbox" 
-                       checked={settings?.default_voice_enabled || true}
-                       onChange={(e) => setSettings(prev => prev ? { ...prev, default_voice_enabled: e.target.checked } : null)}
-                     />
-                   </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Mode accessibilité par défaut</Label>
+                      <input 
+                        type="checkbox" 
+                        checked={settings?.default_accessibility_mode ?? false}
+                        onChange={(e) => setSettings(prev => prev ? { ...prev, default_accessibility_mode: e.target.checked } : null)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Synthèse vocale activée par défaut</Label>
+                      <input 
+                        type="checkbox" 
+                        checked={settings?.default_voice_enabled ?? true}
+                        onChange={(e) => setSettings(prev => prev ? { ...prev, default_voice_enabled: e.target.checked } : null)}
+                      />
+                    </div>
                  </div>
               </div>
 
