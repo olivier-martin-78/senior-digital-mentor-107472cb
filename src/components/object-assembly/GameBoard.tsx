@@ -13,7 +13,8 @@ export const GameBoard: React.FC = () => {
     scenarios, 
     selectActivity, 
     placeSelectedActivity, 
-    speak 
+    speak,
+    completeLevel
   } = useObjectAssemblyGame();
 
   const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
@@ -110,25 +111,7 @@ export const GameBoard: React.FC = () => {
               )}
             </div>
             <Button 
-              onClick={() => {
-                const spatialPlacements = gameState.placedItems.filter(item => item.spatialSlotId).length;
-                const temporalPlacements = gameState.placedItems.filter(item => item.timeSlotId).length;
-                const spatialComplete = spatialPlacements >= currentLevel.spatial_required;
-                const temporalComplete = !currentLevel.enable_timeline || temporalPlacements >= currentLevel.temporal_required;
-
-                if (spatialComplete && temporalComplete) {
-                  speak('Félicitations ! Niveau terminé avec succès.');
-                  // Trigger level completion manually
-                  setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('checkLevelCompletion'));
-                  }, 500);
-                } else {
-                  const missing = [];
-                  if (!spatialComplete) missing.push('placement spatial');
-                  if (!temporalComplete) missing.push('étapes temporelles');
-                  speak(`Il manque encore : ${missing.join(' et ')}`);
-                }
-              }}
+              onClick={completeLevel}
               className="px-8 py-3 text-lg font-semibold"
               disabled={gameState.placedItems.length === 0}
             >

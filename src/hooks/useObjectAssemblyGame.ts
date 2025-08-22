@@ -390,17 +390,47 @@ export const useObjectAssemblyGame = () => {
     }
   }, [gameState.placedItems, checkLevelCompletion, gameState.gamePhase]);
 
-  // Listen for manual level completion check
-  useEffect(() => {
-    const handleManualCheck = () => {
-      if (checkLevelCompletion()) {
-        // Level completed successfully
+  const completeLevel = useCallback(() => {
+    const scenario = scenarios.find(s => s.id === gameState.currentScenario);
+    if (!scenario) return false;
+
+    const currentLevel = scenario.levels.find(l => l.level_number === gameState.currentLevel);
+    if (!currentLevel) return false;
+
+    const spatialPlacements = gameState.placedItems.filter(item => item.spatialSlotId).length;
+    const temporalPlacements = gameState.placedItems.filter(item => item.timeSlotId).length;
+
+    const spatialComplete = spatialPlacements >= currentLevel.spatial_required;
+    const temporalComplete = !currentLevel.enable_timeline || temporalPlacements >= currentLevel.temporal_required;
+
+    if (spatialComplete && temporalComplete) {
+      speak('Félicitations ! Niveau terminé avec succès.');
+      
+      // Check if there's a next level
+      const nextLevel = gameState.currentLevel + 1;
+      const hasNextLevel = scenario.levels.some(l => l.level_number === nextLevel);
+      
+      if (hasNextLevel) {
+        // Progress to next level after a short delay
+        setTimeout(() => {
+          startLevel();
+        }, 1500);
+      } else {
+        // Show success screen for scenario completion
+        setTimeout(() => {
+          setGameState(prev => ({ ...prev, gamePhase: 'success' }));
+        }, 1500);
       }
-    };
-    
-    window.addEventListener('checkLevelCompletion', handleManualCheck);
-    return () => window.removeEventListener('checkLevelCompletion', handleManualCheck);
-  }, [checkLevelCompletion]);
+      
+      return true;
+    } else {
+      const missing = [];
+      if (!spatialComplete) missing.push('placement spatial');
+      if (!temporalComplete) missing.push('étapes temporelles');
+      speak(`Il manque encore : ${missing.join(' et ')}`);
+      return false;
+    }
+  }, [scenarios, gameState, speak, startLevel]);
 
   return {
     gameState,
@@ -416,5 +446,6 @@ export const useObjectAssemblyGame = () => {
     placeItem,
     selectActivity,
     placeSelectedActivity,
+    completeLevel,
   };
 };
