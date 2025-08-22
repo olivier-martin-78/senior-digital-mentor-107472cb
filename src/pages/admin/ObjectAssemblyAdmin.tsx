@@ -9,12 +9,103 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Edit, Trash2, Save, Play } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Save, Play, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import {
+  CSS,
+} from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import ActivityModal from '@/components/admin/ActivityModal';
 import SpatialSlotModal from '@/components/admin/SpatialSlotModal';
 import TimeSlotModal from '@/components/admin/TimeSlotModal';
 import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
+
+// Sortable Spatial Slot Component
+interface SortableSpatialSlotProps {
+  slot: SpatialSlot;
+  onEdit: (modal: { isOpen: boolean; spatialSlot?: SpatialSlot | null }) => void;
+  onDelete: (dialog: { isOpen: boolean; type: 'spatial'; item: SpatialSlot; loading: boolean }) => void;
+}
+
+function SortableSpatialSlot({ slot, onEdit, onDelete }: SortableSpatialSlotProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slot.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between p-3 bg-muted rounded-lg transition-all ${
+        isDragging ? 'ring-2 ring-primary z-10' : ''
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-background rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <span className="text-2xl">{slot.icon}</span>
+        <div>
+          <p className="font-medium">{slot.label}</p>
+          <p className="text-xs text-muted-foreground">
+            Position: ({slot.x_position}, {slot.y_position})
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onEdit({ isOpen: true, spatialSlot: slot })}
+        >
+          <Edit className="h-3 w-3" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onDelete({
+            isOpen: true,
+            type: 'spatial',
+            item: slot,
+            loading: false
+          })}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 interface Scenario {
   id: string;
@@ -54,6 +145,7 @@ interface SpatialSlot {
   icon: string;
   x_position: number;
   y_position: number;
+  display_order: number;
 }
 
 interface TimeSlot {
@@ -190,7 +282,8 @@ export default function ObjectAssemblyAdmin() {
                 supabase
                   .from('cognitive_puzzle_spatial_slots')
                   .select('*')
-                  .eq('level_id', level.id),
+                  .eq('level_id', level.id)
+                  .order('display_order', { ascending: true }),
                 supabase
                   .from('cognitive_puzzle_time_slots')
                   .select('*')
@@ -219,6 +312,105 @@ export default function ObjectAssemblyAdmin() {
       toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Drag and drop functionality
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !selectedLevelData) {
+      return;
+    }
+
+    const oldIndex = selectedLevelData.spatialSlots.findIndex(slot => slot.id === active.id);
+    const newIndex = selectedLevelData.spatialSlots.findIndex(slot => slot.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Update local state immediately for UI responsiveness
+    const newSpatialSlots = arrayMove(selectedLevelData.spatialSlots, oldIndex, newIndex);
+    
+    // Update scenarios state
+    setScenarios(prevScenarios => 
+      prevScenarios.map(scenario => 
+        scenario.id === selectedScenario
+          ? {
+              ...scenario,
+              levels: scenario.levels.map(level =>
+                level.id === selectedLevel
+                  ? { ...level, spatialSlots: newSpatialSlots }
+                  : level
+              )
+            }
+          : scenario
+      )
+    );
+
+    // Save new order to database
+    try {
+      const updates = newSpatialSlots.map((slot, index) => ({
+        id: slot.id,
+        display_order: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('cognitive_puzzle_spatial_slots')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      toast.success('Ordre des zones mis à jour');
+    } catch (error) {
+      console.error('Error updating display order:', error);
+      toast.error('Erreur lors de la mise à jour de l\'ordre');
+      // Reload data to restore original order
+      loadData();
+    }
+  };
+
+  const sortBySpatialCoordinates = async () => {
+    if (!selectedLevelData) return;
+
+    try {
+      // Sort by y_position first, then x_position
+      const sortedSlots = [...selectedLevelData.spatialSlots].sort((a, b) => {
+        if (a.y_position !== b.y_position) {
+          return a.y_position - b.y_position;
+        }
+        return a.x_position - b.x_position;
+      });
+
+      // Update display_order in database
+      const updates = sortedSlots.map((slot, index) => ({
+        id: slot.id,
+        display_order: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('cognitive_puzzle_spatial_slots')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      toast.success('Zones triées par coordonnées spatiales');
+      loadData(); // Reload to reflect new order
+    } catch (error) {
+      console.error('Error sorting by coordinates:', error);
+      toast.error('Erreur lors du tri par coordonnées');
     }
   };
 
@@ -529,43 +721,41 @@ export default function ObjectAssemblyAdmin() {
                 {/* Spatial Zones */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Zones spatiales ({selectedLevelData.spatialSlots.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {selectedLevelData.spatialSlots.map((slot) => (
-                      <div key={slot.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{slot.icon}</span>
-                          <div>
-                            <p className="font-medium">{slot.label}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Position: ({slot.x_position}, {slot.y_position})
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setSpatialSlotModal({ isOpen: true, spatialSlot: slot })}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setDeleteDialog({
-                              isOpen: true,
-                              type: 'spatial',
-                              item: slot,
-                              loading: false
-                            })}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Zones spatiales ({selectedLevelData.spatialSlots.length})</CardTitle>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={sortBySpatialCoordinates}
+                          className="gap-2"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                          Trier par coordonnées
+                        </Button>
                       </div>
-                    ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Glissez-déposez pour réorganiser l'ordre d'affichage dans l'administration (les coordonnées X,Y contrôlent toujours la position dans le jeu)
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext 
+                        items={selectedLevelData.spatialSlots.map(slot => slot.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3">
+                          {selectedLevelData.spatialSlots.map((slot) => (
+                            <SortableSpatialSlot key={slot.id} slot={slot} onEdit={setSpatialSlotModal} onDelete={setDeleteDialog} />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </CardContent>
                 </Card>
               </div>

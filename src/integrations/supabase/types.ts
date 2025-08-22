@@ -742,6 +742,7 @@ export type Database = {
       cognitive_puzzle_spatial_slots: {
         Row: {
           created_at: string
+          display_order: number | null
           icon: string
           id: string
           label: string
@@ -751,6 +752,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number | null
           icon: string
           id?: string
           label: string
@@ -760,6 +762,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number | null
           icon?: string
           id?: string
           label?: string
