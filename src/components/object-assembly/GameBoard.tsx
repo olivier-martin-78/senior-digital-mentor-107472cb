@@ -15,7 +15,8 @@ export const GameBoard: React.FC = () => {
     placeSelectedActivity, 
     speak,
     completeLevel,
-    getCurrentLevelActivities
+    getCurrentLevelActivities,
+    removeItem
   } = useObjectAssemblyGame();
 
   const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
@@ -79,6 +80,7 @@ export const GameBoard: React.FC = () => {
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             onPlaceSelected={placeSelectedActivity}
+            onRemoveItem={removeItem}
             onSpeak={speak}
           />
         </CardContent>

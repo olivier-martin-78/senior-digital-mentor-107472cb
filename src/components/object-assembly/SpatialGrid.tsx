@@ -11,6 +11,7 @@ interface SpatialGridProps {
   selectedActivity: string | null;
   accessibilityMode: boolean;
   onPlaceSelected: (spatialSlotId: string) => void;
+  onRemoveItem: (activityId: string, type: 'spatial' | 'temporal') => void;
   onSpeak: (text: string) => void;
 }
 
@@ -21,9 +22,10 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
   selectedActivity,
   accessibilityMode,
   onPlaceSelected,
+  onRemoveItem,
   onSpeak
 }) => {
-  const { placeItem, removeItem, speak } = useObjectAssemblyGame();
+  const { placeItem } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {
@@ -129,7 +131,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
                   className="absolute -top-1 -right-1 w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeItem(placedActivity.id, 'spatial');
+                    onRemoveItem(placedActivity.id, 'spatial');
                     onSpeak(`${placedActivity.name} retiré de ${slot.label}`);
                   }}
                 >
