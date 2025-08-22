@@ -61,11 +61,21 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
     
     return {
       display: 'grid',
-      gridTemplateColumns: `repeat(${maxX + 1}, 1fr)`,
-      gridTemplateRows: `repeat(${maxY + 1}, 1fr)`,
-      gap: '4px', // Reduced spacing for better visual alignment
+      gridTemplateColumns: `repeat(${maxX + 1}, minmax(80px, 1fr))`,
+      gridTemplateRows: `repeat(${maxY + 1}, minmax(80px, auto))`,
+      gap: '8px',
+      justifyItems: 'center',
+      alignItems: 'center',
     };
   };
+
+  // Sort slots by position for consistent rendering
+  const sortedSpatialSlots = [...spatialSlots].sort((a, b) => {
+    if (a.y_position !== b.y_position) {
+      return a.y_position - b.y_position;
+    }
+    return a.x_position - b.x_position;
+  });
 
   if (spatialSlots.length === 0) {
     return (
@@ -77,7 +87,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
 
   return (
     <div style={getGridStyle()} className="p-2">
-      {spatialSlots.map((slot) => {
+      {sortedSpatialSlots.map((slot) => {
         const placedActivity = getPlacedActivity(slot.id);
         const isDraggedOver = dragOverSlot === slot.id;
         
@@ -86,7 +96,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
             key={slot.id}
             className={cn(
               "transition-all duration-200 border-2 border-dashed cursor-pointer relative",
-              "flex flex-col items-center justify-center text-center w-fit mx-auto",
+              "flex flex-col items-center justify-center text-center",
               accessibilityMode ? "min-h-[80px] min-w-[80px] p-2" : "min-h-[60px] min-w-[60px] p-2",
               isDraggedOver && "border-primary bg-primary/10 scale-105",
               placedActivity && "border-solid border-success bg-success/10",
