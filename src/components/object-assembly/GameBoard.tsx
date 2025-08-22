@@ -20,6 +20,15 @@ export const GameBoard: React.FC = () => {
     placeItem
   } = useObjectAssemblyGame();
 
+  // Add null check for gameState
+  if (!gameState) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Chargement du jeu...</p>
+      </div>
+    );
+  }
+
   const currentScenario = scenarios.find(s => s.id === gameState.currentScenario);
   const currentLevel = currentScenario?.levels.find(l => l.level_number === gameState.currentLevel);
   const adaptedActivities = getCurrentLevelActivities();
