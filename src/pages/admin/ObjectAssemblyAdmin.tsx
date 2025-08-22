@@ -11,6 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, Edit, Trash2, Save, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ActivityModal from '@/components/admin/ActivityModal';
+import SpatialSlotModal from '@/components/admin/SpatialSlotModal';
+import TimeSlotModal from '@/components/admin/TimeSlotModal';
+import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
 
 interface Scenario {
   id: string;
@@ -66,6 +70,29 @@ export default function ObjectAssemblyAdmin() {
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('scenarios');
+
+  // Modal states
+  const [activityModal, setActivityModal] = useState<{
+    isOpen: boolean;
+    activity?: Activity | null;
+  }>({ isOpen: false, activity: null });
+  
+  const [spatialSlotModal, setSpatialSlotModal] = useState<{
+    isOpen: boolean;
+    spatialSlot?: SpatialSlot | null;
+  }>({ isOpen: false, spatialSlot: null });
+  
+  const [timeSlotModal, setTimeSlotModal] = useState<{
+    isOpen: boolean;
+    timeSlot?: TimeSlot | null;
+  }>({ isOpen: false, timeSlot: null });
+
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    type: 'activity' | 'spatial' | 'temporal' | null;
+    item: any;
+    loading: boolean;
+  }>({ isOpen: false, type: null, item: null, loading: false });
 
   useEffect(() => {
     loadData();
@@ -140,6 +167,52 @@ export default function ObjectAssemblyAdmin() {
       toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper functions
+  const handleDeleteItem = async () => {
+    if (!deleteDialog.item || !deleteDialog.type) return;
+
+    setDeleteDialog(prev => ({ ...prev, loading: true }));
+
+    try {
+      let error: any = null;
+      let itemName = '';
+
+      switch (deleteDialog.type) {
+        case 'activity':
+          ({ error } = await supabase
+            .from('cognitive_puzzle_activities')
+            .delete()
+            .eq('id', deleteDialog.item.id));
+          itemName = deleteDialog.item.name;
+          break;
+        case 'spatial':
+          ({ error } = await supabase
+            .from('cognitive_puzzle_spatial_slots')
+            .delete()
+            .eq('id', deleteDialog.item.id));
+          itemName = deleteDialog.item.label;
+          break;
+        case 'temporal':
+          ({ error } = await supabase
+            .from('cognitive_puzzle_time_slots')
+            .delete()
+            .eq('id', deleteDialog.item.id));
+          itemName = deleteDialog.item.label;
+          break;
+      }
+
+      if (error) throw error;
+
+      toast.success(`${itemName} supprimé avec succès`);
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleteDialog({ isOpen: false, type: null, item: null, loading: false });
     }
   };
 
@@ -340,11 +413,19 @@ export default function ObjectAssemblyAdmin() {
                   Configuration - {selectedLevelData.name}
                 </h3>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={() => setActivityModal({ isOpen: true, activity: null })}
+                  >
                     <Plus className="h-4 w-4" />
                     Ajouter objet
                   </Button>
-                  <Button variant="outline" className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={() => setSpatialSlotModal({ isOpen: true, spatialSlot: null })}
+                  >
                     <Plus className="h-4 w-4" />
                     Ajouter zone
                   </Button>
@@ -371,20 +452,19 @@ export default function ObjectAssemblyAdmin() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => {
-                              // TODO: Implémenter l'édition d'objet
-                              toast.info('Édition d\'objet - À implémenter');
-                            }}
+                            onClick={() => setActivityModal({ isOpen: true, activity })}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => {
-                              // TODO: Implémenter la suppression d'objet
-                              toast.info('Suppression d\'objet - À implémenter');
-                            }}
+                            onClick={() => setDeleteDialog({
+                              isOpen: true,
+                              type: 'activity',
+                              item: activity,
+                              loading: false
+                            })}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -415,20 +495,19 @@ export default function ObjectAssemblyAdmin() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => {
-                              // TODO: Implémenter l'édition de zone spatiale
-                              toast.info('Édition de zone spatiale - À implémenter');
-                            }}
+                            onClick={() => setSpatialSlotModal({ isOpen: true, spatialSlot: slot })}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => {
-                              // TODO: Implémenter la suppression de zone spatiale
-                              toast.info('Suppression de zone spatiale - À implémenter');
-                            }}
+                            onClick={() => setDeleteDialog({
+                              isOpen: true,
+                              type: 'spatial',
+                              item: slot,
+                              loading: false
+                            })}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -443,7 +522,18 @@ export default function ObjectAssemblyAdmin() {
               {selectedLevelData.enable_timeline && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Étapes temporelles ({selectedLevelData.timeSlots.length})</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Étapes temporelles ({selectedLevelData.timeSlots.length})</CardTitle>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setTimeSlotModal({ isOpen: true, timeSlot: null })}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter étape
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid md:grid-cols-3 gap-4">
@@ -460,20 +550,19 @@ export default function ObjectAssemblyAdmin() {
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => {
-                                // TODO: Implémenter l'édition d'étape temporelle
-                                toast.info('Édition d\'étape temporelle - À implémenter');
-                              }}
+                              onClick={() => setTimeSlotModal({ isOpen: true, timeSlot: slot })}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => {
-                                // TODO: Implémenter la suppression d'étape temporelle
-                                toast.info('Suppression d\'étape temporelle - À implémenter');
-                              }}
+                              onClick={() => setDeleteDialog({
+                                isOpen: true,
+                                type: 'temporal',
+                                item: slot,
+                                loading: false
+                              })}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -549,6 +638,52 @@ export default function ObjectAssemblyAdmin() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      {selectedLevel && (
+        <>
+          <ActivityModal
+            isOpen={activityModal.isOpen}
+            onClose={() => setActivityModal({ isOpen: false, activity: null })}
+            onSave={loadData}
+            levelId={selectedLevel}
+            activity={activityModal.activity}
+          />
+          
+          <SpatialSlotModal
+            isOpen={spatialSlotModal.isOpen}
+            onClose={() => setSpatialSlotModal({ isOpen: false, spatialSlot: null })}
+            onSave={loadData}
+            levelId={selectedLevel}
+            spatialSlot={spatialSlotModal.spatialSlot}
+          />
+          
+          <TimeSlotModal
+            isOpen={timeSlotModal.isOpen}
+            onClose={() => setTimeSlotModal({ isOpen: false, timeSlot: null })}
+            onSave={loadData}
+            levelId={selectedLevel}
+            timeSlot={timeSlotModal.timeSlot}
+          />
+        </>
+      )}
+
+      <DeleteConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, type: null, item: null, loading: false })}
+        onConfirm={handleDeleteItem}
+        loading={deleteDialog.loading}
+        title={`Supprimer ${
+          deleteDialog.type === 'activity' ? "l'objet" : 
+          deleteDialog.type === 'spatial' ? 'la zone spatiale' : 
+          "l'étape temporelle"
+        }`}
+        description={`Êtes-vous sûr de vouloir supprimer ${
+          deleteDialog.type === 'activity' ? `l'objet "${deleteDialog.item?.name}"` : 
+          deleteDialog.type === 'spatial' ? `la zone "${deleteDialog.item?.label}"` : 
+          `l'étape "${deleteDialog.item?.label}"`
+        } ? Cette action est irréversible.`}
+      />
     </div>
   );
 }
