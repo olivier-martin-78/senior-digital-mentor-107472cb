@@ -65,6 +65,7 @@ export default function ObjectAssemblyAdmin() {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('scenarios');
 
   useEffect(() => {
     loadData();
@@ -183,7 +184,7 @@ export default function ObjectAssemblyAdmin() {
         </Button>
       </div>
 
-      <Tabs defaultValue="scenarios" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="scenarios">Scénarios</TabsTrigger>
           <TabsTrigger value="levels">Niveaux</TabsTrigger>
@@ -223,7 +224,16 @@ export default function ObjectAssemblyAdmin() {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedScenario(scenario.id);
+                          setActiveTab('levels');
+                        }}
+                      >
                         <Edit className="h-3 w-3 mr-1" />
                         Modifier
                       </Button>
