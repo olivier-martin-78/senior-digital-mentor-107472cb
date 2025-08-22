@@ -277,7 +277,10 @@ export default function ObjectAssemblyAdmin() {
                     className={`cursor-pointer transition-all ${
                       selectedLevel === level.id ? 'ring-2 ring-primary' : ''
                     }`}
-                    onClick={() => setSelectedLevel(level.id)}
+                    onClick={() => {
+                      setSelectedLevel(level.id);
+                      setActiveTab('objects');
+                    }}
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between">
@@ -365,10 +368,24 @@ export default function ObjectAssemblyAdmin() {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              // TODO: Implémenter l'édition d'objet
+                              toast.info('Édition d\'objet - À implémenter');
+                            }}
+                          >
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              // TODO: Implémenter la suppression d'objet
+                              toast.info('Suppression d\'objet - À implémenter');
+                            }}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -395,10 +412,24 @@ export default function ObjectAssemblyAdmin() {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              // TODO: Implémenter l'édition de zone spatiale
+                              toast.info('Édition de zone spatiale - À implémenter');
+                            }}
+                          >
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              // TODO: Implémenter la suppression de zone spatiale
+                              toast.info('Suppression de zone spatiale - À implémenter');
+                            }}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -426,10 +457,24 @@ export default function ObjectAssemblyAdmin() {
                             </div>
                           </div>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implémenter l'édition d'étape temporelle
+                                toast.info('Édition d\'étape temporelle - À implémenter');
+                              }}
+                            >
                               <Edit className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implémenter la suppression d'étape temporelle
+                                toast.info('Suppression d\'étape temporelle - À implémenter');
+                              }}
+                            >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
