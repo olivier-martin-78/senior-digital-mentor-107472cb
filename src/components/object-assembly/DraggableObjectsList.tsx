@@ -95,10 +95,10 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
 
       {/* Objects Grid */}
       <div className={cn(
-        "grid gap-3",
+        "grid gap-2",
         accessibilityMode 
           ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" 
-          : "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6"
+          : "grid-cols-4 sm:grid-cols-5 lg:grid-cols-8"
       )}>
         {visibleActivities.map((activity) => {
           const status = getActivityStatus(activity.id);
@@ -110,9 +110,9 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
               key={activity.id}
               className={cn(
                 "transition-all duration-200 cursor-pointer",
-                "flex flex-col items-center justify-center p-4 text-center",
+                "flex flex-col items-center justify-center p-2 text-center",
                 "hover:shadow-md hover:-translate-y-1",
-                accessibilityMode ? "min-h-[100px]" : "min-h-[80px]",
+                accessibilityMode ? "min-h-[80px]" : "min-h-[60px]",
                 isPlaced && "opacity-60 transform scale-95",
                 isSelected && !isPlaced && "ring-2 ring-primary bg-primary/10 scale-105",
                 !isPlaced && !isSelected && "cursor-grab active:cursor-grabbing hover:bg-accent/50",
@@ -123,10 +123,10 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
               onDragStart={(e) => handleDragStart(e, activity.id)}
               onClick={() => handleActivityClick(activity.id)}
             >
-            <div className="text-2xl mb-2">{activity.icon}</div>
+            <div className="text-lg mb-1">{activity.icon}</div>
             <p className={cn(
-              "font-medium",
-              accessibilityMode ? "text-sm" : "text-xs"
+              "font-medium truncate",
+              accessibilityMode ? "text-xs" : "text-xs"
             )}>
               {activity.name}
             </p>

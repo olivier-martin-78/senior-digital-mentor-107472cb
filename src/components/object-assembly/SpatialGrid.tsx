@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useObjectAssemblyGame, SpatialSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
   onPlaceSelected,
   onSpeak
 }) => {
-  const { placeItem, speak } = useObjectAssemblyGame();
+  const { placeItem, removeItem, speak } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {
@@ -82,9 +83,9 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
           <Card
             key={slot.id}
             className={cn(
-              "transition-all duration-200 border-2 border-dashed cursor-pointer",
-              "flex flex-col items-center justify-center p-4 text-center",
-              accessibilityMode ? "min-h-[100px]" : "min-h-[80px]",
+              "transition-all duration-200 border-2 border-dashed cursor-pointer relative",
+              "flex flex-col items-center justify-center p-2 text-center",
+              accessibilityMode ? "min-h-[80px]" : "min-h-[60px]",
               isDraggedOver && "border-primary bg-primary/10 scale-105",
               placedActivity && "border-solid border-success bg-success/10",
               selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
@@ -111,18 +112,30 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
               }
             }}
           >
-            <div className="text-2xl mb-2">{slot.icon}</div>
+            <div className="text-lg mb-1">{slot.icon}</div>
             <p className={cn(
               "font-medium text-muted-foreground",
-              accessibilityMode ? "text-base" : "text-sm"
+              accessibilityMode ? "text-sm" : "text-xs"
             )}>
               {slot.label}
             </p>
             
             {placedActivity && (
-              <div className="mt-2 p-2 bg-background rounded-md border animate-fade-in">
-                <div className="text-lg">{placedActivity.icon}</div>
-                <p className="text-xs font-medium">{placedActivity.name}</p>
+              <div className="mt-1 p-1 bg-background rounded border animate-fade-in relative group">
+                <div className="text-sm">{placedActivity.icon}</div>
+                <p className="text-xs font-medium truncate">{placedActivity.name}</p>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeItem(placedActivity.id, 'spatial');
+                    onSpeak(`${placedActivity.name} retiré de ${slot.label}`);
+                  }}
+                >
+                  <span className="text-xs">×</span>
+                </Button>
               </div>
             )}
             

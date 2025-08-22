@@ -304,8 +304,17 @@ export const useObjectAssemblyGame = () => {
 
     if (isCorrectPlacement) {
       setGameState(prev => {
+        const existingItem = prev.placedItems.find(item => item.activityId === activityId);
         const newPlacedItems = prev.placedItems.filter(item => item.activityId !== activityId);
-        newPlacedItems.push({ activityId, spatialSlotId, timeSlotId });
+        
+        // Merge existing placement with new placement
+        const mergedPlacement = {
+          activityId,
+          spatialSlotId: spatialSlotId || existingItem?.spatialSlotId,
+          timeSlotId: timeSlotId || existingItem?.timeSlotId,
+        };
+        
+        newPlacedItems.push(mergedPlacement);
         
         const newState = {
           ...prev,
@@ -334,6 +343,39 @@ export const useObjectAssemblyGame = () => {
       toast.error('Pas tout à fait, réessayez !');
     }
   }, [speak, saveProgress]);
+
+  const removeItem = useCallback((activityId: string, removeType?: 'spatial' | 'temporal' | 'both') => {
+    setGameState(prev => {
+      const existingItem = prev.placedItems.find(item => item.activityId === activityId);
+      if (!existingItem) return prev;
+
+      const newPlacedItems = prev.placedItems.filter(item => item.activityId !== activityId);
+      
+      if (removeType === 'spatial' && existingItem.timeSlotId) {
+        // Keep only temporal placement
+        newPlacedItems.push({
+          activityId,
+          timeSlotId: existingItem.timeSlotId,
+        });
+      } else if (removeType === 'temporal' && existingItem.spatialSlotId) {
+        // Keep only spatial placement
+        newPlacedItems.push({
+          activityId,
+          spatialSlotId: existingItem.spatialSlotId,
+        });
+      }
+      // If removeType is 'both' or undefined, remove completely (already filtered out)
+
+      const newState = {
+        ...prev,
+        placedItems: newPlacedItems,
+      };
+      saveProgress(newState);
+      return newState;
+    });
+
+    speak('Objet retiré');
+  }, [saveProgress, speak]);
 
   const checkLevelCompletion = useCallback(() => {
     const scenario = scenarios.find(s => s.id === gameState.currentScenario);
@@ -437,13 +479,14 @@ export const useObjectAssemblyGame = () => {
     selectedActivity,
     scenarios,
     loading,
+    speak,
     selectScenario,
     startLevel,
     resetGame,
     toggleAccessibility,
     toggleVoice,
-    speak,
     placeItem,
+    removeItem,
     selectActivity,
     placeSelectedActivity,
     completeLevel,

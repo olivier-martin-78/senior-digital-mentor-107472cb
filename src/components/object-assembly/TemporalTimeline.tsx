@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useObjectAssemblyGame, TimeSlot, ActivityItem, PlacedItem } from '@/hooks/useObjectAssemblyGame';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
   onPlaceSelected,
   onSpeak
 }) => {
-  const { placeItem } = useObjectAssemblyGame();
+  const { placeItem, removeItem } = useObjectAssemblyGame();
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent, slotId: string) => {
@@ -78,9 +79,9 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
             <React.Fragment key={slot.id}>
               <Card
                 className={cn(
-                  "transition-all duration-200 border-2 border-dashed cursor-pointer flex-shrink-0",
-                  "flex flex-col items-center justify-center p-4 text-center",
-                  accessibilityMode ? "min-w-[140px] min-h-[120px]" : "min-w-[120px] min-h-[100px]",
+                  "transition-all duration-200 border-2 border-dashed cursor-pointer flex-shrink-0 relative",
+                  "flex flex-col items-center justify-center p-3 text-center",
+                  accessibilityMode ? "min-w-[120px] min-h-[100px]" : "min-w-[100px] min-h-[80px]",
                   isDraggedOver && "border-primary bg-primary/10 scale-105",
                   placedActivity && "border-solid border-success bg-success/10",
                   selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
@@ -102,11 +103,11 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                     onSpeak(`Étape ${slot.label} disponible. Sélectionnez un objet d'abord.`);
                   }
                 }}
-              >
-                <div className="text-2xl mb-2">{slot.icon}</div>
+                >
+                <div className="text-xl mb-1">{slot.icon}</div>
                 <p className={cn(
                   "font-medium text-muted-foreground",
-                  accessibilityMode ? "text-base" : "text-sm"
+                  accessibilityMode ? "text-sm" : "text-xs"
                 )}>
                   {slot.label}
                 </p>
@@ -115,9 +116,21 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 </p>
                 
                 {placedActivity && (
-                  <div className="mt-2 p-2 bg-background rounded-md border animate-fade-in">
-                    <div className="text-lg">{placedActivity.icon}</div>
-                    <p className="text-xs font-medium">{placedActivity.name}</p>
+                  <div className="mt-1 p-1 bg-background rounded border animate-fade-in relative group">
+                    <div className="text-sm">{placedActivity.icon}</div>
+                    <p className="text-xs font-medium truncate">{placedActivity.name}</p>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute -top-1 -right-1 w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeItem(placedActivity.id, 'temporal');
+                        onSpeak(`${placedActivity.name} retiré de ${slot.label}`);
+                      }}
+                    >
+                      <span className="text-xs">×</span>
+                    </Button>
                   </div>
                 )}
                 
