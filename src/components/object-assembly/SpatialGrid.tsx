@@ -84,8 +84,8 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
             key={slot.id}
             className={cn(
               "transition-all duration-200 border-2 border-dashed cursor-pointer relative",
-              "flex flex-col items-center justify-center p-2 text-center",
-              accessibilityMode ? "min-h-[80px]" : "min-h-[60px]",
+              "flex flex-col items-center justify-center p-1 text-center",
+              accessibilityMode ? "min-h-[40px]" : "min-h-[30px]",
               isDraggedOver && "border-primary bg-primary/10 scale-105",
               placedActivity && "border-solid border-success bg-success/10",
               selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
@@ -112,10 +112,10 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
               }
             }}
           >
-            <div className="text-lg mb-1">{slot.icon}</div>
+            <div className="text-sm mb-0.5">{slot.icon}</div>
             <p className={cn(
               "font-medium text-muted-foreground",
-              accessibilityMode ? "text-sm" : "text-xs"
+              accessibilityMode ? "text-xs" : "text-[10px]"
             )}>
               {slot.label}
             </p>
