@@ -180,7 +180,7 @@ const Auth = () => {
                   onCheckedChange={(checked) => setIsAuxiliary(checked === true)}
                 />
                 <Label htmlFor="is_auxiliary">
-                  Je suis auxiliaire de vie/aide à domicile
+                  Je suis auxiliaire de vie/Aide à domicile/Animatrice/Accompagnatrice sociale
                 </Label>
               </div>
             )}
