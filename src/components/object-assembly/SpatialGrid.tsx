@@ -60,8 +60,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
       display: 'grid',
       gridTemplateColumns: `repeat(${maxX + 1}, 1fr)`,
       gridTemplateRows: `repeat(${maxY + 1}, 1fr)`,
-      gap: accessibilityMode ? '16px' : '12px',
-      minHeight: accessibilityMode ? '400px' : '300px',
+      gap: '8px', // Same as gap-2 in Tailwind, harmonized with DraggableObjectsList
     };
   };
 
@@ -74,7 +73,7 @@ export const SpatialGrid: React.FC<SpatialGridProps> = ({
   }
 
   return (
-    <div style={getGridStyle()} className="p-4">
+    <div style={getGridStyle()} className="p-2">
       {spatialSlots.map((slot) => {
         const placedActivity = getPlacedActivity(slot.id);
         const isDraggedOver = dragOverSlot === slot.id;
