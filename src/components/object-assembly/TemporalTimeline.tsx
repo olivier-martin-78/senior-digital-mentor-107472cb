@@ -119,9 +119,9 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 </p>
                 
                 {placedActivity && (
-                  <div className="mt-1 p-2 bg-background rounded border animate-fade-in relative group">
-                    <div className="text-sm">{placedActivity.icon}</div>
-                    <p className="text-xs font-medium whitespace-pre-line text-center">{formatTextWithLineBreaks(placedActivity.name)}</p>
+                  <div className="mt-1 p-3 bg-background rounded border animate-fade-in relative group min-w-[140px]">
+                    <div className="text-sm mb-1">{placedActivity.icon}</div>
+                    <p className="text-xs font-medium whitespace-pre-line text-center leading-tight">{formatTextWithLineBreaks(placedActivity.name)}</p>
                     <Button
                       size="sm"
                       variant="destructive"
