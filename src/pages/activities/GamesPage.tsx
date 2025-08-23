@@ -209,11 +209,12 @@ export default function GamesPage() {
             className="block"
             onClick={() => UserActionsService.trackView('activity', 'illusionist-game', 'L\'Illusionniste')}
           >
-            <div className="h-48 bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Eye className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">L'Illusionniste</h3>
-              </div>
+            <div 
+              className="h-48 flex items-center justify-center bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url('/lovable-uploads/00f49e53-7786-419a-a181-7fb14aedd4a9.png')`
+              }}
+            >
             </div>
             <CardHeader>
               <CardTitle className="text-lg">L'Illusionniste</CardTitle>
