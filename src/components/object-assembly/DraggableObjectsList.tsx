@@ -70,6 +70,12 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
     const hasSpatial = Boolean(placedItem.spatialSlotId);
     const hasTemporal = Boolean(placedItem.timeSlotId);
     
+    // If timeline is disabled, spatial placement alone is considered complete
+    if (!enableTimeline) {
+      return hasSpatial ? 'fully-placed' : 'not-placed';
+    }
+    
+    // If timeline is enabled, both placements are required for completion
     if (hasSpatial && hasTemporal) return 'fully-placed';
     if (hasSpatial || hasTemporal) return 'partially-placed';
     return 'not-placed';
