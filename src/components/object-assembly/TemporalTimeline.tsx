@@ -121,7 +121,16 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 {placedActivity && (
                   <div className="mt-1 p-3 bg-background rounded border animate-fade-in relative group min-w-[140px]">
                     <div className="text-sm mb-1">{placedActivity.icon}</div>
-                    <p className="text-xs font-medium whitespace-pre-line text-center leading-tight">{(() => {
+                    <p 
+                      className="text-xs font-medium text-center leading-tight"
+                      style={{
+                        whiteSpace: 'pre-line',
+                        border: '1px solid red',
+                        backgroundColor: 'yellow',
+                        overflow: 'visible',
+                        wordWrap: 'break-word'
+                      }}
+                    >{(() => {
                       const originalText = placedActivity.name;
                       const formattedText = formatTextWithLineBreaks(originalText);
                       console.log('🔍 [TemporalTimeline] Debug formatage texte:');
@@ -130,6 +139,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                       console.log('  - Texte formaté:', formattedText);
                       console.log('  - Contient \\n:', formattedText.includes('\n'));
                       console.log('  - Nombre de lignes:', formattedText.split('\n').length);
+                      console.log('  - Style appliqué: whiteSpace=pre-line');
                       return formattedText;
                     })()}</p>
                     <Button
