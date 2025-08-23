@@ -84,7 +84,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 className={cn(
                   "transition-all duration-200 border-2 border-dashed cursor-pointer flex-shrink-0 relative",
                   "flex flex-col items-center justify-center p-3 text-center",
-                  accessibilityMode ? "min-w-[160px] min-h-[100px]" : "min-w-[140px] min-h-[80px]",
+                  accessibilityMode ? "min-w-[200px] min-h-[100px]" : "min-w-[180px] min-h-[80px]",
                   isDraggedOver && "border-primary bg-primary/10 scale-105",
                   placedActivity && "border-solid border-success bg-success/10",
                   selectedActivity && !placedActivity && "border-primary/50 hover:border-primary bg-primary/5",
