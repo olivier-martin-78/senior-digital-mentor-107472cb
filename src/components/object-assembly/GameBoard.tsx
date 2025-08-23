@@ -111,6 +111,7 @@ export const GameBoard: React.FC = () => {
             selectedActivity={selectedActivity}
             accessibilityMode={gameState.accessibilityMode}
             adaptationLevel={gameState.adaptationLevel}
+            enableTimeline={currentLevel.enable_timeline}
             onSelectActivity={selectActivity}
             onSpeak={speak}
           />

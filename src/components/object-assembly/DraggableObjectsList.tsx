@@ -10,6 +10,7 @@ interface DraggableObjectsListProps {
   selectedActivity: string | null;
   accessibilityMode: boolean;
   adaptationLevel: number;
+  enableTimeline: boolean;
   onSelectActivity: (activityId: string | null) => void;
   onSpeak: (text: string) => void;
 }
@@ -20,6 +21,7 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
   selectedActivity,
   accessibilityMode,
   adaptationLevel,
+  enableTimeline,
   onSelectActivity,
   onSpeak
 }) => {
@@ -193,7 +195,7 @@ export const DraggableObjectsList: React.FC<DraggableObjectsListProps> = ({
             return `📌 Objet sélectionné : ${selectedActivityData?.name}${statusText}. Cliquez sur une zone pour le placer.`;
           })()}
           {!selectedActivity && placedCount === 0 && "Cliquez sur un objet puis sur une zone, ou glissez les objets vers les zones appropriées"}
-          {!selectedActivity && placedCount > 0 && placedCount < totalCount && "Continuez ! Les objets avec ⚠ peuvent être placés dans d'autres zones"}
+          {!selectedActivity && placedCount > 0 && placedCount < totalCount && enableTimeline && "Continuez ! Les objets avec ⚠ peuvent être placés dans d'autres zones"}
           {!selectedActivity && placedCount === totalCount && "🎉 Tous les objets sont placés ! Vérifiez si le niveau est terminé"}
         </p>
         
