@@ -554,6 +554,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          display_order: number | null
           icon: string
           id: string
           level_id: string
@@ -562,6 +563,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
+          display_order?: number | null
           icon: string
           id?: string
           level_id: string
@@ -570,6 +572,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          display_order?: number | null
           icon?: string
           id?: string
           level_id?: string
@@ -783,6 +786,7 @@ export type Database = {
       cognitive_puzzle_time_slots: {
         Row: {
           created_at: string
+          display_order: number | null
           icon: string
           id: string
           label: string
@@ -791,6 +795,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number | null
           icon: string
           id?: string
           label: string
@@ -799,6 +804,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number | null
           icon?: string
           id?: string
           label?: string

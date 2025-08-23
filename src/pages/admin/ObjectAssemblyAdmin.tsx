@@ -107,6 +107,146 @@ function SortableSpatialSlot({ slot, onEdit, onDelete }: SortableSpatialSlotProp
   );
 }
 
+// Sortable Activity Component
+interface SortableActivityProps {
+  activity: Activity;
+  onEdit: (modal: { isOpen: boolean; activity?: Activity | null }) => void;
+  onDelete: (dialog: { isOpen: boolean; type: 'activity'; item: Activity; loading: boolean }) => void;
+}
+
+function SortableActivity({ activity, onEdit, onDelete }: SortableActivityProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between p-3 bg-muted rounded-lg transition-all ${
+        isDragging ? 'ring-2 ring-primary z-10' : ''
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-background rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <span className="text-2xl">{activity.icon}</span>
+        <div>
+          <p className="font-medium">{activity.name}</p>
+          <p className="text-xs text-muted-foreground">{activity.category}</p>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onEdit({ isOpen: true, activity })}
+        >
+          <Edit className="h-3 w-3" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onDelete({
+            isOpen: true,
+            type: 'activity',
+            item: activity,
+            loading: false
+          })}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Sortable Time Slot Component
+interface SortableTimeSlotProps {
+  slot: TimeSlot;
+  onEdit: (modal: { isOpen: boolean; timeSlot?: TimeSlot | null }) => void;
+  onDelete: (dialog: { isOpen: boolean; type: 'temporal'; item: TimeSlot; loading: boolean }) => void;
+}
+
+function SortableTimeSlot({ slot, onEdit, onDelete }: SortableTimeSlotProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slot.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between p-3 bg-muted rounded-lg transition-all ${
+        isDragging ? 'ring-2 ring-primary z-10' : ''
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-background rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <span className="text-2xl">{slot.icon}</span>
+        <div>
+          <p className="font-medium">{slot.label}</p>
+          <p className="text-xs text-muted-foreground capitalize">{slot.period}</p>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onEdit({ isOpen: true, timeSlot: slot })}
+        >
+          <Edit className="h-3 w-3" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onDelete({
+            isOpen: true,
+            type: 'temporal',
+            item: slot,
+            loading: false
+          })}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 interface Scenario {
   id: string;
   name: string;
@@ -137,6 +277,7 @@ interface Activity {
   name: string;
   icon: string;
   category: string;
+  display_order?: number;
 }
 
 interface SpatialSlot {
@@ -153,6 +294,7 @@ interface TimeSlot {
   label: string;
   icon: string;
   period: string;
+  display_order?: number;
 }
 
 interface GameSettings {
@@ -278,7 +420,8 @@ export default function ObjectAssemblyAdmin() {
                 supabase
                   .from('cognitive_puzzle_activities')
                   .select('*')
-                  .eq('level_id', level.id),
+                  .eq('level_id', level.id)
+                  .order('display_order', { ascending: true }),
                 supabase
                   .from('cognitive_puzzle_spatial_slots')
                   .select('*')
@@ -288,6 +431,7 @@ export default function ObjectAssemblyAdmin() {
                   .from('cognitive_puzzle_time_slots')
                   .select('*')
                   .eq('level_id', level.id)
+                  .order('display_order', { ascending: true })
               ]);
 
               return {
@@ -373,6 +517,118 @@ export default function ObjectAssemblyAdmin() {
       toast.success('Ordre des zones mis à jour');
     } catch (error) {
       console.error('Error updating display order:', error);
+      toast.error('Erreur lors de la mise à jour de l\'ordre');
+      // Reload data to restore original order
+      loadData();
+    }
+  };
+
+  const handleActivityDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !selectedLevelData) {
+      return;
+    }
+
+    const oldIndex = selectedLevelData.activities.findIndex(activity => activity.id === active.id);
+    const newIndex = selectedLevelData.activities.findIndex(activity => activity.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Update local state immediately for UI responsiveness
+    const newActivities = arrayMove(selectedLevelData.activities, oldIndex, newIndex);
+    
+    // Update scenarios state
+    setScenarios(prevScenarios => 
+      prevScenarios.map(scenario => 
+        scenario.id === selectedScenario
+          ? {
+              ...scenario,
+              levels: scenario.levels.map(level =>
+                level.id === selectedLevel
+                  ? { ...level, activities: newActivities }
+                  : level
+              )
+            }
+          : scenario
+      )
+    );
+
+    // Save new order to database
+    try {
+      const updates = newActivities.map((activity, index) => ({
+        id: activity.id,
+        display_order: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('cognitive_puzzle_activities')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      toast.success('Ordre des objets mis à jour');
+    } catch (error) {
+      console.error('Error updating activity order:', error);
+      toast.error('Erreur lors de la mise à jour de l\'ordre');
+      // Reload data to restore original order
+      loadData();
+    }
+  };
+
+  const handleTimeSlotDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !selectedLevelData) {
+      return;
+    }
+
+    const oldIndex = selectedLevelData.timeSlots.findIndex(timeSlot => timeSlot.id === active.id);
+    const newIndex = selectedLevelData.timeSlots.findIndex(timeSlot => timeSlot.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Update local state immediately for UI responsiveness
+    const newTimeSlots = arrayMove(selectedLevelData.timeSlots, oldIndex, newIndex);
+    
+    // Update scenarios state
+    setScenarios(prevScenarios => 
+      prevScenarios.map(scenario => 
+        scenario.id === selectedScenario
+          ? {
+              ...scenario,
+              levels: scenario.levels.map(level =>
+                level.id === selectedLevel
+                  ? { ...level, timeSlots: newTimeSlots }
+                  : level
+              )
+            }
+          : scenario
+      )
+    );
+
+    // Save new order to database
+    try {
+      const updates = newTimeSlots.map((timeSlot, index) => ({
+        id: timeSlot.id,
+        display_order: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('cognitive_puzzle_time_slots')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      toast.success('Ordre des étapes temporelles mis à jour');
+    } catch (error) {
+      console.error('Error updating time slot order:', error);
       toast.error('Erreur lors de la mise à jour de l\'ordre');
       // Reload data to restore original order
       loadData();
@@ -681,40 +937,32 @@ export default function ObjectAssemblyAdmin() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Objets à placer ({selectedLevelData.activities.length})</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Glissez-déposez pour réorganiser l'ordre d'affichage
+                    </p>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {selectedLevelData.activities.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{activity.icon}</span>
-                          <div>
-                            <p className="font-medium">{activity.name}</p>
-                            <p className="text-xs text-muted-foreground">{activity.category}</p>
-                          </div>
+                  <CardContent>
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleActivityDragEnd}
+                    >
+                      <SortableContext 
+                        items={selectedLevelData.activities.map(activity => activity.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3">
+                          {selectedLevelData.activities.map((activity) => (
+                            <SortableActivity 
+                              key={activity.id} 
+                              activity={activity} 
+                              onEdit={setActivityModal} 
+                              onDelete={setDeleteDialog} 
+                            />
+                          ))}
                         </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setActivityModal({ isOpen: true, activity })}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setDeleteDialog({
-                              isOpen: true,
-                              type: 'activity',
-                              item: activity,
-                              loading: false
-                            })}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      </SortableContext>
+                    </DndContext>
                   </CardContent>
                 </Card>
 
@@ -776,42 +1024,32 @@ export default function ObjectAssemblyAdmin() {
                         Ajouter étape
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Glissez-déposez pour réorganiser l'ordre d'affichage
+                    </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      {selectedLevelData.timeSlots.map((slot) => (
-                        <div key={slot.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{slot.icon}</span>
-                            <div>
-                              <p className="font-medium">{slot.label}</p>
-                              <p className="text-xs text-muted-foreground capitalize">{slot.period}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setTimeSlotModal({ isOpen: true, timeSlot: slot })}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setDeleteDialog({
-                                isOpen: true,
-                                type: 'temporal',
-                                item: slot,
-                                loading: false
-                              })}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleTimeSlotDragEnd}
+                    >
+                      <SortableContext 
+                        items={selectedLevelData.timeSlots.map(slot => slot.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3">
+                          {selectedLevelData.timeSlots.map((slot) => (
+                            <SortableTimeSlot 
+                              key={slot.id} 
+                              slot={slot} 
+                              onEdit={setTimeSlotModal} 
+                              onDelete={setDeleteDialog} 
+                            />
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </SortableContext>
+                    </DndContext>
                   </CardContent>
                 </Card>
               )}

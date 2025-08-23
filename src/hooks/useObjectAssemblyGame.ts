@@ -135,7 +135,8 @@ export const useObjectAssemblyGame = () => {
                 supabase
                   .from('cognitive_puzzle_activities')
                   .select('*')
-                  .eq('level_id', level.id),
+                  .eq('level_id', level.id)
+                  .order('display_order', { ascending: true }),
                 supabase
                   .from('cognitive_puzzle_spatial_slots')
                   .select('*')
@@ -145,6 +146,7 @@ export const useObjectAssemblyGame = () => {
                   .from('cognitive_puzzle_time_slots')
                   .select('*')
                   .eq('level_id', level.id)
+                  .order('display_order', { ascending: true })
               ]);
 
               return {
