@@ -109,10 +109,10 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 >
                 <div className="text-xl mb-1">{slot.icon}</div>
                 <p className={cn(
-                  "font-medium text-muted-foreground",
+                  "font-medium text-muted-foreground whitespace-pre-line",
                   accessibilityMode ? "text-sm" : "text-xs"
                 )}>
-                  {slot.label}
+                  {formatTextWithLineBreaks(slot.label)}
                 </p>
                 <p className="text-xs text-muted-foreground/70 capitalize">
                   {slot.period}
