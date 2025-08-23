@@ -79,7 +79,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
           const isDraggedOver = dragOverSlot === slot.id;
           
           return (
-            <React.Fragment key={slot.id}>
+            <div key={slot.id} className="flex items-center gap-4">
               <Card
                 className={cn(
                   "transition-all duration-200 border-2 border-dashed cursor-pointer flex-shrink-0 relative",
@@ -121,27 +121,9 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                 {placedActivity && (
                   <div className="mt-1 p-3 bg-background rounded border animate-fade-in relative group min-w-[140px]">
                     <div className="text-sm mb-1">{placedActivity.icon}</div>
-                    <p 
-                      className="text-xs font-medium text-center leading-tight"
-                      style={{
-                        whiteSpace: 'pre-line',
-                        border: '1px solid red',
-                        backgroundColor: 'yellow',
-                        overflow: 'visible',
-                        wordWrap: 'break-word'
-                      }}
-                    >{(() => {
-                      const originalText = placedActivity.name;
-                      const formattedText = formatTextWithLineBreaks(originalText);
-                      console.log('🔍 [TemporalTimeline] Debug formatage texte:');
-                      console.log('  - Texte original:', originalText);
-                      console.log('  - Longueur:', originalText.length);
-                      console.log('  - Texte formaté:', formattedText);
-                      console.log('  - Contient \\n:', formattedText.includes('\n'));
-                      console.log('  - Nombre de lignes:', formattedText.split('\n').length);
-                      console.log('  - Style appliqué: whiteSpace=pre-line');
-                      return formattedText;
-                    })()}</p>
+                    <p className="text-xs font-medium text-center leading-tight whitespace-pre-line">
+                      {formatTextWithLineBreaks(placedActivity.name)}
+                    </p>
                     <Button
                       size="sm"
                       variant="destructive"
@@ -170,7 +152,7 @@ export const TemporalTimeline: React.FC<TemporalTimelineProps> = ({
                   <div className="text-2xl">→</div>
                 </div>
               )}
-            </React.Fragment>
+            </div>
           );
         })}
       </div>
