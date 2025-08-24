@@ -351,9 +351,10 @@ export class UserActionsService {
       if (filters.endDate) {
         sessionsQuery = sessionsQuery.lte('login_timestamp', filters.endDate);
       }
-      if (filters.userId) {
-        sessionsQuery = sessionsQuery.eq('user_id', filters.userId);
-      }
+      // Ne pas filtrer par userId pour les sessions - on veut voir toutes les sessions même si un utilisateur est sélectionné
+      // if (filters.userId) {
+      //   sessionsQuery = sessionsQuery.eq('user_id', filters.userId);
+      // }
 
       const { data: sessionsData } = await sessionsQuery;
       const sessionsByUser = new Map();
@@ -401,14 +402,12 @@ export class UserActionsService {
           const profile = profiles?.find(p => p.id === userId);
           const sessionCount = sessionsByUser.get(userId);
           
-          // N'inclure que les utilisateurs avec au moins 1 session
-          if (sessionCount > 0) {
-            sessionsWithNames.push({
-              user_id: userId,
-              session_count: sessionCount,
-              display_name: profile?.display_name || 'Utilisateur inconnu'
-            });
-          }
+          // Inclure tous les utilisateurs qui ont des sessions (même 1 seule)
+          sessionsWithNames.push({
+            user_id: userId,
+            session_count: sessionCount,
+            display_name: profile?.display_name || 'Utilisateur inconnu'
+          });
         });
       }
 

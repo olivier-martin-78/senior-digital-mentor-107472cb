@@ -135,6 +135,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleUserSessionClick = (userId: string) => {
+    if (selectedUserId === userId) {
+      // Désélectionner si déjà sélectionné
+      setSelectedUserId(null);
+    } else {
+      // Sélectionner le nouvel utilisateur
+      setSelectedUserId(userId);
+    }
+  };
+
   const clearAllFilters = () => {
     setSelectedUserId(null);
     setContentType('all');
@@ -572,13 +582,26 @@ const AdminDashboard: React.FC = () => {
                 {stats?.sessionsByUser && stats.sessionsByUser.length > 0 && (
                   <div className="mt-8">
                     <h4 className="text-lg font-semibold mb-4">Sessions par utilisateur</h4>
-                    <div className="grid gap-2">
-                      {stats.sessionsByUser.slice(0, 5).map((userSession, index) => (
-                        <div key={userSession.user_id} className="flex items-center justify-between p-2 border rounded">
+                    <div className="grid gap-2 max-h-80 overflow-y-auto">
+                      {stats.sessionsByUser.map((userSession, index) => (
+                        <div 
+                          key={userSession.user_id} 
+                          className={cn(
+                            "flex items-center justify-between p-3 border rounded cursor-pointer transition-colors",
+                            "hover:bg-accent/50",
+                            selectedUserId === userSession.user_id 
+                              ? "bg-primary/10 border-primary" 
+                              : "bg-background"
+                          )}
+                          onClick={() => handleUserSessionClick(userSession.user_id)}
+                        >
                           <span className="text-sm font-medium">
                             {userSession.display_name}
                           </span>
-                          <Badge variant="outline">
+                          <Badge 
+                            variant={selectedUserId === userSession.user_id ? "default" : "outline"}
+                            className="cursor-pointer"
+                          >
                             {userSession.session_count} session{userSession.session_count > 1 ? 's' : ''}
                           </Badge>
                         </div>
