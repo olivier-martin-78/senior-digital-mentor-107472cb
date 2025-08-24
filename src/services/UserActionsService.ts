@@ -272,13 +272,11 @@ export class UserActionsService {
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
       // Utilisateurs uniques - MÉTRIQUE GLOBALE (ignore tous les filtres)  
-      // Utiliser une limite explicite pour éviter la limite Supabase de 1000
-      const { data: allUsersData } = await supabase
-        .from('user_actions')
-        .select('user_id')
-        .limit(5000); // Limite explicite pour récupérer plus que les 1000 par défaut
+      // Utiliser COUNT(DISTINCT) pour éviter les limitations côté client
+      const { data: uniqueUsersData } = await supabase
+        .rpc('count_unique_users');
       
-      const uniqueUsers = new Set(allUsersData?.map(item => item.user_id) || []).size;
+      const uniqueUsers = uniqueUsersData || 0;
 
       // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase
