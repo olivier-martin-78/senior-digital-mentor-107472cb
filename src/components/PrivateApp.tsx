@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import HeaderWrapper from '@/components/HeaderWrapper';
 import { Routes, Route } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ActivityCreatorRoute from '@/components/ActivityCreatorRoute';
 import Index from '@/pages/Index';
@@ -87,7 +87,7 @@ const PrivateApp: React.FC = () => {
   }
 
   return (
-    <AuthProvider>
+    <>
       <Toaster />
       <HeaderWrapper />
       <div className="min-h-screen">
@@ -206,7 +206,7 @@ const PrivateApp: React.FC = () => {
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes>
       </div>
-    </AuthProvider>
+    </>
   );
 };
 
