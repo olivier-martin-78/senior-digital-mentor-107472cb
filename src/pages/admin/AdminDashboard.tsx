@@ -586,12 +586,16 @@ const AdminDashboard: React.FC = () => {
                 {/* Sessions par utilisateur avec explications */}
         {stats?.sessionsByUser && stats.sessionsByUser.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Sessions par utilisateur</CardTitle>
-              <CardDescription>
-                Calcul basé sur les connexions enregistrées - Les connexions à moins de 30 minutes d'intervalle sont considérées comme une même session
-              </CardDescription>
-            </CardHeader>
+             <CardHeader>
+               <CardTitle>Sessions par utilisateur</CardTitle>
+               <CardDescription>
+                 <strong>Nouveau calcul :</strong> Basé sur les jours d'activité distincts (actions + connexions).
+                 <br />
+                 Chaque jour où un utilisateur a une activité compte pour 1 session.
+                 <br />
+                 Cela donne un comptage plus précis de l'utilisation réelle de l'application.
+               </CardDescription>
+             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-80 overflow-y-auto">
                 {stats.sessionsByUser.slice(0, 20).map((user, index) => (
@@ -611,9 +615,9 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <div>
                         <div className="font-medium">{user.display_name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {user.login_count} connexion{user.login_count > 1 ? 's' : ''} enregistrée{user.login_count > 1 ? 's' : ''}
-                        </div>
+                         <div className="text-sm text-muted-foreground">
+                           {user.login_count} jour{user.login_count > 1 ? 's' : ''} d'activité
+                         </div>
                       </div>
                     </div>
                     <Badge variant="outline" className={cn(

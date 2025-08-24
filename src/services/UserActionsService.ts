@@ -375,16 +375,39 @@ export class UserActionsService {
         sessionsQuery = sessionsQuery.lte('login_timestamp', filters.endDate);
       }
 
-      console.log('🔍 DEBUG: Fetching sessions with filters:', {
+      // Récupérer les actions avec timestamps pour calculer les jours d'activité
+      let actionsForSessionsQuery = supabase
+        .from('user_actions')
+        .select('user_id, created_at')
+        .order('user_id, created_at');
+
+      if (filters.startDate) {
+        actionsForSessionsQuery = actionsForSessionsQuery.gte('created_at', filters.startDate);
+      }
+      if (filters.endDate) {
+        actionsForSessionsQuery = actionsForSessionsQuery.lte('created_at', filters.endDate);
+      }
+
+      console.log('🔍 DEBUG: Fetching sessions and actions with filters:', {
         startDate: filters.startDate,
         endDate: filters.endDate,
         userId: filters.userId
       });
 
-      const { data: sessionsData, error: sessionsError } = await sessionsQuery;
+      const [sessionsResult, actionsResult] = await Promise.all([
+        sessionsQuery,
+        actionsForSessionsQuery
+      ]);
+
+      const { data: sessionsData, error: sessionsError } = sessionsResult;
+      const { data: actionsData, error: actionsError } = actionsResult;
       
       if (sessionsError) {
         console.error('❌ Error fetching sessions:', sessionsError);
+      }
+      
+      if (actionsError) {
+        console.error('❌ Error fetching actions for sessions:', actionsError);
       }
       
       console.log('📊 DEBUG: Raw sessions data:', {
@@ -395,44 +418,67 @@ export class UserActionsService {
       });
       const sessionsByUser = new Map();
 
-      // Grouper les connexions par utilisateur et calculer les vraies sessions
+      // Calculer les sessions basées sur les jours d'activité (user_actions + user_login_sessions)
+      const userActivityDays = new Map();
+      
+      // Première étape : compter les jours d'activité distincts depuis user_actions
+      if (actionsData && actionsData.length > 0) {
+        console.log('📊 DEBUG: Processing user actions for session calculation:', actionsData.length);
+        
+        actionsData.forEach(action => {
+          const userId = action.user_id;
+          const actionDate = new Date(action.created_at).toISOString().split('T')[0]; // Date seule (YYYY-MM-DD)
+          
+          if (!userActivityDays.has(userId)) {
+            userActivityDays.set(userId, new Set());
+          }
+          userActivityDays.get(userId).add(actionDate);
+        });
+        
+        console.log('📅 DEBUG: Activity days from actions per user:', Array.from(userActivityDays.entries()).map(([userId, days]) => ({
+          userId,
+          activityDays: Array.from(days),
+          count: days.size
+        })));
+      }
+      
+      // Deuxième étape : ajouter les jours de connexion depuis user_login_sessions (pour compléter)
       if (sessionsData && sessionsData.length > 0) {
-        // Grouper par utilisateur
-        const userLogins = new Map();
+        console.log('🔑 DEBUG: Processing login sessions for additional session days:', sessionsData.length);
+        
         sessionsData.forEach(session => {
           const userId = session.user_id;
-          if (!userLogins.has(userId)) {
-            userLogins.set(userId, []);
+          const loginDate = new Date(session.login_timestamp).toISOString().split('T')[0];
+          
+          if (!userActivityDays.has(userId)) {
+            userActivityDays.set(userId, new Set());
           }
-          userLogins.get(userId).push(new Date(session.login_timestamp));
+          userActivityDays.get(userId).add(loginDate);
         });
-
-        // Pour chaque utilisateur, calculer le nombre de sessions
-        userLogins.forEach((timestamps, userId) => {
-          timestamps.sort((a, b) => a.getTime() - b.getTime());
-          
-          let sessionCount = 1; // Au moins une session
-          for (let i = 1; i < timestamps.length; i++) {
-            const timeDiff = timestamps[i].getTime() - timestamps[i - 1].getTime();
-            // Si plus de 30 minutes d'écart, c'est une nouvelle session
-            if (timeDiff > 30 * 60 * 1000) {
-              sessionCount++;
-            }
-          }
-          
-          sessionsByUser.set(userId, { sessionCount, loginCount: timestamps.length });
-          
-          // Debug log for each user's session calculation
-          console.log(`👤 DEBUG: User ${userId} - ${timestamps.length} logins → ${sessionCount} sessions`, {
-            loginTimes: timestamps.map(t => t.toISOString()),
-            intervals: timestamps.slice(1).map((t, i) => ({
-              from: timestamps[i].toISOString(),
-              to: t.toISOString(),
-              minutesDiff: Math.round((t.getTime() - timestamps[i].getTime()) / 60000)
-            }))
-          });
-        });
+        
+        console.log('📅 DEBUG: Combined activity days (actions + logins) per user:', Array.from(userActivityDays.entries()).map(([userId, days]) => ({
+          userId,
+          activityDays: Array.from(days),
+          count: days.size
+        })));
       }
+      
+      // Troisième étape : convertir les jours d'activité en sessions
+      userActivityDays.forEach((activityDays, userId) => {
+        const sessionCount = activityDays.size; // Chaque jour d'activité = 1 session
+        const activityDatesArray = Array.from(activityDays).sort();
+        
+        sessionsByUser.set(userId, { 
+          sessionCount, 
+          loginCount: sessionCount, // Pour compatibilité avec l'affichage
+          activityDates: activityDatesArray
+        });
+        
+        // Debug log for each user's session calculation
+        console.log(`👤 DEBUG: User ${userId} - ${activityDays.size} activity days → ${sessionCount} sessions`, {
+          activityDates: activityDatesArray
+        });
+      });
 
       // Récupérer les noms d'utilisateurs pour toutes les données
       const allUserIds = new Set([...sessionsByUser.keys(), ...actionsByUserId.keys()]);
