@@ -202,8 +202,13 @@ const AdminDashboard: React.FC = () => {
                 {statsLoading ? '...' : stats?.uniqueUsers.toLocaleString() || '0'}
               </div>
               <p className="text-xs text-muted-foreground">
-                Utilisateurs uniques
+                Utilisateurs avec actions enregistrées
               </p>
+              {stats?.uniqueUsersFromSessions !== undefined && (
+                <p className="text-xs text-muted-foreground mt-1 border-t pt-1">
+                  {stats.uniqueUsersFromSessions} utilisateurs avec sessions de connexion
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -578,37 +583,104 @@ const AdminDashboard: React.FC = () => {
                   </TableBody>
                 </Table>
 
-                {/* Sessions par utilisateur */}
-                {stats?.sessionsByUser && stats.sessionsByUser.length > 0 && (
-                  <div className="mt-8">
-                    <h4 className="text-lg font-semibold mb-4">Sessions par utilisateur</h4>
-                    <div className="grid gap-2 max-h-80 overflow-y-auto">
-                      {stats.sessionsByUser.map((userSession, index) => (
-                        <div 
-                          key={userSession.user_id} 
-                          className={cn(
-                            "flex items-center justify-between p-3 border rounded cursor-pointer transition-colors",
-                            "hover:bg-accent/50",
-                            selectedUserId === userSession.user_id 
-                              ? "bg-primary/10 border-primary" 
-                              : "bg-background"
-                          )}
-                          onClick={() => handleUserSessionClick(userSession.user_id)}
-                        >
-                          <span className="text-sm font-medium">
-                            {userSession.display_name}
-                          </span>
-                          <Badge 
-                            variant={selectedUserId === userSession.user_id ? "default" : "outline"}
-                            className="cursor-pointer"
-                          >
-                            {userSession.session_count} session{userSession.session_count > 1 ? 's' : ''}
-                          </Badge>
+                {/* Sessions par utilisateur avec explications */}
+        {stats?.sessionsByUser && stats.sessionsByUser.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sessions par utilisateur</CardTitle>
+              <CardDescription>
+                Calcul basé sur les connexions enregistrées - Les connexions à moins de 30 minutes d'intervalle sont considérées comme une même session
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {stats.sessionsByUser.slice(0, 20).map((user, index) => (
+                  <div 
+                    key={user.user_id} 
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+                      selectedUserId === user.user_id 
+                        ? "bg-primary/10 border-primary text-primary font-medium" 
+                        : "hover:bg-muted/50"
+                    )}
+                    onClick={() => handleUserSessionClick(user.user_id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium">{user.display_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {user.login_count} connexion{user.login_count > 1 ? 's' : ''} enregistrée{user.login_count > 1 ? 's' : ''}
                         </div>
-                      ))}
+                      </div>
                     </div>
+                    <Badge variant="outline" className={cn(
+                      "font-bold",
+                      selectedUserId === user.user_id && "bg-primary text-primary-foreground"
+                    )}>
+                      {user.session_count} session{user.session_count > 1 ? 's' : ''}
+                    </Badge>
                   </div>
+                ))}
+                {stats.sessionsByUser.length > 20 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    ... et {stats.sessionsByUser.length - 20} utilisateur{stats.sessionsByUser.length - 20 > 1 ? 's' : ''} supplémentaire{stats.sessionsByUser.length - 20 > 1 ? 's' : ''}
+                  </p>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Utilisateurs par actions avec explications */}
+        {stats?.usersFromActions && stats.usersFromActions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Activité par utilisateur</CardTitle>
+              <CardDescription>
+                Calcul basé sur les actions enregistrées (consultations, créations, etc.)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {stats.usersFromActions.slice(0, 20).map((user, index) => (
+                  <div 
+                    key={user.user_id} 
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+                      selectedUserId === user.user_id 
+                        ? "bg-primary/10 border-primary text-primary font-medium" 
+                        : "hover:bg-muted/50"
+                    )}
+                    onClick={() => handleUserSessionClick(user.user_id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium">{user.display_name}</div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn(
+                      "font-bold",
+                      selectedUserId === user.user_id && "bg-primary text-primary-foreground"
+                    )}>
+                      {user.action_count} action{user.action_count > 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                ))}
+                {stats.usersFromActions.length > 20 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    ... et {stats.usersFromActions.length - 20} utilisateur{stats.usersFromActions.length - 20 > 1 ? 's' : ''} supplémentaire{stats.usersFromActions.length - 20 > 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
                 {/* Pagination */}
                 {totalPages > 1 && (

@@ -219,10 +219,12 @@ export class UserActionsService {
     totalActions: number;
     totalActionsGlobal: number;
     uniqueUsers: number;
+    uniqueUsersFromSessions: number;
     topContent: Array<{ content_title: string; content_type: string; view_count: number }>;
     actionsByType: Array<{ action_type: string; count: number }>;
     dailyActivity: Array<{ date: string; count: number }>;
-    sessionsByUser: Array<{ user_id: string; session_count: number; display_name?: string }>;
+    sessionsByUser: Array<{ user_id: string; session_count: number; display_name?: string; login_count: number }>;
+    usersFromActions: Array<{ user_id: string; action_count: number; display_name?: string }>;
   }> {
     try {
       // Total des actions avec tous les filtres
@@ -339,6 +341,27 @@ export class UserActionsService {
         .sort((a, b) => b.view_count - a.view_count)
         .slice(0, 10);
 
+      // Calculer les utilisateurs basés sur les actions (pour comparaison)
+      let usersFromActionsQuery = supabase
+        .from('user_actions')
+        .select('user_id')
+        .order('user_id');
+
+      if (filters.startDate) {
+        usersFromActionsQuery = usersFromActionsQuery.gte('timestamp', filters.startDate);
+      }
+      if (filters.endDate) {
+        usersFromActionsQuery = usersFromActionsQuery.lte('timestamp', filters.endDate);
+      }
+
+      const { data: actionsUsersData } = await usersFromActionsQuery;
+      const actionsByUserId = new Map();
+      
+      actionsUsersData?.forEach(action => {
+        const userId = action.user_id;
+        actionsByUserId.set(userId, (actionsByUserId.get(userId) || 0) + 1);
+      });
+
       // Calculer les vraies sessions par utilisateur (grouper les connexions par intervalles)
       let sessionsQuery = supabase
         .from('user_login_sessions')
@@ -351,10 +374,6 @@ export class UserActionsService {
       if (filters.endDate) {
         sessionsQuery = sessionsQuery.lte('login_timestamp', filters.endDate);
       }
-      // Ne pas filtrer par userId pour les sessions - on veut voir toutes les sessions même si un utilisateur est sélectionné
-      // if (filters.userId) {
-      //   sessionsQuery = sessionsQuery.eq('user_id', filters.userId);
-      // }
 
       console.log('🔍 DEBUG: Fetching sessions with filters:', {
         startDate: filters.startDate,
@@ -370,11 +389,9 @@ export class UserActionsService {
       
       console.log('📊 DEBUG: Raw sessions data:', {
         totalSessions: sessionsData?.length || 0,
-        sampleData: sessionsData?.slice(0, 5),
-        pinsanSessions: sessionsData?.filter(s => {
-          // Look for Pinsan sessions by checking if user_id might correspond to Sabine Pinsan
-          return s.user_id; // We'll log all and filter in console
-        })
+        uniqueUsersFromSessions: new Set(sessionsData?.map(s => s.user_id)).size,
+        uniqueUsersFromActions: actionsByUserId.size,
+        sampleData: sessionsData?.slice(0, 5)
       });
       const sessionsByUser = new Map();
 
@@ -403,24 +420,33 @@ export class UserActionsService {
             }
           }
           
-          sessionsByUser.set(userId, sessionCount);
+          sessionsByUser.set(userId, { sessionCount, loginCount: timestamps.length });
           
           // Debug log for each user's session calculation
-          console.log(`👤 DEBUG: User ${userId} - ${timestamps.length} logins → ${sessionCount} sessions`);
+          console.log(`👤 DEBUG: User ${userId} - ${timestamps.length} logins → ${sessionCount} sessions`, {
+            loginTimes: timestamps.map(t => t.toISOString()),
+            intervals: timestamps.slice(1).map((t, i) => ({
+              from: timestamps[i].toISOString(),
+              to: t.toISOString(),
+              minutesDiff: Math.round((t.getTime() - timestamps[i].getTime()) / 60000)
+            }))
+          });
         });
       }
 
-      // Récupérer les noms d'utilisateurs pour les sessions
-      const userIds = Array.from(sessionsByUser.keys());
+      // Récupérer les noms d'utilisateurs pour toutes les données
+      const allUserIds = new Set([...sessionsByUser.keys(), ...actionsByUserId.keys()]);
       const sessionsWithNames = [];
+      const usersFromActionsWithNames = [];
+      const uniqueUsersFromSessions = sessionsByUser.size;
       
-      console.log('🔍 DEBUG: Session calculation complete, looking up profiles for users:', userIds);
+      console.log('🔍 DEBUG: Session calculation complete, looking up profiles for users:', Array.from(allUserIds));
       
-      if (userIds.length > 0) {
+      if (allUserIds.size > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, display_name')
-          .in('id', userIds);
+          .in('id', Array.from(allUserIds));
           
         if (profilesError) {
           console.error('❌ Error fetching profiles:', profilesError);
@@ -428,32 +454,58 @@ export class UserActionsService {
         
         console.log('👥 DEBUG: Retrieved profiles:', profiles);
         
-        userIds.forEach(userId => {
+        // Traiter les sessions
+        sessionsByUser.forEach((sessionData, userId) => {
           const profile = profiles?.find(p => p.id === userId);
-          const sessionCount = sessionsByUser.get(userId);
+          const { sessionCount, loginCount } = sessionData;
           
-          console.log(`🔍 DEBUG: Processing user ${userId}: profile=${profile?.display_name}, sessions=${sessionCount}`);
+          console.log(`🔍 DEBUG: Processing user sessions ${userId}: profile=${profile?.display_name}, sessions=${sessionCount}, logins=${loginCount}`);
           
-          // Inclure tous les utilisateurs qui ont des sessions (même 1 seule)
           sessionsWithNames.push({
             user_id: userId,
             session_count: sessionCount,
+            login_count: loginCount,
+            display_name: profile?.display_name || 'Utilisateur inconnu'
+          });
+          
+          // Log spécial pour Sabine Pinsan
+          if (profile?.display_name && profile.display_name.toLowerCase().includes('pinsan')) {
+            console.log(`🔍 PINSAN DEBUG: Found Sabine Pinsan - ${loginCount} logins, ${sessionCount} sessions`);
+          }
+        });
+
+        // Traiter les utilisateurs des actions
+        actionsByUserId.forEach((actionCount, userId) => {
+          const profile = profiles?.find(p => p.id === userId);
+          
+          usersFromActionsWithNames.push({
+            user_id: userId,
+            action_count: actionCount,
             display_name: profile?.display_name || 'Utilisateur inconnu'
           });
         });
       }
 
       const finalSessions = sessionsWithNames.sort((a, b) => b.session_count - a.session_count);
-      console.log('✅ DEBUG: Final sessions by user result:', finalSessions);
+      const finalUsersFromActions = usersFromActionsWithNames.sort((a, b) => b.action_count - a.action_count);
+      
+      console.log('✅ DEBUG: Final results:', {
+        sessionsCount: finalSessions.length,
+        actionsUsersCount: finalUsersFromActions.length,
+        sampleSessions: finalSessions.slice(0, 3),
+        sampleActions: finalUsersFromActions.slice(0, 3)
+      });
 
       return {
         totalActions: totalActions || 0,
         totalActionsGlobal: totalActionsGlobal || 0,
         uniqueUsers,
+        uniqueUsersFromSessions,
         topContent,
         actionsByType: [],
         dailyActivity: [],
-        sessionsByUser: finalSessions
+        sessionsByUser: finalSessions,
+        usersFromActions: finalUsersFromActions
       };
     } catch (error) {
       console.error('Error in getUsageStats:', error);
@@ -461,10 +513,12 @@ export class UserActionsService {
         totalActions: 0,
         totalActionsGlobal: 0,
         uniqueUsers: 0,
+        uniqueUsersFromSessions: 0,
         topContent: [],
         actionsByType: [],
         dailyActivity: [],
-        sessionsByUser: []
+        sessionsByUser: [],
+        usersFromActions: []
       };
     }
   }
