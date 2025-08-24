@@ -442,28 +442,7 @@ export class UserActionsService {
         })));
       }
       
-      // Deuxième étape : ajouter les jours de connexion depuis user_login_sessions (pour compléter)
-      if (sessionsData && sessionsData.length > 0) {
-        console.log('🔑 DEBUG: Processing login sessions for additional session days:', sessionsData.length);
-        
-        sessionsData.forEach(session => {
-          const userId = session.user_id;
-          const loginDate = new Date(session.login_timestamp).toISOString().split('T')[0];
-          
-          if (!userActivityDays.has(userId)) {
-            userActivityDays.set(userId, new Set());
-          }
-          userActivityDays.get(userId).add(loginDate);
-        });
-        
-        console.log('📅 DEBUG: Combined activity days (actions + logins) per user:', Array.from(userActivityDays.entries()).map(([userId, days]) => ({
-          userId,
-          activityDays: Array.from(days),
-          count: days.size
-        })));
-      }
-      
-      // Troisième étape : convertir les jours d'activité en sessions
+      // Convertir les jours d'activité en sessions (basé uniquement sur les actions réelles)
       userActivityDays.forEach((activityDays, userId) => {
         const sessionCount = activityDays.size; // Chaque jour d'activité = 1 session
         const activityDatesArray = Array.from(activityDays).sort();
