@@ -272,11 +272,50 @@ export class UserActionsService {
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
       // Utilisateurs uniques - MÉTRIQUE GLOBALE (ignore tous les filtres)  
-      // Utiliser COUNT(DISTINCT) pour éviter les limitations côté client
-      const { data: uniqueUsersData } = await supabase
-        .rpc('count_unique_users');
+      // Récupérer tous les user_id par chunks pour éviter les limitations
+      const uniqueUserIdsSet = new Set();
       
-      const uniqueUsers = uniqueUsersData || 0;
+      // Premier chunk (0-999)
+      const { data: firstChunk } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .range(0, 999);
+      
+      firstChunk?.forEach(item => uniqueUserIdsSet.add(item.user_id));
+      
+      // Deuxième chunk (1000-1999) si nécessaire
+      const { data: secondChunk } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .range(1000, 1999);
+      
+      secondChunk?.forEach(item => uniqueUserIdsSet.add(item.user_id));
+      
+      // Troisième chunk (2000-2999) si nécessaire
+      const { data: thirdChunk } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .range(2000, 2999);
+      
+      thirdChunk?.forEach(item => uniqueUserIdsSet.add(item.user_id));
+      
+      // Quatrième chunk (3000-3999) si nécessaire
+      const { data: fourthChunk } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .range(3000, 3999);
+      
+      fourthChunk?.forEach(item => uniqueUserIdsSet.add(item.user_id));
+      
+      // Cinquième chunk (4000-4999) si nécessaire
+      const { data: fifthChunk } = await supabase
+        .from('user_actions')
+        .select('user_id')
+        .range(4000, 4999);
+      
+      fifthChunk?.forEach(item => uniqueUserIdsSet.add(item.user_id));
+      
+      const uniqueUsers = uniqueUserIdsSet.size;
 
       // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase

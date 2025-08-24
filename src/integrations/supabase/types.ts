@@ -2557,6 +2557,10 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      count_unique_users: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
