@@ -207,15 +207,19 @@ export class UserActionsService {
   static async getUsageStats(filters: {
     startDate?: string;
     endDate?: string;
+    userId?: string;
+    contentType?: ContentType;
+    actionType?: ActionType;
   } = {}): Promise<{
     totalActions: number;
     uniqueUsers: number;
     topContent: Array<{ content_title: string; content_type: string; view_count: number }>;
     actionsByType: Array<{ action_type: string; count: number }>;
     dailyActivity: Array<{ date: string; count: number }>;
+    sessionsByUser: Array<{ user_id: string; session_count: number; display_name?: string }>;
   }> {
     try {
-      // Total des actions
+      // Total des actions avec tous les filtres
       let totalQuery = supabase
         .from('user_actions')
         .select('*', { count: 'exact', head: true });
@@ -226,13 +230,22 @@ export class UserActionsService {
       if (filters.endDate) {
         totalQuery = totalQuery.lte('timestamp', filters.endDate);
       }
+      if (filters.userId) {
+        totalQuery = totalQuery.eq('user_id', filters.userId);
+      }
+      if (filters.contentType) {
+        totalQuery = totalQuery.eq('content_type', filters.contentType);
+      }
+      if (filters.actionType) {
+        totalQuery = totalQuery.eq('action_type', filters.actionType);
+      }
 
       const { count: totalActions } = await totalQuery;
 
-      // Utilisateurs uniques
+      // Utilisateurs uniques avec tous les filtres
       let usersQuery = supabase
         .from('user_actions')
-        .select('user_id', { count: 'exact' });
+        .select('user_id');
 
       if (filters.startDate) {
         usersQuery = usersQuery.gte('timestamp', filters.startDate);
@@ -240,11 +253,20 @@ export class UserActionsService {
       if (filters.endDate) {
         usersQuery = usersQuery.lte('timestamp', filters.endDate);
       }
+      if (filters.userId) {
+        usersQuery = usersQuery.eq('user_id', filters.userId);
+      }
+      if (filters.contentType) {
+        usersQuery = usersQuery.eq('content_type', filters.contentType);
+      }
+      if (filters.actionType) {
+        usersQuery = usersQuery.eq('action_type', filters.actionType);
+      }
 
       const { data: usersData } = await usersQuery;
       const uniqueUsers = new Set(usersData?.map(u => u.user_id)).size;
 
-      // Récupérer le top contenu vu
+      // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase
         .from('user_actions')
         .select('content_title, content_type, content_id')
@@ -256,13 +278,24 @@ export class UserActionsService {
       if (filters.endDate) {
         topContentQuery = topContentQuery.lte('timestamp', filters.endDate);
       }
+      if (filters.userId) {
+        topContentQuery = topContentQuery.eq('user_id', filters.userId);
+      }
+      if (filters.contentType) {
+        topContentQuery = topContentQuery.eq('content_type', filters.contentType);
+      }
 
       const { data: topContentData } = await topContentQuery;
 
-      // Agréger manuellement les vues par contenu
+      // Agréger par titre de contenu (pour éviter les doublons)
       const contentCounts = new Map();
       topContentData?.forEach(action => {
-        const key = `${action.content_type}-${action.content_id}`;
+        // Exclure "Page Jeux cognitifs"
+        if (action.content_title === 'Page Jeux cognitifs') {
+          return;
+        }
+        
+        const key = action.content_title;
         if (contentCounts.has(key)) {
           contentCounts.set(key, {
             ...contentCounts.get(key),
@@ -281,12 +314,60 @@ export class UserActionsService {
         .sort((a, b) => b.view_count - a.view_count)
         .slice(0, 10);
 
+      // Calculer les sessions par utilisateur
+      let sessionsQuery = supabase
+        .from('user_login_sessions')
+        .select('user_id, login_timestamp');
+
+      if (filters.startDate) {
+        sessionsQuery = sessionsQuery.gte('login_timestamp', filters.startDate);
+      }
+      if (filters.endDate) {
+        sessionsQuery = sessionsQuery.lte('login_timestamp', filters.endDate);
+      }
+      if (filters.userId) {
+        sessionsQuery = sessionsQuery.eq('user_id', filters.userId);
+      }
+
+      const { data: sessionsData } = await sessionsQuery;
+      const sessionsByUser = new Map();
+
+      sessionsData?.forEach(session => {
+        const userId = session.user_id;
+        if (sessionsByUser.has(userId)) {
+          sessionsByUser.set(userId, sessionsByUser.get(userId) + 1);
+        } else {
+          sessionsByUser.set(userId, 1);
+        }
+      });
+
+      // Récupérer les noms d'utilisateurs pour les sessions
+      const userIds = Array.from(sessionsByUser.keys());
+      const sessionsWithNames = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', userIds);
+          
+        userIds.forEach(userId => {
+          const profile = profiles?.find(p => p.id === userId);
+          sessionsWithNames.push({
+            user_id: userId,
+            session_count: sessionsByUser.get(userId),
+            display_name: profile?.display_name || 'Utilisateur inconnu'
+          });
+        });
+      }
+
       return {
         totalActions: totalActions || 0,
         uniqueUsers,
         topContent,
         actionsByType: [],
-        dailyActivity: []
+        dailyActivity: [],
+        sessionsByUser: sessionsWithNames.sort((a, b) => b.session_count - a.session_count)
       };
     } catch (error) {
       console.error('Error in getUsageStats:', error);
@@ -295,7 +376,8 @@ export class UserActionsService {
         uniqueUsers: 0,
         topContent: [],
         actionsByType: [],
-        dailyActivity: []
+        dailyActivity: [],
+        sessionsByUser: []
       };
     }
   }
@@ -358,7 +440,7 @@ export class UserActionsService {
         return [];
       }
 
-      // Récupérer les profils de ces utilisateurs
+      // Récupérer les profils de ces utilisateurs, y compris les admins
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, display_name, email')

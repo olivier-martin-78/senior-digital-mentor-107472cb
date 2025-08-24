@@ -55,6 +55,9 @@ export const useUserActions = (filters: UseUserActionsFilters = {}) => {
 export const useUsageStats = (filters: {
   startDate?: string;
   endDate?: string;
+  userId?: string;
+  contentType?: ContentType;
+  actionType?: ActionType;
 } = {}) => {
   return useQuery({
     queryKey: ['usageStats', filters],

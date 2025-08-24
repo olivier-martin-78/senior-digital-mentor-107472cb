@@ -53,10 +53,7 @@ const AdminDashboard: React.FC = () => {
   const {
     data: stats,
     isLoading: statsLoading
-  } = useUsageStats({
-    startDate: startDate ? format(startOfDay(startDate), 'yyyy-MM-dd HH:mm:ss') : undefined,
-    endDate: endDate ? format(endOfDay(endDate), 'yyyy-MM-dd HH:mm:ss') : undefined,
-  });
+  } = useUsageStats(filters);
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
@@ -365,7 +362,7 @@ const AdminDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {stats.topContent.slice(0, 5).map((content, index) => (
+                {stats.topContent.slice(0, 10).map((content, index) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-semibold">
@@ -418,8 +415,40 @@ const AdminDashboard: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {actions.map((action) => (
-                      <TableRow key={action.id}>
+                    {actions
+                      .reduce((deduplicatedActions, action, index) => {
+                        // Grouper les actions consécutives similaires
+                        if (index === 0) {
+                          deduplicatedActions.push({
+                            ...action,
+                            count: 1,
+                            isGroup: false
+                          });
+                        } else {
+                          const lastAction = deduplicatedActions[deduplicatedActions.length - 1];
+                          const timeDiff = new Date(action.timestamp).getTime() - new Date(lastAction.timestamp).getTime();
+                          const isSimilar = action.user_id === lastAction.user_id && 
+                                           action.action_type === lastAction.action_type && 
+                                           action.content_title === lastAction.content_title &&
+                                           timeDiff < 300000; // 5 minutes
+                          
+                          if (isSimilar && lastAction.count < 5) {
+                            // Grouper avec l'action précédente
+                            lastAction.count++;
+                            lastAction.isGroup = true;
+                          } else {
+                            // Nouvelle action
+                            deduplicatedActions.push({
+                              ...action,
+                              count: 1,
+                              isGroup: false
+                            });
+                          }
+                        }
+                        return deduplicatedActions;
+                      }, [] as any[])
+                      .map((action) => (
+                      <TableRow key={`${action.id}-${action.count}`}>
                         <TableCell className="text-sm">
                           {format(new Date(action.timestamp), 'dd/MM/yyyy HH:mm')}
                         </TableCell>
@@ -445,13 +474,37 @@ const AdminDashboard: React.FC = () => {
                             {getContentTypeLabel(action.content_type)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {action.content_title}
-                        </TableCell>
+                         <TableCell className="max-w-xs truncate">
+                           {action.content_title}
+                           {action.isGroup && action.count > 1 && (
+                             <span className="ml-2 text-xs text-muted-foreground">
+                               ({action.count} actions similaires)
+                             </span>
+                           )}
+                         </TableCell>
                       </TableRow>
-                    ))}
+                     ))}
                   </TableBody>
                 </Table>
+
+                {/* Sessions par utilisateur */}
+                {stats?.sessionsByUser && stats.sessionsByUser.length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="text-lg font-semibold mb-4">Sessions par utilisateur</h4>
+                    <div className="grid gap-2">
+                      {stats.sessionsByUser.slice(0, 5).map((userSession, index) => (
+                        <div key={userSession.user_id} className="flex items-center justify-between p-2 border rounded">
+                          <span className="text-sm font-medium">
+                            {userSession.display_name}
+                          </span>
+                          <Badge variant="outline">
+                            {userSession.session_count} session{userSession.session_count > 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Pagination */}
                 {totalPages > 1 && (
