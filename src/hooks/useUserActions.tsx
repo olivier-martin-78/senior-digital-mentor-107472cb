@@ -14,7 +14,7 @@ interface UseUserActionsFilters {
 
 export const useUserActions = (filters: UseUserActionsFilters = {}) => {
   const [page, setPage] = useState(filters.page || 1);
-  const pageSize = filters.pageSize || 20;
+  const pageSize = filters.pageSize || 30;
 
   const {
     data,

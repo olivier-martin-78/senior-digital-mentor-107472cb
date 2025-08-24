@@ -242,7 +242,7 @@ export class UserActionsService {
 
       const { count: totalActions } = await totalQuery;
 
-      // Utilisateurs uniques avec tous les filtres
+      // Utilisateurs uniques SANS le filtre userId (pour avoir le vrai nombre d'utilisateurs actifs)
       let usersQuery = supabase
         .from('user_actions')
         .select('user_id');
@@ -253,9 +253,7 @@ export class UserActionsService {
       if (filters.endDate) {
         usersQuery = usersQuery.lte('timestamp', filters.endDate);
       }
-      if (filters.userId) {
-        usersQuery = usersQuery.eq('user_id', filters.userId);
-      }
+      // Ne pas appliquer le filtre userId ici pour avoir le vrai nombre d'utilisateurs actifs
       if (filters.contentType) {
         usersQuery = usersQuery.eq('content_type', filters.contentType);
       }
@@ -314,10 +312,11 @@ export class UserActionsService {
         .sort((a, b) => b.view_count - a.view_count)
         .slice(0, 10);
 
-      // Calculer les sessions par utilisateur
+      // Calculer les vraies sessions par utilisateur (grouper les connexions par intervalles)
       let sessionsQuery = supabase
         .from('user_login_sessions')
-        .select('user_id, login_timestamp');
+        .select('user_id, login_timestamp')
+        .order('user_id, login_timestamp');
 
       if (filters.startDate) {
         sessionsQuery = sessionsQuery.gte('login_timestamp', filters.startDate);
@@ -332,14 +331,34 @@ export class UserActionsService {
       const { data: sessionsData } = await sessionsQuery;
       const sessionsByUser = new Map();
 
-      sessionsData?.forEach(session => {
-        const userId = session.user_id;
-        if (sessionsByUser.has(userId)) {
-          sessionsByUser.set(userId, sessionsByUser.get(userId) + 1);
-        } else {
-          sessionsByUser.set(userId, 1);
-        }
-      });
+      // Grouper les connexions par utilisateur et calculer les vraies sessions
+      if (sessionsData && sessionsData.length > 0) {
+        // Grouper par utilisateur
+        const userLogins = new Map();
+        sessionsData.forEach(session => {
+          const userId = session.user_id;
+          if (!userLogins.has(userId)) {
+            userLogins.set(userId, []);
+          }
+          userLogins.get(userId).push(new Date(session.login_timestamp));
+        });
+
+        // Pour chaque utilisateur, calculer le nombre de sessions
+        userLogins.forEach((timestamps, userId) => {
+          timestamps.sort((a, b) => a.getTime() - b.getTime());
+          
+          let sessionCount = 1; // Au moins une session
+          for (let i = 1; i < timestamps.length; i++) {
+            const timeDiff = timestamps[i].getTime() - timestamps[i - 1].getTime();
+            // Si plus de 30 minutes d'écart, c'est une nouvelle session
+            if (timeDiff > 30 * 60 * 1000) {
+              sessionCount++;
+            }
+          }
+          
+          sessionsByUser.set(userId, sessionCount);
+        });
+      }
 
       // Récupérer les noms d'utilisateurs pour les sessions
       const userIds = Array.from(sessionsByUser.keys());
@@ -353,11 +372,16 @@ export class UserActionsService {
           
         userIds.forEach(userId => {
           const profile = profiles?.find(p => p.id === userId);
-          sessionsWithNames.push({
-            user_id: userId,
-            session_count: sessionsByUser.get(userId),
-            display_name: profile?.display_name || 'Utilisateur inconnu'
-          });
+          const sessionCount = sessionsByUser.get(userId);
+          
+          // N'inclure que les utilisateurs avec au moins 1 session
+          if (sessionCount > 0) {
+            sessionsWithNames.push({
+              user_id: userId,
+              session_count: sessionCount,
+              display_name: profile?.display_name || 'Utilisateur inconnu'
+            });
+          }
         });
       }
 

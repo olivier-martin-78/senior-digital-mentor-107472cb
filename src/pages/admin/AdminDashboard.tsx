@@ -21,7 +21,7 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { hasRole } = useAuth();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date('2025-06-01'));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [contentType, setContentType] = useState<string>('all');
   const [actionType, setActionType] = useState<string>('all');
