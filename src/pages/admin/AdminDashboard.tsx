@@ -25,6 +25,7 @@ const AdminDashboard: React.FC = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [contentType, setContentType] = useState<string>('all');
   const [actionType, setActionType] = useState<string>('all');
+  const [selectedContentTitle, setSelectedContentTitle] = useState<string | null>(null);
 
   // Rediriger si pas admin
   if (!hasRole('admin')) {
@@ -38,6 +39,7 @@ const AdminDashboard: React.FC = () => {
     endDate: endDate ? format(endOfDay(endDate), 'yyyy-MM-dd HH:mm:ss') : undefined,
     contentType: contentType === 'all' ? undefined : contentType as any,
     actionType: actionType === 'all' ? undefined : actionType as any,
+    contentTitle: selectedContentTitle || undefined,
   };
 
   const {
@@ -102,30 +104,42 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    const confirmed = window.confirm(
+    const confirmDelete = window.confirm(
       'Êtes-vous sûr de vouloir supprimer TOUTES les actions de cet utilisateur ? Cette action est irréversible.'
     );
 
-    if (!confirmed) return;
+    if (!confirmDelete) return;
 
     try {
-      const loadingToast = toast.loading('Suppression en cours...');
       const result = await UserActionsService.deleteAllUserActions(selectedUserId);
       
-      // Fermer le toast de loading
-      toast.dismiss(loadingToast);
-      
       if (result.success) {
-        toast.success(`${result.deletedCount || 0} action(s) supprimée(s) avec succès`);
-        // Recharger les données
-        refetch();
+        toast.success(`${result.deletedCount} actions supprimées avec succès`);
+        refetch(); // Recharger les données
       } else {
         toast.error(result.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
-      toast.dismiss(); // Fermer tous les toasts de loading en cas d'erreur
-      toast.error('Erreur inattendue lors de la suppression');
+      toast.error('Erreur lors de la suppression des actions');
+      console.error('Delete error:', error);
     }
+  };
+
+  const handleContentClick = (contentTitle: string) => {
+    if (selectedContentTitle === contentTitle) {
+      // Désélectionner si déjà sélectionné
+      setSelectedContentTitle(null);
+    } else {
+      // Sélectionner le nouveau contenu
+      setSelectedContentTitle(contentTitle);
+    }
+  };
+
+  const clearAllFilters = () => {
+    setSelectedUserId(null);
+    setContentType('all');
+    setActionType('all');
+    setSelectedContentTitle(null);
   };
 
   return (
@@ -160,7 +174,7 @@ const AdminDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {statsLoading ? '...' : stats?.totalActions.toLocaleString() || '0'}
+                {statsLoading ? '...' : stats?.totalActionsGlobal.toLocaleString() || '0'}
               </div>
               <p className="text-xs text-muted-foreground">
                 Sur la période sélectionnée
@@ -323,11 +337,66 @@ const AdminDashboard: React.FC = () => {
                     <SelectItem value="update">Modifications</SelectItem>
                     <SelectItem value="delete">Suppressions</SelectItem>
                   </SelectContent>
-                </Select>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              
+              {/* Filtre de contenu actif et bouton de réinitialisation */}
+              {(selectedUserId || contentType !== 'all' || actionType !== 'all' || selectedContentTitle) && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedContentTitle && (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        Contenu : {selectedContentTitle}
+                        <button
+                          onClick={() => setSelectedContentTitle(null)}
+                          className="ml-2 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    )}
+                    {selectedUserId && (
+                      <Badge variant="secondary">
+                        Utilisateur sélectionné
+                        <button
+                          onClick={() => setSelectedUserId(null)}
+                          className="ml-2 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    )}
+                    {contentType !== 'all' && (
+                      <Badge variant="secondary">
+                        Type : {getContentTypeLabel(contentType)}
+                        <button
+                          onClick={() => setContentType('all')}
+                          className="ml-2 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    )}
+                    {actionType !== 'all' && (
+                      <Badge variant="secondary">
+                        Action : {getActionLabel(actionType)}
+                        <button
+                          onClick={() => setActionType('all')}
+                          className="ml-2 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    Réinitialiser tous les filtres
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         {/* Actions administratives */}
         {selectedUserId && (
@@ -363,13 +432,25 @@ const AdminDashboard: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {stats.topContent.slice(0, 10).map((content, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div 
+                    key={index} 
+                    className={cn(
+                      "flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all hover:bg-accent/50",
+                      selectedContentTitle === content.content_title && "bg-primary/10 border-primary/50"
+                    )}
+                    onClick={() => handleContentClick(content.content_title)}
+                  >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-semibold">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer",
+                        selectedContentTitle === content.content_title 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-primary/10"
+                      )}>
                         {index + 1}
                       </div>
                       <div>
-                        <p className="font-medium">{content.content_title}</p>
+                        <p className="font-medium hover:underline cursor-pointer">{content.content_title}</p>
                         <p className="text-sm text-muted-foreground">
                           {getContentTypeLabel(content.content_type)}
                         </p>

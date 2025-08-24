@@ -122,18 +122,19 @@ export class UserActionsService {
     return this.trackUserAction('delete', contentType, contentId, contentTitle, metadata);
   }
 
-   /**
-    * Récupérer les actions utilisateurs avec filtres (pour les admins)
-    */
-   static async getUserActions(filters: {
-     userId?: string;
-     startDate?: string;
-     endDate?: string;
-     contentType?: ContentType;
-     actionType?: ActionType;
-     limit?: number;
-     offset?: number;
-   } = {}): Promise<{ data: UserAction[]; count: number }> {
+  /**
+   * Récupérer les actions utilisateurs avec filtres (pour les admins)
+   */
+  static async getUserActions(filters: {
+    userId?: string;
+    startDate?: string;
+    endDate?: string;
+    contentType?: ContentType;
+    actionType?: ActionType;
+    contentTitle?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<{ data: UserAction[]; count: number }> {
      try {
        let query = supabase
          .from('user_actions')
@@ -157,11 +158,15 @@ export class UserActionsService {
          query = query.eq('content_type', filters.contentType);
        }
 
-       if (filters.actionType) {
-         query = query.eq('action_type', filters.actionType);
-       }
+        if (filters.actionType) {
+          query = query.eq('action_type', filters.actionType);
+        }
 
-       // Pagination
+        if (filters.contentTitle) {
+          query = query.eq('content_title', filters.contentTitle);
+        }
+
+        // Pagination
        if (filters.limit) {
          query = query.limit(filters.limit);
        }
@@ -212,6 +217,7 @@ export class UserActionsService {
     actionType?: ActionType;
   } = {}): Promise<{
     totalActions: number;
+    totalActionsGlobal: number;
     uniqueUsers: number;
     topContent: Array<{ content_title: string; content_type: string; view_count: number }>;
     actionsByType: Array<{ action_type: string; count: number }>;
@@ -241,6 +247,27 @@ export class UserActionsService {
       }
 
       const { count: totalActions } = await totalQuery;
+
+      // Total des actions SANS le filtre userId (pour "Actions totales")
+      let totalGlobalQuery = supabase
+        .from('user_actions')
+        .select('*', { count: 'exact', head: true });
+
+      if (filters.startDate) {
+        totalGlobalQuery = totalGlobalQuery.gte('timestamp', filters.startDate);
+      }
+      if (filters.endDate) {
+        totalGlobalQuery = totalGlobalQuery.lte('timestamp', filters.endDate);
+      }
+      // Ne pas appliquer le filtre userId pour avoir le total global
+      if (filters.contentType) {
+        totalGlobalQuery = totalGlobalQuery.eq('content_type', filters.contentType);
+      }
+      if (filters.actionType) {
+        totalGlobalQuery = totalGlobalQuery.eq('action_type', filters.actionType);
+      }
+
+      const { count: totalActionsGlobal } = await totalGlobalQuery;
 
       // Utilisateurs uniques SANS le filtre userId (pour avoir le vrai nombre d'utilisateurs actifs)
       let usersQuery = supabase
@@ -387,6 +414,7 @@ export class UserActionsService {
 
       return {
         totalActions: totalActions || 0,
+        totalActionsGlobal: totalActionsGlobal || 0,
         uniqueUsers,
         topContent,
         actionsByType: [],
@@ -397,6 +425,7 @@ export class UserActionsService {
       console.error('Error in getUsageStats:', error);
       return {
         totalActions: 0,
+        totalActionsGlobal: 0,
         uniqueUsers: 0,
         topContent: [],
         actionsByType: [],

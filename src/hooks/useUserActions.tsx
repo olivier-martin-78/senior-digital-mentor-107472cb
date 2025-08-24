@@ -8,6 +8,7 @@ interface UseUserActionsFilters {
   endDate?: string;
   contentType?: ContentType;
   actionType?: ActionType;
+  contentTitle?: string;
   page?: number;
   pageSize?: number;
 }
