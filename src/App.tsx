@@ -9,9 +9,6 @@ import PrivateApp from "./components/PrivateApp";
 import PublicApp from "./components/PublicApp";
 import { useOptionalAuth } from "@/hooks/useOptionalAuth";
 import { SecurityMonitor } from "@/components/security/SecurityMonitor";
-import { PublicMiniSite } from "@/pages/PublicMiniSite";
-import { PublicReviewForm } from "@/pages/PublicReviewForm";
-import { MiniSitePreview } from "@/pages/MiniSitePreview";
 
 const queryClient = new QueryClient();
 
