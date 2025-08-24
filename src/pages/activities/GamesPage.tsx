@@ -236,11 +236,12 @@ export default function GamesPage() {
             className="block"
             onClick={() => UserActionsService.trackView('activity', 'memory-count-game', 'Combien de fois...')}
           >
-            <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Brain className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Combien de fois...</h3>
-              </div>
+            <div 
+              className="h-48 flex items-center justify-center bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url('/lovable-uploads/5433948a-d89a-49c0-a06a-1a49214c8464.png')`
+              }}
+            >
             </div>
             <CardHeader>
               <CardTitle className="text-lg">Combien de fois...</CardTitle>
