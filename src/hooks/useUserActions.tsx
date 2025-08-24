@@ -61,11 +61,11 @@ export const useUsageStats = (filters: {
   actionType?: ActionType;
 } = {}) => {
   return useQuery({
-    queryKey: ['usageStats', filters, Date.now()], // Ajout timestamp pour forcer refresh
+    queryKey: ['usageStats', filters],
     queryFn: () => UserActionsService.getUsageStats(filters),
     enabled: true,
     refetchOnWindowFocus: false,
     staleTime: 0, // Désactive le cache - toujours considérer les données comme obsolètes
-    gcTime: 0, // Pas de mise en cache - supprime immédiatement les données obsolètes
+    refetchOnMount: 'always', // Force le refresh à chaque montage du composant
   });
 };
