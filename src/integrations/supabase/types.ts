@@ -2561,6 +2561,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      count_unique_users_with_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
