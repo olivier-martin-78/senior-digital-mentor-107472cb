@@ -271,23 +271,22 @@ export class UserActionsService {
 
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
-      // Utilisateurs uniques SANS le filtre userId (pour avoir le vrai nombre d'utilisateurs actifs)
+      // Utilisateurs uniques - MÉTRIQUE GLOBALE (tous les utilisateurs ayant jamais eu des actions)
+      // Pas de filtres de date pour cette métrique globale
       let usersQuery = supabase
         .from('user_actions')
         .select('user_id');
 
-      if (filters.startDate) {
-        usersQuery = usersQuery.gte('timestamp', filters.startDate);
-      }
-      if (filters.endDate) {
-        usersQuery = usersQuery.lte('timestamp', filters.endDate);
-      }
-      // Ne pas appliquer le filtre userId ici pour avoir le vrai nombre d'utilisateurs actifs
+      console.log('📊 DEBUG: Calculating global "Utilisateurs actifs" without date filters');
+      
+      // Appliquer seulement les filtres non-temporels pour "Utilisateurs actifs"
       if (filters.contentType) {
         usersQuery = usersQuery.eq('content_type', filters.contentType);
+        console.log('📊 DEBUG: Applied contentType filter:', filters.contentType);
       }
       if (filters.actionType) {
         usersQuery = usersQuery.eq('action_type', filters.actionType);
+        console.log('📊 DEBUG: Applied actionType filter:', filters.actionType);
       }
 
       const { data: usersData } = await usersQuery;
