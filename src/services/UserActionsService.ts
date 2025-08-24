@@ -399,6 +399,12 @@ export class UserActionsService {
         sessionsQuery = sessionsQuery.lte('login_timestamp', filters.endDate);
       }
 
+      // Requête séparée pour compter TOUS les utilisateurs uniques avec sessions (sans filtres)
+      const { data: allSessionsData } = await supabase
+        .from('user_login_sessions')
+        .select('user_id')
+        .limit(5000); // Augmenté pour capturer plus d'utilisateurs
+
       // Récupérer les actions avec timestamps pour calculer les jours d'activité
       let actionsForSessionsQuery = supabase
         .from('user_actions')
@@ -488,7 +494,7 @@ export class UserActionsService {
       const sessionsWithNames = [];
       const usersFromActionsWithNames = [];
       // CORRECTION : utiliser les vraies sessions de connexion au lieu des actions
-      const uniqueUsersFromSessions = sessionsData ? new Set(sessionsData.map(s => s.user_id)).size : 0;
+      const uniqueUsersFromSessions = allSessionsData ? new Set(allSessionsData.map(s => s.user_id)).size : 0;
       
       console.log('🔍 DEBUG: Session calculation complete, looking up profiles for users:', Array.from(allUserIds));
       
