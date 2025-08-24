@@ -271,10 +271,12 @@ export class UserActionsService {
 
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
-      // Utilisateurs uniques - MÉTRIQUE GLOBALE (ignore tous les filtres)
+      // Utilisateurs uniques - MÉTRIQUE GLOBALE (ignore tous les filtres)  
+      // Utiliser une limite explicite pour éviter la limite Supabase de 1000
       const { data: allUsersData } = await supabase
         .from('user_actions')
-        .select('user_id');
+        .select('user_id')
+        .limit(5000); // Limite explicite pour récupérer plus que les 1000 par défaut
       
       const uniqueUsers = new Set(allUsersData?.map(item => item.user_id) || []).size;
 
@@ -297,7 +299,7 @@ export class UserActionsService {
         topContentQuery = topContentQuery.eq('content_type', filters.contentType);
       }
 
-      const { data: topContentData } = await topContentQuery;
+      const { data: topContentData } = await topContentQuery.limit(2000);
 
       // Agréger par titre de contenu (pour éviter les doublons)
       const contentCounts = new Map();
@@ -339,7 +341,7 @@ export class UserActionsService {
         usersFromActionsQuery = usersFromActionsQuery.lte('timestamp', filters.endDate);
       }
 
-      const { data: actionsUsersData } = await usersFromActionsQuery;
+      const { data: actionsUsersData } = await usersFromActionsQuery.limit(3000);
       const actionsByUserId = new Map();
       
       actionsUsersData?.forEach(action => {
@@ -380,8 +382,8 @@ export class UserActionsService {
       });
 
       const [sessionsResult, actionsResult] = await Promise.all([
-        sessionsQuery,
-        actionsForSessionsQuery
+        sessionsQuery.limit(2000),
+        actionsForSessionsQuery.limit(3000)
       ]);
 
       const { data: sessionsData, error: sessionsError } = sessionsResult;
@@ -577,6 +579,7 @@ export class UserActionsService {
       const { data: userActions, error: actionsError } = await supabase
         .from('user_actions')
         .select('user_id')
+        .limit(5000) // Limite explicite pour récupérer tous les utilisateurs
         .order('user_id');
 
       if (actionsError) {
