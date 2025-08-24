@@ -271,26 +271,45 @@ export class UserActionsService {
 
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
-      // Utilisateurs uniques - MÉTRIQUE GLOBALE (tous les utilisateurs ayant jamais eu des actions)
-      // Pas de filtres de date pour cette métrique globale
+      // ===== DEBUG: Utilisateurs uniques - MÉTRIQUE GLOBALE =====
+      console.log('🔍 DEBUG: Starting "Utilisateurs actifs" calculation');
+      console.log('🔍 DEBUG: Filters received:', JSON.stringify(filters, null, 2));
+      
+      // PREMIÈRE REQUÊTE: Tous les utilisateurs sans aucun filtre
+      const { data: allUsersData } = await supabase
+        .from('user_actions')
+        .select('user_id');
+      
+      const totalUniqueUsers = new Set(allUsersData?.map(item => item.user_id) || []).size;
+      console.log('🔍 DEBUG: Total unique users in database (no filters):', totalUniqueUsers);
+      
+      // DEUXIÈME REQUÊTE: Avec filtres non-temporels seulement
       let usersQuery = supabase
         .from('user_actions')
         .select('user_id');
 
-      console.log('📊 DEBUG: Calculating global "Utilisateurs actifs" without date filters');
+      let hasNonTemporalFilters = false;
       
       // Appliquer seulement les filtres non-temporels pour "Utilisateurs actifs"
       if (filters.contentType) {
         usersQuery = usersQuery.eq('content_type', filters.contentType);
-        console.log('📊 DEBUG: Applied contentType filter:', filters.contentType);
+        hasNonTemporalFilters = true;
+        console.log('🔍 DEBUG: Applied contentType filter:', filters.contentType);
       }
       if (filters.actionType) {
         usersQuery = usersQuery.eq('action_type', filters.actionType);
-        console.log('📊 DEBUG: Applied actionType filter:', filters.actionType);
+        hasNonTemporalFilters = true;
+        console.log('🔍 DEBUG: Applied actionType filter:', filters.actionType);
       }
+
+      console.log('🔍 DEBUG: Has non-temporal filters applied:', hasNonTemporalFilters);
 
       const { data: usersData } = await usersQuery;
       const uniqueUsers = new Set(usersData?.map(u => u.user_id)).size;
+      
+      console.log('🔍 DEBUG: Final "Utilisateurs actifs" result:', uniqueUsers);
+      console.log('🔍 DEBUG: Users data length:', usersData?.length || 0);
+      console.log('🔍 DEBUG: First 5 users:', usersData?.slice(0, 5) || []);
 
       // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase
