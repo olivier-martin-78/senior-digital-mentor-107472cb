@@ -271,19 +271,12 @@ export class UserActionsService {
 
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
-      // ===== CORRECTION: "Utilisateurs actifs" - MÉTRIQUE VRAIMENT GLOBALE =====
-      console.warn('🚨🔍 STARTING UTILISATEURS ACTIFS CALCULATION 🚨🔍');
-      console.warn('🔍 DEBUG: Filters received:', JSON.stringify(filters, null, 2));
-      
-      // REQUÊTE COMPLÈTEMENT SANS FILTRES pour "Utilisateurs actifs"
-      // Cette métrique doit ignorer TOUS les filtres (dates, contentType, actionType)
+      // Utilisateurs uniques - MÉTRIQUE GLOBALE (ignore tous les filtres)
       const { data: allUsersData } = await supabase
         .from('user_actions')
         .select('user_id');
       
       const uniqueUsers = new Set(allUsersData?.map(item => item.user_id) || []).size;
-      console.warn('🚨🔍 UTILISATEURS ACTIFS RESULT:', uniqueUsers);
-      console.warn('🔍 DEBUG: Total records in user_actions:', allUsersData?.length || 0);
 
       // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase

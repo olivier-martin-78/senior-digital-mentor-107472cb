@@ -57,13 +57,6 @@ const AdminDashboard: React.FC = () => {
     isLoading: statsLoading
   } = useUsageStats(filters);
 
-  // DEBUG: Log des filtres envoyés pour "Utilisateurs actifs"
-  console.log('🎯 DASHBOARD DEBUG: Filters sent to useUsageStats:', JSON.stringify(filters, null, 2));
-  console.log('🎯 DASHBOARD DEBUG: Stats loading:', statsLoading);
-  if (stats) {
-    console.log('🎯 DASHBOARD DEBUG: Stats received - Utilisateurs actifs:', stats.uniqueUsers);
-  }
-
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
       case 'view': return <Eye className="h-4 w-4" />;
