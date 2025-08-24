@@ -1,6 +1,6 @@
 
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import { AppRole } from '@/types/supabase';
 import { useAccountAccess } from '@/hooks/useAccountAccess';
 import AccessRestrictedPage from '@/components/AccessRestrictedPage';
@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ requiredRoles, requiresFullAccess = true }: ProtectedRouteProps) => {
-  const { session, hasRole, isLoading, roles } = useAuth();
+  const { session, hasRole, isLoading, roles } = useOptionalAuth();
   const { hasAccess, isLoading: accessLoading } = useAccountAccess();
 
   // Show loading while authentication is being checked
