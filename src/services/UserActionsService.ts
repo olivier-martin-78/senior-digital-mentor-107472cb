@@ -356,7 +356,26 @@ export class UserActionsService {
       //   sessionsQuery = sessionsQuery.eq('user_id', filters.userId);
       // }
 
-      const { data: sessionsData } = await sessionsQuery;
+      console.log('🔍 DEBUG: Fetching sessions with filters:', {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        userId: filters.userId
+      });
+
+      const { data: sessionsData, error: sessionsError } = await sessionsQuery;
+      
+      if (sessionsError) {
+        console.error('❌ Error fetching sessions:', sessionsError);
+      }
+      
+      console.log('📊 DEBUG: Raw sessions data:', {
+        totalSessions: sessionsData?.length || 0,
+        sampleData: sessionsData?.slice(0, 5),
+        pinsanSessions: sessionsData?.filter(s => {
+          // Look for Pinsan sessions by checking if user_id might correspond to Sabine Pinsan
+          return s.user_id; // We'll log all and filter in console
+        })
+      });
       const sessionsByUser = new Map();
 
       // Grouper les connexions par utilisateur et calculer les vraies sessions
@@ -385,6 +404,9 @@ export class UserActionsService {
           }
           
           sessionsByUser.set(userId, sessionCount);
+          
+          // Debug log for each user's session calculation
+          console.log(`👤 DEBUG: User ${userId} - ${timestamps.length} logins → ${sessionCount} sessions`);
         });
       }
 
@@ -392,15 +414,25 @@ export class UserActionsService {
       const userIds = Array.from(sessionsByUser.keys());
       const sessionsWithNames = [];
       
+      console.log('🔍 DEBUG: Session calculation complete, looking up profiles for users:', userIds);
+      
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, display_name')
           .in('id', userIds);
           
+        if (profilesError) {
+          console.error('❌ Error fetching profiles:', profilesError);
+        }
+        
+        console.log('👥 DEBUG: Retrieved profiles:', profiles);
+        
         userIds.forEach(userId => {
           const profile = profiles?.find(p => p.id === userId);
           const sessionCount = sessionsByUser.get(userId);
+          
+          console.log(`🔍 DEBUG: Processing user ${userId}: profile=${profile?.display_name}, sessions=${sessionCount}`);
           
           // Inclure tous les utilisateurs qui ont des sessions (même 1 seule)
           sessionsWithNames.push({
@@ -411,6 +443,9 @@ export class UserActionsService {
         });
       }
 
+      const finalSessions = sessionsWithNames.sort((a, b) => b.session_count - a.session_count);
+      console.log('✅ DEBUG: Final sessions by user result:', finalSessions);
+
       return {
         totalActions: totalActions || 0,
         totalActionsGlobal: totalActionsGlobal || 0,
@@ -418,7 +453,7 @@ export class UserActionsService {
         topContent,
         actionsByType: [],
         dailyActivity: [],
-        sessionsByUser: sessionsWithNames.sort((a, b) => b.session_count - a.session_count)
+        sessionsByUser: finalSessions
       };
     } catch (error) {
       console.error('Error in getUsageStats:', error);
