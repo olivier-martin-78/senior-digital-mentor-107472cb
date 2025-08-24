@@ -272,8 +272,8 @@ export class UserActionsService {
       const { count: totalActionsGlobal } = await totalGlobalQuery;
 
       // ===== CORRECTION: "Utilisateurs actifs" - MÉTRIQUE VRAIMENT GLOBALE =====
-      console.log('🔍 DEBUG: Starting "Utilisateurs actifs" calculation');
-      console.log('🔍 DEBUG: Filters received:', JSON.stringify(filters, null, 2));
+      console.warn('🚨🔍 STARTING UTILISATEURS ACTIFS CALCULATION 🚨🔍');
+      console.warn('🔍 DEBUG: Filters received:', JSON.stringify(filters, null, 2));
       
       // REQUÊTE COMPLÈTEMENT SANS FILTRES pour "Utilisateurs actifs"
       // Cette métrique doit ignorer TOUS les filtres (dates, contentType, actionType)
@@ -282,8 +282,8 @@ export class UserActionsService {
         .select('user_id');
       
       const uniqueUsers = new Set(allUsersData?.map(item => item.user_id) || []).size;
-      console.log('🔍 DEBUG: "Utilisateurs actifs" (ALL users, no filters):', uniqueUsers);
-      console.log('🔍 DEBUG: Total records in user_actions:', allUsersData?.length || 0);
+      console.warn('🚨🔍 UTILISATEURS ACTIFS RESULT:', uniqueUsers);
+      console.warn('🔍 DEBUG: Total records in user_actions:', allUsersData?.length || 0);
 
       // Récupérer le top contenu vu avec tous les filtres
       let topContentQuery = supabase

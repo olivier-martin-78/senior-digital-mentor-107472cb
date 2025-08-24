@@ -62,8 +62,14 @@ export const useUsageStats = (filters: {
 } = {}) => {
   return useQuery({
     queryKey: ['usageStats', filters],
-    queryFn: () => UserActionsService.getUsageStats(filters),
+    queryFn: () => {
+      console.warn('🚨 REACT QUERY: Executing usageStats query with filters:', JSON.stringify(filters, null, 2));
+      return UserActionsService.getUsageStats(filters);
+    },
     enabled: true,
     refetchOnWindowFocus: false,
+    // Force refresh à chaque fois pour éviter le cache lors du debug
+    staleTime: 0,
+    gcTime: 0,
   });
 };
