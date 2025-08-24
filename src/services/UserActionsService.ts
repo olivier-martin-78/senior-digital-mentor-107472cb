@@ -487,7 +487,8 @@ export class UserActionsService {
       const allUserIds = new Set([...sessionsByUser.keys(), ...actionsByUserId.keys()]);
       const sessionsWithNames = [];
       const usersFromActionsWithNames = [];
-      const uniqueUsersFromSessions = sessionsByUser.size;
+      // CORRECTION : utiliser les vraies sessions de connexion au lieu des actions
+      const uniqueUsersFromSessions = sessionsData ? new Set(sessionsData.map(s => s.user_id)).size : 0;
       
       console.log('🔍 DEBUG: Session calculation complete, looking up profiles for users:', Array.from(allUserIds));
       
