@@ -16,7 +16,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/cat_meow.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Miaou ! Un miaulement de chat doux et mélodieux'
+    description: 'Miaou miaou ! Un miaulement de chat très doux et câlin'
   },
   {
     id: 'lion_roar',
@@ -104,7 +104,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/instruments/piano_c.mp3',
     category: 'instruments',
     type: 'original',
-    description: 'Ding ! Une belle note Do jouée au piano'
+    description: 'Ding ! Une note musicale claire et résonnante au piano'
   },
   {
     id: 'guitar_strum',
@@ -183,7 +183,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/transport/car_engine.mp3',
     category: 'transport',
     type: 'original',
-    description: 'Vrooom vrooom ! Le ronronnement d\'un moteur de voiture'
+    description: 'Vroooooom vroooom ! Le bruit puissant d\'un moteur qui accélère'
   },
   {
     id: 'train_horn',

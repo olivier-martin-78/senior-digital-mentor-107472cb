@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Volume2, Loader2 } from 'lucide-react';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { useWebSpeechAPI } from '@/hooks/useWebSpeechAPI';
 
 interface AudioPlayerProps {
   audioUrl?: string;
@@ -31,19 +31,23 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
-  const { generateSpeech, isLoading: isTTSLoading } = useTextToSpeech();
+  const { speak, stop, isLoading: isSpeechLoading, isSupported } = useWebSpeechAPI();
 
-  // Generate TTS audio if needed
-  useEffect(() => {
-    if (ttsText && !generatedAudioUrl && !isTTSLoading) {
-      generateSpeech({ text: ttsText, voice_id: voiceId }).then(url => {
-        if (url) {
-          setGeneratedAudioUrl(url);
-        }
+  // Handle speech synthesis for TTS text
+  const handleSpeech = async () => {
+    if (!ttsText || !isSupported) return;
+    
+    try {
+      await speak({
+        text: ttsText,
+        voiceId: voiceId || 'french',
+        rate: 0.9,
+        pitch: 1.0
       });
+    } catch (error) {
+      console.error('Speech synthesis error:', error);
     }
-  }, [ttsText, voiceId, generatedAudioUrl, isTTSLoading, generateSpeech]);
+  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -98,14 +102,32 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   }, [autoPlay, onEnded, onPlay, onPause, duration]);
 
   const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.pause();
+    if (ttsText) {
+      // Use Web Speech API for TTS text
+      if (isPlaying) {
+        stop();
+        setIsPlaying(false);
+        setCurrentTime(0);
+      } else {
+        setIsPlaying(true);
+        setCurrentTime(0);
+        handleSpeech().finally(() => {
+          setIsPlaying(false);
+          setCurrentTime(duration);
+          onEnded?.();
+        });
+      }
     } else {
-      audio.currentTime = 0; // Toujours recommencer depuis le début
-      audio.play().catch(console.error);
+      // Use audio file for regular audio
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.currentTime = 0;
+        audio.play().catch(console.error);
+      }
     }
   };
 
@@ -113,8 +135,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${Math.floor(seconds)}s`;
   };
 
-  const effectiveAudioUrl = generatedAudioUrl || audioUrl;
-  const isLoading = isTTSLoading || (ttsText && !generatedAudioUrl);
+  const effectiveAudioUrl = audioUrl;
+  const isLoading = isSpeechLoading;
+  const hasAudio = ttsText || audioUrl;
 
   return (
     <div className={`flex items-center gap-4 ${className}`}>
@@ -127,7 +150,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
-            disabled={isLoading || !effectiveAudioUrl}
+            disabled={isLoading || !hasAudio || (ttsText && !isSupported)}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
