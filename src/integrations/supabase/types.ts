@@ -2715,6 +2715,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_dashboard_stats: {
+        Args: {
+          action_type_param?: string
+          content_type_param?: string
+          end_date_param?: string
+          start_date_param?: string
+          user_id_param?: string
+        }
+        Returns: Json
+      }
       get_professional_users: {
         Args: Record<PropertyKey, never>
         Returns: {
