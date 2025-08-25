@@ -405,14 +405,14 @@ export class UserActionsService {
       // Récupérer les actions avec timestamps pour calculer les jours d'activité
       let actionsForSessionsQuery = supabase
         .from('user_actions')
-        .select('user_id, created_at')
-        .order('user_id, created_at');
+        .select('user_id, timestamp')
+        .order('user_id, timestamp');
 
       if (filters.startDate) {
-        actionsForSessionsQuery = actionsForSessionsQuery.gte('created_at', filters.startDate);
+        actionsForSessionsQuery = actionsForSessionsQuery.gte('timestamp', filters.startDate);
       }
       if (filters.endDate) {
-        actionsForSessionsQuery = actionsForSessionsQuery.lte('created_at', filters.endDate);
+        actionsForSessionsQuery = actionsForSessionsQuery.lte('timestamp', filters.endDate);
       }
 
       console.log('🔍 DEBUG: Fetching sessions and actions with filters:', {
@@ -454,7 +454,7 @@ export class UserActionsService {
         
         actionsData.forEach(action => {
           const userId = action.user_id;
-          const actionDate = new Date(action.created_at).toISOString().split('T')[0]; // Date seule (YYYY-MM-DD)
+          const actionDate = new Date(action.timestamp).toISOString().split('T')[0]; // Date seule (YYYY-MM-DD)
           
           if (!userActivityDays.has(userId)) {
             userActivityDays.set(userId, new Set());
