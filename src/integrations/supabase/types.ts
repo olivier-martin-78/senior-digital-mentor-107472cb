@@ -180,6 +180,141 @@ export type Database = {
           },
         ]
       }
+      audio_memory_game_sessions: {
+        Row: {
+          bonus_points: number
+          completion_time: number | null
+          created_at: string
+          difficulty: string
+          id: string
+          phase1_score: number
+          phase2_score: number
+          phase3_score: number
+          phase4_attempts: number
+          phase4_completed: boolean
+          phase4_score: number
+          questions_answered: number
+          questions_correct: number
+          score: number
+          session_data: Json
+          sounds_used: Json
+          total_points: number
+          user_id: string
+        }
+        Insert: {
+          bonus_points?: number
+          completion_time?: number | null
+          created_at?: string
+          difficulty: string
+          id?: string
+          phase1_score?: number
+          phase2_score?: number
+          phase3_score?: number
+          phase4_attempts?: number
+          phase4_completed?: boolean
+          phase4_score?: number
+          questions_answered?: number
+          questions_correct?: number
+          score?: number
+          session_data?: Json
+          sounds_used?: Json
+          total_points?: number
+          user_id: string
+        }
+        Update: {
+          bonus_points?: number
+          completion_time?: number | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          phase1_score?: number
+          phase2_score?: number
+          phase3_score?: number
+          phase4_attempts?: number
+          phase4_completed?: boolean
+          phase4_score?: number
+          questions_answered?: number
+          questions_correct?: number
+          score?: number
+          session_data?: Json
+          sounds_used?: Json
+          total_points?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audio_memory_game_sounds: {
+        Row: {
+          base_sound_id: string | null
+          category: string
+          created_at: string
+          description: string | null
+          file_url: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          base_sound_id?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          file_url: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          base_sound_id?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audio_memory_leaderboards: {
+        Row: {
+          best_score: number
+          best_total_points: number
+          created_at: string
+          difficulty: string
+          games_played: number
+          id: string
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          difficulty: string
+          games_played?: number
+          id?: string
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          difficulty?: string
+          games_played?: number
+          id?: string
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blog_albums: {
         Row: {
           author_id: string
@@ -2705,6 +2840,17 @@ export type Database = {
           permanent_access: boolean
           role: Database["public"]["Enums"]["app_role"]
           wish_posts_count: number
+        }[]
+      }
+      get_audio_memory_leaderboard: {
+        Args: { p_difficulty_level: string }
+        Returns: {
+          best_score: number
+          best_total_points: number
+          games_played: number
+          rank_position: number
+          user_id: string
+          user_name: string
         }[]
       }
       get_current_user_email: {
