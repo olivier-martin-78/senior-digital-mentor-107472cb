@@ -61,7 +61,7 @@ export const useUsageStats = (filters: {
   actionType?: ActionType;
 } = {}) => {
   return useQuery({
-    queryKey: ['usageStats', filters],
+    queryKey: ['usageStats', filters, Date.now()], // FORCE REFRESH: ajouter timestamp 
     queryFn: () => UserActionsService.getUsageStats(filters),
     enabled: true,
     refetchOnWindowFocus: false,

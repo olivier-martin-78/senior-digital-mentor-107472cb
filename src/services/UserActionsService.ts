@@ -215,18 +215,14 @@ export class UserActionsService {
     userId?: string;
     contentType?: ContentType;
     actionType?: ActionType;
-  } = {}): Promise<{
-    totalActions: number;
-    totalActionsGlobal: number;
-    uniqueUsers: number;
-    uniqueUsersFromSessions: number;
-    topContent: Array<{ content_title: string; content_type: string; view_count: number }>;
-    actionsByType: Array<{ action_type: string; count: number }>;
-    dailyActivity: Array<{ date: string; count: number }>;
-    sessionsByUser: Array<{ user_id: string; session_count: number; display_name?: string; login_count: number }>;
-    usersFromActions: Array<{ user_id: string; action_count: number; display_name?: string }>;
-  }> {
+  } = {}): Promise<any> {
     try {
+      console.log('🔍 DEBUG getUsageStats called with filters:', filters);
+      
+      // FORCE CACHE REFRESH: ajouter timestamp pour éviter le cache
+      const cacheKey = `stats_${Date.now()}_${Math.random()}`;
+      console.log('🔄 DEBUG: Force refresh with cache key:', cacheKey);
+
       // Total des actions avec tous les filtres
       let totalQuery = supabase
         .from('user_actions')
@@ -460,6 +456,11 @@ export class UserActionsService {
             userActivityDays.set(userId, new Set());
           }
           userActivityDays.get(userId).add(actionDate);
+          
+          // DEBUG spécial pour Nancy89
+          if (userId === '9f07fe60-2208-47b8-a255-f759447059a1') {
+            console.log(`🎯 NANCY89 DEBUG: Adding activity date ${actionDate} for user ${userId}`);
+          }
         });
         
         console.log('📅 DEBUG: Activity days from actions per user:', Array.from(userActivityDays.entries()).map(([userId, days]) => ({
@@ -484,6 +485,16 @@ export class UserActionsService {
         console.log(`👤 DEBUG: User ${userId} - ${activityDays.size} activity days → ${sessionCount} sessions`, {
           activityDates: activityDatesArray
         });
+        
+        // DEBUG spécial pour Nancy89
+        if (userId === '9f07fe60-2208-47b8-a255-f759447059a1') {
+          console.log(`🎯 NANCY89 FINAL DEBUG: ${activityDays.size} activity days`, {
+            activityDates: activityDatesArray,
+            expectedDays: ['2025-08-20', '2025-08-21', '2025-08-24', '2025-08-25'],
+            sessionCount,
+            loginCount: sessionCount
+          });
+        }
       });
 
       // Récupérer les noms d'utilisateurs pour toutes les données
