@@ -117,19 +117,12 @@ export const useVisualMemoryGame = () => {
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      currentQuestionIndex: prev.currentQuestionIndex + 1
+      currentQuestionIndex: prev.currentQuestionIndex + 1,
+      // Gérer la transition de phase ici directement
+      ...(prev.currentQuestionIndex + 1 >= prev.imageSequence.length 
+        ? { phase: 'question2', currentQuestionIndex: 0 }
+        : { phase: prev.phase === 'question1' ? 'question2' : 'question1' })
     }));
-
-    // Passer à la question suivante ou à la phase suivante
-    setTimeout(() => {
-      setGameState(prev => {
-        // Alterner entre question1 et question2, puis passer à question3
-        if (prev.currentQuestionIndex >= prev.imageSequence.length) {
-          return { ...prev, phase: 'question2', currentQuestionIndex: 0 };
-        }
-        return { ...prev, phase: prev.phase === 'question1' ? 'question2' : 'question1' };
-      });
-    }, 1500);
   }, [gameState.startTime]);
 
   const answerQuestion2 = useCallback((answer: boolean, imageShown: any, isCorrect: boolean) => {
@@ -154,18 +147,12 @@ export const useVisualMemoryGame = () => {
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      currentQuestionIndex: prev.currentQuestionIndex + 1
+      currentQuestionIndex: prev.currentQuestionIndex + 1,
+      // Gérer la transition de phase ici directement
+      ...(prev.currentQuestionIndex + 1 >= prev.imageSequence.length 
+        ? { phase: 'question3', currentQuestionIndex: 0 }
+        : { phase: 'question1' })
     }));
-
-    // Vérifier si toutes les images ont été trouvées pour passer à phase3
-    setTimeout(() => {
-      setGameState(prev => {
-        if (prev.currentQuestionIndex >= prev.imageSequence.length) {
-          return { ...prev, phase: 'question3', currentQuestionIndex: 0 };
-        }
-        return { ...prev, phase: 'question1' };
-      });
-    }, 1500);
   }, [gameState.startTime]);
 
   const answerQuestion3 = useCallback((position: number, imageShown: any, correctPosition: number) => {
