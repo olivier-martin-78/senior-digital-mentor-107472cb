@@ -50,6 +50,7 @@ import { SpotDifferencesGamePage } from '@/pages/activities/SpotDifferencesGame'
 import Quiz70sGame from '@/pages/activities/Quiz70sGame';
 import IllusionistGame from '@/pages/activities/IllusionistGame';
 import { MemoryCountGame } from '@/pages/activities/MemoryCountGame';
+import { VisualMemoryGame } from '@/pages/activities/VisualMemoryGame';
 import MusicQuizGame from '@/pages/MusicQuizGame';
 import MemoryGame from '@/pages/MemoryGame';
 import TimelineGame from '@/pages/TimelineGame';
@@ -154,6 +155,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/quiz70s" element={<Quiz70sGame />} />
             <Route path="/activities/games/illusionist" element={<IllusionistGame />} />
             <Route path="/activities/games/memory-count" element={<MemoryCountGame />} />
+            <Route path="/activities/games/visual-memory" element={<VisualMemoryGame />} />
             <Route path="/activities/music-quiz/play" element={<MusicQuizGame />} />
             <Route path="/activities/memory-game/play" element={<MemoryGame />} />
             <Route path="/activities/timeline/play" element={<TimelineGame />} />

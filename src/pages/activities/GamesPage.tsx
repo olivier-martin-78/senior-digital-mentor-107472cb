@@ -371,6 +371,32 @@ export default function GamesPage() {
             </>
           )}
         </Card>
+      },
+      {
+        key: "visual-memory",
+        subTagId: remueMeningesId || null,
+        card: <Card key="visual-memory" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/visual-memory" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'visual-memory-game', 'Mémoire Visuelle Inversée')}
+          >
+            <div className="h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="text-6xl mb-2">🧠</div>
+                <h3 className="text-xl font-bold">Mémoire Visuelle</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Mémoire Visuelle Inversée</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Mémorisez des séquences d'images et relevez 4 défis progressifs. Bonus temporels jusqu'à 74 points !
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
       }
     ];
 
