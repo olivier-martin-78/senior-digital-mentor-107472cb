@@ -39,6 +39,7 @@ import InvitationGroups from '@/pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from '@/pages/MyInvitationGroups';
 import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+import { AdminAudioMemorySounds } from '@/pages/admin/AdminAudioMemorySounds';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
@@ -204,6 +205,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/invitation-groups" element={<InvitationGroups />} />
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/audio-memory-sounds" element={<AdminAudioMemorySounds />} />
           </Route>
 
           {/* Error routes */}

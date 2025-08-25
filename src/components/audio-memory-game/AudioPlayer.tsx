@@ -32,6 +32,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const { speak, stop, isLoading: isSpeechLoading, isSupported } = useWebSpeechAPI();
+  
+  console.log('🎵 AudioPlayer render:', { audioUrl, ttsText, showControls });
 
   // Handle speech synthesis for TTS text
   const handleSpeech = async () => {
@@ -102,8 +104,22 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   }, [autoPlay, onEnded, onPlay, onPause, duration]);
 
   const togglePlay = () => {
-    if (ttsText) {
-      // Use Web Speech API for TTS text
+    console.log('🎵 togglePlay called:', { audioUrl, ttsText, isPlaying });
+    
+    if (audioUrl && audioRef.current) {
+      // Prioritize real audio file
+      console.log('🎵 Using real audio file:', audioUrl);
+      const audio = audioRef.current;
+
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.currentTime = 0;
+        audio.play().catch(console.error);
+      }
+    } else if (ttsText) {
+      // Fallback to Web Speech API for TTS text
+      console.log('🗣️ Fallback to TTS:', ttsText);
       if (isPlaying) {
         stop();
         setIsPlaying(false);
@@ -118,16 +134,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         });
       }
     } else {
-      // Use audio file for regular audio
-      const audio = audioRef.current;
-      if (!audio) return;
-
-      if (isPlaying) {
-        audio.pause();
-      } else {
-        audio.currentTime = 0;
-        audio.play().catch(console.error);
-      }
+      console.warn('⚠️ No audio source available (audioUrl or ttsText)');
     }
   };
 
@@ -137,7 +144,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const effectiveAudioUrl = audioUrl;
   const isLoading = isSpeechLoading;
-  const hasAudio = ttsText || audioUrl;
+  const hasAudio = audioUrl || ttsText;
+  console.log('🎵 AudioPlayer state:', { hasAudio, isLoading, effectiveAudioUrl, isSupported });
 
   return (
     <div className={`flex items-center gap-4 ${className}`}>

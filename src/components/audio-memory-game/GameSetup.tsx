@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Play, Users, Medal, Award } from 'lucide-react';
+import { Trophy, Play, Users, Medal, Award, Database, AlertCircle } from 'lucide-react';
 import { DifficultyLevel, LeaderboardEntry } from '@/types/audioMemoryGame';
 import { supabase } from '@/integrations/supabase/client';
+import { useAudioMemoryDB } from '@/hooks/useAudioMemoryDB';
 
 interface GameSetupProps {
   difficulty: DifficultyLevel;
@@ -20,6 +21,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({
 }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const { hasSounds, isLoading: soundsLoading, soundsCount } = useAudioMemoryDB();
 
   useEffect(() => {
     loadLeaderboard();
@@ -128,10 +130,32 @@ export const GameSetup: React.FC<GameSetupProps> = ({
             </div>
           </div>
 
-          <Button onClick={onStartGame} size="lg" className="w-full">
+          <Button 
+            onClick={onStartGame} 
+            size="lg" 
+            className="w-full"
+            disabled={!hasSounds}
+          >
             <Play className="w-5 h-5 mr-2" />
             Commencer le jeu
           </Button>
+
+          {/* Status des sons */}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
+            <Database className="w-4 h-4" />
+            <div className="flex-1">
+              {soundsLoading ? (
+                <span className="text-sm text-muted-foreground">Chargement des sons...</span>
+              ) : hasSounds ? (
+                <span className="text-sm text-green-600">{soundsCount} sons disponibles</span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm text-amber-600">Aucun son disponible - Contactez l'administrateur</span>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

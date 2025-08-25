@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GameState, GameSettings, GameResult, DifficultyLevel, GamePhase, QuestionResult } from '@/types/audioMemoryGame';
-import { generateSoundSequence, generatePhase4Sounds, getDifficultySoundCount } from '@/data/audioMemoryData';
+import { getDifficultySoundCount } from '@/data/audioMemoryData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserActionsService } from '@/services/UserActionsService';
+import { useAudioMemoryGameEngine } from './useAudioMemoryGameEngine';
 
 const initialSettings: GameSettings = {
   difficulty: 'beginner',
@@ -12,6 +13,7 @@ const initialSettings: GameSettings = {
 
 export const useAudioMemoryGame = () => {
   const { toast } = useToast();
+  const { generateSoundSequence, generatePhase4Sounds, hasSounds, isLoading } = useAudioMemoryGameEngine();
   
   const [gameState, setGameState] = useState<GameState>({
     phase: 'setup',
@@ -55,8 +57,25 @@ export const useAudioMemoryGame = () => {
   const startGame = useCallback(() => {
     UserActionsService.trackView('activity', 'audio_memory_game', `Difficulté: ${gameState.settings.difficulty}`);
     
+    console.log('🎮 Starting game with difficulty:', gameState.settings.difficulty);
+    
+    if (!hasSounds) {
+      console.error('❌ Cannot start game: No sounds available in database');
+      toast({
+        title: "Impossible de démarrer le jeu",
+        description: "Aucun son n'est disponible. Veuillez contacter l'administrateur.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const soundSequence = generateSoundSequence(gameState.settings.difficulty);
     const phase4Sounds = generatePhase4Sounds(soundSequence);
+    
+    console.log('🎵 Generated sequences:', {
+      soundSequence: soundSequence.length,
+      phase4Sounds: phase4Sounds.length
+    });
     
     setGameState(prev => ({
       ...prev,
@@ -79,7 +98,7 @@ export const useAudioMemoryGame = () => {
     }));
     
     setQuestionResults([]);
-  }, [gameState.settings]);
+  }, [gameState.settings, generateSoundSequence, generatePhase4Sounds, hasSounds, toast]);
 
   const finishDisplay = useCallback(() => {
     setGameState(prev => ({
