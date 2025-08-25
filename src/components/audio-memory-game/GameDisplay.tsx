@@ -41,7 +41,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
     const currentSound = soundSequence[currentSoundIndex];
     if (!currentSound) return;
 
-    // Jouer le son pendant 2 secondes puis passer au suivant
+    // Jouer le son pendant 4 secondes puis passer au suivant
     const timer = setTimeout(() => {
       if (currentSoundIndex < soundSequence.length - 1) {
         // Son suivant dans la séquence
@@ -62,7 +62,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
           setTimeout(onFinishDisplay, 2000);
         }
       }
-    }, 2000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [currentSoundIndex, currentRepetition, isPlaying, phase, soundSequence, onFinishDisplay]);
@@ -128,12 +128,12 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
                   voiceId="9BWtsMINqrJLrRacOk9x"
                   autoPlay={isPlaying}
                   showControls={false}
-                  duration={2}
+                  duration={4}
                 />
               </div>
 
               <div className="text-center text-sm text-muted-foreground">
-                Chaque son est joué pendant 2 secondes. Concentrez-vous sur l'ordre !
+                Chaque son est joué pendant 4 secondes. Concentrez-vous sur l'ordre !
               </div>
             </div>
           )}

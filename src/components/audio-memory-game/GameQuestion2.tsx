@@ -136,7 +136,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
                 ttsText={currentSound.description}
                 voiceId="9BWtsMINqrJLrRacOk9x"
                 showControls={true}
-                duration={2}
+                duration={4}
               />
             </div>
 
