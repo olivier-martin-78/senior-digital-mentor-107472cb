@@ -111,8 +111,21 @@ export const useUsageStats = (filters: {
     staleTime: 30000, // Cache pendant 30 secondes
     refetchOnMount: true, // Refresh à chaque montage du composant
     retry: (failureCount, error) => {
-      console.log('🔄 useUsageStats: Retry attempt', failureCount, 'Error:', error);
-      return failureCount < 3;
+      console.log('🔄 useUsageStats: Retry attempt', failureCount + 1, 'Error:', {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        isAuthError: (error as any)?.message?.includes('Unauthorized') || (error as any)?.message?.includes('Admin access required')
+      });
+      
+      // Ne pas retry sur les erreurs d'autorisation - c'est un problème de configuration
+      if ((error as any)?.message?.includes('Unauthorized') || (error as any)?.message?.includes('Admin access required')) {
+        console.error('❌ Authorization error detected - stopping retries');
+        console.error('🚨 DASHBOARD BLOCKED: Admin authentication failed in SQL function');
+        console.error('💡 This explains why counters show 0 - the stats cannot be calculated');
+        return false;
+      }
+      
+      return failureCount < 2; // Retry max 2 fois pour les autres erreurs
     }
   });
 };

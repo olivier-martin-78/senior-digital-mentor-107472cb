@@ -244,7 +244,21 @@ export class UserActionsService {
       });
 
       if (error) {
-        console.error('❌ ERROR calling get_dashboard_stats:', error);
+        console.error('❌ ERROR calling get_dashboard_stats:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          fullError: error
+        });
+        
+        // Log spécial pour l'erreur d'autorisation
+        if (error.message?.includes('Unauthorized') || error.message?.includes('Admin access required')) {
+          console.error('🚨 AUTHORIZATION ERROR detected! This means the SQL function cannot verify admin rights.');
+          console.error('🔍 Check if the current user has admin role in the database');
+          console.error('🔍 This could be due to SECURITY INVOKER vs DEFINER issue');
+        }
+        
         throw error;
       }
 
@@ -278,8 +292,24 @@ export class UserActionsService {
         usersFromActions: []
       };
     } catch (error) {
-      console.error('❌ ERROR in getUsageStats:', error);
-      return {
+      console.error('❌ CRITICAL ERROR in getUsageStats:', {
+        errorType: typeof error,
+        errorName: (error as any)?.name,
+        errorMessage: (error as any)?.message,
+        errorCode: (error as any)?.code,
+        errorStack: (error as any)?.stack,
+        fullError: error
+      });
+      
+      // Log spécial pour diagnostiquer le problème
+      if ((error as any)?.message?.includes('Unauthorized') || (error as any)?.message?.includes('Admin access required')) {
+        console.error('🚨 AUTHORIZATION FAILURE: The dashboard stats cannot be loaded because of permission issues');
+        console.error('💡 SOLUTION: This is likely why the counters show 0 - the SQL function is being blocked');
+        console.error('🔧 The SECURITY INVOKER change should have fixed this, but there might be an auth context issue');
+      }
+      
+      // Retourner des données de fallback au lieu de lancer l'erreur
+      const fallbackData = {
         totalActions: 0,
         totalActionsGlobal: 0,
         uniqueUsers: 0,
@@ -290,6 +320,9 @@ export class UserActionsService {
         sessionsByUser: [],
         usersFromActions: []
       };
+      
+      console.log('🔄 Returning fallback data to prevent dashboard crash:', fallbackData);
+      return fallbackData;
     }
   }
 
