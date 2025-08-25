@@ -446,7 +446,7 @@ const AdminDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {stats.topContent.slice(0, 10).map((content, index) => (
+                {stats.topContent.slice(0, 30).map((content, index) => (
                   <div 
                     key={index} 
                     className={cn(
@@ -613,12 +613,18 @@ const AdminDashboard: React.FC = () => {
                       <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-medium">
                         {index + 1}
                       </div>
-                      <div>
-                        <div className="font-medium">{user.display_name}</div>
+                       <div>
+                         <div className="font-medium">{user.display_name}</div>
+                         <div className="text-xs text-muted-foreground">{user.email || 'Email non disponible'}</div>
                          <div className="text-sm text-muted-foreground">
                            {user.login_count} jour{user.login_count > 1 ? 's' : ''} d'activité
                          </div>
-                      </div>
+                         {user.last_session_date && (
+                           <div className="text-xs text-muted-foreground">
+                             Dernière session: {format(new Date(user.last_session_date), 'dd/MM/yyyy')}
+                           </div>
+                         )}
+                       </div>
                     </div>
                     <Badge variant="outline" className={cn(
                       "font-bold",
@@ -648,8 +654,8 @@ const AdminDashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {stats.usersFromActions.slice(0, 20).map((user, index) => (
+               <div className="space-y-3 max-h-80 overflow-y-auto">
+                 {stats.usersFromActions.slice(0, 10).map((user, index) => (
                   <div 
                     key={user.user_id} 
                     className={cn(
@@ -676,11 +682,11 @@ const AdminDashboard: React.FC = () => {
                     </Badge>
                   </div>
                 ))}
-                {stats.usersFromActions.length > 20 && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    ... et {stats.usersFromActions.length - 20} utilisateur{stats.usersFromActions.length - 20 > 1 ? 's' : ''} supplémentaire{stats.usersFromActions.length - 20 > 1 ? 's' : ''}
-                  </p>
-                )}
+                 {stats.usersFromActions.length > 10 && (
+                   <p className="text-sm text-muted-foreground text-center">
+                     ... et {stats.usersFromActions.length - 10} utilisateur{stats.usersFromActions.length - 10 > 1 ? 's' : ''} supplémentaire{stats.usersFromActions.length - 10 > 1 ? 's' : ''}
+                   </p>
+                 )}
               </div>
             </CardContent>
           </Card>
