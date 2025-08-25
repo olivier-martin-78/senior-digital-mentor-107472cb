@@ -967,6 +967,7 @@ export type Database = {
           id: string
           object_reduction: number
           updated_at: string
+          visual_memory_display_duration: number | null
         }
         Insert: {
           created_at?: string
@@ -976,6 +977,7 @@ export type Database = {
           id?: string
           object_reduction?: number
           updated_at?: string
+          visual_memory_display_duration?: number | null
         }
         Update: {
           created_at?: string
@@ -985,6 +987,7 @@ export type Database = {
           id?: string
           object_reduction?: number
           updated_at?: string
+          visual_memory_display_duration?: number | null
         }
         Relationships: []
       }
@@ -2245,6 +2248,90 @@ export type Database = {
           },
         ]
       }
+      visual_memory_game_sessions: {
+        Row: {
+          bonus_points: number
+          completion_time: number | null
+          created_at: string
+          difficulty_level: string
+          id: string
+          phase_4_attempts: number
+          phase_4_completed: boolean
+          questions_answered: number
+          questions_correct: number
+          score: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bonus_points?: number
+          completion_time?: number | null
+          created_at?: string
+          difficulty_level: string
+          id?: string
+          phase_4_attempts?: number
+          phase_4_completed?: boolean
+          questions_answered?: number
+          questions_correct?: number
+          score?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bonus_points?: number
+          completion_time?: number | null
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          phase_4_attempts?: number
+          phase_4_completed?: boolean
+          questions_answered?: number
+          questions_correct?: number
+          score?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visual_memory_leaderboards: {
+        Row: {
+          best_score: number
+          best_total_points: number
+          created_at: string
+          difficulty_level: string
+          games_played: number
+          id: string
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          difficulty_level: string
+          games_played?: number
+          id?: string
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          difficulty_level?: string
+          games_played?: number
+          id?: string
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wish_albums: {
         Row: {
           author_id: string
@@ -2675,6 +2762,17 @@ export type Database = {
       get_user_subscription_plan: {
         Args: { user_id_param: string }
         Returns: string
+      }
+      get_visual_memory_leaderboard: {
+        Args: { p_difficulty_level: string }
+        Returns: {
+          best_score: number
+          best_total_points: number
+          games_played: number
+          rank_position: number
+          user_id: string
+          user_name: string
+        }[]
       }
       has_active_subscription: {
         Args: { user_id_param: string }
