@@ -381,11 +381,12 @@ export default function GamesPage() {
             className="block"
             onClick={() => UserActionsService.trackView('activity', 'visual-memory-game', 'Mémoire Visuelle Inversée')}
           >
-            <div className="h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-              <div className="text-center text-white">
-                <div className="text-6xl mb-2">🧠</div>
-                <h3 className="text-xl font-bold">Mémoire Visuelle</h3>
-              </div>
+            <div 
+              className="h-48 flex items-center justify-center bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url('/lovable-uploads/4250c9de-8b1a-43d5-9bba-e269f5eececa.png')`
+              }}
+            >
             </div>
             <CardHeader>
               <CardTitle className="text-lg">Mémoire Visuelle Inversée</CardTitle>
