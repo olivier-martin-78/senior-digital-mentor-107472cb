@@ -91,6 +91,7 @@ export const GameQuestion1: React.FC<GameQuestion1Props> = ({
               </div>
               
               <AudioPlayer
+                audioUrl={currentSound.file_url}
                 ttsText={currentSound.description}
                 voiceId="9BWtsMINqrJLrRacOk9x"
                 showControls={true}

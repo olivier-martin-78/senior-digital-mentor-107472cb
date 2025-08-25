@@ -78,6 +78,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
               </div>
               
               <AudioPlayer
+                audioUrl={currentSound.sound.file_url}
                 ttsText={currentSound.sound.description}
                 voiceId="9BWtsMINqrJLrRacOk9x"
                 showControls={true}

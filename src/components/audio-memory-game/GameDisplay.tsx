@@ -123,6 +123,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
                 
                 {/* Lecteur audio automatique */}
                 <AudioPlayer
+                  audioUrl={getCurrentSound()?.sound.file_url}
                   ttsText={getCurrentSound()?.sound.description}
                   voiceId="9BWtsMINqrJLrRacOk9x"
                   autoPlay={isPlaying}
