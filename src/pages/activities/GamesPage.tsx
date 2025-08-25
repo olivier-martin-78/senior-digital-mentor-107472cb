@@ -149,6 +149,37 @@ export default function GamesPage() {
         </Card>
       },
       {
+        key: "audio-memory",
+        subTagId: memoireId || null,
+        card: <Card key="audio-memory" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/audio-memory" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'audio_memory_game', 'Mémoire Auditive Inversée')}
+          >
+            <div className="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center relative">
+              <div className="absolute top-4 right-4">
+                <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+                  NOUVEAU
+                </span>
+              </div>
+              <div className="text-center text-white">
+                <div className="text-6xl mb-4">🔊</div>
+                <h3 className="text-xl font-bold">Mémoire Auditive</h3>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Mémoire Auditive Inversée</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Mémorisez une séquence de sons et reconstituez-la dans l'ordre inverse. 4 phases de difficulté croissante avec bonus temporel !
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
         key: "decoder",
         subTagId: remueMeningesId || null,
         card: <Card key="decoder" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">

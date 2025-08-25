@@ -58,6 +58,7 @@ import CognitivePuzzleGame from '@/pages/CognitivePuzzleGame';
 import ObjectAssemblyGame from '@/pages/activities/games/ObjectAssemblyGame';
 import ObjectAssemblyAdmin from '@/pages/admin/ObjectAssemblyAdmin';
 import GamesPage from '@/pages/activities/GamesPage';
+import { AudioMemoryGame } from '@/pages/activities/AudioMemoryGame';
 import ProfessionalModule from '@/pages/ProfessionalModule';
 import Caregivers from '@/pages/Caregivers';
 import { MiniSiteBuilder } from '@/pages/MiniSiteBuilder';
@@ -140,6 +141,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/activities" element={<Activities />} />
             <Route path="/activities/games" element={<GamesPage />} />
             <Route path="/activities/games/object-assembly" element={<ObjectAssemblyGame />} />
+            <Route path="/activities/games/audio-memory" element={<AudioMemoryGame />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/intervention-report" element={<InterventionReport />} />
