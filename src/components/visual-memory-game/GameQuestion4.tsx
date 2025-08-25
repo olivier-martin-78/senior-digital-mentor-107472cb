@@ -160,7 +160,6 @@ export const GameQuestion4: React.FC<GameQuestion4Props> = ({
           <CardContent>
             <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {phase4Images.map((image, index) => {
-                const isFromOriginal = originalImages.some(orig => orig.id === image.id);
                 const isAlreadyUsed = userSequence.some(used => used?.id === image.id);
                 
                 return (
@@ -173,23 +172,16 @@ export const GameQuestion4: React.FC<GameQuestion4Props> = ({
                   >
                     <div className={`p-3 rounded-lg border-2 text-center ${
                       isAlreadyUsed 
-                        ? 'border-gray-300 bg-gray-100' 
-                        : isFromOriginal
-                        ? 'border-green-300 bg-green-50 hover:border-green-500'
-                        : 'border-red-300 bg-red-50 hover:border-red-500'
+                        ? 'border-muted bg-muted/50' 
+                        : 'border-border bg-card hover:border-primary/50'
                     }`}>
                       <div className="text-2xl mb-1">{image.emoji}</div>
                       <div className="text-xs font-medium truncate">{image.name}</div>
                     </div>
                     
-                    {/* Indicateur visuel discret */}
-                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
-                      isFromOriginal ? 'bg-green-500' : 'bg-red-500'
-                    } opacity-20`} />
-                    
                     {isAlreadyUsed && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-gray-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                        <div className="bg-muted-foreground text-background rounded-full w-6 h-6 flex items-center justify-center text-xs">
                           ✓
                         </div>
                       </div>
@@ -197,19 +189,6 @@ export const GameQuestion4: React.FC<GameQuestion4Props> = ({
                   </div>
                 );
               })}
-            </div>
-
-            <div className="mt-4 text-center">
-              <div className="inline-flex items-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-green-500 opacity-20"></div>
-                  <span>Images de la séquence</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-red-500 opacity-20"></div>
-                  <span>Images pièges</span>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
