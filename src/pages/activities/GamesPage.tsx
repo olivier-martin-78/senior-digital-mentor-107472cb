@@ -150,7 +150,7 @@ export default function GamesPage() {
       },
       {
         key: "audio-memory",
-        subTagId: memoireId || null,
+        subTagId: remueMeningesId || null,
         card: <Card key="audio-memory" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
           <Link 
             to="/activities/games/audio-memory" 
