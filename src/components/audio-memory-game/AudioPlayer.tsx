@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2 } from 'lucide-react';
+import { Play, Pause, Volume2, Loader2 } from 'lucide-react';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 interface AudioPlayerProps {
-  audioUrl: string;
+  audioUrl?: string;
+  ttsText?: string;
+  voiceId?: string;
   autoPlay?: boolean;
   onEnded?: () => void;
   onPlay?: () => void;
@@ -15,6 +18,8 @@ interface AudioPlayerProps {
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   audioUrl,
+  ttsText,
+  voiceId,
   autoPlay = false,
   onEnded,
   onPlay,
@@ -26,6 +31,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
+  const { generateSpeech, isLoading: isTTSLoading } = useTextToSpeech();
+
+  // Generate TTS audio if needed
+  useEffect(() => {
+    if (ttsText && !generatedAudioUrl && !isTTSLoading) {
+      generateSpeech({ text: ttsText, voice_id: voiceId }).then(url => {
+        if (url) {
+          setGeneratedAudioUrl(url);
+        }
+      });
+    }
+  }, [ttsText, voiceId, generatedAudioUrl, isTTSLoading, generateSpeech]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -95,9 +113,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${Math.floor(seconds)}s`;
   };
 
+  const effectiveAudioUrl = generatedAudioUrl || audioUrl;
+  const isLoading = isTTSLoading || (ttsText && !generatedAudioUrl);
+
   return (
     <div className={`flex items-center gap-4 ${className}`}>
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio ref={audioRef} src={effectiveAudioUrl} preload="metadata" />
       
       {showControls && (
         <>
@@ -106,13 +127,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
+            disabled={isLoading || !effectiveAudioUrl}
           >
-            {isPlaying ? (
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isPlaying ? (
               <Pause className="w-4 h-4" />
             ) : (
               <Play className="w-4 h-4" />
             )}
-            {isPlaying ? 'Pause' : 'Écouter'}
+            {isLoading ? 'Génération...' : isPlaying ? 'Pause' : 'Écouter'}
           </Button>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

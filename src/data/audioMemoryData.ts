@@ -8,7 +8,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/dog_bark.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Aboiement classique de chien'
+    description: 'Wouf wouf ! Un aboiement de chien énergique'
   },
   {
     id: 'cat_meow',
@@ -16,7 +16,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/cat_meow.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Miaulement doux de chat'
+    description: 'Miaou ! Un miaulement de chat doux et mélodieux'
   },
   {
     id: 'lion_roar',
@@ -24,7 +24,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/lion_roar.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Rugissement puissant de lion'
+    description: 'Rooooaaarrr ! Le rugissement puissant du roi des animaux'
   },
   {
     id: 'bird_chirp',
@@ -32,7 +32,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/bird_chirp.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Chant mélodieux d\'oiseau'
+    description: 'Cui cui cui ! Le chant joyeux d\'un petit oiseau'
   },
   {
     id: 'cow_moo',
@@ -40,7 +40,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/animals/cow_moo.mp3',
     category: 'animals',
     type: 'original',
-    description: 'Meuglement grave de vache'
+    description: 'Meuuuuh ! Le meuglement grave d\'une vache dans les prés'
   },
 
   // Variants d'animaux pour tromper
@@ -51,7 +51,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     category: 'animals',
     type: 'variant',
     base_sound_id: 'dog_bark',
-    description: 'Aboiement plus aigu'
+    description: 'Ouaf ouaf ! Un aboiement plus aigu et rapide'
   },
   {
     id: 'cat_purr',
@@ -60,7 +60,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     category: 'animals',
     type: 'variant',
     base_sound_id: 'cat_meow',
-    description: 'Ronronnement au lieu de miaulement'
+    description: 'Ronron ronron... Le ronronnement doux d\'un chat satisfait'
   },
 
   // Onomatopées
@@ -70,7 +70,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/onomatopoeia/boom.mp3',
     category: 'onomatopoeia',
     type: 'original',
-    description: 'Explosion sonore'
+    description: 'BOOM ! Une explosion sonore retentissante'
   },
   {
     id: 'splash',
@@ -78,7 +78,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/onomatopoeia/splash.mp3',
     category: 'onomatopoeia',
     type: 'original',
-    description: 'Éclaboussure d\'eau'
+    description: 'Splash ! Le bruit d\'une éclaboussure dans l\'eau'
   },
   {
     id: 'click',
@@ -86,7 +86,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/onomatopoeia/click.mp3',
     category: 'onomatopoeia',
     type: 'original',
-    description: 'Clic sec'
+    description: 'Clic ! Un petit bruit sec et net'
   },
   {
     id: 'whoosh',
@@ -94,7 +94,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/onomatopoeia/whoosh.mp3',
     category: 'onomatopoeia',
     type: 'original',
-    description: 'Sifflement du vent'
+    description: 'Whoooosh ! Le sifflement du vent qui passe'
   },
 
   // Instruments
@@ -104,7 +104,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/instruments/piano_c.mp3',
     category: 'instruments',
     type: 'original',
-    description: 'Note Do au piano'
+    description: 'Ding ! Une belle note Do jouée au piano'
   },
   {
     id: 'guitar_strum',
@@ -112,7 +112,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/instruments/guitar_strum.mp3',
     category: 'instruments',
     type: 'original',
-    description: 'Accord gratté à la guitare'
+    description: 'Strum ! Un accord gratté sur une guitare acoustique'
   },
   {
     id: 'drum_beat',
@@ -120,7 +120,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/instruments/drum_beat.mp3',
     category: 'instruments',
     type: 'original',
-    description: 'Coup de caisse claire'
+    description: 'Bam ! Un coup sec sur une caisse claire'
   },
   {
     id: 'violin_note',
@@ -128,7 +128,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/instruments/violin_note.mp3',
     category: 'instruments',
     type: 'original',
-    description: 'Note soutenue au violon'
+    description: 'Une note soutenue et mélodieuse au violon'
   },
 
   // Variants d'instruments
@@ -139,7 +139,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     category: 'instruments',
     type: 'variant',
     base_sound_id: 'piano_c',
-    description: 'Note Do# au piano'
+    description: 'Ding ! Une note Do dièse plus aiguë au piano'
   },
 
   // Nature
@@ -149,7 +149,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/nature/thunder.mp3',
     category: 'nature',
     type: 'original',
-    description: 'Grondement de tonnerre'
+    description: 'Grooooonde ! Le grondement puissant du tonnerre'
   },
   {
     id: 'rain',
@@ -157,7 +157,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/nature/rain.mp3',
     category: 'nature',
     type: 'original',
-    description: 'Bruit de pluie qui tombe'
+    description: 'Plic ploc plic ploc... Le bruit apaisant de la pluie qui tombe'
   },
   {
     id: 'wind',
@@ -165,7 +165,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/nature/wind.mp3',
     category: 'nature',
     type: 'original',
-    description: 'Souffle du vent'
+    description: 'Houuuuu... Le souffle mystérieux du vent dans les arbres'
   },
   {
     id: 'waves',
@@ -173,7 +173,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/nature/waves.mp3',
     category: 'nature',
     type: 'original',
-    description: 'Bruit des vagues sur la plage'
+    description: 'Chhhhhh... Le va-et-vient relaxant des vagues sur la plage'
   },
 
   // Transport
@@ -183,7 +183,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/transport/car_engine.mp3',
     category: 'transport',
     type: 'original',
-    description: 'Ronronnement de moteur'
+    description: 'Vrooom vrooom ! Le ronronnement d\'un moteur de voiture'
   },
   {
     id: 'train_horn',
@@ -191,7 +191,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/transport/train_horn.mp3',
     category: 'transport',
     type: 'original',
-    description: 'Sifflet de locomotive'
+    description: 'Tchou tchoooou ! Le sifflet caractéristique d\'une locomotive'
   },
   {
     id: 'plane_takeoff',
@@ -199,7 +199,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/transport/plane_takeoff.mp3',
     category: 'transport',
     type: 'original',
-    description: 'Bruit de réacteurs au décollage'
+    description: 'Wroooooosh ! Le rugissement des réacteurs au décollage'
   },
 
   // Musique (courts refrains)
@@ -209,7 +209,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/music/happy_birthday.mp3',
     category: 'music',
     type: 'original',
-    description: 'Refrain de Joyeux anniversaire'
+    description: 'Joyeux anniversaire, joyeux anniversaire ! La mélodie festive'
   },
   {
     id: 'twinkle_star',
@@ -217,7 +217,7 @@ export const AUDIO_MEMORY_SOUNDS: GameSound[] = [
     file_url: '/sounds/music/twinkle_star.mp3',
     category: 'music',
     type: 'original',
-    description: 'Mélodie classique'
+    description: 'Ah vous dirai-je maman, ce qui cause mon tourment... La mélodie classique'
   }
 ];
 
