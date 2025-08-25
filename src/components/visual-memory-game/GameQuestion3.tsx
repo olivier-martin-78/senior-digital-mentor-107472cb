@@ -171,24 +171,6 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
                 <p className="text-muted-foreground text-sm">
                   L'image "{currentImageData.image.name}" était en position {correctPosition} dans la séquence originale.
                 </p>
-
-                {/* Aperçu de la séquence */}
-                <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-3">Rappel de la séquence :</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {imageSequence.map((item, index) => (
-                      <div
-                        key={item.image.id}
-                        className={`flex flex-col items-center p-2 rounded ${
-                          index + 1 === correctPosition ? 'bg-green-200' : 'bg-muted'
-                        }`}
-                      >
-                        <div className="text-lg">{item.image.emoji}</div>
-                        <div className="text-xs font-bold">{index + 1}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
