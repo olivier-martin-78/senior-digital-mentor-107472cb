@@ -41,30 +41,51 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
     const currentSound = soundSequence[currentSoundIndex];
     if (!currentSound) return;
 
-    // Jouer le son pendant 4 secondes puis passer au suivant
-    const timer = setTimeout(() => {
-      if (currentSoundIndex < soundSequence.length - 1) {
-        // Son suivant dans la séquence
-        setCurrentSoundIndex(currentSoundIndex + 1);
-      } else {
-        // Fin de la séquence
-        if (currentRepetition < 4) {
-          // Répétition suivante
-          setCurrentRepetition(currentRepetition + 1);
-          setCurrentSoundIndex(0);
-          setIsPlaying(false);
-          
-          // Petite pause entre les répétitions
-          setTimeout(() => setIsPlaying(true), 1000);
-        } else {
-          // Fin de toutes les répétitions
-          setPhase('finished');
-          setTimeout(onFinishDisplay, 2000);
-        }
-      }
-    }, 4000);
+    console.log('🎵 GameDisplay: Playing sound', {
+      soundName: currentSound.sound.name,
+      position: currentSound.position,
+      repetition: currentRepetition,
+      soundIndex: currentSoundIndex,
+      audioUrl: currentSound.sound.file_url
+    });
 
-    return () => clearTimeout(timer);
+    // Délai de sécurité pour le chargement du son
+    const loadingDelay = setTimeout(() => {
+      // Jouer le son pendant 4 secondes puis passer au suivant
+      const playTimer = setTimeout(() => {
+        if (currentSoundIndex < soundSequence.length - 1) {
+          // Son suivant dans la séquence
+          console.log('🎵 GameDisplay: Moving to next sound');
+          setCurrentSoundIndex(currentSoundIndex + 1);
+        } else {
+          // Fin de la séquence
+          if (currentRepetition < 4) {
+            // Répétition suivante
+            console.log('🎵 GameDisplay: Starting repetition', currentRepetition + 1);
+            setCurrentRepetition(currentRepetition + 1);
+            setCurrentSoundIndex(0);
+            setIsPlaying(false);
+            
+            // Pause plus longue entre les répétitions pour éviter les conflits
+            setTimeout(() => {
+              console.log('🎵 GameDisplay: Resuming after repetition pause');
+              setIsPlaying(true);
+            }, 2000);
+          } else {
+            // Fin de toutes les répétitions
+            console.log('🎵 GameDisplay: All repetitions completed');
+            setPhase('finished');
+            setTimeout(onFinishDisplay, 2000);
+          }
+        }
+      }, 4000);
+
+      return () => clearTimeout(playTimer);
+    }, 500); // Délai de sécurité de 500ms
+
+    return () => {
+      clearTimeout(loadingDelay);
+    };
   }, [currentSoundIndex, currentRepetition, isPlaying, phase, soundSequence, onFinishDisplay]);
 
   const getCurrentSound = () => {

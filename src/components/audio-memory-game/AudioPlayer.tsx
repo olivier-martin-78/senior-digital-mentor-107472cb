@@ -149,7 +149,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <div className={`flex items-center gap-4 ${className}`}>
-      <audio ref={audioRef} src={effectiveAudioUrl} preload="metadata" />
+      <audio ref={audioRef} src={effectiveAudioUrl} preload="auto" />
       
       {showControls && (
         <>
