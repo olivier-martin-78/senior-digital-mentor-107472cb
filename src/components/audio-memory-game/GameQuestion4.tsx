@@ -145,10 +145,11 @@ export const GameQuestion4: React.FC<GameQuestion4Props> = ({
                       {sound.name}
                     </div>
                     <AudioPlayer
+                      audioUrl={sound.file_url}
                       ttsText={sound.description}
                       voiceId="9BWtsMINqrJLrRacOk9x"
                       showControls={true}
-                      duration={2}
+                      duration={4}
                       className="scale-75"
                     />
                   </CardContent>
