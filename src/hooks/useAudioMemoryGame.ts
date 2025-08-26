@@ -494,7 +494,7 @@ export const useAudioMemoryGame = () => {
   const getGameResult = useCallback((): GameResult => {
     const totalTime = gameState.endTime - gameState.startTime;
     const phase4Time = gameState.phase4StartTime > 0 ? 
-      (gameState.endTime - gameState.phase4StartTime) / 1000 : undefined;
+      Math.round((gameState.endTime - gameState.phase4StartTime) / 1000) : undefined;
 
     return {
       difficulty: gameState.settings.difficulty,
