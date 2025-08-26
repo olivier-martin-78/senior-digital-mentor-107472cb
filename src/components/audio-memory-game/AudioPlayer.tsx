@@ -51,6 +51,22 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
 
+  // Force reload when audioUrl changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioUrl) return;
+
+    console.log('🔄 Audio URL changed, reloading:', audioUrl);
+    audio.load();
+    
+    if (autoPlay) {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(console.error);
+      }
+    }
+  }, [audioUrl, autoPlay]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -82,9 +98,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     };
 
-    const handleLoadedMetadata = () => {
+    const handleLoadedData = () => {
       if (autoPlay) {
-        audio.play().catch(console.error);
+        setTimeout(() => {
+          audio.play().catch(console.error);
+        }, 100);
       }
     };
 
@@ -92,14 +110,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('loadeddata', handleLoadedData);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('loadeddata', handleLoadedData);
     };
   }, [autoPlay, onEnded, onPlay, onPause, duration]);
 
