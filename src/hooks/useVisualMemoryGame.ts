@@ -28,6 +28,11 @@ export const useVisualMemoryGame = () => {
     questionsAsked: 0,
     questionsAnswered: 0,
     correctAnswers: 0,
+    phase2Questions: 0,
+    phase3Questions: 0,
+    phase2MaxQuestions: 3,
+    phase3MaxQuestions: 5,
+    usedImagesInPhase: [],
     phase4Attempts: 0,
     phase4TimeLimit: 60,
     phase4StartTime: 0,
@@ -79,6 +84,9 @@ export const useVisualMemoryGame = () => {
       questionsAsked: 0,
       questionsAnswered: 0,
       correctAnswers: 0,
+      phase2Questions: 0,
+      phase3Questions: 0,
+      usedImagesInPhase: [],
       currentQuestionIndex: 0
     }));
 
@@ -141,19 +149,20 @@ export const useVisualMemoryGame = () => {
 
     setQuestionResults(prev => [...prev, result]);
 
+    const newPhase2Questions = gameState.phase2Questions + 1;
+    const isPhase2Complete = newPhase2Questions >= gameState.phase2MaxQuestions;
+
     setGameState(prev => ({
       ...prev,
       phase2Score: prev.phase2Score + points,
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      currentQuestionIndex: prev.currentQuestionIndex + 1,
-      // Gérer la transition de phase ici directement
-      ...(prev.currentQuestionIndex + 1 >= prev.imageSequence.length 
-        ? { phase: 'question3', currentQuestionIndex: 0 }
-        : { phase: 'question1' })
+      phase2Questions: newPhase2Questions,
+      usedImagesInPhase: isPhase2Complete ? [] : [...prev.usedImagesInPhase, imageShown.id],
+      phase: isPhase2Complete ? 'question3' : 'question2'
     }));
-  }, [gameState.startTime]);
+  }, [gameState]);
 
   const answerQuestion3 = useCallback((position: number, imageShown: any, correctPosition: number) => {
     const isCorrect = position === correctPosition;
@@ -172,18 +181,22 @@ export const useVisualMemoryGame = () => {
 
     setQuestionResults(prev => [...prev, result]);
 
+    const newPhase3Questions = gameState.phase3Questions + 1;
+    const isPhase3Complete = newPhase3Questions >= gameState.phase3MaxQuestions;
+
     setGameState(prev => ({
       ...prev,
       phase3Score: prev.phase3Score + points,
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      currentQuestionIndex: prev.currentQuestionIndex + 1
+      phase3Questions: newPhase3Questions,
+      usedImagesInPhase: isPhase3Complete ? [] : [...prev.usedImagesInPhase, imageShown.id]
     }));
 
-    setTimeout(() => {
-      setGameState(prev => {
-        if (prev.currentQuestionIndex >= prev.imageSequence.length) {
+    if (isPhase3Complete) {
+      setTimeout(() => {
+        setGameState(prev => {
           // Préparer la phase 4
           const phase4Images = generatePhase4Images(prev.imageSequence);
           return {
@@ -194,11 +207,10 @@ export const useVisualMemoryGame = () => {
             phase4StartTime: Date.now(),
             currentQuestionIndex: 0
           };
-        }
-        return prev;
-      });
-    }, 1500);
-  }, [gameState.startTime]);
+        });
+      }, 1500);
+    }
+  }, [gameState]);
 
   const handlePhase4ImageClick = useCallback((clickedImage: any) => {
     setGameState(prev => {
@@ -398,6 +410,11 @@ export const useVisualMemoryGame = () => {
       questionsAsked: 0,
       questionsAnswered: 0,
       correctAnswers: 0,
+      phase2Questions: 0,
+      phase3Questions: 0,
+      phase2MaxQuestions: 3,
+      phase3MaxQuestions: 5,
+      usedImagesInPhase: [],
       phase4Attempts: 0,
       phase4TimeLimit: 60,
       phase4StartTime: 0,

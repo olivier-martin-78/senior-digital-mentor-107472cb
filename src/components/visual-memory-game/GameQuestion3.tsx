@@ -6,13 +6,17 @@ import { ImageInSequence } from '@/types/visualMemoryGame';
 
 interface GameQuestion3Props {
   imageSequence: ImageInSequence[];
-  currentQuestionIndex: number;
+  currentQuestionNumber: number;
+  maxQuestions: number;
+  usedImagesInPhase: string[];
   onAnswer: (position: number, imageShown: any, correctPosition: number) => void;
 }
 
 export const GameQuestion3: React.FC<GameQuestion3Props> = ({
   imageSequence,
-  currentQuestionIndex,
+  currentQuestionNumber,
+  maxQuestions,
+  usedImagesInPhase,
   onAnswer
 }) => {
   const [currentImageData, setCurrentImageData] = useState<ImageInSequence | null>(null);
@@ -22,7 +26,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
 
   useEffect(() => {
     generateQuestion();
-  }, [currentQuestionIndex, imageSequence]);
+  }, [currentQuestionNumber, imageSequence]);
 
   const generateQuestion = () => {
     setAnswered(false);
@@ -31,9 +35,18 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
     
     if (imageSequence.length === 0) return;
     
-    // Sélectionner une image de la séquence
-    const randomIndex = Math.floor(Math.random() * imageSequence.length);
-    setCurrentImageData(imageSequence[randomIndex]);
+    // Éviter les images déjà utilisées dans cette phase
+    const availableImages = imageSequence.filter(img => !usedImagesInPhase.includes(img.image.id));
+    
+    if (availableImages.length === 0) {
+      // Fallback: utiliser n'importe quelle image si toutes ont été utilisées
+      const randomIndex = Math.floor(Math.random() * imageSequence.length);
+      setCurrentImageData(imageSequence[randomIndex]);
+    } else {
+      // Sélectionner une image non utilisée
+      const randomIndex = Math.floor(Math.random() * availableImages.length);
+      setCurrentImageData(availableImages[randomIndex]);
+    }
   };
 
   const handleAnswer = (userPosition: number) => {
@@ -70,7 +83,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Badge variant="secondary" className="bg-purple-500 text-white">
-                Phase 3
+                Phase 3 ({currentQuestionNumber}/{maxQuestions})
               </Badge>
               <Badge variant="outline">
                 3 points par bonne réponse
@@ -179,7 +192,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
         {/* Progress indicator */}
         <div className="text-center">
           <Badge variant="outline">
-            Question {currentQuestionIndex + 1} / {imageSequence.length}
+            Question {currentQuestionNumber} / {maxQuestions}
           </Badge>
         </div>
       </div>

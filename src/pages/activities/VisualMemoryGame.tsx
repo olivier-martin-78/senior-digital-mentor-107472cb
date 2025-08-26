@@ -63,7 +63,9 @@ export const VisualMemoryGame: React.FC = () => {
         return (
           <GameQuestion2
             imageSequence={gameState.imageSequence}
-            currentQuestionIndex={gameState.currentQuestionIndex}
+            currentQuestionNumber={gameState.phase2Questions + 1}
+            maxQuestions={gameState.phase2MaxQuestions}
+            usedImagesInPhase={gameState.usedImagesInPhase}
             onAnswer={answerQuestion2}
           />
         );
@@ -72,7 +74,9 @@ export const VisualMemoryGame: React.FC = () => {
         return (
           <GameQuestion3
             imageSequence={gameState.imageSequence}
-            currentQuestionIndex={gameState.currentQuestionIndex}
+            currentQuestionNumber={gameState.phase3Questions + 1}
+            maxQuestions={gameState.phase3MaxQuestions}
+            usedImagesInPhase={gameState.usedImagesInPhase}
             onAnswer={answerQuestion3}
           />
         );

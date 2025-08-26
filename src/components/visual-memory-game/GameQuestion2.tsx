@@ -8,13 +8,17 @@ import { getImageVariant } from '@/data/visualMemoryImages';
 
 interface GameQuestion2Props {
   imageSequence: ImageInSequence[];
-  currentQuestionIndex: number;
+  currentQuestionNumber: number;
+  maxQuestions: number;
+  usedImagesInPhase: string[];
   onAnswer: (answer: boolean, imageShown: GameImage, isCorrect: boolean) => void;
 }
 
 export const GameQuestion2: React.FC<GameQuestion2Props> = ({
   imageSequence,
-  currentQuestionIndex,
+  currentQuestionNumber,
+  maxQuestions,
+  usedImagesInPhase,
   onAnswer
 }) => {
   const [currentImage, setCurrentImage] = useState<GameImage | null>(null);
@@ -25,7 +29,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
 
   useEffect(() => {
     generateQuestion();
-  }, [currentQuestionIndex, imageSequence]);
+  }, [currentQuestionNumber, imageSequence]);
 
   const generateQuestion = () => {
     setAnswered(false);
@@ -33,22 +37,33 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
     
     if (imageSequence.length === 0) return;
     
-    // Sélectionner une image de la séquence
-    const randomIndex = Math.floor(Math.random() * imageSequence.length);
-    const originalImage = imageSequence[randomIndex].image;
-    setCurrentImage(originalImage);
+    // Éviter les images déjà utilisées dans cette phase
+    const availableImages = imageSequence.filter(img => !usedImagesInPhase.includes(img.image.id));
+    
+    let selectedImage;
+    if (availableImages.length === 0) {
+      // Fallback: utiliser n'importe quelle image si toutes ont été utilisées
+      const randomIndex = Math.floor(Math.random() * imageSequence.length);
+      selectedImage = imageSequence[randomIndex].image;
+    } else {
+      // Sélectionner une image non utilisée
+      const randomIndex = Math.floor(Math.random() * availableImages.length);
+      selectedImage = availableImages[randomIndex].image;
+    }
+    
+    setCurrentImage(selectedImage);
     
     // 50% de chance de montrer la bonne couleur
     const showCorrectColor = Math.random() > 0.5;
     
     if (showCorrectColor) {
       // Montrer l'image avec sa couleur originale
-      setDisplayedEmoji(originalImage.emoji);
+      setDisplayedEmoji(selectedImage.emoji);
       setWasCorrectColor(true);
     } else {
       // Montrer l'image avec une couleur différente (variante)
-      const variant = getImageVariant(originalImage);
-      setDisplayedEmoji(variant || originalImage.emoji);
+      const variant = getImageVariant(selectedImage);
+      setDisplayedEmoji(variant || selectedImage.emoji);
       setWasCorrectColor(false);
     }
   };
@@ -84,7 +99,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Badge variant="secondary" className="bg-orange-500 text-white">
-                Phase 2
+                Phase 2 ({currentQuestionNumber}/{maxQuestions})
               </Badge>
               <Badge variant="outline">
                 2 points par bonne réponse
@@ -182,7 +197,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
         {/* Progress indicator */}
         <div className="text-center">
           <Badge variant="outline">
-            Question {currentQuestionIndex + 1}
+            Question {currentQuestionNumber} / {maxQuestions}
           </Badge>
         </div>
       </div>
