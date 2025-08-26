@@ -3,10 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Play, Users, Medal, Award, Database, AlertCircle } from 'lucide-react';
+import { Trophy, Play, Users, Medal, Award, Database, AlertCircle, Swords } from 'lucide-react';
 import { DifficultyLevel, LeaderboardEntry } from '@/types/audioMemoryGame';
 import { supabase } from '@/integrations/supabase/client';
 import { useAudioMemoryDB } from '@/hooks/useAudioMemoryDB';
+import { useChallengeFriend } from '@/hooks/useChallengeFriend';
+import { ChallengeModal } from '@/components/games/ChallengeModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GameSetupProps {
   difficulty: DifficultyLevel;
@@ -22,6 +25,15 @@ export const GameSetup: React.FC<GameSetupProps> = ({
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const { hasSounds, isLoading: soundsLoading, soundsCount } = useAudioMemoryDB();
+  const { user, profile } = useAuth();
+  const {
+    isModalOpen,
+    isLoading: challengeLoading,
+    openModal,
+    closeModal,
+    sendChallenge,
+    getUserScore
+  } = useChallengeFriend();
 
   useEffect(() => {
     loadLeaderboard();
@@ -73,6 +85,11 @@ export const GameSetup: React.FC<GameSetupProps> = ({
       default:
         return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">#{position}</span>;
     }
+  };
+
+  const handleSendChallenge = async (friendEmail: string) => {
+    const challengerScore = await getUserScore('audio', difficulty);
+    await sendChallenge(friendEmail, 'audio', difficulty, challengerScore);
   };
 
   return (
@@ -167,6 +184,17 @@ export const GameSetup: React.FC<GameSetupProps> = ({
             Classement {getDifficultyInfo(difficulty).name}
             <Badge variant="outline">Ce mois</Badge>
           </CardTitle>
+          {user && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={openModal}
+              className="flex items-center gap-2"
+            >
+              <Swords className="h-4 w-4" />
+              Défier un ami
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -205,6 +233,17 @@ export const GameSetup: React.FC<GameSetupProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de défi */}
+      <ChallengeModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSendChallenge={handleSendChallenge}
+        challengerName={profile?.display_name || user?.email || 'Un ami'}
+        gameType="audio"
+        difficulty={difficulty}
+        isLoading={challengeLoading}
+      />
     </div>
   );
 };

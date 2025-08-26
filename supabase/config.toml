@@ -11,6 +11,9 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
+[functions.send-challenge-email]
+verify_jwt = true
+
 [functions.send-group-notification]
 verify_jwt = true
 

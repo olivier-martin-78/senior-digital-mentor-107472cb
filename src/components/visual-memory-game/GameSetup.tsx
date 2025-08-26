@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Clock, Users, Star } from 'lucide-react';
+import { Trophy, Clock, Users, Star, Swords } from 'lucide-react';
 import { DifficultyLevel, GameSettings, LeaderboardEntry } from '@/types/visualMemoryGame';
 import { supabase } from '@/integrations/supabase/client';
+import { useChallengeFriend } from '@/hooks/useChallengeFriend';
+import { ChallengeModal } from '@/components/games/ChallengeModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GameSetupProps {
   settings: GameSettings;
@@ -24,6 +27,15 @@ export const GameSetup: React.FC<GameSetupProps> = ({
     advanced: []
   });
   const [loading, setLoading] = useState(true);
+  const { user, profile } = useAuth();
+  const {
+    isModalOpen,
+    isLoading: challengeLoading,
+    openModal,
+    closeModal,
+    sendChallenge,
+    getUserScore
+  } = useChallengeFriend();
 
   useEffect(() => {
     loadLeaderboards();
@@ -91,6 +103,11 @@ export const GameSetup: React.FC<GameSetupProps> = ({
   };
 
   const currentDifficultyInfo = getDifficultyInfo(settings.difficulty);
+
+  const handleSendChallenge = async (friendEmail: string) => {
+    const challengerScore = await getUserScore('visual', settings.difficulty);
+    await sendChallenge(friendEmail, 'visual', settings.difficulty, challengerScore);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 p-4">
@@ -187,6 +204,17 @@ export const GameSetup: React.FC<GameSetupProps> = ({
                 <Trophy className="h-5 w-5" />
                 Classements du mois
               </CardTitle>
+              {user && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={openModal}
+                  className="flex items-center gap-2"
+                >
+                  <Swords className="h-4 w-4" />
+                  Défier un ami
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -266,6 +294,16 @@ export const GameSetup: React.FC<GameSetupProps> = ({
             </div>
           </CardContent>
         </Card>
+        {/* Modal de défi */}
+        <ChallengeModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          onSendChallenge={handleSendChallenge}
+          challengerName={profile?.display_name || user?.email || 'Un ami'}
+          gameType="visual"
+          difficulty={settings.difficulty}
+          isLoading={challengeLoading}
+        />
       </div>
     </div>
   );
