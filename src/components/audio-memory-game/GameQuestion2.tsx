@@ -5,16 +5,24 @@ import { Badge } from '@/components/ui/badge';
 import { Volume2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { GameSound } from '@/types/audioMemoryGame';
 import { AudioPlayer } from './AudioPlayer';
-import { AUDIO_MEMORY_SOUNDS, getSoundVariant } from '@/data/audioMemoryData';
+import { getSoundVariant } from '@/data/audioMemoryData';
 
 interface GameQuestion2Props {
   soundSequence: GameSound[];
+  availableSounds: GameSound[];
+  currentQuestionNumber: number;
+  maxQuestions: number;
+  usedSoundsInPhase: string[];
   onAnswer: (soundId: string, answer: boolean) => void;
   score: number;
 }
 
 export const GameQuestion2: React.FC<GameQuestion2Props> = ({
   soundSequence,
+  availableSounds,
+  currentQuestionNumber,
+  maxQuestions,
+  usedSoundsInPhase,
   onAnswer,
   score
 }) => {
@@ -24,27 +32,36 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
 
   useEffect(() => {
     generateQuestion();
-  }, []);
+  }, [currentQuestionNumber]);
 
   const generateQuestion = () => {
     setHasAnswered(false);
     
+    // Éviter les sons déjà utilisés dans cette phase
+    const availableSequenceSounds = soundSequence.filter(s => !usedSoundsInPhase.includes(s.id));
+    const availableDecoySounds = availableSounds.filter(
+      sound => 
+        sound.type === 'original' && 
+        !soundSequence.some(s => s.id === sound.id) &&
+        !usedSoundsInPhase.includes(sound.id)
+    );
+    
     // 70% de chance de prendre un variant d'un son de la séquence pour tromper
-    // 30% de chance de prendre le son original de la séquence
+    // 30% de chance de prendre le son original de la séquence ou un son différent
     const shouldUseVariant = Math.random() < 0.7;
     
-    if (shouldUseVariant) {
+    if (shouldUseVariant && availableSequenceSounds.length > 0) {
       // Chercher un variant d'un son de la séquence
-      const soundsWithVariants = soundSequence.filter(sound => {
+      const soundsWithVariants = availableSequenceSounds.filter(sound => {
         const variant = getSoundVariant(sound);
-        return variant !== null;
+        return variant !== null && !usedSoundsInPhase.includes(variant.id);
       });
       
       if (soundsWithVariants.length > 0) {
         const randomOriginalSound = soundsWithVariants[Math.floor(Math.random() * soundsWithVariants.length)];
         const variant = getSoundVariant(randomOriginalSound);
         
-        if (variant) {
+        if (variant && !usedSoundsInPhase.includes(variant.id)) {
           setCurrentSound(variant);
           setIsVariant(true);
           return;
@@ -55,23 +72,21 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
     // Fallback : prendre un son original de la séquence ou un son complètement différent
     const shouldUseOriginalSound = Math.random() < 0.5;
     
-    if (shouldUseOriginalSound && soundSequence.length > 0) {
-      const randomIndex = Math.floor(Math.random() * soundSequence.length);
-      setCurrentSound(soundSequence[randomIndex]);
+    if (shouldUseOriginalSound && availableSequenceSounds.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availableSequenceSounds.length);
+      setCurrentSound(availableSequenceSounds[randomIndex]);
+      setIsVariant(false);
+    } else if (availableDecoySounds.length > 0) {
+      // Son différent de la séquence
+      const randomIndex = Math.floor(Math.random() * availableDecoySounds.length);
+      setCurrentSound(availableDecoySounds[randomIndex]);
       setIsVariant(false);
     } else {
-      // Son différent de la séquence
-      const availableSounds = AUDIO_MEMORY_SOUNDS.filter(
-        sound => 
-          sound.type === 'original' && 
-          !soundSequence.some(s => s.id === sound.id)
-      );
-      
-      if (availableSounds.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableSounds.length);
-        setCurrentSound(availableSounds[randomIndex]);
+      // Fallback: utiliser n'importe quel son disponible
+      if (availableSequenceSounds.length > 0) {
+        setCurrentSound(availableSequenceSounds[0]);
         setIsVariant(false);
-      } else {
+      } else if (soundSequence.length > 0) {
         setCurrentSound(soundSequence[0]);
         setIsVariant(false);
       }
@@ -99,7 +114,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="w-6 h-6" />
-              Question de difficulté 2
+              Question de difficulté 2 ({currentQuestionNumber}/{maxQuestions})
             </CardTitle>
             <Badge variant="outline">2 points</Badge>
           </div>
@@ -187,7 +202,7 @@ export const GameQuestion2: React.FC<GameQuestion2Props> = ({
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
-                  Passage à la question suivante...
+                  {currentQuestionNumber < maxQuestions ? 'Question suivante...' : 'Passage à la question de difficulté 3...'}
                 </div>
               </div>
             )}

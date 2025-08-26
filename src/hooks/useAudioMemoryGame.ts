@@ -31,6 +31,11 @@ export const useAudioMemoryGame = () => {
     questionsAsked: 0,
     questionsAnswered: 0,
     correctAnswers: 0,
+    phase2Questions: 0,
+    phase3Questions: 0,
+    phase2MaxQuestions: 3,
+    phase3MaxQuestions: 5,
+    usedSoundsInPhase: [],
     phase4Attempts: 0,
     phase4TimeLimit: 60,
     phase4StartTime: 0,
@@ -163,13 +168,18 @@ export const useAudioMemoryGame = () => {
 
     setQuestionResults(prev => [...prev, questionResult]);
     
+    const newPhase2Questions = gameState.phase2Questions + 1;
+    const isPhase2Complete = newPhase2Questions >= gameState.phase2MaxQuestions;
+    
     setGameState(prev => ({
       ...prev,
       phase2Score: prev.phase2Score + points,
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      phase: 'question3'
+      phase2Questions: newPhase2Questions,
+      usedSoundsInPhase: isPhase2Complete ? [] : [...prev.usedSoundsInPhase, soundId],
+      phase: isPhase2Complete ? 'question3' : 'question2'
     }));
 
     if (!isCorrect) {
@@ -199,14 +209,19 @@ export const useAudioMemoryGame = () => {
 
     setQuestionResults(prev => [...prev, questionResult]);
     
+    const newPhase3Questions = gameState.phase3Questions + 1;
+    const isPhase3Complete = newPhase3Questions >= gameState.phase3MaxQuestions;
+    
     setGameState(prev => ({
       ...prev,
       phase3Score: prev.phase3Score + points,
       score: prev.score + points,
       questionsAnswered: prev.questionsAnswered + 1,
       correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-      phase: 'question4',
-      phase4StartTime: Date.now()
+      phase3Questions: newPhase3Questions,
+      usedSoundsInPhase: isPhase3Complete ? [] : [...prev.usedSoundsInPhase, soundId],
+      phase: isPhase3Complete ? 'question4' : 'question3',
+      phase4StartTime: isPhase3Complete ? Date.now() : prev.phase4StartTime
     }));
 
     if (!isCorrect) {

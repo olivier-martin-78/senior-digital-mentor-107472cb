@@ -72,6 +72,10 @@ export const AudioMemoryGame: React.FC = () => {
         return (
           <GameQuestion2
             soundSequence={gameState.soundSequence.map(s => s.sound)}
+            availableSounds={availableSounds}
+            currentQuestionNumber={gameState.phase2Questions + 1}
+            maxQuestions={gameState.phase2MaxQuestions}
+            usedSoundsInPhase={gameState.usedSoundsInPhase}
             onAnswer={answerQuestion2}
             score={gameState.score}
           />
@@ -81,6 +85,9 @@ export const AudioMemoryGame: React.FC = () => {
         return (
           <GameQuestion3
             soundSequence={gameState.soundSequence}
+            currentQuestionNumber={gameState.phase3Questions + 1}
+            maxQuestions={gameState.phase3MaxQuestions}
+            usedSoundsInPhase={gameState.usedSoundsInPhase}
             onAnswer={answerQuestion3}
             score={gameState.score}
           />

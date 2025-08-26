@@ -41,6 +41,13 @@ export interface GameState {
   questionsAnswered: number;
   correctAnswers: number;
   
+  // Phase 2 et 3 - Questions multiples
+  phase2Questions: number; // Nombre de questions déjà posées en phase 2
+  phase3Questions: number; // Nombre de questions déjà posées en phase 3
+  phase2MaxQuestions: number; // Nombre maximum de questions en phase 2 (3)
+  phase3MaxQuestions: number; // Nombre maximum de questions en phase 3 (5)
+  usedSoundsInPhase: string[]; // Sons déjà utilisés dans la phase courante
+  
   // Phase 4 spécifique
   phase4Attempts: number;
   phase4TimeLimit: number; // 60 secondes

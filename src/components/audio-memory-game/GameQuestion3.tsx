@@ -8,12 +8,18 @@ import { AudioPlayer } from './AudioPlayer';
 
 interface GameQuestion3Props {
   soundSequence: SoundInSequence[];
+  currentQuestionNumber: number;
+  maxQuestions: number;
+  usedSoundsInPhase: string[];
   onAnswer: (soundId: string, position: number) => void;
   score: number;
 }
 
 export const GameQuestion3: React.FC<GameQuestion3Props> = ({
   soundSequence,
+  currentQuestionNumber,
+  maxQuestions,
+  usedSoundsInPhase,
   onAnswer,
   score
 }) => {
@@ -23,15 +29,24 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
 
   useEffect(() => {
     generateQuestion();
-  }, []);
+  }, [currentQuestionNumber]);
 
   const generateQuestion = () => {
     setHasAnswered(false);
     setSelectedPosition(null);
     
-    // Prendre un son aléatoire de la séquence
-    const randomIndex = Math.floor(Math.random() * soundSequence.length);
-    setCurrentSoundIndex(randomIndex);
+    // Éviter les sons déjà utilisés dans cette phase
+    const availableSounds = soundSequence.filter(s => !usedSoundsInPhase.includes(s.sound.id));
+    
+    if (availableSounds.length > 0) {
+      // Prendre un son aléatoire de la séquence non encore utilisé
+      const randomIndex = Math.floor(Math.random() * availableSounds.length);
+      setCurrentSoundIndex(soundSequence.findIndex(s => s.sound.id === availableSounds[randomIndex].sound.id));
+    } else {
+      // Fallback: prendre n'importe quel son si tous ont été utilisés
+      const randomIndex = Math.floor(Math.random() * soundSequence.length);
+      setCurrentSoundIndex(randomIndex);
+    }
   };
 
   const handleAnswer = (position: number) => {
@@ -57,7 +72,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="w-6 h-6" />
-              Question de difficulté 3
+              Question de difficulté 3 ({currentQuestionNumber}/{maxQuestions})
             </CardTitle>
             <Badge variant="outline">3 points</Badge>
           </div>
@@ -137,7 +152,7 @@ export const GameQuestion3: React.FC<GameQuestion3Props> = ({
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
-                  Passage à la phase finale...
+                  {currentQuestionNumber < maxQuestions ? 'Question suivante...' : 'Passage à la phase finale...'}
                 </div>
               </div>
             )}
