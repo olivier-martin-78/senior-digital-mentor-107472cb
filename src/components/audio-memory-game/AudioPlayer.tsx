@@ -31,6 +31,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [audioError, setAudioError] = useState(false);
   const { speak, stop, isLoading: isSpeechLoading, isSupported } = useWebSpeechAPI();
   
   console.log('🎵 AudioPlayer render:', { audioUrl, ttsText, showControls });
@@ -57,6 +58,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     if (!audio || !audioUrl) return;
 
     console.log('🔄 Audio URL changed, reloading:', audioUrl);
+    setAudioError(false);
     audio.load();
     
     if (autoPlay) {
@@ -106,11 +108,17 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     };
 
+    const handleError = () => {
+      console.error('🚨 Audio loading error for:', audioUrl);
+      setAudioError(true);
+    };
+
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadeddata', handleLoadedData);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
@@ -118,13 +126,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadeddata', handleLoadedData);
+      audio.removeEventListener('error', handleError);
     };
   }, [autoPlay, onEnded, onPlay, onPause, duration]);
 
   const togglePlay = () => {
-    console.log('🎵 togglePlay called:', { audioUrl, ttsText, isPlaying });
+    console.log('🎵 togglePlay called:', { audioUrl, ttsText, isPlaying, audioError });
     
-    if (audioUrl && audioRef.current) {
+    if (audioUrl && audioRef.current && !audioError) {
       // Prioritize real audio file
       console.log('🎵 Using real audio file:', audioUrl);
       const audio = audioRef.current;
@@ -133,7 +142,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         audio.pause();
       } else {
         audio.currentTime = 0;
-        audio.play().catch(console.error);
+        audio.play().catch(() => {
+          console.error('🚨 Audio play failed, falling back to TTS');
+          setAudioError(true);
+        });
       }
     } else if (ttsText) {
       // Fallback to Web Speech API for TTS text
@@ -160,10 +172,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${Math.floor(seconds)}s`;
   };
 
-  const effectiveAudioUrl = audioUrl;
+  const effectiveAudioUrl = (audioError || !audioUrl) ? undefined : audioUrl;
   const isLoading = isSpeechLoading;
   const hasAudio = audioUrl || ttsText;
-  console.log('🎵 AudioPlayer state:', { hasAudio, isLoading, effectiveAudioUrl, isSupported });
+  const shouldUseTTS = audioError || !audioUrl;
+  console.log('🎵 AudioPlayer state:', { hasAudio, isLoading, effectiveAudioUrl, isSupported, audioError, shouldUseTTS });
 
   return (
     <div className={`flex items-center gap-4 ${className}`}>
