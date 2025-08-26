@@ -344,7 +344,7 @@ export const useVisualMemoryGame = () => {
         .eq('user_id', user.id)
         .eq('difficulty_level', difficulty)
         .eq('month_year', monthYear)
-        .single();
+        .maybeSingle();
 
       if (existingEntry) {
         // Mettre à jour si c'est un meilleur score
