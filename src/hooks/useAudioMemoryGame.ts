@@ -392,7 +392,7 @@ export const useAudioMemoryGame = () => {
         .eq('user_id', user.id)
         .eq('difficulty', gameResult.difficulty)
         .eq('month_year', monthYear)
-        .single();
+        .maybeSingle();
 
       if (existingEntry) {
         // Mettre à jour si meilleur score
