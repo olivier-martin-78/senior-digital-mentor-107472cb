@@ -3,18 +3,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Volume2, Play } from 'lucide-react';
-import { SoundInSequence } from '@/types/audioMemoryGame';
+import { SoundInSequence, DifficultyLevel } from '@/types/audioMemoryGame';
 import { AudioPlayer } from './AudioPlayer';
 
 interface GameDisplayProps {
   soundSequence: SoundInSequence[];
+  difficulty: DifficultyLevel;
   onFinishDisplay: () => void;
 }
 
 export const GameDisplay: React.FC<GameDisplayProps> = ({
   soundSequence,
+  difficulty,
   onFinishDisplay
 }) => {
+  // Nombre de répétitions selon la difficulté
+  const getRepetitionsForDifficulty = (difficulty: DifficultyLevel): number => {
+    switch (difficulty) {
+      case 'beginner': return 2;
+      case 'intermediate': return 3;
+      case 'advanced': return 4;
+      default: return 4;
+    }
+  };
+
+  const maxRepetitions = getRepetitionsForDifficulty(difficulty);
   const [currentRepetition, setCurrentRepetition] = useState(1);
   const [currentSoundIndex, setCurrentSoundIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -59,7 +72,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
           setCurrentSoundIndex(currentSoundIndex + 1);
         } else {
           // Fin de la séquence
-          if (currentRepetition < 4) {
+          if (currentRepetition < maxRepetitions) {
             // Répétition suivante
             console.log('🎵 GameDisplay: Starting repetition', currentRepetition + 1);
             setCurrentRepetition(currentRepetition + 1);
@@ -93,7 +106,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
   };
 
   const getProgress = () => {
-    const totalSounds = soundSequence.length * 4; // 4 répétitions
+    const totalSounds = soundSequence.length * maxRepetitions;
     const completedSounds = (currentRepetition - 1) * soundSequence.length + currentSoundIndex;
     return (completedSounds / totalSounds) * 100;
   };
@@ -123,7 +136,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
             <div className="space-y-6">
               <div className="text-center">
                 <div className="text-2xl font-bold mb-2">
-                  Répétition {currentRepetition} / 4
+                  Répétition {currentRepetition} / {maxRepetitions}
                 </div>
                 <div className="text-lg text-muted-foreground">
                   Son {currentSoundIndex + 1} / {soundSequence.length}
@@ -180,7 +193,7 @@ export const GameDisplay: React.FC<GameDisplayProps> = ({
               <div className="text-sm text-muted-foreground">Sons à mémoriser</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">4</div>
+              <div className="text-2xl font-bold">{maxRepetitions}</div>
               <div className="text-sm text-muted-foreground">Répétitions</div>
             </div>
           </div>

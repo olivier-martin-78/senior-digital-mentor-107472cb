@@ -51,6 +51,7 @@ export const AudioMemoryGame: React.FC = () => {
         return (
           <GameDisplay
             soundSequence={gameState.soundSequence}
+            difficulty={gameState.settings.difficulty}
             onFinishDisplay={finishDisplay}
           />
         );
