@@ -163,12 +163,6 @@ serve(async (req) => {
         </div>
         
         <p>Bonne chance et amusez-vous bien ! 🎯</p>
-        
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        <p style="color: #666; font-size: 12px;">
-          Cet email a été envoyé automatiquement par l'application Senior Digital Mentor.<br>
-          Si vous ne souhaitez plus recevoir de défis, contactez ${cleanChallengerEmail}.
-        </p>
       </div>
     `;
 

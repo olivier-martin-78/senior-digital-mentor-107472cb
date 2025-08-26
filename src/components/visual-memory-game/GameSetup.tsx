@@ -209,7 +209,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({
                   variant="outline" 
                   size="sm" 
                   onClick={openModal}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-neon-accent hover:bg-neon-accent/80 text-white border-neon-accent"
                 >
                   <Swords className="h-4 w-4" />
                   Défier un ami
