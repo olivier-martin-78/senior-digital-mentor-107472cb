@@ -133,7 +133,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const togglePlay = () => {
     console.log('🎵 togglePlay called:', { audioUrl, ttsText, isPlaying, audioError });
     
-    if (audioUrl && audioRef.current && !audioError) {
+    const isLocalFile = audioUrl && audioUrl.startsWith('/sounds/');
+    
+    if (audioUrl && audioRef.current && !audioError && !isLocalFile) {
       // Prioritize real audio file
       console.log('🎵 Using real audio file:', audioUrl);
       const audio = audioRef.current;
@@ -149,7 +151,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     } else if (ttsText) {
       // Fallback to Web Speech API for TTS text
-      console.log('🗣️ Fallback to TTS:', ttsText);
+      console.log('🗣️ Using TTS:', ttsText, isLocalFile ? '(local file detected)' : '');
       if (isPlaying) {
         stop();
         setIsPlaying(false);
@@ -172,11 +174,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${Math.floor(seconds)}s`;
   };
 
-  const effectiveAudioUrl = (audioError || !audioUrl) ? undefined : audioUrl;
+  // Detect local file paths and force TTS fallback
+  const isLocalFile = audioUrl && audioUrl.startsWith('/sounds/');
+  const effectiveAudioUrl = (audioError || !audioUrl || isLocalFile) ? undefined : audioUrl;
   const isLoading = isSpeechLoading;
   const hasAudio = audioUrl || ttsText;
-  const shouldUseTTS = audioError || !audioUrl;
-  console.log('🎵 AudioPlayer state:', { hasAudio, isLoading, effectiveAudioUrl, isSupported, audioError, shouldUseTTS });
+  const shouldUseTTS = audioError || !audioUrl || isLocalFile;
+  console.log('🎵 AudioPlayer state:', { hasAudio, isLoading, effectiveAudioUrl, isSupported, audioError, shouldUseTTS, isLocalFile });
 
   return (
     <div className={`flex items-center gap-4 ${className}`}>
