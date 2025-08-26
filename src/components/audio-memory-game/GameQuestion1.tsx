@@ -5,16 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Volume2, CheckCircle, XCircle } from 'lucide-react';
 import { GameSound } from '@/types/audioMemoryGame';
 import { AudioPlayer } from './AudioPlayer';
-import { AUDIO_MEMORY_SOUNDS } from '@/data/audioMemoryData';
 
 interface GameQuestion1Props {
   soundSequence: GameSound[];
+  availableSounds: GameSound[];
   onAnswer: (soundId: string, answer: boolean) => void;
   score: number;
 }
 
 export const GameQuestion1: React.FC<GameQuestion1Props> = ({
   soundSequence,
+  availableSounds,
   onAnswer,
   score
 }) => {
@@ -37,15 +38,15 @@ export const GameQuestion1: React.FC<GameQuestion1Props> = ({
       setCurrentSound(soundSequence[randomIndex]);
     } else {
       // Prendre un son qui n'était pas dans la séquence
-      const availableSounds = AUDIO_MEMORY_SOUNDS.filter(
+      const decoySounds = availableSounds.filter(
         sound => 
           sound.type === 'original' && 
           !soundSequence.some(s => s.id === sound.id)
       );
       
-      if (availableSounds.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableSounds.length);
-        setCurrentSound(availableSounds[randomIndex]);
+      if (decoySounds.length > 0) {
+        const randomIndex = Math.floor(Math.random() * decoySounds.length);
+        setCurrentSound(decoySounds[randomIndex]);
       } else {
         // Fallback si pas de sons disponibles
         setCurrentSound(soundSequence[0]);

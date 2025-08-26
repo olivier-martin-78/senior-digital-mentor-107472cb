@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserActionsService } from '@/services/UserActionsService';
 import { useAudioMemoryGameEngine } from './useAudioMemoryGameEngine';
+import { useAudioMemoryDB } from './useAudioMemoryDB';
 
 const initialSettings: GameSettings = {
   difficulty: 'beginner',
@@ -14,6 +15,7 @@ const initialSettings: GameSettings = {
 export const useAudioMemoryGame = () => {
   const { toast } = useToast();
   const { generateSoundSequence, generatePhase4Sounds, hasSounds, isLoading } = useAudioMemoryGameEngine();
+  const { sounds: availableSounds } = useAudioMemoryDB();
   
   const [gameState, setGameState] = useState<GameState>({
     phase: 'setup',
@@ -505,6 +507,7 @@ export const useAudioMemoryGame = () => {
     gameState,
     questionResults,
     phase4TimeLeft,
+    availableSounds,
     updateSettings,
     startGame,
     finishDisplay,

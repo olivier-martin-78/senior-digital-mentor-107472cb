@@ -14,7 +14,9 @@ export const AudioMemoryGame: React.FC = () => {
   const navigate = useNavigate();
   const {
     gameState,
+    questionResults,
     phase4TimeLeft,
+    availableSounds,
     updateSettings,
     startGame,
     finishDisplay,
@@ -60,6 +62,7 @@ export const AudioMemoryGame: React.FC = () => {
         return (
           <GameQuestion1
             soundSequence={gameState.soundSequence.map(s => s.sound)}
+            availableSounds={availableSounds}
             onAnswer={answerQuestion1}
             score={gameState.score}
           />
