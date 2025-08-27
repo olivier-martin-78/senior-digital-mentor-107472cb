@@ -416,8 +416,8 @@ export default function GamesPage() {
           >
             <div className="h-48 relative overflow-hidden">
               <img 
-                src={bigNoiseGameImage} 
-                alt="Jeu qui fait grand bruit"
+                src="/lovable-uploads/39b75828-a47c-4df8-ab47-14f415b43ac6.png" 
+                alt="Le jeu qui fait grand bruit"
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-4 right-4">
