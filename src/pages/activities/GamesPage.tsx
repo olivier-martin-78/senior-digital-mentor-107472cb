@@ -157,15 +157,16 @@ export default function GamesPage() {
             className="block"
             onClick={() => UserActionsService.trackView('activity', 'audio_memory_game', 'Mémoire Auditive Inversée')}
           >
-            <div className="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center relative">
+            <div className="h-48 relative overflow-hidden">
+              <img 
+                src="/lovable-uploads/1ae6179a-6642-49c5-9b77-177933e91190.png" 
+                alt="Jeu original pour la Mémoire Auditive"
+                className="w-full h-full object-cover"
+              />
               <div className="absolute top-4 right-4">
                 <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
                   NOUVEAU
                 </span>
-              </div>
-              <div className="text-center text-white">
-                <div className="text-6xl mb-4">🔊</div>
-                <h3 className="text-xl font-bold">Mémoire Auditive</h3>
               </div>
             </div>
             <CardHeader>
