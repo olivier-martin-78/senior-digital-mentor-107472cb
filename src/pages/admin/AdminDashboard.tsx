@@ -598,7 +598,7 @@ const AdminDashboard: React.FC = () => {
              </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {stats.sessionsByUser.slice(0, 20).map((user, index) => (
+                {stats.sessionsByUser.slice(0, 100).map((user, index) => (
                   <div 
                     key={user.user_id} 
                     className={cn(
@@ -634,9 +634,9 @@ const AdminDashboard: React.FC = () => {
                     </Badge>
                   </div>
                 ))}
-                {stats.sessionsByUser.length > 20 && (
+                {stats.sessionsByUser.length > 100 && (
                   <p className="text-sm text-muted-foreground text-center">
-                    ... et {stats.sessionsByUser.length - 20} utilisateur{stats.sessionsByUser.length - 20 > 1 ? 's' : ''} supplémentaire{stats.sessionsByUser.length - 20 > 1 ? 's' : ''}
+                    ... et {stats.sessionsByUser.length - 100} utilisateur{stats.sessionsByUser.length - 100 > 1 ? 's' : ''} supplémentaire{stats.sessionsByUser.length - 100 > 1 ? 's' : ''}
                   </p>
                 )}
               </div>
