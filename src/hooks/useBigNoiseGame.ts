@@ -104,24 +104,39 @@ export const useBigNoiseGame = () => {
       setGameState(prev => ({ ...prev, audioProgress: Math.min(progress, 100) }));
     };
 
-    audio.addEventListener('loadeddata', () => {
-      audio.play();
-      progressInterval = setInterval(updateProgress, 100);
-    });
+    const startPlayback = async () => {
+      try {
+        await audio.play();
+        progressInterval = setInterval(updateProgress, 100);
+        
+        // Force stop after 3 seconds and move to input phase
+        setTimeout(() => {
+          if (!audio.paused) {
+            audio.pause();
+          }
+          clearInterval(progressInterval);
+          setGameState(prev => ({ ...prev, audioProgress: 100, phase: 'input' }));
+        }, SOUND_DURATION);
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        // Move to input phase even if audio fails
+        setGameState(prev => ({ ...prev, audioProgress: 100, phase: 'input' }));
+      }
+    };
 
+    audio.addEventListener('loadeddata', startPlayback);
+    
     audio.addEventListener('ended', () => {
       clearInterval(progressInterval);
       setGameState(prev => ({ ...prev, audioProgress: 100, phase: 'input' }));
     });
 
-    // Force stop after 3 seconds
+    // Fallback: if audio doesn't load within 2 seconds, move to input phase
     setTimeout(() => {
-      if (!audio.paused) {
-        audio.pause();
-        clearInterval(progressInterval);
+      if (gameState.phase === 'playing') {
         setGameState(prev => ({ ...prev, audioProgress: 100, phase: 'input' }));
       }
-    }, SOUND_DURATION);
+    }, 2000);
   }, [gameState.currentSound, currentAudio]);
 
   // Submit user input
