@@ -92,7 +92,7 @@ export const useBigNoiseGame = () => {
       currentAudio.currentTime = 0;
     }
 
-    const audio = new HTMLAudioElement();
+    const audio = new Audio();
     audio.src = gameState.currentSound.file_url;
     setCurrentAudio(audio);
 
