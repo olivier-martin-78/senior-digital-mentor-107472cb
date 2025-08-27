@@ -10,6 +10,7 @@ import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { useAuth } from '@/contexts/AuthContext';
 import ActivityCard from '@/components/activities/ActivityCard';
 import { UserActionsService } from '@/services/UserActionsService';
+import bigNoiseGameImage from '@/assets/big-noise-game.jpg';
 
 export default function GamesPage() {
   const navigate = useNavigate();
@@ -413,16 +414,17 @@ export default function GamesPage() {
             className="block"
             onClick={() => UserActionsService.trackView('activity', 'big_noise_game', 'Le jeu qui fait grand bruit')}
           >
-            <div className="h-48 bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Volume2 className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold">Le jeu qui fait grand bruit</h3>
+            <div className="h-48 relative overflow-hidden">
+              <img 
+                src={bigNoiseGameImage} 
+                alt="Jeu qui fait grand bruit"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 right-4">
+                <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
+                  NOUVEAU
+                </span>
               </div>
-            </div>
-            <div className="absolute top-4 right-4">
-              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
-                NOUVEAU
-              </span>
             </div>
             <CardHeader>
               <CardTitle className="text-lg">Le jeu qui fait grand bruit</CardTitle>
