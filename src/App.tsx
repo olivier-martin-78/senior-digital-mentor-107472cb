@@ -48,6 +48,7 @@ const AppContent = () => {
     <>
       <Routes>
         {/* Simplified routing - let PrivateApp and PublicApp handle specific routes */}
+        <Route path="/activities/games/big-noise" element={shouldUsePublicApp ? <PublicApp /> : <PrivateApp />} />
         <Route 
           path="/*" 
           element={

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Gamepad2, Plus, Brain, Languages, KeySquare, Eye, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Plus, Brain, Languages, KeySquare, Eye, Edit, Trash2, Volume2 } from 'lucide-react';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { useAuth } from '@/contexts/AuthContext';
@@ -402,6 +402,37 @@ export default function GamesPage() {
               </Button>
             </>
           )}
+        </Card>
+      },
+      {
+        key: "big-noise",
+        subTagId: remueMeningesId || null,
+        card: <Card key="big-noise" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/big-noise" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'big_noise_game', 'Le jeu qui fait grand bruit')}
+          >
+            <div className="h-48 bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Volume2 className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold">Le jeu qui fait grand bruit</h3>
+              </div>
+            </div>
+            <div className="absolute top-4 right-4">
+              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
+                NOUVEAU
+              </span>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">Le jeu qui fait grand bruit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Identifiez 20 bruitages en 3 secondes chacun ! Tapez le bon mot pour 2 points ou choisissez parmi les options.
+              </p>
+            </CardContent>
+          </Link>
         </Card>
       },
       {

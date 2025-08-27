@@ -315,6 +315,87 @@ export type Database = {
         }
         Relationships: []
       }
+      big_noise_game_sessions: {
+        Row: {
+          completion_time: number | null
+          consecutive_bonus: number
+          correct_answers: number
+          created_at: string
+          exact_matches: number
+          id: string
+          label_matches: number
+          max_consecutive: number
+          score: number
+          session_data: Json
+          sounds_used: Json
+          total_sounds: number
+          user_id: string
+        }
+        Insert: {
+          completion_time?: number | null
+          consecutive_bonus?: number
+          correct_answers?: number
+          created_at?: string
+          exact_matches?: number
+          id?: string
+          label_matches?: number
+          max_consecutive?: number
+          score?: number
+          session_data?: Json
+          sounds_used?: Json
+          total_sounds?: number
+          user_id: string
+        }
+        Update: {
+          completion_time?: number | null
+          consecutive_bonus?: number
+          correct_answers?: number
+          created_at?: string
+          exact_matches?: number
+          id?: string
+          label_matches?: number
+          max_consecutive?: number
+          score?: number
+          session_data?: Json
+          sounds_used?: Json
+          total_sounds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      big_noise_leaderboards: {
+        Row: {
+          best_score: number
+          best_total_points: number
+          created_at: string
+          games_played: number
+          id: string
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blog_albums: {
         Row: {
           author_id: string
@@ -2844,6 +2925,17 @@ export type Database = {
       }
       get_audio_memory_leaderboard: {
         Args: { p_difficulty_level: string }
+        Returns: {
+          best_score: number
+          best_total_points: number
+          games_played: number
+          rank_position: number
+          user_id: string
+          user_name: string
+        }[]
+      }
+      get_big_noise_leaderboard: {
+        Args: Record<PropertyKey, never>
         Returns: {
           best_score: number
           best_total_points: number
