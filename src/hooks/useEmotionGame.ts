@@ -60,19 +60,19 @@ export const useEmotionGame = () => {
     try {
       const images = await fetchEmotionImages();
       
-      if (images.length < 24) {
+      if (images.length < 2) {
         toast({
           title: "Images insuffisantes",
-          description: `Il faut au moins 24 images pour jouer. Actuellement: ${images.length}`,
+          description: `Il faut au moins 2 images pour jouer. Actuellement: ${images.length}`,
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
 
-      // Select 24 random images
+      // Select available images (up to 24)
       const shuffledImages = [...images].sort(() => 0.5 - Math.random());
-      const selectedImages = shuffledImages.slice(0, 24);
+      const selectedImages = shuffledImages.slice(0, Math.min(24, images.length));
       
       // Create questions
       const gameQuestions: EmotionGameQuestion[] = selectedImages.map((image, index) => ({
@@ -192,7 +192,7 @@ export const useEmotionGame = () => {
         score: stats.totalScore,
         emotion_correct: stats.emotionCorrect,
         intensity_correct: stats.intensityCorrect,
-        total_questions: 24,
+        total_questions: questions.length,
         completion_time: stats.completionTime,
         session_data: {
           questions: questions.length,
