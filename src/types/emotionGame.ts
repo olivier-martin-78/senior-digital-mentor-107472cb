@@ -2,7 +2,7 @@ export interface EmotionImage {
   id: string;
   image_url: string;
   emotion_name: string;
-  intensity: 'Puissante' | 'Intermédiaire' | 'Modérée';
+  intensity: string; // Changed from union type to string to match database
   created_at: string;
   updated_at: string;
   created_by: string;

@@ -10,7 +10,11 @@ import { useActivitySubTags } from '@/hooks/useActivitySubTags';
 import { useAuth } from '@/contexts/AuthContext';
 import ActivityCard from '@/components/activities/ActivityCard';
 import { UserActionsService } from '@/services/UserActionsService';
-import bigNoiseGameImage from '@/assets/big-noise-game.jpg';
+import bigNoiseGameImage from '@/assets/big-noise-game.png';
+import frankieGameImage from '@/assets/frankie-game.png';
+import memoryGameImage from '@/assets/memory-game.png';
+import audioMemoryGameImage from '@/assets/audio-memory-game.png';
+import emotionPaletteGameImage from '@/assets/emotion-palette-game.jpg';
 
 export default function GamesPage() {
   const navigate = useNavigate();
@@ -459,6 +463,38 @@ export default function GamesPage() {
             <CardContent>
               <p className="text-sm text-gray-600">
                 Mémorisez des séquences d'images et relevez 4 défis progressifs. Bonus temporels jusqu'à 74 points !
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
+        key: "emotion-palette",
+        subTagId: remueMeningesId || null,
+        card: <Card key="emotion-palette" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/emotion-palette" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'emotion-palette-game', 'La Palette des Émotions')}
+          >
+            <div className="h-48 relative overflow-hidden">
+              <img 
+                src={emotionPaletteGameImage} 
+                alt="La Palette des Émotions"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 right-4">
+                <span className="bg-pink-400 text-pink-900 text-xs font-bold px-2 py-1 rounded-full">
+                  NOUVEAU
+                </span>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-lg">La Palette des Émotions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Identifiez les émotions et leur intensité à travers 24 images. 2 points par émotion correcte + 1 bonus pour l'intensité !
               </p>
             </CardContent>
           </Link>

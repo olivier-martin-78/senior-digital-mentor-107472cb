@@ -22,12 +22,12 @@ const PicturesSlideShowPage = () => {
   const [uploadForm, setUploadForm] = useState({
     file: null as File | null,
     emotionName: '',
-    intensity: '' as 'Puissante' | 'Intermédiaire' | 'Modérée' | ''
+    intensity: '' as string // Changed to string
   });
   const [editingId, setEditingId] = useState<string>('');
   const [editForm, setEditForm] = useState({
     emotionName: '',
-    intensity: '' as 'Puissante' | 'Intermédiaire' | 'Modérée' | ''
+    intensity: '' as string // Changed to string
   });
 
   // Fetch images
@@ -284,7 +284,7 @@ const PicturesSlideShowPage = () => {
                 <Label htmlFor="intensity">Intensité de l'émotion</Label>
                 <Select
                   value={uploadForm.intensity}
-                  onValueChange={(value: 'Puissante' | 'Intermédiaire' | 'Modérée') => 
+                  onValueChange={(value: string) => 
                     setUploadForm(prev => ({ ...prev, intensity: value }))
                   }
                   required

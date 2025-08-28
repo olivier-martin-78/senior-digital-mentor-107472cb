@@ -70,6 +70,8 @@ import Unauthorized from '@/pages/Unauthorized';
 import { AppRole } from '@/types/supabase';
 import { Toaster } from '@/components/ui/toaster';
 import { useOptionalAuth } from '@/hooks/useOptionalAuth';
+import EmotionPalettePage from '@/pages/activities/games/EmotionPalettePage';
+import PicturesSlideShowPage from '@/pages/admin/PicturesSlideShowPage';
 
 const PrivateApp: React.FC = () => {
   const { user, isLoading } = useOptionalAuth();
@@ -145,6 +147,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/games/object-assembly" element={<ObjectAssemblyGame />} />
             <Route path="/activities/games/audio-memory" element={<AudioMemoryGame />} />
             <Route path="/activities/games/big-noise" element={<BigNoiseGame />} />
+            <Route path="/activities/games/emotion-palette" element={<EmotionPalettePage />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/intervention-report" element={<InterventionReport />} />
@@ -208,6 +211,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/audio-memory-sounds" element={<AdminAudioMemorySounds />} />
+            <Route path="/admin/pictures-slide-show" element={<PicturesSlideShowPage />} />
           </Route>
 
           {/* Error routes */}

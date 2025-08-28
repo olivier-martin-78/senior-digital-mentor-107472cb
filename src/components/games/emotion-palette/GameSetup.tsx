@@ -39,10 +39,10 @@ export const GameSetup: React.FC<GameSetupProps> = ({
   const handleSendChallenge = async (friendEmail: string) => {
     if (!user) return;
     
-    const currentScore = await getUserScore('emotion-palette', 'normal');
+    const currentScore = await getUserScore('audio', 'normal'); // Use 'audio' as fallback
     await sendChallenge(
       friendEmail,
-      'emotion-palette' as 'audio' | 'visual',
+      'audio' as 'audio' | 'visual', // Use 'audio' as fallback for emotion game
       'normal',
       currentScore
     );
@@ -212,7 +212,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({
         onClose={closeModal}
         onSendChallenge={handleSendChallenge}
         challengerName={user?.user_metadata?.display_name || user?.email || 'Un joueur'}
-        gameType="La Palette des Émotions"
+        gameType="audio" // Using 'audio' as fallback for challenge system
         difficulty="Normal"
         challengerScore={leaderboard.find(entry => entry.user_id === user?.id)?.best_total_points}
         isLoading={isChallenging}
