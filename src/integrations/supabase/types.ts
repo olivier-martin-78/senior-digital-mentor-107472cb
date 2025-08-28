@@ -1156,6 +1156,105 @@ export type Database = {
         }
         Relationships: []
       }
+      emotion_game_sessions: {
+        Row: {
+          completion_time: number | null
+          created_at: string
+          emotion_correct: number
+          id: string
+          intensity_correct: number
+          score: number
+          session_data: Json
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          completion_time?: number | null
+          created_at?: string
+          emotion_correct?: number
+          id?: string
+          intensity_correct?: number
+          score?: number
+          session_data?: Json
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          completion_time?: number | null
+          created_at?: string
+          emotion_correct?: number
+          id?: string
+          intensity_correct?: number
+          score?: number
+          session_data?: Json
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      emotion_images: {
+        Row: {
+          created_at: string
+          created_by: string
+          emotion_name: string
+          id: string
+          image_url: string
+          intensity: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          emotion_name: string
+          id?: string
+          image_url: string
+          intensity: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          emotion_name?: string
+          id?: string
+          image_url?: string
+          intensity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      emotion_leaderboards: {
+        Row: {
+          best_score: number
+          best_total_points: number
+          created_at: string
+          games_played: number
+          id: string
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          best_total_points?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_franglais: {
         Row: {
           Anglais: string
@@ -2962,6 +3061,17 @@ export type Database = {
           user_id_param?: string
         }
         Returns: Json
+      }
+      get_emotion_leaderboard: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          best_score: number
+          best_total_points: number
+          games_played: number
+          rank_position: number
+          user_id: string
+          user_name: string
+        }[]
       }
       get_professional_users: {
         Args: Record<PropertyKey, never>
