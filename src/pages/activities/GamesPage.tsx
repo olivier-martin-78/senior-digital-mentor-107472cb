@@ -14,7 +14,6 @@ import bigNoiseGameImage from '@/assets/big-noise-game.png';
 import frankieGameImage from '@/assets/frankie-game.png';
 import memoryGameImage from '@/assets/memory-game.png';
 import audioMemoryGameImage from '@/assets/audio-memory-game.png';
-import emotionPaletteGameImage from '@/assets/emotion-palette-game.jpg';
 
 export default function GamesPage() {
   const navigate = useNavigate();
@@ -479,7 +478,7 @@ export default function GamesPage() {
           >
             <div className="h-48 relative overflow-hidden">
               <img 
-                src={emotionPaletteGameImage} 
+                src="/lovable-uploads/0c290154-575c-40e0-afe2-4bcdaad6430e.png" 
                 alt="La Palette des Émotions"
                 className="w-full h-full object-cover"
               />
