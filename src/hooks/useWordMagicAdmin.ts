@@ -125,9 +125,8 @@ export const useWordMagicAdmin = () => {
   const validateLevel = (levelData: Partial<CreateLevelData>): string[] => {
     const errors: string[] = [];
 
-    if (!levelData.level_number || levelData.level_number < 1) {
-      errors.push('Le numéro de niveau doit être supérieur à 0');
-    }
+    // Note: On ne valide plus level_number et difficulty ici car c'est fait dans LevelForm
+    // Cette fonction se concentre sur la validation de la grille et des mots
 
     if (!levelData.letters || levelData.letters.trim().length === 0) {
       errors.push('Les lettres sont obligatoires');
@@ -141,34 +140,21 @@ export const useWordMagicAdmin = () => {
       errors.push('Au moins une solution est requise');
     }
 
-    if (!levelData.difficulty) {
-      errors.push('La difficulté est obligatoire');
-    }
-
     // Validation des lettres disponibles vs grille
+    // Dans un jeu de mots, on peut réutiliser les lettres disponibles
     if (levelData.letters && levelData.grid_layout) {
       const availableLetters = levelData.letters.split(',').map(l => l.trim().toUpperCase());
-      const gridLetters: string[] = [];
+      const availableLetterSet = new Set(availableLetters);
       
       levelData.grid_layout.forEach(row => {
         row.forEach(cell => {
-          if (cell.letter && cell.letter.trim() !== '') {
-            gridLetters.push(cell.letter.toUpperCase());
+          if (cell.letter && cell.letter.trim() !== '' && cell.letter !== '-') {
+            const letter = cell.letter.toUpperCase();
+            if (!availableLetterSet.has(letter)) {
+              errors.push(`La lettre "${letter}" dans la grille n'est pas disponible dans les lettres fournies`);
+            }
           }
         });
-      });
-
-      const letterCounts: { [key: string]: number } = {};
-      availableLetters.forEach(letter => {
-        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-      });
-
-      gridLetters.forEach(letter => {
-        if (letterCounts[letter]) {
-          letterCounts[letter]--;
-        } else {
-          errors.push(`La lettre "${letter}" dans la grille n'est pas disponible dans les lettres fournies`);
-        }
       });
     }
 
