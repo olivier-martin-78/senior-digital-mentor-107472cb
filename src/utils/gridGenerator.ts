@@ -188,7 +188,7 @@ export class GridGenerator {
     return this.generateIntelligentGrid(solutions, bonusWords);
   }
 
-  // New intelligent grid generation algorithm
+  // New intelligent grid generation algorithm with parasitic word detection
   static generateIntelligentGrid(solutions: string[], bonusWords: string[] = []): GridData {
     const allWords = [...solutions, ...bonusWords];
     if (allWords.length === 0) {
@@ -213,6 +213,45 @@ export class GridGenerator {
     });
 
     const bestSolution = this.findBestGridSolution(sortedWords, bonusWords);
+    const gridData = this.createGridFromSolution(bestSolution, bonusWords);
+    
+    // Detect and validate parasitic words
+    const parasiticWords = this.detectParasiticWords(gridData, allWords);
+    
+    // If too many parasitic words, try again with different placement
+    if (parasiticWords.length > Math.floor(allWords.length * 0.5)) {
+      console.warn(`Detected ${parasiticWords.length} parasitic words:`, parasiticWords);
+      return this.generateIntelligentGridWithConstraints(sortedWords, bonusWords, parasiticWords);
+    }
+    
+    return gridData;
+  }
+
+  // Generate grid with constraints to avoid specific parasitic words
+  static generateIntelligentGridWithConstraints(words: string[], bonusWords: string[], avoidWords: string[]): GridData {
+    const maxAttempts = 50;
+    let bestSolution: PlacedWord[] = [];
+    let bestScore = -1;
+    let fewestParasites = Infinity;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const solution = this.tryPlaceAllWordsWithConstraints(words, bonusWords, avoidWords);
+      if (solution.length === 0) continue;
+      
+      const tempGrid = this.createGridFromSolution(solution, bonusWords);
+      const parasites = this.detectParasiticWords(tempGrid, [...words, ...bonusWords]);
+      const score = this.scoreSolution(solution);
+      
+      if (parasites.length < fewestParasites || (parasites.length === fewestParasites && score > bestScore)) {
+        bestSolution = solution;
+        bestScore = score;
+        fewestParasites = parasites.length;
+        
+        // If we found a solution with no parasites, use it
+        if (parasites.length === 0) break;
+      }
+    }
+
     return this.createGridFromSolution(bestSolution, bonusWords);
   }
 
@@ -246,6 +285,246 @@ export class GridGenerator {
     return bestSolution;
   }
 
+  // Detect parasitic words in the grid (words that aren't in the target word list)
+  static detectParasiticWords(gridData: GridData, targetWords: string[]): string[] {
+    const targetWordsSet = new Set(targetWords.map(w => w.toUpperCase()));
+    const foundWords = new Set<string>();
+    const { grid, gridWidth, gridHeight } = gridData;
+
+    // Check horizontal words
+    for (let row = 0; row < gridHeight; row++) {
+      let currentWord = '';
+      for (let col = 0; col < gridWidth; col++) {
+        const cell = grid[row][col];
+        if (cell && cell.letter && !cell.isBlocked) {
+          currentWord += cell.letter;
+        } else {
+          if (currentWord.length >= 2) {
+            const word = currentWord.toUpperCase();
+            if (!targetWordsSet.has(word)) {
+              foundWords.add(word);
+            }
+          }
+          currentWord = '';
+        }
+      }
+      if (currentWord.length >= 2) {
+        const word = currentWord.toUpperCase();
+        if (!targetWordsSet.has(word)) {
+          foundWords.add(word);
+        }
+      }
+    }
+
+    // Check vertical words
+    for (let col = 0; col < gridWidth; col++) {
+      let currentWord = '';
+      for (let row = 0; row < gridHeight; row++) {
+        const cell = grid[row][col];
+        if (cell && cell.letter && !cell.isBlocked) {
+          currentWord += cell.letter;
+        } else {
+          if (currentWord.length >= 2) {
+            const word = currentWord.toUpperCase();
+            if (!targetWordsSet.has(word)) {
+              foundWords.add(word);
+            }
+          }
+          currentWord = '';
+        }
+      }
+      if (currentWord.length >= 2) {
+        const word = currentWord.toUpperCase();
+        if (!targetWordsSet.has(word)) {
+          foundWords.add(word);
+        }
+      }
+    }
+
+    return Array.from(foundWords);
+  }
+
+  // Try to place words while avoiding specific parasitic words
+  private static tryPlaceAllWordsWithConstraints(words: string[], bonusWords: string[], avoidWords: string[]): PlacedWord[] {
+    const placedWords: PlacedWord[] = [];
+    const availableWords = [...words];
+    
+    if (availableWords.length === 0) return placedWords;
+
+    // Place the first word horizontally in the center
+    const firstWord = availableWords.shift()!;
+    const startX = Math.max(0, Math.floor((20 - firstWord.length) / 2));
+    const startY = 10;
+    
+    placedWords.push({
+      id: `word-${placedWords.length}`,
+      word: firstWord,
+      startX,
+      startY,
+      direction: 'horizontal',
+      isFound: false,
+      isBonus: bonusWords.includes(firstWord)
+    });
+
+    // Try to place remaining words
+    for (const word of availableWords) {
+      const placement = this.findBestWordPlacementWithConstraints(word, placedWords, avoidWords);
+      if (placement) {
+        placedWords.push({
+          id: `word-${placedWords.length}`,
+          word,
+          ...placement,
+          isFound: false,
+          isBonus: bonusWords.includes(word)
+        });
+      }
+    }
+
+    return placedWords;
+  }
+
+  // Find best placement while avoiding parasitic words
+  private static findBestWordPlacementWithConstraints(
+    word: string,
+    placedWords: PlacedWord[],
+    avoidWords: string[]
+  ): { startX: number; startY: number; direction: 'horizontal' | 'vertical' } | null {
+    const placements = [];
+    
+    for (const placedWord of placedWords) {
+      for (let i = 0; i < word.length; i++) {
+        for (let j = 0; j < placedWord.word.length; j++) {
+          if (word[i] === placedWord.word[j]) {
+            // Try horizontal placement
+            const hPlacement = {
+              startX: placedWord.startX + j - i,
+              startY: placedWord.direction === 'horizontal' ? placedWord.startY - 1 : placedWord.startY,
+              direction: 'horizontal' as const
+            };
+            
+            if (this.isValidPlacementWithConstraints(word, hPlacement, placedWords, avoidWords)) {
+              placements.push(hPlacement);
+            }
+            
+            // Try vertical placement
+            const vPlacement = {
+              startX: placedWord.direction === 'horizontal' ? placedWord.startX + j : placedWord.startX - 1,
+              startY: placedWord.startY + (placedWord.direction === 'horizontal' ? 0 : j) - i,
+              direction: 'vertical' as const
+            };
+            
+            if (this.isValidPlacementWithConstraints(word, vPlacement, placedWords, avoidWords)) {
+              placements.push(vPlacement);
+            }
+          }
+        }
+      }
+    }
+    
+    return placements.length > 0 ? placements[Math.floor(Math.random() * placements.length)] : null;
+  }
+
+  // Validate placement while checking for parasitic words
+  private static isValidPlacementWithConstraints(
+    word: string,
+    placement: { startX: number; startY: number; direction: 'horizontal' | 'vertical' },
+    placedWords: PlacedWord[],
+    avoidWords: string[]
+  ): boolean {
+    // First check basic validity
+    if (!this.isValidPlacement(word, placement, placedWords)) {
+      return false;
+    }
+
+    // Create temporary grid to check for parasitic words
+    const tempPlacedWords = [...placedWords, {
+      id: 'temp',
+      word,
+      ...placement,
+      isFound: false,
+      isBonus: false
+    }];
+    
+    const tempGrid = this.createBasicGridFromWords(tempPlacedWords);
+    const allTargetWords = [...new Set([...placedWords.map(w => w.word), word])];
+    const parasites = this.detectParasiticWordsInBasicGrid(tempGrid, allTargetWords);
+    
+    // Check if this placement would create avoided parasitic words
+    return !parasites.some(parasite => avoidWords.includes(parasite.toUpperCase()));
+  }
+
+  // Create a basic grid for testing purposes
+  private static createBasicGridFromWords(placedWords: PlacedWord[]): string[][] {
+    const minX = Math.min(...placedWords.map(w => w.startX));
+    const maxX = Math.max(...placedWords.map(w => 
+      w.direction === 'horizontal' ? w.startX + w.word.length - 1 : w.startX
+    ));
+    const minY = Math.min(...placedWords.map(w => w.startY));
+    const maxY = Math.max(...placedWords.map(w => 
+      w.direction === 'vertical' ? w.startY + w.word.length - 1 : w.startY
+    ));
+    
+    const width = maxX - minX + 1;
+    const height = maxY - minY + 1;
+    const grid: string[][] = Array(height).fill(null).map(() => Array(width).fill(''));
+    
+    for (const word of placedWords) {
+      for (let i = 0; i < word.word.length; i++) {
+        const x = word.direction === 'horizontal' ? word.startX + i - minX : word.startX - minX;
+        const y = word.direction === 'vertical' ? word.startY + i - minY : word.startY - minY;
+        grid[y][x] = word.word[i];
+      }
+    }
+    
+    return grid;
+  }
+
+  // Detect parasitic words in a basic grid
+  private static detectParasiticWordsInBasicGrid(grid: string[][], targetWords: string[]): string[] {
+    const targetWordsSet = new Set(targetWords.map(w => w.toUpperCase()));
+    const foundWords = new Set<string>();
+    const height = grid.length;
+    const width = grid[0]?.length || 0;
+
+    // Check horizontal words
+    for (let row = 0; row < height; row++) {
+      let currentWord = '';
+      for (let col = 0; col < width; col++) {
+        if (grid[row][col] && grid[row][col] !== '') {
+          currentWord += grid[row][col];
+        } else {
+          if (currentWord.length >= 2 && !targetWordsSet.has(currentWord.toUpperCase())) {
+            foundWords.add(currentWord);
+          }
+          currentWord = '';
+        }
+      }
+      if (currentWord.length >= 2 && !targetWordsSet.has(currentWord.toUpperCase())) {
+        foundWords.add(currentWord);
+      }
+    }
+
+    // Check vertical words
+    for (let col = 0; col < width; col++) {
+      let currentWord = '';
+      for (let row = 0; row < height; row++) {
+        if (grid[row][col] && grid[row][col] !== '') {
+          currentWord += grid[row][col];
+        } else {
+          if (currentWord.length >= 2 && !targetWordsSet.has(currentWord.toUpperCase())) {
+            foundWords.add(currentWord);
+          }
+          currentWord = '';
+        }
+      }
+      if (currentWord.length >= 2 && !targetWordsSet.has(currentWord.toUpperCase())) {
+        foundWords.add(currentWord);
+      }
+    }
+
+    return Array.from(foundWords);
+  }
+
   // Try to place all words using backtracking
   private static tryPlaceAllWords(words: string[], bonusWords: string[]): PlacedWord[] {
     const placedWords: PlacedWord[] = [];
@@ -275,8 +554,8 @@ export class GridGenerator {
         placedWords.push({
           id: word,
           word: word,
-          startX: placement.x,
-          startY: placement.y,
+          startX: placement.startX,
+          startY: placement.startY,
           direction: placement.direction,
           isFound: false,
           isBonus: bonusWords.includes(word)
@@ -292,8 +571,8 @@ export class GridGenerator {
     word: string, 
     placedWords: PlacedWord[], 
     maxGridSize: number
-  ): { x: number; y: number; direction: 'horizontal' | 'vertical'; score: number } | null {
-    let bestPlacement: { x: number; y: number; direction: 'horizontal' | 'vertical'; score: number } | null = null;
+  ): { startX: number; startY: number; direction: 'horizontal' | 'vertical'; score: number } | null {
+    let bestPlacement: { startX: number; startY: number; direction: 'horizontal' | 'vertical'; score: number } | null = null;
     let bestScore = -1;
 
     // Try intersections with each placed word
@@ -301,11 +580,12 @@ export class GridGenerator {
       const intersectionPlacements = this.findIntersectionPlacements(word, placedWord, maxGridSize);
       
       for (const placement of intersectionPlacements) {
-        if (this.isValidPlacement(word, placement, placedWords, maxGridSize)) {
+        const fullPlacement = { startX: placement.x, startY: placement.y, direction: placement.direction };
+        if (this.isValidPlacement(word, fullPlacement, placedWords)) {
           const score = this.scorePlacement(word, placement, placedWords);
           if (score > bestScore) {
             bestScore = score;
-            bestPlacement = { ...placement, score };
+            bestPlacement = { startX: placement.x, startY: placement.y, direction: placement.direction, score };
           }
         }
       }
@@ -353,10 +633,16 @@ export class GridGenerator {
   // Check if a placement is valid (no conflicts)
   private static isValidPlacement(
     word: string,
-    placement: { x: number; y: number; direction: 'horizontal' | 'vertical' },
-    placedWords: PlacedWord[],
-    maxGridSize: number
+    placement: { startX: number; startY: number; direction: 'horizontal' | 'vertical' },
+    placedWords: PlacedWord[]
   ): boolean {
+    const maxGridSize = 20;
+    
+    // Check bounds
+    if (placement.startX < 0 || placement.startY < 0) return false;
+    if (placement.direction === 'horizontal' && placement.startX + word.length > maxGridSize) return false;
+    if (placement.direction === 'vertical' && placement.startY + word.length > maxGridSize) return false;
+    
     // Create a virtual grid to check conflicts
     const occupiedCells = new Set<string>();
     
@@ -371,8 +657,8 @@ export class GridGenerator {
 
     // Check if new word conflicts
     for (let i = 0; i < word.length; i++) {
-      const x = placement.direction === 'horizontal' ? placement.x + i : placement.x;
-      const y = placement.direction === 'vertical' ? placement.y + i : placement.y;
+      const x = placement.direction === 'horizontal' ? placement.startX + i : placement.startX;
+      const y = placement.direction === 'vertical' ? placement.startY + i : placement.startY;
       const cellKey = `${x},${y}:${word[i]}`;
       const positionKey = `${x},${y}`;
       

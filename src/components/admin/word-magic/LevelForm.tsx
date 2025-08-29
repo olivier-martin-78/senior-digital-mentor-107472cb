@@ -6,8 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Minus, Save, X } from 'lucide-react';
+import { Plus, Minus, Save, X, AlertTriangle } from 'lucide-react';
 import type { WordMagicLevel, GridCell } from '@/types/wordMagicGame';
+import { useWordMagicAdmin } from '@/hooks/useWordMagicAdmin';
+import { GridGenerator } from '@/utils/gridGenerator';
 
 interface LevelFormProps {
   level?: WordMagicLevel;
@@ -27,6 +29,10 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
   });
 
   const [errors, setErrors] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [previewGrid, setPreviewGrid] = useState<any>(null);
+  
+  const { validateLevel } = useWordMagicAdmin();
 
   // Générer une grille vide basée sur les lettres
   const generateGridFromLetters = (letters: string) => {
@@ -134,23 +140,62 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
     }
   };
 
-  const validateForm = () => {
+  const validateFormAndCheckParasites = () => {
     const newErrors: string[] = [];
-
-    if (formData.level_number < 1) {
+    const newWarnings: string[] = [];
+    
+    if (!formData.level_number || formData.level_number < 1) {
       newErrors.push('Le numéro de niveau doit être supérieur à 0');
     }
-
+    
     if (!formData.letters.trim()) {
-      newErrors.push('Les lettres sont obligatoires');
+      newErrors.push('Les lettres disponibles sont requises');
     }
+    
+    const solutions = formData.solutions.filter(s => s.trim());
+    if (solutions.length === 0) {
+      newErrors.push('Au moins un mot solution est requis');
+    }
+    
+    // Validation with the hook
+    const validationErrors = validateLevel({
+      letters: formData.letters,
+      grid_layout: formData.grid_layout,
+      solutions: formData.solutions.filter(s => s.trim()),
+      bonus_words: formData.bonus_words.filter(s => s.trim())
+    });
+    
+    newErrors.push(...validationErrors);
 
-    if (formData.solutions.filter(s => s.trim()).length === 0) {
-      newErrors.push('Au moins une solution est requise');
+    // Check for parasitic words if we have solutions
+    if (solutions.length > 0) {
+      try {
+        const bonusWords = formData.bonus_words.filter(s => s.trim());
+        const allWords = [...solutions, ...bonusWords];
+        
+        // Generate a test grid to check for parasitic words
+        const testGrid = GridGenerator.generateGrid(solutions, bonusWords);
+        const parasiticWords = GridGenerator.detectParasiticWords(testGrid, allWords);
+        
+        if (parasiticWords.length > 0) {
+          newWarnings.push(`Mots parasites détectés dans la grille générée: ${parasiticWords.join(', ')}`);
+          newWarnings.push('Ces mots apparaissent dans la grille mais ne font pas partie des solutions ou mots bonus.');
+        }
+        
+        // Update preview grid
+        setPreviewGrid(testGrid);
+      } catch (error) {
+        newWarnings.push('Impossible de générer la grille de prévisualisation');
+      }
     }
 
     setErrors(newErrors);
+    setWarnings(newWarnings);
     return newErrors.length === 0;
+  };
+
+  const validateForm = () => {
+    return validateFormAndCheckParasites();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,14 +215,41 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
     }
   };
 
+  // Trigger validation when form data changes
+  useEffect(() => {
+    if (formData.solutions.some(s => s.trim()) && formData.letters.trim()) {
+      validateFormAndCheckParasites();
+    }
+  }, [formData.solutions, formData.bonus_words, formData.letters]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {errors.length > 0 && (
         <Card className="border-destructive">
           <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <span className="font-semibold text-destructive">Erreurs de validation</span>
+            </div>
             <ul className="list-disc list-inside text-destructive space-y-1">
               {errors.map((error, index) => (
                 <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+      
+      {warnings.length > 0 && (
+        <Card className="border-orange-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <span className="font-semibold text-orange-500">Avertissements</span>
+            </div>
+            <ul className="list-disc list-inside text-orange-600 space-y-1">
+              {warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
               ))}
             </ul>
           </CardContent>
@@ -225,12 +297,12 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
               <Label htmlFor="letters">Lettres disponibles (séparées par des virgules)</Label>
               <Textarea
                 id="letters"
-                placeholder="T,E,R,R,E"
+                placeholder="M,A,I,S,O,N"
                 value={formData.letters}
                 onChange={(e) => handleLettersChange(e.target.value)}
               />
               <p className="text-sm text-muted-foreground mt-1">
-                Exemple: T,E,R,R,E pour le mot TERRE
+                Exemple: M,A,I,S,O,N pour des mots comme MAISON, AMI, etc.
               </p>
             </div>
           </CardContent>
@@ -341,14 +413,56 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
         </Card>
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-2">
+      {/* Prévisualisation de la grille */}
+      {previewGrid && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Prévisualisation de la grille générée</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div 
+                className="grid gap-1 max-w-md mx-auto"
+                style={{ 
+                  gridTemplateColumns: `repeat(${previewGrid.gridWidth}, 1fr)`,
+                  fontSize: '12px'
+                }}
+              >
+                {previewGrid.grid.flat().map((cell: any, index: number) => (
+                  <div
+                    key={index}
+                    className={`
+                      w-8 h-8 border border-gray-300 flex items-center justify-center text-xs font-bold
+                      ${cell?.letter ? 'bg-blue-100' : 'bg-gray-50'}
+                      ${cell?.isBlocked ? 'bg-gray-800' : ''}
+                    `}
+                  >
+                    {cell?.letter || ''}
+                  </div>
+                ))}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Mots placés :</strong> {previewGrid.placedWords?.map((w: any) => w.word).join(', ')}</p>
+                <p><strong>Intersections :</strong> {previewGrid.intersections?.length || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          <Save className="h-4 w-4 mr-2" />
-          {level ? 'Modifier' : 'Créer'} le niveau
+        <Button 
+          type="button" 
+          variant="secondary" 
+          onClick={() => validateFormAndCheckParasites()}
+        >
+          Valider et prévisualiser
+        </Button>
+        <Button type="submit" disabled={isSubmitting || errors.length > 0}>
+          {isSubmitting ? 'Enregistrement...' : level ? 'Modifier le niveau' : 'Créer le niveau'}
         </Button>
       </div>
     </form>
