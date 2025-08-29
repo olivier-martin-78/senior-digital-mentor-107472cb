@@ -9,12 +9,22 @@ interface CrosswordGridProps {
 }
 
 const CrosswordGrid: React.FC<CrosswordGridProps> = ({ level, foundWords }) => {
-  // Generate interactive crossword grid
+  // Generate interactive crossword grid - use existing grid_layout if available
   const gridData = useMemo(() => {
-    const generated = GridGenerator.generateGrid(level.solutions, level.bonus_words);
-    const trimmed = GridGenerator.trimGrid(generated);
-    return GridGenerator.updateGridWithFoundWords(trimmed, foundWords);
-  }, [level.solutions, level.bonus_words, foundWords]);
+    let generated;
+    
+    // Prioritize existing grid_layout
+    if (level.grid_layout && level.grid_layout.length > 0) {
+      generated = GridGenerator.fromGridLayout(level.grid_layout, level.solutions, level.bonus_words);
+    } else {
+      // Fallback to intelligent generation
+      generated = GridGenerator.generateGrid(level.solutions, level.bonus_words);
+      const trimmed = GridGenerator.trimGrid(generated);
+      generated = trimmed;
+    }
+    
+    return GridGenerator.updateGridWithFoundWords(generated, foundWords);
+  }, [level.solutions, level.bonus_words, level.grid_layout, foundWords]);
   
   const renderInteractiveGrid = () => {
     if (!gridData.grid.length) {

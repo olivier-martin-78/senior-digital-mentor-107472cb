@@ -9,12 +9,188 @@ export interface GridData {
 }
 
 export class GridGenerator {
-  static generateGrid(solutions: string[], bonusWords: string[] = []): GridData {
-    const allWords = [...solutions, ...bonusWords];
+  // Convert existing grid_layout to GridData
+  static fromGridLayout(gridLayout: any[][], solutions: string[], bonusWords: string[] = []): GridData {
+    if (!gridLayout || gridLayout.length === 0) {
+      return this.generateGrid(solutions, bonusWords);
+    }
+
+    const gridHeight = gridLayout.length;
+    const gridWidth = gridLayout[0]?.length || 0;
+    const grid: GridCell[][] = [];
     const placedWords: PlacedWord[] = [];
     const intersections: WordIntersection[] = [];
+    const allWords = [...solutions, ...bonusWords];
+
+    // Initialize grid
+    for (let y = 0; y < gridHeight; y++) {
+      grid[y] = [];
+      for (let x = 0; x < gridWidth; x++) {
+        const cell = gridLayout[y][x];
+        grid[y][x] = {
+          letter: cell?.letter && cell.letter.trim() !== '' ? cell.letter : null,
+          isRevealed: false,
+          wordIds: [],
+          x,
+          y,
+          isBlocked: !cell?.letter || cell.letter.trim() === ''
+        };
+      }
+    }
+
+    // Find words in the grid
+    this.findWordsInGrid(grid, allWords, placedWords, intersections, bonusWords);
+
+    return {
+      grid,
+      placedWords,
+      intersections,
+      gridWidth,
+      gridHeight
+    };
+  }
+
+  // Find words in an existing grid
+  private static findWordsInGrid(
+    grid: GridCell[][],
+    allWords: string[],
+    placedWords: PlacedWord[],
+    intersections: WordIntersection[],
+    bonusWords: string[]
+  ) {
+    const foundWords = new Set<string>();
+
+    // Check horizontal words
+    for (let y = 0; y < grid.length; y++) {
+      let currentWord = '';
+      let startX = -1;
+      
+      for (let x = 0; x <= grid[y].length; x++) {
+        const cell = grid[y]?.[x];
+        
+        if (cell && !cell.isBlocked && cell.letter) {
+          if (startX === -1) startX = x;
+          currentWord += cell.letter;
+        } else {
+          if (currentWord.length > 1 && allWords.includes(currentWord) && !foundWords.has(currentWord)) {
+            foundWords.add(currentWord);
+            placedWords.push({
+              id: currentWord,
+              word: currentWord,
+              startX,
+              startY: y,
+              direction: 'horizontal',
+              isFound: false,
+              isBonus: bonusWords.includes(currentWord)
+            });
+            
+            // Mark cells as belonging to this word
+            for (let i = 0; i < currentWord.length; i++) {
+              grid[y][startX + i].wordIds.push(currentWord);
+            }
+          }
+          currentWord = '';
+          startX = -1;
+        }
+      }
+    }
+
+    // Check vertical words
+    for (let x = 0; x < grid[0]?.length || 0; x++) {
+      let currentWord = '';
+      let startY = -1;
+      
+      for (let y = 0; y <= grid.length; y++) {
+        const cell = grid[y]?.[x];
+        
+        if (cell && !cell.isBlocked && cell.letter) {
+          if (startY === -1) startY = y;
+          currentWord += cell.letter;
+        } else {
+          if (currentWord.length > 1 && allWords.includes(currentWord) && !foundWords.has(currentWord)) {
+            foundWords.add(currentWord);
+            placedWords.push({
+              id: currentWord,
+              word: currentWord,
+              startX: x,
+              startY,
+              direction: 'vertical',
+              isFound: false,
+              isBonus: bonusWords.includes(currentWord)
+            });
+            
+            // Mark cells as belonging to this word
+            for (let i = 0; i < currentWord.length; i++) {
+              grid[startY + i][x].wordIds.push(currentWord);
+            }
+          }
+          currentWord = '';
+          startY = -1;
+        }
+      }
+    }
+
+    // Find intersections
+    this.findIntersections(placedWords, intersections);
+  }
+
+  // Find intersections between placed words
+  private static findIntersections(placedWords: PlacedWord[], intersections: WordIntersection[]) {
+    for (let i = 0; i < placedWords.length; i++) {
+      for (let j = i + 1; j < placedWords.length; j++) {
+        const word1 = placedWords[i];
+        const word2 = placedWords[j];
+        
+        if (word1.direction !== word2.direction) {
+          const intersection = this.findWordIntersection(word1, word2);
+          if (intersection) {
+            intersections.push(intersection);
+          }
+        }
+      }
+    }
+  }
+
+  // Find intersection point between two words
+  private static findWordIntersection(word1: PlacedWord, word2: PlacedWord): WordIntersection | null {
+    const horizontal = word1.direction === 'horizontal' ? word1 : word2;
+    const vertical = word1.direction === 'vertical' ? word1 : word2;
     
-    // Simple grid generation - place first word horizontally, then try intersections
+    // Check if they intersect
+    const hStartX = horizontal.startX;
+    const hEndX = horizontal.startX + horizontal.word.length - 1;
+    const hY = horizontal.startY;
+    
+    const vX = vertical.startX;
+    const vStartY = vertical.startY;
+    const vEndY = vertical.startY + vertical.word.length - 1;
+    
+    if (vX >= hStartX && vX <= hEndX && hY >= vStartY && hY <= vEndY) {
+      const hCharIndex = vX - hStartX;
+      const vCharIndex = hY - vStartY;
+      
+      if (horizontal.word[hCharIndex] === vertical.word[vCharIndex]) {
+        return {
+          wordId1: horizontal.id,
+          wordId2: vertical.id,
+          x: vX,
+          y: hY,
+          letter: horizontal.word[hCharIndex]
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  static generateGrid(solutions: string[], bonusWords: string[] = []): GridData {
+    // Use intelligent algorithm for automatic generation
+    return this.generateIntelligentGrid(solutions, bonusWords);
+  }
+
+  // New intelligent grid generation algorithm
+  static generateIntelligentGrid(solutions: string[], bonusWords: string[] = []): GridData {
+    const allWords = [...solutions, ...bonusWords];
     if (allWords.length === 0) {
       return {
         grid: [[]],
@@ -25,16 +201,60 @@ export class GridGenerator {
       };
     }
 
-    // Start with the longest word
-    const sortedWords = allWords.sort((a, b) => b.length - a.length);
-    const firstWord = sortedWords[0];
-    
-    let gridWidth = Math.max(15, firstWord.length + 4);
-    let gridHeight = Math.max(15, Math.ceil(allWords.length * 1.5));
-    
-    // Place first word horizontally in the middle
-    const startX = Math.floor((gridWidth - firstWord.length) / 2);
-    const startY = Math.floor(gridHeight / 2);
+    // Sort words by length (longest first) and then by number of potential intersections
+    const sortedWords = allWords.sort((a, b) => {
+      const lengthDiff = b.length - a.length;
+      if (lengthDiff !== 0) return lengthDiff;
+      
+      // Secondary sort by potential intersections
+      const aIntersections = allWords.filter(w => w !== a && this.hasCommonLetters(a, w)).length;
+      const bIntersections = allWords.filter(w => w !== b && this.hasCommonLetters(b, w)).length;
+      return bIntersections - aIntersections;
+    });
+
+    const bestSolution = this.findBestGridSolution(sortedWords, bonusWords);
+    return this.createGridFromSolution(bestSolution, bonusWords);
+  }
+
+  // Check if two words have common letters
+  private static hasCommonLetters(word1: string, word2: string): boolean {
+    for (const char of word1) {
+      if (word2.includes(char)) return true;
+    }
+    return false;
+  }
+
+  // Find the best grid solution using backtracking
+  private static findBestGridSolution(words: string[], bonusWords: string[]): PlacedWord[] {
+    const maxAttempts = 100;
+    let bestSolution: PlacedWord[] = [];
+    let bestScore = -1;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const solution = this.tryPlaceAllWords(words, bonusWords);
+      const score = this.scoreSolution(solution);
+      
+      if (score > bestScore && solution.length >= Math.min(words.length, 8)) {
+        bestSolution = solution;
+        bestScore = score;
+        
+        // If we found a perfect solution, stop
+        if (solution.length === words.length && score > 50) break;
+      }
+    }
+
+    return bestSolution;
+  }
+
+  // Try to place all words using backtracking
+  private static tryPlaceAllWords(words: string[], bonusWords: string[]): PlacedWord[] {
+    const placedWords: PlacedWord[] = [];
+    const maxGridSize = 20;
+
+    // Place first word horizontally in the center
+    const firstWord = words[0];
+    const startX = Math.floor(maxGridSize / 2) - Math.floor(firstWord.length / 2);
+    const startY = Math.floor(maxGridSize / 2);
     
     placedWords.push({
       id: firstWord,
@@ -46,10 +266,10 @@ export class GridGenerator {
       isBonus: bonusWords.includes(firstWord)
     });
 
-    // Try to place other words with intersections
-    for (let i = 1; i < sortedWords.length && i < 8; i++) {
-      const word = sortedWords[i];
-      const placement = this.findBestPlacement(word, placedWords, gridWidth, gridHeight);
+    // Try to place remaining words
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const placement = this.findBestWordPlacement(word, placedWords, maxGridSize);
       
       if (placement) {
         placedWords.push({
@@ -61,12 +281,230 @@ export class GridGenerator {
           isFound: false,
           isBonus: bonusWords.includes(word)
         });
+      }
+    }
 
-        if (placement.intersection) {
-          intersections.push(placement.intersection);
+    return placedWords;
+  }
+
+  // Find best placement for a word with scoring
+  private static findBestWordPlacement(
+    word: string, 
+    placedWords: PlacedWord[], 
+    maxGridSize: number
+  ): { x: number; y: number; direction: 'horizontal' | 'vertical'; score: number } | null {
+    let bestPlacement: { x: number; y: number; direction: 'horizontal' | 'vertical'; score: number } | null = null;
+    let bestScore = -1;
+
+    // Try intersections with each placed word
+    for (const placedWord of placedWords) {
+      const intersectionPlacements = this.findIntersectionPlacements(word, placedWord, maxGridSize);
+      
+      for (const placement of intersectionPlacements) {
+        if (this.isValidPlacement(word, placement, placedWords, maxGridSize)) {
+          const score = this.scorePlacement(word, placement, placedWords);
+          if (score > bestScore) {
+            bestScore = score;
+            bestPlacement = { ...placement, score };
+          }
         }
       }
     }
+
+    return bestPlacement;
+  }
+
+  // Find all possible intersection placements between two words
+  private static findIntersectionPlacements(
+    newWord: string, 
+    placedWord: PlacedWord, 
+    maxGridSize: number
+  ): { x: number; y: number; direction: 'horizontal' | 'vertical' }[] {
+    const placements: { x: number; y: number; direction: 'horizontal' | 'vertical' }[] = [];
+    const oppositeDirection = placedWord.direction === 'horizontal' ? 'vertical' : 'horizontal';
+
+    // Find common letters
+    for (let i = 0; i < newWord.length; i++) {
+      for (let j = 0; j < placedWord.word.length; j++) {
+        if (newWord[i] === placedWord.word[j]) {
+          let newX, newY;
+          
+          if (oppositeDirection === 'horizontal') {
+            newX = placedWord.startX + j - i;
+            newY = placedWord.startY;
+          } else {
+            newX = placedWord.startX;
+            newY = placedWord.startY + j - i;
+          }
+
+          // Check bounds
+          if (newX >= 0 && newY >= 0 && 
+              newX + (oppositeDirection === 'horizontal' ? newWord.length : 1) <= maxGridSize &&
+              newY + (oppositeDirection === 'vertical' ? newWord.length : 1) <= maxGridSize) {
+            placements.push({ x: newX, y: newY, direction: oppositeDirection });
+          }
+        }
+      }
+    }
+
+    return placements;
+  }
+
+  // Check if a placement is valid (no conflicts)
+  private static isValidPlacement(
+    word: string,
+    placement: { x: number; y: number; direction: 'horizontal' | 'vertical' },
+    placedWords: PlacedWord[],
+    maxGridSize: number
+  ): boolean {
+    // Create a virtual grid to check conflicts
+    const occupiedCells = new Set<string>();
+    
+    // Mark cells occupied by existing words
+    placedWords.forEach(placedWord => {
+      for (let i = 0; i < placedWord.word.length; i++) {
+        const x = placedWord.direction === 'horizontal' ? placedWord.startX + i : placedWord.startX;
+        const y = placedWord.direction === 'vertical' ? placedWord.startY + i : placedWord.startY;
+        occupiedCells.add(`${x},${y}:${placedWord.word[i]}`);
+      }
+    });
+
+    // Check if new word conflicts
+    for (let i = 0; i < word.length; i++) {
+      const x = placement.direction === 'horizontal' ? placement.x + i : placement.x;
+      const y = placement.direction === 'vertical' ? placement.y + i : placement.y;
+      const cellKey = `${x},${y}:${word[i]}`;
+      const positionKey = `${x},${y}`;
+      
+      // Check if position is already occupied by a different letter
+      for (const occupied of occupiedCells) {
+        if (occupied.startsWith(positionKey + ':') && occupied !== cellKey) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Score a placement (higher is better)
+  private static scorePlacement(
+    word: string,
+    placement: { x: number; y: number; direction: 'horizontal' | 'vertical' },
+    placedWords: PlacedWord[]
+  ): number {
+    let score = 0;
+    
+    // Bonus for intersections
+    let intersectionCount = 0;
+    for (let i = 0; i < word.length; i++) {
+      const x = placement.direction === 'horizontal' ? placement.x + i : placement.x;
+      const y = placement.direction === 'vertical' ? placement.y + i : placement.y;
+      
+      for (const placedWord of placedWords) {
+        const intersects = this.wordIntersectsAtPosition(placedWord, x, y, word[i]);
+        if (intersects) {
+          intersectionCount++;
+          score += 20; // Big bonus for intersections
+        }
+      }
+    }
+    
+    // Bonus for word length
+    score += word.length * 2;
+    
+    // Bonus for compact placement (closer to center)
+    const centerX = 10;
+    const centerY = 10;
+    const distance = Math.abs(placement.x - centerX) + Math.abs(placement.y - centerY);
+    score += Math.max(0, 20 - distance);
+    
+    return score;
+  }
+
+  // Check if a word intersects at a specific position
+  private static wordIntersectsAtPosition(
+    placedWord: PlacedWord, 
+    x: number, 
+    y: number, 
+    letter: string
+  ): boolean {
+    for (let i = 0; i < placedWord.word.length; i++) {
+      const wordX = placedWord.direction === 'horizontal' ? placedWord.startX + i : placedWord.startX;
+      const wordY = placedWord.direction === 'vertical' ? placedWord.startY + i : placedWord.startY;
+      
+      if (wordX === x && wordY === y && placedWord.word[i] === letter) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Score a complete solution
+  private static scoreSolution(placedWords: PlacedWord[]): number {
+    let score = placedWords.length * 10; // Base score for placed words
+    
+    // Find intersections
+    let intersectionCount = 0;
+    for (let i = 0; i < placedWords.length; i++) {
+      for (let j = i + 1; j < placedWords.length; j++) {
+        if (this.findWordIntersection(placedWords[i], placedWords[j])) {
+          intersectionCount++;
+        }
+      }
+    }
+    
+    score += intersectionCount * 15; // Bonus for intersections
+    
+    // Calculate grid compactness
+    const bounds = this.calculateBounds(placedWords);
+    const area = (bounds.maxX - bounds.minX + 1) * (bounds.maxY - bounds.minY + 1);
+    const efficiency = placedWords.reduce((sum, word) => sum + word.word.length, 0) / area;
+    score += efficiency * 30;
+    
+    return score;
+  }
+
+  // Calculate bounds of placed words
+  private static calculateBounds(placedWords: PlacedWord[]): { minX: number; maxX: number; minY: number; maxY: number } {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    placedWords.forEach(word => {
+      const endX = word.direction === 'horizontal' ? word.startX + word.word.length - 1 : word.startX;
+      const endY = word.direction === 'vertical' ? word.startY + word.word.length - 1 : word.startY;
+      
+      minX = Math.min(minX, word.startX);
+      maxX = Math.max(maxX, endX);
+      minY = Math.min(minY, word.startY);
+      maxY = Math.max(maxY, endY);
+    });
+    
+    return { minX, maxX, minY, maxY };
+  }
+
+  // Create final grid from solution
+  private static createGridFromSolution(placedWords: PlacedWord[], bonusWords: string[]): GridData {
+    if (placedWords.length === 0) {
+      return {
+        grid: [[]],
+        placedWords: [],
+        intersections: [],
+        gridWidth: 1,
+        gridHeight: 1
+      };
+    }
+
+    // Calculate grid bounds
+    const bounds = this.calculateBounds(placedWords);
+    const gridWidth = bounds.maxX - bounds.minX + 1;
+    const gridHeight = bounds.maxY - bounds.minY + 1;
+    
+    // Adjust word positions to start from (0,0)
+    const adjustedWords = placedWords.map(word => ({
+      ...word,
+      startX: word.startX - bounds.minX,
+      startY: word.startY - bounds.minY
+    }));
 
     // Create grid
     const grid: GridCell[][] = [];
@@ -85,7 +523,7 @@ export class GridGenerator {
     }
 
     // Place words in grid
-    placedWords.forEach(placedWord => {
+    adjustedWords.forEach(placedWord => {
       for (let i = 0; i < placedWord.word.length; i++) {
         const x = placedWord.direction === 'horizontal' ? placedWord.startX + i : placedWord.startX;
         const y = placedWord.direction === 'vertical' ? placedWord.startY + i : placedWord.startY;
@@ -98,9 +536,13 @@ export class GridGenerator {
       }
     });
 
+    // Find intersections
+    const intersections: WordIntersection[] = [];
+    this.findIntersections(adjustedWords, intersections);
+
     return {
       grid,
-      placedWords,
+      placedWords: adjustedWords,
       intersections,
       gridWidth,
       gridHeight
