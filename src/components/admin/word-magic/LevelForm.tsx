@@ -22,7 +22,7 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
   const [formData, setFormData] = useState({
     level_number: level?.level_number || 1,
     letters: level?.letters || '',
-    difficulty: level?.difficulty || 'facile' as 'facile' | 'moyen' | 'difficile',
+    difficulty: level?.difficulty || ('facile' as 'facile' | 'moyen' | 'difficile'),
     solutions: level?.solutions || [''],
     bonus_words: level?.bonus_words || [''],
     grid_layout: level?.grid_layout || [[{ letter: '', x: 0, y: 0, isRevealed: false, wordIds: [], isBlocked: false }]] as GridCell[][],
@@ -148,6 +148,10 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
       newErrors.push('Le numéro de niveau doit être supérieur à 0');
     }
     
+    if (!formData.difficulty) {
+      newErrors.push('La difficulté est obligatoire');
+    }
+    
     if (!formData.letters.trim()) {
       newErrors.push('Les lettres disponibles sont requises');
     }
@@ -167,25 +171,34 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
     
     newErrors.push(...validationErrors);
 
-    // Check for parasitic words if we have solutions
+    // Check for parasitic words if we have solutions and a manual grid
     if (solutions.length > 0) {
       try {
         const bonusWords = formData.bonus_words.filter(s => s.trim());
         const allWords = [...solutions, ...bonusWords];
         
-        // Generate a test grid to check for parasitic words
-        const testGrid = GridGenerator.generateGrid(solutions, bonusWords);
-        const parasiticWords = GridGenerator.detectParasiticWords(testGrid, allWords);
+        // Use the manual grid layout for parasitic word detection and preview
+        const manualGridData = GridGenerator.fromGridLayout(formData.grid_layout, solutions, bonusWords);
+        const parasiticWords = GridGenerator.detectParasiticWords(manualGridData, allWords);
         
         if (parasiticWords.length > 0) {
-          newWarnings.push(`Mots parasites détectés dans la grille générée: ${parasiticWords.join(', ')}`);
+          newWarnings.push(`Mots parasites détectés dans la grille manuelle: ${parasiticWords.join(', ')}`);
           newWarnings.push('Ces mots apparaissent dans la grille mais ne font pas partie des solutions ou mots bonus.');
         }
         
-        // Update preview grid
-        setPreviewGrid(testGrid);
+        // Validate that all solution words are present in the manual grid
+        const foundWords = manualGridData.placedWords.map(w => w.word.toUpperCase());
+        const missingSolutions = solutions.filter(s => !foundWords.includes(s.toUpperCase()));
+        
+        if (missingSolutions.length > 0) {
+          newErrors.push(`Mots solutions non trouvés dans la grille: ${missingSolutions.join(', ')}`);
+        }
+        
+        // Update preview grid with manual layout
+        setPreviewGrid(manualGridData);
       } catch (error) {
-        newWarnings.push('Impossible de générer la grille de prévisualisation');
+        newWarnings.push('Impossible de analyser la grille manuelle');
+        console.error('Grid analysis error:', error);
       }
     }
 
@@ -215,12 +228,13 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
     }
   };
 
-  // Trigger validation when form data changes
+  // Trigger validation when user manually validates or when key fields change
   useEffect(() => {
-    if (formData.solutions.some(s => s.trim()) && formData.letters.trim()) {
+    // Only auto-validate if we have existing level data (editing mode)
+    if (level && formData.solutions.some(s => s.trim()) && formData.letters.trim()) {
       validateFormAndCheckParasites();
     }
-  }, [formData.solutions, formData.bonus_words, formData.letters]);
+  }, [formData.solutions, formData.bonus_words, formData.letters, level]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

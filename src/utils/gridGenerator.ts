@@ -27,13 +27,14 @@ export class GridGenerator {
       grid[y] = [];
       for (let x = 0; x < gridWidth; x++) {
         const cell = gridLayout[y][x];
+        const hasLetter = cell?.letter && typeof cell.letter === 'string' && cell.letter.trim() !== '' && cell.letter !== '-';
         grid[y][x] = {
-          letter: cell?.letter && cell.letter.trim() !== '' ? cell.letter : null,
+          letter: hasLetter ? cell.letter.trim().toUpperCase() : null,
           isRevealed: false,
           wordIds: [],
           x,
           y,
-          isBlocked: !cell?.letter || cell.letter.trim() === ''
+          isBlocked: !hasLetter
         };
       }
     }
