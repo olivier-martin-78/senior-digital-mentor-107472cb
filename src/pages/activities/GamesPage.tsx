@@ -468,6 +468,45 @@ export default function GamesPage() {
         </Card>
       },
       {
+        key: "word-magic",
+        subTagId: remueMeningesId || null,
+        card: <Card key="word-magic" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">
+          <Link 
+            to="/activities/games/word-magic" 
+            className="block"
+            onClick={() => UserActionsService.trackView('activity', 'word-magic-game', 'La Magie des Mots')}
+          >
+            <div className="h-48 relative overflow-hidden">
+              <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="text-6xl mb-2">🪄</div>
+                  <p className="text-lg font-semibold">La Magie des Mots</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4">
+                <span className="bg-purple-400 text-purple-900 text-xs font-bold px-2 py-1 rounded-full">
+                  NOUVEAU
+                </span>
+              </div>
+            </div>
+            <CardContent className="p-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">La Magie des Mots</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Formez des mots magiques en reliant les lettres pour remplir la grille croisée !
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded-full">
+                  Mots & Lettres
+                </span>
+                <div className="text-xs text-gray-500">
+                  Nouveauté !
+                </div>
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+      },
+      {
         key: "emotion-palette",
         subTagId: remueMeningesId || null,
         card: <Card key="emotion-palette" className="cursor-pointer hover:shadow-lg transition-shadow duration-200">

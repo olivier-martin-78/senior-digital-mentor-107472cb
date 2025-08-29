@@ -39,6 +39,7 @@ import InvitationGroups from '@/pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from '@/pages/MyInvitationGroups';
 import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+import { AdminAudioMemorySounds } from '@/pages/admin/AdminAudioMemorySounds';
 import WordMagicPage from '@/components/games/word-magic/WordMagicPage';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
