@@ -621,13 +621,31 @@ export class GridGenerator {
       isFound: foundWords.includes(word.word.toUpperCase())
     }));
 
+    // Create a set of found words for faster lookup
+    const foundWordsSet = new Set(foundWords.map(word => word.toUpperCase()));
+
     const updatedGrid = gridData.grid.map(row => 
-      row.map(cell => ({
-        ...cell,
-        isRevealed: cell.wordIds.some(wordId => 
-          foundWords.includes(wordId.toUpperCase())
-        )
-      }))
+      row.map(cell => {
+        // Check if any of the words this cell belongs to has been found
+        const shouldBeRevealed = cell.wordIds.some(wordId => {
+          // Handle both cases: wordId could be the word itself or a word ID
+          if (foundWordsSet.has(wordId.toUpperCase())) {
+            return true;
+          }
+          
+          // Find the word by checking placedWords
+          const matchingWord = updatedPlacedWords.find(word => 
+            word.id === wordId || word.word.toUpperCase() === wordId.toUpperCase()
+          );
+          
+          return matchingWord?.isFound || false;
+        });
+
+        return {
+          ...cell,
+          isRevealed: shouldBeRevealed
+        };
+      })
     );
 
     return {
