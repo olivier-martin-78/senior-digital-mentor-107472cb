@@ -63,7 +63,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
             </CardHeader>
             <CardContent>
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {levels.slice(0, 12).map((level) => (
+                {levels.map((level) => (
                   <Card 
                     key={level.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
