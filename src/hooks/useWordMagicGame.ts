@@ -52,8 +52,10 @@ export const useWordMagicGame = (initialLevel?: WordMagicLevel) => {
         row.map((cell, x) => ({
           letter: null,
           isRevealed: false,
+          wordIds: [],
           x,
-          y
+          y,
+          isBlocked: true
         }))
       );
       
@@ -200,10 +202,9 @@ export const useWordMagicGame = (initialLevel?: WordMagicLevel) => {
 
   // Update grid with found word
   const updateGridWithFoundWord = (word: string) => {
-    // This is a simplified version - in a real implementation,
-    // you would need to determine the exact position of the word in the grid
-    // based on the grid_layout and word positioning logic
     console.log('📝 Word found, updating grid:', word);
+    // The grid update is now handled by the CrosswordGrid component
+    // through the foundWords prop and GridGenerator.updateGridWithFoundWords
   };
 
   // Save game session to database

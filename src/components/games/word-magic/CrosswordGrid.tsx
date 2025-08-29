@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { WordMagicLevel } from '@/types/wordMagicGame';
+import { GridGenerator } from '@/utils/gridGenerator';
+import GridCellComponent from './GridCellComponent';
 
 interface CrosswordGridProps {
   level: WordMagicLevel;
@@ -7,86 +9,119 @@ interface CrosswordGridProps {
 }
 
 const CrosswordGrid: React.FC<CrosswordGridProps> = ({ level, foundWords }) => {
-  // This is a simplified crossword grid implementation
-  // In a full implementation, you would need more sophisticated 
-  // grid layout logic based on the level.grid_layout
+  // Generate interactive crossword grid
+  const gridData = useMemo(() => {
+    const generated = GridGenerator.generateGrid(level.solutions, level.bonus_words);
+    const trimmed = GridGenerator.trimGrid(generated);
+    return GridGenerator.updateGridWithFoundWords(trimmed, foundWords);
+  }, [level.solutions, level.bonus_words, foundWords]);
   
-  const renderSimpleGrid = () => {
-    // For now, show a simple representation
-    const maxWordLength = Math.max(...level.solutions.map(word => word.length));
-    const gridSize = Math.max(8, Math.min(12, maxWordLength + 2));
-    
+  const renderInteractiveGrid = () => {
+    if (!gridData.grid.length) {
+      return <div className="text-center text-muted-foreground">Aucune grille disponible</div>;
+    }
+
     return (
       <div className="space-y-6">
-        {/* Grid placeholder */}
+        {/* Interactive Crossword Grid */}
         <div 
-          className="grid gap-1 mx-auto w-fit"
+          className="grid gap-1 mx-auto w-fit p-4 bg-muted/20 rounded-lg"
           style={{
-            gridTemplateColumns: `repeat(${gridSize}, 1fr)`
+            gridTemplateColumns: `repeat(${gridData.gridWidth}, 1fr)`
           }}
         >
-          {Array.from({ length: gridSize * gridSize }).map((_, index) => {
-            const row = Math.floor(index / gridSize);
-            const col = index % gridSize;
-            
-            // Simple pattern: show some cells as active/inactive
-            const isActive = (row + col) % 3 === 0 || row === Math.floor(gridSize / 2) || col === Math.floor(gridSize / 2);
-            
-            return (
-              <div
-                key={index}
-                className={`
-                  w-8 h-8 border border-border flex items-center justify-center text-sm font-bold
-                  ${isActive 
-                    ? 'bg-background border-2 border-primary/20' 
-                    : 'bg-muted/30 border-muted'
-                  }
-                `}
-              >
-                {isActive && ''}
-              </div>
-            );
-          })}
+          {gridData.grid.flat().map((cell, index) => (
+            <GridCellComponent
+              key={`${cell.x}-${cell.y}`}
+              cell={cell}
+            />
+          ))}
         </div>
         
-        {/* Words list as fallback */}
+        {/* Word Progress Overview */}
         <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="font-semibold mb-3 text-center">Mots à trouver</h4>
+          <h4 className="font-semibold mb-3 text-center">Progression des mots</h4>
+          
+          {/* Main Words */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {level.solutions.map((word) => (
-              <div
-                key={word}
-                className={`
-                  p-2 rounded text-center font-mono text-sm transition-colors
-                  ${foundWords.includes(word) 
-                    ? 'bg-green-100 text-green-800 line-through border border-green-200' 
-                    : 'bg-background border border-border'
-                  }
-                `}
-              >
-                {foundWords.includes(word) ? word : '???'}
-              </div>
-            ))}
+            {level.solutions.map((word) => {
+              const isFound = foundWords.includes(word.toUpperCase());
+              const wordData = gridData.placedWords.find(p => p.word.toUpperCase() === word.toUpperCase());
+              
+              return (
+                <div
+                  key={word}
+                  className={`
+                    p-2 rounded text-center font-mono text-sm transition-all duration-300
+                    ${isFound 
+                      ? 'bg-success/20 text-success-foreground border border-success/30 animate-fade-in' 
+                      : 'bg-background border border-border hover:bg-muted/50'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    {isFound ? (
+                      <span>{word}</span>
+                    ) : (
+                      <span className="flex gap-0.5">
+                        {Array.from({ length: word.length }).map((_, i) => (
+                          <span key={i} className="inline-block w-2 h-2 bg-muted-foreground/30 rounded-full" />
+                        ))}
+                      </span>
+                    )}
+                    {wordData?.direction && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {wordData.direction === 'horizontal' ? '→' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           
+          {/* Bonus Words */}
           {level.bonus_words.length > 0 && (
             <>
-              <h4 className="font-semibold mb-3 text-center mt-6">Mots bonus ⭐</h4>
+              <h4 className="font-semibold mb-3 text-center mt-6 flex items-center justify-center gap-1">
+                <span>Mots bonus</span> 
+                <span className="text-yellow-500">⭐</span>
+              </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {level.bonus_words.map((word) => (
-                  <div
-                    key={word}
-                    className={`
-                      p-2 rounded text-center font-mono text-sm transition-colors
-                      ${foundWords.includes(word) 
-                        ? 'bg-yellow-100 text-yellow-800 line-through border border-yellow-200' 
-                        : 'bg-background border border-dashed border-yellow-300'
-                      }
-                    `}
-                  >
-                    {foundWords.includes(word) ? word : '???'}
-                  </div>
-                ))}
+                {level.bonus_words.map((word) => {
+                  const isFound = foundWords.includes(word.toUpperCase());
+                  const wordData = gridData.placedWords.find(p => p.word.toUpperCase() === word.toUpperCase());
+                  
+                  return (
+                    <div
+                      key={word}
+                      className={`
+                        p-2 rounded text-center font-mono text-sm transition-all duration-300
+                        ${isFound 
+                          ? 'bg-warning/20 text-warning-foreground border border-warning/30 animate-fade-in' 
+                          : 'bg-background border border-dashed border-warning/50 hover:bg-warning/10'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        {isFound ? (
+                          <span>{word}</span>
+                        ) : (
+                          <span className="flex gap-0.5">
+                            {Array.from({ length: word.length }).map((_, i) => (
+                              <span key={i} className="inline-block w-2 h-2 bg-warning/30 rounded-full" />
+                            ))}
+                          </span>
+                        )}
+                        {wordData?.direction && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            {wordData.direction === 'horizontal' ? '→' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -97,7 +132,7 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ level, foundWords }) => {
 
   return (
     <div className="space-y-4">
-      {renderSimpleGrid()}
+      {renderInteractiveGrid()}
     </div>
   );
 };

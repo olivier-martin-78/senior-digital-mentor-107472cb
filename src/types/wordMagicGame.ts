@@ -13,9 +13,28 @@ export interface WordMagicLevel {
 export interface GridCell {
   letter: string | null;
   isRevealed: boolean;
-  wordId?: string;
+  wordIds: string[];
   x: number;
   y: number;
+  isBlocked: boolean;
+}
+
+export interface PlacedWord {
+  id: string;
+  word: string;
+  startX: number;
+  startY: number;
+  direction: 'horizontal' | 'vertical';
+  isFound: boolean;
+  isBonus: boolean;
+}
+
+export interface WordIntersection {
+  wordId1: string;
+  wordId2: string;
+  x: number;
+  y: number;
+  letter: string;
 }
 
 export interface WordMagicProgress {

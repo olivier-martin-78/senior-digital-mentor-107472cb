@@ -23,14 +23,14 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
     difficulty: level?.difficulty || 'facile' as 'facile' | 'moyen' | 'difficile',
     solutions: level?.solutions || [''],
     bonus_words: level?.bonus_words || [''],
-    grid_layout: level?.grid_layout || [[{ letter: '', x: 0, y: 0, isRevealed: false }]] as GridCell[][],
+    grid_layout: level?.grid_layout || [[{ letter: '', x: 0, y: 0, isRevealed: false, wordIds: [], isBlocked: false }]] as GridCell[][],
   });
 
   const [errors, setErrors] = useState<string[]>([]);
 
   // Générer une grille vide basée sur les lettres
   const generateGridFromLetters = (letters: string) => {
-    if (!letters) return [[{ letter: '', x: 0, y: 0, isRevealed: false }]];
+    if (!letters) return [[{ letter: '', x: 0, y: 0, isRevealed: false, wordIds: [], isBlocked: false }]];
     
     const letterArray = letters.split(',').map(l => l.trim().toUpperCase());
     const gridSize = Math.ceil(Math.sqrt(letterArray.length));
@@ -44,7 +44,9 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
           letter: index < letterArray.length ? letterArray[index] : '',
           x,
           y,
-          isRevealed: false
+          isRevealed: false,
+          wordIds: [],
+          isBlocked: false
         });
       }
       newGrid.push(row);
@@ -78,7 +80,9 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
       letter: '',
       x,
       y: newRowIndex,
-      isRevealed: false
+      isRevealed: false,
+      wordIds: [],
+      isBlocked: false
     }));
     setFormData(prev => ({
       ...prev,
@@ -98,7 +102,7 @@ export const LevelForm = ({ level, onSubmit, onCancel, isSubmitting }: LevelForm
   const addGridColumn = () => {
     const newGrid = formData.grid_layout.map((row, y) => [
       ...row,
-      { letter: '', x: row.length, y, isRevealed: false }
+      { letter: '', x: row.length, y, isRevealed: false, wordIds: [], isBlocked: false }
     ]);
     setFormData(prev => ({ ...prev, grid_layout: newGrid }));
   };
