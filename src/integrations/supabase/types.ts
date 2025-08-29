@@ -2787,6 +2787,159 @@ export type Database = {
           },
         ]
       }
+      word_magic_game_sessions: {
+        Row: {
+          bonus_words_found: number
+          completed: boolean
+          completion_time: number | null
+          created_at: string
+          id: string
+          level_number: number
+          score: number
+          session_data: Json
+          total_words: number
+          user_id: string
+          words_found: number
+        }
+        Insert: {
+          bonus_words_found?: number
+          completed?: boolean
+          completion_time?: number | null
+          created_at?: string
+          id?: string
+          level_number: number
+          score?: number
+          session_data?: Json
+          total_words?: number
+          user_id: string
+          words_found?: number
+        }
+        Update: {
+          bonus_words_found?: number
+          completed?: boolean
+          completion_time?: number | null
+          created_at?: string
+          id?: string
+          level_number?: number
+          score?: number
+          session_data?: Json
+          total_words?: number
+          user_id?: string
+          words_found?: number
+        }
+        Relationships: []
+      }
+      word_magic_leaderboards: {
+        Row: {
+          best_completion_time: number | null
+          best_score: number
+          created_at: string
+          games_played: number
+          id: string
+          month_year: string
+          total_levels_completed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_completion_time?: number | null
+          best_score?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year: string
+          total_levels_completed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_completion_time?: number | null
+          best_score?: number
+          created_at?: string
+          games_played?: number
+          id?: string
+          month_year?: string
+          total_levels_completed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      word_magic_levels: {
+        Row: {
+          bonus_words: Json
+          created_at: string
+          difficulty: string
+          grid_layout: Json
+          id: string
+          letters: string
+          level_number: number
+          solutions: Json
+          updated_at: string
+        }
+        Insert: {
+          bonus_words?: Json
+          created_at?: string
+          difficulty?: string
+          grid_layout?: Json
+          id?: string
+          letters: string
+          level_number: number
+          solutions?: Json
+          updated_at?: string
+        }
+        Update: {
+          bonus_words?: Json
+          created_at?: string
+          difficulty?: string
+          grid_layout?: Json
+          id?: string
+          letters?: string
+          level_number?: number
+          solutions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      word_magic_progress: {
+        Row: {
+          bonus_words_found: number
+          completed: boolean
+          completion_time: number | null
+          created_at: string
+          id: string
+          level_number: number
+          score: number
+          updated_at: string
+          user_id: string
+          words_found: number
+        }
+        Insert: {
+          bonus_words_found?: number
+          completed?: boolean
+          completion_time?: number | null
+          created_at?: string
+          id?: string
+          level_number: number
+          score?: number
+          updated_at?: string
+          user_id: string
+          words_found?: number
+        }
+        Update: {
+          bonus_words_found?: number
+          completed?: boolean
+          completion_time?: number | null
+          created_at?: string
+          id?: string
+          level_number?: number
+          score?: number
+          updated_at?: string
+          user_id?: string
+          words_found?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       mini_sites_public: {
@@ -3128,6 +3281,18 @@ export type Database = {
           best_total_points: number
           games_played: number
           rank_position: number
+          user_id: string
+          user_name: string
+        }[]
+      }
+      get_word_magic_leaderboard: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          best_completion_time: number
+          best_score: number
+          games_played: number
+          rank_position: number
+          total_levels_completed: number
           user_id: string
           user_name: string
         }[]
