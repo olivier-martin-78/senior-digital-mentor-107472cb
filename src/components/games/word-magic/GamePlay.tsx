@@ -155,13 +155,13 @@ const GamePlay: React.FC<GamePlayProps> = ({
         </div>
 
         {/* Word Input & Letter Selection */}
-        <div className="space-y-4">
+        <div className="space-y-4 h-full flex flex-col">
           {/* Current Word Input */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Mot en cours</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 pb-4">
+            <CardContent className="space-y-3 pb-3">
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-center text-xl font-mono font-bold min-h-[1.5rem]">
                   {currentWord || "..."}
@@ -194,11 +194,11 @@ const GamePlay: React.FC<GamePlayProps> = ({
           </Card>
 
           {/* Letter Selection Circle */}
-          <Card>
+          <Card className="flex-1 flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Sélectionnez les lettres</CardTitle>
             </CardHeader>
-            <CardContent className="pb-4">
+            <CardContent className="pb-3 flex-1 flex flex-col justify-center">
               <LetterCircle
                 availableLetters={availableLetters}
                 selectedLetters={selectedLetters}

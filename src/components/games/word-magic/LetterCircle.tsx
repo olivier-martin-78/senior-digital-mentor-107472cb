@@ -35,21 +35,19 @@ const LetterCircle: React.FC<LetterCircleProps> = ({
   // Calculate circle positioning
   const getLetterPosition = (index: number, total: number) => {
     const angle = (index * 2 * Math.PI) / total;
-    const radius = 120; // Base radius in pixels
+    const radius = 90; // Base radius in pixels
     const x = Math.cos(angle - Math.PI / 2) * radius;
     const y = Math.sin(angle - Math.PI / 2) * radius;
     return { x, y };
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      <h3 className="text-lg font-semibold">Sélectionnez les lettres</h3>
-      
+    <div className="flex flex-col items-center space-y-3">
       {/* Letter circle container */}
       <div className="relative">
         <div 
           className="relative mx-auto"
-          style={{ width: '280px', height: '280px' }}
+          style={{ width: '220px', height: '220px' }}
         >
           {/* Center circle */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -77,8 +75,8 @@ const LetterCircle: React.FC<LetterCircleProps> = ({
                   }
                 `}
                 style={{
-                  left: `${140 + position.x}px`,
-                  top: `${140 + position.y}px`,
+                  left: `${110 + position.x}px`,
+                  top: `${110 + position.y}px`,
                 }}
               >
                 <div className="relative">
