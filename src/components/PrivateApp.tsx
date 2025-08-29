@@ -39,7 +39,7 @@ import InvitationGroups from '@/pages/admin/AdminInvitationGroups';
 import MyInvitationGroups from '@/pages/MyInvitationGroups';
 import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
-import { AdminAudioMemorySounds } from '@/pages/admin/AdminAudioMemorySounds';
+import WordMagicPage from '@/components/games/word-magic/WordMagicPage';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
 import CrosswordGame from '@/pages/activities/CrosswordGame';
@@ -147,7 +147,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/games/object-assembly" element={<ObjectAssemblyGame />} />
             <Route path="/activities/games/audio-memory" element={<AudioMemoryGame />} />
             <Route path="/activities/games/big-noise" element={<BigNoiseGame />} />
-            <Route path="/activities/games/emotion-palette" element={<EmotionPalettePage />} />
+            <Route path="/activities/games/word-magic" element={<WordMagicPage />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/intervention-report" element={<InterventionReport />} />
