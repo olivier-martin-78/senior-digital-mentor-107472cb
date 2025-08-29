@@ -58,14 +58,14 @@ const GamePlay: React.FC<GamePlayProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with game info and controls */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
-                <CardTitle className="text-2xl">Niveau {level.level_number}</CardTitle>
+                <CardTitle className="text-xl">Niveau {level.level_number}</CardTitle>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge className={getDifficultyColor(level.difficulty)}>
                     {level.difficulty}
@@ -93,42 +93,42 @@ const GamePlay: React.FC<GamePlayProps> = ({
         
         <CardContent className="pt-0">
           {/* Progress and Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Trophy className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">Score</span>
+                <span className="text-xs font-medium">Score</span>
               </div>
-              <p className="text-2xl font-bold text-primary">{gameStats.score}</p>
+              <p className="text-lg font-bold text-primary">{gameStats.score}</p>
             </div>
             
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-medium">Trouvés</span>
+                <span className="text-xs font-medium">Trouvés</span>
               </div>
-              <p className="text-2xl font-bold">{gameStats.words_found}</p>
+              <p className="text-lg font-bold">{gameStats.words_found}</p>
             </div>
             
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Target className="h-4 w-4 text-blue-500" />
-                <span className="text-sm font-medium">Total</span>
+                <span className="text-xs font-medium">Total</span>
               </div>
-              <p className="text-2xl font-bold">{gameStats.total_words}</p>
+              <p className="text-lg font-bold">{gameStats.total_words}</p>
             </div>
             
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Star className="h-4 w-4 text-purple-500" />
-                <span className="text-sm font-medium">Bonus</span>
+                <span className="text-xs font-medium">Bonus</span>
               </div>
-              <p className="text-2xl font-bold">{gameStats.bonus_words_found}</p>
+              <p className="text-lg font-bold">{gameStats.bonus_words_found}</p>
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center justify-between text-sm">
               <span>Progression</span>
               <span className="font-medium">{progressPercentage}%</span>
@@ -138,14 +138,14 @@ const GamePlay: React.FC<GamePlayProps> = ({
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4">
         {/* Crossword Grid */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Grille des mots</CardTitle>
+          <Card className="h-fit">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Grille des mots</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-4">
               <CrosswordGrid 
                 level={level}
                 foundWords={foundWords}
@@ -154,16 +154,16 @@ const GamePlay: React.FC<GamePlayProps> = ({
           </Card>
         </div>
 
-        {/* Found Words & Word Input */}
-        <div className="space-y-6">
+        {/* Word Input & Letter Selection */}
+        <div className="space-y-4">
           {/* Current Word Input */}
           <Card>
-            <CardHeader>
-              <CardTitle>Mot en cours</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Mot en cours</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-center text-2xl font-mono font-bold min-h-[2rem]">
+            <CardContent className="space-y-3 pb-4">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-center text-xl font-mono font-bold min-h-[1.5rem]">
                   {currentWord || "..."}
                 </p>
               </div>
@@ -193,47 +193,22 @@ const GamePlay: React.FC<GamePlayProps> = ({
             </CardContent>
           </Card>
 
-          {/* Found Words */}
+          {/* Letter Selection Circle */}
           <Card>
-            <CardHeader>
-              <CardTitle>Mots trouvés</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Sélectionnez les lettres</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {foundWords.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">
-                    Aucun mot trouvé
-                  </p>
-                ) : (
-                  foundWords.map((word, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-muted/50 rounded"
-                    >
-                      <span className="font-mono font-medium">{word}</span>
-                      {level.bonus_words.includes(word) && (
-                        <Star className="h-4 w-4 text-yellow-500" />
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+            <CardContent className="pb-4">
+              <LetterCircle
+                availableLetters={availableLetters}
+                selectedLetters={selectedLetters}
+                onSelectLetter={onSelectLetter}
+                onDeselectLetter={onDeselectLetter}
+              />
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* Letter Selection Circle */}
-      <Card>
-        <CardContent className="py-6">
-          <LetterCircle
-            availableLetters={availableLetters}
-            selectedLetters={selectedLetters}
-            onSelectLetter={onSelectLetter}
-            onDeselectLetter={onDeselectLetter}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 };
