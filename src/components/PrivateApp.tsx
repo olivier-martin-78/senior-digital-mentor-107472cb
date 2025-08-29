@@ -40,6 +40,7 @@ import MyInvitationGroups from '@/pages/MyInvitationGroups';
 import PermissionsDiagnostic from '@/pages/admin/AdminPermissionsDiagnostic';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import { AdminAudioMemorySounds } from '@/pages/admin/AdminAudioMemorySounds';
+import AdminWordMagicLevels from '@/pages/admin/AdminWordMagicLevels';
 import WordMagicPage from '@/components/games/word-magic/WordMagicPage';
 import OppositesGame from '@/pages/activities/OppositesGame';
 import SudokuGame from '@/pages/activities/SudokuGame';
@@ -212,6 +213,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/admin/permissions-diagnostic" element={<PermissionsDiagnostic />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/audio-memory-sounds" element={<AdminAudioMemorySounds />} />
+            <Route path="/admin/word-magic-levels" element={<AdminWordMagicLevels />} />
             <Route path="/admin/pictures-slide-show" element={<PicturesSlideShowPage />} />
           </Route>
 

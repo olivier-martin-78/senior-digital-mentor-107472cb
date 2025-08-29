@@ -277,6 +277,12 @@ const Header = () => {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
+                          <Link to="/admin/word-magic-levels" className="flex items-center">
+                            <Activity className="mr-2 h-4 w-4" />
+                            Admin - Niveaux Magie des Mots
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Link to="/admin/homepage-carousel" className="flex items-center">
                             <Image className="mr-2 h-4 w-4" />
                             Édition carrousel
