@@ -150,6 +150,7 @@ const PrivateApp: React.FC = () => {
             <Route path="/activities/games/audio-memory" element={<AudioMemoryGame />} />
             <Route path="/activities/games/big-noise" element={<BigNoiseGame />} />
             <Route path="/activities/games/word-magic" element={<WordMagicPage />} />
+            <Route path="/activities/games/emotion-palette" element={<EmotionPalettePage />} />
             <Route path="/activities/:type" element={<ActivityPage />} />
             <Route path="/scheduler" element={<Scheduler />} />
             <Route path="/intervention-report" element={<InterventionReport />} />
