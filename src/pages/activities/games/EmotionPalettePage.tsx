@@ -26,6 +26,12 @@ const EmotionPalettePage = () => {
     fetchLeaderboard
   } = useEmotionGame();
 
+  console.log('🎮 [EMOTION_PAGE_DEBUG] Current state:', {
+    gamePhase,
+    hasCurrentQuestion: !!currentQuestion,
+    isLoading
+  });
+
   if (gamePhase === 'setup') {
     return (
       <div className="container mx-auto px-6 py-8">

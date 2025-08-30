@@ -15,6 +15,8 @@ export const useEmotionGame = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  console.log('🎮 [EMOTION_GAME_DEBUG] Hook initialized, user:', !!user);
+
   const [gamePhase, setGamePhase] = useState<GamePhase>('setup');
   const [questions, setQuestions] = useState<EmotionGameQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
