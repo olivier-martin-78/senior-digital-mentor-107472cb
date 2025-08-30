@@ -363,38 +363,70 @@ export class UserActionsService {
 
   /**
    * Récupérer les utilisateurs qui ont des actions enregistrées (pour le filtre admin)
+   * Utilise une approche en deux étapes avec pagination pour respecter la limite Supabase de 1000 records
    */
   static async getUsersWithActions(): Promise<Array<{ id: string; display_name: string | null; email: string }>> {
     try {
-      // Utiliser une requête optimisée avec JOIN pour récupérer directement les profils d'utilisateurs avec actions
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select(`
-          id, 
-          display_name, 
-          email,
-          user_actions!inner(user_id)
-        `)
-        .order('display_name');
+      // Étape 1: Récupérer tous les user_id distincts avec pagination pour respecter la limite Supabase
+      const allUserIds = new Set<string>();
+      let offset = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error('Error fetching users with actions:', error);
+      while (hasMore) {
+        const { data: userActions, error: actionsError } = await supabase
+          .from('user_actions')
+          .select('user_id')
+          .range(offset, offset + limit - 1)
+          .order('user_id');
+
+        if (actionsError) {
+          console.error('Error fetching user actions:', actionsError);
+          break;
+        }
+
+        if (!userActions || userActions.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        // Ajouter les user_id uniques au Set
+        userActions.forEach(action => allUserIds.add(action.user_id));
+
+        // Vérifier s'il y a plus de données
+        hasMore = userActions.length === limit;
+        offset += limit;
+      }
+
+      if (allUserIds.size === 0) {
         return [];
       }
 
-      // Dédupliquer par ID utilisateur (au cas où un utilisateur aurait plusieurs actions)
-      const uniqueProfiles = profiles?.reduce((acc, profile) => {
-        if (!acc.find(p => p.id === profile.id)) {
-          acc.push({
-            id: profile.id,
-            display_name: profile.display_name,
-            email: profile.email
-          });
-        }
-        return acc;
-      }, [] as Array<{ id: string; display_name: string | null; email: string }>) || [];
+      // Étape 2: Récupérer les profils par chunks si nécessaire
+      const uniqueUserIdArray = Array.from(allUserIds);
+      const profiles: Array<{ id: string; display_name: string | null; email: string }> = [];
+      const profileLimit = 1000;
 
-      return uniqueProfiles;
+      for (let i = 0; i < uniqueUserIdArray.length; i += profileLimit) {
+        const chunk = uniqueUserIdArray.slice(i, i + profileLimit);
+        
+        const { data: profileChunk, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .in('id', chunk)
+          .order('display_name');
+
+        if (profilesError) {
+          console.error('Error fetching profiles chunk:', profilesError);
+          continue;
+        }
+
+        if (profileChunk) {
+          profiles.push(...profileChunk);
+        }
+      }
+
+      return profiles;
     } catch (error) {
       console.error('Error in getUsersWithActions:', error);
       return [];
