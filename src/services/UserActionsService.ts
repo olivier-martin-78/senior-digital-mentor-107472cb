@@ -366,38 +366,35 @@ export class UserActionsService {
    */
   static async getUsersWithActions(): Promise<Array<{ id: string; display_name: string | null; email: string }>> {
     try {
-      // Récupérer les IDs d'utilisateurs uniques qui ont des actions
-      const { data: userActions, error: actionsError } = await supabase
-        .from('user_actions')
-        .select('user_id')
-        .limit(5000) // Limite explicite pour récupérer tous les utilisateurs
-        .order('user_id');
-
-      if (actionsError) {
-        console.error('Error fetching user actions:', actionsError);
-        return [];
-      }
-
-      // Extraire les IDs uniques
-      const uniqueUserIds = [...new Set(userActions?.map(action => action.user_id) || [])];
-
-      if (uniqueUserIds.length === 0) {
-        return [];
-      }
-
-      // Récupérer les profils de ces utilisateurs, y compris les admins
-      const { data: profiles, error: profilesError } = await supabase
+      // Utiliser une requête optimisée avec JOIN pour récupérer directement les profils d'utilisateurs avec actions
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, display_name, email')
-        .in('id', uniqueUserIds)
+        .select(`
+          id, 
+          display_name, 
+          email,
+          user_actions!inner(user_id)
+        `)
         .order('display_name');
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+      if (error) {
+        console.error('Error fetching users with actions:', error);
         return [];
       }
 
-      return profiles || [];
+      // Dédupliquer par ID utilisateur (au cas où un utilisateur aurait plusieurs actions)
+      const uniqueProfiles = profiles?.reduce((acc, profile) => {
+        if (!acc.find(p => p.id === profile.id)) {
+          acc.push({
+            id: profile.id,
+            display_name: profile.display_name,
+            email: profile.email
+          });
+        }
+        return acc;
+      }, [] as Array<{ id: string; display_name: string | null; email: string }>) || [];
+
+      return uniqueProfiles;
     } catch (error) {
       console.error('Error in getUsersWithActions:', error);
       return [];
