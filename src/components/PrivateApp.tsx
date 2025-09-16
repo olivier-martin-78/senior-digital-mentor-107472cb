@@ -6,6 +6,9 @@ import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ActivityCreatorRoute from '@/components/ActivityCreatorRoute';
 import Index from '@/pages/Index';
+import FitnessHome from '@/pages/FitnessHome';
+import FitnessArticleEditor from '@/pages/FitnessArticleEditor';
+import FitnessArticle from '@/pages/FitnessArticle';
 import Profile from '@/pages/Profile';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminPosts from '@/pages/admin/AdminPosts';
@@ -123,11 +126,20 @@ const PrivateApp: React.FC = () => {
             <Route path="/subscription" element={<Subscription />} />
           </Route>
 
-          {/* Page d'accueil pour les utilisateurs connectés */}
-          <Route path="/" element={<Index />} />
+          {/* Page d'accueil "Rester en forme" pour les utilisateurs connectés */}
+          <Route path="/" element={<FitnessHome />} />
+          
+          {/* Ancienne page d'accueil accessible via /home */}
+          <Route path="/home" element={<Index />} />
 
           {/* Fully protected routes - require authentication and account access */}
           <Route element={<ProtectedRoute />}>
+            {/* Fitness articles routes */}
+            <Route path="/fitness" element={<FitnessHome />} />
+            <Route path="/fitness/editor" element={<FitnessArticleEditor />} />
+            <Route path="/fitness/editor/:id" element={<FitnessArticleEditor />} />
+            <Route path="/fitness/article/:id" element={<FitnessArticle />} />
+            
             <Route path="/profile" element={<Profile />} />
             <Route path="/recent" element={<Recent />} />
             <Route path="/blog" element={<Blog />} />

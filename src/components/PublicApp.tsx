@@ -3,6 +3,7 @@ import React from 'react';
 import HeaderWrapper from '@/components/HeaderWrapper';
 import { Routes, Route } from 'react-router-dom';
 import Index from '@/pages/Index';
+import FitnessHome from '@/pages/FitnessHome';
 import Auth from '@/pages/Auth';
 import ResetPassword from '@/pages/ResetPassword';
 import AuthConfirm from '@/pages/AuthConfirm';
@@ -47,7 +48,8 @@ const PublicApp: React.FC = () => {
           } 
         />
         
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<FitnessHome />} />
+        <Route path="/home" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth/confirm" element={<AuthConfirm />} />
         <Route path="/resend-confirmation" element={<ResendConfirmation />} />
