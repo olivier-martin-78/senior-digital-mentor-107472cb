@@ -17,7 +17,9 @@ const FitnessHome = () => {
   // Fetch featured article (most viewed)
   const { articles: featuredArticles, loading: featuredLoading } = useFitnessArticles({
     published: true,
-    limit: 1
+    limit: 1,
+    orderBy: 'view_count',
+    ascending: false
   });
 
   // Fetch recent articles
@@ -118,7 +120,7 @@ const FitnessHome = () => {
         )}
 
         {/* Featured Article */}
-        {featuredArticle && (
+        {featuredArticle ? (
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Article vedette</h2>
             <Card className="overflow-hidden">
@@ -132,7 +134,7 @@ const FitnessHome = () => {
                     />
                   </div>
                 )}
-                <div className="md:w-1/2 p-6">
+                <div className={featuredArticle.image_url ? "md:w-1/2 p-6" : "p-6"}>
                   <Badge variant="secondary" className="mb-3">
                     {featuredArticle.fitness_categories.name}
                   </Badge>
@@ -140,6 +142,9 @@ const FitnessHome = () => {
                   {featuredArticle.subtitle && (
                     <p className="text-muted-foreground mb-4">{featuredArticle.subtitle}</p>
                   )}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                    <span>{featuredArticle.view_count} vues</span>
+                  </div>
                   <Button asChild>
                     <Link to={`/fitness/article/${featuredArticle.id}`}>
                       Lire l'article
@@ -149,40 +154,56 @@ const FitnessHome = () => {
               </div>
             </Card>
           </section>
+        ) : (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Article vedette</h2>
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">Aucun article publié pour le moment.</p>
+            </Card>
+          </section>
         )}
 
         {/* Articles by Category */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Parcourir par catégorie</h2>
-          <div className="space-y-8">
-            {predefinedCategories.map(category => {
-              // Filter recent articles by category for display
-              const categoryRecentArticles = recentArticles.filter(
-                article => article.category_id === category.id
-              ).slice(0, articlesPerCategory);
-              
-              if (categoryRecentArticles.length === 0) return null;
+        {predefinedCategories.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Parcourir par catégorie</h2>
+            <div className="space-y-8">
+              {predefinedCategories.map(category => {
+                // Filter recent articles by category for display
+                const categoryRecentArticles = recentArticles.filter(
+                  article => article.category_id === category.id
+                ).slice(0, articlesPerCategory);
+                
+                if (categoryRecentArticles.length === 0) return null;
 
-              return (
-                <div key={category.id}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">{category.name}</h3>
-                    <Badge variant="outline">{categoryRecentArticles.length} articles</Badge>
+                return (
+                  <div key={category.id}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold">{category.name}</h3>
+                      <Badge variant="outline">{categoryRecentArticles.length} articles</Badge>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                      {categoryRecentArticles.map(article => (
+                        <FitnessArticleCard 
+                          key={article.id} 
+                          article={article} 
+                          compact={true}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                    {categoryRecentArticles.map(article => (
-                      <FitnessArticleCard 
-                        key={article.id} 
-                        article={article} 
-                        compact={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+                );
+              })}
+              {predefinedCategories.every(category => 
+                recentArticles.filter(article => article.category_id === category.id).length === 0
+              ) && (
+                <Card className="p-6 text-center">
+                  <p className="text-muted-foreground">Aucun article publié dans les catégories pour le moment.</p>
+                </Card>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Recent Articles */}
         <section>
@@ -191,7 +212,7 @@ const FitnessHome = () => {
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : (
+          ) : recentArticles.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {recentArticles.map(article => (
@@ -211,6 +232,16 @@ const FitnessHome = () => {
                 </div>
               )}
             </>
+          ) : (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">Aucun article publié pour le moment.</p>
+              <Button asChild className="mt-4">
+                <Link to="/fitness/editor">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Créer le premier article
+                </Link>
+              </Button>
+            </Card>
           )}
         </section>
       </div>

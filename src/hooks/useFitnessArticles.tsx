@@ -8,6 +8,8 @@ export const useFitnessArticles = (filters?: {
   categoryId?: string;
   limit?: number;
   published?: boolean;
+  orderBy?: 'created_at' | 'view_count';
+  ascending?: boolean;
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -27,8 +29,12 @@ export const useFitnessArticles = (filters?: {
             name,
             is_predefined
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // Apply ordering
+      const orderField = filters?.orderBy || 'created_at';
+      const ascending = filters?.ascending || false;
+      query = query.order(orderField, { ascending });
 
       if (filters?.published !== undefined) {
         query = query.eq('published', filters.published);
@@ -62,7 +68,7 @@ export const useFitnessArticles = (filters?: {
 
   useEffect(() => {
     fetchArticles();
-  }, [filters?.categoryId, filters?.limit, filters?.published]);
+  }, [filters?.categoryId, filters?.limit, filters?.published, filters?.orderBy, filters?.ascending]);
 
   return {
     articles,
