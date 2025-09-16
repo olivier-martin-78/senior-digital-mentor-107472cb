@@ -26,6 +26,12 @@ const FitnessHome = () => {
     limit: recentArticlesLimit
   });
 
+  // Fetch user's drafts (unpublished articles)
+  const { articles: userDrafts, loading: draftsLoading } = useFitnessArticles({
+    published: false,
+    limit: 20
+  });
+
   // Fetch categories
   const { categories, loading: categoriesLoading } = useFitnessCategories();
   
@@ -40,7 +46,7 @@ const FitnessHome = () => {
     setRecentArticlesLimit(prev => prev + 6);
   };
 
-  if (featuredLoading || categoriesLoading) {
+  if (featuredLoading || categoriesLoading || draftsLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -72,6 +78,44 @@ const FitnessHome = () => {
             </Link>
           </Button>
         </div>
+
+        {/* User's Drafts */}
+        {user && userDrafts.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Mes brouillons</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userDrafts.map(article => (
+                <Card key={article.id} className="relative">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <Badge variant="outline" className="mb-2">Brouillon</Badge>
+                      {article.fitness_categories && (
+                        <Badge variant="secondary" className="text-xs">
+                          {article.fitness_categories.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg line-clamp-2">{article.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {article.subtitle && (
+                      <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                        {article.subtitle}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button asChild size="sm" className="flex-1">
+                        <Link to={`/fitness/editor/${article.id}`}>
+                          Continuer l'édition
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Featured Article */}
         {featuredArticle && (
