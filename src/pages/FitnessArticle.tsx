@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Eye, Calendar, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const FitnessArticle = () => {
   const { id } = useParams<{ id: string }>();
@@ -124,9 +125,12 @@ const FitnessArticle = () => {
           {article.image_url && (
             <div className="mb-8">
               <img 
-                src={article.image_url}
+                src={article.image_url && /^https?:\/\//.test(article.image_url) ? article.image_url : (article.image_url ? supabase.storage.from('blog-media').getPublicUrl(article.image_url).data.publicUrl : '')}
                 alt={article.title}
                 className="w-full h-64 md:h-96 object-cover rounded-lg"
+                loading="lazy"
+                decoding="async"
+                onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
               />
             </div>
           )}

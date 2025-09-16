@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const FitnessHome = () => {
   const { user } = useAuth();
@@ -128,9 +129,12 @@ const FitnessHome = () => {
                 {featuredArticle.image_url && (
                   <div className="md:w-1/2">
                     <img 
-                      src={featuredArticle.image_url}
+                      src={featuredArticle.image_url && /^https?:\/\//.test(featuredArticle.image_url) ? featuredArticle.image_url : (featuredArticle.image_url ? supabase.storage.from('blog-media').getPublicUrl(featuredArticle.image_url).data.publicUrl : '')}
                       alt={featuredArticle.title}
                       className="w-full h-64 md:h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                     />
                   </div>
                 )}

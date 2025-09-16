@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Calendar } from 'lucide-react';
 import type { FitnessArticleWithCategory } from '@/types/fitness';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FitnessArticleCardProps {
   article: FitnessArticleWithCategory;
@@ -26,9 +27,12 @@ const FitnessArticleCard: React.FC<FitnessArticleCardProps> = ({ article, compac
           {article.image_url && (
             <div className={`relative overflow-hidden ${compact ? 'h-32' : 'h-48'}`}>
               <img 
-                src={article.image_url} 
+                src={article.image_url && /^https?:\/\//.test(article.image_url) ? article.image_url : (article.image_url ? supabase.storage.from('blog-media').getPublicUrl(article.image_url).data.publicUrl : '')}
                 alt={article.title}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                decoding="async"
+                onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
               />
               <div className="absolute top-2 right-2">
                 <Badge variant="secondary" className="bg-white/90">
