@@ -1255,6 +1255,112 @@ export type Database = {
         }
         Relationships: []
       }
+      fitness_article_views: {
+        Row: {
+          article_id: string
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          article_id: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          article_id?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fitness_article_views_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "fitness_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fitness_articles: {
+        Row: {
+          author_id: string
+          category_id: string | null
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          published: boolean | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          author_id: string
+          category_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published?: boolean | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          author_id?: string
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published?: boolean | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fitness_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fitness_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fitness_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_predefined: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_predefined?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_predefined?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       game_franglais: {
         Row: {
           Anglais: string
@@ -3307,6 +3413,14 @@ export type Database = {
           user_id: string
         }
         Returns: boolean
+      }
+      increment_fitness_article_views: {
+        Args: {
+          article_id_param: string
+          ip_address_param?: unknown
+          user_id_param?: string
+        }
+        Returns: undefined
       }
       init_free_trial: {
         Args: { user_id_param: string }
