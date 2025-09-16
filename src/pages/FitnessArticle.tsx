@@ -5,11 +5,13 @@ import FitnessArticleCard from '@/components/fitness/FitnessArticleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Eye, Calendar } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Calendar, Edit } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const FitnessArticle = () => {
   const { id } = useParams<{ id: string }>();
   const { article, loading } = useFitnessArticle(id!);
+  const { user } = useAuth();
   
   // Get recent articles for the bottom section
   const { articles: recentArticles } = useFitnessArticles({
@@ -104,6 +106,18 @@ const FitnessArticle = () => {
                 <span>{article.view_count} vues</span>
               </div>
             </div>
+
+            {/* Edit Button for Article Author */}
+            {user && user.id === article.author_id && (
+              <div className="mt-4">
+                <Button asChild>
+                  <Link to={`/fitness/editor/${article.id}`}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Modifier l'article
+                  </Link>
+                </Button>
+              </div>
+            )}
           </header>
 
           {/* Featured Image */}
