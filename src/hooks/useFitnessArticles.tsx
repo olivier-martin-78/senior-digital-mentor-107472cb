@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { FitnessArticle, FitnessArticleWithCategory } from '@/types/fitness';
 
@@ -11,7 +11,7 @@ export const useFitnessArticles = (filters?: {
   orderBy?: 'created_at' | 'view_count';
   ascending?: boolean;
 }) => {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const { toast } = useToast();
   const [articles, setArticles] = useState<FitnessArticleWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
