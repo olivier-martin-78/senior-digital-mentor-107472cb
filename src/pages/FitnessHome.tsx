@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 const FitnessHome = () => {
-  const { user } = useOptionalAuth();
+  const { user, hasRole } = useOptionalAuth();
   const [articlesPerCategory, setArticlesPerCategory] = useState(5);
   const [recentArticlesLimit, setRecentArticlesLimit] = useState(6);
 
@@ -93,7 +93,7 @@ const FitnessHome = () => {
             </div>
             
             {/* Deuxième ligne : Nouvel article */}
-            {user && (
+            {user && hasRole('admin') && (
               <div className="flex justify-start">
                 <Button asChild className="bg-primary hover:bg-primary/90" size="sm">
                   <Link to="/fitness/editor">
@@ -261,12 +261,14 @@ const FitnessHome = () => {
           ) : (
             <Card className="p-6 text-center">
               <p className="text-muted-foreground">Aucun article publié pour le moment.</p>
-              <Button asChild className="mt-4">
-                <Link to="/fitness/editor">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Créer le premier article
-                </Link>
-              </Button>
+              {user && hasRole('admin') && (
+                <Button asChild className="mt-4">
+                  <Link to="/fitness/editor">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Créer le premier article
+                  </Link>
+                </Button>
+              )}
             </Card>
           )}
         </section>
