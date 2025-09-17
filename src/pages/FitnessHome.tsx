@@ -201,12 +201,13 @@ const FitnessHome = () => {
                       <h3 className="text-xl font-semibold">{category.name}</h3>
                       <Badge variant="outline">{categoryRecentArticles.length} articles</Badge>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                       {categoryRecentArticles.map(article => (
                         <FitnessArticleCard 
                           key={article.id} 
                           article={article} 
-                          compact={true}
+                          compact={false}
+                          fullWidth={true}
                         />
                       ))}
                     </div>
