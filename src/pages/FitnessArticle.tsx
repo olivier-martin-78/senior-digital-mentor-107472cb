@@ -20,7 +20,7 @@ const FitnessArticle = () => {
     console.info('[FitnessArticle] init', { id, userId: user?.id ?? null });
   }, [id, user]);
   
-  // Debug: article loading state changes
+  // Debug: article loading state changes  
   useEffect(() => {
     console.debug('[FitnessArticle] state', { loading, hasArticle: !!article });
     if (article) {
@@ -84,7 +84,7 @@ const FitnessArticle = () => {
   const filteredRelatedArticles = relatedArticles.filter(a => a.id !== article.id);
   const filteredRecentArticles = recentArticles.filter(a => a.id !== article.id);
 
-  // Debug: related and recent lists
+  // Debug: related and recent lists (stable dependencies)
   useEffect(() => {
     console.debug('[FitnessArticle] lists', {
       relatedCount: relatedArticles.length,
@@ -92,7 +92,7 @@ const FitnessArticle = () => {
       recentCount: recentArticles.length,
       filteredRecentCount: filteredRecentArticles.length
     });
-  }, [relatedArticles, filteredRelatedArticles, recentArticles, filteredRecentArticles]);
+  }, [relatedArticles.length, recentArticles.length, article?.id]);
 
   return (
     <div className="min-h-screen bg-background">
