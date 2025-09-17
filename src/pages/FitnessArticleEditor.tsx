@@ -36,6 +36,7 @@ const FitnessArticleEditor = () => {
     content: '',
     category_id: '',
     image_url: '',
+    source: '',
     published: false
   });
   const [loading, setLoading] = useState(false);
@@ -134,6 +135,7 @@ const FitnessArticleEditor = () => {
         content: article.content!,
         category_id: article.category_id!,
         image_url: article.image_url || null,
+        source: article.source || null,
         author_id: user.id,
         published: publish || article.published || false
       };
@@ -222,6 +224,17 @@ const FitnessArticleEditor = () => {
               value={article.subtitle || ''}
               onChange={(e) => setArticle(prev => ({ ...prev, subtitle: e.target.value }))}
               placeholder="Sous-titre de l'article"
+            />
+          </div>
+
+          {/* Source */}
+          <div>
+            <Label htmlFor="source">Source</Label>
+            <Input
+              id="source"
+              value={article.source || ''}
+              onChange={(e) => setArticle(prev => ({ ...prev, source: e.target.value }))}
+              placeholder="Source de l'article (optionnel)"
             />
           </div>
 

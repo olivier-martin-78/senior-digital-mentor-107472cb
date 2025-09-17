@@ -16,6 +16,7 @@ export interface FitnessArticle {
   author_id: string;
   published: boolean;
   view_count: number;
+  source: string | null;
   created_at: string;
   updated_at: string;
 }

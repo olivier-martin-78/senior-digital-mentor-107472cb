@@ -143,9 +143,18 @@ const FitnessArticle = () => {
 
           {/* Article Content */}
           <div 
-            className="prose prose-lg max-w-none mb-12"
+            className="prose prose-lg max-w-none mb-8"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
+
+          {/* Source */}
+          {article.source && (
+            <div className="mb-12">
+              <p className="text-sm text-muted-foreground">
+                <strong>Source :</strong> {article.source}
+              </p>
+            </div>
+          )}
         </article>
 
         {/* Bottom Sections */}
