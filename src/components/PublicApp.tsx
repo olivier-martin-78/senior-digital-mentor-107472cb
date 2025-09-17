@@ -13,6 +13,7 @@ import ProfessionalModule from '@/pages/ProfessionalModule';
 import { PublicMiniSite } from '@/pages/PublicMiniSite';
 import { PublicReviewForm } from '@/pages/PublicReviewForm';
 import { MiniSitePreview } from '@/pages/MiniSitePreview';
+import FitnessArticle from '@/pages/FitnessArticle';
 
 const PublicApp: React.FC = () => {
   return (
@@ -49,6 +50,8 @@ const PublicApp: React.FC = () => {
         />
         
         <Route path="/" element={<FitnessHome />} />
+        <Route path="/fitness" element={<FitnessHome />} />
+        <Route path="/fitness/article/:id" element={<FitnessArticle />} />
         <Route path="/home" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth/confirm" element={<AuthConfirm />} />
