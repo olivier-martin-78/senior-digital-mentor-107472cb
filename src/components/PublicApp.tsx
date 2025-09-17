@@ -56,6 +56,7 @@ const PublicApp: React.FC = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/subscription" element={<PublicSubscription />} />
         <Route path="/module-pro" element={<ProfessionalModule />} />
+        <Route path="/activities/games" element={<Auth />} />
         <Route path="/avis/:token" element={<PublicReviewForm />} />
       </Routes>
     </>
