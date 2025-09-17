@@ -64,38 +64,44 @@ const FitnessHome = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
               {user ? `Bienvenue ${displayName}` : 'Rester en forme'}
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-sm md:text-lg">
               Découvrez nos conseils pour rester en forme
             </p>
           </div>
           
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <Link to="/home">
-                <Target className="w-4 h-4 mr-2" />
-                Notre intention  
-              </Link>
-            </Button>
-            
-            <Button asChild variant="outline">
-              <Link to="/activities/games">
-                <Gamepad2 className="w-4 h-4 mr-2" />
-                Jeux cognitifs
-              </Link>
-            </Button>
-            
-            {user && (
-              <Button asChild className="bg-primary hover:bg-primary/90">
-                <Link to="/fitness/editor">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvel article
+          <div className="flex flex-col gap-2">
+            {/* Première ligne : Notre intention + Jeux cognitifs */}
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/home">
+                  <Target className="w-4 h-4 mr-2" />
+                  Notre intention  
                 </Link>
               </Button>
+              
+              <Button asChild variant="outline" size="sm">
+                <Link to="/activities/games">
+                  <Gamepad2 className="w-4 h-4 mr-2" />
+                  Jeux cognitifs
+                </Link>
+              </Button>
+            </div>
+            
+            {/* Deuxième ligne : Nouvel article */}
+            {user && (
+              <div className="flex justify-start">
+                <Button asChild className="bg-primary hover:bg-primary/90" size="sm">
+                  <Link to="/fitness/editor">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouvel article
+                  </Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>
