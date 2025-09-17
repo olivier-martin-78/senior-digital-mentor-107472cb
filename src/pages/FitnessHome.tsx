@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import { useFitnessArticles } from '@/hooks/useFitnessArticles';
 import { useFitnessCategories } from '@/hooks/useFitnessCategories';
 import FitnessArticleCard from '@/components/fitness/FitnessArticleCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Gamepad2, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 const FitnessHome = () => {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [articlesPerCategory, setArticlesPerCategory] = useState(5);
   const [recentArticlesLimit, setRecentArticlesLimit] = useState(6);
 
@@ -43,7 +43,7 @@ const FitnessHome = () => {
   // For now, we'll just show recent articles by category
   // Later we can optimize with separate API calls if needed
 
-  const displayName = user?.user_metadata?.display_name || user?.email || 'Utilisateur';
+  const displayName = user?.user_metadata?.display_name || user?.email || 'Visiteur';
 
   const showMoreRecentArticles = () => {
     setRecentArticlesLimit(prev => prev + 6);
@@ -67,19 +67,37 @@ const FitnessHome = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">
-              Bienvenue {displayName}
+              {user ? `Bienvenue ${displayName}` : 'Rester en forme'}
             </h1>
             <p className="text-muted-foreground text-lg">
               Découvrez nos conseils pour rester en forme
             </p>
           </div>
           
-          <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link to="/fitness/editor">
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvel article
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/home">
+                <Target className="w-4 h-4 mr-2" />
+                Notre intention  
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline">
+              <Link to="/activities/games">
+                <Gamepad2 className="w-4 h-4 mr-2" />
+                Jeux cognitifs
+              </Link>
+            </Button>
+            
+            {user && (
+              <Button asChild className="bg-primary hover:bg-primary/90">
+                <Link to="/fitness/editor">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvel article
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* User's Drafts */}
@@ -123,7 +141,6 @@ const FitnessHome = () => {
         {/* Featured Article */}
         {featuredArticle ? (
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Article vedette</h2>
             <Card className="overflow-hidden">
               <div className="md:flex">
                 {featuredArticle.image_url && (
@@ -160,7 +177,6 @@ const FitnessHome = () => {
           </section>
         ) : (
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Article vedette</h2>
             <Card className="p-6 text-center">
               <p className="text-muted-foreground">Aucun article publié pour le moment.</p>
             </Card>
@@ -170,7 +186,6 @@ const FitnessHome = () => {
         {/* Articles by Category */}
         {predefinedCategories.length > 0 && (
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Parcourir par catégorie</h2>
             <div className="space-y-8">
               {predefinedCategories.map(category => {
                 // Filter recent articles by category for display
@@ -186,7 +201,7 @@ const FitnessHome = () => {
                       <h3 className="text-xl font-semibold">{category.name}</h3>
                       <Badge variant="outline">{categoryRecentArticles.length} articles</Badge>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                       {categoryRecentArticles.map(article => (
                         <FitnessArticleCard 
                           key={article.id} 

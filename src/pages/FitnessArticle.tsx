@@ -1,18 +1,24 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFitnessArticle, useFitnessArticles } from '@/hooks/useFitnessArticles';
 import FitnessArticleCard from '@/components/fitness/FitnessArticleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Eye, Calendar, Edit } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const FitnessArticle = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { article, loading } = useFitnessArticle(id!);
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
+  
+  // Redirect to auth if user tries to access restricted content
+  useEffect(() => {
+    // Allow anonymous access to articles - no authentication required
+  }, [user, navigate]);
   
   // Get recent articles for the bottom section
   const { articles: recentArticles } = useFitnessArticles({

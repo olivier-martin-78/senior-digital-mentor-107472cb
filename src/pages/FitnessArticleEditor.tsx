@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
 import { useFitnessCategories } from '@/hooks/useFitnessCategories';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,8 +18,16 @@ import type { FitnessArticle } from '@/types/fitness';
 const FitnessArticleEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const { toast } = useToast();
+  
+  // Redirect to auth if user is not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+  }, [user, navigate]);
   const { categories, createCategory } = useFitnessCategories();
 
   const [article, setArticle] = useState<Partial<FitnessArticle>>({
