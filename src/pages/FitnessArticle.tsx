@@ -15,10 +15,24 @@ const FitnessArticle = () => {
   const { article, loading } = useFitnessArticle(id!);
   const { user } = useOptionalAuth();
   
-  // Redirect to auth if user tries to access restricted content
+  // Debug: auth and route state
   useEffect(() => {
-    // Allow anonymous access to articles - no authentication required
-  }, [user, navigate]);
+    console.info('[FitnessArticle] init', { id, userId: user?.id ?? null });
+  }, [id, user]);
+  
+  // Debug: article loading state changes
+  useEffect(() => {
+    console.debug('[FitnessArticle] state', { loading, hasArticle: !!article });
+    if (article) {
+      console.debug('[FitnessArticle] article loaded', {
+        id: article.id,
+        title: article.title,
+        category: article.fitness_categories?.name,
+        published: article.published,
+        imageUrl: article.image_url
+      });
+    }
+  }, [loading, article]);
   
   // Get recent articles for the bottom section
   const { articles: recentArticles } = useFitnessArticles({
@@ -69,6 +83,16 @@ const FitnessArticle = () => {
   // Filter out current article from related articles
   const filteredRelatedArticles = relatedArticles.filter(a => a.id !== article.id);
   const filteredRecentArticles = recentArticles.filter(a => a.id !== article.id);
+
+  // Debug: related and recent lists
+  useEffect(() => {
+    console.debug('[FitnessArticle] lists', {
+      relatedCount: relatedArticles.length,
+      filteredRelatedCount: filteredRelatedArticles.length,
+      recentCount: recentArticles.length,
+      filteredRecentCount: filteredRecentArticles.length
+    });
+  }, [relatedArticles, filteredRelatedArticles, recentArticles, filteredRecentArticles]);
 
   return (
     <div className="min-h-screen bg-background">

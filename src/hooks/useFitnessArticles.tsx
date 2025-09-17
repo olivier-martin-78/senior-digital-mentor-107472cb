@@ -18,6 +18,7 @@ export const useFitnessArticles = (filters?: {
 
   const fetchArticles = async () => {
     try {
+      console.debug('[useFitnessArticles] fetchArticles called', { filters });
       setLoading(true);
       
       let query = supabase
@@ -35,6 +36,7 @@ export const useFitnessArticles = (filters?: {
       const orderField = filters?.orderBy || 'created_at';
       const ascending = filters?.ascending || false;
       query = query.order(orderField, { ascending });
+      console.debug('[useFitnessArticles] ordering', { orderField, ascending });
 
       if (filters?.published !== undefined) {
         query = query.eq('published', filters.published);
@@ -52,9 +54,10 @@ export const useFitnessArticles = (filters?: {
 
       if (error) throw error;
 
+      console.debug('[useFitnessArticles] fetched', { count: data?.length ?? 0 });
       setArticles(data || []);
     } catch (error: any) {
-      console.error('Error fetching fitness articles:', error);
+      console.error('[useFitnessArticles] Error fetching fitness articles:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger les articles',
@@ -84,10 +87,14 @@ export const useFitnessArticle = (id: string) => {
 
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!id) return;
+      if (!id) {
+        console.warn('[useFitnessArticle] no id provided');
+        return;
+      }
 
       try {
         setLoading(true);
+        console.debug('[useFitnessArticle] fetching article', { id });
         
         const { data, error } = await supabase
           .from('fitness_articles')
@@ -104,18 +111,25 @@ export const useFitnessArticle = (id: string) => {
 
         if (error) throw error;
 
+        console.debug('[useFitnessArticle] fetch result', { exists: !!data, id: data?.id });
         setArticle(data);
 
         // Increment view count
         if (data?.published) {
-          await supabase.rpc('increment_fitness_article_views', {
+          console.debug('[useFitnessArticle] incrementing view count', { id });
+          const { data: rpcData, error: rpcError } = await supabase.rpc('increment_fitness_article_views', {
             article_id_param: id,
             user_id_param: null, // We'll handle user tracking later if needed
             ip_address_param: null
           });
+          if (rpcError) {
+            console.warn('[useFitnessArticle] view count RPC error', rpcError);
+          } else {
+            console.debug('[useFitnessArticle] view count RPC success', rpcData);
+          }
         }
       } catch (error: any) {
-        console.error('Error fetching fitness article:', error);
+        console.error('[useFitnessArticle] Error fetching fitness article:', error);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger l\'article',
