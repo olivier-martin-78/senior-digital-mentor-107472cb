@@ -132,13 +132,15 @@ const PrivateApp: React.FC = () => {
           {/* Ancienne page d'accueil accessible via /home */}
           <Route path="/home" element={<Index />} />
 
+          {/* Article fitness - PUBLIC même en mode connecté */}
+          <Route path="/fitness/article/:id" element={<FitnessArticle />} />
+
           {/* Fully protected routes - require authentication and account access */}
           <Route element={<ProtectedRoute />}>
             {/* Fitness articles routes */}
             <Route path="/fitness" element={<FitnessHome />} />
             <Route path="/fitness/editor" element={<FitnessArticleEditor />} />
             <Route path="/fitness/editor/:id" element={<FitnessArticleEditor />} />
-            <Route path="/fitness/article/:id" element={<FitnessArticle />} />
             
             <Route path="/profile" element={<Profile />} />
             <Route path="/recent" element={<Recent />} />
