@@ -50,12 +50,7 @@ const AppContent = () => {
         {/* Simplified routing - let PrivateApp and PublicApp handle specific routes */}
         <Route 
           path="/*" 
-          element={
-            (() => {
-              console.log('🔥 [APP_DEBUG] Routing vers', shouldUsePublicApp ? 'PublicApp' : 'PrivateApp', 'pour path:', window.location.pathname);
-              return shouldUsePublicApp ? <PublicApp /> : <PrivateApp />;
-            })()
-          } 
+          element={shouldUsePublicApp ? <PublicApp /> : <PrivateApp />} 
         />
       </Routes>
       <SecurityMonitor />

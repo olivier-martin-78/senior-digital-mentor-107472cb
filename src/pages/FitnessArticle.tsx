@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFitnessArticle, useFitnessArticles } from '@/hooks/useFitnessArticles';
 import FitnessArticleCard from '@/components/fitness/FitnessArticleCard';
@@ -34,18 +34,23 @@ const FitnessArticle = () => {
     }
   }, [loading, article]);
   
-  // Get recent articles for the bottom section
-  const { articles: recentArticles } = useFitnessArticles({
+  // Stabilize filter objects to prevent unnecessary re-renders
+  const recentFilters = useMemo(() => ({
     published: true,
     limit: 6
-  });
+  }), []);
 
-  // Get popular articles by category (we'll show articles from the same category)
-  const { articles: relatedArticles } = useFitnessArticles({
+  const relatedFilters = useMemo(() => ({
     published: true,
     categoryId: article?.category_id,
     limit: 6
-  });
+  }), [article?.category_id]);
+
+  // Get recent articles for the bottom section
+  const { articles: recentArticles } = useFitnessArticles(recentFilters);
+
+  // Get popular articles by category (we'll show articles from the same category)
+  const { articles: relatedArticles } = useFitnessArticles(relatedFilters);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -113,7 +118,7 @@ const FitnessArticle = () => {
           <header className="mb-8">
             <div className="mb-4">
               <Badge variant="secondary" className="mb-4">
-                {article.fitness_categories.name}
+                {article.fitness_categories?.name || 'Non catégorisé'}
               </Badge>
             </div>
             
@@ -168,7 +173,7 @@ const FitnessArticle = () => {
           {/* Article Content */}
           <div 
             className="prose prose-lg max-w-none mb-8"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: article.content || '' }}
           />
 
           {/* Source */}
@@ -187,7 +192,7 @@ const FitnessArticle = () => {
           {filteredRelatedArticles.length > 0 && (
             <section>
               <h2 className="text-2xl font-bold mb-6">
-                Articles dans la catégorie "{article.fitness_categories.name}"
+                Articles dans la catégorie "{article.fitness_categories?.name || 'Non catégorisé'}"
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRelatedArticles.slice(0, 6).map(relatedArticle => (

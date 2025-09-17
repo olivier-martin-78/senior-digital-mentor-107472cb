@@ -14,6 +14,7 @@ import { PublicMiniSite } from '@/pages/PublicMiniSite';
 import { PublicReviewForm } from '@/pages/PublicReviewForm';
 import { MiniSitePreview } from '@/pages/MiniSitePreview';
 import FitnessArticle from '@/pages/FitnessArticle';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const PublicApp: React.FC = () => {
   return (
@@ -27,7 +28,11 @@ const PublicApp: React.FC = () => {
         
         <Route path="/" element={<FitnessHome />} />
         <Route path="/fitness" element={<FitnessHome />} />
-        <Route path="/fitness/article/:id" element={<FitnessArticle />} />
+        <Route path="/fitness/article/:id" element={
+          <ErrorBoundary>
+            <FitnessArticle />
+          </ErrorBoundary>
+        } />
         <Route path="/home" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth/confirm" element={<AuthConfirm />} />

@@ -9,6 +9,7 @@ import Index from '@/pages/Index';
 import FitnessHome from '@/pages/FitnessHome';
 import FitnessArticleEditor from '@/pages/FitnessArticleEditor';
 import FitnessArticle from '@/pages/FitnessArticle';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Profile from '@/pages/Profile';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminPosts from '@/pages/admin/AdminPosts';
@@ -125,7 +126,11 @@ const PrivateApp: React.FC = () => {
           <Route path="/home" element={<Index />} />
 
           {/* Article fitness - PUBLIC même en mode connecté */}
-          <Route path="/fitness/article/:id" element={<FitnessArticle />} />
+          <Route path="/fitness/article/:id" element={
+            <ErrorBoundary>
+              <FitnessArticle />
+            </ErrorBoundary>
+          } />
 
           {/* Fully protected routes - require authentication and account access */}
           <Route element={<ProtectedRoute />}>
