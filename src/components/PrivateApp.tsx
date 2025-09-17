@@ -104,15 +104,7 @@ const PrivateApp: React.FC = () => {
       <div className="min-h-screen">
         <Routes>
           {/* Mini-site builder route - TOP PRIORITY */}
-          <Route 
-            path="/mini-site/builder" 
-            element={
-              (() => {
-                console.log('🔥 [PRIVATE_APP_DEBUG] Route /mini-site/builder matchée');
-                return <MiniSiteBuilder />;
-              })()
-            } 
-          />
+          <Route path="/mini-site/builder" element={<MiniSiteBuilder />} />
           
           {/* Page module professionnel - accessible à tous */}
           <Route path="/module-pro" element={<ProfessionalModule />} />
@@ -190,15 +182,7 @@ const PrivateApp: React.FC = () => {
 
           {/* Routes publiques pour les mini-sites - accessibles même quand connecté */}
           <Route path="/mini-site/preview" element={<MiniSitePreview />} />
-          <Route 
-            path="/mini-site/:slug" 
-            element={
-              (() => {
-                console.log('🔥 [PRIVATE_APP_DEBUG] Route /mini-site/:slug matchée dans PrivateApp');
-                return <PublicMiniSite />;
-              })()
-            } 
-          />
+          <Route path="/mini-site/:slug" element={<PublicMiniSite />} />
 
           {/* Activity creator routes - require activity creation permissions */}
           <Route element={<ActivityCreatorRoute />}>
