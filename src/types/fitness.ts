@@ -13,10 +13,10 @@ export interface FitnessArticle {
   content: string;
   category_id: string;
   image_url: string | null;
+  source: string | null;
   author_id: string;
   published: boolean;
   view_count: number;
-  source: string | null;
   created_at: string;
   updated_at: string;
 }
