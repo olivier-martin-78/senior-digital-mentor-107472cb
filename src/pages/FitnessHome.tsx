@@ -26,7 +26,9 @@ const FitnessHome = () => {
   // Fetch recent articles
   const { articles: recentArticles, loading: recentLoading } = useFitnessArticles({
     published: true,
-    limit: recentArticlesLimit
+    limit: recentArticlesLimit,
+    orderBy: 'created_at',
+    ascending: false
   });
 
   // Fetch user's drafts (unpublished articles)
