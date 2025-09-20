@@ -6,7 +6,7 @@ import FitnessArticleCard from '@/components/fitness/FitnessArticleCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Gamepad2, Target } from 'lucide-react';
+import { Loader2, Plus, Gamepad2, Target, Brain, Zap, Eye, Focus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -107,6 +107,110 @@ const FitnessHome = () => {
             )}
           </div>
         </div>
+
+        {/* Mental Fitness Section */}
+        <section className="mb-12">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 border-2 border-primary/20">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5" />
+            <CardContent className="relative p-8">
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="flex-1 text-center lg:text-left">
+                  <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
+                    <div className="relative">
+                      <Brain className="h-8 w-8 text-primary" />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse" />
+                    </div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      Entraînez aussi votre cerveau !
+                    </h2>
+                  </div>
+                  
+                  <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                    Complétez votre fitness physique avec nos <strong>11 jeux cognitifs</strong> scientifiquement conçus. 
+                    Stimulez votre neuroplasticité et prévenez le déclin cognitif tout en vous amusant.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50">
+                      <Eye className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="text-sm font-medium">Améliore la mémoire de travail</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50">
+                      <Focus className="h-5 w-5 text-accent flex-shrink-0" />
+                      <span className="text-sm font-medium">Renforce l'attention soutenue</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50">
+                      <Zap className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="text-sm font-medium">Accélère la réactivité mentale</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50">
+                      <Brain className="h-5 w-5 text-accent flex-shrink-0" />
+                      <span className="text-sm font-medium">Stimule la neuroplasticité</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                    <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+                      <Link to="/activities/games">
+                        <Gamepad2 className="w-5 h-5 mr-2" />
+                        Découvrir les jeux
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg" className="border-primary/50 hover:bg-primary/5">
+                      <Link to="/activities/games">
+                        <Target className="w-5 h-5 mr-2" />
+                        Commencer maintenant
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 max-w-md">
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Sample games preview */}
+                    <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-xl shadow-sm border border-primary/10 hover:shadow-md transition-all duration-200">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg mb-2 flex items-center justify-center">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">Mémoire Audio</h4>
+                      <p className="text-xs text-muted-foreground">Séquences sonores</p>
+                    </div>
+                    
+                    <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-xl shadow-sm border border-primary/10 hover:shadow-md transition-all duration-200">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg mb-2 flex items-center justify-center">
+                        <Focus className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">Word Magic</h4>
+                      <p className="text-xs text-muted-foreground">Mots cachés</p>
+                    </div>
+                    
+                    <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-xl shadow-sm border border-primary/10 hover:shadow-md transition-all duration-200">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg mb-2 flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">Réaction</h4>
+                      <p className="text-xs text-muted-foreground">Vitesse & précision</p>
+                    </div>
+                    
+                    <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-xl shadow-sm border border-primary/10 hover:shadow-md transition-all duration-200">
+                      <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg mb-2 flex items-center justify-center">
+                        <Brain className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">Puzzle Spatial</h4>
+                      <p className="text-xs text-muted-foreground">Logique & espace</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                      + 7 autres jeux disponibles
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* User's Drafts */}
         {user && userDrafts.length > 0 && (
