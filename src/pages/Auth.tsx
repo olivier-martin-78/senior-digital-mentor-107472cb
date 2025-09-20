@@ -142,8 +142,14 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center">
+          <p className="text-lg font-medium text-gray-700">
+            Inscrivez-vous gratuitement pour accéder à ce contenu.
+          </p>
+        </div>
+        <Card className="w-full">
         <CardHeader>
           <CardTitle>{isSignUp ? 'Inscription' : 'Connexion'}</CardTitle>
         </CardHeader>
@@ -224,6 +230,7 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
