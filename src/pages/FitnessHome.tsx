@@ -76,34 +76,21 @@ const FitnessHome = () => {
             </p>
           </div>
           
-          <div className="flex flex-col gap-2">
-            {/* Première ligne : Notre intention + Jeux cognitifs */}
-            <div className="flex gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link to="/home">
-                  <Target className="w-4 h-4 mr-2" />
-                  Notre intention  
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" size="sm">
-                <Link to="/activities/games">
-                  <Gamepad2 className="w-4 h-4 mr-2" />
-                  Jeux cognitifs
-                </Link>
-              </Button>
-            </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/home">
+                <Target className="w-4 h-4 mr-2" />
+                Notre intention  
+              </Link>
+            </Button>
             
-            {/* Deuxième ligne : Nouvel article */}
             {user && hasRole('admin') && (
-              <div className="flex justify-start">
-                <Button asChild className="bg-primary hover:bg-primary/90" size="sm">
-                  <Link to="/fitness/editor">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouvel article
-                  </Link>
-                </Button>
-              </div>
+              <Button asChild className="bg-primary hover:bg-primary/90" size="sm">
+                <Link to="/fitness/editor">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvel article
+                </Link>
+              </Button>
             )}
           </div>
         </div>
