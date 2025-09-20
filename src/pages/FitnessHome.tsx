@@ -69,7 +69,7 @@ const FitnessHome = () => {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-foreground mb-2 whitespace-nowrap overflow-hidden text-ellipsis">
-              {user ? `Bienvenue ${displayName}` : 'Rester en forme'}
+              {user ? `Bienvenue ${displayName}` : 'Vieillir en bonne santé et se maintenir en forme'}
             </h1>
             <p className="text-muted-foreground text-sm md:text-lg">
               Découvrez nos conseils pour rester en forme
