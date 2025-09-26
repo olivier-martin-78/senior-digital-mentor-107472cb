@@ -72,7 +72,7 @@ const FitnessHome = () => {
               {user ? `Bienvenue ${displayName}` : 'Vieillir en bonne santé et se maintenir en forme'}
             </h1>
             <p className="text-muted-foreground text-sm md:text-lg">
-              Découvrez nos conseils pour rester en forme
+              Découvrez nos activités pour vous maintenir en forme physique et mentale
             </p>
           </div>
           
