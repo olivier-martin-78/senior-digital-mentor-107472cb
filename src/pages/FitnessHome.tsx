@@ -103,7 +103,7 @@ const FitnessHome = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <Brain className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold text-foreground">Fitness Mental</h3>
+                    <h3 className="text-lg font-semibold text-foreground">Booster votre mémoire</h3>
                     <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                       50 jeux cognitifs
                     </Badge>
